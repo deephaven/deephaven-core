@@ -23,18 +23,29 @@ public class Log4jLoggerImpl implements Logger {
      * Static buffer pool, shared among all log4j loggers
      */
     private static final Pool<ByteBuffer> buffers = new ThreadSafeLenientFixedSizePool<>(2048,
-            new Function.Nullary<ByteBuffer>() {
-                @Override
-                public ByteBuffer call() {
-                    return ByteBuffer.allocate(512);
-                }
-            },
-            null);
+        new Function.Nullary<ByteBuffer>() {
+            @Override
+            public ByteBuffer call() {
+                return ByteBuffer.allocate(512);
+            }
+        },
+        null);
 
     private static final LogBufferPool logBufferPool = new LogBufferPool() {
-        @Override public ByteBuffer take(int minSize) { return  buffers.take(); }
-        @Override public ByteBuffer take() { return buffers.take(); }
-        @Override public void give(ByteBuffer item) { buffers.give(item); }
+        @Override
+        public ByteBuffer take(int minSize) {
+            return buffers.take();
+        }
+
+        @Override
+        public ByteBuffer take() {
+            return buffers.take();
+        }
+
+        @Override
+        public void give(ByteBuffer item) {
+            buffers.give(item);
+        }
     };
 
     /**
@@ -48,11 +59,13 @@ public class Log4jLoggerImpl implements Logger {
             super(logBufferPool);
         }
 
-        public Entry start(LogSink sink, org.apache.log4j.Logger log4jLogger, LogLevel level, long currentTime) {
+        public Entry start(LogSink sink, org.apache.log4j.Logger log4jLogger, LogLevel level,
+            long currentTime) {
             return start(sink, log4jLogger, level, currentTime, null);
         }
 
-        public Entry start(LogSink sink, org.apache.log4j.Logger log4jLogger, LogLevel level, long currentTime, Throwable t) {
+        public Entry start(LogSink sink, org.apache.log4j.Logger log4jLogger, LogLevel level,
+            long currentTime, Throwable t) {
             super.start(sink, level, currentTime, t);
             this.log4jLogger = log4jLogger;
             this.log4jLevel = getLog4jLevel(level);
@@ -73,13 +86,13 @@ public class Log4jLoggerImpl implements Logger {
      * Static pool shared among all loggers
      */
     private static final Pool<Entry> entries = new ThreadSafeLenientFixedSizePool<>(1024,
-            new Function.Nullary<Entry>() {
-                @Override
-                public Entry call() {
-                    return new Entry(logBufferPool);
-                }
-            },
-            null);
+        new Function.Nullary<Entry>() {
+            @Override
+            public Entry call() {
+                return new Entry(logBufferPool);
+            }
+        },
+        null);
 
     /**
      * Specialized sink for log4j loggers
@@ -88,18 +101,17 @@ public class Log4jLoggerImpl implements Logger {
 
         @Override
         public void write(Entry e) {
-            if ( e.getBufferCount() == 1 && e.getBuffer(0).hasArray() ) {
+            if (e.getBufferCount() == 1 && e.getBuffer(0).hasArray()) {
                 ByteBuffer b = e.getBuffer(0);
                 b.flip();
                 byte[] ba = b.array();
                 e.log4jLogger.log(e.log4jLevel, new String(ba, 0, b.limit()), e.getThrowable());
-            }
-            else {
+            } else {
                 StringBuilder sb = new StringBuilder(e.size());
-                for ( int i = 0; i < e.getBufferCount(); ++i ) {
+                for (int i = 0; i < e.getBufferCount(); ++i) {
                     ByteBuffer b = e.getBuffer(i);
                     b.flip();
-                    while ( b.remaining() > 0 ) {
+                    while (b.remaining() > 0) {
                         sb.append((char) b.get());
                     }
                 }
@@ -127,7 +139,7 @@ public class Log4jLoggerImpl implements Logger {
 
     private static final Sink SINK = new Sink();
 
-    //---------------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------------
 
     private final org.apache.log4j.Logger log4jlogger;
 
@@ -149,12 +161,14 @@ public class Log4jLoggerImpl implements Logger {
 
     @Override
     public LogEntry getEntry(LogLevel level) {
-        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000) : LogEntry.NULL;
+        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000)
+            : LogEntry.NULL;
     }
 
     @Override
     public LogEntry getEntry(LogLevel level, Throwable t) {
-        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000, t) : LogEntry.NULL;
+        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000, t)
+            : LogEntry.NULL;
     }
 
     @Override
@@ -184,31 +198,23 @@ public class Log4jLoggerImpl implements Logger {
     /** See also {@link Log4jAdapter#getLogLevel}. */
     public static org.apache.log4j.Level getLog4jLevel(LogLevel level) {
         // common case first
-        if ( level == LogLevel.INFO ) {
+        if (level == LogLevel.INFO) {
             return org.apache.log4j.Level.INFO;
-        }
-        else if ( level == LogLevel.DEBUG ) {
+        } else if (level == LogLevel.DEBUG) {
             return org.apache.log4j.Level.DEBUG;
-        }
-        else if ( level == LogLevel.TRACE ) {
+        } else if (level == LogLevel.TRACE) {
             return org.apache.log4j.Level.TRACE;
-        }
-        else if ( level == LogLevel.WARN ) {
+        } else if (level == LogLevel.WARN) {
             return org.apache.log4j.Level.WARN;
-        }
-        else if ( level == LogLevel.ERROR ) {
+        } else if (level == LogLevel.ERROR) {
             return org.apache.log4j.Level.ERROR;
-        }
-        else if ( level == LogLevel.FATAL ) {
+        } else if (level == LogLevel.FATAL) {
             return org.apache.log4j.Level.FATAL;
-        }
-        else if ( level == LogLevel.EMAIL ) {
+        } else if (level == LogLevel.EMAIL) {
             return CustomLog4jLevel.EMAIL;
-        }
-        else if ( level instanceof LogLevel.MailLevel) {
+        } else if (level instanceof LogLevel.MailLevel) {
             return new MailLevel(((LogLevel.MailLevel) level).getSubject());
-        }
-        else {
+        } else {
             throw new IllegalArgumentException(level.toString());
         }
     }

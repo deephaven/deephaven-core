@@ -18,7 +18,8 @@ public class DidCloseTextDocumentParams implements Serializable {
         this();
 
         if (source.has("textDocument")) {
-            textDocument = new TextDocumentIdentifier(source.getAny("textDocument").asPropertyMap());
+            textDocument =
+                new TextDocumentIdentifier(source.getAny("textDocument").asPropertyMap());
         }
     }
 }

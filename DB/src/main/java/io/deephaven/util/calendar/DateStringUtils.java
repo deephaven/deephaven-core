@@ -16,18 +16,18 @@ import java.util.regex.Pattern;
 /**
  * Basic utilities for Date Strings.
  *
- * To comply with the ISO-8601 standard for dates, Strings should
- * be of the form "yyyy-MM-dd"
+ * To comply with the ISO-8601 standard for dates, Strings should be of the form "yyyy-MM-dd"
  *
- * Quiet methods are functionally equivalent to their counterparts,
- * but assume Date String validity to remove the overhead of checking.
+ * Quiet methods are functionally equivalent to their counterparts, but assume Date String validity
+ * to remove the overhead of checking.
  */
 @SuppressWarnings("WeakerAccess")
 public class DateStringUtils {
-    private DateStringUtils(){}
+    private DateStringUtils() {}
 
     private static final Locale DATE_STRING_LOCALE = new Locale("en", "US");
-    private static final DateTimeFormatter DATE_STRING_FORMATTER = DateTimeFormatter.ofPattern("uuuu-MM-dd")
+    private static final DateTimeFormatter DATE_STRING_FORMATTER =
+        DateTimeFormatter.ofPattern("uuuu-MM-dd")
             .withLocale(DATE_STRING_LOCALE)
             .withChronology(IsoChronology.INSTANCE)
             .withResolverStyle(ResolverStyle.STRICT);
@@ -65,7 +65,7 @@ public class DateStringUtils {
      * @return the day {@code days} after {@code date}
      */
     public static String plusDays(final String date, final int days) {
-        if(date == null) {
+        if (date == null) {
             return null;
         }
 
@@ -84,7 +84,7 @@ public class DateStringUtils {
      * @return the day {@code days} after {@code date}
      */
     public static String plusDaysQuiet(final String date, final int days) {
-        if(date == null) {
+        if (date == null) {
             return null;
         }
 
@@ -101,7 +101,7 @@ public class DateStringUtils {
      */
     static boolean isLeapYear(final int year) {
         return ((year % 4 == 0) &&
-                (!(year % 100 == 0) || (year % 400) == 0));
+            (!(year % 100 == 0) || (year % 400) == 0));
     }
 
     /**
@@ -112,7 +112,7 @@ public class DateStringUtils {
      * @return true if {@code date1} is chronologically before {@code date2}; false otherwise.
      */
     public static boolean isBefore(final String date1, final String date2) {
-        if(date1 == null || date2 == null) {
+        if (date1 == null || date2 == null) {
             return false;
         }
 
@@ -125,9 +125,8 @@ public class DateStringUtils {
     /**
      * Is one date before another?
      *
-     * This does not check that dates are formatted correctly.
-     * Could be disastrous if {@code date1} and {@code date2} are not
-     * ISO-8601 compliant!
+     * This does not check that dates are formatted correctly. Could be disastrous if {@code date1}
+     * and {@code date2} are not ISO-8601 compliant!
      *
      * @param date1 if {@code null} return false
      * @param date2 if {@code null} return false
@@ -146,7 +145,7 @@ public class DateStringUtils {
      * @return true if {@code date1} is chronologically after {@code date2}; false otherwise.
      */
     public static boolean isAfter(final String date1, final String date2) {
-        if(date1 == null || date2 == null) {
+        if (date1 == null || date2 == null) {
             return false;
         }
 
@@ -159,9 +158,8 @@ public class DateStringUtils {
     /**
      * Is one date after another?
      *
-     * This does not check that dates are formatted correctly.
-     * Could be disastrous if {@code date1} and {@code date2} are not
-     * ISO-8601 compliant!
+     * This does not check that dates are formatted correctly. Could be disastrous if {@code date1}
+     * and {@code date2} are not ISO-8601 compliant!
      *
      * @param date1 if {@code null} return false
      * @param date2 if {@code null} return false
@@ -179,7 +177,7 @@ public class DateStringUtils {
      * @return month of the year for the date. Jan = 1, Dec = 12
      */
     public static int monthOfYear(final String date) {
-        if(date == null) {
+        if (date == null) {
             return QueryConstants.NULL_INT;
         }
 
@@ -187,8 +185,8 @@ public class DateStringUtils {
     }
 
     /**
-     * Parses a string as a local date.  If the string is not a valid
-     * ISO-8601 Date String, throws an exception.
+     * Parses a string as a local date. If the string is not a valid ISO-8601 Date String, throws an
+     * exception.
      *
      * This method can beused to verify that a date string is properly formed.
      *
@@ -196,19 +194,21 @@ public class DateStringUtils {
      * @throws IllegalArgumentException improper date string
      */
     static LocalDate parseLocalDate(final String date) {
-        if(date == null) {
+        if (date == null) {
             throw new IllegalArgumentException("Date can not be null");
         }
 
         final boolean matchesPattern = DATE_STRING_PATTERN.matcher(date).matches();
-        if(!matchesPattern) {
-            throw new IllegalArgumentException("Text '" + date + "' could not be parsed as a date: format must be yyyy-MM-dd");
+        if (!matchesPattern) {
+            throw new IllegalArgumentException(
+                "Text '" + date + "' could not be parsed as a date: format must be yyyy-MM-dd");
         }
 
         try {
             return LocalDate.parse(date, DATE_STRING_FORMATTER);
-        } catch(Exception e) {
-            throw new IllegalArgumentException("Text '" + date + "' could not be parsed as a date: " + e.getMessage());
+        } catch (Exception e) {
+            throw new IllegalArgumentException(
+                "Text '" + date + "' could not be parsed as a date: " + e.getMessage());
         }
     }
 
@@ -218,7 +218,7 @@ public class DateStringUtils {
      * @param date date
      * @return ISO-8601 formatted string (yyyy-MM-dd)
      */
-    static String format(final LocalDate date){
+    static String format(final LocalDate date) {
         return DATE_STRING_FORMATTER.format(date);
     }
 }

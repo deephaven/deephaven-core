@@ -15,14 +15,15 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 1, time = 10)
 @Measurement(iterations = 3, time = 10)
-@Fork(value=1)
+@Fork(value = 1)
 
 public class BuildSortedRangesBench {
 
-    private static final int count = 415 * 1000;  // -Xmx768M makes for a tight heap, which is how we want to test.
+    private static final int count = 415 * 1000; // -Xmx768M makes for a tight heap, which is how we
+                                                 // want to test.
     private static final int sortedRangesIntMaxCapacity = SortedRanges.MAX_CAPACITY / 2;
     private static final int sz = sortedRangesIntMaxCapacity - 2;
-    private static final long[] values =  new long[sz + 1];
+    private static final long[] values = new long[sz + 1];
     private static final int step = 10;
     private static final float rangeP = 0.5F;
 
@@ -50,18 +51,23 @@ public class BuildSortedRangesBench {
     // See "Numerical Recipes in C", 7-1 "Uniform Deviates", "An Even Quicker Generator".
     private static class QuickDirtyRandom {
         private int idum;
+
         public QuickDirtyRandom(final int seed) {
             idum = seed;
         }
+
         public QuickDirtyRandom() {
             idum = 1;
         }
+
         public void next() {
             idum = 1664525 * idum + 1013904223;
         }
+
         public int curr() {
             return idum;
         }
+
         public void reset(final int seed) {
             idum = seed;
         }
@@ -81,7 +87,7 @@ public class BuildSortedRangesBench {
             for (int j = 0; j < n; j += 2) {
                 quickRand.next();;
                 d += quickRand.curr() & 0xF;
-                sr = sr.appendRange(values[j] + d, values[j+1] + d);
+                sr = sr.appendRange(values[j] + d, values[j + 1] + d);
             }
             sr.tryCompactUnsafe(4);
             tixs[i] = sr;
@@ -102,7 +108,7 @@ public class BuildSortedRangesBench {
                 quickRand.next();;
                 d += quickRand.curr() & 0xF;
 
-                rb.appendRangeUnsafeNoWriteCheck(values[j] + d, values[j+1] + d);
+                rb.appendRangeUnsafeNoWriteCheck(values[j] + d, values[j + 1] + d);
             }
             rb.tryCompactUnsafe(4);
             rb.finishMutations();

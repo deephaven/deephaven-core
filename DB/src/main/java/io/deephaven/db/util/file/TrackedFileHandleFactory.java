@@ -25,12 +25,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Simple least-recently-opened "cache" for FileHandles, to avoid running up against ulimits.
- * Will probably not achieve satisfactory results if the number of file handles concurrently in active use
- * exceeds capacity.
- * Note that returned FileHandles may be closed asynchronously by the factory.
+ * Simple least-recently-opened "cache" for FileHandles, to avoid running up against ulimits. Will
+ * probably not achieve satisfactory results if the number of file handles concurrently in active
+ * use exceeds capacity. Note that returned FileHandles may be closed asynchronously by the factory.
  *
- * TODO: Consider adding a lookup to enable handle sharing.  Not necessary for current usage.
+ * TODO: Consider adding a lookup to enable handle sharing. Not necessary for current usage.
  */
 public class TrackedFileHandleFactory implements FileHandleFactory {
 
@@ -41,8 +40,10 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
             synchronized (TrackedFileHandleFactory.class) {
                 if (instance == null) {
                     instance = new TrackedFileHandleFactory(
-                            CommBase.singleThreadedScheduler("TrackedFileHandleFactory.CleanupScheduler", Logger.NULL).start(),
-                            Configuration.getInstance().getInteger("TrackedFileHandleFactory.maxOpenFiles"));
+                        CommBase.singleThreadedScheduler(
+                            "TrackedFileHandleFactory.CleanupScheduler", Logger.NULL).start(),
+                        Configuration.getInstance()
+                            .getInteger("TrackedFileHandleFactory.maxOpenFiles"));
                 }
             }
         }
@@ -61,29 +62,38 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
     private final AtomicInteger size = new AtomicInteger(0);
     private final Queue<HandleReference> handleReferences = new ConcurrentLinkedQueue<>();
 
-    public final FileToHandleFunction readOnlyHandleCreator = FileHandleFactory.toReadOnlyHandleCreator(this);
-    public final FileToHandleFunction readWriteCreateHandleCreator = FileHandleFactory.toReadWriteCreateHandleCreator(this);
-    public final FileToHandleFunction writeAppendCreateHandleCreator = FileHandleFactory.toWriteAppendCreateHandleCreator(this);
-    public final FileToHandleFunction writeTruncateCreateHandleCreator = FileHandleFactory.toWriteTruncateCreateHandleCreator(this);
+    public final FileToHandleFunction readOnlyHandleCreator =
+        FileHandleFactory.toReadOnlyHandleCreator(this);
+    public final FileToHandleFunction readWriteCreateHandleCreator =
+        FileHandleFactory.toReadWriteCreateHandleCreator(this);
+    public final FileToHandleFunction writeAppendCreateHandleCreator =
+        FileHandleFactory.toWriteAppendCreateHandleCreator(this);
+    public final FileToHandleFunction writeTruncateCreateHandleCreator =
+        FileHandleFactory.toWriteTruncateCreateHandleCreator(this);
 
     /**
      * Full constructor.
+     * 
      * @param scheduler The scheduler to use for cleanup
      * @param capacity The total number of file handles to allow outstanding
      * @param targetUsageRatio The target usage threshold as a ratio of capacity, in [0.1, 0.9]
      * @param cleanupIntervalMillis The interval for asynchronous cleanup attempts
      */
-    public TrackedFileHandleFactory(@NotNull final Scheduler scheduler, final int capacity, final double targetUsageRatio, final long cleanupIntervalMillis) {
+    public TrackedFileHandleFactory(@NotNull final Scheduler scheduler, final int capacity,
+        final double targetUsageRatio, final long cleanupIntervalMillis) {
         this.scheduler = scheduler;
         this.capacity = Require.gtZero(capacity, "capacity");
         this.targetUsageRatio = Require.inRange(targetUsageRatio, 0.1, 0.9, "targetUsageRatio");
-        targetUsageThreshold = Require.gtZero((int)(capacity * targetUsageRatio), "targetUsageThreshold");
+        targetUsageThreshold =
+            Require.gtZero((int) (capacity * targetUsageRatio), "targetUsageThreshold");
 
         new CleanupJob(cleanupIntervalMillis).schedule();
     }
 
     /**
-     * Constructor with default target usage ratio of 0.9 (90%) and cleanup attempts every 60 seconds.
+     * Constructor with default target usage ratio of 0.9 (90%) and cleanup attempts every 60
+     * seconds.
+     * 
      * @param scheduler The scheduler to use for cleanup
      * @param capacity The total number of file handles to allow outstanding
      */
@@ -113,7 +123,8 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
 
     @Override
     @NotNull
-    public final FileHandle makeHandle(@NotNull final File file, @NotNull final OpenOption[] openOptions) throws IOException {
+    public final FileHandle makeHandle(@NotNull final File file,
+        @NotNull final OpenOption[] openOptions) throws IOException {
         if (size.get() >= capacity) {
             // Synchronous cleanup at full capacity.
             cleanup();
@@ -126,21 +137,25 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
     }
 
     private void cleanup() {
-        for (final Iterator<HandleReference> handleReferenceIterator = handleReferences.iterator(); handleReferenceIterator.hasNext(); ) {
+        for (final Iterator<HandleReference> handleReferenceIterator =
+            handleReferences.iterator(); handleReferenceIterator.hasNext();) {
             final HandleReference handleReference = handleReferenceIterator.next();
             final FileHandle handle = handleReference.get();
             if (handle == null) {
                 handleReference.reclaim();
                 handleReferenceIterator.remove();
             } else if (!handle.isOpen()) {
-                // NB: handle.isOpen() will invoke the close recorder as a side effect, if necessary.
+                // NB: handle.isOpen() will invoke the close recorder as a side effect, if
+                // necessary.
                 handleReferenceIterator.remove();
             }
         }
 
         HandleReference handleReference;
-        while (size.get() > targetUsageThreshold && (handleReference = handleReferences.poll()) != null) {
-            // NB: poll() might return null if targetUsageThreshold is very low and some thread has incremented size but not added its handle.
+        while (size.get() > targetUsageThreshold
+            && (handleReference = handleReferences.poll()) != null) {
+            // NB: poll() might return null if targetUsageThreshold is very low and some thread has
+            // incremented size but not added its handle.
             handleReference.reclaim();
         }
     }
@@ -170,7 +185,8 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
             try {
                 cleanup();
             } catch (Exception e) {
-                throw new RuntimeException("TrackedFileHandleFactory.CleanupJob: Unexpected exception", e);
+                throw new RuntimeException(
+                    "TrackedFileHandleFactory.CleanupJob: Unexpected exception", e);
             }
             schedule();
         }
@@ -185,7 +201,7 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
         }
 
         @Override
-        public void call () {
+        public void call() {
             if (reclaimed.compareAndSet(false, true)) {
                 size.decrementAndGet();
             }
@@ -197,7 +213,8 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
         private final FileChannel fileChannel;
         private final CloseRecorder closeRecorder;
 
-        private HandleReference(@NotNull final FileHandle referent, @NotNull final FileChannel fileChannel, @NotNull final CloseRecorder closeRecorder) {
+        private HandleReference(@NotNull final FileHandle referent,
+            @NotNull final FileChannel fileChannel, @NotNull final CloseRecorder closeRecorder) {
             super(referent);
             this.fileChannel = fileChannel;
             this.closeRecorder = closeRecorder;

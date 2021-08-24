@@ -39,6 +39,7 @@ public class FilterValue {
         lit.setStringValue(string);
         return new FilterValue(lit);
     }
+
     @JsMethod(namespace = "dh.FilterValue")
     public static FilterValue ofNumber(Object input) {
         Objects.requireNonNull(input);
@@ -55,12 +56,13 @@ public class FilterValue {
             lit.setDoubleValue(Js.asDouble(input));
             return new FilterValue(lit);
         } else {
-            //not sure what the input is, try to toString(), then parse to Double, and use that
+            // not sure what the input is, try to toString(), then parse to Double, and use that
             Literal lit = new Literal();
             lit.setDoubleValue(Double.parseDouble(input.toString()));
             return new FilterValue(lit);
         }
     }
+
     @JsMethod(namespace = "dh.FilterValue")
     public static FilterValue ofBoolean(Boolean b) {
         Objects.requireNonNull(b);
@@ -84,9 +86,9 @@ public class FilterValue {
         descriptor.setReference(ref);
     }
 
-    @JsIgnore//hidden until implemented
+    @JsIgnore // hidden until implemented
     public FilterValue abs() {
-        //TODO just sugar for invoke? special operation?
+        // TODO just sugar for invoke? special operation?
         return this;
     }
 
@@ -110,9 +112,11 @@ public class FilterValue {
     public FilterCondition eqIgnoreCase(FilterValue term) {
         return inIgnoreCase(new FilterValue[] {term});
     }
+
     public FilterCondition notEq(FilterValue term) {
         return makeCompare(term, CompareCondition.CompareOperation.getNOT_EQUALS());
     }
+
     public FilterCondition notEqIgnoreCase(FilterValue term) {
         return notInIgnoreCase(new FilterValue[] {term});
     }
@@ -120,17 +124,22 @@ public class FilterValue {
     public FilterCondition greaterThan(FilterValue term) {
         return makeCompare(term, CompareCondition.CompareOperation.getGREATER_THAN());
     }
+
     public FilterCondition lessThan(FilterValue term) {
         return makeCompare(term, CompareCondition.CompareOperation.getLESS_THAN());
     }
+
     public FilterCondition greaterThanOrEqualTo(FilterValue term) {
         return makeCompare(term, CompareCondition.CompareOperation.getGREATER_THAN_OR_EQUAL());
     }
+
     public FilterCondition lessThanOrEqualTo(FilterValue term) {
         return makeCompare(term, CompareCondition.CompareOperation.getLESS_THAN_OR_EQUAL());
     }
+
     public FilterCondition in(FilterValue[] terms) {
-        return makeIn(terms, Table_pb.MatchType.getREGULAR(), Table_pb.CaseSensitivity.getMATCH_CASE());
+        return makeIn(terms, Table_pb.MatchType.getREGULAR(),
+            Table_pb.CaseSensitivity.getMATCH_CASE());
     }
 
     private FilterCondition makeIn(FilterValue[] terms, double matchType, double casesensitivity) {
@@ -146,14 +155,18 @@ public class FilterValue {
     }
 
     public FilterCondition inIgnoreCase(FilterValue[] terms) {
-        return makeIn(terms, Table_pb.MatchType.getREGULAR(), Table_pb.CaseSensitivity.getIGNORE_CASE());
+        return makeIn(terms, Table_pb.MatchType.getREGULAR(),
+            Table_pb.CaseSensitivity.getIGNORE_CASE());
     }
 
     public FilterCondition notIn(FilterValue[] terms) {
-        return makeIn(terms, Table_pb.MatchType.getINVERTED(), Table_pb.CaseSensitivity.getMATCH_CASE());
+        return makeIn(terms, Table_pb.MatchType.getINVERTED(),
+            Table_pb.CaseSensitivity.getMATCH_CASE());
     }
+
     public FilterCondition notInIgnoreCase(FilterValue[] terms) {
-        return makeIn(terms, Table_pb.MatchType.getINVERTED(), Table_pb.CaseSensitivity.getIGNORE_CASE());
+        return makeIn(terms, Table_pb.MatchType.getINVERTED(),
+            Table_pb.CaseSensitivity.getIGNORE_CASE());
     }
 
     public FilterCondition contains(FilterValue term) {
@@ -177,6 +190,7 @@ public class FilterValue {
     public FilterCondition matches(FilterValue pattern) {
         return makeMatches(pattern, Table_pb.CaseSensitivity.getMATCH_CASE());
     }
+
     public FilterCondition matchesIgnoreCase(FilterValue pattern) {
         return makeMatches(pattern, Table_pb.CaseSensitivity.getIGNORE_CASE());
     }
@@ -223,7 +237,8 @@ public class FilterValue {
 
     @Override
     public String toString() {
-        // TODO (deephaven-core#723) implement a readable tostring rather than turning the pb object into a string
+        // TODO (deephaven-core#723) implement a readable tostring rather than turning the pb object
+        // into a string
         return descriptor.toString();
     }
 }

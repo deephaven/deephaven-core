@@ -12,8 +12,8 @@ import java.util.List;
 import static io.deephaven.db.plot.util.NullCategory.INSTANCE;
 
 /**
- * {@link IndexableData} dataset backed by an array. If the array contains a null value,
- * return a NULL_CATEGORY.
+ * {@link IndexableData} dataset backed by an array. If the array contains a null value, return a
+ * NULL_CATEGORY.
  */
 public class IndexableDataListNullCategory<T> extends IndexableData<T> {
     private static final long serialVersionUID = -3605356450513219514L;
@@ -22,8 +22,7 @@ public class IndexableDataListNullCategory<T> extends IndexableData<T> {
     /**
      * Creates an IndexableDataArray instance.
      *
-     * @throws io.deephaven.base.verify.RequirementFailure
-     *                                  {@code data} must not be null
+     * @throws io.deephaven.base.verify.RequirementFailure {@code data} must not be null
      * @param data data
      * @param plotInfo plot information
      */

@@ -14,125 +14,125 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.DoubleMapWithDefault",
     namespace = JsPackage.GLOBAL)
 public class DoubleMapWithDefault {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
-    @JsOverlay
-    static DoubleMapWithDefault.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType {
+        @JsOverlay
+        static DoubleMapWithDefault.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        double getDefaultDouble();
+
+        @JsProperty
+        JsArray<String> getKeysList();
+
+        @JsProperty
+        JsArray<Double> getValuesList();
+
+        @JsProperty
+        void setDefaultDouble(double defaultDouble);
+
+        @JsProperty
+        void setKeysList(JsArray<String> keysList);
+
+        @JsOverlay
+        default void setKeysList(String[] keysList) {
+            setKeysList(Js.<JsArray<String>>uncheckedCast(keysList));
+        }
+
+        @JsProperty
+        void setValuesList(JsArray<Double> valuesList);
+
+        @JsOverlay
+        default void setValuesList(double[] valuesList) {
+            setValuesList(Js.<JsArray<Double>>uncheckedCast(valuesList));
+        }
     }
 
-    @JsProperty
-    double getDefaultDouble();
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType0 {
+        @JsOverlay
+        static DoubleMapWithDefault.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
 
-    @JsProperty
-    JsArray<String> getKeysList();
+        @JsProperty
+        double getDefaultDouble();
 
-    @JsProperty
-    JsArray<Double> getValuesList();
+        @JsProperty
+        JsArray<String> getKeysList();
 
-    @JsProperty
-    void setDefaultDouble(double defaultDouble);
+        @JsProperty
+        JsArray<Double> getValuesList();
 
-    @JsProperty
-    void setKeysList(JsArray<String> keysList);
+        @JsProperty
+        void setDefaultDouble(double defaultDouble);
 
-    @JsOverlay
-    default void setKeysList(String[] keysList) {
-      setKeysList(Js.<JsArray<String>>uncheckedCast(keysList));
+        @JsProperty
+        void setKeysList(JsArray<String> keysList);
+
+        @JsOverlay
+        default void setKeysList(String[] keysList) {
+            setKeysList(Js.<JsArray<String>>uncheckedCast(keysList));
+        }
+
+        @JsProperty
+        void setValuesList(JsArray<Double> valuesList);
+
+        @JsOverlay
+        default void setValuesList(double[] valuesList) {
+            setValuesList(Js.<JsArray<Double>>uncheckedCast(valuesList));
+        }
     }
 
-    @JsProperty
-    void setValuesList(JsArray<Double> valuesList);
+    public static native DoubleMapWithDefault deserializeBinary(Uint8Array bytes);
+
+    public static native DoubleMapWithDefault deserializeBinaryFromReader(
+        DoubleMapWithDefault message, Object reader);
+
+    public static native void serializeBinaryToWriter(DoubleMapWithDefault message, Object writer);
+
+    public static native DoubleMapWithDefault.ToObjectReturnType toObject(
+        boolean includeInstance, DoubleMapWithDefault msg);
+
+    public native String addKeys(String value, double index);
+
+    public native String addKeys(String value);
+
+    public native double addValues(double value, double index);
+
+    public native double addValues(double value);
+
+    public native void clearKeysList();
+
+    public native void clearValuesList();
+
+    public native double getDefaultDouble();
+
+    public native JsArray<String> getKeysList();
+
+    public native JsArray<Double> getValuesList();
+
+    public native Uint8Array serializeBinary();
+
+    public native void setDefaultDouble(double value);
+
+    public native void setKeysList(JsArray<String> value);
 
     @JsOverlay
-    default void setValuesList(double[] valuesList) {
-      setValuesList(Js.<JsArray<Double>>uncheckedCast(valuesList));
-    }
-  }
-
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsOverlay
-    static DoubleMapWithDefault.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    public final void setKeysList(String[] value) {
+        setKeysList(Js.<JsArray<String>>uncheckedCast(value));
     }
 
-    @JsProperty
-    double getDefaultDouble();
-
-    @JsProperty
-    JsArray<String> getKeysList();
-
-    @JsProperty
-    JsArray<Double> getValuesList();
-
-    @JsProperty
-    void setDefaultDouble(double defaultDouble);
-
-    @JsProperty
-    void setKeysList(JsArray<String> keysList);
+    public native void setValuesList(JsArray<Double> value);
 
     @JsOverlay
-    default void setKeysList(String[] keysList) {
-      setKeysList(Js.<JsArray<String>>uncheckedCast(keysList));
+    public final void setValuesList(double[] value) {
+        setValuesList(Js.<JsArray<Double>>uncheckedCast(value));
     }
 
-    @JsProperty
-    void setValuesList(JsArray<Double> valuesList);
+    public native DoubleMapWithDefault.ToObjectReturnType0 toObject();
 
-    @JsOverlay
-    default void setValuesList(double[] valuesList) {
-      setValuesList(Js.<JsArray<Double>>uncheckedCast(valuesList));
-    }
-  }
-
-  public static native DoubleMapWithDefault deserializeBinary(Uint8Array bytes);
-
-  public static native DoubleMapWithDefault deserializeBinaryFromReader(
-      DoubleMapWithDefault message, Object reader);
-
-  public static native void serializeBinaryToWriter(DoubleMapWithDefault message, Object writer);
-
-  public static native DoubleMapWithDefault.ToObjectReturnType toObject(
-      boolean includeInstance, DoubleMapWithDefault msg);
-
-  public native String addKeys(String value, double index);
-
-  public native String addKeys(String value);
-
-  public native double addValues(double value, double index);
-
-  public native double addValues(double value);
-
-  public native void clearKeysList();
-
-  public native void clearValuesList();
-
-  public native double getDefaultDouble();
-
-  public native JsArray<String> getKeysList();
-
-  public native JsArray<Double> getValuesList();
-
-  public native Uint8Array serializeBinary();
-
-  public native void setDefaultDouble(double value);
-
-  public native void setKeysList(JsArray<String> value);
-
-  @JsOverlay
-  public final void setKeysList(String[] value) {
-    setKeysList(Js.<JsArray<String>>uncheckedCast(value));
-  }
-
-  public native void setValuesList(JsArray<Double> value);
-
-  @JsOverlay
-  public final void setValuesList(double[] value) {
-    setValuesList(Js.<JsArray<Double>>uncheckedCast(value));
-  }
-
-  public native DoubleMapWithDefault.ToObjectReturnType0 toObject();
-
-  public native DoubleMapWithDefault.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native DoubleMapWithDefault.ToObjectReturnType0 toObject(boolean includeInstance);
 }

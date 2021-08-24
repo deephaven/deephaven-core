@@ -13,67 +13,67 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.console_pb.VariableDefinition",
     namespace = JsPackage.GLOBAL)
 public class VariableDefinition {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
-    @JsOverlay
-    static VariableDefinition.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType {
+        @JsOverlay
+        static VariableDefinition.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getName();
+
+        @JsProperty
+        String getType();
+
+        @JsProperty
+        void setName(String name);
+
+        @JsProperty
+        void setType(String type);
     }
 
-    @JsProperty
-    String getName();
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType0 {
+        @JsOverlay
+        static VariableDefinition.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
 
-    @JsProperty
-    String getType();
+        @JsProperty
+        String getName();
 
-    @JsProperty
-    void setName(String name);
+        @JsProperty
+        String getType();
 
-    @JsProperty
-    void setType(String type);
-  }
+        @JsProperty
+        void setName(String name);
 
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsOverlay
-    static VariableDefinition.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+        @JsProperty
+        void setType(String type);
     }
 
-    @JsProperty
-    String getName();
+    public static native VariableDefinition deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    String getType();
+    public static native VariableDefinition deserializeBinaryFromReader(
+        VariableDefinition message, Object reader);
 
-    @JsProperty
-    void setName(String name);
+    public static native void serializeBinaryToWriter(VariableDefinition message, Object writer);
 
-    @JsProperty
-    void setType(String type);
-  }
+    public static native VariableDefinition.ToObjectReturnType toObject(
+        boolean includeInstance, VariableDefinition msg);
 
-  public static native VariableDefinition deserializeBinary(Uint8Array bytes);
+    public native String getName();
 
-  public static native VariableDefinition deserializeBinaryFromReader(
-      VariableDefinition message, Object reader);
+    public native String getType();
 
-  public static native void serializeBinaryToWriter(VariableDefinition message, Object writer);
+    public native Uint8Array serializeBinary();
 
-  public static native VariableDefinition.ToObjectReturnType toObject(
-      boolean includeInstance, VariableDefinition msg);
+    public native void setName(String value);
 
-  public native String getName();
+    public native void setType(String value);
 
-  public native String getType();
+    public native VariableDefinition.ToObjectReturnType0 toObject();
 
-  public native Uint8Array serializeBinary();
-
-  public native void setName(String value);
-
-  public native void setType(String value);
-
-  public native VariableDefinition.ToObjectReturnType0 toObject();
-
-  public native VariableDefinition.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native VariableDefinition.ToObjectReturnType0 toObject(boolean includeInstance);
 }

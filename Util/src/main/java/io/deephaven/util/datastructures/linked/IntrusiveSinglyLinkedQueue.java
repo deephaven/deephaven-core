@@ -4,10 +4,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Singly-linked queue. Supports basic queue operations, but not extended Collection methods that would be required
- * by actually implementing java.lang.Queue.
+ * Singly-linked queue. Supports basic queue operations, but not extended Collection methods that
+ * would be required by actually implementing java.lang.Queue.
  */
-public class IntrusiveSinglyLinkedQueue<VALUE_TYPE>  {
+public class IntrusiveSinglyLinkedQueue<VALUE_TYPE> {
     VALUE_TYPE head = null;
     VALUE_TYPE tail = null;
     private long count = 0;
@@ -52,14 +52,17 @@ public class IntrusiveSinglyLinkedQueue<VALUE_TYPE>  {
     public long size() {
         return count;
     }
+
     /**
      * Adapter interface for nodes with intrusively-stored next nodes.
+     * 
      * @param <NODE_TYPE>
      */
     public interface Adapter<NODE_TYPE> {
 
         /**
          * Get the next node after the input node.
+         * 
          * @param node The input node
          * @return The input node's next node
          */
@@ -68,6 +71,7 @@ public class IntrusiveSinglyLinkedQueue<VALUE_TYPE>  {
 
         /**
          * Set the input node's next node.
+         * 
          * @param node The input node
          * @param other The input node's new next node
          */
@@ -82,6 +86,7 @@ public class IntrusiveSinglyLinkedQueue<VALUE_TYPE>  {
 
     /**
      * Constructor, for sub-class use only.
+     * 
      * @param adapter The adapter for updating a node's next node.
      */
     public IntrusiveSinglyLinkedQueue(@NotNull final Adapter<VALUE_TYPE> adapter) {
@@ -90,6 +95,7 @@ public class IntrusiveSinglyLinkedQueue<VALUE_TYPE>  {
 
     /**
      * Get the next node after the input node.
+     * 
      * @param node The input node
      * @return The input node's next node
      */
@@ -100,6 +106,7 @@ public class IntrusiveSinglyLinkedQueue<VALUE_TYPE>  {
 
     /**
      * Set the input node's next node.
+     * 
      * @param node The input node
      * @param other The input node's new next node
      */

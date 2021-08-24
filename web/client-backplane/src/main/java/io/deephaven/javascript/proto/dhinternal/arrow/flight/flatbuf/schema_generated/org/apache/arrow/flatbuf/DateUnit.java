@@ -8,6 +8,6 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.DateUnit",
     namespace = JsPackage.GLOBAL)
 public class DateUnit {
-  public static int DAY,
-  MILLISECOND;
+    public static int DAY,
+        MILLISECOND;
 }

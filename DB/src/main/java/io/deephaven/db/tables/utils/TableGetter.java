@@ -13,35 +13,35 @@ public class TableGetter {
         this.table = table;
     }
 
-    Object get(String columnName,int index) {
+    Object get(String columnName, int index) {
         return table.getColumn(columnName).get(index);
     }
 
-    byte getByte(String columnName,int index) {
+    byte getByte(String columnName, int index) {
         return table.getColumn(columnName).getByte(index);
     }
 
-    char getChar(String columnName,int index) {
+    char getChar(String columnName, int index) {
         return table.getColumn(columnName).getChar(index);
     }
 
-    double getDouble(String columnName,int index) {
+    double getDouble(String columnName, int index) {
         return table.getColumn(columnName).getDouble(index);
     }
 
-    float getFloat(String columnName,int index) {
+    float getFloat(String columnName, int index) {
         return table.getColumn(columnName).getFloat(index);
     }
 
-    int getInt(String columnName,int index) {
+    int getInt(String columnName, int index) {
         return table.getColumn(columnName).getInt(index);
     }
 
-    long getLong(String columnName,int index) {
+    long getLong(String columnName, int index) {
         return table.getColumn(columnName).getLong(index);
     }
 
-    short getShort(String columnName,int index) {
+    short getShort(String columnName, int index) {
         return table.getColumn(columnName).getShort(index);
     }
 

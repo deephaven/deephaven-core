@@ -16,7 +16,7 @@ public class FIFOSemaphore {
 
     public FIFOSemaphore(int spinsUntilPark, int resources) {
         this.spinsUntilPark = spinsUntilPark;
-        threads = new LockFreeArrayQueue<Thread>(12);  // 4094 threads max
+        threads = new LockFreeArrayQueue<Thread>(12); // 4094 threads max
         resource = new AtomicInteger(resources);
     }
 
@@ -74,20 +74,22 @@ public class FIFOSemaphore {
         int spins = 0;
         int resourcesAvailable;
         boolean peekNotMe = true;
-        while ( (peekNotMe && (peekNotMe = (threads.peek() != me))) || // once we've peeked ourselves once, we don't need to do it again!
-                (resourcesAvailable = getAndDecreaseIfCan(toAcquire)) < toAcquire) {
-            if ( (++spins % spinsUntilPark) == 0 ) {
+        while ((peekNotMe && (peekNotMe = (threads.peek() != me))) || // once we've peeked ourselves
+                                                                      // once, we don't need to do
+                                                                      // it again!
+            (resourcesAvailable = getAndDecreaseIfCan(toAcquire)) < toAcquire) {
+            if ((++spins % spinsUntilPark) == 0) {
                 LockSupport.park(this);
 
                 // ignore interrupts while waiting
-                if ( Thread.interrupted() ) {
+                if (Thread.interrupted()) {
                     wasInterrupted = true;
                 }
             }
         }
 
-        if ( (t = threads.dequeue()) != me ) {
-            throw new IllegalStateException("Failed to dequeue myself, got "+t);
+        if ((t = threads.dequeue()) != me) {
+            throw new IllegalStateException("Failed to dequeue myself, got " + t);
         }
 
         // notify the next guy if there are more resources available
@@ -96,8 +98,8 @@ public class FIFOSemaphore {
         }
 
         // reassert interrupt status on exit
-        if ( wasInterrupted ) {
-           me.interrupt();
+        if (wasInterrupted) {
+            me.interrupt();
         }
     }
 }

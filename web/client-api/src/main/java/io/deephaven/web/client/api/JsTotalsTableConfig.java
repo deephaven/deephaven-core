@@ -17,34 +17,33 @@ import java.util.List;
 @JsType(name = "TotalsTableConfig", namespace = "dh")
 public class JsTotalsTableConfig {
     @Deprecated // Use JsAggregationOperation instead
-    public static final String  COUNT = "Count",
-                                MIN = "Min",
-                                MAX = "Max",
-                                SUM = "Sum",
-                                ABS_SUM = "AbsSum",
-                                VAR = "Var",
-                                AVG = "Avg",
-                                STD = "Std",
-                                FIRST = "First",
-                                LAST = "Last",
-//                                ARRAY = "Array",
-                                SKIP = "Skip";
+    public static final String COUNT = "Count",
+        MIN = "Min",
+        MAX = "Max",
+        SUM = "Sum",
+        ABS_SUM = "AbsSum",
+        VAR = "Var",
+        AVG = "Avg",
+        STD = "Std",
+        FIRST = "First",
+        LAST = "Last",
+        // ARRAY = "Array",
+        SKIP = "Skip";
     private static final List<String> knownAggTypes = Arrays.asList(
-            JsAggregationOperation.COUNT,
-            JsAggregationOperation.MIN,
-            JsAggregationOperation.MAX,
-            JsAggregationOperation.SUM,
-            JsAggregationOperation.ABS_SUM,
-            JsAggregationOperation.VAR,
-            JsAggregationOperation.AVG,
-            JsAggregationOperation.STD,
-            JsAggregationOperation.FIRST,
-            JsAggregationOperation.LAST,
-            JsAggregationOperation.SKIP,
-            JsAggregationOperation.COUNT_DISTINCT,
-            JsAggregationOperation.DISTINCT,
-            JsAggregationOperation.UNIQUE
-    );
+        JsAggregationOperation.COUNT,
+        JsAggregationOperation.MIN,
+        JsAggregationOperation.MAX,
+        JsAggregationOperation.SUM,
+        JsAggregationOperation.ABS_SUM,
+        JsAggregationOperation.VAR,
+        JsAggregationOperation.AVG,
+        JsAggregationOperation.STD,
+        JsAggregationOperation.FIRST,
+        JsAggregationOperation.LAST,
+        JsAggregationOperation.SKIP,
+        JsAggregationOperation.COUNT_DISTINCT,
+        JsAggregationOperation.DISTINCT,
+        JsAggregationOperation.UNIQUE);
 
     public boolean showTotalsByDefault = false;
     public boolean showGrandTotalsByDefault = false;
@@ -54,8 +53,7 @@ public class JsTotalsTableConfig {
     public JsArray<JsString> groupBy = new JsArray<>();
 
     @JsConstructor
-    public JsTotalsTableConfig() {
-    }
+    public JsTotalsTableConfig() {}
 
     @JsIgnore
     public JsTotalsTableConfig(JsPropertyMap<Object> source) {
@@ -85,11 +83,10 @@ public class JsTotalsTableConfig {
     }
 
     /**
-     * Implementation from TotalsTableBuilder.fromDirective, plus changes
-     * required to make this able to act on plan JS objects/arrays.
+     * Implementation from TotalsTableBuilder.fromDirective, plus changes required to make this able
+     * to act on plan JS objects/arrays.
      *
-     * Note that this omits groupBy for now, until the server directive format
-     * supports it!
+     * Note that this omits groupBy for now, until the server directive format supports it!
      */
     @JsIgnore
     public static JsTotalsTableConfig parse(String configString) {
@@ -98,8 +95,8 @@ public class JsTotalsTableConfig {
             return builder;
         }
 
-        final String [] splitSemi = configString.split(";");
-        final String [] frontMatter = splitSemi[0].split(",");
+        final String[] splitSemi = configString.split(";");
+        final String[] frontMatter = splitSemi[0].split(",");
 
         if (frontMatter.length < 3) {
             throw new IllegalArgumentException("Invalid Totals Table: " + configString);
@@ -111,15 +108,16 @@ public class JsTotalsTableConfig {
 
 
         if (splitSemi.length > 1) {
-            final String [] columnDirectives = splitSemi[1].split(",");
+            final String[] columnDirectives = splitSemi[1].split(",");
             for (final String columnDirective : columnDirectives) {
                 if (columnDirective.trim().isEmpty())
                     continue;
-                final String [] kv = columnDirective.split("=");
+                final String[] kv = columnDirective.split("=");
                 if (kv.length != 2) {
-                    throw new IllegalArgumentException("Invalid Totals Table: " + configString + ", bad column " + columnDirective);
+                    throw new IllegalArgumentException("Invalid Totals Table: " + configString
+                        + ", bad column " + columnDirective);
                 }
-                final String [] operations = kv[1].split(":");
+                final String[] operations = kv[1].split(":");
                 builder.operationMap.set(kv[0], new JsArray<>());
                 for (String op : operations) {
                     checkOperation(op);
@@ -140,25 +138,29 @@ public class JsTotalsTableConfig {
     @Override
     public String toString() {
         return "JsTotalsTableConfig{" +
-                "showTotalsByDefault=" + showTotalsByDefault +
-                ", showGrandTotalsByDefault=" + showGrandTotalsByDefault +
-                ", defaultOperation='" + defaultOperation + '\'' +
-                ", operationMap=" + Global.JSON.stringify(operationMap) + // Object.create(null) has no valueOf
-                ", groupBy=" + groupBy +
-                '}';
+            "showTotalsByDefault=" + showTotalsByDefault +
+            ", showGrandTotalsByDefault=" + showGrandTotalsByDefault +
+            ", defaultOperation='" + defaultOperation + '\'' +
+            ", operationMap=" + Global.JSON.stringify(operationMap) + // Object.create(null) has no
+                                                                      // valueOf
+            ", groupBy=" + groupBy +
+            '}';
     }
 
     /**
-     * Implementation from TotalsTableBuilder.buildDirective(), plus a minor change
-     * to iterate JS arrays/objects correctly.
+     * Implementation from TotalsTableBuilder.buildDirective(), plus a minor change to iterate JS
+     * arrays/objects correctly.
      *
      * Note that this omits groupBy until the server directive format supports it!
      */
     @JsIgnore
     public String serialize() {
         final StringBuilder builder = new StringBuilder();
-        builder.append(Boolean.toString(showTotalsByDefault)).append(",").append(Boolean.toString(showGrandTotalsByDefault)).append(",").append(defaultOperation).append(";");
-        operationMap.forEach(key -> builder.append(key).append("=").append(operationMap.get(key).join(":")).append(","));
+        builder.append(Boolean.toString(showTotalsByDefault)).append(",")
+            .append(Boolean.toString(showGrandTotalsByDefault)).append(",").append(defaultOperation)
+            .append(";");
+        operationMap.forEach(key -> builder.append(key).append("=")
+            .append(operationMap.get(key).join(":")).append(","));
         return builder.toString();
     }
 

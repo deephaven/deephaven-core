@@ -8,4 +8,5 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.grpcWeb.grpc.UnaryRpcOptions",
     namespace = JsPackage.GLOBAL)
 public interface UnaryRpcOptions<TRequest, TResponse>
-    extends io.deephaven.javascript.proto.dhinternal.grpcweb.unary.UnaryRpcOptions {}
+    extends io.deephaven.javascript.proto.dhinternal.grpcweb.unary.UnaryRpcOptions {
+}

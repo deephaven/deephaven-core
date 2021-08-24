@@ -9,8 +9,7 @@ import java.util.Arrays;
 public class BigIntegerArrayColumnData extends ColumnData {
     private BigInteger[] data;
 
-    public BigIntegerArrayColumnData() {
-    }
+    public BigIntegerArrayColumnData() {}
 
     public BigIntegerArrayColumnData(BigInteger[] data) {
         this.data = data;
@@ -26,8 +25,10 @@ public class BigIntegerArrayColumnData extends ColumnData {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         final BigIntegerArrayColumnData that = (BigIntegerArrayColumnData) o;
         return Arrays.deepEquals(data, that.data);
     }

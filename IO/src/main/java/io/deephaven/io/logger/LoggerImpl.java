@@ -26,17 +26,19 @@ public class LoggerImpl implements Logger {
     protected final boolean showLevel;
     protected final boolean showThreadName;
 
-    private static final ThreadLocal<String> THREAD_NAME=new ThreadLocal<String>(){
+    private static final ThreadLocal<String> THREAD_NAME = new ThreadLocal<String>() {
         private String threadName;
 
         protected String initialValue() {
-            threadName=Thread.currentThread().getName();
+            threadName = Thread.currentThread().getName();
 
             return threadName;
         }
     };
 
-    public LoggerImpl(LogEntryPool logEntryPool, LogSink logSink, String prefix, LogLevel loggingLevel, LoggerTimeSource timeSource, TimeZone tz, boolean showLevel, boolean showThreadName) {
+    public LoggerImpl(LogEntryPool logEntryPool, LogSink logSink, String prefix,
+        LogLevel loggingLevel, LoggerTimeSource timeSource, TimeZone tz, boolean showLevel,
+        boolean showThreadName) {
         this.logEntryPool = logEntryPool;
         this.logSink = logSink;
 
@@ -79,7 +81,8 @@ public class LoggerImpl implements Logger {
             LogEntry entry = logEntryPool.take().start(logSink, level, currentTimeMicros, t);
 
             if (tz != null) {
-                entry.append("[").appendTimestampMicros(entry.getTimestampMicros(), localTimestamp).append("] ");
+                entry.append("[").appendTimestampMicros(entry.getTimestampMicros(), localTimestamp)
+                    .append("] ");
             }
 
             if (showLevel) {

@@ -4,6 +4,7 @@ import io.deephaven.db.tables.ColumnDefinition;
 
 /**
  * A {@link ColumnGenerator} that can be used to generate a typed number column
+ * 
  * @param <T> The type.
  */
 public abstract class AbstractNumColumnGenerator<T extends Number> implements ColumnGenerator<T> {
@@ -20,14 +21,20 @@ public abstract class AbstractNumColumnGenerator<T extends Number> implements Co
 
     @Override
     public String getUpdateString(String varName) {
-        return def.getName()+"=("+def.getDataType().getSimpleName()+")"+varName+chooseGetter();
+        return def.getName() + "=(" + def.getDataType().getSimpleName() + ")" + varName
+            + chooseGetter();
     }
 
     public abstract byte getByte();
+
     public abstract short getShort();
+
     public abstract int getInt();
+
     public abstract long getLong();
+
     public abstract float getFloat();
+
     public abstract double getDouble();
 
     /**
@@ -35,21 +42,21 @@ public abstract class AbstractNumColumnGenerator<T extends Number> implements Co
      */
     private String chooseGetter() {
         final Class<T> type = def.getDataType();
-        if(type == byte.class || type == Byte.class) {
+        if (type == byte.class || type == Byte.class) {
             return ".getByte()";
-        } else if(type == short.class || type == Short.class) {
+        } else if (type == short.class || type == Short.class) {
             return ".getShort()";
-        } else if(type == int.class || type == Integer.class) {
+        } else if (type == int.class || type == Integer.class) {
             return ".getInt()";
-        } else if(type == long.class || type == Long.class) {
+        } else if (type == long.class || type == Long.class) {
             return ".getLong()";
-        } else if(type == float.class || type == Float.class) {
+        } else if (type == float.class || type == Float.class) {
             return ".getFloat()";
-        } else if(type == double.class || type == Double.class) {
+        } else if (type == double.class || type == Double.class) {
             return ".getDouble()";
         }
 
-        throw new IllegalStateException("Unsupported numeric type: "+type.toGenericString());
+        throw new IllegalStateException("Unsupported numeric type: " + type.toGenericString());
     }
 
     @Override

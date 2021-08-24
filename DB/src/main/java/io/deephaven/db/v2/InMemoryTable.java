@@ -19,8 +19,8 @@ import java.util.Map;
 public class InMemoryTable extends QueryTable {
 
     /**
-     * Defers to {@link ArrayBackedColumnSource#from(io.deephaven.qst.array.Array)} to construct the appropriate
-     * {@link ColumnSource column sources} (this involves copying the data).
+     * Defers to {@link ArrayBackedColumnSource#from(io.deephaven.qst.array.Array)} to construct the
+     * appropriate {@link ColumnSource column sources} (this involves copying the data).
      *
      * @param table the new table qst
      * @return the in memory table
@@ -38,25 +38,29 @@ public class InMemoryTable extends QueryTable {
     }
 
     public InMemoryTable(String columnNames[], Object arrayValues[]) {
-        super(Index.FACTORY.getFlatIndex(Array.getLength(arrayValues[0])), createColumnsMap(columnNames, arrayValues));
+        super(Index.FACTORY.getFlatIndex(Array.getLength(arrayValues[0])),
+            createColumnsMap(columnNames, arrayValues));
     }
 
     public InMemoryTable(TableDefinition definition, final int size) {
-        super(Index.FACTORY.getFlatIndex( size ),
-                createColumnsMap(
-                        definition.getColumnNames().toArray(new String[definition.getColumnNames().size()]),
-                        Arrays.stream(definition.getColumns()).map(
-                                x -> Array.newInstance(x.getDataType(), size)).toArray(Object[]::new)));
+        super(Index.FACTORY.getFlatIndex(size),
+            createColumnsMap(
+                definition.getColumnNames().toArray(new String[definition.getColumnNames().size()]),
+                Arrays.stream(definition.getColumns()).map(
+                    x -> Array.newInstance(x.getDataType(), size)).toArray(Object[]::new)));
     }
 
-    private InMemoryTable(TableDefinition definition, Index index, Map<String, ? extends ColumnSource<?>> columns) {
+    private InMemoryTable(TableDefinition definition, Index index,
+        Map<String, ? extends ColumnSource<?>> columns) {
         super(definition, index, columns);
     }
 
-    private static Map<String, ColumnSource> createColumnsMap(String[] columnNames, Object[] arrayValues) {
+    private static Map<String, ColumnSource> createColumnsMap(String[] columnNames,
+        Object[] arrayValues) {
         Map<String, ColumnSource> map = new LinkedHashMap<>();
         for (int i = 0; i < columnNames.length; i++) {
-            map.put(columnNames[i], ArrayBackedColumnSource.getMemoryColumnSourceUntyped((arrayValues[i])));
+            map.put(columnNames[i],
+                ArrayBackedColumnSource.getMemoryColumnSourceUntyped((arrayValues[i])));
         }
         return map;
     }

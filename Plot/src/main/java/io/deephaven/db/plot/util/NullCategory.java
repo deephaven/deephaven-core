@@ -9,8 +9,7 @@ public final class NullCategory implements Comparable {
 
     public static final NullCategory INSTANCE = new NullCategory();
 
-    private NullCategory() {
-    }
+    private NullCategory() {}
 
     @Override
     public int compareTo(@NotNull Object o) {

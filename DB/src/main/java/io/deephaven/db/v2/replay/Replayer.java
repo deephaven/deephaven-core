@@ -30,7 +30,7 @@ import static io.deephaven.db.tables.utils.DBTimeUtils.nanosToTime;
 /**
  * Replay historical data as simulated real-time data.
  */
-public class Replayer implements ReplayerInterface,LiveTable{
+public class Replayer implements ReplayerInterface, LiveTable {
     private static final Logger log = LoggerFactory.getLogger(InstrumentedListener.class);
 
     protected DBDateTime startTime;
@@ -39,8 +39,11 @@ public class Replayer implements ReplayerInterface,LiveTable{
     private CopyOnWriteArrayList<LiveTable> currentTables = new CopyOnWriteArrayList<>();
     private boolean done;
     private boolean lastLap;
-    private final ReplayerHandle handle =  new ReplayerHandle() {
-        @Override public Replayer getReplayer() { return Replayer.this; }
+    private final ReplayerHandle handle = new ReplayerHandle() {
+        @Override
+        public Replayer getReplayer() {
+            return Replayer.this;
+        }
     };
 
     // Condition variable for use with LiveTableMonitor lock - the object monitor is no longer used
@@ -52,7 +55,7 @@ public class Replayer implements ReplayerInterface,LiveTable{
      * @param startTime start time
      * @param endTime end time
      */
-    public Replayer(DBDateTime startTime,DBDateTime endTime) {
+    public Replayer(DBDateTime startTime, DBDateTime endTime) {
         this.endTime = endTime;
         this.startTime = startTime;
         currentTables.add(this);
@@ -62,8 +65,9 @@ public class Replayer implements ReplayerInterface,LiveTable{
      * Starts replaying data.
      */
     @Override
-    public void start(){
-        delta = nanosToTime(millisToNanos(System.currentTimeMillis())).getNanos() - startTime.getNanos();
+    public void start() {
+        delta = nanosToTime(millisToNanos(System.currentTimeMillis())).getNanos()
+            - startTime.getNanos();
         for (LiveTable currentTable : currentTables) {
             LiveTableMonitor.DEFAULT.addTable(currentTable);
         }
@@ -99,8 +103,8 @@ public class Replayer implements ReplayerInterface,LiveTable{
     }
 
     /**
-     * Wait a specified interval for the replayer to complete.  If the replayer has not completed by the
-     * end of the interval, the method returns.
+     * Wait a specified interval for the replayer to complete. If the replayer has not completed by
+     * the end of the interval, the method returns.
      *
      * @param maxTimeMillis maximum number of milliseconds to wait.
      * @throws QueryCancellationException thread was interrupted.
@@ -114,7 +118,8 @@ public class Replayer implements ReplayerInterface,LiveTable{
         LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(() -> {
             while (!done && expiryTime > System.currentTimeMillis()) {
                 try {
-                    ltmCondition.await(expiryTime - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+                    ltmCondition.await(expiryTime - System.currentTimeMillis(),
+                        TimeUnit.MILLISECONDS);
                 } catch (InterruptedException interruptIsCancel) {
                     throw new QueryCancellationException("Interrupt detected", interruptIsCancel);
                 }
@@ -131,17 +136,17 @@ public class Replayer implements ReplayerInterface,LiveTable{
      */
     @Override
     public void schedule(TimerTask task, long delay, long period) {
-        timerTasks.add(new PeriodicTask(task,delay,period));
+        timerTasks.add(new PeriodicTask(task, delay, period));
     }
 
     /**
-     * Gets a time provider for the replayer.  The time provider returns the current replay time.
+     * Gets a time provider for the replayer. The time provider returns the current replay time.
      *
      * @param replayer replayer
      * @return time provider that returns the current replay time.
      */
     public static TimeProvider getTimeProvider(final ReplayerInterface replayer) {
-        return replayer == null? new TimeProvider() {
+        return replayer == null ? new TimeProvider() {
             @Override
             public DBDateTime currentTime() {
                 return DBTimeUtils.currentTime();
@@ -174,8 +179,10 @@ public class Replayer implements ReplayerInterface,LiveTable{
      */
     @Override
     public DBDateTime currentTime() {
-        if (delta == Long.MAX_VALUE) return startTime;
-        final DBDateTime result = DBTimeUtils.minus(nanosToTime(millisToNanos(System.currentTimeMillis())), delta);
+        if (delta == Long.MAX_VALUE)
+            return startTime;
+        final DBDateTime result =
+            DBTimeUtils.minus(nanosToTime(millisToNanos(System.currentTimeMillis())), delta);
         if (result.getNanos() > endTime.getNanos()) {
             return endTime;
         }
@@ -192,9 +199,9 @@ public class Replayer implements ReplayerInterface,LiveTable{
         if (delta == Long.MAX_VALUE) {
             startTime = DBTimeUtils.millisToTime(updatedTime);
         } else {
-            long adjustment = updatedTime -currentTime().getMillis();
+            long adjustment = updatedTime - currentTime().getMillis();
             if (adjustment > 0) {
-                delta = delta - adjustment*1000000;
+                delta = delta - adjustment * 1000000;
             }
         }
     }
@@ -207,8 +214,9 @@ public class Replayer implements ReplayerInterface,LiveTable{
      * @return dynamic, replayed version of the table.
      */
     @Override
-    public DynamicTable replay(Table dataSource,String timeColumn){
-        final ReplayTable result = new ReplayTable(dataSource.getIndex(), dataSource.getColumnSourceMap(), timeColumn, this);
+    public DynamicTable replay(Table dataSource, String timeColumn) {
+        final ReplayTable result = new ReplayTable(dataSource.getIndex(),
+            dataSource.getColumnSourceMap(), timeColumn, this);
         currentTables.add(result);
         if (delta < Long.MAX_VALUE) {
             LiveTableMonitor.DEFAULT.addTable(result);
@@ -217,17 +225,18 @@ public class Replayer implements ReplayerInterface,LiveTable{
     }
 
     /**
-     * Prepares a grouped historical table for replaying.  This method can be faster than the ungrouped replay, but
-     * the performance increase comes with a cost.  Within a group, the data ordering is maintained.  Between groups,
-     * data ordering is not maintained for a time interval.
+     * Prepares a grouped historical table for replaying. This method can be faster than the
+     * ungrouped replay, but the performance increase comes with a cost. Within a group, the data
+     * ordering is maintained. Between groups, data ordering is not maintained for a time interval.
      *
      * @param dataSource historical table to replay
      * @param timeColumn column in the table containing timestamps
      * @return dynamic, replayed version of the table.
      */
     @Override
-    public DynamicTable replayGrouped(Table dataSource,String timeColumn,String groupingColumn){
-        final ReplayGroupedFullTable result = new ReplayGroupedFullTable(dataSource.getIndex(), dataSource.getColumnSourceMap(), timeColumn, this,groupingColumn);
+    public DynamicTable replayGrouped(Table dataSource, String timeColumn, String groupingColumn) {
+        final ReplayGroupedFullTable result = new ReplayGroupedFullTable(dataSource.getIndex(),
+            dataSource.getColumnSourceMap(), timeColumn, this, groupingColumn);
         currentTables.add(result);
         if (delta < Long.MAX_VALUE) {
             LiveTableMonitor.DEFAULT.addTable(result);
@@ -244,8 +253,10 @@ public class Replayer implements ReplayerInterface,LiveTable{
      * @return dynamic, replayed version of the last-by table.
      */
     @Override
-    public DynamicTable replayGroupedLastBy(Table dataSource,String timeColumn,String... groupingColumns){
-        final ReplayLastByGroupedTable result = new ReplayLastByGroupedTable(dataSource.getIndex(), dataSource.getColumnSourceMap(), timeColumn, this,groupingColumns);
+    public DynamicTable replayGroupedLastBy(Table dataSource, String timeColumn,
+        String... groupingColumns) {
+        final ReplayLastByGroupedTable result = new ReplayLastByGroupedTable(dataSource.getIndex(),
+            dataSource.getColumnSourceMap(), timeColumn, this, groupingColumns);
         currentTables.add(result);
         if (delta < Long.MAX_VALUE) {
             LiveTableMonitor.DEFAULT.addTable(result);
@@ -254,14 +265,15 @@ public class Replayer implements ReplayerInterface,LiveTable{
     }
 
     /**
-     * Register the time column and index from a new table to replay.  Most users will use <code>replay</code>,
-     * <code>replayGrouped</code>, or <code>replayGroupedLastBy</code> instead of this function.
+     * Register the time column and index from a new table to replay. Most users will use
+     * <code>replay</code>, <code>replayGrouped</code>, or <code>replayGroupedLastBy</code> instead
+     * of this function.
      *
      * @param index table index
      * @param timestampSource column source containing time information.
      */
     public void registerTimeSource(Index index, ColumnSource<DBDateTime> timestampSource) {
-        //Does nothing
+        // Does nothing
     }
 
     /**
@@ -300,12 +312,12 @@ public class Replayer implements ReplayerInterface,LiveTable{
 
         public void next(DBDateTime currentTime) {
             if (nextTime == null) {
-                nextTime = DBTimeUtils.plus(currentTime,delay*1000000);
+                nextTime = DBTimeUtils.plus(currentTime, delay * 1000000);
             } else {
                 if (nextTime.getNanos() < currentTime.getNanos()) {
-                    try{
+                    try {
                         task.run();
-                        nextTime = DBTimeUtils.plus(currentTime,period*1000000);
+                        nextTime = DBTimeUtils.plus(currentTime, period * 1000000);
                     } catch (Error e) {
                         log.error(e).append("Error").endl();
                     }
@@ -321,7 +333,8 @@ public class Replayer implements ReplayerInterface,LiveTable{
      *
      * @return handle to the replayer.
      */
-    @Override public ReplayerHandle getHandle() {
+    @Override
+    public ReplayerHandle getHandle() {
         return handle;
     }
 }

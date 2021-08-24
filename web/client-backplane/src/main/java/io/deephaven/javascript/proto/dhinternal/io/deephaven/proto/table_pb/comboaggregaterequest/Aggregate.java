@@ -14,135 +14,135 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.table_pb.ComboAggregateRequest.Aggregate",
     namespace = JsPackage.GLOBAL)
 public class Aggregate {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
-    @JsOverlay
-    static Aggregate.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType {
+        @JsOverlay
+        static Aggregate.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getColumnName();
+
+        @JsProperty
+        JsArray<String> getMatchPairsList();
+
+        @JsProperty
+        double getPercentile();
+
+        @JsProperty
+        double getType();
+
+        @JsProperty
+        boolean isAvgMedian();
+
+        @JsProperty
+        void setAvgMedian(boolean avgMedian);
+
+        @JsProperty
+        void setColumnName(String columnName);
+
+        @JsProperty
+        void setMatchPairsList(JsArray<String> matchPairsList);
+
+        @JsOverlay
+        default void setMatchPairsList(String[] matchPairsList) {
+            setMatchPairsList(Js.<JsArray<String>>uncheckedCast(matchPairsList));
+        }
+
+        @JsProperty
+        void setPercentile(double percentile);
+
+        @JsProperty
+        void setType(double type);
     }
 
-    @JsProperty
-    String getColumnName();
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType0 {
+        @JsOverlay
+        static Aggregate.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
 
-    @JsProperty
-    JsArray<String> getMatchPairsList();
+        @JsProperty
+        String getColumnName();
 
-    @JsProperty
-    double getPercentile();
+        @JsProperty
+        JsArray<String> getMatchPairsList();
 
-    @JsProperty
-    double getType();
+        @JsProperty
+        double getPercentile();
 
-    @JsProperty
-    boolean isAvgMedian();
+        @JsProperty
+        double getType();
 
-    @JsProperty
-    void setAvgMedian(boolean avgMedian);
+        @JsProperty
+        boolean isAvgMedian();
 
-    @JsProperty
-    void setColumnName(String columnName);
+        @JsProperty
+        void setAvgMedian(boolean avgMedian);
 
-    @JsProperty
-    void setMatchPairsList(JsArray<String> matchPairsList);
+        @JsProperty
+        void setColumnName(String columnName);
 
-    @JsOverlay
-    default void setMatchPairsList(String[] matchPairsList) {
-      setMatchPairsList(Js.<JsArray<String>>uncheckedCast(matchPairsList));
+        @JsProperty
+        void setMatchPairsList(JsArray<String> matchPairsList);
+
+        @JsOverlay
+        default void setMatchPairsList(String[] matchPairsList) {
+            setMatchPairsList(Js.<JsArray<String>>uncheckedCast(matchPairsList));
+        }
+
+        @JsProperty
+        void setPercentile(double percentile);
+
+        @JsProperty
+        void setType(double type);
     }
 
-    @JsProperty
-    void setPercentile(double percentile);
+    public static native Aggregate deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    void setType(double type);
-  }
+    public static native Aggregate deserializeBinaryFromReader(Aggregate message, Object reader);
 
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsOverlay
-    static Aggregate.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
+    public static native void serializeBinaryToWriter(Aggregate message, Object writer);
 
-    @JsProperty
-    String getColumnName();
+    public static native Aggregate.ToObjectReturnType toObject(
+        boolean includeInstance, Aggregate msg);
 
-    @JsProperty
-    JsArray<String> getMatchPairsList();
+    public native String addMatchPairs(String value, double index);
 
-    @JsProperty
-    double getPercentile();
+    public native String addMatchPairs(String value);
 
-    @JsProperty
-    double getType();
+    public native void clearMatchPairsList();
 
-    @JsProperty
-    boolean isAvgMedian();
+    public native boolean getAvgMedian();
 
-    @JsProperty
-    void setAvgMedian(boolean avgMedian);
+    public native String getColumnName();
 
-    @JsProperty
-    void setColumnName(String columnName);
+    public native JsArray<String> getMatchPairsList();
 
-    @JsProperty
-    void setMatchPairsList(JsArray<String> matchPairsList);
+    public native double getPercentile();
+
+    public native double getType();
+
+    public native Uint8Array serializeBinary();
+
+    public native void setAvgMedian(boolean value);
+
+    public native void setColumnName(String value);
+
+    public native void setMatchPairsList(JsArray<String> value);
 
     @JsOverlay
-    default void setMatchPairsList(String[] matchPairsList) {
-      setMatchPairsList(Js.<JsArray<String>>uncheckedCast(matchPairsList));
+    public final void setMatchPairsList(String[] value) {
+        setMatchPairsList(Js.<JsArray<String>>uncheckedCast(value));
     }
 
-    @JsProperty
-    void setPercentile(double percentile);
+    public native void setPercentile(double value);
 
-    @JsProperty
-    void setType(double type);
-  }
+    public native void setType(double value);
 
-  public static native Aggregate deserializeBinary(Uint8Array bytes);
+    public native Aggregate.ToObjectReturnType0 toObject();
 
-  public static native Aggregate deserializeBinaryFromReader(Aggregate message, Object reader);
-
-  public static native void serializeBinaryToWriter(Aggregate message, Object writer);
-
-  public static native Aggregate.ToObjectReturnType toObject(
-      boolean includeInstance, Aggregate msg);
-
-  public native String addMatchPairs(String value, double index);
-
-  public native String addMatchPairs(String value);
-
-  public native void clearMatchPairsList();
-
-  public native boolean getAvgMedian();
-
-  public native String getColumnName();
-
-  public native JsArray<String> getMatchPairsList();
-
-  public native double getPercentile();
-
-  public native double getType();
-
-  public native Uint8Array serializeBinary();
-
-  public native void setAvgMedian(boolean value);
-
-  public native void setColumnName(String value);
-
-  public native void setMatchPairsList(JsArray<String> value);
-
-  @JsOverlay
-  public final void setMatchPairsList(String[] value) {
-    setMatchPairsList(Js.<JsArray<String>>uncheckedCast(value));
-  }
-
-  public native void setPercentile(double value);
-
-  public native void setType(double value);
-
-  public native Aggregate.ToObjectReturnType0 toObject();
-
-  public native Aggregate.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native Aggregate.ToObjectReturnType0 toObject(boolean includeInstance);
 }

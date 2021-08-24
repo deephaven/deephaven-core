@@ -14,193 +14,189 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.console_pb.StartConsoleRequest",
     namespace = JsPackage.GLOBAL)
 public class StartConsoleRequest {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultIdFieldType {
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetTicketUnionType {
-        @JsOverlay
-        static StartConsoleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-            Object o) {
-          return Js.cast(o);
+    public interface ToObjectReturnType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ResultIdFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface GetTicketUnionType {
+                @JsOverlay
+                static StartConsoleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
+                    Object o) {
+                    return Js.cast(o);
+                }
+
+                @JsOverlay
+                default String asString() {
+                    return Js.asString(this);
+                }
+
+                @JsOverlay
+                default Uint8Array asUint8Array() {
+                    return Js.cast(this);
+                }
+
+                @JsOverlay
+                default boolean isString() {
+                    return (Object) this instanceof String;
+                }
+
+                @JsOverlay
+                default boolean isUint8Array() {
+                    return (Object) this instanceof Uint8Array;
+                }
+            }
+
+            @JsOverlay
+            static StartConsoleRequest.ToObjectReturnType.ResultIdFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            StartConsoleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType getTicket();
+
+            @JsProperty
+            void setTicket(
+                StartConsoleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+
+            @JsOverlay
+            default void setTicket(String ticket) {
+                setTicket(
+                    Js.<StartConsoleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
+
+            @JsOverlay
+            default void setTicket(Uint8Array ticket) {
+                setTicket(
+                    Js.<StartConsoleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
         }
 
         @JsOverlay
-        default String asString() {
-          return Js.asString(this);
+        static StartConsoleRequest.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
         }
 
-        @JsOverlay
-        default Uint8Array asUint8Array() {
-          return Js.cast(this);
-        }
+        @JsProperty
+        StartConsoleRequest.ToObjectReturnType.ResultIdFieldType getResultId();
 
-        @JsOverlay
-        default boolean isString() {
-          return (Object) this instanceof String;
-        }
+        @JsProperty
+        String getSessionType();
 
-        @JsOverlay
-        default boolean isUint8Array() {
-          return (Object) this instanceof Uint8Array;
-        }
-      }
+        @JsProperty
+        void setResultId(StartConsoleRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
-      @JsOverlay
-      static StartConsoleRequest.ToObjectReturnType.ResultIdFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      StartConsoleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType getTicket();
-
-      @JsProperty
-      void setTicket(
-          StartConsoleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
-
-      @JsOverlay
-      default void setTicket(String ticket) {
-        setTicket(
-            Js
-                .<StartConsoleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
-
-      @JsOverlay
-      default void setTicket(Uint8Array ticket) {
-        setTicket(
-            Js
-                .<StartConsoleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
+        @JsProperty
+        void setSessionType(String sessionType);
     }
 
-    @JsOverlay
-    static StartConsoleRequest.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
-
-    @JsProperty
-    StartConsoleRequest.ToObjectReturnType.ResultIdFieldType getResultId();
-
-    @JsProperty
-    String getSessionType();
-
-    @JsProperty
-    void setResultId(StartConsoleRequest.ToObjectReturnType.ResultIdFieldType resultId);
-
-    @JsProperty
-    void setSessionType(String sessionType);
-  }
-
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultIdFieldType {
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetTicketUnionType {
-        @JsOverlay
-        static StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-            Object o) {
-          return Js.cast(o);
+    public interface ToObjectReturnType0 {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ResultIdFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface GetTicketUnionType {
+                @JsOverlay
+                static StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
+                    Object o) {
+                    return Js.cast(o);
+                }
+
+                @JsOverlay
+                default String asString() {
+                    return Js.asString(this);
+                }
+
+                @JsOverlay
+                default Uint8Array asUint8Array() {
+                    return Js.cast(this);
+                }
+
+                @JsOverlay
+                default boolean isString() {
+                    return (Object) this instanceof String;
+                }
+
+                @JsOverlay
+                default boolean isUint8Array() {
+                    return (Object) this instanceof Uint8Array;
+                }
+            }
+
+            @JsOverlay
+            static StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType getTicket();
+
+            @JsProperty
+            void setTicket(
+                StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+
+            @JsOverlay
+            default void setTicket(String ticket) {
+                setTicket(
+                    Js.<StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
+
+            @JsOverlay
+            default void setTicket(Uint8Array ticket) {
+                setTicket(
+                    Js.<StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
         }
 
         @JsOverlay
-        default String asString() {
-          return Js.asString(this);
+        static StartConsoleRequest.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
         }
 
-        @JsOverlay
-        default Uint8Array asUint8Array() {
-          return Js.cast(this);
-        }
+        @JsProperty
+        StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
 
-        @JsOverlay
-        default boolean isString() {
-          return (Object) this instanceof String;
-        }
+        @JsProperty
+        String getSessionType();
 
-        @JsOverlay
-        default boolean isUint8Array() {
-          return (Object) this instanceof Uint8Array;
-        }
-      }
+        @JsProperty
+        void setResultId(StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType resultId);
 
-      @JsOverlay
-      static StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType getTicket();
-
-      @JsProperty
-      void setTicket(
-          StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
-
-      @JsOverlay
-      default void setTicket(String ticket) {
-        setTicket(
-            Js
-                .<StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
-
-      @JsOverlay
-      default void setTicket(Uint8Array ticket) {
-        setTicket(
-            Js
-                .<StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
+        @JsProperty
+        void setSessionType(String sessionType);
     }
 
-    @JsOverlay
-    static StartConsoleRequest.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
+    public static native StartConsoleRequest deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
+    public static native StartConsoleRequest deserializeBinaryFromReader(
+        StartConsoleRequest message, Object reader);
 
-    @JsProperty
-    String getSessionType();
+    public static native void serializeBinaryToWriter(StartConsoleRequest message, Object writer);
 
-    @JsProperty
-    void setResultId(StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType resultId);
+    public static native StartConsoleRequest.ToObjectReturnType toObject(
+        boolean includeInstance, StartConsoleRequest msg);
 
-    @JsProperty
-    void setSessionType(String sessionType);
-  }
+    public native void clearResultId();
 
-  public static native StartConsoleRequest deserializeBinary(Uint8Array bytes);
+    public native Ticket getResultId();
 
-  public static native StartConsoleRequest deserializeBinaryFromReader(
-      StartConsoleRequest message, Object reader);
+    public native String getSessionType();
 
-  public static native void serializeBinaryToWriter(StartConsoleRequest message, Object writer);
+    public native boolean hasResultId();
 
-  public static native StartConsoleRequest.ToObjectReturnType toObject(
-      boolean includeInstance, StartConsoleRequest msg);
+    public native Uint8Array serializeBinary();
 
-  public native void clearResultId();
+    public native void setResultId();
 
-  public native Ticket getResultId();
+    public native void setResultId(Ticket value);
 
-  public native String getSessionType();
+    public native void setSessionType(String value);
 
-  public native boolean hasResultId();
+    public native StartConsoleRequest.ToObjectReturnType0 toObject();
 
-  public native Uint8Array serializeBinary();
-
-  public native void setResultId();
-
-  public native void setResultId(Ticket value);
-
-  public native void setSessionType(String value);
-
-  public native StartConsoleRequest.ToObjectReturnType0 toObject();
-
-  public native StartConsoleRequest.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native StartConsoleRequest.ToObjectReturnType0 toObject(boolean includeInstance);
 }

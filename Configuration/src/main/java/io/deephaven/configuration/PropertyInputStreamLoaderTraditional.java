@@ -5,13 +5,12 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 
 /**
- * A {@link PropertyInputStreamLoader} implementation that first searches for the property file
- * as a classpath resource, and then via the filesystem. The priority is 100.
+ * A {@link PropertyInputStreamLoader} implementation that first searches for the property file as a
+ * classpath resource, and then via the filesystem. The priority is 100.
  */
 public class PropertyInputStreamLoaderTraditional implements PropertyInputStreamLoader {
 
-    public PropertyInputStreamLoaderTraditional() {
-    }
+    public PropertyInputStreamLoaderTraditional() {}
 
     @Override
     public long getPriority() {

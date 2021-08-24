@@ -14,7 +14,9 @@ import java.util.PrimitiveIterator;
 
 public interface IndexBuilder {
     Index getIndex();
+
     void addKey(long key);
+
     void addRange(long firstKey, long lastKey);
 
     default void addKeys(final PrimitiveIterator.OfLong it) {
@@ -23,6 +25,7 @@ public interface IndexBuilder {
             addKey(v);
         }
     }
+
     default void addRanges(final LongRangeIterator it) {
         while (it.hasNext()) {
             it.next();

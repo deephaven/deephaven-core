@@ -32,20 +32,21 @@ public class LocalDateCodecTest extends TestCase {
         roundTripWithOffset(args, value, value, offset);
     }
 
-    private void roundTripWithOffset(final String args, final LocalDate value, final LocalDate expected, final int offset) {
+    private void roundTripWithOffset(final String args, final LocalDate value,
+        final LocalDate expected, final int offset) {
         final LocalDateCodec codec = new LocalDateCodec(args);
         byte[] enc = codec.encode(value);
         // if we expect to be decoding from an offset, construct the input accordingly
-        if(offset > 0) {
-            final byte[] buffer = new byte[enc.length+offset];
+        if (offset > 0) {
+            final byte[] buffer = new byte[enc.length + offset];
             System.arraycopy(enc, 0, buffer, offset, enc.length);
             enc = buffer;
         }
         // when fixed width we expect every encoded value to be the same size
-        if(codec.expectedObjectWidth() > 0) {
-            assertEquals(codec.expectedObjectWidth(), enc.length-offset);
+        if (codec.expectedObjectWidth() > 0) {
+            assertEquals(codec.expectedObjectWidth(), enc.length - offset);
         }
-        final LocalDate v1 = codec.decode(enc, offset, enc.length-offset);
+        final LocalDate v1 = codec.decode(enc, offset, enc.length - offset);
         assertEquals(expected, v1);
     }
 
@@ -54,14 +55,15 @@ public class LocalDateCodecTest extends TestCase {
             final LocalDateCodec codec = new LocalDateCodec(args);
             codec.encode(value);
             Assert.fail("Encoding of " + value + " unexpectedly succeeded");
-        } catch(IllegalArgumentException ex) {}
+        } catch (IllegalArgumentException ex) {
+        }
     }
 
     private void expectNull(final String args) {
         final LocalDateCodec codec = new LocalDateCodec(args);
         final byte[] enc = codec.encode(null);
         // when fixed width we expect every encoded value to be the same size
-        if(codec.expectedObjectWidth() > 0) {
+        if (codec.expectedObjectWidth() > 0) {
             assertEquals(codec.expectedObjectWidth(), enc.length);
         }
         final LocalDate v1 = codec.decode(enc, 0, enc.length);
@@ -78,18 +80,18 @@ public class LocalDateCodecTest extends TestCase {
         roundTrip("", "2018-01-01");
         roundTrip("", "0001-01-01");
 
-        roundTrip("", (LocalDate)null);
+        roundTrip("", (LocalDate) null);
     }
 
     public void testFullYearRange() {
-        for(int year = Year.MIN_VALUE; year <= Year.MAX_VALUE; year += 1_000_000) {
+        for (int year = Year.MIN_VALUE; year <= Year.MAX_VALUE; year += 1_000_000) {
             roundTrip("", LocalDate.of(year, 1, 1));
             roundTrip("", LocalDate.of(year, 12, 31));
         }
     }
 
     public void testCompactYearRange() {
-        for(int year = -9999; year <= 9999; year++) {
+        for (int year = -9999; year <= 9999; year++) {
             roundTrip("", LocalDate.of(year, 1, 1));
             roundTrip("", LocalDate.of(year, 12, 31));
         }
@@ -102,7 +104,7 @@ public class LocalDateCodecTest extends TestCase {
         roundTrip(LocalDateCodec.Domain.Compact.name(), "2018-01-01");
         roundTrip(LocalDateCodec.Domain.Compact.name(), "0001-01-01");
 
-        roundTrip("Compact", (LocalDate)null);
+        roundTrip("Compact", (LocalDate) null);
     }
 
     public void testFullNotNullEncoding() {
@@ -148,7 +150,7 @@ public class LocalDateCodecTest extends TestCase {
     }
 
     public void testIllegalEncodingType() {
-        expectIllegalArgumentException("blah", LocalDate.of(2018,1,1));
+        expectIllegalArgumentException("blah", LocalDate.of(2018, 1, 1));
     }
 
     public void testOutOfRangeCompactDate() {
@@ -157,13 +159,14 @@ public class LocalDateCodecTest extends TestCase {
     }
 
     public void testCompactEncodingWithOffset() {
-        roundTripWithOffset(LocalDateCodec.Domain.Compact.name(), "0000-01-01", 3); // minimum compact value
+        roundTripWithOffset(LocalDateCodec.Domain.Compact.name(), "0000-01-01", 3); // minimum
+                                                                                    // compact value
         roundTripWithOffset(LocalDateCodec.Domain.Compact.name(), "9999-12-31", 3);
 
         roundTripWithOffset(LocalDateCodec.Domain.Compact.name(), "2018-01-01", 3);
         roundTripWithOffset(LocalDateCodec.Domain.Compact.name(), "0001-01-01", 3);
 
-        roundTripWithOffset("Compact", (LocalDate)null, 0);
+        roundTripWithOffset("Compact", (LocalDate) null, 0);
     }
 
     public void testFullEncodingWithOffset() {
@@ -176,6 +179,6 @@ public class LocalDateCodecTest extends TestCase {
         roundTripWithOffset("", "2018-01-01", 3);
         roundTripWithOffset("", "0001-01-01", 3);
 
-        roundTripWithOffset("", (LocalDate)null, 3);
+        roundTripWithOffset("", (LocalDate) null, 3);
     }
 }

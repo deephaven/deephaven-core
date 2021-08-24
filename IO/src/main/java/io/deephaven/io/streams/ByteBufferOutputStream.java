@@ -14,20 +14,19 @@ import java.io.UTFDataFormatException;
 // TODO: this implementation is not suited for application which need to fill the underlying
 // TODO: buffers to their full capacity, because it calculates (or, for CSV appenders, estimates)
 // TODO: the number of bytes needed by each write operation and will not begin the operation
-// TODO: in the current buffer unless the entire operation can be completed there.  The
+// TODO: in the current buffer unless the entire operation can be completed there. The
 // TODO: alternative would be to begin the operation anyway and react to the
 // TODO: BufferOverflowExceptions by calling the sink and then continuing, which would be both
 // TODO: very expensive and extremely complex.
 
 /**
- * This is an OutputStream implementation which places the output into a java.nio.ByteBuffer.
- * The constructor accepts an initial buffer and an instance of ByteBufferSink.  When an output
- * operation would cause the buffer to overflow, it is handed to the sink's acceptBuffer()
- * method, which is expected to dispose of the existing contents and return a buffer in which
- * writing can continue.
+ * This is an OutputStream implementation which places the output into a java.nio.ByteBuffer. The
+ * constructor accepts an initial buffer and an instance of ByteBufferSink. When an output operation
+ * would cause the buffer to overflow, it is handed to the sink's acceptBuffer() method, which is
+ * expected to dispose of the existing contents and return a buffer in which writing can continue.
  *
- * Note that the stream contains no state other than the buffer itself, so the buffer and/or
- * the sink can be switched at any time by calling setBuffer() or setSink().
+ * Note that the stream contains no state other than the buffer itself, so the buffer and/or the
+ * sink can be switched at any time by calling setBuffer() or setSink().
  */
 public class ByteBufferOutputStream extends java.io.OutputStream implements DataOutput {
     protected volatile ByteBuffer buf;
@@ -38,6 +37,7 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
 
     /**
      * Returns a new ByteBufferOutputStream with the specified initial buffer and sink.
+     * 
      * @param b The initial buffer
      * @param sink The sink that should be used to accept full buffers
      */
@@ -60,9 +60,9 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
         this.sink = sink;
     }
 
-    //-----------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------
     // java.io.OutputStream implementation
-    //-----------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------
 
     @Override
     public void close() throws IOException {
@@ -73,14 +73,14 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
 
     @Override
     public void flush() throws IOException {
-        if ( buf.position() != 0 ) {
+        if (buf.position() != 0) {
             buf = sink.acceptBuffer(buf, 0);
         }
     }
 
     @Override
     public void write(int b) throws IOException {
-        if ( buf.remaining() < 1 ) {
+        if (buf.remaining() < 1) {
             buf = sink.acceptBuffer(buf, 1);
         }
         buf.put((byte) b);
@@ -118,18 +118,18 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
         buf.put(b);
     }
 
-//    @Override
-//    public boolean isOpen() {
-//        return sink != null;
-//    }
+    // @Override
+    // public boolean isOpen() {
+    // return sink != null;
+    // }
 
-    //-----------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------
     // java.io.DataOutput implementation
-    //-----------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------
 
     @Override
     public void writeBoolean(boolean v) throws IOException {
-        if ( buf.remaining() < 1 ) {
+        if (buf.remaining() < 1) {
             buf = sink.acceptBuffer(buf, 1);
         }
         buf.put((byte) (v ? 1 : 0));
@@ -137,7 +137,7 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
 
     @Override
     public void writeByte(int v) throws IOException {
-        if ( buf.remaining() < 1 ) {
+        if (buf.remaining() < 1) {
             buf = sink.acceptBuffer(buf, 1);
         }
         buf.put((byte) v);
@@ -145,7 +145,7 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
 
     @Override
     public void writeShort(int v) throws IOException {
-        if ( buf.remaining() < 2 ) {
+        if (buf.remaining() < 2) {
             buf = sink.acceptBuffer(buf, 2);
         }
         buf.putShort((short) v);
@@ -153,7 +153,7 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
 
     @Override
     public void writeChar(int v) throws IOException {
-        if ( buf.remaining() < 2 ) {
+        if (buf.remaining() < 2) {
             buf = sink.acceptBuffer(buf, 2);
         }
         buf.putChar((char) v);
@@ -161,7 +161,7 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
 
     @Override
     public void writeInt(int v) throws IOException {
-        if ( buf.remaining() < 4 ) {
+        if (buf.remaining() < 4) {
             buf = sink.acceptBuffer(buf, 4);
         }
         buf.putInt(v);
@@ -169,7 +169,7 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
 
     @Override
     public void writeLong(long v) throws IOException {
-        if ( buf.remaining() < 8 ) {
+        if (buf.remaining() < 8) {
             buf = sink.acceptBuffer(buf, 8);
         }
         buf.putLong(v);
@@ -177,7 +177,7 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
 
     @Override
     public void writeFloat(float f) throws IOException {
-        if ( buf.remaining() < 8 ) {
+        if (buf.remaining() < 8) {
             buf = sink.acceptBuffer(buf, 8);
         }
         buf.putFloat(f);
@@ -185,7 +185,7 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
 
     @Override
     public void writeDouble(double d) throws IOException {
-        if ( buf.remaining() < 8 ) {
+        if (buf.remaining() < 8) {
             buf = sink.acceptBuffer(buf, 8);
         }
         buf.putDouble(d);
@@ -203,28 +203,26 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
 
     @Override
     public void writeUTF(String str) throws IOException {
-        writeUTF((CharSequence)str);
+        writeUTF((CharSequence) str);
     }
 
     public void writeUTF(CharSequence str) throws IOException {
         int len = str.length();
         int total = 0;
-        for ( int i = 0; i < len; ++i ) {
+        for (int i = 0; i < len; ++i) {
             int c = str.charAt(i);
-            if ( c <= 0x7f ) {
+            if (c <= 0x7f) {
                 total++;
-                if ( c == 0 ) {
+                if (c == 0) {
                     total++;
                 }
-            }
-            else if ( c <= 0x7ff ) {
+            } else if (c <= 0x7ff) {
                 total += 2;
-            }
-            else {
+            } else {
                 total += 3;
             }
         }
-        if ( total >= 65536 ) {
+        if (total >= 65536) {
             throw new UTFDataFormatException();
         }
 
@@ -235,29 +233,26 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
             buf = sink.acceptBuffer(buf, 2);
         }
 
-        buf.putShort((short)total);
+        buf.putShort((short) total);
 
         // underestimate the number remaining
         while ((remaining = buf.remaining() / 3) < len) {
             for (int i = 0; i < remaining; ++i) {
                 int c = str.charAt(position++);
-                if ( c <= 0x7f ) {
-                    if ( c == 0 ) {
+                if (c <= 0x7f) {
+                    if (c == 0) {
                         buf.put((byte) 0xC0);
                         buf.put((byte) 0x80);
-                    }
-                    else {
+                    } else {
                         buf.put((byte) c);
                     }
-                }
-                else if ( c <= 0x7ff ) {
-                    buf.put((byte)(0xc0 | (0x1f & (c >> 6))));
-                    buf.put((byte)(0x80 | (0x3f & c)));
-                }
-                else {
-                    buf.put((byte)(0xe0 | (0x0f & (c >> 12))));
-                    buf.put((byte)(0x80 | (0x3f & (c >>  6))));
-                    buf.put((byte)(0x80 | (0x3f & c)));
+                } else if (c <= 0x7ff) {
+                    buf.put((byte) (0xc0 | (0x1f & (c >> 6))));
+                    buf.put((byte) (0x80 | (0x3f & c)));
+                } else {
+                    buf.put((byte) (0xe0 | (0x0f & (c >> 12))));
+                    buf.put((byte) (0x80 | (0x3f & (c >> 6))));
+                    buf.put((byte) (0x80 | (0x3f & c)));
                 }
             }
             buf = sink.acceptBuffer(buf, Math.max(buf.capacity(), 3));
@@ -266,33 +261,30 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
 
         for (int i = 0; i < len; ++i) {
             int c = str.charAt(position++);
-            if ( c <= 0x7f ) {
-                if ( c == 0 ) {
+            if (c <= 0x7f) {
+                if (c == 0) {
                     buf.put((byte) 0xC0);
                     buf.put((byte) 0x80);
-                }
-                else {
+                } else {
                     buf.put((byte) c);
                 }
-            }
-            else if ( c <= 0x7ff ) {
-                buf.put((byte)(0xc0 | (0x1f & (c >> 6))));
-                buf.put((byte)(0x80 | (0x3f & c)));
-            }
-            else {
-                buf.put((byte)(0xe0 | (0x0f & (c >> 12))));
-                buf.put((byte)(0x80 | (0x3f & (c >>  6))));
-                buf.put((byte)(0x80 | (0x3f & c)));
+            } else if (c <= 0x7ff) {
+                buf.put((byte) (0xc0 | (0x1f & (c >> 6))));
+                buf.put((byte) (0x80 | (0x3f & c)));
+            } else {
+                buf.put((byte) (0xe0 | (0x0f & (c >> 12))));
+                buf.put((byte) (0x80 | (0x3f & (c >> 6))));
+                buf.put((byte) (0x80 | (0x3f & c)));
             }
         }
     }
 
-    //-----------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------
     // csv appenders
-    //-----------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------
 
     public ByteBufferOutputStream appendByteBuffer(ByteBuffer bb) throws IOException {
-        if ( buf.remaining() < bb.remaining() ) {
+        if (buf.remaining() < bb.remaining()) {
             buf = sink.acceptBuffer(buf, bb.remaining());
         }
         int position = bb.position();
@@ -302,7 +294,7 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
     }
 
     public ByteBufferOutputStream appendByte(byte n) throws IOException {
-        if ( buf.remaining() < 1 ) {
+        if (buf.remaining() < 1) {
             buf = sink.acceptBuffer(buf, 1);
         }
         buf.put(n);
@@ -310,7 +302,7 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
     }
 
     public ByteBufferOutputStream appendShort(short n) throws IOException {
-        if ( buf.remaining() < Convert.MAX_SHORT_BYTES ) {
+        if (buf.remaining() < Convert.MAX_SHORT_BYTES) {
             buf = sink.acceptBuffer(buf, Convert.MAX_SHORT_BYTES);
         }
         Convert.appendShort(n, buf);
@@ -318,7 +310,7 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
     }
 
     public ByteBufferOutputStream appendInt(int n) throws IOException {
-        if ( buf.remaining() < Convert.MAX_INT_BYTES ) {
+        if (buf.remaining() < Convert.MAX_INT_BYTES) {
             buf = sink.acceptBuffer(buf, Convert.MAX_INT_BYTES);
         }
         Convert.appendInt(n, buf);
@@ -326,7 +318,7 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
     }
 
     public ByteBufferOutputStream appendLong(long n) throws IOException {
-        if ( buf.remaining() < Convert.MAX_LONG_BYTES ) {
+        if (buf.remaining() < Convert.MAX_LONG_BYTES) {
             buf = sink.acceptBuffer(buf, Convert.MAX_LONG_BYTES);
         }
         Convert.appendLong(n, buf);
@@ -334,7 +326,7 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
     }
 
     public ByteBufferOutputStream appendDouble(double p) throws IOException {
-        if ( buf.remaining() < Convert.MAX_DOUBLE_BYTES ) {
+        if (buf.remaining() < Convert.MAX_DOUBLE_BYTES) {
             buf = sink.acceptBuffer(buf, Convert.MAX_DOUBLE_BYTES);
         }
         Convert.appendDouble(p, buf);
@@ -347,7 +339,8 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
     }
 
     @SuppressWarnings("WeakerAccess")
-    public ByteBufferOutputStream appendChars(CharSequence s, @SuppressWarnings("SameParameterValue") int position, int len) throws IOException {
+    public ByteBufferOutputStream appendChars(CharSequence s,
+        @SuppressWarnings("SameParameterValue") int position, int len) throws IOException {
         int remaining;
         while ((remaining = buf.remaining() / 2) < len) {
             for (int i = 0; i < remaining; ++i) {
@@ -368,18 +361,19 @@ public class ByteBufferOutputStream extends java.io.OutputStream implements Data
         return appendBytes(s, 0, s.length());
     }
 
-    public ByteBufferOutputStream appendBytes(CharSequence s, int position, int len) throws IOException {
+    public ByteBufferOutputStream appendBytes(CharSequence s, int position, int len)
+        throws IOException {
         int remaining;
         while ((remaining = buf.remaining()) < len) {
             for (int i = 0; i < remaining; ++i) {
-                buf.put((byte)s.charAt(position++));
+                buf.put((byte) s.charAt(position++));
             }
             buf = sink.acceptBuffer(buf, buf.capacity());
             len -= remaining;
         }
 
         for (int i = 0; i < len; ++i) {
-            buf.put((byte)s.charAt(position++));
+            buf.put((byte) s.charAt(position++));
         }
 
         return this;

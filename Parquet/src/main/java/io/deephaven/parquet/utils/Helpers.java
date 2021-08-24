@@ -13,7 +13,8 @@ public class Helpers {
     public static void readFully(SeekableByteChannel f, byte[] buffer) throws IOException {
         int read = f.read(ByteBuffer.wrap(buffer));
         if (read != buffer.length) {
-            throw new IOException("Expected for bytes, only read " + read + " while it expected " + buffer.length);
+            throw new IOException(
+                "Expected for bytes, only read " + read + " while it expected " + buffer.length);
         }
     }
 
@@ -21,7 +22,8 @@ public class Helpers {
         int expected = buffer.remaining();
         int read = f.read(buffer);
         if (read != expected) {
-            throw new IOException("Expected for bytes, only read " + read + " while it expected " + expected);
+            throw new IOException(
+                "Expected for bytes, only read " + read + " while it expected " + expected);
         }
     }
 
@@ -29,7 +31,8 @@ public class Helpers {
         ByteBuffer buffer = allocate(expected);
         int read = f.read(buffer);
         if (read != expected) {
-            throw new IOException("Expected for bytes, only read " + read + " while it expected " + expected);
+            throw new IOException(
+                "Expected for bytes, only read " + read + " while it expected " + expected);
         }
         buffer.flip();
         return buffer;
@@ -51,7 +54,7 @@ public class Helpers {
     }
 
     static int readIntLittleEndianPaddedOnBitWidth(ByteBuffer in, int bitWidth)
-            throws IOException {
+        throws IOException {
 
         int bytesWidth = BytesUtils.paddedByteCountFromBits(bitWidth);
         switch (bytesWidth) {
@@ -67,7 +70,8 @@ public class Helpers {
                 return in.getInt();
             default:
                 throw new IOException(
-                        String.format("Encountered bitWidth (%d) that requires more than 4 bytes", bitWidth));
+                    String.format("Encountered bitWidth (%d) that requires more than 4 bytes",
+                        bitWidth));
         }
     }
 

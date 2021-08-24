@@ -78,66 +78,31 @@ public abstract class FirmwareOshi implements PropertySet {
     }
 
     /*
-    public static FirmwareOshi from(PropertySet properties) {
-        return Parser.INSTANCE.parse(properties);
-    }
-
-    enum Parser implements PropertySetParser<FirmwareOshi> {
-        INSTANCE;
-
-        @Override
-        public FirmwareOshi parse(PropertySet properties) {
-            final Visitor parser = new Visitor();
-            parser.visitProperties(properties);
-            return parser.build();
-        }
-    }
-
-    static class Visitor implements PropertyVisitor {
-
-        private final ImmutableFirmwareOshi.Builder builder = ImmutableFirmwareOshi.builder();
-
-        FirmwareOshi build() {
-            return builder.build();
-        }
-
-        @Override
-        public void visit(String key, String value) {
-            switch (key) {
-                case MANUFACTURER:
-                    builder.manufacturer(value);
-                    break;
-                case NAME:
-                    builder.name(value);
-                    break;
-                case DESCRIPTION:
-                    builder.description(value);
-                    break;
-                case VERSION:
-                    builder.version(value);
-                    break;
-                case RELEASE_DATE:
-                    builder.releaseDate(value);
-                    break;
-                default:
-                    Error.INSTANCE.visit(key, value);
-            }
-        }
-
-        @Override
-        public void visit(String key, int value) {
-            Error.INSTANCE.visit(key, value);
-        }
-
-        @Override
-        public void visit(String key, long value) {
-            Error.INSTANCE.visit(key, value);
-        }
-
-        @Override
-        public void visit(String key, boolean value) {
-            Error.INSTANCE.visit(key, value);
-        }
-    }
+     * public static FirmwareOshi from(PropertySet properties) { return
+     * Parser.INSTANCE.parse(properties); }
+     * 
+     * enum Parser implements PropertySetParser<FirmwareOshi> { INSTANCE;
+     * 
+     * @Override public FirmwareOshi parse(PropertySet properties) { final Visitor parser = new
+     * Visitor(); parser.visitProperties(properties); return parser.build(); } }
+     * 
+     * static class Visitor implements PropertyVisitor {
+     * 
+     * private final ImmutableFirmwareOshi.Builder builder = ImmutableFirmwareOshi.builder();
+     * 
+     * FirmwareOshi build() { return builder.build(); }
+     * 
+     * @Override public void visit(String key, String value) { switch (key) { case MANUFACTURER:
+     * builder.manufacturer(value); break; case NAME: builder.name(value); break; case DESCRIPTION:
+     * builder.description(value); break; case VERSION: builder.version(value); break; case
+     * RELEASE_DATE: builder.releaseDate(value); break; default: Error.INSTANCE.visit(key, value); }
+     * }
+     * 
+     * @Override public void visit(String key, int value) { Error.INSTANCE.visit(key, value); }
+     * 
+     * @Override public void visit(String key, long value) { Error.INSTANCE.visit(key, value); }
+     * 
+     * @Override public void visit(String key, boolean value) { Error.INSTANCE.visit(key, value); }
+     * }
      */
 }

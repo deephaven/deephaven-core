@@ -22,10 +22,12 @@ import static io.deephaven.db.v2.TstUtils.assertTableEquals;
 
 public class TestIncrementalReleaseFilter extends LiveTableTestCase {
     public void testSimple() {
-        final Table source = TableTools.newTable(TableTools.intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+        final Table source =
+            TableTools.newTable(TableTools.intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
         TableTools.show(source);
 
-        final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(2, 1);
+        final IncrementalReleaseFilter incrementalReleaseFilter =
+            new IncrementalReleaseFilter(2, 1);
         final Table filtered = source.where(incrementalReleaseFilter);
 
         TableTools.show(filtered);
@@ -41,11 +43,13 @@ public class TestIncrementalReleaseFilter extends LiveTableTestCase {
 
     public void testBigTable() {
         final Table sourcePart = TableTools.emptyTable(1_000_000_000L);
-        final List<Table> sourceParts = IntStream.range(0, 20).mapToObj(x -> sourcePart).collect(Collectors.toList());
+        final List<Table> sourceParts =
+            IntStream.range(0, 20).mapToObj(x -> sourcePart).collect(Collectors.toList());
         final Table source = TableTools.merge(sourceParts);
         TableTools.show(source);
 
-        final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(2, 10_000_000);
+        final IncrementalReleaseFilter incrementalReleaseFilter =
+            new IncrementalReleaseFilter(2, 10_000_000);
         final Table filtered = source.where(incrementalReleaseFilter);
         final Table flattened = filtered.flatten();
 
@@ -63,7 +67,7 @@ public class TestIncrementalReleaseFilter extends LiveTableTestCase {
 
     static public <T> T sleepValue(long duration, T retVal) {
         final Object blech = new Object();
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (blech) {
             try {
                 final long seconds = duration / 1000000000L;
@@ -90,10 +94,13 @@ public class TestIncrementalReleaseFilter extends LiveTableTestCase {
         final Table source = TableTools.emptyTable(1_000_000);
         TableTools.show(source);
 
-        final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter = new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true, new ClockTimeProvider(new RealTimeClock()));
+        final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter =
+            new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true,
+                new ClockTimeProvider(new RealTimeClock()));
         final Table filtered = source.where(incrementalReleaseFilter);
 
-        final Table updated = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> filtered.update("I=ii"));
+        final Table updated =
+            LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> filtered.update("I=ii"));
 
         while (filtered.size() < source.size()) {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::refresh);
@@ -107,10 +114,14 @@ public class TestIncrementalReleaseFilter extends LiveTableTestCase {
         final Table source = TableTools.emptyTable(10_000);
         TableTools.show(source);
 
-        final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter = new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true, new ClockTimeProvider(new RealTimeClock()));
+        final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter =
+            new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true,
+                new ClockTimeProvider(new RealTimeClock()));
         final Table filtered = source.where(incrementalReleaseFilter);
 
-        final Table updated = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> filtered.update("I=io.deephaven.db.v2.utils.TestIncrementalReleaseFilter.sleepValue(100000, ii)"));
+        final Table updated =
+            LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> filtered.update(
+                "I=io.deephaven.db.v2.utils.TestIncrementalReleaseFilter.sleepValue(100000, ii)"));
 
         int cycles = 0;
         while (filtered.size() < source.size()) {

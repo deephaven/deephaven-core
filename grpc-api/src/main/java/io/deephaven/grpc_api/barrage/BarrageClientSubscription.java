@@ -49,104 +49,110 @@ public class BarrageClientSubscription implements LogOutputAppendable {
     private final ClientCall<Flight.FlightData, BarrageMessage> call;
 
     public BarrageClientSubscription(
-            final String logName,
-            final Channel channel,
-            final BarrageSubscriptionRequest initialRequest,
-            final BarrageMessageConsumer.StreamReader<ChunkInputStreamGenerator.Options> streamReader,
-            final BarrageTable resultTable) {
+        final String logName,
+        final Channel channel,
+        final BarrageSubscriptionRequest initialRequest,
+        final BarrageMessageConsumer.StreamReader<ChunkInputStreamGenerator.Options> streamReader,
+        final BarrageTable resultTable) {
         this(logName, channel, initialRequest, streamReader,
-                resultTable.getWireChunkTypes(),
-                resultTable.getWireTypes(),
-                resultTable.getWireComponentTypes(),
-                new WeakReference<>(resultTable));
+            resultTable.getWireChunkTypes(),
+            resultTable.getWireTypes(),
+            resultTable.getWireComponentTypes(),
+            new WeakReference<>(resultTable));
     }
 
     public BarrageClientSubscription(
-            final String logName,
-            final Channel channel,
-            final BarrageSubscriptionRequest initialRequest,
-            final BarrageMessageConsumer.StreamReader<ChunkInputStreamGenerator.Options> streamReader,
-            final ChunkType[] wireChunkTypes,
-            final Class<?>[] wireTypes,
-            final Class<?>[] wireComponentTypes,
-            final WeakReference<BarrageMessage.Listener> weakListener) {
+        final String logName,
+        final Channel channel,
+        final BarrageSubscriptionRequest initialRequest,
+        final BarrageMessageConsumer.StreamReader<ChunkInputStreamGenerator.Options> streamReader,
+        final ChunkType[] wireChunkTypes,
+        final Class<?>[] wireTypes,
+        final Class<?>[] wireComponentTypes,
+        final WeakReference<BarrageMessage.Listener> weakListener) {
         this.logName = logName;
         this.isViewport = initialRequest.viewportVector() != null;
 
-//        final Channel channel = authClientManager.getAuthChannel();
+        // final Channel channel = authClientManager.getAuthChannel();
 
         final BarrageMessage.Listener rt = weakListener.get();
         if (rt == null) {
             this.call = null;
-            log.error().append(this).append(": replicated table already garbage collected not requesting subscription").endl();
+            log.error().append(this)
+                .append(": replicated table already garbage collected not requesting subscription")
+                .endl();
             return;
         }
 
-        final ChunkInputStreamGenerator.Options options = ChunkInputStreamGenerator.Options.of(initialRequest);
+        final ChunkInputStreamGenerator.Options options =
+            ChunkInputStreamGenerator.Options.of(initialRequest);
 
         final MethodDescriptor<Flight.FlightData, BarrageMessage> subscribeDescriptor =
-                FlightServiceGrpcBinding.getClientDoExchangeDescriptor(options, wireChunkTypes, wireTypes, wireComponentTypes, streamReader);
+            FlightServiceGrpcBinding.getClientDoExchangeDescriptor(options, wireChunkTypes,
+                wireTypes, wireComponentTypes, streamReader);
         this.call = channel.newCall(subscribeDescriptor, CallOptions.DEFAULT);
 
-        ClientCalls.asyncBidiStreamingCall(call, new ClientResponseObserver<Flight.FlightData, BarrageMessage>() {
-            @Override
-            public void beforeStart(final ClientCallStreamObserver<Flight.FlightData> requestStream) {
-                // IDS-6890-3: control flow may be needed here
-                requestStream.disableAutoInboundFlowControl();
-            }
-
-            @Override
-            public void onNext(final BarrageMessage barrageMessage) {
-                if (barrageMessage == null) {
-                    return;
+        ClientCalls.asyncBidiStreamingCall(call,
+            new ClientResponseObserver<Flight.FlightData, BarrageMessage>() {
+                @Override
+                public void beforeStart(
+                    final ClientCallStreamObserver<Flight.FlightData> requestStream) {
+                    // IDS-6890-3: control flow may be needed here
+                    requestStream.disableAutoInboundFlowControl();
                 }
-                try {
+
+                @Override
+                public void onNext(final BarrageMessage barrageMessage) {
+                    if (barrageMessage == null) {
+                        return;
+                    }
+                    try {
+                        final BarrageMessage.Listener listener = getListener();
+                        if (!connected || listener == null) {
+                            return;
+                        }
+                        listener.handleBarrageMessage(barrageMessage);
+                    } finally {
+                        barrageMessage.close();
+                    }
+                }
+
+                @Override
+                public void onError(final Throwable t) {
+                    log.error().append(BarrageClientSubscription.this)
+                        .append(": Error detected in subscription: ")
+                        .append(t).endl();
+
                     final BarrageMessage.Listener listener = getListener();
                     if (!connected || listener == null) {
                         return;
                     }
-                    listener.handleBarrageMessage(barrageMessage);
-                } finally {
-                    barrageMessage.close();
+                    listener.handleBarrageError(t);
+                    handleDisconnect();
                 }
-            }
 
-            @Override
-            public void onError(final Throwable t) {
-                log.error().append(BarrageClientSubscription.this)
-                        .append(": Error detected in subscription: ")
-                        .append(t).endl();
-
-                final BarrageMessage.Listener listener = getListener();
-                if (!connected || listener == null) {
-                    return;
+                @Override
+                public void onCompleted() {
+                    handleDisconnect();
                 }
-                listener.handleBarrageError(t);
-                handleDisconnect();
-            }
 
-            @Override
-            public void onCompleted() {
-                handleDisconnect();
-            }
-
-            @Nullable
-            private BarrageMessage.Listener getListener() {
-                final BarrageMessage.Listener listener = weakListener.get();
-                if (listener == null) {
-                    close();
+                @Nullable
+                private BarrageMessage.Listener getListener() {
+                    final BarrageMessage.Listener listener = weakListener.get();
+                    if (listener == null) {
+                        close();
+                    }
+                    return listener;
                 }
-                return listener;
-            }
-        });
+            });
 
         // Set connected here before we initialize the request.
         this.connected = true;
 
         // Send the initial subscription:
         call.sendMessage(Flight.FlightData.newBuilder()
-                .setAppMetadata(ByteStringAccess.wrap(initialRequest.getByteBuffer()))
-                .build());
+            .setAppMetadata(ByteStringAccess.wrap(initialRequest.getByteBuffer()))
+            .build());
 
         // Allow the server to send us all of the commands when there is bandwidth:
         call.request(Integer.MAX_VALUE);
@@ -183,18 +189,21 @@ public class BarrageClientSubscription implements LogOutputAppendable {
         }
 
         call.sendMessage(Flight.FlightData.newBuilder()
-                .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns)))
-                .build());
+            .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns)))
+            .build());
     }
 
     @Override
     public LogOutput append(final LogOutput logOutput) {
-        return logOutput.append("Barrage/").append("/ClientSubscription/").append(logName).append("/")
-                .append(System.identityHashCode(this)).append("/");
+        return logOutput.append("Barrage/").append("/ClientSubscription/").append(logName)
+            .append("/")
+            .append(System.identityHashCode(this)).append("/");
     }
 
-    public static BarrageSubscriptionRequest makeRequest(final Index viewport, final BitSet columns) {
-        return BarrageSubscriptionRequest.getRootAsBarrageSubscriptionRequest(makeRequestInternal(viewport, columns));
+    public static BarrageSubscriptionRequest makeRequest(final Index viewport,
+        final BitSet columns) {
+        return BarrageSubscriptionRequest
+            .getRootAsBarrageSubscriptionRequest(makeRequestInternal(viewport, columns));
     }
 
     private static ByteBuffer makeRequestInternal(final Index viewport, final BitSet columns) {
@@ -202,11 +211,13 @@ public class BarrageClientSubscription implements LogOutputAppendable {
 
         int colOffset = 0;
         if (columns != null) {
-            colOffset = BarrageSubscriptionRequest.createColumnsVector(metadata, columns.toByteArray());
+            colOffset =
+                BarrageSubscriptionRequest.createColumnsVector(metadata, columns.toByteArray());
         }
         int vpOffset = 0;
         if (viewport != null) {
-            vpOffset = BarrageSubscriptionRequest.createViewportVector(metadata, BarrageProtoUtil.toByteBuffer(viewport));
+            vpOffset = BarrageSubscriptionRequest.createViewportVector(metadata,
+                BarrageProtoUtil.toByteBuffer(viewport));
         }
 
         BarrageSubscriptionRequest.startBarrageSubscriptionRequest(metadata);
@@ -215,13 +226,13 @@ public class BarrageClientSubscription implements LogOutputAppendable {
         final int subscription = BarrageSubscriptionRequest.endBarrageSubscriptionRequest(metadata);
 
         final int wrapper = BarrageMessageWrapper.createBarrageMessageWrapper(
-                metadata,
-                BarrageStreamGenerator.FLATBUFFER_MAGIC,
-                BarrageMessageType.BarrageSubscriptionRequest,
-                subscription,
-                0, // no ticket
-                0, // no sequence
-                false // don't half-close
+            metadata,
+            BarrageStreamGenerator.FLATBUFFER_MAGIC,
+            BarrageMessageType.BarrageSubscriptionRequest,
+            subscription,
+            0, // no ticket
+            0, // no sequence
+            false // don't half-close
         );
         metadata.finish(wrapper);
         return metadata.dataBuffer();

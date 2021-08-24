@@ -34,12 +34,14 @@ public class EmptyTableGrpcImpl extends GrpcTableOperation<EmptyTableRequest> {
     @Override
     public void validateRequest(final EmptyTableRequest request) throws StatusRuntimeException {
         if (request.getSize() < 0) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Size must be greater than zero");
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                "Size must be greater than zero");
         }
     }
 
     @Override
-    public Table create(final EmptyTableRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final EmptyTableRequest request,
+        final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 0);
 
         return TableTools.emptyTable(request.getSize());

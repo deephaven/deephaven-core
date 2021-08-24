@@ -16,8 +16,11 @@ public class IntegerOutTest extends PythonTest {
 
     interface IntegerOut extends IdentityOut {
         Integer identity(int object);
+
         Integer identity(Integer object);
+
         Integer identity(PyObject object);
+
         Integer identity(Object object);
     }
 
@@ -30,12 +33,12 @@ public class IntegerOutTest extends PythonTest {
         out = IdentityOut.create(getCreateModule(), IntegerOut.class);
         ref = ReferenceCounting.create();
         jpy = JpyModule.create();
-        //jpy.setFlags(EnumSet.of(Flag.ALL));
+        // jpy.setFlags(EnumSet.of(Flag.ALL));
     }
 
     @After
     public void tearDown() {
-        //jpy.setFlags(EnumSet.of(Flag.OFF));
+        // jpy.setFlags(EnumSet.of(Flag.OFF));
         jpy.close();
         ref.close();
         out.close();
@@ -72,7 +75,7 @@ public class IntegerOutTest extends PythonTest {
     public void implicitPyObjectToInteger() {
         try (final PyObject in = expr(UNIQ_INT)) {
             check(1, in);
-            Assert.assertEquals(Integer.valueOf(UNIQ_INT), out.identity((Object)in));
+            Assert.assertEquals(Integer.valueOf(UNIQ_INT), out.identity((Object) in));
             check(1, in);
         }
     }

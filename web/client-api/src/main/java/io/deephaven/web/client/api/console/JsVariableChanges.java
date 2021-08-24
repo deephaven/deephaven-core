@@ -10,19 +10,21 @@ import java.util.Arrays;
 
 public class JsVariableChanges {
     @JsProperty(namespace = "dh.VariableType")
-    public static final String  TABLE = "Table",
-                                TREETABLE = "TreeTable",
-                                TABLEMAP = "TableMap",
-                                FIGURE = "Figure",
-                                OTHERWIDGET = "OtherWidget",
-                                PANDAS = "Pandas";
+    public static final String TABLE = "Table",
+        TREETABLE = "TreeTable",
+        TABLEMAP = "TableMap",
+        FIGURE = "Figure",
+        OTHERWIDGET = "OtherWidget",
+        PANDAS = "Pandas";
 
     private JsVariableDefinition[] created;
     private JsVariableDefinition[] updated;
     private JsVariableDefinition[] removed;
 
     private static JsVariableDefinition[] convertDefinitions(VariableDefinition[] definitions) {
-        return Arrays.stream(definitions).map(def -> new JsVariableDefinition(def.getName(), def.getType())).toArray(JsVariableDefinition[]::new);
+        return Arrays.stream(definitions)
+            .map(def -> new JsVariableDefinition(def.getName(), def.getType()))
+            .toArray(JsVariableDefinition[]::new);
     }
 
     public JsVariableChanges(VariableChanges changes) {

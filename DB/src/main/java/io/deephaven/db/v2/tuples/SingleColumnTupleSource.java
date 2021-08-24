@@ -11,11 +11,12 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * <p>{@link TupleSource} that produces key column values from a single {@link ColumnSource}.
+ * <p>
+ * {@link TupleSource} that produces key column values from a single {@link ColumnSource}.
  */
 @SuppressWarnings("unused")
-class SingleColumnTupleSource<TUPLE_TYPE> implements TupleSource<TUPLE_TYPE>, DefaultChunkSource.WithPrev<Attributes.Values>
-{
+class SingleColumnTupleSource<TUPLE_TYPE>
+    implements TupleSource<TUPLE_TYPE>, DefaultChunkSource.WithPrev<Attributes.Values> {
 
     private final ColumnSource<TUPLE_TYPE> columnSource;
 
@@ -43,13 +44,15 @@ class SingleColumnTupleSource<TUPLE_TYPE> implements TupleSource<TUPLE_TYPE>, De
 
     @Override
     public final TUPLE_TYPE createTupleFromValues(@NotNull final Object... values) {
-        //noinspection unchecked
+        // noinspection unchecked
         return (TUPLE_TYPE) values[0];
     }
 
     @Override
-    public <ELEMENT_TYPE> void exportElement(@NotNull final TUPLE_TYPE tuple, final int elementIndex, @NotNull final WritableSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
-        //noinspection unchecked
+    public <ELEMENT_TYPE> void exportElement(@NotNull final TUPLE_TYPE tuple,
+        final int elementIndex, @NotNull final WritableSource<ELEMENT_TYPE> writableSource,
+        final long destinationIndexKey) {
+        // noinspection unchecked
         writableSource.set(destinationIndexKey, (ELEMENT_TYPE) tuple);
     }
 
@@ -70,17 +73,22 @@ class SingleColumnTupleSource<TUPLE_TYPE> implements TupleSource<TUPLE_TYPE>, De
     }
 
     @Override
-    public Chunk<? extends Attributes.Values> getChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
+    public Chunk<? extends Attributes.Values> getChunk(@NotNull GetContext context,
+        @NotNull OrderedKeys orderedKeys) {
         return columnSource.getChunk(context, orderedKeys);
     }
 
     @Override
-    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
+    public void fillChunk(@NotNull FillContext context,
+        @NotNull WritableChunk<? super Attributes.Values> destination,
+        @NotNull OrderedKeys orderedKeys) {
         columnSource.fillChunk(context, destination, orderedKeys);
     }
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
+    public void fillPrevChunk(@NotNull FillContext context,
+        @NotNull WritableChunk<? super Attributes.Values> destination,
+        @NotNull OrderedKeys orderedKeys) {
         columnSource.fillPrevChunk(context, destination, orderedKeys);
     }
 

@@ -8,15 +8,16 @@ package io.deephaven.db.v2.by;
  * Factory for iterative variance aggregations.
  */
 public class VarStateFactory extends IterativeOperatorStateFactory {
-    public VarStateFactory() {
-    }
+    public VarStateFactory() {}
 
     @Override
-    public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name, boolean exposeInternalColumns) {
+    public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name,
+        boolean exposeInternalColumns) {
         return getVarChunked(type, false, name, exposeInternalColumns);
     }
 
     private static final AggregationMemoKey VAR_INSTANCE = new AggregationMemoKey() {};
+
     @Override
     public AggregationMemoKey getMemoKey() {
         return VAR_INSTANCE;

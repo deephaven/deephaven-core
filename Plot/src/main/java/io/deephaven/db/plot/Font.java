@@ -60,7 +60,7 @@ public class Font implements Serializable {
 
     }
 
-    private static final Map<String,FontStyle> extraFontStyles = new LinkedHashMap<>();
+    private static final Map<String, FontStyle> extraFontStyles = new LinkedHashMap<>();
 
     static {
         extraFontStyles.put("P", FontStyle.PLAIN);
@@ -84,10 +84,10 @@ public class Font implements Serializable {
 
         style = style.toUpperCase().trim();
 
-        try{
+        try {
             return FontStyle.valueOf(style);
-        } catch (Exception ignored){
-            //pass
+        } catch (Exception ignored) {
+            // pass
         }
 
         final FontStyle fontStyle = extraFontStyles.get(style);
@@ -106,13 +106,10 @@ public class Font implements Serializable {
      */
     public static String[] fontStyleNames() {
         final ArrayList<String> names = new ArrayList<>();
-        Arrays.stream(FontStyle.values()).forEach(x->names.add(x.name()));
+        Arrays.stream(FontStyle.values()).forEach(x -> names.add(x.name()));
         names.addAll(extraFontStyles.keySet());
         return names.stream().toArray(String[]::new);
     }
-
-
-
 
 
 
@@ -126,8 +123,8 @@ public class Font implements Serializable {
     private final java.awt.Font font;
 
     /**
-     * Creates a new instance of the Font with the specified {@code family},
-     * {@code style}, and {@code size}.
+     * Creates a new instance of the Font with the specified {@code family}, {@code style}, and
+     * {@code size}.
      *
      * @param family font family; if null, set to Arial
      * @param style font style; if null, set to {@link Font.FontStyle} PLAIN
@@ -138,13 +135,13 @@ public class Font implements Serializable {
         this.style = style == null ? FontStyle.PLAIN : style;
         this.size = size;
 
-        //noinspection MagicConstant
+        // noinspection MagicConstant
         this.font = new java.awt.Font(this.family, this.style.mask(), this.size);
     }
 
     /**
-     * Creates a new instance of the Font with the specified {@code family},
-     * {@code style}, and {@code size}.
+     * Creates a new instance of the Font with the specified {@code family}, {@code style}, and
+     * {@code size}.
      *
      * @param family font family; if null, set to Arial
      * @param style font style; if null, set to {@link Font.FontStyle} PLAIN
@@ -175,7 +172,7 @@ public class Font implements Serializable {
      * @param size the point size of the Font
      * @return font with the specified family, style and size
      */
-    public static Font font(final String family, final FontStyle style, final int size){
+    public static Font font(final String family, final FontStyle style, final int size) {
         return new Font(family, style, size);
     }
 
@@ -187,7 +184,7 @@ public class Font implements Serializable {
      * @param size the point size of the Font
      * @return font with the specified family, style and size
      */
-    public static Font font(final String family, final String style, final int size){
+    public static Font font(final String family, final String style, final int size) {
         return new Font(family, style, size);
     }
 
@@ -197,7 +194,8 @@ public class Font implements Serializable {
      * @return array of available Font family names
      */
     public static String[] fontFamilyNames() {
-        return java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
+        return java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
+            .getAvailableFontFamilyNames();
     }
 
 
@@ -210,7 +208,7 @@ public class Font implements Serializable {
      * @param family font family; if null, set to Arial
      * @return Font with {@code family} and this Font's style and size
      */
-    public Font refamily(final String family){
+    public Font refamily(final String family) {
         return new Font(family, this.style, this.size);
     }
 
@@ -221,7 +219,7 @@ public class Font implements Serializable {
      * @return Font with {@code style} and this Font's family and size
      */
     @SuppressWarnings("unused")
-    public Font restyle(final FontStyle style){
+    public Font restyle(final FontStyle style) {
         return new Font(this.family, style, this.size);
     }
 
@@ -231,7 +229,7 @@ public class Font implements Serializable {
      * @param style font style; if null, set to {@link Font.FontStyle} PLAIN
      * @return Font with {@code style} and this Font's family and size
      */
-    public Font restyle(final String style){
+    public Font restyle(final String style) {
         return new Font(this.family, style, this.size);
     }
 
@@ -241,7 +239,7 @@ public class Font implements Serializable {
      * @param size point size of the font
      * @return Font with {@code size} and this Font's family and style
      */
-    public Font resize(final int size){
+    public Font resize(final int size) {
         return new Font(this.family, this.style, size);
     }
 
@@ -259,11 +257,11 @@ public class Font implements Serializable {
     }
 
 
-    ///////////////////////// Object  /////////////////////////
+    ///////////////////////// Object /////////////////////////
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof Font && ((Font)obj).font.equals(this.font);
+        return obj instanceof Font && ((Font) obj).font.equals(this.font);
     }
 
     @Override

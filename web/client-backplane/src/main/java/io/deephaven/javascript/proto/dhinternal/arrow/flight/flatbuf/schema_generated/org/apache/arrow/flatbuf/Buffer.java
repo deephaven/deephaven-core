@@ -11,16 +11,16 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Buffer",
     namespace = JsPackage.GLOBAL)
 public class Buffer {
-  public static native double createBuffer(Builder builder, Long offset, Long length);
+    public static native double createBuffer(Builder builder, Long offset, Long length);
 
-  public static native double sizeOf();
+    public static native double sizeOf();
 
-  public ByteBuffer bb;
-  public double bb_pos;
+    public ByteBuffer bb;
+    public double bb_pos;
 
-  public native Buffer __init(double i, ByteBuffer bb);
+    public native Buffer __init(double i, ByteBuffer bb);
 
-  public native Long length();
+    public native Long length();
 
-  public native Long offset();
+    public native Long offset();
 }

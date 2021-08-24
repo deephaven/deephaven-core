@@ -10,71 +10,70 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
     isNative = true,
-    name =
-        "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.BusinessCalendarDescriptor.BusinessPeriod",
+    name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.BusinessCalendarDescriptor.BusinessPeriod",
     namespace = JsPackage.GLOBAL)
 public class BusinessPeriod {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
-    @JsOverlay
-    static BusinessPeriod.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType {
+        @JsOverlay
+        static BusinessPeriod.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getClose();
+
+        @JsProperty
+        String getOpen();
+
+        @JsProperty
+        void setClose(String close);
+
+        @JsProperty
+        void setOpen(String open);
     }
 
-    @JsProperty
-    String getClose();
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType0 {
+        @JsOverlay
+        static BusinessPeriod.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
 
-    @JsProperty
-    String getOpen();
+        @JsProperty
+        String getClose();
 
-    @JsProperty
-    void setClose(String close);
+        @JsProperty
+        String getOpen();
 
-    @JsProperty
-    void setOpen(String open);
-  }
+        @JsProperty
+        void setClose(String close);
 
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsOverlay
-    static BusinessPeriod.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+        @JsProperty
+        void setOpen(String open);
     }
 
-    @JsProperty
-    String getClose();
+    public static native BusinessPeriod deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    String getOpen();
+    public static native BusinessPeriod deserializeBinaryFromReader(
+        BusinessPeriod message, Object reader);
 
-    @JsProperty
-    void setClose(String close);
+    public static native void serializeBinaryToWriter(BusinessPeriod message, Object writer);
 
-    @JsProperty
-    void setOpen(String open);
-  }
+    public static native BusinessPeriod.ToObjectReturnType toObject(
+        boolean includeInstance, BusinessPeriod msg);
 
-  public static native BusinessPeriod deserializeBinary(Uint8Array bytes);
+    public native String getClose();
 
-  public static native BusinessPeriod deserializeBinaryFromReader(
-      BusinessPeriod message, Object reader);
+    public native String getOpen();
 
-  public static native void serializeBinaryToWriter(BusinessPeriod message, Object writer);
+    public native Uint8Array serializeBinary();
 
-  public static native BusinessPeriod.ToObjectReturnType toObject(
-      boolean includeInstance, BusinessPeriod msg);
+    public native void setClose(String value);
 
-  public native String getClose();
+    public native void setOpen(String value);
 
-  public native String getOpen();
+    public native BusinessPeriod.ToObjectReturnType0 toObject();
 
-  public native Uint8Array serializeBinary();
-
-  public native void setClose(String value);
-
-  public native void setOpen(String value);
-
-  public native BusinessPeriod.ToObjectReturnType0 toObject();
-
-  public native BusinessPeriod.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native BusinessPeriod.ToObjectReturnType0 toObject(boolean includeInstance);
 }

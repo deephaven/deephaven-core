@@ -1,8 +1,7 @@
 package io.deephaven.db.v2.utils.rsp.container;
 
 public final class EmptyContainer extends ImmutableContainer {
-    private EmptyContainer() {
-    }
+    private EmptyContainer() {}
 
     protected static final EmptyContainer instance = new EmptyContainer();
 
@@ -299,7 +298,8 @@ public final class EmptyContainer extends ImmutableContainer {
     }
 
     @Override
-    public boolean findRanges(final RangeConsumer outPositions, final RangeIterator inValues, final int maxPos) {
+    public boolean findRanges(final RangeConsumer outPositions, final RangeIterator inValues,
+        final int maxPos) {
         if (inValues.hasNext()) {
             throw new IllegalStateException();
         }
@@ -307,8 +307,7 @@ public final class EmptyContainer extends ImmutableContainer {
     }
 
     @Override
-    public void trim() {
-    }
+    public void trim() {}
 
     @Override
     public Container xor(final ArrayContainer x) {
@@ -381,8 +380,7 @@ public final class EmptyContainer extends ImmutableContainer {
     }
 
     @Override
-    public void setCopyOnWrite() {
-    }
+    public void setCopyOnWrite() {}
 
     @Override
     public int bytesAllocated() {
@@ -405,6 +403,5 @@ public final class EmptyContainer extends ImmutableContainer {
     }
 
     @Override
-    public void validate() {
-    }
+    public void validate() {}
 }

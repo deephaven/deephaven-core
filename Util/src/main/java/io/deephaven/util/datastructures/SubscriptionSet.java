@@ -12,13 +12,16 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 
 /**
- * <p>Array-backed set that stores generic listener objects, only enforcing hard reachability on listeners that are
- * SubstitutionWeakReferences.
  * <p>
- * <p>All public operations (except clear and isEmpty) are O(n).  All comparisons are based on object reference
- * equality.
+ * Array-backed set that stores generic listener objects, only enforcing hard reachability on
+ * listeners that are SubstitutionWeakReferences.
  * <p>
- * <p>Requires external synchronization for thread safe usage, except where otherwise noted.
+ * <p>
+ * All public operations (except clear and isEmpty) are O(n). All comparisons are based on object
+ * reference equality.
+ * <p>
+ * <p>
+ * Requires external synchronization for thread safe usage, except where otherwise noted.
  */
 public class SubscriptionSet<LISTENER_TYPE> {
 
@@ -32,7 +35,8 @@ public class SubscriptionSet<LISTENER_TYPE> {
         private boolean active;
 
         private Entry(final LISTENER_TYPE listener) {
-            this.listenerReference = WeakReferenceWrapper.maybeCreateWeakReference(Require.neqNull(listener, "listener"));
+            this.listenerReference = WeakReferenceWrapper
+                .maybeCreateWeakReference(Require.neqNull(listener, "listener"));
         }
 
         private LISTENER_TYPE getListener() {
@@ -63,8 +67,8 @@ public class SubscriptionSet<LISTENER_TYPE> {
      * Remove all listeners.
      */
     public final void clear() {
-        //noinspection unchecked
-        subscriptions = (Entry[])Array.newInstance(Entry.class, 1);
+        // noinspection unchecked
+        subscriptions = (Entry[]) Array.newInstance(Entry.class, 1);
         size = 0;
     }
 
@@ -84,10 +88,11 @@ public class SubscriptionSet<LISTENER_TYPE> {
      */
     public final boolean collect() {
         final int initialSize = size;
-        for (int si = 0; si < size; ) {
+        for (int si = 0; si < size;) {
             if (subscriptions[si].getListener() == null) {
                 removeAt(si);
-                continue; // si is not incremented in this case - we'll reconsider the same slot if necessary.
+                continue; // si is not incremented in this case - we'll reconsider the same slot if
+                          // necessary.
             }
             ++si;
         }
@@ -95,8 +100,8 @@ public class SubscriptionSet<LISTENER_TYPE> {
     }
 
     /**
-     * Make an entry for a listener, in order to pass it to {@link #add(Object, Entry)}.
-     * May be called without holding any locks.
+     * Make an entry for a listener, in order to pass it to {@link #add(Object, Entry)}. May be
+     * called without holding any locks.
      *
      * @param listener The listener
      * @return A new entry for the listener
@@ -106,11 +111,11 @@ public class SubscriptionSet<LISTENER_TYPE> {
     }
 
     /**
-     * Add a listener to the set, if it's not already present.  Clean up any GC'd subscriptions.
-     * See {@link #makeEntryFor(Object)}.
+     * Add a listener to the set, if it's not already present. Clean up any GC'd subscriptions. See
+     * {@link #makeEntryFor(Object)}.
      *
      * @param listener The listener to be added
-     * @param entry    An entry for the listener to be added
+     * @param entry An entry for the listener to be added
      * @return Whether this operation caused the set to become <b>non-empty</b>
      */
     public final boolean add(final @NotNull LISTENER_TYPE listener, final @NotNull Entry entry) {
@@ -118,12 +123,13 @@ public class SubscriptionSet<LISTENER_TYPE> {
 
         final int initialSize = size;
         boolean found = false;
-        for (int si = 0; si < size; ) {
+        for (int si = 0; si < size;) {
             final Entry currentEntry = subscriptions[si];
             final LISTENER_TYPE currentListener = currentEntry.getListener();
             if (currentListener == null) {
                 removeAt(si);
-                continue; // si is not incremented in this case - we'll reconsider the same slot if necessary.
+                continue; // si is not incremented in this case - we'll reconsider the same slot if
+                          // necessary.
             }
             if (currentEntry == entry || currentListener == listener) {
                 found = true;
@@ -141,18 +147,19 @@ public class SubscriptionSet<LISTENER_TYPE> {
     }
 
     /**
-     * Remove a listener from the set, if it's present.  Clean up any GC'd subscriptions.
+     * Remove a listener from the set, if it's present. Clean up any GC'd subscriptions.
      *
      * @param listener The listener to remove
      * @return Whether this operation caused the set to become <b>empty</b>
      */
     public final boolean remove(final LISTENER_TYPE listener) {
         final int initialSize = size;
-        for (int si = 0; si < size; ) {
+        for (int si = 0; si < size;) {
             final LISTENER_TYPE currentListener = subscriptions[si].getListener();
             if (currentListener == null || currentListener == listener) {
                 removeAt(si);
-                continue; // si is not incremented in this case - we'll reconsider the same slot if necessary.
+                continue; // si is not incremented in this case - we'll reconsider the same slot if
+                          // necessary.
             }
             ++si;
         }
@@ -160,21 +167,23 @@ public class SubscriptionSet<LISTENER_TYPE> {
     }
 
     /**
-     * Dispatch a nullary notification to all subscribers.  Clean up any GC'd subscriptions.
+     * Dispatch a nullary notification to all subscribers. Clean up any GC'd subscriptions.
      *
-     * @param procedure  The notification procedure to invoke
+     * @param procedure The notification procedure to invoke
      * @param activeOnly Whether to restrict this notification to active subscriptions only
      * @return Whether this operation caused the set to become <b>empty</b>
      */
-    public final boolean deliverNotification(@NotNull final Procedure.Unary<LISTENER_TYPE> procedure,
-                                             final boolean activeOnly) {
+    public final boolean deliverNotification(
+        @NotNull final Procedure.Unary<LISTENER_TYPE> procedure,
+        final boolean activeOnly) {
         final int initialSize = size;
-        for (int si = 0; si < size; ) {
+        for (int si = 0; si < size;) {
             final Entry currentEntry = subscriptions[si];
             final LISTENER_TYPE currentListener = currentEntry.getListener();
             if (currentListener == null) {
                 removeAt(si);
-                continue; // si is not incremented in this case - we'll reconsider the same slot if necessary.
+                continue; // si is not incremented in this case - we'll reconsider the same slot if
+                          // necessary.
             }
             if (!activeOnly || currentEntry.isActive()) {
                 procedure.call(currentListener);
@@ -185,23 +194,25 @@ public class SubscriptionSet<LISTENER_TYPE> {
     }
 
     /**
-     * Dispatch a unary notification to all subscribers.  Clean up any GC'd subscriptions.
+     * Dispatch a unary notification to all subscribers. Clean up any GC'd subscriptions.
      *
-     * @param procedure    The notification procedure to invoke
+     * @param procedure The notification procedure to invoke
      * @param notification The notification to deliver
-     * @param activeOnly   Whether to restrict this notification to active subscriptions only
+     * @param activeOnly Whether to restrict this notification to active subscriptions only
      * @return Whether this operation caused the set to become <b>empty</b>
      */
-    public final <NOTIFICATION_TYPE> boolean deliverNotification(@NotNull final Procedure.Binary<LISTENER_TYPE, NOTIFICATION_TYPE> procedure,
-                                                                 @Nullable final NOTIFICATION_TYPE notification,
-                                                                 final boolean activeOnly) {
+    public final <NOTIFICATION_TYPE> boolean deliverNotification(
+        @NotNull final Procedure.Binary<LISTENER_TYPE, NOTIFICATION_TYPE> procedure,
+        @Nullable final NOTIFICATION_TYPE notification,
+        final boolean activeOnly) {
         final int initialSize = size;
-        for (int si = 0; si < size; ) {
+        for (int si = 0; si < size;) {
             final Entry currentEntry = subscriptions[si];
             final LISTENER_TYPE currentListener = currentEntry.getListener();
             if (currentListener == null) {
                 removeAt(si);
-                continue; // si is not incremented in this case - we'll reconsider the same slot if necessary.
+                continue; // si is not incremented in this case - we'll reconsider the same slot if
+                          // necessary.
             }
             if (!activeOnly || currentEntry.isActive()) {
                 procedure.call(currentListener, notification);

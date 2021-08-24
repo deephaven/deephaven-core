@@ -18,7 +18,8 @@ public abstract class HashMapK4V4 extends HashMapBase {
     }
 
     protected final long putImplNoTranslate(long[] kvs, long key, long value, boolean insertOnly) {
-        // To minimize possible painful effects of nonsynchronized access to our array, we get the reference once.
+        // To minimize possible painful effects of nonsynchronized access to our array, we get the
+        // reference once.
         int location = getLocationFor(kvs, key);
         if (location >= 0) {
             // Item found, so replace it (unless 'insertOnly' is set).
@@ -33,7 +34,8 @@ public abstract class HashMapK4V4 extends HashMapBase {
         location = -location - 1;
         ++size;
         checkSize(SIZE_LIMIT4);
-        // The slot is either empty or removed. If we're about to consume an empty slot, then update our counter.
+        // The slot is either empty or removed. If we're about to consume an empty slot, then update
+        // our counter.
         if (kvs[location] == SPECIAL_KEY_FOR_EMPTY_SLOT) {
             ++nonEmptySlots;
         }
@@ -42,10 +44,14 @@ public abstract class HashMapK4V4 extends HashMapBase {
 
         // Did we run out of empty slots?
         if (nonEmptySlots >= rehashThreshold) {
-            // This means we're low on empty slots.  We might be low on empty slots because we've done a lot of
-            // deletions of previous items (in this case 'size' could be small), or because we've done a lot of
-            // insertions (in this case 'size' would be close to 'nonEmptySlots'). In the former case we would rather
-            // rehash to the same size. In the latter case we would like to grow the hash table. The heuristic we use to
+            // This means we're low on empty slots. We might be low on empty slots because we've
+            // done a lot of
+            // deletions of previous items (in this case 'size' could be small), or because we've
+            // done a lot of
+            // insertions (in this case 'size' would be close to 'nonEmptySlots'). In the former
+            // case we would rather
+            // rehash to the same size. In the latter case we would like to grow the hash table. The
+            // heuristic we use to
             // make this decision is if size exceeds 2/3 of the nonEmptySlots.
             boolean wantResize = size >= nonEmptySlots * 2 / 3;
             rehash(kvs, wantResize, 4);
@@ -59,7 +65,8 @@ public abstract class HashMapK4V4 extends HashMapBase {
             return noEntryValue;
         }
         key = fixKey(key);
-        // To minimize possible painful effects of nonsynchronized access to our array, we get the reference once.
+        // To minimize possible painful effects of nonsynchronized access to our array, we get the
+        // reference once.
         final int location = getLocationFor(kvs, key);
         if (location < 0) {
             return noEntryValue;
@@ -72,7 +79,8 @@ public abstract class HashMapK4V4 extends HashMapBase {
             return noEntryValue;
         }
         key = fixKey(key);
-        // To minimize possible painful effects of nonsynchronized access to our array, we get the reference once.
+        // To minimize possible painful effects of nonsynchronized access to our array, we get the
+        // reference once.
         final int location = getLocationFor(kvs, key);
         if (location < 0) {
             return noEntryValue;
@@ -125,7 +133,8 @@ public abstract class HashMapK4V4 extends HashMapBase {
             return -(probe + 6) - 1;
         }
 
-        // These slots might also have been deleted slots. If so, we need to keep searching (until key found or the
+        // These slots might also have been deleted slots. If so, we need to keep searching (until
+        // key found or the
         // first empty slot), but we remember the first deleted slot.
         int priorDeletedSlot;
         if (cKey0 == SPECIAL_KEY_FOR_DELETED_SLOT) {
@@ -144,13 +153,15 @@ public abstract class HashMapK4V4 extends HashMapBase {
         final int offset = (1 + (hash1 % (numBuckets - 2))) * (4 * 2);
         final int probeStart = probe;
         while (true) {
-            probe = (int)(((long)probe + offset) % length);
+            probe = (int) (((long) probe + offset) % length);
             if (probe == probeStart) {
                 throw new IllegalStateException("Wrapped around? Impossible.");
             }
 
-            // Same logic as the above. Looking for the specific key and aborting if the empty slot is found.
-            // (But, if the empty slot is found, and if there was an earlier deleted slot, we need to return the
+            // Same logic as the above. Looking for the specific key and aborting if the empty slot
+            // is found.
+            // (But, if the empty slot is found, and if there was an earlier deleted slot, we need
+            // to return the
             // earlier deleted slot)
             cKey0 = kvs[probe];
             if (cKey0 == target) {

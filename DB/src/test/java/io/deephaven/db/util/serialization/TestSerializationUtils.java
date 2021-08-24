@@ -28,13 +28,14 @@ public class TestSerializationUtils {
             this.member = member;
         }
 
-        public EE() {
-        }
+        public EE() {}
 
         @Override
         public boolean equals(final Object other) {
-            if (this == other) return true;
-            if (other == null || getClass() != other.getClass()) return false;
+            if (this == other)
+                return true;
+            if (other == null || getClass() != other.getClass())
+                return false;
             final EE otherEE = (EE) other;
             return member == otherEE.member;
         }
@@ -67,8 +68,10 @@ public class TestSerializationUtils {
 
         @Override
         public boolean equals(final Object other) {
-            if (this == other) return true;
-            if (other == null || getClass() != other.getClass()) return false;
+            if (this == other)
+                return true;
+            if (other == null || getClass() != other.getClass())
+                return false;
             final SE otherSE = (SE) other;
             return member == otherSE.member;
         }
@@ -89,13 +92,15 @@ public class TestSerializationUtils {
 
     @Test
     public void testAllTypes() throws Exception {
-        //noinspection AutoBoxing
-        final ArrayTuple fullInput = new ArrayTuple((byte)1, (short)2, 3, 4L, 5.0F, 6.0D, true, '7', "08",
+        // noinspection AutoBoxing
+        final ArrayTuple fullInput =
+            new ArrayTuple((byte) 1, (short) 2, 3, 4L, 5.0F, 6.0D, true, '7', "08",
                 new DBDateTime(9), new Date(10),
                 new ObjectObjectTuple("11-A", "11-B"),
                 new ObjectObjectObjectTuple("12-X", "12-Y", "12-Z"),
                 new EE(13), new SE(14));
-        final ArrayTuple nullInput = new ArrayTuple(null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        final ArrayTuple nullInput = new ArrayTuple(null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null);
 
         final ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
         final DataOutputStream dataOut = new DataOutputStream(bytesOut);
@@ -117,9 +122,13 @@ public class TestSerializationUtils {
         final ObjectInputStream objectIn = new ObjectInputStream(dataIn);
 
         final TIntObjectMap<SerializationUtils.Reader> cachedReaders = new TIntObjectHashMap<>();
-        TestCase.assertEquals(nullInput, new ArrayTuple().initializeExternalStreaming(objectIn, cachedReaders));
-        TestCase.assertEquals(fullInput, new ArrayTuple().initializeExternalStreaming(objectIn, cachedReaders));
-        TestCase.assertEquals(nullInput, new ArrayTuple().initializeExternalStreaming(objectIn, cachedReaders));
-        TestCase.assertEquals(fullInput, new ArrayTuple().initializeExternalStreaming(objectIn, cachedReaders));
+        TestCase.assertEquals(nullInput,
+            new ArrayTuple().initializeExternalStreaming(objectIn, cachedReaders));
+        TestCase.assertEquals(fullInput,
+            new ArrayTuple().initializeExternalStreaming(objectIn, cachedReaders));
+        TestCase.assertEquals(nullInput,
+            new ArrayTuple().initializeExternalStreaming(objectIn, cachedReaders));
+        TestCase.assertEquals(fullInput,
+            new ArrayTuple().initializeExternalStreaming(objectIn, cachedReaders));
     }
 }

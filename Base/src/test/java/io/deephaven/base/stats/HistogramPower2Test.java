@@ -15,8 +15,9 @@ public class HistogramPower2Test extends TestCase {
     }
 
     public void testSample() throws Exception {
-        Item  testItem = Stats.makeItem("HistogramPower2Test", "testData",  HistogramPower2.FACTORY, NOW);
-        Value testNewHistoState  = testItem.getValue();
+        Item testItem =
+            Stats.makeItem("HistogramPower2Test", "testData", HistogramPower2.FACTORY, NOW);
+        Value testNewHistoState = testItem.getValue();
 
         assertEquals(testNewHistoState.getTypeTag(), 'N');
 
@@ -31,35 +32,36 @@ public class HistogramPower2Test extends TestCase {
 
         testNewHistoState.alwaysUpdated(true);
 
-        //should have a count of 1 in bin[1]..bin[63]; bin[0]=2
+        // should have a count of 1 in bin[1]..bin[63]; bin[0]=2
 
         Stats.update(new ItemUpdateListener() {
-            public void handleItemUpdated(Item item, long now, long appNow, int intervalIndex, long intervalMillis, String intervalName) {
-                //Value v = item.getValue();
+            public void handleItemUpdated(Item item, long now, long appNow, int intervalIndex,
+                long intervalMillis, String intervalName) {
+                // Value v = item.getValue();
                 HistogramPower2 nh;
                 nh = (HistogramPower2) item.getValue();
                 History history = nh.getHistory();
                 StringBuilder sb = new StringBuilder();
                 sb.append("STAT")
-                        .append(',').append(intervalName)
-                        .append(',').append(now / 1000.)
-                        .append(',').append(appNow / 1000.)
-                        .append(',').append(nh.getTypeTag())
-                        .append(',').append(item.getGroupName())
-                        .append('.').append(item.getName())
-                        .append(',').append(history.getN(intervalIndex, 1))
-                        .append(',').append(history.getSum(intervalIndex, 1))
-                        .append(',').append(history.getLast(intervalIndex, 1))
-                        .append(',').append(history.getMin(intervalIndex, 1))
-                        .append(',').append(history.getMax(intervalIndex, 1))
-                        .append(',').append(history.getAvg(intervalIndex, 1))
-                        .append(',').append(history.getSum2(intervalIndex, 1))
-                        .append(',').append(history.getStdev(intervalIndex, 1))
-                        .append(',').append(nh.getHistogramString());
+                    .append(',').append(intervalName)
+                    .append(',').append(now / 1000.)
+                    .append(',').append(appNow / 1000.)
+                    .append(',').append(nh.getTypeTag())
+                    .append(',').append(item.getGroupName())
+                    .append('.').append(item.getName())
+                    .append(',').append(history.getN(intervalIndex, 1))
+                    .append(',').append(history.getSum(intervalIndex, 1))
+                    .append(',').append(history.getLast(intervalIndex, 1))
+                    .append(',').append(history.getMin(intervalIndex, 1))
+                    .append(',').append(history.getMax(intervalIndex, 1))
+                    .append(',').append(history.getAvg(intervalIndex, 1))
+                    .append(',').append(history.getSum2(intervalIndex, 1))
+                    .append(',').append(history.getStdev(intervalIndex, 1))
+                    .append(',').append(nh.getHistogramString());
 
                 System.out.println(sb);
             }
-        }, NOW+1000, NOW+1000, 0);
+        }, NOW + 1000, NOW + 1000, 0);
 
         ((HistogramPower2) testNewHistoState).clear();
     }

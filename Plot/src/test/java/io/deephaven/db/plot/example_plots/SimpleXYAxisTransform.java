@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ * * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  *
  */
 
@@ -22,12 +22,11 @@ public class SimpleXYAxisTransform {
         final Number[] y2 = {1.3, -3.2, 3.4, 0};
 
         Figure axs2 = plot("Test2", x2, y2).pointsVisible(true)
-                .plot("Test1", x1, y1).pointsVisible(true)
-                .xLabel("X")
-                .yLabel("Y")
-                .yTransform(AxisTransforms.LOG)
-                .plotOrientation("H")
-                ;
+            .plot("Test1", x1, y1).pointsVisible(true)
+            .xLabel("X")
+            .yLabel("Y")
+            .yTransform(AxisTransforms.LOG)
+            .plotOrientation("H");
 
         ExamplePlotUtils.display(axs2);
     }

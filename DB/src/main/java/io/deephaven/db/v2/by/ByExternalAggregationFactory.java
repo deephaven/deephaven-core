@@ -12,7 +12,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 /**
- * An {@link AggregationContextFactory} used in the implementation of {@link io.deephaven.db.tables.Table#byExternal}.
+ * An {@link AggregationContextFactory} used in the implementation of
+ * {@link io.deephaven.db.tables.Table#byExternal}.
  */
 public class ByExternalAggregationFactory implements AggregationContextFactory {
 
@@ -23,29 +24,30 @@ public class ByExternalAggregationFactory implements AggregationContextFactory {
     private ByExternalChunkedOperator operator;
 
     private ByExternalAggregationFactory(final boolean dropKeys,
-                                         @NotNull final ByExternalChunkedOperator.AttributeCopier attributeCopier,
-                                         @NotNull final List<Object> keysToPrepopulate) {
+        @NotNull final ByExternalChunkedOperator.AttributeCopier attributeCopier,
+        @NotNull final List<Object> keysToPrepopulate) {
         this.dropKeys = dropKeys;
         this.attributeCopier = attributeCopier;
         this.keysToPrepopulate = keysToPrepopulate;
     }
 
     @Override
-    public AggregationContext makeAggregationContext(@NotNull final Table inputTable, @NotNull final String... groupByColumnNames) {
-        final QueryTable adjustedInputTable = (QueryTable) (dropKeys ? inputTable.dropColumns(groupByColumnNames) : inputTable);
-        //noinspection unchecked
+    public AggregationContext makeAggregationContext(@NotNull final Table inputTable,
+        @NotNull final String... groupByColumnNames) {
+        final QueryTable adjustedInputTable =
+            (QueryTable) (dropKeys ? inputTable.dropColumns(groupByColumnNames) : inputTable);
+        // noinspection unchecked
         return new AggregationContext(
-                new IterativeChunkedAggregationOperator[]{
-                        operator = new ByExternalChunkedOperator(
-                                (QueryTable) inputTable,
-                                adjustedInputTable,
-                                attributeCopier,
-                                keysToPrepopulate,
-                                groupByColumnNames)
-                },
-                new String[][]{CollectionUtil.ZERO_LENGTH_STRING_ARRAY},
-                new ChunkSource.WithPrev[]{null}
-        );
+            new IterativeChunkedAggregationOperator[] {
+                    operator = new ByExternalChunkedOperator(
+                        (QueryTable) inputTable,
+                        adjustedInputTable,
+                        attributeCopier,
+                        keysToPrepopulate,
+                        groupByColumnNames)
+            },
+            new String[][] {CollectionUtil.ZERO_LENGTH_STRING_ARRAY},
+            new ChunkSource.WithPrev[] {null});
     }
 
     @Override
@@ -54,41 +56,46 @@ public class ByExternalAggregationFactory implements AggregationContextFactory {
     }
 
     public static LocalTableMap byExternal(@NotNull final QueryTable inputTable,
-                                           final boolean dropKeys,
-                                           @NotNull final ByExternalChunkedOperator.AttributeCopier attributeCopier,
-                                           @NotNull final List<Object> keysToPrepopulate,
-                                           @NotNull final String... groupByColumnNames) {
-        return byExternal(AggregationControl.DEFAULT_FOR_OPERATOR, inputTable, dropKeys, attributeCopier, keysToPrepopulate, groupByColumnNames);
+        final boolean dropKeys,
+        @NotNull final ByExternalChunkedOperator.AttributeCopier attributeCopier,
+        @NotNull final List<Object> keysToPrepopulate,
+        @NotNull final String... groupByColumnNames) {
+        return byExternal(AggregationControl.DEFAULT_FOR_OPERATOR, inputTable, dropKeys,
+            attributeCopier, keysToPrepopulate, groupByColumnNames);
     }
 
     public static LocalTableMap byExternal(@NotNull final QueryTable inputTable,
-                                           final boolean dropKeys,
-                                           @NotNull final ByExternalChunkedOperator.AttributeCopier attributeCopier,
-                                           @NotNull final List<Object> keysToPrepopulate,
-                                           @NotNull final SelectColumn[] groupByColumns) {
-        return byExternal(AggregationControl.DEFAULT_FOR_OPERATOR, inputTable, dropKeys, attributeCopier, keysToPrepopulate, groupByColumns);
+        final boolean dropKeys,
+        @NotNull final ByExternalChunkedOperator.AttributeCopier attributeCopier,
+        @NotNull final List<Object> keysToPrepopulate,
+        @NotNull final SelectColumn[] groupByColumns) {
+        return byExternal(AggregationControl.DEFAULT_FOR_OPERATOR, inputTable, dropKeys,
+            attributeCopier, keysToPrepopulate, groupByColumns);
     }
 
     public static LocalTableMap byExternal(@NotNull final AggregationControl aggregationControl,
-                                           @NotNull final QueryTable inputTable,
-                                           final boolean dropKeys,
-                                           @NotNull final ByExternalChunkedOperator.AttributeCopier attributeCopier,
-                                           @NotNull final List<Object> keysToPrepopulate,
-                                           @NotNull final String... groupByColumnNames) {
-        return byExternal(aggregationControl, inputTable, dropKeys, attributeCopier, keysToPrepopulate, SelectColumnFactory.getExpressions(groupByColumnNames));
+        @NotNull final QueryTable inputTable,
+        final boolean dropKeys,
+        @NotNull final ByExternalChunkedOperator.AttributeCopier attributeCopier,
+        @NotNull final List<Object> keysToPrepopulate,
+        @NotNull final String... groupByColumnNames) {
+        return byExternal(aggregationControl, inputTable, dropKeys, attributeCopier,
+            keysToPrepopulate, SelectColumnFactory.getExpressions(groupByColumnNames));
     }
 
     public static LocalTableMap byExternal(@NotNull final AggregationControl aggregationControl,
-                                           @NotNull final QueryTable inputTable,
-                                           final boolean dropKeys,
-                                           @NotNull final ByExternalChunkedOperator.AttributeCopier attributeCopier,
-                                           @NotNull final List<Object> keysToPrepopulate,
-                                           @NotNull final SelectColumn[] groupByColumns) {
+        @NotNull final QueryTable inputTable,
+        final boolean dropKeys,
+        @NotNull final ByExternalChunkedOperator.AttributeCopier attributeCopier,
+        @NotNull final List<Object> keysToPrepopulate,
+        @NotNull final SelectColumn[] groupByColumns) {
         if (groupByColumns.length == 0) {
             return noKeyByExternal(inputTable);
         }
-        final ByExternalAggregationFactory aggregationFactory = new ByExternalAggregationFactory(dropKeys, attributeCopier, keysToPrepopulate);
-        ChunkedOperatorAggregationHelper.aggregation(aggregationControl, aggregationFactory, inputTable, groupByColumns);
+        final ByExternalAggregationFactory aggregationFactory =
+            new ByExternalAggregationFactory(dropKeys, attributeCopier, keysToPrepopulate);
+        ChunkedOperatorAggregationHelper.aggregation(aggregationControl, aggregationFactory,
+            inputTable, groupByColumns);
         return aggregationFactory.operator.getTableMap();
     }
 

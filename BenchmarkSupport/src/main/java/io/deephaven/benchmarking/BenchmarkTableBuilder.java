@@ -11,6 +11,7 @@ public interface BenchmarkTableBuilder {
 
     /**
      * Set the RNG seed to be used to populate the table.
+     * 
      * @param seed The seed.
      */
     @ScriptApi

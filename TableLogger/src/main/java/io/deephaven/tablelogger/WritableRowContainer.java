@@ -17,13 +17,15 @@ public interface WritableRowContainer<R extends Row> {
 
     /**
      * Write the underlying row to the storage.
+     * 
      * @throws IOException If a problem occurs during the write.
      */
     void writeRow() throws IOException;
 
     /**
-     * Indicate that the underlying row has been written and should be reclaimed. This may be a no-op for many storage types,
-     *  however it enables additional layers of buffering where it may be beneficial.
+     * Indicate that the underlying row has been written and should be reclaimed. This may be a
+     * no-op for many storage types, however it enables additional layers of buffering where it may
+     * be beneficial.
      */
     void release();
 }

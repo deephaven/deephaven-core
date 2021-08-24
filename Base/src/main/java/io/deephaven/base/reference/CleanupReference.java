@@ -10,7 +10,8 @@ package io.deephaven.base.reference;
 public interface CleanupReference<T> extends SimpleReference<T> {
 
     /**
-     * Allow for a reference queue consumer to invoke a custom cleanup method, for post-GC resource reclamation.
+     * Allow for a reference queue consumer to invoke a custom cleanup method, for post-GC resource
+     * reclamation.
      */
     void cleanup();
 }

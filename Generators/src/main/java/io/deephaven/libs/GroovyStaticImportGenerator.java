@@ -18,9 +18,9 @@ import io.deephaven.util.type.TypeUtils;
 
 
 /**
- * Groovy has a bug where performing a static import on multiple libraries containing functions with the same name causes
- * some of the functions to not be present in the namespace.  This class combines static imports from multiple sources
- * into a single class that can be imported.
+ * Groovy has a bug where performing a static import on multiple libraries containing functions with
+ * the same name causes some of the functions to not be present in the namespace. This class
+ * combines static imports from multiple sources into a single class that can be imported.
  */
 public class GroovyStaticImportGenerator {
     private static Logger log = Logger.getLogger(GroovyStaticImportGenerator.class.toString());
@@ -35,7 +35,10 @@ public class GroovyStaticImportGenerator {
         private final String[] parameterNames;
         private final boolean isVarArgs;
 
-        public JavaFunction(final String className, final String classNameShort, final String methodName, final TypeVariable<Method>[] typeParameters, final Type returnType, final Type[] parameterTypes, final String[] parameterNames, final boolean isVarArgs) {
+        public JavaFunction(final String className, final String classNameShort,
+            final String methodName, final TypeVariable<Method>[] typeParameters,
+            final Type returnType, final Type[] parameterTypes, final String[] parameterNames,
+            final boolean isVarArgs) {
             this.className = className;
             this.classNameShort = classNameShort;
             this.methodName = methodName;
@@ -48,31 +51,35 @@ public class GroovyStaticImportGenerator {
 
         public JavaFunction(final Method m) {
             this(
-                    m.getDeclaringClass().getCanonicalName(),
-                    m.getDeclaringClass().getSimpleName(),
-                    m.getName(),
-                    m.getTypeParameters(),
-                    m.getGenericReturnType(),
-                    m.getGenericParameterTypes(),
-                    Arrays.stream(m.getParameters()).map(Parameter::getName).toArray(String[]::new),
-                    m.isVarArgs()
-            );
+                m.getDeclaringClass().getCanonicalName(),
+                m.getDeclaringClass().getSimpleName(),
+                m.getName(),
+                m.getTypeParameters(),
+                m.getGenericReturnType(),
+                m.getGenericParameterTypes(),
+                Arrays.stream(m.getParameters()).map(Parameter::getName).toArray(String[]::new),
+                m.isVarArgs());
 
             for (Parameter parameter : m.getParameters()) {
-                if(!parameter.isNamePresent()){
-                    throw new IllegalArgumentException("Parameter names are not present in the code!  Was the code compiled with \"-parameters\": " + toString());
+                if (!parameter.isNamePresent()) {
+                    throw new IllegalArgumentException(
+                        "Parameter names are not present in the code!  Was the code compiled with \"-parameters\": "
+                            + toString());
                 }
             }
         }
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
 
             JavaFunction that = (JavaFunction) o;
 
-            if (methodName != null ? !methodName.equals(that.methodName) : that.methodName != null) return false;
+            if (methodName != null ? !methodName.equals(that.methodName) : that.methodName != null)
+                return false;
             // Probably incorrect - comparing Object[] arrays with Arrays.equals
             return Arrays.equals(parameterTypes, that.parameterTypes);
 
@@ -88,13 +95,13 @@ public class GroovyStaticImportGenerator {
         @Override
         public String toString() {
             return "JavaFunction{" +
-                    "className='" + className + '\'' +
-                    ", methodName='" + methodName + '\'' +
-                    ", typeParameters=" + Arrays.toString(typeParameters) +
-                    ", returnType=" + returnType +
-                    ", parameterTypes=" + Arrays.toString(parameterTypes) +
-                    ", parameterNames=" + Arrays.toString(parameterNames) +
-                    '}';
+                "className='" + className + '\'' +
+                ", methodName='" + methodName + '\'' +
+                ", typeParameters=" + Arrays.toString(typeParameters) +
+                ", returnType=" + returnType +
+                ", parameterTypes=" + Arrays.toString(parameterTypes) +
+                ", parameterNames=" + Arrays.toString(parameterNames) +
+                '}';
         }
 
         @Override
@@ -140,14 +147,15 @@ public class GroovyStaticImportGenerator {
         }
 
         public Class getReturnClass() {
-            if(returnType == null){
+            if (returnType == null) {
                 return null;
             }
 
             try {
                 return TypeUtils.getErasedType(returnType);
-            }catch (UnsupportedOperationException e){
-                log.warning("Unable to determine Class from returnType=" + returnType.getTypeName());
+            } catch (UnsupportedOperationException e) {
+                log.warning(
+                    "Unable to determine Class from returnType=" + returnType.getTypeName());
                 return null;
             }
         }
@@ -169,7 +177,8 @@ public class GroovyStaticImportGenerator {
     private final Map<JavaFunction, JavaFunction> staticFunctions = new TreeMap<>();
     private final Collection<Predicate<JavaFunction>> skips;
 
-    private GroovyStaticImportGenerator(final String[] imports, Collection<Predicate<JavaFunction>> skips) throws ClassNotFoundException {
+    private GroovyStaticImportGenerator(final String[] imports,
+        Collection<Predicate<JavaFunction>> skips) throws ClassNotFoundException {
         this.skips = skips;
 
         for (String imp : imports) {
@@ -192,7 +201,7 @@ public class GroovyStaticImportGenerator {
         log.info("Processing public static method: " + m);
 
         JavaFunction f = new JavaFunction(m);
-//        System.out.println(f);
+        // System.out.println(f);
 
         if (staticFunctions.containsKey(f)) {
             JavaFunction fAlready = staticFunctions.get(f);
@@ -244,7 +253,7 @@ public class GroovyStaticImportGenerator {
                 result.addAll(typesToImport(a));
             }
         } else if (t instanceof TypeVariable) {
-            //type variables are generic so they don't need importing
+            // type variables are generic so they don't need importing
             return result;
         } else if (t instanceof GenericArrayType) {
             GenericArrayType at = (GenericArrayType) t;
@@ -259,11 +268,13 @@ public class GroovyStaticImportGenerator {
     private String generateCode() {
 
         String code = "/*\n" +
-                " * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending\n" +
-                " */\n\n" +
-                "/****************************************************************************************************************************\n" +
-                " ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run GroovyStaticImportGenerator or \"./gradlew :Generators:groovyStaticImportGenerator\" to regenerate\n" +
-                " ****************************************************************************************************************************/\n\n";
+            " * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending\n" +
+            " */\n\n" +
+            "/****************************************************************************************************************************\n"
+            +
+            " ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run GroovyStaticImportGenerator or \"./gradlew :Generators:groovyStaticImportGenerator\" to regenerate\n"
+            +
+            " ****************************************************************************************************************************/\n\n";
 
         code += "package io.deephaven.libs;\n\n";
 
@@ -294,9 +305,11 @@ public class GroovyStaticImportGenerator {
 
             String returnType = f.returnType.getTypeName();
             String s =
-                    "    /** @see " + f.getClassName() + "#" + f.getMethodName() + "(" +
-                   Arrays.stream(f.parameterTypes).map(t->t.getTypeName().replace("<T>","")).collect(Collectors.joining(",")) +
-                   ") */\n" +
+                "    /** @see " + f.getClassName() + "#" + f.getMethodName() + "(" +
+                    Arrays.stream(f.parameterTypes).map(t -> t.getTypeName().replace("<T>", ""))
+                        .collect(Collectors.joining(","))
+                    +
+                    ") */\n" +
                     "    public static ";
 
             if (f.typeParameters.length > 0) {
@@ -314,7 +327,8 @@ public class GroovyStaticImportGenerator {
                     Type[] bounds = t.getBounds();
 
                     if (bounds.length != 1) {
-                        throw new RuntimeException("Unsupported bounds: " + Arrays.toString(bounds));
+                        throw new RuntimeException(
+                            "Unsupported bounds: " + Arrays.toString(bounds));
                     }
 
                     Type bound = bounds[0];
@@ -398,8 +412,12 @@ public class GroovyStaticImportGenerator {
                 "io.deephaven.libs.primitives.Casting",
         };
 
-        @SuppressWarnings("unchecked") GroovyStaticImportGenerator gen = new GroovyStaticImportGenerator(imports,
-                Collections.singletonList((f) -> f.methodName.equals("sum") && f.parameterTypes.length == 1 && f.parameterTypes[0].getTypeName().contains("io.deephaven.db.tables.dbarrays.DbArray<")) // skipping common erasure "sum"
+        @SuppressWarnings("unchecked")
+        GroovyStaticImportGenerator gen = new GroovyStaticImportGenerator(imports,
+            Collections.singletonList((f) -> f.methodName.equals("sum")
+                && f.parameterTypes.length == 1 && f.parameterTypes[0].getTypeName()
+                    .contains("io.deephaven.db.tables.dbarrays.DbArray<")) // skipping common
+                                                                           // erasure "sum"
         );
 
         final String code = gen.generateCode();
@@ -411,7 +429,8 @@ public class GroovyStaticImportGenerator {
         if (assertNoChange) {
             String oldCode = new String(Files.readAllBytes(Paths.get(file)));
             if (!code.equals(oldCode)) {
-                throw new RuntimeException("Change in generated code.  Run GroovyStaticImportGenerator or \"./gradlew :DB:groovyStaticImportGenerator\" to regenerate\n");
+                throw new RuntimeException(
+                    "Change in generated code.  Run GroovyStaticImportGenerator or \"./gradlew :DB:groovyStaticImportGenerator\" to regenerate\n");
             }
         } else {
 

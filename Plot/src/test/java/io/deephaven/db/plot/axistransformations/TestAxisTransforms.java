@@ -77,7 +77,8 @@ public class TestAxisTransforms extends BaseArrayTestCase {
         assertEquals(AxisTransforms.SQRT, AxisTransforms.axisTransform("SQRT"));
 
         final BusinessCalendar cal = Calendars.calendar("USNYSE");
-        final AxisTransformBusinessCalendar at1 = (AxisTransformBusinessCalendar) AxisTransforms.axisTransform("USNYSE");
+        final AxisTransformBusinessCalendar at1 =
+            (AxisTransformBusinessCalendar) AxisTransforms.axisTransform("USNYSE");
         assertEquals(cal, at1.getBusinessCalendar());
     }
 }

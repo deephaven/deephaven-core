@@ -15,8 +15,7 @@ public class JsTreeTableConfig {
     public String parentColumn = null;
     public boolean promoteOrphansToRoot = false;
 
-    public JsTreeTableConfig() {
-    }
+    public JsTreeTableConfig() {}
 
     @JsIgnore
     public JsTreeTableConfig(JsPropertyMap<Object> source) {

@@ -17,7 +17,8 @@ public class UnaryInputStreamMarshaller implements MethodDescriptor.Marshaller<I
 
     @Override
     public InputStream parse(InputStream stream) {
-        try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos = new BarrageProtoUtil.ExposedByteArrayOutputStream()) {
+        try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
+            new BarrageProtoUtil.ExposedByteArrayOutputStream()) {
             final byte[] buffer = new byte[4096];
             while (stream.available() > 0) {
                 int len = stream.read(buffer);

@@ -17,15 +17,14 @@ public class JsVariableDefinition implements Serializable {
     @JsIgnore
     public static JsVariableDefinition from(Object definitionObject) {
         if (definitionObject instanceof JsVariableDefinition) {
-            return (JsVariableDefinition)definitionObject;
+            return (JsVariableDefinition) definitionObject;
         } else {
             return new JsVariableDefinition(Js.cast(definitionObject));
         }
     }
 
     @JsConstructor
-    public JsVariableDefinition() {
-    }
+    public JsVariableDefinition() {}
 
     @JsIgnore
     public JsVariableDefinition(String name, String type) {

@@ -12,7 +12,9 @@ public interface StatusCallback {
      * @param progress percent complete (0-100)
      * @param status optional message text
      */
-    default void update(int progress, String status) { update(progress, () -> status); }
+    default void update(int progress, String status) {
+        update(progress, () -> status);
+    }
 
     /**
      * Update the progress % and status message.
@@ -50,6 +52,7 @@ public interface StatusCallback {
 
     /**
      * Get the current value of the the current step/subrange.
+     * 
      * @return the % complete of the current step - a number between 1 and 100
      */
     default int getStepValue() {
@@ -59,7 +62,9 @@ public interface StatusCallback {
     /**
      * Get a new status callback representing a sub range of this one.
      *
-     * TODO: it's iffy whether this belongs in the interface, but is pretty handy.  Could easily be a factory.
+     * TODO: it's iffy whether this belongs in the interface, but is pretty handy. Could easily be a
+     * factory.
+     * 
      * @param min 0% in the subrange corresponds to min in the parent
      * @param max 100% in the subrange corresponds to max in the parent
      * @return a new status callback representing the specified subrange of this callback
@@ -70,6 +75,7 @@ public interface StatusCallback {
 
     /**
      * Syntactic sugar for converting the remaining capacity to a subrange.
+     * 
      * @return a new ProcessStatusSubrange for the remaining part of this one.
      */
     default StatusCallback remaining() {
@@ -78,11 +84,12 @@ public interface StatusCallback {
 
     /**
      * Syntactic sugar for converting part of remaining capacity to a subrange.
+     * 
      * @return a new ProcessStatusSubrange for pct percent of the remaining part of this one.
      */
     default StatusCallback remaining(int pct) {
         int min = getStepValue();
-        int max = (int)((100.0-min) * pct/100.0) + min;
+        int max = (int) ((100.0 - min) * pct / 100.0) + min;
         return subrange(min, max);
     }
 }

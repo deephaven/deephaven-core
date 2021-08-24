@@ -13,7 +13,7 @@ import java.math.BigInteger;
 
 public class QueryTableAggregationTestFormulaStaticMethods {
     public static DbByteArray abs(DbByteArray values) {
-        final byte [] result = new byte[values.intSize()];
+        final byte[] result = new byte[values.intSize()];
         for (int ii = 0; ii < values.size(); ++ii) {
             result[ii] = ByteNumericPrimitives.abs(values.get(ii));
         }
@@ -21,7 +21,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     }
 
     public static DbShortArray abs(DbShortArray values) {
-        final short [] result = new short[values.intSize()];
+        final short[] result = new short[values.intSize()];
         for (int ii = 0; ii < values.size(); ++ii) {
             result[ii] = ShortNumericPrimitives.abs(values.get(ii));
         }
@@ -29,7 +29,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     }
 
     public static DbIntArray abs(DbIntArray values) {
-        final int [] result = new int[values.intSize()];
+        final int[] result = new int[values.intSize()];
         for (int ii = 0; ii < values.size(); ++ii) {
             result[ii] = IntegerNumericPrimitives.abs(values.get(ii));
         }
@@ -37,7 +37,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     }
 
     public static DbLongArray abs(DbLongArray values) {
-        final long [] result = new long[values.intSize()];
+        final long[] result = new long[values.intSize()];
         for (int ii = 0; ii < values.size(); ++ii) {
             result[ii] = LongNumericPrimitives.abs(values.get(ii));
         }
@@ -45,7 +45,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     }
 
     public static DbFloatArray abs(DbFloatArray values) {
-        final float [] result = new float[values.intSize()];
+        final float[] result = new float[values.intSize()];
         for (int ii = 0; ii < values.size(); ++ii) {
             result[ii] = FloatNumericPrimitives.abs(values.get(ii));
         }
@@ -53,7 +53,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     }
 
     public static DbDoubleArray abs(DbDoubleArray values) {
-        final double [] result = new double[values.intSize()];
+        final double[] result = new double[values.intSize()];
         for (int ii = 0; ii < values.size(); ++ii) {
             result[ii] = DoubleNumericPrimitives.abs(values.get(ii));
         }
@@ -230,7 +230,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
             final int v = values.get(ii);
             if (v != QueryConstants.NULL_INT) {
                 sum += v;
-                 count++;
+                count++;
             }
         }
         return count == 0 ? QueryConstants.NULL_LONG : sum;
@@ -359,7 +359,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
             final char c = values.get(ii);
             if (c != QueryConstants.NULL_CHAR) {
                 sum += c;
-                sum2 += c*c;
+                sum2 += c * c;
                 count++;
             }
         }
@@ -385,7 +385,9 @@ public class QueryTableAggregationTestFormulaStaticMethods {
             return null;
         }
         final BigDecimal countMinus1 = BigDecimal.valueOf(count - 1);
-        return new BigDecimal(sum2).subtract(new BigDecimal(sum.pow(2)).divide(BigDecimal.valueOf(count), BigDecimal.ROUND_HALF_UP)).divide(countMinus1, BigDecimal.ROUND_HALF_UP);
+        return new BigDecimal(sum2).subtract(
+            new BigDecimal(sum.pow(2)).divide(BigDecimal.valueOf(count), BigDecimal.ROUND_HALF_UP))
+            .divide(countMinus1, BigDecimal.ROUND_HALF_UP);
     }
 
     public static BigDecimal varBigDec(DbArray<BigDecimal> values) {
@@ -406,7 +408,8 @@ public class QueryTableAggregationTestFormulaStaticMethods {
             return null;
         }
         final BigDecimal countMinus1 = BigDecimal.valueOf(count - 1);
-        return sum2.subtract(sum.pow(2).divide(BigDecimal.valueOf(count), BigDecimal.ROUND_HALF_UP)).divide(countMinus1, BigDecimal.ROUND_HALF_UP);
+        return sum2.subtract(sum.pow(2).divide(BigDecimal.valueOf(count), BigDecimal.ROUND_HALF_UP))
+            .divide(countMinus1, BigDecimal.ROUND_HALF_UP);
     }
 
     public static char minChar(DbCharArray values) {
@@ -493,7 +496,8 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         int count = 0;
         for (int ii = 0; ii < values.size(); ++ii) {
             final double v = values.get(ii);
-            if (v != QueryConstants.NULL_DOUBLE) { // TODO: the existing aggregator doesn't handle this && !Double.isNaN(v)) {
+            if (v != QueryConstants.NULL_DOUBLE) { // TODO: the existing aggregator doesn't handle
+                                                   // this && !Double.isNaN(v)) {
                 if (count++ == 0) {
                     min = v;
                 } else if (DhDoubleComparisons.lt(v, min)) {
@@ -512,7 +516,8 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         int count = 0;
         for (int ii = 0; ii < values.size(); ++ii) {
             final double v = values.get(ii);
-            if (v != QueryConstants.NULL_DOUBLE) { // TODO: the existing aggregator doesn't handle this && !Double.isNaN(v)) {
+            if (v != QueryConstants.NULL_DOUBLE) { // TODO: the existing aggregator doesn't handle
+                                                   // this && !Double.isNaN(v)) {
                 if (count++ == 0) {
                     min = v;
                 } else if (DhDoubleComparisons.gt(v, min)) {
@@ -526,24 +531,33 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     static String sumFunction(String col) {
         switch (col) {
             case "charCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".sumChar";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".sumChar";
             case "boolCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".sumBool";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".sumBool";
             case "byteCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".sumByte";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".sumByte";
             case "shortCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".sumShort";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".sumShort";
             case "intCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".sumInt";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".sumInt";
             case "bigI":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".sumBigInt";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".sumBigInt";
             case "bigD":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".sumBigDec";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".sumBigDec";
             case "doubleCol":
             case "doubleNanCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".sumDouble";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".sumDouble";
             case "floatCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".sumFloat";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".sumFloat";
             default:
                 return "(long)sum";
         }
@@ -552,11 +566,15 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     static String minFunction(String col) {
         switch (col) {
             case "charCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".minChar(" + col + ")";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".minChar(" + col + ")";
             case "doubleNanCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".minDouble(" + col + ")";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".minDouble(" + col + ")";
             case "Sym":
-                return "(String)" + QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".minObj(" + col + ")";
+                return "(String)"
+                    + QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".minObj(" + col + ")";
             default:
                 return GroovyStaticImports.class.getCanonicalName() + ".min(" + col + ")";
         }
@@ -565,11 +583,15 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     static String maxFunction(String col) {
         switch (col) {
             case "charCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".maxChar(" + col + ")";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".maxChar(" + col + ")";
             case "doubleNanCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".maxDouble(" + col + ")";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".maxDouble(" + col + ")";
             case "Sym":
-                return "(String)" + QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".maxObj(" + col + ")";
+                return "(String)"
+                    + QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".maxObj(" + col + ")";
             default:
                 return GroovyStaticImports.class.getCanonicalName() + ".max(" + col + ")";
         }
@@ -578,11 +600,14 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     static String varFunction(String col) {
         switch (col) {
             case "charCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".varChar(" + col + ")";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".varChar(" + col + ")";
             case "bigI":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".varBigInt(" + col + ")";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".varBigInt(" + col + ")";
             case "bigD":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".varBigDec(" + col + ")";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".varBigDec(" + col + ")";
             default:
                 return "var(" + col + ")";
         }
@@ -601,31 +626,41 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     static String countFunction(String col) {
         switch (col) {
             case "charCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".countChar";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".countChar";
             case "byteCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".countByte";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".countByte";
             case "shortCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".countShort";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".countShort";
             case "intCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".countInt";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".countInt";
             case "bigI":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".countObject";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".countObject";
             case "bigD":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".countObject";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".countObject";
             case "doubleCol":
             case "doubleNanCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".countDouble";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".countDouble";
             case "floatCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".countFloat";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".countFloat";
             case "longCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".countLong";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".countLong";
             default:
                 throw new IllegalArgumentException();
         }
     }
 
     static String absSumFunction(String col, String expr) {
-        final String className = QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName();
+        final String className =
+            QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName();
         switch (col) {
             case "charCol":
                 return className + ".sumChar(" + expr + ")";
@@ -643,9 +678,11 @@ public class QueryTableAggregationTestFormulaStaticMethods {
                 return className + ".absSumBigDec(" + expr + ")";
             case "doubleCol":
             case "doubleNanCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".sumDouble(" + className + ".abs(" + expr + "))";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".sumDouble(" + className + ".abs(" + expr + "))";
             case "floatCol":
-                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".sumFloat(" + className + ".abs(" + expr + "))";
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName()
+                    + ".sumFloat(" + className + ".abs(" + expr + "))";
             default:
                 return "(long)sum(" + className + ".abs(" + expr + "))";
         }

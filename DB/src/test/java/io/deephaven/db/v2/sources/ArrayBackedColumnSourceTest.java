@@ -26,7 +26,7 @@ public class ArrayBackedColumnSourceTest {
 
     @Test
     public void fromByteArray() {
-        check(Type.byteType(), (byte)1, null, (byte)3);
+        check(Type.byteType(), (byte) 1, null, (byte) 3);
     }
 
     @Test
@@ -36,7 +36,7 @@ public class ArrayBackedColumnSourceTest {
 
     @Test
     public void fromShortArray() {
-        check(Type.shortType(), (short)1, null, (short)3);
+        check(Type.shortType(), (short) 1, null, (short) 3);
     }
 
     @Test
@@ -66,7 +66,8 @@ public class ArrayBackedColumnSourceTest {
 
     @Test
     public void fromInstants() {
-        check(ArrayBackedColumnSourceTest::checkInstant, Type.instantType(), Instant.ofEpochMilli(1), null, Instant.ofEpochMilli(3));
+        check(ArrayBackedColumnSourceTest::checkInstant, Type.instantType(),
+            Instant.ofEpochMilli(1), null, Instant.ofEpochMilli(3));
     }
 
     @Test
@@ -92,14 +93,16 @@ public class ArrayBackedColumnSourceTest {
         check(Objects::equals, type, values);
     }
 
-    private static <T> void check(BiPredicate<T, Object> comparison, GenericType<T> type, T... values) {
+    private static <T> void check(BiPredicate<T, Object> comparison, GenericType<T> type,
+        T... values) {
         GenericArray<T> array = GenericArray.of(type, values);
         ArrayBackedColumnSource<?> columnSource = ArrayBackedColumnSource.from(array);
         int ix = 0;
         for (T left : values) {
-            assertThat(columnSource.get(ix++)).matches((Predicate<Object>) right -> comparison.test(left, right));
+            assertThat(columnSource.get(ix++))
+                .matches((Predicate<Object>) right -> comparison.test(left, right));
         }
-        check(comparison, (Type<T>)type, values);
+        check(comparison, (Type<T>) type, values);
     }
 
     private static <T> void check(BiPredicate<T, Object> comparison, Type<T> type, T... values) {
@@ -107,12 +110,14 @@ public class ArrayBackedColumnSourceTest {
         ArrayBackedColumnSource<?> columnSource = ArrayBackedColumnSource.from(array);
         int ix = 0;
         for (T left : values) {
-            assertThat(columnSource.get(ix++)).matches((Predicate<Object>) right -> comparison.test(left, right));
+            assertThat(columnSource.get(ix++))
+                .matches((Predicate<Object>) right -> comparison.test(left, right));
         }
     }
 
     private static boolean checkInstant(Instant instant, Object o) {
         return (instant == null && o == null) ||
-                (instant != null && (o instanceof DBDateTime) && instant.toEpochMilli() == ((DBDateTime)o).getMillis());
+            (instant != null && (o instanceof DBDateTime)
+                && instant.toEpochMilli() == ((DBDateTime) o).getMillis());
     }
 }

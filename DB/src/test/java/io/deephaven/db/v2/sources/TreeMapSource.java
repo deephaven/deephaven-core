@@ -20,16 +20,17 @@ import java.util.function.LongConsumer;
 @AbstractColumnSource.IsSerializable(value = true)
 public class TreeMapSource<T> extends AbstractColumnSource<T> {
     private long lastAdditionTime = LogicalClock.DEFAULT.currentStep();
-    protected final TreeMap<Long,T> data = new TreeMap<>();
-    private TreeMap<Long,T> prevData = new TreeMap<>();
+    protected final TreeMap<Long, T> data = new TreeMap<>();
+    private TreeMap<Long, T> prevData = new TreeMap<>();
 
     public TreeMapSource(Class<T> type) {
         super(type);
     }
-    public TreeMapSource(Class<T> type, Index index,T[] data) {
-        //noinspection unchecked
+
+    public TreeMapSource(Class<T> type, Index index, T[] data) {
+        // noinspection unchecked
         super(convertType(type));
-        add(index,data);
+        add(index, data);
         prevData = this.data;
     }
 
@@ -44,7 +45,7 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
         }
     }
 
-    public synchronized void add(final Index index, T[] vs){
+    public synchronized void add(final Index index, T[] vs) {
         if (groupToRange != null) {
             setGroupToRange(null);
         }
@@ -55,11 +56,13 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
             lastAdditionTime = currentStep;
         }
         if (index.size() != vs.length) {
-            throw new IllegalArgumentException("Index=" + index + ", data(" + vs.length + ")=" + Arrays.toString(vs));
+            throw new IllegalArgumentException(
+                "Index=" + index + ", data(" + vs.length + ")=" + Arrays.toString(vs));
         }
 
         index.forAllLongs(new LongConsumer() {
             private final MutableInt ii = new MutableInt(0);
+
             @Override
             public void accept(final long v) {
                 data.put(v, vs[ii.intValue()]);
@@ -68,7 +71,7 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
         });
     }
 
-    public synchronized void remove(Index index){
+    public synchronized void remove(Index index) {
         if (groupToRange != null) {
             setGroupToRange(null);
         }
@@ -78,7 +81,7 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
             prevData = new TreeMap<>(this.data);
             lastAdditionTime = currentStep;
         }
-        for (final Index.Iterator iterator = index.iterator(); iterator.hasNext(); ) {
+        for (final Index.Iterator iterator = index.iterator(); iterator.hasNext();) {
             this.data.remove(iterator.nextLong());
         }
     }
@@ -91,16 +94,20 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
         // Note: moving to the right, we need to start with rightmost data first.
         final long dir = shiftDelta > 0 ? -1 : 1;
         final long len = endKeyInclusive - startKeyInclusive + 1;
-        for (long offset = dir < 0 ? len - 1 : 0; dir < 0 ? offset >= 0 : offset < len; offset += dir) {
-            data.put(startKeyInclusive + offset + shiftDelta, data.remove(startKeyInclusive + offset));
+        for (long offset = dir < 0 ? len - 1 : 0; dir < 0 ? offset >= 0 : offset < len; offset +=
+            dir) {
+            data.put(startKeyInclusive + offset + shiftDelta,
+                data.remove(startKeyInclusive + offset));
         }
     }
 
     @Override
     public synchronized T get(long index) {
         // If a test asks for a non-existent positive index something is wrong.
-        // We have to accept negative values, because e.g. a join may find no matching right key, in which case it
-        // has an empty redirection index entry that just gets passed through to the inner column source as -1.
+        // We have to accept negative values, because e.g. a join may find no matching right key, in
+        // which case it
+        // has an empty redirection index entry that just gets passed through to the inner column
+        // source as -1.
         if (index >= 0 && !data.containsKey(index))
             throw new IllegalStateException("Asking for a non-existent key: " + index);
         return data.get(index);
@@ -118,22 +125,22 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public byte getByte(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Byte)get(index));
+        return io.deephaven.util.type.TypeUtils.unbox((Byte) get(index));
     }
 
     @Override
     public char getChar(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Character)get(index));
+        return io.deephaven.util.type.TypeUtils.unbox((Character) get(index));
     }
 
     @Override
     public double getDouble(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Double)get(index));
+        return io.deephaven.util.type.TypeUtils.unbox((Double) get(index));
     }
 
     @Override
     public float getFloat(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Float)get(index));
+        return io.deephaven.util.type.TypeUtils.unbox((Float) get(index));
     }
 
     @Override
@@ -143,12 +150,12 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public long getLong(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Long)get(index));
+        return io.deephaven.util.type.TypeUtils.unbox((Long) get(index));
     }
 
     @Override
     public short getShort(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Short)get(index));
+        return io.deephaven.util.type.TypeUtils.unbox((Short) get(index));
     }
 
     @Override
@@ -202,6 +209,5 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public void startTrackingPrevValues() {
-    }
+    public void startTrackingPrevValues() {}
 }

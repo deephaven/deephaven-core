@@ -21,21 +21,18 @@ public class SignalUtils {
     private static final int UNDEFINED_SIGNAL_NUMBER = Integer.MIN_VALUE;
 
     /**
-     * Supported signals.  Be careful when adding new entries - as you can see, signal numbers don't always line up
-     * across operating systems.
+     * Supported signals. Be careful when adding new entries - as you can see, signal numbers don't
+     * always line up across operating systems.
      */
     public enum Signal {
-        SIGINT ( "int",  2,  2,  2  ),
-        SIGTERM( "term", 15, 15, 15 ),
-        SIGQUIT( "quit", 3,  3,  3  ),
-        SIGKILL( "kill", 9,  9,  9  ),
-        SIGSTOP( "stop", 19, 23, 17 ),
-        SIGCONT( "cont", 18, 25, 19 );
+        SIGINT("int", 2, 2, 2), SIGTERM("term", 15, 15, 15), SIGQUIT("quit", 3, 3,
+            3), SIGKILL("kill", 9, 9, 9), SIGSTOP("stop", 19, 23, 17), SIGCONT("cont", 18, 25, 19);
 
         private final String signalName;
         private final int signalNumber;
 
-        Signal(final String signalName, final int linuxSignalNumber, final int solarisSignalNumber, final int macOsSignalNumber) {
+        Signal(final String signalName, final int linuxSignalNumber, final int solarisSignalNumber,
+            final int macOsSignalNumber) {
             this.signalName = signalName;
             switch (OPERATING_SYSTEM) {
                 case LINUX:
@@ -60,7 +57,8 @@ public class SignalUtils {
 
         public int getSignalNumber() {
             if (signalNumber == UNDEFINED_SIGNAL_NUMBER) {
-                throw new UnsupportedOperationException(this + " is undefined on " + OPERATING_SYSTEM);
+                throw new UnsupportedOperationException(
+                    this + " is undefined on " + OPERATING_SYSTEM);
             }
             return signalNumber;
         }
@@ -74,8 +72,10 @@ public class SignalUtils {
      * @return The exit value of the child process.
      */
     @SuppressWarnings("WeakerAccess")
-    public static int sendSignalWithBinKill(final int processId, final String signalName) throws IOException {
-        final ProcessBuilder pb = new ProcessBuilder("/bin/kill", "-s", signalName, Integer.toString(processId));
+    public static int sendSignalWithBinKill(final int processId, final String signalName)
+        throws IOException {
+        final ProcessBuilder pb =
+            new ProcessBuilder("/bin/kill", "-s", signalName, Integer.toString(processId));
         final Process p = pb.start();
 
         try {
@@ -83,7 +83,10 @@ public class SignalUtils {
             p.getInputStream().close();
             p.getOutputStream().close();
         } catch (IOException e) {
-            throw new AssertionError("sendSignalWithBinKill: unexpected exception while closing child process streams: " + e.getMessage(), e);
+            throw new AssertionError(
+                "sendSignalWithBinKill: unexpected exception while closing child process streams: "
+                    + e.getMessage(),
+                e);
         }
 
         while (true) {

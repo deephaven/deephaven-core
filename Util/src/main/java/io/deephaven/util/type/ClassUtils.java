@@ -4,8 +4,8 @@ import org.jetbrains.annotations.NotNull;
 
 public class ClassUtils {
     /**
-     * Gets the specified className, and if it is assignable from the expectedType returns it.  Otherwise throws
-     * a RuntimeException.
+     * Gets the specified className, and if it is assignable from the expectedType returns it.
+     * Otherwise throws a RuntimeException.
      *
      * @param className the class we would like to retrieve
      * @param expectedType the type of class we expect className to be
@@ -13,7 +13,8 @@ public class ClassUtils {
      * @return the Class object for className
      */
     @NotNull
-    static public <T> Class<? extends T> checkedClassForName(final String className, final Class<T> expectedType) {
+    static public <T> Class<? extends T> checkedClassForName(final String className,
+        final Class<T> expectedType) {
         Class<?> resultClass;
         try {
             resultClass = Class.forName(className);
@@ -22,10 +23,11 @@ public class ClassUtils {
         }
 
         if (!expectedType.isAssignableFrom(resultClass)) {
-            throw new RuntimeException("Invalid session class, " + resultClass.getCanonicalName() +  ", does not implement " + expectedType.getCanonicalName());
+            throw new RuntimeException("Invalid session class, " + resultClass.getCanonicalName()
+                + ", does not implement " + expectedType.getCanonicalName());
         }
 
-        //noinspection unchecked
-        return (Class<? extends T>)resultClass;
+        // noinspection unchecked
+        return (Class<? extends T>) resultClass;
     }
 }

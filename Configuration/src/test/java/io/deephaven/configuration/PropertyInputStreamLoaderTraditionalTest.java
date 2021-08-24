@@ -12,7 +12,8 @@ import org.apache.commons.compress.utils.IOUtils;
 
 public class PropertyInputStreamLoaderTraditionalTest extends TestCase {
 
-    private static final PropertyInputStreamLoaderTraditional loader = new PropertyInputStreamLoaderTraditional();
+    private static final PropertyInputStreamLoaderTraditional loader =
+        new PropertyInputStreamLoaderTraditional();
 
     private static InputStream open(String name) {
         return loader.openConfiguration(name);
@@ -33,7 +34,8 @@ public class PropertyInputStreamLoaderTraditionalTest extends TestCase {
     public void testContentFromFile() throws IOException, URISyntaxException {
         // ensure that the resource hello-world.prop is fully scoped out as a filesystem path
         String path = Paths
-            .get(PropertyInputStreamLoaderTraditionalTest.class.getResource("/hello-world.prop").toURI())
+            .get(PropertyInputStreamLoaderTraditionalTest.class.getResource("/hello-world.prop")
+                .toURI())
             .toString();
         final byte[] bytes;
         try (final InputStream in = open(path)) {

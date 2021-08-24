@@ -23,7 +23,8 @@ public class FirstOrLastByAggregationFactory implements AggregationContextFactor
 
     public FirstOrLastByAggregationFactory(boolean isFirst, String exposeRedirection) {
         this.isFirst = isFirst;
-        this.exposeRedirection = exposeRedirection == null ? null : NameValidator.validateColumnName(exposeRedirection);
+        this.exposeRedirection =
+            exposeRedirection == null ? null : NameValidator.validateColumnName(exposeRedirection);
     }
 
     @Override
@@ -32,28 +33,36 @@ public class FirstOrLastByAggregationFactory implements AggregationContextFactor
     }
 
     @Override
-    public AggregationContext makeAggregationContext(@NotNull final Table table, @NotNull final String... groupByColumns) {
-        //noinspection unchecked
+    public AggregationContext makeAggregationContext(@NotNull final Table table,
+        @NotNull final String... groupByColumns) {
+        // noinspection unchecked
         final ChunkSource.WithPrev<Values>[] inputSource = new ChunkSource.WithPrev[1];
         inputSource[0] = null;
 
-        final IterativeChunkedAggregationOperator[] operator = new IterativeChunkedAggregationOperator[1];
-        final String [][] name = new String[1][0];
+        final IterativeChunkedAggregationOperator[] operator =
+            new IterativeChunkedAggregationOperator[1];
+        final String[][] name = new String[1][0];
         name[0] = CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 
         final Set<String> groupBySet = new HashSet<>(Arrays.asList(groupByColumns));
-        final MatchPair[] matchPairs = table.getDefinition().getColumnNames().stream().filter(col -> !groupBySet.contains(col)).map(col -> new MatchPair(col, col)).toArray(MatchPair[]::new);
+        final MatchPair[] matchPairs =
+            table.getDefinition().getColumnNames().stream().filter(col -> !groupBySet.contains(col))
+                .map(col -> new MatchPair(col, col)).toArray(MatchPair[]::new);
 
         if (table.isLive()) {
             if (((BaseTable) table).isStream()) {
-                operator[0] = isFirst ? new StreamFirstChunkedOperator(matchPairs, table) : new StreamLastChunkedOperator(matchPairs, table);
+                operator[0] = isFirst ? new StreamFirstChunkedOperator(matchPairs, table)
+                    : new StreamLastChunkedOperator(matchPairs, table);
             } else if (((BaseTable) table).isAddOnly()) {
-                operator[0] = new AddOnlyFirstOrLastChunkedOperator(isFirst, matchPairs, table, exposeRedirection);
+                operator[0] = new AddOnlyFirstOrLastChunkedOperator(isFirst, matchPairs, table,
+                    exposeRedirection);
             } else {
-                operator[0] = new FirstOrLastChunkedOperator(isFirst, matchPairs, table, exposeRedirection);
+                operator[0] =
+                    new FirstOrLastChunkedOperator(isFirst, matchPairs, table, exposeRedirection);
             }
         } else {
-            operator[0] = new StaticFirstOrLastChunkedOperator(isFirst, matchPairs, table, exposeRedirection);
+            operator[0] =
+                new StaticFirstOrLastChunkedOperator(isFirst, matchPairs, table, exposeRedirection);
         }
 
         return new AggregationContext(operator, name, inputSource);

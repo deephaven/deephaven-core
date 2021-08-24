@@ -15,8 +15,10 @@ import static io.deephaven.db.util.BooleanUtils.TRUE_BOOLEAN_AS_BYTE;
 public class ArrayGenerator {
 
     private static Map<Class, GeneratorWithSpaceSize> generatorWithSize = new ConcurrentHashMap<>();
-    private static Map<Class, Function<Object, ArrayAdapter>> adapterBuilder = new ConcurrentHashMap<>();
-    private static Map<Class, Function<Object, ChunkAdapter>> chunkAdapterBuilder = new ConcurrentHashMap<>();
+    private static Map<Class, Function<Object, ArrayAdapter>> adapterBuilder =
+        new ConcurrentHashMap<>();
+    private static Map<Class, Function<Object, ChunkAdapter>> chunkAdapterBuilder =
+        new ConcurrentHashMap<>();
 
     static {
         generatorWithSize.put(boolean.class, ArrayGenerator::randomBooleans);
@@ -112,7 +114,7 @@ public class ArrayGenerator {
         return result;
     }
 
-    public static Object[] randomObjects(Random random,int size) {
+    public static Object[] randomObjects(Random random, int size) {
         Object[] result = new Object[size];
         for (int i = 0; i < result.length; i++) {
             result[i] = "" + random.nextInt();
@@ -140,7 +142,8 @@ public class ArrayGenerator {
      * @param objectType The type of the elements buit into the array
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values
+     *        that may exist in the result
      * @return An array with random values
      */
     public static Object randomValues(Class objectType, Random random, int size, int spaceSize) {
@@ -150,7 +153,8 @@ public class ArrayGenerator {
     /**
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values
+     *        that may exist in the result
      * @return An array with random values
      */
     public static boolean[] randomBooleans(Random random, int size, int spaceSize) {
@@ -164,7 +168,8 @@ public class ArrayGenerator {
     /**
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values
+     *        that may exist in the result
      * @return An array with random values
      */
     public static byte[] randomBytes(Random random, int size, int spaceSize) {
@@ -174,7 +179,8 @@ public class ArrayGenerator {
     /**
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values
+     *        that may exist in the result
      * @return An array with random values
      */
     public static char[] randomChars(Random random, int size, int spaceSize) {
@@ -184,7 +190,8 @@ public class ArrayGenerator {
     /**
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values
+     *        that may exist in the result
      * @return An array with random values
      */
     public static int[] randomInts(Random random, int size, int spaceSize) {
@@ -194,7 +201,8 @@ public class ArrayGenerator {
     /**
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values
+     *        that may exist in the result
      * @return An array with random values
      */
     public static long[] randomLongs(Random random, int size, int spaceSize) {
@@ -204,7 +212,8 @@ public class ArrayGenerator {
     /**
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values
+     *        that may exist in the result
      * @return An array with random values
      */
     public static short[] randomShorts(Random random, int size, int spaceSize) {
@@ -214,7 +223,8 @@ public class ArrayGenerator {
     /**
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values
+     *        that may exist in the result
      * @return An array with random values
      */
     public static double[] randomDoubles(Random random, int size, int spaceSize) {
@@ -224,7 +234,8 @@ public class ArrayGenerator {
     /**
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values
+     *        that may exist in the result
      * @return An array with random values
      */
     public static float[] randomFloats(Random random, int size, int spaceSize) {
@@ -239,14 +250,17 @@ public class ArrayGenerator {
     /**
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values
+     *        that may exist in the result
      * @return An array with random values
      */
     public static String[] randomStrings(Random random, int size, int spaceSize) {
-        return Arrays.stream(randomInts(random, size, 0, spaceSize)).mapToObj(Integer::toString).toArray(String[]::new);
+        return Arrays.stream(randomInts(random, size, 0, spaceSize)).mapToObj(Integer::toString)
+            .toArray(String[]::new);
     }
 
-    public static boolean[] randomBooleans(Random random, int size, boolean minValue, boolean maxValue) {
+    public static boolean[] randomBooleans(Random random, int size, boolean minValue,
+        boolean maxValue) {
         boolean[] result = new boolean[size];
         if (minValue == maxValue) {
             Arrays.fill(result, minValue);
@@ -288,7 +302,8 @@ public class ArrayGenerator {
         return result;
     }
 
-    public static double[] randomDoubles(Random random, int size, double minValue, double maxValue) {
+    public static double[] randomDoubles(Random random, int size, double minValue,
+        double maxValue) {
         double[] result = new double[size];
         if (maxValue <= 0) {
             maxValue = Double.MAX_VALUE;
@@ -378,17 +393,20 @@ public class ArrayGenerator {
         return result;
     }
 
-    public static long[] indexDataGenerator(Random random, int size, double gapProbability, int maxStep, int maxValue) {
+    public static long[] indexDataGenerator(Random random, int size, double gapProbability,
+        int maxStep, int maxValue) {
         long result[] = new long[size];
         if (size == 0) {
             return result;
         }
-        result[0] = Math.max(0, Math.min(Math.abs(random.nextLong()), maxValue - (maxStep + 1) * size));
+        result[0] =
+            Math.max(0, Math.min(Math.abs(random.nextLong()), maxValue - (maxStep + 1) * size));
 
 
         for (int i = 1; i < result.length; i++) {
             long l = result[i];
-            if (random.nextDouble() < gapProbability && result[i - 1] < maxValue - result.length + i - 2) {
+            if (random.nextDouble() < gapProbability
+                && result[i - 1] < maxValue - result.length + i - 2) {
                 result[i] = result[i - 1] + 2 + random.nextInt(maxStep);
             } else {
                 result[i] = result[i - 1] + 1;
@@ -398,7 +416,9 @@ public class ArrayGenerator {
     }
 
     static public ArrayAdapter getAdapter(Object array) {
-        return adapterBuilder.getOrDefault(array.getClass().getComponentType(), ObjectArrayAdapter::new).apply(array);
+        return adapterBuilder
+            .getOrDefault(array.getClass().getComponentType(), ObjectArrayAdapter::new)
+            .apply(array);
     }
 
     @FunctionalInterface
@@ -631,7 +651,8 @@ public class ArrayGenerator {
     }
 
     static public ChunkAdapter getChunkAdapter(Object chunk) {
-        return chunkAdapterBuilder.getOrDefault(chunk.getClass(), ObjectChunkAdapter::new).apply(chunk);
+        return chunkAdapterBuilder.getOrDefault(chunk.getClass(), ObjectChunkAdapter::new)
+            .apply(chunk);
     }
 
     public interface ChunkAdapter<T> {
@@ -662,7 +683,7 @@ public class ArrayGenerator {
 
         @Override
         public void set(int i, Byte value) {
-            chunk.set(i,value);
+            chunk.set(i, value);
         }
     }
 
@@ -686,7 +707,7 @@ public class ArrayGenerator {
 
         @Override
         public void set(int i, Boolean value) {
-            chunk.set(i,value);
+            chunk.set(i, value);
         }
     }
 
@@ -710,7 +731,7 @@ public class ArrayGenerator {
 
         @Override
         public void set(int i, Character value) {
-            chunk.set(i,value);
+            chunk.set(i, value);
         }
     }
 
@@ -734,7 +755,7 @@ public class ArrayGenerator {
 
         @Override
         public void set(int i, Double value) {
-            chunk.set(i,value);
+            chunk.set(i, value);
         }
     }
 
@@ -758,7 +779,7 @@ public class ArrayGenerator {
 
         @Override
         public void set(int i, Float value) {
-            chunk.set(i,value);
+            chunk.set(i, value);
         }
     }
 
@@ -782,7 +803,7 @@ public class ArrayGenerator {
 
         @Override
         public void set(int i, Integer value) {
-            chunk.set(i,value);
+            chunk.set(i, value);
         }
     }
 
@@ -806,7 +827,7 @@ public class ArrayGenerator {
 
         @Override
         public void set(int i, Long value) {
-            chunk.set(i,value);
+            chunk.set(i, value);
         }
     }
 
@@ -830,7 +851,7 @@ public class ArrayGenerator {
 
         @Override
         public void set(int i, Short value) {
-            chunk.set(i,value);
+            chunk.set(i, value);
         }
     }
 

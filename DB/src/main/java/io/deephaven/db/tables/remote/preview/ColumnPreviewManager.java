@@ -16,18 +16,23 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Converts large data types to Preview types.  Also wraps non-serializable data types to be serializable.
+ * Converts large data types to Preview types. Also wraps non-serializable data types to be
+ * serializable.
  */
 public class ColumnPreviewManager {
     // Maps types pt preview factories from the addPreview method
-    private static final Map<Class<?>, PreviewColumnFactory<?,?>> previewMap = new HashMap<>();
+    private static final Map<Class<?>, PreviewColumnFactory<?, ?>> previewMap = new HashMap<>();
 
     // Factories for arrays and DbArrays
-    private static final PreviewColumnFactory<Object, ArrayPreview> arrayPreviewFactory = new PreviewColumnFactory<>(Object.class, ArrayPreview.class, ArrayPreview::fromArray);
-    private static final PreviewColumnFactory<DbArrayBase, ArrayPreview> dbArrayPreviewFactory = new PreviewColumnFactory<>(DbArrayBase.class, ArrayPreview.class, ArrayPreview::fromDbArray);
+    private static final PreviewColumnFactory<Object, ArrayPreview> arrayPreviewFactory =
+        new PreviewColumnFactory<>(Object.class, ArrayPreview.class, ArrayPreview::fromArray);
+    private static final PreviewColumnFactory<DbArrayBase, ArrayPreview> dbArrayPreviewFactory =
+        new PreviewColumnFactory<>(DbArrayBase.class, ArrayPreview.class,
+            ArrayPreview::fromDbArray);
 
     // Factory for non-serializable types
-    private static final PreviewColumnFactory<Object, DisplayWrapper> nonDisplayableFactory = new PreviewColumnFactory<>(Object.class, DisplayWrapper.class, DisplayWrapper::make);
+    private static final PreviewColumnFactory<Object, DisplayWrapper> nonDisplayableFactory =
+        new PreviewColumnFactory<>(Object.class, DisplayWrapper.class, DisplayWrapper::make);
 
     private static boolean shouldPreview(Class<?> type) {
         return previewMap.containsKey(type);
@@ -36,8 +41,10 @@ public class ColumnPreviewManager {
     private static final Set<String> whiteList;
 
     static {
-        final String whiteListString = Configuration.getInstance().getStringWithDefault("ColumnPreviewManager.whiteListClasses", "");
-        whiteList = Arrays.stream(whiteListString.split(",")).map(String::trim).filter(StringUtils::isNotEmpty).collect(Collectors.toSet());
+        final String whiteListString = Configuration.getInstance()
+            .getStringWithDefault("ColumnPreviewManager.whiteListClasses", "");
+        whiteList = Arrays.stream(whiteListString.split(",")).map(String::trim)
+            .filter(StringUtils::isNotEmpty).collect(Collectors.toSet());
     }
 
     /**
@@ -49,7 +56,8 @@ public class ColumnPreviewManager {
      * @param <S> the source type
      * @param <D> the destination type
      */
-    public static <S,D extends PreviewType> void addPreview(Class<S> sourceType, Class<D> destType, Function<S,D> function) {
+    public static <S, D extends PreviewType> void addPreview(Class<S> sourceType, Class<D> destType,
+        Function<S, D> function) {
         previewMap.put(sourceType, new PreviewColumnFactory<>(sourceType, destType, function));
     }
 
@@ -61,7 +69,8 @@ public class ColumnPreviewManager {
      */
     public static Table applyPreview(final Table table) {
         if (table instanceof HierarchicalTable) {
-            // HierarchicalTable tables do not permit `updateView(...)`, and therefore there is nothing of value that
+            // HierarchicalTable tables do not permit `updateView(...)`, and therefore there is
+            // nothing of value that
             // can be applied in this method. short-circuit away
             return table;
         }
@@ -70,39 +79,43 @@ public class ColumnPreviewManager {
         final List<SelectColumn> selectColumns = new ArrayList<>();
         final Map<String, ? extends ColumnSource> columns = table.getColumnSourceMap();
         final Map<String, String> originalTypes = new HashMap<>();
-        for(String name : columns.keySet()) {
+        for (String name : columns.keySet()) {
             final ColumnSource<?> columnSource = columns.get(name);
             final Class<?> type = columnSource.getType();
-            if(shouldPreview(type)) {
+            if (shouldPreview(type)) {
                 final PreviewColumnFactory factory = previewMap.get(type);
                 selectColumns.add(factory.makeColumn(name));
                 originalTypes.put(name, type.getName());
-            } else if(DbArrayBase.class.isAssignableFrom(type)) {
+            } else if (DbArrayBase.class.isAssignableFrom(type)) {
                 // Always wrap DbArrays
                 selectColumns.add(dbArrayPreviewFactory.makeColumn(name));
                 originalTypes.put(name, type.getName());
-            } else if(type.isArray()) {
+            } else if (type.isArray()) {
                 // Always wrap arrays
                 selectColumns.add(arrayPreviewFactory.makeColumn(name));
                 originalTypes.put(name, type.getName());
-            } else if(!isColumnTypeDisplayable(type) || !io.deephaven.util.type.TypeUtils.isPrimitiveOrSerializable(type)) {
+            } else if (!isColumnTypeDisplayable(type)
+                || !io.deephaven.util.type.TypeUtils.isPrimitiveOrSerializable(type)) {
                 // Always wrap non-displayable and non-serializable types
                 selectColumns.add(nonDisplayableFactory.makeColumn(name));
                 originalTypes.put(name, type.getName());
             }
         }
 
-        if(!selectColumns.isEmpty()) {
-            result = table.updateView(selectColumns.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
-            ((BaseTable)table).copyAttributes(result, BaseTable.CopyAttributeOperation.Preview);
+        if (!selectColumns.isEmpty()) {
+            result = table
+                .updateView(selectColumns.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
+            ((BaseTable) table).copyAttributes(result, BaseTable.CopyAttributeOperation.Preview);
 
             result.setAttribute(Table.PREVIEW_PARENT_TABLE, table);
 
             // Add original types to the column descriptions
             final Object attribute = table.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
 
-            //noinspection unchecked
-            final Map<String, String> columnDescriptions = attribute != null ? new HashMap<>((Map<String, String>) attribute) : new HashMap<>();
+            // noinspection unchecked
+            final Map<String, String> columnDescriptions =
+                attribute != null ? new HashMap<>((Map<String, String>) attribute)
+                    : new HashMap<>();
 
             for (String name : originalTypes.keySet()) {
                 String message = "Preview of type: " + originalTypes.get(name);
@@ -120,14 +133,15 @@ public class ColumnPreviewManager {
     }
 
     /**
-     * Indicates if a column type is displayable by the client.  This is used to screen out unknown classes, unserializable,
-     * and anything else that should not be displayed.
+     * Indicates if a column type is displayable by the client. This is used to screen out unknown
+     * classes, unserializable, and anything else that should not be displayed.
      *
      * @param type the column type
      * @return true if the type can be displayed by the client, false otherwise.
      */
     public static boolean isColumnTypeDisplayable(Class<?> type) {
-        // Generally arrays and DbArrays will be wrapped in an ArrayPreview class.  This check is here for correctness.
+        // Generally arrays and DbArrays will be wrapped in an ArrayPreview class. This check is
+        // here for correctness.
         if (type.isArray() || DbArrayBase.class.isAssignableFrom(type)) {
             // For arrays, we need to check that the component type is displayable
             return isColumnTypeDisplayable(type.getComponentType());
@@ -139,7 +153,10 @@ public class ColumnPreviewManager {
         // String
         // BigInt, BigDecimal
         // DbDateTime
-        return type.isPrimitive() || io.deephaven.util.type.TypeUtils.isBoxedType(type) || io.deephaven.util.type.TypeUtils.isString(type) || io.deephaven.util.type.TypeUtils.isBigNumeric(type) || TypeUtils.isDateTime(type) || isOnWhiteList(type);
+        return type.isPrimitive() || io.deephaven.util.type.TypeUtils.isBoxedType(type)
+            || io.deephaven.util.type.TypeUtils.isString(type)
+            || io.deephaven.util.type.TypeUtils.isBigNumeric(type) || TypeUtils.isDateTime(type)
+            || isOnWhiteList(type);
     }
 
     /**
@@ -155,9 +172,9 @@ public class ColumnPreviewManager {
     private static class PreviewColumnFactory<S, D> {
         private final Class<S> sourceType;
         private final Class<D> destType;
-        private final Function<S,D> function;
+        private final Function<S, D> function;
 
-        PreviewColumnFactory(Class<S> sourceType, Class<D> destType, Function<S,D> function) {
+        PreviewColumnFactory(Class<S> sourceType, Class<D> destType, Function<S, D> function) {
             this.sourceType = sourceType;
             this.destType = destType;
             this.function = function;

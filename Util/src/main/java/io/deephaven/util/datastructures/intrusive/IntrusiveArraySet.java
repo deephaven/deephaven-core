@@ -11,18 +11,18 @@ import java.util.Set;
 /**
  * An intrusive set that uses an array for its backing storage.
  *
- * You can insert, remove, or check for existence in O(1) time.  Clearing the set is O(n); as we need to null out
- * references.
+ * You can insert, remove, or check for existence in O(1) time. Clearing the set is O(n); as we need
+ * to null out references.
  *
- * If you attempt to perform an operation element which is not in this set, but is in another set with the same adapter;
- * then you are going to have a bad time.  Tread carefully.
+ * If you attempt to perform an operation element which is not in this set, but is in another set
+ * with the same adapter; then you are going to have a bad time. Tread carefully.
  *
  * @param <T> the type of the element we are storing.
  */
 public class IntrusiveArraySet<T> implements Set<T> {
     private final Adapter<T> adapter;
     private int size = 0;
-    private T [] storage;
+    private T[] storage;
 
     public IntrusiveArraySet(Adapter<T> adapter, Class<T> elementClass) {
         this(adapter, elementClass, 16);
@@ -31,8 +31,8 @@ public class IntrusiveArraySet<T> implements Set<T> {
     @SuppressWarnings("WeakerAccess")
     public IntrusiveArraySet(Adapter<T> adapter, Class<T> elementClass, int initialCapacity) {
         this.adapter = adapter;
-        //noinspection unchecked
-        storage = (T[])Array.newInstance(elementClass, initialCapacity);
+        // noinspection unchecked
+        storage = (T[]) Array.newInstance(elementClass, initialCapacity);
     }
 
     public void ensureCapacity(int capacity) {
@@ -57,8 +57,8 @@ public class IntrusiveArraySet<T> implements Set<T> {
         if (o == null) {
             return false;
         }
-        //noinspection unchecked
-        final int candidateSlot = adapter.getSlot((T)o);
+        // noinspection unchecked
+        final int candidateSlot = adapter.getSlot((T) o);
         return (candidateSlot >= 0 && candidateSlot < size && storage[candidateSlot] == o);
     }
 
@@ -77,8 +77,9 @@ public class IntrusiveArraySet<T> implements Set<T> {
     @NotNull
     @Override
     public <T1> T1[] toArray(@NotNull T1[] a) {
-        //noinspection unchecked
-        final T[] r = a.length >= size ? (T[])a :(T[])java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), size);
+        // noinspection unchecked
+        final T[] r = a.length >= size ? (T[]) a
+            : (T[]) java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), size);
 
         if (size >= 0) {
             System.arraycopy(storage, 0, r, 0, size);
@@ -87,8 +88,8 @@ public class IntrusiveArraySet<T> implements Set<T> {
             a[size] = null;
         }
 
-        //noinspection unchecked
-        return (T1[])r;
+        // noinspection unchecked
+        return (T1[]) r;
     }
 
     @Override
@@ -114,8 +115,8 @@ public class IntrusiveArraySet<T> implements Set<T> {
         if (o == null) {
             return false;
         }
-        //noinspection unchecked
-        final int candidateSlot = adapter.getSlot((T)o);
+        // noinspection unchecked
+        final int candidateSlot = adapter.getSlot((T) o);
         if (candidateSlot >= 0 && candidateSlot < size && storage[candidateSlot] == o) {
             if (candidateSlot < size - 1) {
                 storage[candidateSlot] = storage[size - 1];
@@ -153,14 +154,13 @@ public class IntrusiveArraySet<T> implements Set<T> {
         int destinationSlot = 0;
 
         for (Object c : collection) {
-            final int slot = adapter.getSlot((T)c);
+            final int slot = adapter.getSlot((T) c);
             // check if it exists in our set
             if (slot >= 0 && slot < size && storage[slot] == c) {
                 if (destinationSlot > slot) {
                     // if we have already retained it, we need not retain it again
                     continue;
-                }
-                else if (destinationSlot == slot) {
+                } else if (destinationSlot == slot) {
                     // it's already where we want it
                     destinationSlot++;
                     continue;
@@ -168,7 +168,7 @@ public class IntrusiveArraySet<T> implements Set<T> {
 
                 // swap c and destination slot
                 storage[slot] = storage[destinationSlot];
-                storage[destinationSlot] = (T)c;
+                storage[destinationSlot] = (T) c;
 
                 adapter.setSlot(storage[destinationSlot], destinationSlot);
                 adapter.setSlot(storage[slot], slot);
@@ -205,6 +205,7 @@ public class IntrusiveArraySet<T> implements Set<T> {
      */
     public interface Adapter<T> {
         int getSlot(T element);
+
         void setSlot(T element, int slot);
     }
 

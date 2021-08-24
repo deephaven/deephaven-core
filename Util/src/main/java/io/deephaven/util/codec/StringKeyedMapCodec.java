@@ -24,8 +24,8 @@ abstract class StringKeyedMapCodec<V> extends MapCodec<String, V> {
     /**
      * Return the size of the values (presuming they are fixed size).
      *
-     * If your values are not fixed size, then you must override the {@link #estimateSize(Map)} method and should throw
-     * an UnsupportedOperationException.
+     * If your values are not fixed size, then you must override the {@link #estimateSize(Map)}
+     * method and should throw an UnsupportedOperationException.
      *
      * @return the size of each encoded value
      */

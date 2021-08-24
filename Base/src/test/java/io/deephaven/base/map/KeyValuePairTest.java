@@ -20,53 +20,57 @@ public class KeyValuePairTest extends TestCase {
         return new KeyValuePair<LongWrapper, TrialClassA>(key, value);
     }
 
-    private static class Reader implements FastArray.ReadExternalFunction<KeyValuePair<LongWrapper, TrialClassA>> {
+    private static class Reader
+        implements FastArray.ReadExternalFunction<KeyValuePair<LongWrapper, TrialClassA>> {
 
         @Override
-        public void readExternal(ObjectInput in, KeyValuePair<LongWrapper, TrialClassA> item) throws IOException, ClassNotFoundException {
+        public void readExternal(ObjectInput in, KeyValuePair<LongWrapper, TrialClassA> item)
+            throws IOException, ClassNotFoundException {
             byte nullByteA = in.readByte();
-//            System.out.println("read nullByteA: " + nullByteA);
+            // System.out.println("read nullByteA: " + nullByteA);
             if (nullByteA == 1) {
-//                System.out.println("item is null");
+                // System.out.println("item is null");
                 item = null;
             } else if (nullByteA == 0) {
 
-                //key
+                // key
                 byte nullByteB = in.readByte();
-//                System.out.println("read nullByteB: " + nullByteB);
+                // System.out.println("read nullByteB: " + nullByteB);
                 if (nullByteB == 1) {
-//                    System.out.println("item.key is null");
+                    // System.out.println("item.key is null");
                     item.setKey(null);
                 } else if (nullByteB == 0) {
                     LongWrapper oldKey = item.getKey();
                     if (oldKey == null) {
-//                        System.out.println("oldKey was null so construct a dummy one");
+                        // System.out.println("oldKey was null so construct a dummy one");
                         oldKey = new LongWrapper();
                         item.setKey(oldKey);
                     }
                     oldKey.readExternal(in);
-//                    System.out.println("read in key\n" + oldKey);
+                    // System.out.println("read in key\n" + oldKey);
                 } else {
-                    throw new IllegalStateException("did not recognize your nullByteB: " + nullByteB);
+                    throw new IllegalStateException(
+                        "did not recognize your nullByteB: " + nullByteB);
                 }
 
-                //value
+                // value
                 byte nullByteC = in.readByte();
-//                System.out.println("read nullByteC: " + nullByteC);
+                // System.out.println("read nullByteC: " + nullByteC);
                 if (nullByteC == 1) {
-//                    System.out.println("item.value is null");
+                    // System.out.println("item.value is null");
                     item.setValue(null);
                 } else if (nullByteC == 0) {
                     TrialClassA oldValue = item.getValue();
                     if (oldValue == null) {
-//                        System.out.println("oldValue was null so construct a dummy one");
+                        // System.out.println("oldValue was null so construct a dummy one");
                         oldValue = new TrialClassA();
                         item.setValue(oldValue);
                     }
                     oldValue.readExternal(in);
-//                    System.out.println("read in value\n" + oldValue);
+                    // System.out.println("read in value\n" + oldValue);
                 } else {
-                    throw new IllegalStateException("did not recognize your nullByteC: " + nullByteC);
+                    throw new IllegalStateException(
+                        "did not recognize your nullByteC: " + nullByteC);
                 }
 
 
@@ -76,40 +80,42 @@ public class KeyValuePairTest extends TestCase {
         }
     }
 
-    private static class Writer implements FastArray.WriteExternalFunction<KeyValuePair<LongWrapper, TrialClassA>> {
+    private static class Writer
+        implements FastArray.WriteExternalFunction<KeyValuePair<LongWrapper, TrialClassA>> {
 
         @Override
-        public void writeExternal(ObjectOutput out, KeyValuePair<LongWrapper, TrialClassA> item) throws IOException {
+        public void writeExternal(ObjectOutput out, KeyValuePair<LongWrapper, TrialClassA> item)
+            throws IOException {
             if (item == null) {
-//                System.out.println("write nullByteA = 1");
-                out.writeByte(1); //nullByteA
+                // System.out.println("write nullByteA = 1");
+                out.writeByte(1); // nullByteA
             } else {
-//                System.out.println("write nullByteA = 0");
-                out.writeByte(0);  //nullByteA
+                // System.out.println("write nullByteA = 0");
+                out.writeByte(0); // nullByteA
 
-                //key
+                // key
                 LongWrapper key = item.getKey();
                 if (key == null) {
-//                    System.out.println("write nullByteB = 1");
-                    out.writeByte(1);    //nullByteB
+                    // System.out.println("write nullByteB = 1");
+                    out.writeByte(1); // nullByteB
                 } else {
-//                    System.out.println("write nullByteB = 0");
-                    out.writeByte(0);    //nullByteB
+                    // System.out.println("write nullByteB = 0");
+                    out.writeByte(0); // nullByteB
 
-//                    System.out.println("write key\n" + key);
+                    // System.out.println("write key\n" + key);
                     key.writeExternal(out);
                 }
 
-                //value
+                // value
                 TrialClassA value = item.getValue();
                 if (value == null) {
-//                    System.out.println("write nullByteC = 1");
-                    out.writeByte(1);    //nullByteC
+                    // System.out.println("write nullByteC = 1");
+                    out.writeByte(1); // nullByteC
                 } else {
-//                    System.out.println("write nullByteC = 0");
-                    out.writeByte(0);    //nullByteC
+                    // System.out.println("write nullByteC = 0");
+                    out.writeByte(0); // nullByteC
 
-//                    System.out.println("write vlue:\n" + value);
+                    // System.out.println("write vlue:\n" + value);
                     value.writeExternal(out);
                 }
             }
@@ -127,11 +133,12 @@ public class KeyValuePairTest extends TestCase {
         long long1 = 978234897L;
         TrialClassA value = new TrialClassA(double1, int1, long1);
 
-        KeyValuePair<LongWrapper, TrialClassA> kvp = new KeyValuePair<LongWrapper, TrialClassA>(key, value);
-        //values in key
+        KeyValuePair<LongWrapper, TrialClassA> kvp =
+            new KeyValuePair<LongWrapper, TrialClassA>(key, value);
+        // values in key
         assertEquals(longKey, kvp.getKey().getVal());
 
-        //values in value
+        // values in value
         assertEquals(double1, kvp.getValue().getDouble1());
         assertEquals(int1, kvp.getValue().getInt1());
         assertEquals(long1, kvp.getValue().getLong1());
@@ -144,17 +151,17 @@ public class KeyValuePairTest extends TestCase {
         assertFalse(kvp1.equals(kvp2));
         assertFalse(kvp2.equals(kvp1));
 
-        //copy it over
+        // copy it over
         kvp2 = kvp1.safeClone();
         assertTrue(kvp1.equals(kvp2));
         assertTrue(kvp2.equals(kvp1));
 
-        //put some other stuff in
+        // put some other stuff in
         kvp1.setValue(FastArrayTest.makeRandomTestObject(myRandom));
         assertFalse(kvp1.equals(kvp2));
         assertFalse(kvp2.equals(kvp1));
 
-        //copy it over again
+        // copy it over again
         kvp1 = kvp2.safeClone();
         assertTrue(kvp1.equals(kvp2));
         assertTrue(kvp2.equals(kvp1));
@@ -167,23 +174,24 @@ public class KeyValuePairTest extends TestCase {
         assertFalse(kvp1.equals(kvp2));
         assertFalse(kvp2.equals(kvp1));
 
-        //copy it over
+        // copy it over
         kvp2.copyValues(kvp1);
         assertTrue(kvp1.equals(kvp2));
         assertTrue(kvp2.equals(kvp1));
 
-        //put some other stuff in
+        // put some other stuff in
         kvp1.setValue(FastArrayTest.makeRandomTestObject(myRandom));
         assertFalse(kvp1.equals(kvp2));
         assertFalse(kvp2.equals(kvp1));
 
-        //copy it over again
+        // copy it over again
         kvp1.copyValues(kvp2);
         assertTrue(kvp1.equals(kvp2));
         assertTrue(kvp2.equals(kvp1));
     }
 
-    public void checkExternalization(KeyValuePair<LongWrapper, TrialClassA> kvpInput, KeyValuePair<LongWrapper, TrialClassA> kvpReceiver) throws Exception {
+    public void checkExternalization(KeyValuePair<LongWrapper, TrialClassA> kvpInput,
+        KeyValuePair<LongWrapper, TrialClassA> kvpReceiver) throws Exception {
         if (kvpInput == null) {
             fail("writing from a null kvpInput");
         }
@@ -203,29 +211,33 @@ public class KeyValuePairTest extends TestCase {
         if (kvpInput == null) {
             assertTrue(kvpReceiver == null);
         } else {
-//            System.out.println("kvpInput:\n" + kvpInput);
-//            System.out.println("kvpReceiver:\n" + kvpReceiver);
+            // System.out.println("kvpInput:\n" + kvpInput);
+            // System.out.println("kvpReceiver:\n" + kvpReceiver);
             assertTrue(kvpInput.equals(kvpReceiver));
             assertTrue(kvpReceiver.equals(kvpInput));
         }
     }
 
     public void testExternalizationNullInputsNullReceiver() throws Exception {
-        KeyValuePair<LongWrapper, TrialClassA> kvpInput = new KeyValuePair<LongWrapper, TrialClassA>();
-        KeyValuePair<LongWrapper, TrialClassA> kvpReceiver = new KeyValuePair<LongWrapper, TrialClassA>();
+        KeyValuePair<LongWrapper, TrialClassA> kvpInput =
+            new KeyValuePair<LongWrapper, TrialClassA>();
+        KeyValuePair<LongWrapper, TrialClassA> kvpReceiver =
+            new KeyValuePair<LongWrapper, TrialClassA>();
         checkExternalization(kvpInput, kvpReceiver);
     }
 
     public void testExternalizationNullInputsValidReceiver() throws Exception {
         Random myRandom = new Random(89324L);
-        KeyValuePair<LongWrapper, TrialClassA> kvpInput = new KeyValuePair<LongWrapper, TrialClassA>();
+        KeyValuePair<LongWrapper, TrialClassA> kvpInput =
+            new KeyValuePair<LongWrapper, TrialClassA>();
         KeyValuePair<LongWrapper, TrialClassA> kvpReceiver = makeRandomKvp(myRandom);
         checkExternalization(kvpInput, kvpReceiver);
     }
 
     public void testExternalizationValidInputsNullReceiver() throws Exception {
         Random myRandom = new Random(89324L);
-        KeyValuePair<LongWrapper, TrialClassA> kvpReceiver = new KeyValuePair<LongWrapper, TrialClassA>();
+        KeyValuePair<LongWrapper, TrialClassA> kvpReceiver =
+            new KeyValuePair<LongWrapper, TrialClassA>();
         KeyValuePair<LongWrapper, TrialClassA> kvpInput = makeRandomKvp(myRandom);
         checkExternalization(kvpInput, kvpReceiver);
     }

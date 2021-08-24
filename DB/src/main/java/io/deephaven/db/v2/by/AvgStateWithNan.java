@@ -21,21 +21,21 @@ class AvgStateWithNan extends AvgState {
         if (nanCount > 0) {
             return Double.NaN;
         }
-        return runningSum/nonNullCount;
+        return runningSum / nonNullCount;
     }
 
     @Override
     void savePrevious() {
         super.savePrevious();
-        ((AvgStateWithNan)prev()).nanCount = nanCount;
+        ((AvgStateWithNan) prev()).nanCount = nanCount;
     }
 
     @Override
     public String toString() {
         return "Avg{" +
-                "sum=" + runningSum +
-                ", nonNull=" + nonNullCount +
-                ", nan=" + nanCount +
-                '}';
+            "sum=" + runningSum +
+            ", nonNull=" + nonNullCount +
+            ", nan=" + nanCount +
+            '}';
     }
 }

@@ -6,14 +6,14 @@ package io.deephaven.util.audit;
  * namely {@link AuditEvent#getEvent()} and {@link AuditEvent#getDetails()}.
  */
 public interface AuditEventLoggerBasic {
-  void log(String event, String details);
+    void log(String event, String details);
 
-  enum Null implements AuditEventLoggerBasic {
-    INSTANCE;
+    enum Null implements AuditEventLoggerBasic {
+        INSTANCE;
 
-    @Override
-    public void log(String event, String details) {
-      // ignore
+        @Override
+        public void log(String event, String details) {
+            // ignore
+        }
     }
-  }
 }

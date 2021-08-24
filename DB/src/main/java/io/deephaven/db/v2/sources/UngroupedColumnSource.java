@@ -55,38 +55,51 @@ public abstract class UngroupedColumnSource<T> extends AbstractColumnSource<T> {
             return ((AggregateColumnSource) column).ungrouped();
         }
         if (DbArray.class.isAssignableFrom(column.getType())) {
-            if (column.getComponentType() == Byte.class || column.getComponentType() == byte.class) {
+            if (column.getComponentType() == Byte.class
+                || column.getComponentType() == byte.class) {
                 return new UngroupedBoxedByteDbArrayColumnSource(column);
-            } else if (column.getComponentType() == Character.class || column.getComponentType() == char.class) {
+            } else if (column.getComponentType() == Character.class
+                || column.getComponentType() == char.class) {
                 return new UngroupedBoxedCharDbArrayColumnSource(column);
-            } else if (column.getComponentType() == Double.class || column.getComponentType() == double.class) {
+            } else if (column.getComponentType() == Double.class
+                || column.getComponentType() == double.class) {
                 return new UngroupedBoxedDoubleDbArrayColumnSource(column);
-            } else if (column.getComponentType() == Float.class || column.getComponentType() == float.class) {
+            } else if (column.getComponentType() == Float.class
+                || column.getComponentType() == float.class) {
                 return new UngroupedBoxedFloatDbArrayColumnSource(column);
-            } else if (column.getComponentType() == Integer.class || column.getComponentType() == int.class) {
+            } else if (column.getComponentType() == Integer.class
+                || column.getComponentType() == int.class) {
                 return new UngroupedBoxedIntDbArrayColumnSource(column);
-            } else if (column.getComponentType() == Long.class || column.getComponentType() == long.class) {
+            } else if (column.getComponentType() == Long.class
+                || column.getComponentType() == long.class) {
                 return new UngroupedBoxedLongDbArrayColumnSource(column);
-            } else if (column.getComponentType() == Short.class || column.getComponentType() == short.class) {
+            } else if (column.getComponentType() == Short.class
+                || column.getComponentType() == short.class) {
                 return new UngroupedBoxedShortDbArrayColumnSource(column);
-            }  else {
+            } else {
                 return new UngroupedDbArrayColumnSource(column);
             }
-        }
-        else if (DbArrayBase.class.isAssignableFrom(column.getType())) {
-            if (column.getComponentType() == Byte.class || column.getComponentType() == byte.class) {
+        } else if (DbArrayBase.class.isAssignableFrom(column.getType())) {
+            if (column.getComponentType() == Byte.class
+                || column.getComponentType() == byte.class) {
                 return new UngroupedByteDbArrayColumnSource(column);
-            } else if (column.getComponentType() == Character.class || column.getComponentType() == char.class) {
+            } else if (column.getComponentType() == Character.class
+                || column.getComponentType() == char.class) {
                 return new UngroupedCharDbArrayColumnSource(column);
-            } else if (column.getComponentType() == Double.class || column.getComponentType() == double.class) {
+            } else if (column.getComponentType() == Double.class
+                || column.getComponentType() == double.class) {
                 return new UngroupedDoubleDbArrayColumnSource(column);
-            } else if (column.getComponentType() == Float.class || column.getComponentType() == float.class) {
+            } else if (column.getComponentType() == Float.class
+                || column.getComponentType() == float.class) {
                 return new UngroupedFloatDbArrayColumnSource(column);
-            } else if (column.getComponentType() == Integer.class || column.getComponentType() == int.class) {
+            } else if (column.getComponentType() == Integer.class
+                || column.getComponentType() == int.class) {
                 return new UngroupedIntDbArrayColumnSource(column);
-            } else if (column.getComponentType() == Long.class || column.getComponentType() == long.class) {
+            } else if (column.getComponentType() == Long.class
+                || column.getComponentType() == long.class) {
                 return new UngroupedLongDbArrayColumnSource(column);
-            } else if (column.getComponentType() == Short.class || column.getComponentType() == short.class) {
+            } else if (column.getComponentType() == Short.class
+                || column.getComponentType() == short.class) {
                 return new UngroupedShortDbArrayColumnSource(column);
             } else {
                 return new UngroupedDbArrayColumnSource(column);
@@ -96,7 +109,7 @@ public abstract class UngroupedColumnSource<T> extends AbstractColumnSource<T> {
                 return new UngroupedByteArrayColumnSource(column);
             } else if (column.getComponentType() == char.class) {
                 return new UngroupedCharArrayColumnSource(column);
-            } else if ( column.getComponentType() == double.class) {
+            } else if (column.getComponentType() == double.class) {
                 return new UngroupedDoubleArrayColumnSource(column);
             } else if (column.getComponentType() == float.class) {
                 return new UngroupedFloatArrayColumnSource(column);
@@ -108,8 +121,7 @@ public abstract class UngroupedColumnSource<T> extends AbstractColumnSource<T> {
                 return new UngroupedShortArrayColumnSource(column);
             } else if (column.getComponentType() == boolean.class) {
                 return new UngroupedBooleanArrayColumnSource(column);
-            }
-            else if (column.getComponentType() == Byte.class) {
+            } else if (column.getComponentType() == Byte.class) {
                 return new UngroupedBoxedByteArrayColumnSource(column);
             } else if (column.getComponentType() == Character.class) {
                 return new UngroupedBoxedCharArrayColumnSource(column);
@@ -129,6 +141,7 @@ public abstract class UngroupedColumnSource<T> extends AbstractColumnSource<T> {
                 return new UngroupedArrayColumnSource(column);
             }
         }
-        throw new UnsupportedOperationException("column.getType() = " + column.getType() + " column.getClass() = " + column.getClass());
+        throw new UnsupportedOperationException(
+            "column.getType() = " + column.getType() + " column.getClass() = " + column.getClass());
     }
 }

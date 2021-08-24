@@ -22,27 +22,30 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public class UpdatableTable extends QueryTable implements LiveTable {
 
     /**
-     * Interface provided to updater functions that allows index changes to be recorded for propagation.
+     * Interface provided to updater functions that allows index changes to be recorded for
+     * propagation.
      */
     public interface IndexChangeRecorder {
 
         /**
-         * Flag key as an addition (or a modification if previously removed in this cycle). Must only be called in an
-         * updater function.
+         * Flag key as an addition (or a modification if previously removed in this cycle). Must
+         * only be called in an updater function.
          *
          * @param key The key
          */
         void addIndex(long key);
 
         /**
-         * Flag key as a removal (if it wasn't added on this cycle). Must only be called in an updater function.
+         * Flag key as a removal (if it wasn't added on this cycle). Must only be called in an
+         * updater function.
          *
          * @param key The key
          */
         void removeIndex(long key);
 
         /**
-         * Flag key as an modification (unless it was added this cycle). Must only be called in an  updater function.
+         * Flag key as an modification (unless it was added this cycle). Must only be called in an
+         * updater function.
          *
          * @param key The key
          */
@@ -60,13 +63,16 @@ public class UpdatableTable extends QueryTable implements LiveTable {
 
     private final IndexChangeRecorder indexChangeRecorder = new IndexChangeRecorderImpl();
 
-    private final TLongSet addedSet = new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
-    private final TLongSet removedSet = new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
-    private final TLongSet modifiedSet = new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
+    private final TLongSet addedSet =
+        new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
+    private final TLongSet removedSet =
+        new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
+    private final TLongSet modifiedSet =
+        new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
 
     public UpdatableTable(@NotNull final Index index,
-                          @NotNull final Map<String, ? extends ColumnSource> nameToColumnSource,
-                          @NotNull final Updater updater) {
+        @NotNull final Map<String, ? extends ColumnSource> nameToColumnSource,
+        @NotNull final Updater updater) {
         super(index, nameToColumnSource);
         this.updater = updater;
     }
@@ -75,7 +81,8 @@ public class UpdatableTable extends QueryTable implements LiveTable {
 
         @Override
         public void addIndex(final long key) {
-            // if a key is removed and then added back before a refresh, it looks like it was modified
+            // if a key is removed and then added back before a refresh, it looks like it was
+            // modified
             if (removedSet.remove(key)) {
                 modifiedSet.add(key);
             } else {

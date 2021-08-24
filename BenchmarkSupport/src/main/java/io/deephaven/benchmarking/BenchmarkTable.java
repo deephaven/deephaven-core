@@ -12,19 +12,20 @@ import java.io.File;
 @ScriptApi
 public interface BenchmarkTable {
     /**
-     * Reset any internal state of the factory,  ie. RNGs
+     * Reset any internal state of the factory, ie. RNGs
      */
     @ScriptApi
     void reset();
 
     /**
-     * Clean up any existing data.  Do NOT change any RNG states.
+     * Clean up any existing data. Do NOT change any RNG states.
      */
     void cleanup();
 
 
     /**
      * Generates the table
+     * 
      * @param resetRNG when true resets the random number generator
      */
     @ScriptApi

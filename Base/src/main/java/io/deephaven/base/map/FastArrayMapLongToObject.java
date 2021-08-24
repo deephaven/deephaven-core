@@ -16,14 +16,14 @@ import java.io.ObjectOutput;
 import java.util.Arrays;
 
 public class FastArrayMapLongToObject<V extends Externalizable & Copyable<V>>
-        implements Copyable<FastArrayMapLongToObject<V>> {
+    implements Copyable<FastArrayMapLongToObject<V>> {
 
     private FastArray<KeyValuePairLongToObject<V>> array;
 
-    public FastArrayMapLongToObject() {
-    }
+    public FastArrayMapLongToObject() {}
 
-    public FastArrayMapLongToObject(final Function.Nullary<? extends KeyValuePairLongToObject<V>> newInstance) {
+    public FastArrayMapLongToObject(
+        final Function.Nullary<? extends KeyValuePairLongToObject<V>> newInstance) {
         array = new FastArray<KeyValuePairLongToObject<V>>(newInstance);
     }
 
@@ -40,13 +40,13 @@ public class FastArrayMapLongToObject<V extends Externalizable & Copyable<V>>
     }
 
     private int findThisKeyIndex(long key) {
-        //todo write this to be faster with binary search
+        // todo write this to be faster with binary search
         for (int i = 0; i < array.getLength(); i++) {
             if (array.getUnsafeArray()[i].getKey() == key) {
                 return i;
             }
         }
-        return -1; //could not find your key
+        return -1; // could not find your key
     }
 
     public boolean containsKey(long key) {
@@ -69,7 +69,7 @@ public class FastArrayMapLongToObject<V extends Externalizable & Copyable<V>>
             array.getUnsafeArray()[index].setValue(value);
             return oldValue;
         } else {
-            KeyValuePairLongToObject<V> newItem = new KeyValuePairLongToObject<V>(key, value); //ALLOCATION
+            KeyValuePairLongToObject<V> newItem = new KeyValuePairLongToObject<V>(key, value); // ALLOCATION
             insertNewlyAllocatedItemIntoArray(newItem);
             return null;
         }
@@ -89,7 +89,7 @@ public class FastArrayMapLongToObject<V extends Externalizable & Copyable<V>>
         if (index >= 0) {
             V oldValue = array.getUnsafeArray()[index].getValue();
             array.removeThisIndex(index);
-            //this just moves all the values ahead one slot so we should still be sorted still
+            // this just moves all the values ahead one slot so we should still be sorted still
             return oldValue;
         } else {
             return null;
@@ -107,10 +107,13 @@ public class FastArrayMapLongToObject<V extends Externalizable & Copyable<V>>
     }
 
 
-    public static <V extends Externalizable & Copyable<V>> void writeExternal(final FastArrayMapLongToObject<V> THIS, ObjectOutput out,
-                                                                              FastArray.WriteExternalFunction<KeyValuePairLongToObject<V>> writeExternalFunction) throws IOException {
+    public static <V extends Externalizable & Copyable<V>> void writeExternal(
+        final FastArrayMapLongToObject<V> THIS, ObjectOutput out,
+        FastArray.WriteExternalFunction<KeyValuePairLongToObject<V>> writeExternalFunction)
+        throws IOException {
         if (THIS == null) {
-            throw new IllegalArgumentException("FastArrayMapLongToObject.writeExternal(): THIS was null and is not supported");
+            throw new IllegalArgumentException(
+                "FastArrayMapLongToObject.writeExternal(): THIS was null and is not supported");
         }
         out.writeInt(THIS.array.getLength());
         for (int i = 0; i < THIS.array.getLength(); ++i) {
@@ -118,10 +121,13 @@ public class FastArrayMapLongToObject<V extends Externalizable & Copyable<V>>
         }
     }
 
-    public static <V extends Externalizable & Copyable<V>> void readExternal(final FastArrayMapLongToObject<V> THIS, ObjectInput in,
-                                                                             FastArray.ReadExternalFunction<KeyValuePairLongToObject<V>> readExternalFunction) throws IOException, ClassNotFoundException {
+    public static <V extends Externalizable & Copyable<V>> void readExternal(
+        final FastArrayMapLongToObject<V> THIS, ObjectInput in,
+        FastArray.ReadExternalFunction<KeyValuePairLongToObject<V>> readExternalFunction)
+        throws IOException, ClassNotFoundException {
         if (THIS == null) {
-            throw new IllegalArgumentException("FastArrayMapLongToObject.readExternal(): THIS was null and is not supported");
+            throw new IllegalArgumentException(
+                "FastArrayMapLongToObject.readExternal(): THIS was null and is not supported");
         }
         THIS.array.quickReset();
         final int len = in.readInt();
@@ -133,12 +139,15 @@ public class FastArrayMapLongToObject<V extends Externalizable & Copyable<V>>
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof FastArrayMapLongToObject)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof FastArrayMapLongToObject))
+            return false;
 
         FastArrayMapLongToObject that = (FastArrayMapLongToObject) o;
 
-        if (array != null ? !array.equals(that.array) : that.array != null) return false;
+        if (array != null ? !array.equals(that.array) : that.array != null)
+            return false;
 
         return true;
     }
@@ -149,7 +158,7 @@ public class FastArrayMapLongToObject<V extends Externalizable & Copyable<V>>
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return toStringXml("");
     }
 
@@ -171,7 +180,8 @@ public class FastArrayMapLongToObject<V extends Externalizable & Copyable<V>>
 
     @Override
     public FastArrayMapLongToObject<V> safeClone() {
-        FastArrayMapLongToObject<V> result = new FastArrayMapLongToObject<V>(array.getNewInstance());
+        FastArrayMapLongToObject<V> result =
+            new FastArrayMapLongToObject<V>(array.getNewInstance());
         for (int i = 0; i < array.getLength(); i++) {
             KeyValuePairLongToObject<V> pair = array.getUnsafeArray()[i];
             result.put(pair.getKey(), pair.getValue());

@@ -49,28 +49,29 @@ public class TestAggregatedSelect extends TestCase {
         FileUtils.deleteRecursively(tableDirectory);
 
         TableDefinition tableDefinition = TableDefinition.of(
-                ColumnDefinition.ofString("USym"),
-                ColumnDefinition.ofDouble("Bid"),
-                ColumnDefinition.ofDouble("BidSize"));
+            ColumnDefinition.ofString("USym"),
+            ColumnDefinition.ofDouble("Bid"),
+            ColumnDefinition.ofDouble("BidSize"));
 
         final int size = 40;
 
-        String [] symbol = new String[size];
-        double [] bid = new double[size];
-        double [] bidSize = new double[size];
+        String[] symbol = new String[size];
+        double[] bid = new double[size];
+        double[] bidSize = new double[size];
 
         for (int ii = 0; ii < size; ++ii) {
-            symbol[ii] =  (ii < 8) ? "ABC" : "XYZ";
-            bid[ii] =  (ii < 15) ? 98 : 99;
-            bidSize[ii] =  ii;
+            symbol[ii] = (ii < 8) ? "ABC" : "XYZ";
+            bid[ii] = (ii < 15) ? 98 : 99;
+            bidSize[ii] = ii;
         }
 
         tableDirectory.mkdirs();
         final File dest = new File(tableDirectory, "Table.parquet");
         ParquetTools.writeTable(
-                newTable(stringCol("USym", symbol), doubleCol("Bid", bid), doubleCol("BidSize", bidSize)),
-                dest,
-                tableDefinition);
+            newTable(stringCol("USym", symbol), doubleCol("Bid", bid),
+                doubleCol("BidSize", bidSize)),
+            dest,
+            tableDefinition);
         return ParquetTools.readTable(dest);
     }
 
@@ -82,8 +83,8 @@ public class TestAggregatedSelect extends TestCase {
 
     double avgConsecutive(int start, int end) {
         double count = (end - start) + 1;
-        double sumEnd = (end*(end+1)) / 2;
-        double sumStart = (start*(start+1)) / 2;
+        double sumEnd = (end * (end + 1)) / 2;
+        double sumStart = (start * (start + 1)) / 2;
         return (sumEnd - sumStart) / count;
     }
 
@@ -91,9 +92,8 @@ public class TestAggregatedSelect extends TestCase {
         Table table = createTestTable();
         Table selectedTable = table.select();
 
-        String [] colNames = {"USym", "Bid", "BidSize"};
-        for (String colName : colNames)
-        {
+        String[] colNames = {"USym", "Bid", "BidSize"};
+        for (String colName : colNames) {
             DataColumn dcFresh = table.getColumn(colName);
             DataColumn dcSelected = selectedTable.getColumn(colName);
             TestCase.assertEquals(dcFresh.getType(), dcSelected.getType());
@@ -119,8 +119,7 @@ public class TestAggregatedSelect extends TestCase {
         t2 = t1.select();
 
         String[] colNames = {"Bid", "USym"};
-        for (String colName : colNames)
-        {
+        for (String colName : colNames) {
             DataColumn dcFresh = t1.getColumn(colName);
             DataColumn dcSelected = t2.getColumn(colName);
             TestCase.assertEquals(dcFresh.getType(), dcSelected.getType());
@@ -135,8 +134,7 @@ public class TestAggregatedSelect extends TestCase {
 
         Table s1s = s1.select();
         colNames[0] = "BidSize";
-        for (String colName : colNames)
-        {
+        for (String colName : colNames) {
             DataColumn dcFresh = s1.getColumn(colName);
             DataColumn dcSelected = s1s.getColumn(colName);
             TestCase.assertEquals(dcFresh.getType(), dcSelected.getType());
@@ -179,18 +177,19 @@ public class TestAggregatedSelect extends TestCase {
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
         objectOutputStream.writeObject(toBeSerialized);
 
-        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+        ByteArrayInputStream byteArrayInputStream =
+            new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
         ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
-        Table result = (Table)objectInputStream.readObject();
+        Table result = (Table) objectInputStream.readObject();
 
         TableTools.show(result);
 
         dumpColumn(result.getColumn("Bid"));
         dumpColumn(result.getColumn("BidSize"));
 
-        //noinspection unchecked
+        // noinspection unchecked
         DataColumn<DbDoubleArray> bidColumn = result.getColumn("Bid");
-        //noinspection unchecked
+        // noinspection unchecked
         DataColumn<DbArray<DbDoubleArray>> bidSizeColumn = result.getColumn("BidSize");
 
         TestCase.assertTrue(DbDoubleArray.class.isAssignableFrom(bidColumn.getType()));
@@ -202,8 +201,8 @@ public class TestAggregatedSelect extends TestCase {
         TestCase.assertTrue(DbDoubleArray.class.isAssignableFrom(bidSizeColumn.getComponentType()));
         TestCase.assertEquals(2, bidSizeColumn.size());
 
-        int [] expectedSize = { 1, 2 };
-        for (int ii = 0; ii < bidColumn.size(); ++ii)  {
+        int[] expectedSize = {1, 2};
+        for (int ii = 0; ii < bidColumn.size(); ++ii) {
             DbDoubleArray bidArray = bidColumn.get(ii);
             DbArray<DbDoubleArray> bidSizeArray = bidSizeColumn.get(ii);
 
@@ -211,17 +210,20 @@ public class TestAggregatedSelect extends TestCase {
             TestCase.assertEquals(expectedSize[ii], bidSizeArray.size());
 
             TestCase.assertTrue(double.class.isAssignableFrom(bidArray.getComponentType()));
-            TestCase.assertTrue(DbDoubleArray.class.isAssignableFrom(bidSizeArray.getComponentType()));
+            TestCase
+                .assertTrue(DbDoubleArray.class.isAssignableFrom(bidSizeArray.getComponentType()));
 
             for (int jj = 0; jj < bidSizeArray.size(); ++jj) {
                 DbDoubleArray bidSizeInnerArray = bidSizeArray.get(jj);
-                TestCase.assertTrue(double.class.isAssignableFrom(bidSizeInnerArray.getComponentType()));
+                TestCase.assertTrue(
+                    double.class.isAssignableFrom(bidSizeInnerArray.getComponentType()));
             }
         }
 
         TestCase.assertEquals(98.0, DoubleNumericPrimitives.avg(bidColumn.get(0)));
         TestCase.assertEquals(98.5, DoubleNumericPrimitives.avg(bidColumn.get(1)));
-        TestCase.assertEquals(avgConsecutive(0, 7), DoubleNumericPrimitives.avg(bidSizeColumn.get(0).get(0)));
+        TestCase.assertEquals(avgConsecutive(0, 7),
+            DoubleNumericPrimitives.avg(bidSizeColumn.get(0).get(0)));
 
         Table checkPrimitives = result.update("BidAvg=avg(Bid)");
         TableTools.show(checkPrimitives);
@@ -229,18 +231,15 @@ public class TestAggregatedSelect extends TestCase {
 
     private void dumpColumn(DataColumn dc) {
         boolean isArray = DbArrayBase.class.isAssignableFrom(dc.getType());
-        System.out.println("Column Type: " + dc.getType().toString() + (isArray ? " (Array)" : "") + ", ComponentType: " + dc.getComponentType());
+        System.out.println("Column Type: " + dc.getType().toString() + (isArray ? " (Array)" : "")
+            + ", ComponentType: " + dc.getComponentType());
 
-        for (int ii = 0; ii < dc.size(); ++ii)
-        {
+        for (int ii = 0; ii < dc.size(); ++ii) {
             String prefix = dc.getName() + "[" + ii + "]";
-            if (isArray)
-            {
-                DbArrayBase dbArrayBase = (DbArrayBase)dc.get(ii);
+            if (isArray) {
+                DbArrayBase dbArrayBase = (DbArrayBase) dc.get(ii);
                 dumpArray(prefix, dbArrayBase);
-            }
-            else
-            {
+            } else {
                 System.out.println(prefix + ":" + dc.get(ii).toString());
             }
         }
@@ -249,8 +248,10 @@ public class TestAggregatedSelect extends TestCase {
     private void dumpArray(String prefix, DbArrayBase dbArrayBase) {
         System.out.println(prefix + ": Array of " + dbArrayBase.getComponentType().toString());
         String prefixsp = new String(new char[prefix.length()]).replace('\0', ' ');
-        final boolean containsArrays = DbArrayBase.class.isAssignableFrom(dbArrayBase.getComponentType());
-        final ArrayUtils.ArrayAccessor<?> arrayAccessor = ArrayUtils.getArrayAccessor(dbArrayBase.toArray());
+        final boolean containsArrays =
+            DbArrayBase.class.isAssignableFrom(dbArrayBase.getComponentType());
+        final ArrayUtils.ArrayAccessor<?> arrayAccessor =
+            ArrayUtils.getArrayAccessor(dbArrayBase.toArray());
         for (int jj = 0; jj < dbArrayBase.size(); ++jj) {
             if (containsArrays) {
                 dumpArray(prefix + "[" + jj + "] ", (DbArrayBase) arrayAccessor.get(jj));

@@ -8,44 +8,43 @@ import jsinterop.annotations.JsType;
 
 @JsType(
     isNative = true,
-    name =
-        "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.DictionaryEncoding",
+    name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.DictionaryEncoding",
     namespace = JsPackage.GLOBAL)
 public class DictionaryEncoding {
-  public static native void addDictionaryKind(Builder builder, int dictionaryKind);
+    public static native void addDictionaryKind(Builder builder, int dictionaryKind);
 
-  public static native void addId(Builder builder, Long id);
+    public static native void addId(Builder builder, Long id);
 
-  public static native void addIndexType(Builder builder, double indexTypeOffset);
+    public static native void addIndexType(Builder builder, double indexTypeOffset);
 
-  public static native void addIsOrdered(Builder builder, boolean isOrdered);
+    public static native void addIsOrdered(Builder builder, boolean isOrdered);
 
-  public static native double endDictionaryEncoding(Builder builder);
+    public static native double endDictionaryEncoding(Builder builder);
 
-  public static native DictionaryEncoding getRootAsDictionaryEncoding(
-      ByteBuffer bb, DictionaryEncoding obj);
+    public static native DictionaryEncoding getRootAsDictionaryEncoding(
+        ByteBuffer bb, DictionaryEncoding obj);
 
-  public static native DictionaryEncoding getRootAsDictionaryEncoding(ByteBuffer bb);
+    public static native DictionaryEncoding getRootAsDictionaryEncoding(ByteBuffer bb);
 
-  public static native DictionaryEncoding getSizePrefixedRootAsDictionaryEncoding(
-      ByteBuffer bb, DictionaryEncoding obj);
+    public static native DictionaryEncoding getSizePrefixedRootAsDictionaryEncoding(
+        ByteBuffer bb, DictionaryEncoding obj);
 
-  public static native DictionaryEncoding getSizePrefixedRootAsDictionaryEncoding(ByteBuffer bb);
+    public static native DictionaryEncoding getSizePrefixedRootAsDictionaryEncoding(ByteBuffer bb);
 
-  public static native void startDictionaryEncoding(Builder builder);
+    public static native void startDictionaryEncoding(Builder builder);
 
-  public ByteBuffer bb;
-  public double bb_pos;
+    public ByteBuffer bb;
+    public double bb_pos;
 
-  public native DictionaryEncoding __init(double i, ByteBuffer bb);
+    public native DictionaryEncoding __init(double i, ByteBuffer bb);
 
-  public native int dictionaryKind();
+    public native int dictionaryKind();
 
-  public native Long id();
+    public native Long id();
 
-  public native Int indexType();
+    public native Int indexType();
 
-  public native Int indexType(Int obj);
+    public native Int indexType(Int obj);
 
-  public native boolean isOrdered();
+    public native boolean isOrdered();
 }

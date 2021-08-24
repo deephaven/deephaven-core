@@ -12,6 +12,7 @@ public interface ConsoleModule {
     @IntoSet
     BindableService bindConsoleServiceImpl(ConsoleServiceGrpcImpl consoleService);
 
-    @Binds @IntoSet
+    @Binds
+    @IntoSet
     TicketResolver bindConsoleTicketResolver(ScopeTicketResolver resolver);
 }

@@ -5,12 +5,13 @@ import java.util.function.Function;
 
 /**
  */
-public class JsLazy <T> {
+public class JsLazy<T> {
     @FunctionalInterface
     public interface LazyProvider<T> {
         T valueOf();
     }
-    private static final LazyProvider NO_REENTRY = ()->{
+
+    private static final LazyProvider NO_REENTRY = () -> {
         throw new IllegalStateException("no reentry");
     };
 
@@ -48,11 +49,11 @@ public class JsLazy <T> {
     }
 
     public static <A1, A2, T> JsLazy<T> of(BiFunction<A1, A2, T> factory, A1 arg1, A2 arg2) {
-        return new JsLazy<>(()->factory.apply(arg1, arg2));
+        return new JsLazy<>(() -> factory.apply(arg1, arg2));
     }
 
     public static <A1, T> JsLazy<T> of(Function<A1, T> factory, A1 arg1) {
-        return new JsLazy<>(()->factory.apply(arg1));
+        return new JsLazy<>(() -> factory.apply(arg1));
     }
 
     public static <T> JsLazy<T> of(LazyProvider<T> factory) {

@@ -15,36 +15,36 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.grpcWeb.ChunkParser.ChunkParser",
     namespace = JsPackage.GLOBAL)
 public class ChunkParser {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ParseReturnType {
-    @JsOverlay
-    static ChunkParser.ParseReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ParseReturnType {
+        @JsOverlay
+        static ChunkParser.ParseReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        int getChunkType();
+
+        @JsProperty
+        Uint8Array getData();
+
+        @JsProperty
+        BrowserHeaders getTrailers();
+
+        @JsProperty
+        void setChunkType(int chunkType);
+
+        @JsProperty
+        void setData(Uint8Array data);
+
+        @JsProperty
+        void setTrailers(BrowserHeaders trailers);
     }
 
-    @JsProperty
-    int getChunkType();
+    public Uint8Array buffer;
+    public double position;
 
-    @JsProperty
-    Uint8Array getData();
+    public native JsArray<ChunkParser.ParseReturnType> parse(Uint8Array bytes, boolean flush);
 
-    @JsProperty
-    BrowserHeaders getTrailers();
-
-    @JsProperty
-    void setChunkType(int chunkType);
-
-    @JsProperty
-    void setData(Uint8Array data);
-
-    @JsProperty
-    void setTrailers(BrowserHeaders trailers);
-  }
-
-  public Uint8Array buffer;
-  public double position;
-
-  public native JsArray<ChunkParser.ParseReturnType> parse(Uint8Array bytes, boolean flush);
-
-  public native JsArray<ChunkParser.ParseReturnType> parse(Uint8Array bytes);
+    public native JsArray<ChunkParser.ParseReturnType> parse(Uint8Array bytes);
 }

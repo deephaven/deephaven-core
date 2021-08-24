@@ -40,8 +40,7 @@ public abstract class IndexableNumericData implements PlotExceptionCause, Serial
     public abstract int size();
 
     /**
-     * Gets the value at the specified {@code index}
-     * as a double.
+     * Gets the value at the specified {@code index} as a double.
      *
      * @param index index
      * @return value at {@code index} as a double
@@ -64,7 +63,7 @@ public abstract class IndexableNumericData implements PlotExceptionCause, Serial
 
             @Override
             public boolean tryAdvance(DoubleConsumer action) {
-                if( index >= size() ){
+                if (index >= size()) {
                     return false;
                 }
 

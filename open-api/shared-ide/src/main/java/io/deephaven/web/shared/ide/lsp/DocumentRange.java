@@ -46,8 +46,7 @@ public class DocumentRange implements Serializable {
         range.start = getPositionFromOffset(source, start);
         range.end = getPositionFromOffset(
             source,
-            start + length
-        );
+            start + length);
         return range;
     }
 
@@ -80,13 +79,13 @@ public class DocumentRange implements Serializable {
             if (nextLineOffset >= 0) {
                 position.line += 1;
                 position.character = 0;
-                offset -= (1+nextLineOffset - pos);
+                offset -= (1 + nextLineOffset - pos);
             } else {
                 position.character = offset;
                 break;
             }
 
-            pos = nextLineOffset+1;
+            pos = nextLineOffset + 1;
         }
         return position;
     }

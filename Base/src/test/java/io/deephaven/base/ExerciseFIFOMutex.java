@@ -20,9 +20,9 @@ public class ExerciseFIFOMutex {
 
         @Override
         public void run() {
-            while ( !stop ) {
+            while (!stop) {
                 mutex.lock();
-                for ( int i = 0; i < 100; ++i ) {
+                for (int i = 0; i < 100; ++i) {
                     foo++;
                 }
                 mutex.unlock();
@@ -34,8 +34,7 @@ public class ExerciseFIFOMutex {
     private void sleep(long millis) {
         try {
             Thread.sleep(1000);
-        }
-        catch ( InterruptedException x ) {
+        } catch (InterruptedException x) {
             // ignore
         }
 
@@ -44,16 +43,16 @@ public class ExerciseFIFOMutex {
     private void start(final int NTHREADS) {
         Locker[] lockers = new Locker[NTHREADS];
         Thread[] threads = new Thread[NTHREADS];
-        for ( int i = 0; i < NTHREADS; ++i ) {
+        for (int i = 0; i < NTHREADS; ++i) {
             lockers[i] = new Locker(i);
             threads[i] = new Thread(lockers[i]);
-            threads[i].setName("Locker-"+i);
+            threads[i].setName("Locker-" + i);
             threads[i].setDaemon(true);
         }
 
         // lock the mutex, then start the threads and wait for them to join the mutex queue
         mutex.lock();
-        for ( Thread t : threads ) {
+        for (Thread t : threads) {
             t.start();
         }
         sleep(1000);
@@ -65,25 +64,25 @@ public class ExerciseFIFOMutex {
         stop = true;
         int totalLoops = 0;
         int minLoops = Integer.MAX_VALUE, maxLoops = Integer.MIN_VALUE;
-        for ( int i = 0; i < NTHREADS; ++i ) {
+        for (int i = 0; i < NTHREADS; ++i) {
             Thread t = threads[i];
             try {
                 t.join(1000);
-                if ( t.isAlive() ) {
-                    System.out.println("Couldn't stop thread "+i);
-                }
-                else {
-                    //System.out.println("Locker "+i+"/"+NTHREADS+" executed "+lockers[i].loopCount+" loops");
+                if (t.isAlive()) {
+                    System.out.println("Couldn't stop thread " + i);
+                } else {
+                    // System.out.println("Locker "+i+"/"+NTHREADS+" executed
+                    // "+lockers[i].loopCount+" loops");
                     totalLoops += lockers[i].loopCount;
                     minLoops = Math.min(minLoops, lockers[i].loopCount);
                     maxLoops = Math.max(maxLoops, lockers[i].loopCount);
                 }
-            }
-            catch ( InterruptedException x ) {
+            } catch (InterruptedException x) {
                 // ignore
             }
         }
-        System.out.println(NTHREADS+" lockers executed "+totalLoops+" loops in total; min="+minLoops+", max="+maxLoops);
+        System.out.println(NTHREADS + " lockers executed " + totalLoops + " loops in total; min="
+            + minLoops + ", max=" + maxLoops);
     }
 
     public static void main(String[] args) {

@@ -8,6 +8,6 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Endianness",
     namespace = JsPackage.GLOBAL)
 public class Endianness {
-  public static int Big,
-  Little;
+    public static int Big,
+        Little;
 }

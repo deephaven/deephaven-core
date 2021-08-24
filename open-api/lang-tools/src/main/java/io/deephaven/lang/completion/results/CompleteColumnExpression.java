@@ -16,8 +16,8 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * A class specifically for completing column expression;
- * to be called after the completer has discovered the a column expression with an = and the cursor is at or after =.
+ * A class specifically for completing column expression; to be called after the completer has
+ * discovered the a column expression with an = and the cursor is at or after =.
  *
  */
 public class CompleteColumnExpression extends CompletionBuilder {
@@ -29,8 +29,7 @@ public class CompleteColumnExpression extends CompletionBuilder {
     public CompleteColumnExpression(
         ChunkerCompleter completer,
         Node node,
-        ChunkerInvoke invoke
-    ) {
+        ChunkerInvoke invoke) {
         super(completer);
         this.node = node;
         this.invoke = invoke;
@@ -40,13 +39,14 @@ public class CompleteColumnExpression extends CompletionBuilder {
     public void doCompletion(
         Collection<CompletionItem.Builder> results,
         CompletionRequest request,
-        Method method
-    ) {
+        Method method) {
         final String displayCompletion;
-        if (method.getDeclaringClass().getSimpleName().endsWith("Primitives") && method.getDeclaringClass().getPackage().equals(
-            BytePrimitives.class.getPackage())) {
+        if (method.getDeclaringClass().getSimpleName().endsWith("Primitives")
+            && method.getDeclaringClass().getPackage().equals(
+                BytePrimitives.class.getPackage())) {
             // reduce massive duplication from same-named primitives methods.
-            // In the future, when we have better column/type inference, we should be able to delete this workaround
+            // In the future, when we have better column/type inference, we should be able to delete
+            // this workaround
             displayCompletion = "*Primitives.";
         } else {
             displayCompletion = method.getDeclaringClass().getSimpleName() + ".";
@@ -65,7 +65,7 @@ public class CompleteColumnExpression extends CompletionBuilder {
             // instead of trying to communicate through displayCompletion string.
             final Class<?> type0 = method.getParameterTypes()[0];
             suffix = "(" + type0.getSimpleName() + ")";
-            if (!node.isWellFormed()&& String.class.equals(type0)) {
+            if (!node.isWellFormed() && String.class.equals(type0)) {
                 final String qt = getCompleter().getQuoteType(node);
                 replaced += "\"".equals(qt) ? "`" : "\"";
             }
@@ -76,8 +76,7 @@ public class CompleteColumnExpression extends CompletionBuilder {
         char c = 0, prev;
         boolean spaceBefore = false;
         boolean sawEqual = false;
-        loop:
-        for (int i = 0; i < src.length();i++) {
+        loop: for (int i = 0; i < src.length(); i++) {
             prev = c;
             c = src.charAt(i);
             if (sawEqual) {
@@ -99,25 +98,25 @@ public class CompleteColumnExpression extends CompletionBuilder {
                     spaceBefore = Character.isWhitespace(prev);
                     sawEqual = true;
                 default:
-                    range.getStartBuilder().setCharacter(range.getStartBuilder().getCharacter() + 1);
+                    range.getStartBuilder()
+                        .setCharacter(range.getStartBuilder().getCharacter() + 1);
                     start++;
             }
         }
         CompletionItem.Builder result = CompletionItem.newBuilder();
         result.setStart(start)
-                .setLength(len)
-                .setLabel(displayCompletion + replaced + suffix)
-                .getTextEditBuilder()
-                        .setText(replaced)
-                        .setRange(range);
+            .setLength(len)
+            .setLabel(displayCompletion + replaced + suffix)
+            .getTextEditBuilder()
+            .setText(replaced)
+            .setRange(range);
         results.add(result);
     }
 
     public void doCompletion(
         Collection<CompletionItem.Builder> results,
         CompletionRequest request,
-        String colName
-    ) {
+        String colName) {
         String replaced = colName;
 
         // need to handle null node using parent invoke, the same as CompleteColumnName
@@ -126,8 +125,7 @@ public class CompleteColumnExpression extends CompletionBuilder {
         char c = 0, prev;
         boolean spaceBefore = false;
         boolean sawEqual = false;
-        loop:
-        for (int i = 0; i < src.length();i++) {
+        loop: for (int i = 0; i < src.length(); i++) {
             prev = c;
             c = src.charAt(i);
             if (sawEqual) {
@@ -149,7 +147,8 @@ public class CompleteColumnExpression extends CompletionBuilder {
                     spaceBefore = Character.isWhitespace(prev);
                     sawEqual = true;
                 default:
-                    range.getStartBuilder().setCharacter(range.getStartBuilder().getCharacter() + 1);
+                    range.getStartBuilder()
+                        .setCharacter(range.getStartBuilder().getCharacter() + 1);
                     start++;
             }
         }
@@ -172,16 +171,16 @@ public class CompleteColumnExpression extends CompletionBuilder {
         }
         final CompletionItem.Builder result = CompletionItem.newBuilder();
         result.setStart(start)
-                .setLength(len)
-                .setLabel(withClose)
-                .getTextEditBuilder()
-                        .setText(withClose)
-                        .setRange(range);
+            .setLength(len)
+            .setLabel(withClose)
+            .getTextEditBuilder()
+            .setText(withClose)
+            .setRange(range);
         results.add(result);
         // An alternate version which does not include the close quote.
         // Ideally, we just move the user's cursor position backwards, by making the main
         // completion use the code below, with an additional edit to append the closing quote.
         // We'll do this once we figure out how to control the resulting cursor position in Monaco
-//        CompletionItem result = new CompletionItem(start, len, replaced, replaced, range);
+        // CompletionItem result = new CompletionItem(start, len, replaced, replaced, range);
     }
 }

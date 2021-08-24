@@ -44,8 +44,9 @@ public class TestWindowCheck {
      *
      * Time advances by one second per step, which randomly modifies the source table.
      *
-     * The WindowEvalNugget verifies the original columns are unchanged and that the value of the InWindow column
-     * is correct.  A prev checker is added to ensure that getPrev works on the new table.
+     * The WindowEvalNugget verifies the original columns are unchanged and that the value of the
+     * InWindow column is correct. A prev checker is added to ensure that getPrev works on the new
+     * table.
      */
     @Test
     public void testWindowCheckIterative() {
@@ -56,19 +57,21 @@ public class TestWindowCheck {
         final int size = 100;
         final DBDateTime startTime = DBTimeUtils.convertDateTime("2018-02-23T09:30:00 NY");
         final DBDateTime endTime = DBTimeUtils.convertDateTime("2018-02-23T16:00:00 NY");
-        final QueryTable table = getTable(size, random, columnInfo = initColumnInfos(new String[]{"Timestamp", "C1"},
+        final QueryTable table = getTable(size, random,
+            columnInfo = initColumnInfos(new String[] {"Timestamp", "C1"},
                 new TstUtils.UnsortedDateTimeGenerator(startTime, endTime, 0.01),
                 new TstUtils.IntGenerator(1, 100)));
-        // Use a smaller step size so that the random walk on tableSize doesn't become unwieldy given the large number of steps.
-        final int stepSize = (int)Math.ceil(Math.sqrt(size));
+        // Use a smaller step size so that the random walk on tableSize doesn't become unwieldy
+        // given the large number of steps.
+        final int stepSize = (int) Math.ceil(Math.sqrt(size));
 
         final TestTimeProvider timeProvider = new TestTimeProvider();
         timeProvider.now = startTime.getNanos();
 
-        final WindowEvalNugget [] en;
+        final WindowEvalNugget[] en;
         LiveTableMonitor.DEFAULT.exclusiveLock().lock();
         try {
-            en = new WindowEvalNugget[]{
+            en = new WindowEvalNugget[] {
                     new WindowEvalNugget(timeProvider, table)
             };
         } finally {
@@ -86,20 +89,24 @@ public class TestWindowCheck {
             if (combined) {
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                     advanceTime(timeProvider, en);
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, size, random, table, columnInfo);
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(
+                        GenerateTableUpdates.DEFAULT_PROFILE, size, random, table, columnInfo);
                 });
                 TstUtils.validate("Step " + step, en);
             } else {
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> advanceTime(timeProvider, en));
+                LiveTableMonitor.DEFAULT
+                    .runWithinUnitTestCycle(() -> advanceTime(timeProvider, en));
                 if (LiveTableTestCase.printTableUpdates) {
-                    TstUtils.validate("Step = " + step + " time = " + new DBDateTime(timeProvider.now), en);
+                    TstUtils.validate(
+                        "Step = " + step + " time = " + new DBDateTime(timeProvider.now), en);
                 }
 
                 for (int ii = 0; ii < stepsPerTick; ++ii) {
                     if (LiveTableTestCase.printTableUpdates) {
                         System.out.println("Step " + step + "-" + ii);
                     }
-                    LiveTableTestCase.simulateShiftAwareStep(step + "-" + ii, stepSize, random, table, columnInfo, en);
+                    LiveTableTestCase.simulateShiftAwareStep(step + "-" + ii, stepSize, random,
+                        table, columnInfo, en);
                 }
             }
         }
@@ -124,9 +131,12 @@ public class TestWindowCheck {
         timeProvider.now = startTime.getNanos();
 
         final DBDateTime[] emptyDateTimeArray = new DBDateTime[0];
-        final Table tableToCheck = testRefreshingTable(i(), c("Timestamp", emptyDateTimeArray), intCol("Sentinel"));
+        final Table tableToCheck =
+            testRefreshingTable(i(), c("Timestamp", emptyDateTimeArray), intCol("Sentinel"));
 
-        final Pair<Table, WindowCheck.TimeWindowListener> windowed = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() ->  WindowCheck.addTimeWindowInternal(timeProvider, tableToCheck, "Timestamp", DBTimeUtils.SECOND * 60, "InWindow", false));
+        final Pair<Table, WindowCheck.TimeWindowListener> windowed = LiveTableMonitor.DEFAULT
+            .sharedLock().computeLocked(() -> WindowCheck.addTimeWindowInternal(timeProvider,
+                tableToCheck, "Timestamp", DBTimeUtils.SECOND * 60, "InWindow", false));
 
         TableTools.showWithIndex(windowed.first);
 
@@ -160,7 +170,8 @@ public class TestWindowCheck {
             public void onUpdate(Update upstream) {}
 
             @Override
-            public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+            public void onFailureInternal(Throwable originalException,
+                UpdatePerformanceTracker.Entry sourceEntry) {
                 exception = originalException;
                 final StringWriter errors = new StringWriter();
                 originalException.printStackTrace(new PrintWriter(errors));
@@ -175,10 +186,11 @@ public class TestWindowCheck {
             this.table = table;
             this.timeProvider = timeProvider;
             windowNanos = 300 * DBTimeUtils.SECOND;
-            windowed = WindowCheck.addTimeWindowInternal(timeProvider, table, "Timestamp", windowNanos, "InWindow", false);
-            validator = TableUpdateValidator.make((QueryTable)windowed.first);
+            windowed = WindowCheck.addTimeWindowInternal(timeProvider, table, "Timestamp",
+                windowNanos, "InWindow", false);
+            validator = TableUpdateValidator.make((QueryTable) windowed.first);
 
-            ((QueryTable)windowed.first).listenForUpdates(windowedFailureListener);
+            ((QueryTable) windowed.first).listenForUpdates(windowedFailureListener);
             validator.getResultTable().listenForUpdates(updateFailureListener);
         }
 
@@ -197,14 +209,14 @@ public class TestWindowCheck {
                 }
             }
 
-            //noinspection unchecked
+            // noinspection unchecked
             final ColumnSource<DBDateTime> timestamp = table.getColumnSource("Timestamp");
-            //noinspection unchecked
+            // noinspection unchecked
             final ColumnSource<Boolean> inWindow = windowed.first.getColumnSource("InWindow");
 
             final long now = timeProvider.now;
 
-            for (final Index.Iterator it = windowed.first.getIndex().iterator(); it.hasNext(); ) {
+            for (final Index.Iterator it = windowed.first.getIndex().iterator(); it.hasNext();) {
                 final long key = it.nextLong();
                 final DBDateTime tableTime = timestamp.get(key);
 
@@ -213,7 +225,7 @@ public class TestWindowCheck {
                     TestCase.assertNull(actual);
                 } else {
                     final boolean expected = now - tableTime.getNanos() < windowNanos;
-                    TestCase.assertEquals((boolean)actual, expected);
+                    TestCase.assertEquals((boolean) actual, expected);
                 }
             }
 

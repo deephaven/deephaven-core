@@ -23,7 +23,7 @@ public class ModelInputDeserializer<T> implements AutoCloseable {
     /**
      * Creates a new deserializer.
      *
-     * @param c        data type
+     * @param c data type
      * @param filename input file name
      * @throws IOException problem creating input stream
      */
@@ -37,12 +37,13 @@ public class ModelInputDeserializer<T> implements AutoCloseable {
      * Returns the next input.
      *
      * @return next input
-     * @throws IOException            problem reading the next input
+     * @throws IOException problem reading the next input
      * @throws ClassNotFoundException problem casting the object
      */
     public synchronized T next() throws IOException, ClassNotFoundException {
         if (isClosed) {
-            throw new RuntimeException("Attempting to access the next value after the stream is closed.");
+            throw new RuntimeException(
+                "Attempting to access the next value after the stream is closed.");
         }
 
         return c.cast(ois.readObject());

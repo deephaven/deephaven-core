@@ -15,7 +15,7 @@ public class SimpleXYStepPlot {
 
         Figure fig = FigureFactory.figure();
         Figure cht = fig
-                .plot("Test1", x1, y1).plotStyle("step");
+            .plot("Test1", x1, y1).plotStyle("step");
 
         ExamplePlotUtils.display(cht);
     }

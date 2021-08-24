@@ -7,10 +7,9 @@ package io.deephaven.base.testing;
 import io.deephaven.base.verify.Require;
 import org.apache.log4j.Level;
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 /**
- * The details of a message that should have been logged. For use
- * with {@link LoggingRecorder}.
+ * The details of a message that should have been logged. For use with {@link LoggingRecorder}.
  */
 public class CheckedMessage {
     private final String m_sMessageFragment;
@@ -19,17 +18,17 @@ public class CheckedMessage {
 
     public CheckedMessage(String sMessageFragment, Level level) {
         Require.nonempty(sMessageFragment, "sMessageFragment");
-        m_sMessageFragment=sMessageFragment;
-        m_sDetailFragment=null;
-        m_level=level;
+        m_sMessageFragment = sMessageFragment;
+        m_sDetailFragment = null;
+        m_level = level;
     }
 
     public CheckedMessage(String sMessageFragment, String sDetailFragment, Level level) {
         Require.nonempty(sMessageFragment, "sMessageFragment");
         Require.nonempty(sDetailFragment, "sDetailFragment");
-        m_sMessageFragment=sMessageFragment;
-        m_sDetailFragment=sDetailFragment;
-        m_level=level;
+        m_sMessageFragment = sMessageFragment;
+        m_sDetailFragment = sDetailFragment;
+        m_level = level;
     }
 
     public String getMessageFragment() {

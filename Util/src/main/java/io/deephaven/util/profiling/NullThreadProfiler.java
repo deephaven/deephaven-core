@@ -9,8 +9,7 @@ public final class NullThreadProfiler implements ThreadProfiler {
 
     public static final ThreadProfiler INSTANCE = new NullThreadProfiler();
 
-    private NullThreadProfiler() {
-    }
+    private NullThreadProfiler() {}
 
     @Override
     public boolean memoryProfilingAvailable() {

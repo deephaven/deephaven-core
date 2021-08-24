@@ -17,6 +17,6 @@ import io.deephaven.util.codec.ObjectDecoder;
 public interface RegionedTableComponentFactory extends SourceTableComponentFactory {
 
     <DATA_TYPE> RegionedColumnSource<DATA_TYPE> createRegionedColumnSource(
-            ColumnDefinition<DATA_TYPE> columnDefinition,
-            ColumnToCodecMappings codecMappings);
+        ColumnDefinition<DATA_TYPE> columnDefinition,
+        ColumnToCodecMappings codecMappings);
 }

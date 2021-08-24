@@ -39,7 +39,8 @@ import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 /**
  * Base class for the {@link XYDataSeriesInternal}.
  */
-public abstract class AbstractXYDataSeries extends AbstractDataSeries implements XYDataSeriesInternal {
+public abstract class AbstractXYDataSeries extends AbstractDataSeries
+    implements XYDataSeriesInternal {
 
     private static final long serialVersionUID = 5353144043894861970L;
     private final IndexableDataWithDefault<String> shapeLabels;
@@ -51,17 +52,18 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
      * Creates an AbstractXYDataSeries instance.
      *
      * @param axes axes on which the data will be plotted
-     * @param id   data series id
+     * @param id data series id
      * @param name series name
      */
-    public AbstractXYDataSeries(final AxesImpl axes, final int id, final Comparable name, final AbstractXYDataSeries series) {
+    public AbstractXYDataSeries(final AxesImpl axes, final int id, final Comparable name,
+        final AbstractXYDataSeries series) {
         super(axes, id, name, series);
         shapeLabels = new IndexableDataWithDefault<>(getPlotInfo());
         shapeSizes = new IndexableDataWithDefault<>(getPlotInfo());
         shapeColors = new IndexableDataWithDefault<>(getPlotInfo());
         pointShapes = new IndexableDataWithDefault<>(getPlotInfo());
 
-        if(series != null) {
+        if (series != null) {
             this.shapeLabels.set(series.shapeLabels);
             this.shapeSizes.set(series.shapeSizes);
             this.shapeColors.set(series.shapeColors);
@@ -73,7 +75,7 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
      * Creates a copy of a series using a different Axes.
      *
      * @param series series to copy.
-     * @param axes   new axes to use.
+     * @param axes new axes to use.
      */
     protected AbstractXYDataSeries(final AbstractXYDataSeries series, final AxesImpl axes) {
         super(series, axes);
@@ -89,7 +91,7 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
         this.pointShapes.set(series.pointShapes);
     }
 
-    //////////////////////////  internal  //////////////////////////
+    ////////////////////////// internal //////////////////////////
 
     protected void colorsSetSpecific(final IndexableData<Paint> data) {
         shapeColors.setSpecific(data, true);
@@ -101,11 +103,14 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     }
 
     @Override
-    public String getPointLabel(int i) { return shapeLabels.get(i);}
+    public String getPointLabel(int i) {
+        return shapeLabels.get(i);
+    }
 
     @Override
     public Shape getPointShape(int i) {
-        return pointShapes.get(i); }
+        return pointShapes.get(i);
+    }
 
     @Override
     public Double getPointSize(int i) {
@@ -119,7 +124,7 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
 
 
 
-    //////////////////////////  visibility  //////////////////////////
+    ////////////////////////// visibility //////////////////////////
 
 
     @Override
@@ -141,7 +146,7 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     }
 
 
-    //////////////////////////  line color  //////////////////////////
+    ////////////////////////// line color //////////////////////////
 
 
     @Override
@@ -163,7 +168,7 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     }
 
 
-    //////////////////////////  error bar color  //////////////////////////
+    ////////////////////////// error bar color //////////////////////////
 
 
     @Override
@@ -185,7 +190,7 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     }
 
 
-    //////////////////////////  line style  //////////////////////////
+    ////////////////////////// line style //////////////////////////
 
 
     @Override
@@ -195,7 +200,7 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     }
 
 
-    //////////////////////////  color  //////////////////////////
+    ////////////////////////// color //////////////////////////
 
 
     public AbstractXYDataSeries seriesColor(final Paint color) {
@@ -217,7 +222,7 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     }
 
 
-    //////////////////////////  point sizes  //////////////////////////
+    ////////////////////////// point sizes //////////////////////////
 
 
     @Override
@@ -276,7 +281,8 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
 
         final TableHandle tableHandle = new TableHandle(t, columnName);
         addTableHandle(tableHandle);
-        final ColumnHandlerFactory.ColumnHandler columnHandler = ColumnHandlerFactory.newNumericHandler(tableHandle, columnName, getPlotInfo());
+        final ColumnHandlerFactory.ColumnHandler columnHandler =
+            ColumnHandlerFactory.newNumericHandler(tableHandle, columnName, getPlotInfo());
 
         if (columnHandler.typeClassification().isNumeric()) {
             shapeSizes.setSpecific(new IndexableDataTable<Double>(columnHandler, getPlotInfo()) {
@@ -286,7 +292,8 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
                 }
             }, true);
         } else {
-            throw new PlotUnsupportedOperationException("Column can not be converted into a size: column=" + columnName, this);
+            throw new PlotUnsupportedOperationException(
+                "Column can not be converted into a size: column=" + columnName, this);
         }
 
         return this;
@@ -301,13 +308,14 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
 
         final SwappableTable t = sds.getSwappableTable(name(), chart(), columnName);
         addSwappableTable(t);
-        shapeSizes.setSpecific(new IndexableDataSwappableTableDouble(t, columnName, getPlotInfo()), true);
+        shapeSizes.setSpecific(new IndexableDataSwappableTableDouble(t, columnName, getPlotInfo()),
+            true);
 
         return this;
     }
 
 
-    //////////////////////////  point colors  //////////////////////////
+    ////////////////////////// point colors //////////////////////////
 
 
     @Override
@@ -364,15 +372,20 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
 
         final TableHandle tableHandle = new TableHandle(t, columnName);
         addTableHandle(tableHandle);
-        final ColumnHandlerFactory.ColumnHandler columnHandler = ColumnHandlerFactory.newNumericHandler(tableHandle, columnName, getPlotInfo());
+        final ColumnHandlerFactory.ColumnHandler columnHandler =
+            ColumnHandlerFactory.newNumericHandler(tableHandle, columnName, getPlotInfo());
 
         if (columnHandler.typeClassification() == ColumnHandlerFactory.TypeClassification.INTEGER &&
-                (columnHandler.type() == int.class || columnHandler.type() == Integer.class)) {
+            (columnHandler.type() == int.class || columnHandler.type() == Integer.class)) {
             return pointColor(new IndexableDataTablePaint(columnHandler, chart()));
-        } else if (columnHandler.typeClassification() == ColumnHandlerFactory.TypeClassification.PAINT) {
+        } else if (columnHandler
+            .typeClassification() == ColumnHandlerFactory.TypeClassification.PAINT) {
             return pointColor(new IndexableDataTable<>(columnHandler, getPlotInfo()));
         } else {
-            throw new PlotUnsupportedOperationException("Column can not be converted into a color: column=" + columnName + "\ttype=" + columnHandler.type(), this);
+            throw new PlotUnsupportedOperationException(
+                "Column can not be converted into a color: column=" + columnName + "\ttype="
+                    + columnHandler.type(),
+                this);
         }
     }
 
@@ -380,11 +393,14 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     public AbstractXYDataSeries pointColor(final SelectableDataSet sds, final String columnName) {
         ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), columnName);
         final Class type = sds.getTableDefinition().getColumn(columnName).getDataType();
-        final boolean isInt = type.equals(int.class) || type.equals(Integer.class) || type.equals(short.class) || type.equals(Short.class);
+        final boolean isInt = type.equals(int.class) || type.equals(Integer.class)
+            || type.equals(short.class) || type.equals(Short.class);
         final boolean isPaint = Paint.class.isAssignableFrom(type);
 
         if (!isInt && !isPaint) {
-            throw new PlotUnsupportedOperationException("Column can not be converted into a color: column=" + columnName + "\ttype=" + type, this);
+            throw new PlotUnsupportedOperationException(
+                "Column can not be converted into a color: column=" + columnName + "\ttype=" + type,
+                this);
         }
 
         final SwappableTable t = sds.getSwappableTable(name(), chart(), columnName);
@@ -404,7 +420,7 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
         ArgumentValidations.assertNotNull(colors, "colors", getPlotInfo());
         final Paint[] paints = new Paint[size()];
 
-        for(int i = 0; i < size(); i++) {
+        for (int i = 0; i < size(); i++) {
             paints[i] = colors.apply(getY(i));
         }
 
@@ -416,7 +432,7 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
         return pointColorByY(new ClosureFunction<>(colors));
     }
 
-    //////////////////////////  point labels  //////////////////////////
+    ////////////////////////// point labels //////////////////////////
 
 
     @Override
@@ -441,13 +457,15 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     public AbstractXYDataSeries pointLabel(@NotNull Table t, @NotNull String columnName) {
         final TableHandle tableHandle = new TableHandle(t, columnName);
         addTableHandle(tableHandle);
-        final ColumnHandlerFactory.ColumnHandler columnHandler = ColumnHandlerFactory.newObjectHandler(tableHandle, columnName, getPlotInfo());
+        final ColumnHandlerFactory.ColumnHandler columnHandler =
+            ColumnHandlerFactory.newObjectHandler(tableHandle, columnName, getPlotInfo());
 
         return pointLabel(new IndexableDataTableString(columnHandler, getPlotInfo()));
     }
 
     @Override
-    public AbstractXYDataSeries pointLabel(@NotNull SelectableDataSet sds, @NotNull String columnName) {
+    public AbstractXYDataSeries pointLabel(@NotNull SelectableDataSet sds,
+        @NotNull String columnName) {
         ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), columnName);
 
         final SwappableTable t = sds.getSwappableTable(name(), chart(), columnName);
@@ -456,7 +474,7 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     }
 
 
-    ////////////////////  point shapes  //////////////////////////
+    //////////////////// point shapes //////////////////////////
 
 
     @Override
@@ -481,13 +499,16 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     @Override
     public XYDataSeries pointShape(final String... shapes) {
         ArgumentValidations.assertNotNull(shapes, "shapes", getPlotInfo());
-        //sanity check shapes
+        // sanity check shapes
         int index = 0;
         for (final String shape : shapes) {
             try {
                 NamedShape.getShape(shape);
             } catch (final IllegalArgumentException iae) {
-                throw new PlotIllegalArgumentException("Not a valid shape: `" + shape + "` at index: " + index + "; valid shapes: " + Arrays.toString(NamedShape.values()), this);
+                throw new PlotIllegalArgumentException(
+                    "Not a valid shape: `" + shape + "` at index: " + index + "; valid shapes: "
+                        + Arrays.toString(NamedShape.values()),
+                    this);
             }
             ++index;
         }
@@ -498,7 +519,9 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     @Override
     public XYDataSeries pointShape(final Shape... shapes) {
         ArgumentValidations.assertNotNull(shapes, "shapes", getPlotInfo());
-        pointShapes.setSpecific(new IndexableDataPointShapeObject(new IndexableDataArray<>(shapes, getPlotInfo())), true);
+        pointShapes.setSpecific(
+            new IndexableDataPointShapeObject(new IndexableDataArray<>(shapes, getPlotInfo())),
+            true);
         return this;
     }
 
@@ -511,16 +534,20 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
         if (String.class.isAssignableFrom(columnType)) {
             final TableHandle tableHandle = new TableHandle(t, columnName);
             addTableHandle(tableHandle);
-            final ColumnHandlerFactory.ColumnHandler columnHandler = ColumnHandlerFactory.newObjectHandler(tableHandle, columnName, getPlotInfo());
+            final ColumnHandlerFactory.ColumnHandler columnHandler =
+                ColumnHandlerFactory.newObjectHandler(tableHandle, columnName, getPlotInfo());
             return pointShape(new IndexableDataTableString<>(columnHandler, getPlotInfo()));
         } else if (Shape.class.isAssignableFrom(columnType)) {
             final TableHandle tableHandle = new TableHandle(t, columnName);
             addTableHandle(tableHandle);
-            final ColumnHandlerFactory.ColumnHandler columnHandler = ColumnHandlerFactory.newObjectHandler(tableHandle, columnName, getPlotInfo());
-            pointShapes.setSpecific(new IndexableDataTablePointShapeObject(columnHandler, getPlotInfo()), true);
+            final ColumnHandlerFactory.ColumnHandler columnHandler =
+                ColumnHandlerFactory.newObjectHandler(tableHandle, columnName, getPlotInfo());
+            pointShapes.setSpecific(
+                new IndexableDataTablePointShapeObject(columnHandler, getPlotInfo()), true);
             return this;
         } else {
-            throw new PlotRuntimeException("column is not a supported type (String or Shape): columnName=" + columnName, this);
+            throw new PlotRuntimeException(
+                "column is not a supported type (String or Shape): columnName=" + columnName, this);
         }
     }
 
@@ -533,14 +560,18 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
         if (String.class.isAssignableFrom(columnType)) {
             final SwappableTable t = sds.getSwappableTable(name(), chart(), columnName);
             addSwappableTable(t);
-            return pointShape(new IndexableDataSwappableTableString<>(t, columnName, getPlotInfo()));
+            return pointShape(
+                new IndexableDataSwappableTableString<>(t, columnName, getPlotInfo()));
         } else if (Shape.class.isAssignableFrom(columnType)) {
             final SwappableTable t = sds.getSwappableTable(name(), chart(), columnName);
             addSwappableTable(t);
-            pointShapes.setSpecific(new IndexableDataSwappableTablePointShapeObject(t, columnName, getPlotInfo()), true);
+            pointShapes.setSpecific(
+                new IndexableDataSwappableTablePointShapeObject(t, columnName, getPlotInfo()),
+                true);
             return this;
         } else {
-            throw new PlotRuntimeException("column is not a supported type (String or Shape): columnName=" + columnName, this);
+            throw new PlotRuntimeException(
+                "column is not a supported type (String or Shape): columnName=" + columnName, this);
         }
     }
 
@@ -562,7 +593,8 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
         return this;
     }
 
-    private static class IndexableDataString<T> extends IndexableData<String> implements Serializable {
+    private static class IndexableDataString<T> extends IndexableData<String>
+        implements Serializable {
 
         private static final long serialVersionUID = 4764967316583190069L;
         private IndexableData<T> labels;
@@ -584,12 +616,14 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
         }
     }
 
-    private static class IndexableDataTableString<T> extends IndexableDataTable<String> implements Serializable {
+    private static class IndexableDataTableString<T> extends IndexableDataTable<String>
+        implements Serializable {
 
         private static final long serialVersionUID = 5039901915605865720L;
         private IndexableData<T> labels;
 
-        IndexableDataTableString(ColumnHandlerFactory.ColumnHandler columnHandler, final PlotInfo plotInfo) {
+        IndexableDataTableString(ColumnHandlerFactory.ColumnHandler columnHandler,
+            final PlotInfo plotInfo) {
             super(columnHandler, plotInfo);
             this.labels = labels;
         }
@@ -600,11 +634,13 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
         }
     }
 
-    private static class IndexableDataTablePointShapeObject extends IndexableDataTable<Shape> implements Serializable {
+    private static class IndexableDataTablePointShapeObject extends IndexableDataTable<Shape>
+        implements Serializable {
 
         private static final long serialVersionUID = -3933148551484191243L;
 
-        IndexableDataTablePointShapeObject(ColumnHandlerFactory.ColumnHandler columnHandler, final PlotInfo plotInfo) {
+        IndexableDataTablePointShapeObject(ColumnHandlerFactory.ColumnHandler columnHandler,
+            final PlotInfo plotInfo) {
             super(columnHandler, plotInfo);
         }
 
@@ -614,11 +650,13 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
         }
     }
 
-    private static class IndexableDataSwappableTablePointShapeObject extends IndexableDataSwappableTable<Shape> implements Serializable {
+    private static class IndexableDataSwappableTablePointShapeObject
+        extends IndexableDataSwappableTable<Shape> implements Serializable {
 
         private static final long serialVersionUID = 5642048699432187943L;
 
-        IndexableDataSwappableTablePointShapeObject(final SwappableTable swappableTable, final String column, PlotInfo plotInfo) {
+        IndexableDataSwappableTablePointShapeObject(final SwappableTable swappableTable,
+            final String column, PlotInfo plotInfo) {
             super(swappableTable, column, plotInfo);
         }
 
@@ -628,11 +666,13 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
         }
     }
 
-    private static class IndexableDataSwappableTableString<T> extends IndexableDataSwappableTable<String> implements Serializable {
+    private static class IndexableDataSwappableTableString<T>
+        extends IndexableDataSwappableTable<String> implements Serializable {
 
         private static final long serialVersionUID = 5039901915605865720L;
 
-        IndexableDataSwappableTableString(final SwappableTable t, final String column, final PlotInfo plotInfo) {
+        IndexableDataSwappableTableString(final SwappableTable t, final String column,
+            final PlotInfo plotInfo) {
             super(t, column, plotInfo);
         }
 
@@ -642,11 +682,13 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
         }
     }
 
-    private static class IndexableDataSwappableTablePaint extends IndexableDataSwappableTable<Paint> implements Serializable {
+    private static class IndexableDataSwappableTablePaint extends IndexableDataSwappableTable<Paint>
+        implements Serializable {
         private static final long serialVersionUID = 1809364632850960872L;
         private final ChartImpl chart;
 
-        IndexableDataSwappableTablePaint(final SwappableTable t, final String column, final ChartImpl chart) {
+        IndexableDataSwappableTablePaint(final SwappableTable t, final String column,
+            final ChartImpl chart) {
             super(t, column, chart.getPlotInfo());
             this.chart = chart;
         }
@@ -657,7 +699,8 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
         }
     }
 
-    private static class IndexableDataPaintInteger extends IndexableData<Paint> implements Serializable {
+    private static class IndexableDataPaintInteger extends IndexableData<Paint>
+        implements Serializable {
         private static final long serialVersionUID = 6258408120262796309L;
         private final IndexableData<Integer> colors;
         private final ChartImpl chart;
@@ -679,7 +722,8 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
         }
     }
 
-    private static class IndexableDataTablePaint extends IndexableDataTable<Paint> implements Serializable {
+    private static class IndexableDataTablePaint extends IndexableDataTable<Paint>
+        implements Serializable {
         private static final long serialVersionUID = 1809364632850960872L;
         private final ChartImpl chart;
 

@@ -7,15 +7,15 @@ package io.deephaven.base.pool;
 import io.deephaven.base.Procedure;
 import io.deephaven.base.testing.RecordingMockObject;
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 /**
  * Mock clearing procedure.
  */
 public class MockClearingProcedure<T> extends RecordingMockObject implements Procedure.Unary<T> {
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     @Override // from Procedure.Unary
     public void call(T arg) {
-        recordActivity("call("+arg+")");
+        recordActivity("call(" + arg + ")");
     }
 }

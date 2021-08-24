@@ -28,50 +28,56 @@ public class FlightServiceGrpcBinding implements BindableService {
     private final FlightServiceGrpcImpl<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> delegate;
 
     @Inject
-    public FlightServiceGrpcBinding(final FlightServiceGrpcImpl<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> service) {
+    public FlightServiceGrpcBinding(
+        final FlightServiceGrpcImpl<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> service) {
         this.delegate = service;
     }
 
     @Override
     public ServerServiceDefinition bindService() {
-        return GrpcServiceOverrideBuilder.newBuilder(delegate.bindService(), FlightServiceGrpc.SERVICE_NAME)
-                .onOpenOverride(delegate::doGetCustom, "DoGet", FlightServiceGrpc.getDoGetMethod(),
-                        ProtoUtils.marshaller(Flight.Ticket.getDefaultInstance()),
-                        PassthroughInputStreamMarshaller.INSTANCE)
-                .onBidiOverride(delegate::doPutCustom, "DoPut", FlightServiceGrpc.getDoPutMethod(),
-                        PassthroughInputStreamMarshaller.INSTANCE,
-                        ProtoUtils.marshaller(Flight.PutResult.getDefaultInstance()))
-                .onBidiOverride(delegate::doExchangeCustom, "DoExchange", FlightServiceGrpc.getDoExchangeMethod(),
-                        PassthroughInputStreamMarshaller.INSTANCE,
-                        PassthroughInputStreamMarshaller.INSTANCE)
-                .build();
+        return GrpcServiceOverrideBuilder
+            .newBuilder(delegate.bindService(), FlightServiceGrpc.SERVICE_NAME)
+            .onOpenOverride(delegate::doGetCustom, "DoGet", FlightServiceGrpc.getDoGetMethod(),
+                ProtoUtils.marshaller(Flight.Ticket.getDefaultInstance()),
+                PassthroughInputStreamMarshaller.INSTANCE)
+            .onBidiOverride(delegate::doPutCustom, "DoPut", FlightServiceGrpc.getDoPutMethod(),
+                PassthroughInputStreamMarshaller.INSTANCE,
+                ProtoUtils.marshaller(Flight.PutResult.getDefaultInstance()))
+            .onBidiOverride(delegate::doExchangeCustom, "DoExchange",
+                FlightServiceGrpc.getDoExchangeMethod(),
+                PassthroughInputStreamMarshaller.INSTANCE,
+                PassthroughInputStreamMarshaller.INSTANCE)
+            .build();
     }
 
     /**
      * Fetch the client side descriptor for a specific table schema.
      *
-     * @param options           the set of options that last across the entire life of the subscription
-     * @param columnChunkTypes  the chunk types per column
-     * @param columnTypes       the class type per column
-     * @param componentTypes    the component class type per column
-     * @param streamReader      the stream reader - intended to be thread safe and re-usable
-     * @param <Options>         the options related to deserialization
+     * @param options the set of options that last across the entire life of the subscription
+     * @param columnChunkTypes the chunk types per column
+     * @param columnTypes the class type per column
+     * @param componentTypes the component class type per column
+     * @param streamReader the stream reader - intended to be thread safe and re-usable
+     * @param <Options> the options related to deserialization
      * @return the client side method descriptor
      */
     public static <Options> MethodDescriptor<Flight.FlightData, BarrageMessage> getClientDoExchangeDescriptor(
-            final Options options,
-            final ChunkType[] columnChunkTypes,
-            final Class<?>[] columnTypes,
-            final Class<?>[] componentTypes,
-            final BarrageMessageConsumer.StreamReader<Options> streamReader) {
+        final Options options,
+        final ChunkType[] columnChunkTypes,
+        final Class<?>[] columnTypes,
+        final Class<?>[] componentTypes,
+        final BarrageMessageConsumer.StreamReader<Options> streamReader) {
         return GrpcServiceOverrideBuilder.descriptorFor(
-                MethodDescriptor.MethodType.BIDI_STREAMING, FlightServiceGrpc.SERVICE_NAME, "DoExchange",
-                ProtoUtils.marshaller(Flight.FlightData.getDefaultInstance()),
-                new BarrageDataMarshaller<>(options, columnChunkTypes, columnTypes, componentTypes, streamReader),
-                FlightServiceGrpc.getDoExchangeMethod());
+            MethodDescriptor.MethodType.BIDI_STREAMING, FlightServiceGrpc.SERVICE_NAME,
+            "DoExchange",
+            ProtoUtils.marshaller(Flight.FlightData.getDefaultInstance()),
+            new BarrageDataMarshaller<>(options, columnChunkTypes, columnTypes, componentTypes,
+                streamReader),
+            FlightServiceGrpc.getDoExchangeMethod());
     }
 
-    public static class BarrageDataMarshaller<Options> implements MethodDescriptor.Marshaller<BarrageMessage> {
+    public static class BarrageDataMarshaller<Options>
+        implements MethodDescriptor.Marshaller<BarrageMessage> {
         private final Options options;
         private final ChunkType[] columnChunkTypes;
         private final Class<?>[] columnTypes;
@@ -79,11 +85,11 @@ public class FlightServiceGrpcBinding implements BindableService {
         private final BarrageMessageConsumer.StreamReader<Options> streamReader;
 
         public BarrageDataMarshaller(
-                final Options options,
-                final ChunkType[] columnChunkTypes,
-                final Class<?>[] columnTypes,
-                final Class<?>[] componentTypes,
-                final BarrageMessageConsumer.StreamReader<Options> streamReader) {
+            final Options options,
+            final ChunkType[] columnChunkTypes,
+            final Class<?>[] columnTypes,
+            final Class<?>[] componentTypes,
+            final BarrageMessageConsumer.StreamReader<Options> streamReader) {
             this.options = options;
             this.columnChunkTypes = columnChunkTypes;
             this.columnTypes = columnTypes;
@@ -93,12 +99,14 @@ public class FlightServiceGrpcBinding implements BindableService {
 
         @Override
         public InputStream stream(final BarrageMessage value) {
-            throw new UnsupportedOperationException("BarrageDataMarshaller unexpectedly used to directly convert BarrageMessage to InputStream");
+            throw new UnsupportedOperationException(
+                "BarrageDataMarshaller unexpectedly used to directly convert BarrageMessage to InputStream");
         }
 
         @Override
         public BarrageMessage parse(final InputStream stream) {
-            return streamReader.safelyParseFrom(options, columnChunkTypes, columnTypes, componentTypes, stream);
+            return streamReader.safelyParseFrom(options, columnChunkTypes, columnTypes,
+                componentTypes, stream);
         }
     }
 }

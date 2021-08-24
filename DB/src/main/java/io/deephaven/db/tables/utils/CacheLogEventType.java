@@ -6,7 +6,5 @@ package io.deephaven.db.tables.utils;
 
 public enum CacheLogEventType {
 
-    INITIAL,
-    ADDED,
-    REMOVED
+    INITIAL, ADDED, REMOVED
 }

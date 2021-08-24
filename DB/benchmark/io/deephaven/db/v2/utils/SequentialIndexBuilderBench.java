@@ -14,11 +14,11 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 1, time = 30)
 @Measurement(iterations = 3, time = 30)
-@Fork(value=1)
+@Fork(value = 1)
 
 public class SequentialIndexBuilderBench {
 
-    @Param({"10000000"}) //"10000", "100000", "1000000"}) // , "10000000"})
+    @Param({"10000000"}) // "10000", "100000", "1000000"}) // , "10000000"})
     private static int sz;
     private long[] values;
 

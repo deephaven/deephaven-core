@@ -25,7 +25,8 @@ import java.util.List;
 /**
  * Boilerplate super-class for various clock-oriented filters.
  */
-public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl implements ReindexingFilter, LiveTable {
+public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl
+    implements ReindexingFilter, LiveTable {
 
     protected final String columnName;
     protected final Clock clock;
@@ -35,15 +36,15 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
     private QueryTable resultTable;
 
     @SuppressWarnings("WeakerAccess")
-    public ClockFilter(@NotNull final String columnName, @NotNull final Clock clock, final boolean live) {
+    public ClockFilter(@NotNull final String columnName, @NotNull final Clock clock,
+        final boolean live) {
         this.columnName = columnName;
         this.clock = clock;
         this.live = live;
     }
 
     @Override
-    public final void init(@NotNull final TableDefinition tableDefinition) {
-    }
+    public final void init(@NotNull final TableDefinition tableDefinition) {}
 
     @Override
     public final List<String> getColumns() {
@@ -56,34 +57,39 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
     }
 
     @Override
-    public final Index filter(@NotNull final Index selection, @NotNull final Index fullSet, @NotNull final Table table, boolean usePrev) {
+    public final Index filter(@NotNull final Index selection, @NotNull final Index fullSet,
+        @NotNull final Table table, boolean usePrev) {
         if (usePrev) {
             throw new PreviousFilteringNotSupported();
         }
 
         // We have no support for refreshing tables, nor any known use cases for that support.
-        Require.requirement(DynamicNode.notDynamicOrNotRefreshing(table), "DynamicNode.notDynamicOrNotRefreshing(table)");
+        Require.requirement(DynamicNode.notDynamicOrNotRefreshing(table),
+            "DynamicNode.notDynamicOrNotRefreshing(table)");
 
         // noinspection unchecked
         final ColumnSource<DBDateTime> dateTimeColumnSource = table.getColumnSource(columnName);
         // Obviously, column needs to be of date-time values.
         Require.requirement(DBDateTime.class.isAssignableFrom(dateTimeColumnSource.getType()),
-                "DBDateTime.class.isAssignableFrom(dateTimeColumnSource.getType())");
+            "DBDateTime.class.isAssignableFrom(dateTimeColumnSource.getType())");
 
-        //noinspection unchecked
+        // noinspection unchecked
         nanosColumnSource = dateTimeColumnSource.allowsReinterpret(long.class)
-                ? table.dateTimeColumnAsNanos(columnName).getColumnSource(columnName)
-                : table.view(columnName + " = isNull(" + columnName + ") ? NULL_LONG : " + columnName + ".getNanos()").getColumnSource(columnName);
+            ? table.dateTimeColumnAsNanos(columnName).getColumnSource(columnName)
+            : table.view(columnName + " = isNull(" + columnName + ") ? NULL_LONG : " + columnName
+                + ".getNanos()").getColumnSource(columnName);
 
         final Index initial = initializeAndGetInitialIndex(selection, fullSet, table);
         return initial == null ? Index.FACTORY.getEmptyIndex() : initial;
     }
 
-    protected abstract @Nullable Index initializeAndGetInitialIndex(@NotNull final Index selection, @NotNull final Index fullSet, @NotNull final Table table);
+    protected abstract @Nullable Index initializeAndGetInitialIndex(@NotNull final Index selection,
+        @NotNull final Index fullSet, @NotNull final Table table);
 
     @Override
     public final boolean isSimpleFilter() {
-        // This doesn't execute any user code, so it should be safe to execute it before ACL filters are applied.
+        // This doesn't execute any user code, so it should be safe to execute it before ACL filters
+        // are applied.
         return true;
     }
 
@@ -113,7 +119,8 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
         final Index added = updateAndGetAddedIndex();
         if (added != null && !added.empty()) {
             resultTable.getIndex().insert(added);
-            resultTable.notifyListeners(added, Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());
+            resultTable.notifyListeners(added, Index.FACTORY.getEmptyIndex(),
+                Index.FACTORY.getEmptyIndex());
         }
     }
 
@@ -140,12 +147,14 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
             return nextKey > lastKey;
         }
 
-        @Nullable Index.RandomBuilder consumeKeysAndAppendAdded(final ColumnSource<Long> nanosColumnSource,
-                                                                final long nowNanos,
-                                                                @Nullable Index.RandomBuilder addedBuilder) {
+        @Nullable
+        Index.RandomBuilder consumeKeysAndAppendAdded(final ColumnSource<Long> nanosColumnSource,
+            final long nowNanos,
+            @Nullable Index.RandomBuilder addedBuilder) {
             final long firstKeyAdded = nextKey;
             long lastKeyAdded = -1L;
-            while (nextKey <= lastKey && DBLanguageFunctionUtil.lessEquals(nanosColumnSource.getLong(nextKey), nowNanos)) {
+            while (nextKey <= lastKey && DBLanguageFunctionUtil
+                .lessEquals(nanosColumnSource.getLong(nextKey), nowNanos)) {
                 lastKeyAdded = nextKey++;
             }
             if (lastKeyAdded == -1L) {

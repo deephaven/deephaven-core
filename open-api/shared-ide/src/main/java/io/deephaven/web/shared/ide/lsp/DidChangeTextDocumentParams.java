@@ -12,21 +12,23 @@ public class DidChangeTextDocumentParams implements Serializable {
     public VersionedTextDocumentIdentifier textDocument;
     public TextDocumentContentChangeEvent[] contentChanges;
 
-    public DidChangeTextDocumentParams() { }
+    public DidChangeTextDocumentParams() {}
 
     @JsIgnore
     public DidChangeTextDocumentParams(JsPropertyMap<Object> source) {
         this();
 
         if (source.has("textDocument")) {
-            textDocument = new VersionedTextDocumentIdentifier(source.getAny("textDocument").asPropertyMap());
+            textDocument =
+                new VersionedTextDocumentIdentifier(source.getAny("textDocument").asPropertyMap());
         }
 
         if (source.has("contentChanges")) {
             Any[] rawContentChanges = source.getAny("contentChanges").asArray();
             contentChanges = new TextDocumentContentChangeEvent[rawContentChanges.length];
             for (int i = 0; i < rawContentChanges.length; i++) {
-                contentChanges[i] = new TextDocumentContentChangeEvent(rawContentChanges[i].asPropertyMap());
+                contentChanges[i] =
+                    new TextDocumentContentChangeEvent(rawContentChanges[i].asPropertyMap());
             }
         }
     }

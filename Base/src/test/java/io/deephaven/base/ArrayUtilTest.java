@@ -35,88 +35,88 @@ public class ArrayUtilTest extends TestCase {
     public void testDeleteArrayPos() {
         String[] sa;
 
-        sa = ArrayUtil.deleteArrayPos(0, new String[] { "a" } );
+        sa = ArrayUtil.deleteArrayPos(0, new String[] {"a"});
         assertTrue(sa == null);
 
-        //---
+        // ---
 
-        sa = ArrayUtil.deleteArrayPos(0, new String[] { "a", "b" } );
+        sa = ArrayUtil.deleteArrayPos(0, new String[] {"a", "b"});
         assertFalse(sa == null);
         assertEquals(String.class, sa.getClass().getComponentType());
         assertEquals(1, sa.length);
         assertEquals("b", sa[0]);
 
-        sa = ArrayUtil.deleteArrayPos(1, new String[] { "a", "b" } );
+        sa = ArrayUtil.deleteArrayPos(1, new String[] {"a", "b"});
         assertFalse(sa == null);
         assertEquals(String.class, sa.getClass().getComponentType());
         assertEquals(1, sa.length);
         assertEquals("a", sa[0]);
 
-        //---
+        // ---
 
-        sa = ArrayUtil.deleteArrayPos(0, new String[] { "a", "b", "c" } );
+        sa = ArrayUtil.deleteArrayPos(0, new String[] {"a", "b", "c"});
         assertFalse(sa == null);
         assertEquals(String.class, sa.getClass().getComponentType());
         assertEquals(2, sa.length);
         assertEquals("b", sa[0]);
         assertEquals("c", sa[1]);
 
-        sa = ArrayUtil.deleteArrayPos(1, new String[] { "a", "b", "c" } );
+        sa = ArrayUtil.deleteArrayPos(1, new String[] {"a", "b", "c"});
         assertFalse(sa == null);
         assertEquals(String.class, sa.getClass().getComponentType());
         assertEquals(2, sa.length);
         assertEquals("a", sa[0]);
         assertEquals("c", sa[1]);
 
-        sa = ArrayUtil.deleteArrayPos(2, new String[] { "a", "b", "c" } );
+        sa = ArrayUtil.deleteArrayPos(2, new String[] {"a", "b", "c"});
         assertFalse(sa == null);
         assertEquals(String.class, sa.getClass().getComponentType());
         assertEquals(2, sa.length);
         assertEquals("a", sa[0]);
         assertEquals("b", sa[1]);
 
-        //---
+        // ---
 
         int[] ia;
-        ia = ArrayUtil.deleteArrayPos(0, new int[] { 1, 2, 3 } );
+        ia = ArrayUtil.deleteArrayPos(0, new int[] {1, 2, 3});
         assertFalse(ia == null);
         assertEquals(int.class, ia.getClass().getComponentType());
         assertEquals(2, ia.length);
         assertEquals(2, ia[0]);
         assertEquals(3, ia[1]);
 
-        ia = ArrayUtil.deleteArrayPos(1, new int[] { 1, 2, 3 } );
+        ia = ArrayUtil.deleteArrayPos(1, new int[] {1, 2, 3});
         assertFalse(ia == null);
         assertEquals(int.class, ia.getClass().getComponentType());
         assertEquals(2, ia.length);
         assertEquals(1, ia[0]);
         assertEquals(3, ia[1]);
 
-        ia = ArrayUtil.deleteArrayPos(2, new int[] { 1, 2, 3 } );
+        ia = ArrayUtil.deleteArrayPos(2, new int[] {1, 2, 3});
         assertFalse(ia == null);
         assertEquals(int.class, ia.getClass().getComponentType());
         assertEquals(2, ia.length);
         assertEquals(1, ia[0]);
         assertEquals(2, ia[1]);
 
-        //---
+        // ---
 
         double[] da;
-        da = ArrayUtil.deleteArrayPos(0, new double[] { 1.0, 2.0, 3.0 } );
+        da = ArrayUtil.deleteArrayPos(0, new double[] {1.0, 2.0, 3.0});
         assertFalse(da == null);
         assertEquals(double.class, da.getClass().getComponentType());
         assertEquals(2, da.length);
         assertEquals(2.0, da[0]);
         assertEquals(3.0, da[1]);
 
-        da = ArrayUtil.deleteArrayPos(1, new double[] { 1.0, 2.0, 3.0 } );
+        da = ArrayUtil.deleteArrayPos(1, new double[] {1.0, 2.0, 3.0});
         assertFalse(da == null);
         assertEquals(double.class, da.getClass().getComponentType());
         assertEquals(2, da.length);
         assertEquals(1.0, da[0]);
         assertEquals(3.0, da[1]);
 
-        da = ArrayUtil.deleteArrayPos(2, new double[] { 1.0, 2.0, 3.0 } );
+        da = ArrayUtil.deleteArrayPos(2, new double[] {1.0, 2.0, 3.0});
         assertFalse(da == null);
         assertEquals(double.class, da.getClass().getComponentType());
         assertEquals(2, da.length);
@@ -171,7 +171,7 @@ public class ArrayUtilTest extends TestCase {
         assertEquals("third", sa_third[1]);
         assertEquals("bar", sa_third[2]);
 
-        //--
+        // --
 
         int[] ia = ArrayUtil.insert(new int[0], 0, 1);
         assertFalse(ia == null);
@@ -201,7 +201,7 @@ public class ArrayUtilTest extends TestCase {
         assertEquals(3, ia_third[1]);
         assertEquals(2, ia_third[2]);
 
-        //--
+        // --
 
         double[] da = ArrayUtil.insert(new double[0], 0, 1.0);
         assertFalse(da == null);
@@ -231,7 +231,7 @@ public class ArrayUtilTest extends TestCase {
         assertEquals(3.0, da_third[1]);
         assertEquals(2.0, da_third[2]);
 
-        //--
+        // --
 
         long[] la = ArrayUtil.insert(new long[0], 0, 1);
         assertFalse(la == null);
@@ -264,18 +264,22 @@ public class ArrayUtilTest extends TestCase {
 
     public static class StringWrapper {
         public String s;
+
         public StringWrapper(String s) {
             this.s = s;
         }
+
         public boolean equals(Object other) {
             return other instanceof StringWrapper && ((StringWrapper) other).s.equals(this.s);
         }
 
         public static class UnaryEquals implements Predicate.Unary<StringWrapper> {
             String other;
+
             UnaryEquals(String other) {
                 this.other = other;
             }
+
             public boolean call(StringWrapper arg) {
                 return arg.s.equals(other);
             }
@@ -289,9 +293,11 @@ public class ArrayUtilTest extends TestCase {
 
         public static class NullaryFactory implements Function.Nullary<StringWrapper> {
             String s;
+
             NullaryFactory(String s) {
                 this.s = s;
             }
+
             public StringWrapper call() {
                 return new StringWrapper(s);
             }
@@ -329,7 +335,7 @@ public class ArrayUtilTest extends TestCase {
     }
 
     public void testRemoveFromArray() {
-        String sa[] = new String[] { "foo", "bar", "zot" };
+        String sa[] = new String[] {"foo", "bar", "zot"};
 
         String sa2[] = ArrayUtil.removeFromArray("qux", sa);
         assertTrue(sa2 == sa);
@@ -363,7 +369,7 @@ public class ArrayUtilTest extends TestCase {
         StringWrapper zot = new StringWrapper("zot");
         StringWrapper foo2 = new StringWrapper("foo");
 
-        StringWrapper[] sa = new StringWrapper[] { foo, bar };
+        StringWrapper[] sa = new StringWrapper[] {foo, bar};
 
         assertFalse(ArrayUtil.replaceInArray(zot, sa));
         assertTrue(sa[0] == foo);
@@ -379,18 +385,21 @@ public class ArrayUtilTest extends TestCase {
     }
 
     public void testAddUnlessUnary() {
-        StringWrapper[] sa = ArrayUtil.addUnless(null, StringWrapper.class, new StringWrapper.UnaryEquals("foo"), new StringWrapper.NullaryFactory("foo"));
+        StringWrapper[] sa = ArrayUtil.addUnless(null, StringWrapper.class,
+            new StringWrapper.UnaryEquals("foo"), new StringWrapper.NullaryFactory("foo"));
         assertFalse(sa == null);
         assertEquals(StringWrapper.class, sa.getClass().getComponentType());
         assertEquals(1, sa.length);
         assertEquals("foo", sa[0].s);
         StringWrapper sw1 = sa[0];
 
-        StringWrapper[] sa2 = ArrayUtil.addUnless(sa, StringWrapper.class, new StringWrapper.UnaryEquals("foo"), new StringWrapper.NullaryFactory("foo"));
+        StringWrapper[] sa2 = ArrayUtil.addUnless(sa, StringWrapper.class,
+            new StringWrapper.UnaryEquals("foo"), new StringWrapper.NullaryFactory("foo"));
         assertTrue(sa2 == sa);
         assertTrue(sa2[0] == sw1);
 
-        StringWrapper[] sa3 = ArrayUtil.addUnless(sa, StringWrapper.class, new StringWrapper.UnaryEquals("bar"), new StringWrapper.NullaryFactory("bar"));
+        StringWrapper[] sa3 = ArrayUtil.addUnless(sa, StringWrapper.class,
+            new StringWrapper.UnaryEquals("bar"), new StringWrapper.NullaryFactory("bar"));
         assertFalse(sa3 == sa);
         assertEquals(StringWrapper.class, sa.getClass().getComponentType());
         assertEquals(2, sa3.length);
@@ -399,18 +408,21 @@ public class ArrayUtilTest extends TestCase {
     }
 
     public void testAddUnlessBinary() {
-        StringWrapper[] sa = ArrayUtil.addUnless(null, StringWrapper.class, new StringWrapper.BinaryEquals(), new StringWrapper.UnaryFactory(), "foo");
+        StringWrapper[] sa = ArrayUtil.addUnless(null, StringWrapper.class,
+            new StringWrapper.BinaryEquals(), new StringWrapper.UnaryFactory(), "foo");
         assertFalse(sa == null);
         assertEquals(StringWrapper.class, sa.getClass().getComponentType());
         assertEquals(1, sa.length);
         assertEquals("foo", sa[0].s);
         StringWrapper sw1 = sa[0];
 
-        StringWrapper[] sa2 = ArrayUtil.addUnless(sa, StringWrapper.class, new StringWrapper.BinaryEquals(), new StringWrapper.UnaryFactory(), "foo");
+        StringWrapper[] sa2 = ArrayUtil.addUnless(sa, StringWrapper.class,
+            new StringWrapper.BinaryEquals(), new StringWrapper.UnaryFactory(), "foo");
         assertTrue(sa2 == sa);
         assertTrue(sa2[0] == sw1);
 
-        StringWrapper[] sa3 = ArrayUtil.addUnless(sa, StringWrapper.class, new StringWrapper.BinaryEquals(), new StringWrapper.UnaryFactory(), "bar");
+        StringWrapper[] sa3 = ArrayUtil.addUnless(sa, StringWrapper.class,
+            new StringWrapper.BinaryEquals(), new StringWrapper.UnaryFactory(), "bar");
         assertFalse(sa3 == sa);
         assertEquals(StringWrapper.class, sa.getClass().getComponentType());
         assertEquals(2, sa3.length);
@@ -419,19 +431,22 @@ public class ArrayUtilTest extends TestCase {
     }
 
     public void testReplaceOrAdd() {
-        StringWrapper[] sa = ArrayUtil.replaceOrAdd(null, StringWrapper.class, new StringWrapper.BinaryEquals(), new StringWrapper.UnaryFactory(), "foo");
+        StringWrapper[] sa = ArrayUtil.replaceOrAdd(null, StringWrapper.class,
+            new StringWrapper.BinaryEquals(), new StringWrapper.UnaryFactory(), "foo");
         assertFalse(sa == null);
         assertEquals(StringWrapper.class, sa.getClass().getComponentType());
         assertEquals(1, sa.length);
         assertEquals("foo", sa[0].s);
         StringWrapper sw1 = sa[0];
 
-        StringWrapper[] sa2 = ArrayUtil.replaceOrAdd(sa, StringWrapper.class, new StringWrapper.BinaryEquals(), new StringWrapper.UnaryFactory(), "foo");
+        StringWrapper[] sa2 = ArrayUtil.replaceOrAdd(sa, StringWrapper.class,
+            new StringWrapper.BinaryEquals(), new StringWrapper.UnaryFactory(), "foo");
         assertTrue(sa2 == sa);
         assertEquals("foo", sa2[0].s);
         assertTrue(sa2[0] != sw1);
 
-        StringWrapper[] sa3 = ArrayUtil.addUnless(sa, StringWrapper.class, new StringWrapper.BinaryEquals(), new StringWrapper.UnaryFactory(), "bar");
+        StringWrapper[] sa3 = ArrayUtil.addUnless(sa, StringWrapper.class,
+            new StringWrapper.BinaryEquals(), new StringWrapper.UnaryFactory(), "bar");
         assertFalse(sa3 == sa);
         assertEquals(StringWrapper.class, sa.getClass().getComponentType());
         assertEquals(2, sa3.length);
@@ -443,7 +458,7 @@ public class ArrayUtilTest extends TestCase {
         StringWrapper foo = new StringWrapper("foo");
         StringWrapper bar = new StringWrapper("bar");
         StringWrapper zot = new StringWrapper("zot");
-        StringWrapper[] sa = new StringWrapper[] { foo, bar, zot };
+        StringWrapper[] sa = new StringWrapper[] {foo, bar, zot};
 
         StringWrapper[] sa2 = ArrayUtil.removeIf(sa, new StringWrapper.UnaryEquals("qux"));
         assertTrue(sa2 == sa);
@@ -475,7 +490,7 @@ public class ArrayUtilTest extends TestCase {
         StringWrapper foo = new StringWrapper("foo");
         StringWrapper bar = new StringWrapper("bar");
         StringWrapper zot = new StringWrapper("zot");
-        StringWrapper[] sa = new StringWrapper[] { foo, bar, zot };
+        StringWrapper[] sa = new StringWrapper[] {foo, bar, zot};
 
         StringWrapper[] sa2 = ArrayUtil.removeIf(sa, new StringWrapper.BinaryEquals(), "qux");
         assertTrue(sa2 == sa);
@@ -506,15 +521,14 @@ public class ArrayUtilTest extends TestCase {
     private static void nullOrEqual(final String sa, final String sb) {
         if (sa == null) {
             assertTrue(sb == null);
-        }
-        else {
+        } else {
             assertTrue(sa.equals(sb));
         }
     }
 
     private static void checkRange(final String[] a, final int aFromIndex,
-                                   final String[] b, final int bFromIndex,
-                                   final int count) {
+        final String[] b, final int bFromIndex,
+        final int count) {
         assertTrue(aFromIndex + count <= a.length);
         assertTrue(bFromIndex + count <= b.length);
         for (int i = 0; i < count; ++i) {
@@ -530,10 +544,10 @@ public class ArrayUtilTest extends TestCase {
     }
 
     public void testMerge() {
-        final String[] ss1 = { "a", "b", "c" };
-        final String[] ss2 = { "d", "c", "e", "f", "g" };
+        final String[] ss1 = {"a", "b", "c"};
+        final String[] ss2 = {"d", "c", "e", "f", "g"};
         final String[] empty = {};
-        final String[] one = { "just1" };
+        final String[] one = {"just1"};
         checkMerge(ss1, ss2);
         checkMerge(ss1, empty);
         checkMerge(empty, ss2);
@@ -590,9 +604,9 @@ public class ArrayUtilTest extends TestCase {
     }
 
     public void testMergeMulti() {
-        String[] s1 = { "a", "b", "c"};
-        String[] s2 = { "d", "e", "f", "g"};
-        String[] s3 = { "h", "i" };
+        String[] s1 = {"a", "b", "c"};
+        String[] s2 = {"d", "e", "f", "g"};
+        String[] s3 = {"h", "i"};
         String[] m1 = ArrayUtil.merge(ArrayUtil.merge(s1, s2, String.class), s3, String.class);
         String[] m2 = ArrayUtil.merge(String.class, s1, s2, s3);
         checkEquals(m1, m2);
@@ -600,50 +614,50 @@ public class ArrayUtilTest extends TestCase {
 
     public void testIsSorted() {
         // ints
-        assertTrue(ArrayUtil.isSorted(new int[]{1, 2, 3, 5}));
-        assertTrue(ArrayUtil.isSorted(new int[]{1, 2}));
-        assertTrue(ArrayUtil.isSorted(new int[]{1}));
+        assertTrue(ArrayUtil.isSorted(new int[] {1, 2, 3, 5}));
+        assertTrue(ArrayUtil.isSorted(new int[] {1, 2}));
+        assertTrue(ArrayUtil.isSorted(new int[] {1}));
         assertTrue(ArrayUtil.isSorted(new int[0]));
-        assertTrue(ArrayUtil.isSorted((int[])null));
+        assertTrue(ArrayUtil.isSorted((int[]) null));
 
-        assertFalse(ArrayUtil.isSorted(new int[]{1, 5, 3, 4}));
-        assertFalse(ArrayUtil.isSorted(new int[]{5, 2, 3, 4}));
-        assertFalse(ArrayUtil.isSorted(new int[]{1, 2, 3, 0}));
+        assertFalse(ArrayUtil.isSorted(new int[] {1, 5, 3, 4}));
+        assertFalse(ArrayUtil.isSorted(new int[] {5, 2, 3, 4}));
+        assertFalse(ArrayUtil.isSorted(new int[] {1, 2, 3, 0}));
 
         // longs
-        assertTrue(ArrayUtil.isSorted(new long[]{1, 2, 3, 5}));
-        assertTrue(ArrayUtil.isSorted(new long[]{1, 2}));
-        assertTrue(ArrayUtil.isSorted(new long[]{1}));
+        assertTrue(ArrayUtil.isSorted(new long[] {1, 2, 3, 5}));
+        assertTrue(ArrayUtil.isSorted(new long[] {1, 2}));
+        assertTrue(ArrayUtil.isSorted(new long[] {1}));
         assertTrue(ArrayUtil.isSorted(new long[0]));
-        assertTrue(ArrayUtil.isSorted((long[])null));
+        assertTrue(ArrayUtil.isSorted((long[]) null));
 
-        assertFalse(ArrayUtil.isSorted(new long[]{1, 5, 3, 4}));
-        assertFalse(ArrayUtil.isSorted(new long[]{5, 2, 3, 4}));
-        assertFalse(ArrayUtil.isSorted(new long[]{1, 2, 3, 0}));
+        assertFalse(ArrayUtil.isSorted(new long[] {1, 5, 3, 4}));
+        assertFalse(ArrayUtil.isSorted(new long[] {5, 2, 3, 4}));
+        assertFalse(ArrayUtil.isSorted(new long[] {1, 2, 3, 0}));
 
         // doubles
-        assertTrue(ArrayUtil.isSorted(new double[]{1, 2, 3, 5}));
-        assertTrue(ArrayUtil.isSorted(new double[]{1, 2}));
-        assertTrue(ArrayUtil.isSorted(new double[]{1}));
+        assertTrue(ArrayUtil.isSorted(new double[] {1, 2, 3, 5}));
+        assertTrue(ArrayUtil.isSorted(new double[] {1, 2}));
+        assertTrue(ArrayUtil.isSorted(new double[] {1}));
         assertTrue(ArrayUtil.isSorted(new double[0]));
-        assertTrue(ArrayUtil.isSorted((double[])null));
+        assertTrue(ArrayUtil.isSorted((double[]) null));
 
-        assertFalse(ArrayUtil.isSorted(new double[]{1, 5, 3, 4}));
-        assertFalse(ArrayUtil.isSorted(new double[]{5, 2, 3, 4}));
-        assertFalse(ArrayUtil.isSorted(new double[]{1, 2, 3, 0}));
+        assertFalse(ArrayUtil.isSorted(new double[] {1, 5, 3, 4}));
+        assertFalse(ArrayUtil.isSorted(new double[] {5, 2, 3, 4}));
+        assertFalse(ArrayUtil.isSorted(new double[] {1, 2, 3, 0}));
 
         // Objects
-        assertTrue(ArrayUtil.isSorted(new String[]{"A", "B", "C", "D"}));
-        assertTrue(ArrayUtil.isSorted(new String[]{"A", "B"}));
-        assertTrue(ArrayUtil.isSorted(new String[]{"A"}));
-        assertTrue(ArrayUtil.isSorted(new String[]{null, "A", "B"}));
+        assertTrue(ArrayUtil.isSorted(new String[] {"A", "B", "C", "D"}));
+        assertTrue(ArrayUtil.isSorted(new String[] {"A", "B"}));
+        assertTrue(ArrayUtil.isSorted(new String[] {"A"}));
+        assertTrue(ArrayUtil.isSorted(new String[] {null, "A", "B"}));
         assertTrue(ArrayUtil.isSorted(new String[0]));
-        assertTrue(ArrayUtil.isSorted((String[])null));
+        assertTrue(ArrayUtil.isSorted((String[]) null));
 
-        assertFalse(ArrayUtil.isSorted(new String[]{"A", "Z", "C", "D"}));
-        assertFalse(ArrayUtil.isSorted(new String[]{"Z", "B", "C", "D"}));
-        assertFalse(ArrayUtil.isSorted(new String[]{"B", "C", "D", "A"}));
-        assertFalse(ArrayUtil.isSorted(new String[]{"A", "C", "D", null}));
-        assertFalse(ArrayUtil.isSorted(new String[]{"B", null, "D", "A"}));
+        assertFalse(ArrayUtil.isSorted(new String[] {"A", "Z", "C", "D"}));
+        assertFalse(ArrayUtil.isSorted(new String[] {"Z", "B", "C", "D"}));
+        assertFalse(ArrayUtil.isSorted(new String[] {"B", "C", "D", "A"}));
+        assertFalse(ArrayUtil.isSorted(new String[] {"A", "C", "D", null}));
+        assertFalse(ArrayUtil.isSorted(new String[] {"B", null, "D", "A"}));
     }
 }

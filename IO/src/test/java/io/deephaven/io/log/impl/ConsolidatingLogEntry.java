@@ -16,19 +16,25 @@ import io.deephaven.io.log.LogSink;
 
 import java.nio.ByteBuffer;
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 /**
- * A mock {@link LogEntry} for use with JMock that consolidates all
- * the append calls into the single resulting string.
- * <P> Example: </P>
+ * A mock {@link LogEntry} for use with JMock that consolidates all the append calls into the single
+ * resulting string.
+ * <P>
+ * Example:
+ * </P>
+ * 
  * <PRE>
- * final Logger logger=mock(Logger.class);
- * final ConsolidatingLogEntry.Monitor logEntryMonitor=mock(ConsolidatingLogEntry.Monitor.class);
- * final LogEntry logEntry=new ConsolidatingLogEntry(logEntryMonitor);
- * checking(new Expectations() {{
- *     oneOf(logger).info(); will(returnValue(logEntry));
- *     oneOf(logEntryMonitor).endl("Some logged message.");
- * }});
+ * final Logger logger = mock(Logger.class);
+ * final ConsolidatingLogEntry.Monitor logEntryMonitor = mock(ConsolidatingLogEntry.Monitor.class);
+ * final LogEntry logEntry = new ConsolidatingLogEntry(logEntryMonitor);
+ * checking(new Expectations() {
+ *     {
+ *         oneOf(logger).info();
+ *         will(returnValue(logEntry));
+ *         oneOf(logEntryMonitor).endl("Some logged message.");
+ *     }
+ * });
  * objectUnderTest.someMethodThatLogs(logger);
  * assertIsSatisfied();
  * </PRE>
@@ -36,26 +42,29 @@ import java.nio.ByteBuffer;
 public class ConsolidatingLogEntry extends LogOutputStringImpl implements LogEntry {
 
     public interface Monitor {
-        /** Indicates that {@link LogEntry#endl()} was called on the
-         * monitored {@link LogEntry} and the given message had been
-         * accumulated since the last call to endl(). */
+        /**
+         * Indicates that {@link LogEntry#endl()} was called on the monitored {@link LogEntry} and
+         * the given message had been accumulated since the last call to endl().
+         */
         void endl(String sMessage);
 
         void start(LogSink sink, LogLevel level, Throwable t);
     }
+
     private final Monitor m_monitor;
 
     public ConsolidatingLogEntry(Monitor monitor) {
         Require.neqNull(monitor, "monitor");
-        m_monitor=monitor;
+        m_monitor = monitor;
     }
 
     // called in JMock error reports, this makes more sense in that context that the super impl.
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return "{ConsolidatingLogEntry}";
     }
 
-    //################################################################
+    // ################################################################
 
     @Override
     public LogEntry start(final LogSink sink, LogLevel level) {
@@ -87,7 +96,7 @@ public class ConsolidatingLogEntry extends LogOutputStringImpl implements LogEnt
         return this;
     }
 
-    //################################################################
+    // ################################################################
 
     @Override // from LogSink.Element
     public long getTimestampMicros() {
@@ -114,7 +123,7 @@ public class ConsolidatingLogEntry extends LogOutputStringImpl implements LogEnt
         throw Assert.statementNeverExecuted();
     }
 
-    //################################################################
+    // ################################################################
 
     @Override // from LogOutput
     public LogOutput start() {
@@ -151,7 +160,7 @@ public class ConsolidatingLogEntry extends LogOutputStringImpl implements LogEnt
         throw Assert.statementNeverExecuted();
     }
 
-    //################################################################
+    // ################################################################
 
     @Override // from LogEntry, covariant with LogOutput
     public LogEntry append(final boolean b) {

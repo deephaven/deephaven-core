@@ -13,24 +13,24 @@ import jsinterop.base.Js;
     name = "dhinternal.browserHeaders.iterateHeaders",
     namespace = JsPackage.GLOBAL)
 public class IterateHeaders {
-  @JsFunction
-  public interface IterateHeadersCallbackFn {
-    void onInvoke(JsArray<String> p0);
+    @JsFunction
+    public interface IterateHeadersCallbackFn {
+        void onInvoke(JsArray<String> p0);
 
-    @JsOverlay
-    default void onInvoke(String[] p0) {
-      onInvoke(Js.<JsArray<String>>uncheckedCast(p0));
+        @JsOverlay
+        default void onInvoke(String[] p0) {
+            onInvoke(Js.<JsArray<String>>uncheckedCast(p0));
+        }
     }
-  }
 
-  @JsFunction
-  public interface IterateHeadersKeysCallbackFn {
-    void onInvoke(String p0);
-  }
+    @JsFunction
+    public interface IterateHeadersKeysCallbackFn {
+        void onInvoke(String p0);
+    }
 
-  public static native void iterateHeaders(
-      WindowHeaders headers, IterateHeaders.IterateHeadersCallbackFn callback);
+    public static native void iterateHeaders(
+        WindowHeaders headers, IterateHeaders.IterateHeadersCallbackFn callback);
 
-  public static native void iterateHeadersKeys(
-      WindowHeaders headers, IterateHeaders.IterateHeadersKeysCallbackFn callback);
+    public static native void iterateHeadersKeys(
+        WindowHeaders headers, IterateHeaders.IterateHeadersKeysCallbackFn callback);
 }

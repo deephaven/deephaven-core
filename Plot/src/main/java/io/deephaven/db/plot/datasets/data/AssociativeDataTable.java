@@ -15,12 +15,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * An {@link AssociativeData} dataset backed by a {@link Table}.  Table columns hold the keys and
- * the associated values.
+ * An {@link AssociativeData} dataset backed by a {@link Table}. Table columns hold the keys and the
+ * associated values.
  *
  * Data types are specified in construction.
  */
-public class AssociativeDataTable<KEY,VALUE,VALUECOLUMN> extends LiveAssociativeData<KEY,VALUE,VALUECOLUMN> {
+public class AssociativeDataTable<KEY, VALUE, VALUECOLUMN>
+    extends LiveAssociativeData<KEY, VALUE, VALUECOLUMN> {
 
     private static final long serialVersionUID = -1752085070371782144L;
     private final TableHandle tableHandle;
@@ -31,16 +32,18 @@ public class AssociativeDataTable<KEY,VALUE,VALUECOLUMN> extends LiveAssociative
     /**
      * Creates an AssociativeDataSwappableTable instance.
      *
-     * Key are in the {@code keyColumn} of the table held by {@code tableHandle}.
-     * Their associated values are in the {@code valueColumn}.
+     * Key are in the {@code keyColumn} of the table held by {@code tableHandle}. Their associated
+     * values are in the {@code valueColumn}.
      *
-     * The data type of the keys is specified by {@code keyColumnType}.
-     * The data type of the values is specified by {@code valueColumnType}.
+     * The data type of the keys is specified by {@code keyColumnType}. The data type of the values
+     * is specified by {@code valueColumnType}.
      *
      * @throws io.deephaven.base.verify.RequirementFailure {@code tableHandle}, {@code keyColumn},
-     *                                                      and {@code valueColumn} must not be null
-     * @throws IllegalArgumentException {@code keyColumn} and {@code valueColumn} must be columns in {@code swappableTable}
-     * @throws RuntimeException the specified data types must match the data types of the corresponding columns
+     *         and {@code valueColumn} must not be null
+     * @throws IllegalArgumentException {@code keyColumn} and {@code valueColumn} must be columns in
+     *         {@code swappableTable}
+     * @throws RuntimeException the specified data types must match the data types of the
+     *         corresponding columns
      * @param tableHandle holds the underlying table
      * @param keyColumn column in the table which holds the key values
      * @param valueColumn column in the table which holds the values associated with the keys
@@ -48,23 +51,33 @@ public class AssociativeDataTable<KEY,VALUE,VALUECOLUMN> extends LiveAssociative
      * @param valueColumnType data type of the values
      * @param plotInfo plot information
      */
-    public AssociativeDataTable(final TableHandle tableHandle, final String keyColumn, final String valueColumn, final Class<KEY> keyColumnType, final Class<VALUECOLUMN> valueColumnType, final PlotInfo plotInfo) {
+    public AssociativeDataTable(final TableHandle tableHandle, final String keyColumn,
+        final String valueColumn, final Class<KEY> keyColumnType,
+        final Class<VALUECOLUMN> valueColumnType, final PlotInfo plotInfo) {
         super(plotInfo);
         ArgumentValidations.assertNotNull(tableHandle, "tableHandle", getPlotInfo());
         ArgumentValidations.assertNotNull(keyColumn, "keyColumn", getPlotInfo());
         ArgumentValidations.assertNotNull(valueColumn, "valueColumn", getPlotInfo());
         ArgumentValidations.assertColumnsInTable(tableHandle, plotInfo, keyColumn, valueColumn);
-        ArgumentValidations.assertInstance(tableHandle.getTable(), keyColumn, keyColumnType, keyColumn + " is not of type " + keyColumnType, plotInfo);
-        ArgumentValidations.assertInstance(tableHandle.getTable(), valueColumn, valueColumnType, valueColumn + " is not of type " + valueColumnType, plotInfo);
+        ArgumentValidations.assertInstance(tableHandle.getTable(), keyColumn, keyColumnType,
+            keyColumn + " is not of type " + keyColumnType, plotInfo);
+        ArgumentValidations.assertInstance(tableHandle.getTable(), valueColumn, valueColumnType,
+            valueColumn + " is not of type " + valueColumnType, plotInfo);
 
         this.tableHandle = tableHandle;
-        tableHandle.setTable(PlotUtils.createCategoryTable(tableHandle.getTable(), new String[]{keyColumn})); //todo should this be done here
+        tableHandle.setTable(
+            PlotUtils.createCategoryTable(tableHandle.getTable(), new String[] {keyColumn})); // todo
+                                                                                              // should
+                                                                                              // this
+                                                                                              // be
+                                                                                              // done
+                                                                                              // here
         this.keyColumn = keyColumn;
         this.valueColumn = valueColumn;
     }
 
 
-    //////////////////////////  external  //////////////////////////
+    ////////////////////////// external //////////////////////////
 
 
     @Override
@@ -73,16 +86,20 @@ public class AssociativeDataTable<KEY,VALUE,VALUECOLUMN> extends LiveAssociative
     }
 
     @Override
-    public boolean isModifiable() { return false; }
+    public boolean isModifiable() {
+        return false;
+    }
 
     @Override
     public void put(KEY key, VALUE value) {
-        throw new PlotUnsupportedOperationException("Modifying values is not supported for AssociativeDataTable", getPlotInfo());
+        throw new PlotUnsupportedOperationException(
+            "Modifying values is not supported for AssociativeDataTable", getPlotInfo());
     }
 
     @Override
     public <K extends KEY, V extends VALUE> void putAll(Map<K, V> values) {
-        throw new PlotUnsupportedOperationException("Modifying values is not supported for AssociativeDataTable", getPlotInfo());
+        throw new PlotUnsupportedOperationException(
+            "Modifying values is not supported for AssociativeDataTable", getPlotInfo());
     }
 
 }

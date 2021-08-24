@@ -1,8 +1,8 @@
 /*
  * (c) the authors Licensed under the Apache License, Version 2.0.
  *
- * The code in this file is a heavily modified version of the
- * original in the RoaringBitmap library; please see https://roaringbitmap.org/
+ * The code in this file is a heavily modified version of the original in the RoaringBitmap library;
+ * please see https://roaringbitmap.org/
  *
  */
 
@@ -18,23 +18,24 @@ import static java.lang.Long.numberOfTrailingZeros;
 public final class ContainerUtil {
 
     /**
-     * optimization flag: whether to use hybrid binary search: hybrid formats
-     * combine a binary search with a sequential search
+     * optimization flag: whether to use hybrid binary search: hybrid formats combine a binary
+     * search with a sequential search
      */
     public static final boolean USE_HYBRID_BINSEARCH = true;
 
     /**
-     * Find the smallest integer larger than pos such that array[pos]&gt;= min. If none can be found,
-     * return length. Based on code by O. Kaser.
+     * Find the smallest integer larger than pos such that array[pos]&gt;= min. If none can be
+     * found, return length. Based on code by O. Kaser.
      *
-     * @param array  array to search within
-     * @param pos    starting position of the search
+     * @param array array to search within
+     * @param pos starting position of the search
      * @param length length of the array to search
-     * @param min    minimum value
-     * @return x greater than pos such that array[pos] is at least as large as min, pos is is equal to
-     * length if it is not possible.
+     * @param min minimum value
+     * @return x greater than pos such that array[pos] is at least as large as min, pos is is equal
+     *         to length if it is not possible.
      */
-    public static int advanceUntil(final short[] array, final int pos, final int length, final short min) {
+    public static int advanceUntil(final short[] array, final int pos, final int length,
+        final short min) {
         int lower = pos + 1;
 
         // special handling for a possibly common sequential case
@@ -46,7 +47,7 @@ public final class ContainerUtil {
         // bootstrap an upper limit
 
         while (lower + spansize < length
-                && toIntUnsigned(array[lower + spansize]) < toIntUnsigned(min)) {
+            && toIntUnsigned(array[lower + spansize]) < toIntUnsigned(min)) {
             spansize *= 2; // hoping for compiler will reduce to
         }
         // shift
@@ -89,15 +90,15 @@ public final class ContainerUtil {
     }
 
     /**
-     * Find the smallest integer larger than pos such that array[pos]&gt;= min. If none can be found,
-     * return length.
+     * Find the smallest integer larger than pos such that array[pos]&gt;= min. If none can be
+     * found, return length.
      *
-     * @param array  array to search within
-     * @param pos    starting position of the search
+     * @param array array to search within
+     * @param pos starting position of the search
      * @param length length of the array to search
-     * @param min    minimum value
-     * @return x greater than pos such that array[pos] is at least as large as min, pos is is equal to
-     * length if it is not possible.
+     * @param min minimum value
+     * @return x greater than pos such that array[pos] is at least as large as min, pos is is equal
+     *         to length if it is not possible.
      */
     public static int iterateUntil(final short[] array, int pos, final int length, final int min) {
         while (pos < length && toIntUnsigned(array[pos]) < min) {
@@ -107,7 +108,7 @@ public final class ContainerUtil {
     }
 
     protected static int branchyUnsignedBinarySearch(final short[] array, final int begin,
-                                                     final int end, final short k) {
+        final int end, final short k) {
         int ikey = toIntUnsigned(k);
         // next line accelerates the possibly common case where the value would
         // be inserted at the end
@@ -134,31 +135,32 @@ public final class ContainerUtil {
     @FunctionalInterface
     public interface TargetComparator {
         /**
-         * Compare the underlying target to the provided value.
-         * Return -1, 0, or 1 if target is less than, equal, or greater than the provided value, respectively.
+         * Compare the underlying target to the provided value. Return -1, 0, or 1 if target is less
+         * than, equal, or greater than the provided value, respectively.
          *
          * @param value
-         * @return -1 if target is to the left of value (target < value );
-         * 0 if value == target;
-         * +1 if target is to the right of value (value < target).
+         * @return -1 if target is to the left of value (target < value ); 0 if value == target; +1
+         *         if target is to the right of value (value < target).
          */
         int directionFrom(final int value);
     }
 
     /**
-     * Search for the largest value in array such that comp.directionFrom(value) > 0, or any
-     * value such that comp.directionFrom(value) == 0, and return its index.
-     * If there is no such a value return -1.
+     * Search for the largest value in array such that comp.directionFrom(value) > 0, or any value
+     * such that comp.directionFrom(value) == 0, and return its index. If there is no such a value
+     * return -1.
      *
      * @param array Array with values sorted in increasing order.
      * @param begin Start position in the array for the search.
-     * @param end   One past the last position in the array for the search.
-     * @param comp  A comparator.
-     * @return -1 if comp.directionFrom(array[begin]) < 0, otherwise the biggest position pos in [begin, end - 1] such that
-     * comp.directionFrom(array[pos]) > 0 or, if there is a one or more positions pos for which
-     * comp.directionFrom(array[pos]) == 0, return any of them.
+     * @param end One past the last position in the array for the search.
+     * @param comp A comparator.
+     * @return -1 if comp.directionFrom(array[begin]) < 0, otherwise the biggest position pos in
+     *         [begin, end - 1] such that comp.directionFrom(array[pos]) > 0 or, if there is a one
+     *         or more positions pos for which comp.directionFrom(array[pos]) == 0, return any of
+     *         them.
      */
-    public static int search(final short[] array, final int begin, final int end, final TargetComparator comp) {
+    public static int search(final short[] array, final int begin, final int end,
+        final TargetComparator comp) {
         if (end < 1) {
             return -1;
         }
@@ -206,12 +208,14 @@ public final class ContainerUtil {
     }
 
     /**
-     * Look for the biggest value of i that satisfies begin <= i < end and comp.directionFrom(i) >= 0.
+     * Look for the biggest value of i that satisfies begin <= i < end and comp.directionFrom(i) >=
+     * 0.
      *
      * @param begin The beginning of the range (inclusive)
-     * @param end   The end of the range (exclusive)
-     * @param comp  a TargetComparator.
-     * @return the last position i inside the provided range that satisfies comp.directionFrom(i) >= 0, or -1 if none does.
+     * @param end The end of the range (exclusive)
+     * @param comp a TargetComparator.
+     * @return the last position i inside the provided range that satisfies comp.directionFrom(i) >=
+     *         0, or -1 if none does.
      */
     public static int rangeSearch(final int begin, final int end, final TargetComparator comp) {
         if (begin >= end) {
@@ -252,8 +256,8 @@ public final class ContainerUtil {
      *
      * @param a the first unsigned {@code short} to compare
      * @param b the second unsigned {@code short} to compare
-     * @return a negative value if {@code a} is less than {@code b}; a positive value if {@code a} is
-     * greater than {@code b}; or zero if they are equal
+     * @return a negative value if {@code a} is less than {@code b}; a positive value if {@code a}
+     *         is greater than {@code b}; or zero if they are equal
      */
     public static int compareUnsigned(final short a, final short b) {
         return toIntUnsigned(a) - toIntUnsigned(b);
@@ -263,11 +267,11 @@ public final class ContainerUtil {
      * Compute the bitwise AND between two long arrays and write the set bits in the container.
      *
      * @param container where we write
-     * @param bitmap1   first bitmap
-     * @param bitmap2   second bitmap
+     * @param bitmap1 first bitmap
+     * @param bitmap2 second bitmap
      */
     public static void fillArrayAND(final short[] container, final long[] bitmap1,
-                                    final long[] bitmap2) {
+        final long[] bitmap2) {
         int pos = 0;
         if (bitmap1.length != bitmap2.length) {
             throw new IllegalArgumentException("not supported");
@@ -285,11 +289,11 @@ public final class ContainerUtil {
      * Compute the bitwise ANDNOT between two long arrays and write the set bits in the container.
      *
      * @param container where we write
-     * @param bitmap1   first bitmap
-     * @param bitmap2   second bitmap
+     * @param bitmap1 first bitmap
+     * @param bitmap2 second bitmap
      */
     public static void fillArrayANDNOT(final short[] container, final long[] bitmap1,
-                                       final long[] bitmap2) {
+        final long[] bitmap2) {
         int pos = 0;
         if (bitmap1.length != bitmap2.length) {
             throw new IllegalArgumentException("not supported");
@@ -307,11 +311,11 @@ public final class ContainerUtil {
      * Compute the bitwise XOR between two long arrays and write the set bits in the container.
      *
      * @param container where we write
-     * @param bitmap1   first bitmap
-     * @param bitmap2   second bitmap
+     * @param bitmap1 first bitmap
+     * @param bitmap2 second bitmap
      */
     public static void fillArrayXOR(final short[] container, final long[] bitmap1,
-                                    final long[] bitmap2) {
+        final long[] bitmap2) {
         int pos = 0;
         if (bitmap1.length != bitmap2.length) {
             throw new IllegalArgumentException("not supported");
@@ -329,8 +333,8 @@ public final class ContainerUtil {
      * flip bits at start, start+1,..., end-1
      *
      * @param bitmap array of words to be modified
-     * @param start  first index to be modified (inclusive)
-     * @param end    last index to be modified (exclusive)
+     * @param start first index to be modified (inclusive)
+     * @param end last index to be modified (exclusive)
      */
     public static void flipBitmapRange(final long[] bitmap, final int start, final int end) {
         if (start == end) {
@@ -347,18 +351,18 @@ public final class ContainerUtil {
 
 
     /**
-     * Hamming weight of the 64-bit words involved in the range
-     * start, start+1,..., end-1, that is, it will compute the
-     * cardinality of the bitset from index (floor(start/64) to floor((end-1)/64))
-     * inclusively.
+     * Hamming weight of the 64-bit words involved in the range start, start+1,..., end-1, that is,
+     * it will compute the cardinality of the bitset from index (floor(start/64) to
+     * floor((end-1)/64)) inclusively.
      *
      * @param bitmap array of words representing a bitset
-     * @param start  first index  (inclusive)
-     * @param end    last index (exclusive)
+     * @param start first index (inclusive)
+     * @param end last index (exclusive)
      * @return the hamming weight of the corresponding words
      */
     @Deprecated
-    public static int cardinalityInBitmapWordRange(final long[] bitmap, final int start, final int end) {
+    public static int cardinalityInBitmapWordRange(final long[] bitmap, final int start,
+        final int end) {
         if (start >= end) {
             return 0;
         }
@@ -373,15 +377,15 @@ public final class ContainerUtil {
 
 
     /**
-     * Hamming weight of the bitset in the range
-     * start, start+1,..., end-1
+     * Hamming weight of the bitset in the range start, start+1,..., end-1
      *
      * @param bitmap array of words representing a bitset
-     * @param start  first index  (inclusive)
-     * @param end    last index  (exclusive)
+     * @param start first index (inclusive)
+     * @param end last index (exclusive)
      * @return the hamming weight of the corresponding range
      */
-    public static int cardinalityInBitmapRange(final long[] bitmap, final int start, final int end) {
+    public static int cardinalityInBitmapRange(final long[] bitmap, final int start,
+        final int end) {
         if (start >= end) {
             return 0;
         }
@@ -400,7 +404,7 @@ public final class ContainerUtil {
 
     // starts with binary search and finishes with a sequential search
     protected static int hybridUnsignedBinarySearch(final short[] array, final int begin,
-                                                    final int end, final short k) {
+        final int end, final short k) {
         int ikey = toIntUnsigned(k);
         // next line accelerates the possibly common case where the value would
         // be inserted at the end
@@ -448,8 +452,8 @@ public final class ContainerUtil {
      * clear bits at start, start+1,..., end-1
      *
      * @param bitmap array of words to be modified
-     * @param start  first index to be modified (inclusive)
-     * @param end    last index to be modified (exclusive)
+     * @param start first index to be modified (inclusive)
+     * @param end last index to be modified (exclusive)
      */
     public static void resetBitmapRange(final long[] bitmap, final int start, final int end) {
         if (start == end) {
@@ -526,8 +530,8 @@ public final class ContainerUtil {
      * set bits at start, start+1,..., end-1
      *
      * @param bitmap array of words to be modified
-     * @param start  first index to be modified (inclusive)
-     * @param end    last index to be modified (exclusive)
+     * @param start first index to be modified (inclusive)
+     * @param end last index to be modified (exclusive)
      */
     public static void setBitmapRange(final long[] bitmap, final int start, final int end) {
         if (start == end) {
@@ -547,16 +551,16 @@ public final class ContainerUtil {
     }
 
     /**
-     * set bits at start, start+1,..., end-1 and report the
-     * cardinality change
+     * set bits at start, start+1,..., end-1 and report the cardinality change
      *
      * @param bitmap array of words to be modified
-     * @param start  first index to be modified (inclusive)
-     * @param end    last index to be modified (exclusive)
+     * @param start first index to be modified (inclusive)
+     * @param end last index to be modified (exclusive)
      * @return cardinality change
      */
     @Deprecated
-    public static int setBitmapRangeAndCardinalityChange(final long[] bitmap, final int start, final int end) {
+    public static int setBitmapRangeAndCardinalityChange(final long[] bitmap, final int start,
+        final int end) {
         int cardbefore = cardinalityInBitmapWordRange(bitmap, start, end);
         setBitmapRange(bitmap, start, end);
         int cardafter = cardinalityInBitmapWordRange(bitmap, start, end);
@@ -565,16 +569,16 @@ public final class ContainerUtil {
 
 
     /**
-     * flip  bits at start, start+1,..., end-1 and report the
-     * cardinality change
+     * flip bits at start, start+1,..., end-1 and report the cardinality change
      *
      * @param bitmap array of words to be modified
-     * @param start  first index to be modified (inclusive)
-     * @param end    last index to be modified (exclusive)
+     * @param start first index to be modified (inclusive)
+     * @param end last index to be modified (exclusive)
      * @return cardinality change
      */
     @Deprecated
-    public static int flipBitmapRangeAndCardinalityChange(final long[] bitmap, final int start, final int end) {
+    public static int flipBitmapRangeAndCardinalityChange(final long[] bitmap, final int start,
+        final int end) {
         int cardbefore = cardinalityInBitmapWordRange(bitmap, start, end);
         flipBitmapRange(bitmap, start, end);
         int cardafter = cardinalityInBitmapWordRange(bitmap, start, end);
@@ -583,16 +587,16 @@ public final class ContainerUtil {
 
 
     /**
-     * reset  bits at start, start+1,..., end-1 and report the
-     * cardinality change
+     * reset bits at start, start+1,..., end-1 and report the cardinality change
      *
      * @param bitmap array of words to be modified
-     * @param start  first index to be modified (inclusive)
-     * @param end    last index to be modified (exclusive)
+     * @param start first index to be modified (inclusive)
+     * @param end last index to be modified (exclusive)
      * @return cardinality change
      */
     @Deprecated
-    public static int resetBitmapRangeAndCardinalityChange(final long[] bitmap, final int start, final int end) {
+    public static int resetBitmapRangeAndCardinalityChange(final long[] bitmap, final int start,
+        final int end) {
         int cardbefore = cardinalityInBitmapWordRange(bitmap, start, end);
         resetBitmapRange(bitmap, start, end);
         int cardafter = cardinalityInBitmapWordRange(bitmap, start, end);
@@ -604,18 +608,18 @@ public final class ContainerUtil {
     }
 
     /**
-     * Look for value k in array in the range [begin,end). If the value is found, return its index. If
-     * not, return -(i+1) where i is the index where the value would be inserted. The array is assumed
-     * to contain sorted values where shorts are interpreted as unsigned integers.
+     * Look for value k in array in the range [begin,end). If the value is found, return its index.
+     * If not, return -(i+1) where i is the index where the value would be inserted. The array is
+     * assumed to contain sorted values where shorts are interpreted as unsigned integers.
      *
      * @param array array where we search
      * @param begin first index (inclusive)
-     * @param end   last index (exclusive)
-     * @param k     value we search for
+     * @param end last index (exclusive)
+     * @param k value we search for
      * @return count
      */
     public static int unsignedBinarySearch(final short[] array, final int begin, final int end,
-                                           final short k) {
+        final short k) {
         if (USE_HYBRID_BINSEARCH) {
             return hybridUnsignedBinarySearch(array, begin, end, k);
         } else {
@@ -627,15 +631,15 @@ public final class ContainerUtil {
      * Compute the difference between two sorted lists and write the result to the provided output
      * array
      *
-     * @param set1    first array
+     * @param set1 first array
      * @param length1 length of first array
-     * @param set2    second array
+     * @param set2 second array
      * @param length2 length of second array
-     * @param buffer  output array
+     * @param buffer output array
      * @return cardinality of the difference
      */
     public static int unsignedDifference(final short[] set1, final int length1, final short[] set2,
-                                         final int length2, final short[] buffer) {
+        final int length2, final short[] buffer) {
         int pos = 0;
         int k1 = 0, k2 = 0;
         if (0 == length2) {
@@ -683,13 +687,13 @@ public final class ContainerUtil {
      * Compute the difference between two sorted lists and write the result to the provided output
      * array
      *
-     * @param set1   first array
-     * @param set2   second array
+     * @param set1 first array
+     * @param set2 second array
      * @param buffer output array
      * @return cardinality of the difference
      */
     public static int unsignedDifference(final ShortIterator set1, final ShortIterator set2,
-                                         final short[] buffer) {
+        final short[] buffer) {
         int pos = 0;
         if (!set2.hasNext()) {
             while (set1.hasNext()) {
@@ -739,15 +743,15 @@ public final class ContainerUtil {
      * Compute the exclusive union of two sorted lists and write the result to the provided output
      * array
      *
-     * @param set1    first array
+     * @param set1 first array
      * @param length1 length of first array
-     * @param set2    second array
+     * @param set2 second array
      * @param length2 length of second array
-     * @param buffer  output array
+     * @param buffer output array
      * @return cardinality of the exclusive union
      */
     public static int unsignedExclusiveUnion2by2(final short[] set1, final int length1,
-                                                 final short[] set2, final int length2, final short[] buffer) {
+        final short[] set2, final int length2, final short[] buffer) {
         int pos = 0;
         int k1 = 0, k2 = 0;
         if (0 == length2) {
@@ -799,15 +803,16 @@ public final class ContainerUtil {
     /**
      * Intersect two sorted lists and write the result to the provided output array
      *
-     * @param set1    first array
+     * @param set1 first array
      * @param length1 length of first array
-     * @param set2    second array
+     * @param set2 second array
      * @param length2 length of second array
-     * @param buffer  output array
+     * @param buffer output array
      * @return cardinality of the intersection
      */
-    public static int unsignedIntersect2by2(final short[] set1, final int length1, final short[] set2,
-                                            final int length2, final short[] buffer) {
+    public static int unsignedIntersect2by2(final short[] set1, final int length1,
+        final short[] set2,
+        final int length2, final short[] buffer) {
         final int THRESHOLD = 25;
         if (set1.length * THRESHOLD < set2.length) {
             return unsignedOneSidedGallopingIntersect2by2(set1, length1, set2, length2, buffer);
@@ -822,13 +827,14 @@ public final class ContainerUtil {
     /**
      * Checks if two arrays intersect
      *
-     * @param set1    first array
+     * @param set1 first array
      * @param length1 length of first array
-     * @param set2    second array
+     * @param set2 second array
      * @param length2 length of second array
      * @return true if they intersect
      */
-    public static boolean unsignedIntersects(final short[] set1, final int length1, final short[] set2, final int length2) {
+    public static boolean unsignedIntersects(final short[] set1, final int length1,
+        final short[] set2, final int length2) {
         // galloping might be faster, but we do not expect this function to be slow
         if ((0 == length1) || (0 == length2)) {
             return false;
@@ -837,8 +843,7 @@ public final class ContainerUtil {
         int k2 = 0;
         short s1 = set1[k1];
         short s2 = set2[k2];
-        mainwhile:
-        while (true) {
+        mainwhile: while (true) {
             if (toIntUnsigned(s2) < toIntUnsigned(s1)) {
                 do {
                     ++k2;
@@ -865,7 +870,7 @@ public final class ContainerUtil {
 
 
     protected static int unsignedLocalIntersect2by2(final short[] set1, final int length1,
-                                                    final short[] set2, final int length2, final short[] buffer) {
+        final short[] set2, final int length2, final short[] buffer) {
         if ((0 == length1) || (0 == length2)) {
             return 0;
         }
@@ -875,8 +880,7 @@ public final class ContainerUtil {
         short s1 = set1[k1];
         short s2 = set2[k2];
 
-        mainwhile:
-        while (true) {
+        mainwhile: while (true) {
             int v1 = toIntUnsigned(s1);
             int v2 = toIntUnsigned(s2);
             if (v2 < v1) {
@@ -920,14 +924,14 @@ public final class ContainerUtil {
     /**
      * Compute the cardinality of the intersection
      *
-     * @param set1    first set
+     * @param set1 first set
      * @param length1 how many values to consider in the first set
-     * @param set2    second set
+     * @param set2 second set
      * @param length2 how many values to consider in the second set
      * @return cardinality of the intersection
      */
     public static int unsignedLocalIntersect2by2Cardinality(final short[] set1, final int length1,
-                                                            final short[] set2, final int length2) {
+        final short[] set2, final int length2) {
         if ((0 == length1) || (0 == length2)) {
             return 0;
         }
@@ -937,8 +941,7 @@ public final class ContainerUtil {
         short s1 = set1[k1];
         short s2 = set2[k2];
 
-        mainwhile:
-        while (true) {
+        mainwhile: while (true) {
             int v1 = toIntUnsigned(s1);
             int v2 = toIntUnsigned(s2);
             if (v2 < v1) {
@@ -980,7 +983,8 @@ public final class ContainerUtil {
 
 
     protected static int unsignedOneSidedGallopingIntersect2by2(final short[] smallSet,
-                                                                final int smallLength, final short[] largeSet, final int largeLength, final short[] buffer) {
+        final int smallLength, final short[] largeSet, final int largeLength,
+        final short[] buffer) {
         if (0 == smallLength) {
             return 0;
         }
@@ -1026,19 +1030,19 @@ public final class ContainerUtil {
     /**
      * Unite two sorted lists and write the result to the provided output array
      *
-     * @param set1    first array
+     * @param set1 first array
      * @param offset1 offset of first array
      * @param length1 length of first array
-     * @param set2    second array
+     * @param set2 second array
      * @param offset2 offset of second array
      * @param length2 length of second array
-     * @param buffer  output array
+     * @param buffer output array
      * @return cardinality of the union
      */
     public static int unsignedUnion2by2(
-            final short[] set1, final int offset1, final int length1,
-            final short[] set2, final int offset2, final int length2,
-            final short[] buffer) {
+        final short[] set1, final int offset1, final int length1,
+        final short[] set2, final int offset2, final int length2,
+        final short[] buffer) {
         if (0 == length2) {
             System.arraycopy(set1, offset1, buffer, 0, length1);
             return length1;
@@ -1142,7 +1146,8 @@ public final class ContainerUtil {
             int value = ContainerUtil.toIntUnsigned(c1.getValue(c1i));
             int len = ContainerUtil.toIntUnsigned(c1.getLength(c1i));
             for (int j = value; j <= value + len; ++j) {
-                int s = ContainerUtil.unsignedBinarySearch(c2.content, c2i, c2.cardinality, ContainerUtil.lowbits(j));
+                int s = ContainerUtil.unsignedBinarySearch(c2.content, c2i, c2.cardinality,
+                    ContainerUtil.lowbits(j));
                 if (s >= 0) {
                     return true;
                 }
@@ -1155,6 +1160,5 @@ public final class ContainerUtil {
     /**
      * Private constructor to prevent instantiation of utility class
      */
-    private ContainerUtil() {
-    }
+    private ContainerUtil() {}
 }

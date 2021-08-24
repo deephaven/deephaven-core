@@ -11,7 +11,8 @@ import jsinterop.annotations.JsType;
 public class JsTimeZone {
 
     public static JsTimeZone getTimeZone(String tzCode) {
-        if (tzCode.equals("UTC") || tzCode.equals("GMT") || tzCode.equals("Etc/GMT") || tzCode.equals("Z")) {
+        if (tzCode.equals("UTC") || tzCode.equals("GMT") || tzCode.equals("Etc/GMT")
+            || tzCode.equals("Z")) {
             return new JsTimeZone(TimeZone.createTimeZone(0));
         }
         return new JsTimeZone(TimeZone.createTimeZone(getJsonForCode(tzCode)));

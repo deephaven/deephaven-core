@@ -4,16 +4,16 @@
 
 package io.deephaven.base.testing;
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 /**
- * Calculates a short thumbprint of a complex class for use in unit
- * testing.
+ * Calculates a short thumbprint of a complex class for use in unit testing.
  */
 public interface Thumbprinter<T> {
-    Thumbprinter DEFAULT=new Thumbprinter() {
+    Thumbprinter DEFAULT = new Thumbprinter() {
         public String getThumbprint(Object object) {
-            return null==object?"null":object.toString();
+            return null == object ? "null" : object.toString();
         }
     };
+
     String getThumbprint(T t);
 }

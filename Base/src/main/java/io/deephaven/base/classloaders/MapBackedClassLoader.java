@@ -10,7 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @note This ClassLoader doesn't follow the standard delegation model - it tries to find the class itself first.
+ * @note This ClassLoader doesn't follow the standard delegation model - it tries to find the class
+ *       itself first.
  */
 public class MapBackedClassLoader extends ClassLoader {
 
@@ -21,7 +22,8 @@ public class MapBackedClassLoader extends ClassLoader {
     }
 
     @Override
-    protected synchronized Class<?> loadClass(final String name, final boolean resolve) throws ClassNotFoundException {
+    protected synchronized Class<?> loadClass(final String name, final boolean resolve)
+        throws ClassNotFoundException {
         Class<?> clazz = findLoadedClass(name);
         if (clazz == null) {
             try {
@@ -40,7 +42,7 @@ public class MapBackedClassLoader extends ClassLoader {
     protected synchronized Class<?> findClass(final String name) throws ClassNotFoundException {
         final byte[] clazzData = classData.get(name);
         if (clazzData != null) {
-            return defineClass(name, clazzData, 0 , clazzData.length);
+            return defineClass(name, clazzData, 0, clazzData.length);
         }
         throw new ClassNotFoundException();
     }

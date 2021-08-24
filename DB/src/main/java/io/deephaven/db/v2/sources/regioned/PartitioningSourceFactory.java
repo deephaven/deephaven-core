@@ -10,7 +10,8 @@ class PartitioningSourceFactory {
      * @param dataType The data type expected for partition values
      * @return A new partitioning {@link RegionedColumnSource}
      */
-    static <DATA_TYPE> RegionedColumnSource<DATA_TYPE> makePartitioningSource(@NotNull final Class<DATA_TYPE> dataType) {
+    static <DATA_TYPE> RegionedColumnSource<DATA_TYPE> makePartitioningSource(
+        @NotNull final Class<DATA_TYPE> dataType) {
         final RegionedColumnSource<?> result;
         if (dataType == boolean.class || dataType == Boolean.class) {
             result = new RegionedColumnSourceObject.Partitioning<>(dataType);
@@ -31,7 +32,7 @@ class PartitioningSourceFactory {
         } else {
             result = new RegionedColumnSourceObject.Partitioning<>(dataType);
         }
-        //noinspection unchecked
+        // noinspection unchecked
         return (RegionedColumnSource<DATA_TYPE>) result;
     }
 }

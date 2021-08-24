@@ -3,8 +3,7 @@ package io.deephaven.util.progress;
 import java.util.function.Supplier;
 
 /**
- * Minimal root implementation of a Process Status.
- * No interface is needed at this point.
+ * Minimal root implementation of a Process Status. No interface is needed at this point.
  */
 public class MinProcessStatus implements StatusCallback {
     private int progress;

@@ -12,25 +12,27 @@ import java.io.*;
 
 public class DailyRollingFileAppender extends org.apache.log4j.DailyRollingFileAppender {
 
-    private boolean isActivated=false;
+    private boolean isActivated = false;
 
     public DailyRollingFileAppender() {
         super();
     }
 
-    public DailyRollingFileAppender(Layout layout, String filename, String datePattern) throws IOException {
+    public DailyRollingFileAppender(Layout layout, String filename, String datePattern)
+        throws IOException {
         super(layout, filename, datePattern);
     }
 
     public void activateOptions() {
-        //i'll activate it myself...
+        // i'll activate it myself...
     }
 
-    public synchronized void setFile(String fileName, boolean append, boolean bufferedIO, int bufferSize) throws IOException {
-        LogLog.debug("setFile called: "+fileName+", "+append);
+    public synchronized void setFile(String fileName, boolean append, boolean bufferedIO,
+        int bufferSize) throws IOException {
+        LogLog.debug("setFile called: " + fileName + ", " + append);
 
         // It does not make sense to have immediate flush and bufferedIO.
-        if(bufferedIO) {
+        if (bufferedIO) {
             setImmediateFlush(false);
         }
 
@@ -38,19 +40,19 @@ public class DailyRollingFileAppender extends org.apache.log4j.DailyRollingFileA
         FileOutputStream ostream = null;
         try {
             //
-            //   attempt to create file
+            // attempt to create file
             //
             ostream = new FileOutputStream(fileName, append);
-        } catch(FileNotFoundException ex) {
+        } catch (FileNotFoundException ex) {
             //
-            //   if parent directory does not exist then
-            //      attempt to create it and try to create file
-            //      see bug 9150
+            // if parent directory does not exist then
+            // attempt to create it and try to create file
+            // see bug 9150
             //
             String parentName = new File(fileName).getParent();
             if (parentName != null) {
                 File parentDir = new File(parentName);
-                if(!parentDir.exists() && parentDir.mkdirs()) {
+                if (!parentDir.exists() && parentDir.mkdirs()) {
                     ostream = new FileOutputStream(fileName, append);
                 } else {
                     throw ex;
@@ -60,7 +62,7 @@ public class DailyRollingFileAppender extends org.apache.log4j.DailyRollingFileA
             }
         }
         Writer fw = createWriter(ostream);
-        if(bufferedIO) {
+        if (bufferedIO) {
             fw = new Log4JTimedBufferedWriter(fw, bufferSize);
         }
         this.setQWForFiles(fw);
@@ -73,9 +75,9 @@ public class DailyRollingFileAppender extends org.apache.log4j.DailyRollingFileA
     }
 
     public void append(LoggingEvent event) {
-        if (!isActivated){
+        if (!isActivated) {
             super.activateOptions();
-            isActivated=true;
+            isActivated = true;
         }
 
         super.append(event);

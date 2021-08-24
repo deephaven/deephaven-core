@@ -9,21 +9,21 @@ import io.deephaven.gui.color.Color;
 
 /**
  * Colors moved to {@link Color}. They are left in here for backwards compatibility.
- *<p>
- * Colors are encoded into longs, the 32 least significant bits representing the foreground
- * color and the 32 most significant bits the background color. The 24 least significant bits of each chunk
- * hold the color's RGB values.
+ * <p>
+ * Colors are encoded into longs, the 32 least significant bits representing the foreground color
+ * and the 32 most significant bits the background color. The 24 least significant bits of each
+ * chunk hold the color's RGB values.
  * </p>
  * The 25th bit is flipped. This distinguishes between no formatting (0L) and black.<br>
- * For foreground colors, one of the remaining 7 bits denotes
- * no foreground color overriding when the cell is highlighted in the table.
- * This means the foreground color will stay the same when the cell is highlighted.
- * TODO (deephaven/deephaven-core/issues/175): Move this to a new module and package
+ * For foreground colors, one of the remaining 7 bits denotes no foreground color overriding when
+ * the cell is highlighted in the table. This means the foreground color will stay the same when the
+ * cell is highlighted. TODO (deephaven/deephaven-core/issues/175): Move this to a new module and
+ * package
  */
 @SuppressWarnings({"UnusedDeclaration", "WeakerAccess"})
 public class DBColorUtil extends DBColorUtilImpl {
 
-    //////////////////////////////////////  Deprecated Colors  //////////////////////////////////////
+    ////////////////////////////////////// Deprecated Colors //////////////////////////////////////
     @Deprecated
     public static final long VIVID_RED = toLong(Color.VIVID_RED);
     @Deprecated

@@ -12,7 +12,8 @@ import io.deephaven.db.plot.util.tables.TableHandle;
 
 import org.jetbrains.annotations.NotNull;
 
-public class XYErrorBarDataSeriesTableArray extends XYErrorBarDataSeriesArray implements TableSnapshotSeries {
+public class XYErrorBarDataSeriesTableArray extends XYErrorBarDataSeriesArray
+    implements TableSnapshotSeries {
 
     private final TableHandle tableHandle;
     private final String x;
@@ -22,8 +23,22 @@ public class XYErrorBarDataSeriesTableArray extends XYErrorBarDataSeriesArray im
     private final String yLow;
     private final String yHigh;
 
-    public XYErrorBarDataSeriesTableArray(final AxesImpl axes, final int id, final Comparable name, @NotNull final TableHandle tableHandle, final String x, final String xLow, final String xHigh, final String y, final String yLow, final String yHigh, final boolean drawXError, final boolean drawYError) {
-        super(axes, id, name, new IndexableNumericDataTable(tableHandle, x, new PlotInfo(axes, name)), xLow == null ? null : new IndexableNumericDataTable(tableHandle, xLow, new PlotInfo(axes, name)), xHigh == null ? null : new IndexableNumericDataTable(tableHandle, xHigh, new PlotInfo(axes, name)), new IndexableNumericDataTable(tableHandle, y, new PlotInfo(axes, name)), yLow == null ? null : new IndexableNumericDataTable(tableHandle, yLow, new PlotInfo(axes, name)), yHigh == null ? null : new IndexableNumericDataTable(tableHandle, yHigh, new PlotInfo(axes, name)), drawXError, drawYError);
+    public XYErrorBarDataSeriesTableArray(final AxesImpl axes, final int id, final Comparable name,
+        @NotNull final TableHandle tableHandle, final String x, final String xLow,
+        final String xHigh, final String y, final String yLow, final String yHigh,
+        final boolean drawXError, final boolean drawYError) {
+        super(axes, id, name,
+            new IndexableNumericDataTable(tableHandle, x, new PlotInfo(axes, name)),
+            xLow == null ? null
+                : new IndexableNumericDataTable(tableHandle, xLow, new PlotInfo(axes, name)),
+            xHigh == null ? null
+                : new IndexableNumericDataTable(tableHandle, xHigh, new PlotInfo(axes, name)),
+            new IndexableNumericDataTable(tableHandle, y, new PlotInfo(axes, name)),
+            yLow == null ? null
+                : new IndexableNumericDataTable(tableHandle, yLow, new PlotInfo(axes, name)),
+            yHigh == null ? null
+                : new IndexableNumericDataTable(tableHandle, yHigh, new PlotInfo(axes, name)),
+            drawXError, drawYError);
 
         this.tableHandle = tableHandle;
         this.x = x;
@@ -34,7 +49,8 @@ public class XYErrorBarDataSeriesTableArray extends XYErrorBarDataSeriesArray im
         this.yHigh = yHigh;
     }
 
-    private XYErrorBarDataSeriesTableArray(final XYErrorBarDataSeriesTableArray series, final AxesImpl axes) {
+    private XYErrorBarDataSeriesTableArray(final XYErrorBarDataSeriesTableArray series,
+        final AxesImpl axes) {
         super(series, axes);
         this.tableHandle = series.tableHandle;
         this.x = series.x;

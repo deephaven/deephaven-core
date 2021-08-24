@@ -31,23 +31,28 @@ public class TestLogEntryImpl extends TestCase {
         final LogEntryImpl SUT = new LogEntryImpl(pool);
         final ByteBuffer buf = ByteBuffer.allocate(100);
 
-        context.checking(new Expectations() {{
-            one(pool).take(); will(returnValue(buf));
-        }});
+        context.checking(new Expectations() {
+            {
+                one(pool).take();
+                will(returnValue(buf));
+            }
+        });
         SUT.start(sink, LogLevel.INFO);
         context.assertIsSatisfied();
 
-        context.checking(new Expectations() {{
-            oneOf(sink).write(with(same(SUT)));
-            will(new CustomAction("write") {
-                public Object invoke(Invocation invocation) throws Throwable {
-                    SUT.writing(null);
-                    SUT.written(null);
-                    return null;
-                }
-            });
-            oneOf(pool).give(with(same(buf)));
-        }});
+        context.checking(new Expectations() {
+            {
+                oneOf(sink).write(with(same(SUT)));
+                will(new CustomAction("write") {
+                    public Object invoke(Invocation invocation) throws Throwable {
+                        SUT.writing(null);
+                        SUT.written(null);
+                        return null;
+                    }
+                });
+                oneOf(pool).give(with(same(buf)));
+            }
+        });
         SUT.append("FOO!");
         SUT.endl();
         context.assertIsSatisfied();

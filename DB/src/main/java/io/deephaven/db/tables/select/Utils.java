@@ -14,13 +14,16 @@ public class Utils {
         List<String> result = new ArrayList<String>();
         for (String name : names) {
             int lastIndex = 0;
-            while ((lastIndex = formula.indexOf(name,lastIndex)) != -1) {
-                if (lastIndex > 0 && (Character.isLetter(formula.charAt(lastIndex - 1)) || formula.charAt(lastIndex - 1) == '_')) {
+            while ((lastIndex = formula.indexOf(name, lastIndex)) != -1) {
+                if (lastIndex > 0 && (Character.isLetter(formula.charAt(lastIndex - 1))
+                    || formula.charAt(lastIndex - 1) == '_')) {
                     lastIndex++;
                     continue;
                 }
                 int nextChar = lastIndex + name.length();
-                if (nextChar < formula.length() && (Character.isLetter(formula.charAt(nextChar)) || formula.charAt(nextChar) == '_' || Character.isDigit(formula.charAt(nextChar)))) {
+                if (nextChar < formula.length() && (Character.isLetter(formula.charAt(nextChar))
+                    || formula.charAt(nextChar) == '_'
+                    || Character.isDigit(formula.charAt(nextChar)))) {
                     lastIndex++;
                     continue;
                 }
@@ -31,20 +34,26 @@ public class Utils {
         return result;
     }
 
-    public static String replaceFormulaTokens(String formula, String sourceToken, String destToken) {
+    public static String replaceFormulaTokens(String formula, String sourceToken,
+        String destToken) {
         int lastIndex = 0;
-        while (lastIndex < formula.length() && (lastIndex = formula.indexOf(sourceToken,lastIndex)) != -1) {
-            if (lastIndex > 0 && (Character.isLetter(formula.charAt(lastIndex - 1)) || formula.charAt(lastIndex - 1) == '_')) {
+        while (lastIndex < formula.length()
+            && (lastIndex = formula.indexOf(sourceToken, lastIndex)) != -1) {
+            if (lastIndex > 0 && (Character.isLetter(formula.charAt(lastIndex - 1))
+                || formula.charAt(lastIndex - 1) == '_')) {
                 lastIndex++;
                 continue;
             }
             int nextChar = lastIndex + sourceToken.length();
-            if (nextChar < formula.length() && (Character.isLetter(formula.charAt(nextChar)) || formula.charAt(nextChar) == '_' || Character.isDigit(formula.charAt(nextChar)))) {
+            if (nextChar < formula.length()
+                && (Character.isLetter(formula.charAt(nextChar)) || formula.charAt(nextChar) == '_'
+                    || Character.isDigit(formula.charAt(nextChar)))) {
                 lastIndex++;
                 continue;
             }
-            formula = formula.substring(0,lastIndex) +  destToken + formula.substring(lastIndex + sourceToken.length());
-            lastIndex+= destToken.length();
+            formula = formula.substring(0, lastIndex) + destToken
+                + formula.substring(lastIndex + sourceToken.length());
+            lastIndex += destToken.length();
         }
         return formula;
     }

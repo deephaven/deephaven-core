@@ -18,8 +18,7 @@ public class LongRingBufferTest extends TestCase {
         try {
             rb.element();
             fail("queue should be empty");
-        }
-        catch ( NoSuchElementException x ) {
+        } catch (NoSuchElementException x) {
             // expected
         }
 
@@ -27,8 +26,7 @@ public class LongRingBufferTest extends TestCase {
         try {
             rb.remove();
             fail("queue should be empty");
-        }
-        catch ( NoSuchElementException x ) {
+        } catch (NoSuchElementException x) {
             // expected
         }
     }
@@ -45,8 +43,7 @@ public class LongRingBufferTest extends TestCase {
         assertTrue(expectedHead == rb.peek(Long.MIN_VALUE));
         try {
             assertTrue(expectedHead == rb.element());
-        }
-        catch ( NoSuchElementException x ) {
+        } catch (NoSuchElementException x) {
             fail("queue should not be empty");
         }
     }
@@ -62,16 +59,15 @@ public class LongRingBufferTest extends TestCase {
     }
 
     private void assertPoll(LongRingBuffer rb, int expectedSize, long expectedHead) {
-        assertNotEmpty(rb, expectedSize,  expectedHead);
+        assertNotEmpty(rb, expectedSize, expectedHead);
         assertTrue(expectedHead == rb.poll(Long.MIN_VALUE));
     }
 
     private void assertRemove(LongRingBuffer rb, int expectedSize, long expectedHead) {
-        assertNotEmpty(rb, expectedSize,  expectedHead);
+        assertNotEmpty(rb, expectedSize, expectedHead);
         try {
             assertTrue(expectedHead == rb.remove());
-        }
-        catch ( NoSuchElementException x ) {
+        } catch (NoSuchElementException x) {
             fail("queue should not be empty");
         }
     }
@@ -194,8 +190,8 @@ public class LongRingBufferTest extends TestCase {
         assertOffer(rb, C, 3, A);
         assertFull(rb);
 
-        assertAdd(rb, D, 4, A);     // need one add to grow it
-        assertOffer(rb, E, 5, A);   // NOTE: assumes capacity grows by at least a factor of two
+        assertAdd(rb, D, 4, A); // need one add to grow it
+        assertOffer(rb, E, 5, A); // NOTE: assumes capacity grows by at least a factor of two
         assertOffer(rb, F, 6, A);
 
         assertPoll(rb, 6, A);
@@ -259,7 +255,7 @@ public class LongRingBufferTest extends TestCase {
         assertEmpty(rb);
     }
 
-     public void testIterator() {
+    public void testIterator() {
         LongRingBuffer rb = new LongRingBuffer(3);
 
         LongRingBuffer.Iterator iter = rb.iterator();
@@ -329,8 +325,7 @@ public class LongRingBufferTest extends TestCase {
         try {
             rb.back();
             fail("expected a NoSuchElement exception");
-        }
-        catch ( NoSuchElementException x ) {
+        } catch (NoSuchElementException x) {
             // expected
         }
     }
@@ -358,14 +353,14 @@ public class LongRingBufferTest extends TestCase {
 
         for (int i = 100; i < 200; i++) {
             rb.add(i);
-            assertEquals(i-100+1, rb.front(1));
-            assertEquals(i-100, rb.poll(Long.MIN_VALUE));
+            assertEquals(i - 100 + 1, rb.front(1));
+            assertEquals(i - 100, rb.poll(Long.MIN_VALUE));
         }
 
         for (int i = 200; i < 300; i++) {
             if (i < 299)
-                assertEquals(i-100+1, rb.front(1));
-            assertEquals(i-100, rb.poll(Long.MIN_VALUE));
+                assertEquals(i - 100 + 1, rb.front(1));
+            assertEquals(i - 100, rb.poll(Long.MIN_VALUE));
         }
     }
 }

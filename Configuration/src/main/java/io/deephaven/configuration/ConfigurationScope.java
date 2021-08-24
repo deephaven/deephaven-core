@@ -8,9 +8,9 @@ class ConfigurationScope {
     final private String token;
     final private List<String> targetValues;
     final private List<ConfigurationScope> subScopes;
-    //endregion class variables
+    // endregion class variables
 
-    //region properties
+    // region properties
     private String getToken() {
         return token;
     }
@@ -18,14 +18,14 @@ class ConfigurationScope {
     private List<String> getTargetValues() {
         return targetValues;
     }
-    //endregion properties
+    // endregion properties
 
-    //region constructors
+    // region constructors
 
     /**
      * Create a single scope item with a single token and a pipe-delimited list of target values.
      *
-     * @param token       The property name to check
+     * @param token The property name to check
      * @param targetValue A pipe-delimited list of values to match against the property
      */
     ConfigurationScope(String token, String targetValue) {
@@ -35,7 +35,8 @@ class ConfigurationScope {
     }
 
     /**
-     * Create a scope with a set of subscopes. Collapse the subscopes to this scope if there is only one subscope.
+     * Create a scope with a set of subscopes. Collapse the subscopes to this scope if there is only
+     * one subscope.
      *
      * @param scopes The list of scopes to evaluate collectively.
      */
@@ -51,7 +52,7 @@ class ConfigurationScope {
         }
 
     }
-    //endregion constructors
+    // endregion constructors
 
     /**
      * Determine whether the specified context is within this scope.
@@ -75,7 +76,8 @@ class ConfigurationScope {
     }
 
     /**
-     * Represent a ConfigurationScope as either the token and values it indicates, or a collection of subscopes. Useful when debugging.
+     * Represent a ConfigurationScope as either the token and values it indicates, or a collection
+     * of subscopes. Useful when debugging.
      *
      * @return The String representation of this scope.
      */
@@ -84,7 +86,8 @@ class ConfigurationScope {
         if (subScopes.isEmpty()) {
             return token + "=" + String.join("|", targetValues);
         } else {
-            return "[" + subScopes.stream().map(Objects::toString).collect(Collectors.joining(",")) + "]";
+            return "[" + subScopes.stream().map(Objects::toString).collect(Collectors.joining(","))
+                + "]";
         }
     }
 }

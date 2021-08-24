@@ -22,13 +22,16 @@ public class TestUngroupRebase extends LiveTableTestCase {
             int size = 9;
             Random random = new Random(0);
 
-            ColumnHolder arrayColumnHolder = TstUtils.c("Y", new int [] {10, 20}, new int [] {110, 120, 130});
-            final QueryTable table = TstUtils.testRefreshingTable(TstUtils.c("X", 1, 3), arrayColumnHolder);
+            ColumnHolder arrayColumnHolder =
+                TstUtils.c("Y", new int[] {10, 20}, new int[] {110, 120, 130});
+            final QueryTable table =
+                TstUtils.testRefreshingTable(TstUtils.c("X", 1, 3), arrayColumnHolder);
 
-            EvalNugget en[] = new EvalNugget[]{
+            EvalNugget en[] = new EvalNugget[] {
                     new EvalNugget() {
                         public Table e() {
-                            return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(table::ungroup);
+                            return LiveTableMonitor.DEFAULT.exclusiveLock()
+                                .computeLocked(table::ungroup);
                         }
                     },
             };
@@ -47,7 +50,7 @@ public class TestUngroupRebase extends LiveTableTestCase {
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
             keysToModify = Index.FACTORY.getIndexByValues(0);
             ColumnHolder keyModifications = TstUtils.c("X", 1);
-            ColumnHolder valueModifications = TstUtils.c("Y", new int []{10, 20, 30});
+            ColumnHolder valueModifications = TstUtils.c("Y", new int[] {10, 20, 30});
             TstUtils.addToTable(table, keysToModify, keyModifications, valueModifications);
             table.notifyListeners(keysToAdd, keysToRemove, keysToModify);
             LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
@@ -58,7 +61,7 @@ public class TestUngroupRebase extends LiveTableTestCase {
             // Now let's modify the first row such that we will cause a rebasing operation
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
             keysToModify = Index.FACTORY.getIndexByValues(0);
-            valueModifications = TstUtils.c("Y", new int []{10, 20, 30, 40, 50, 60});
+            valueModifications = TstUtils.c("Y", new int[] {10, 20, 30, 40, 50, 60});
             TstUtils.addToTable(table, keysToModify, keyModifications, valueModifications);
             table.notifyListeners(keysToAdd, keysToRemove, keysToModify);
             LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
@@ -67,13 +70,16 @@ public class TestUngroupRebase extends LiveTableTestCase {
 
             // Time to start fresh again, so we can do an addition operation,
             // without having such a high base for the table.
-            arrayColumnHolder = TstUtils.c("Y", new int [] {10, 20}, new int [] {200}, new int [] {110, 120, 130}, new int [] {310});
-            final QueryTable table2 = TstUtils.testRefreshingTable(TstUtils.c("X", 1, 2, 3, 4), arrayColumnHolder);
+            arrayColumnHolder = TstUtils.c("Y", new int[] {10, 20}, new int[] {200},
+                new int[] {110, 120, 130}, new int[] {310});
+            final QueryTable table2 =
+                TstUtils.testRefreshingTable(TstUtils.c("X", 1, 2, 3, 4), arrayColumnHolder);
 
-            en = new EvalNugget[]{
+            en = new EvalNugget[] {
                     new EvalNugget() {
                         public Table e() {
-                            return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(table2::ungroup);
+                            return LiveTableMonitor.DEFAULT.exclusiveLock()
+                                .computeLocked(table2::ungroup);
                         }
                     },
             };
@@ -96,8 +102,8 @@ public class TestUngroupRebase extends LiveTableTestCase {
             keysToModify = Index.FACTORY.getIndexByValues(2, 3);
 
             ColumnHolder keyAdditions = TstUtils.c("X", 2);
-            ColumnHolder valueAdditions = TstUtils.c("Y", new int []{210, 220, 230, 240, 250, 260});
-            valueModifications = TstUtils.c("Y", new int []{110, 120, 140}, new int []{320});
+            ColumnHolder valueAdditions = TstUtils.c("Y", new int[] {210, 220, 230, 240, 250, 260});
+            valueModifications = TstUtils.c("Y", new int[] {110, 120, 140}, new int[] {320});
             keyModifications = TstUtils.c("X", 3, 4);
 
             TstUtils.addToTable(table2, keysToAdd, keyAdditions, valueAdditions);

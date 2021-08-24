@@ -7,6 +7,7 @@ public abstract class TerminalNotification extends AbstractNotification {
 
     @Override
     public boolean canExecute(final long step) {
-        throw new UnsupportedOperationException("Terminal notifications do not have dependency information.");
+        throw new UnsupportedOperationException(
+            "Terminal notifications do not have dependency information.");
     }
 }

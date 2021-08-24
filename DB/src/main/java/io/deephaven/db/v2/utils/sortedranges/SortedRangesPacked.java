@@ -11,7 +11,9 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
     }
 
     @Override
-    public boolean fits(final long start, final long end) { return offset <= start && end - offset <= maxValueForType(); }
+    public boolean fits(final long start, final long end) {
+        return offset <= start && end - offset <= maxValueForType();
+    }
 
     @Override
     public boolean fitsForAppend(final long end) {
@@ -44,12 +46,14 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
         this.offset = offset;
     }
 
-    protected SortedRangesPacked(final ArrayType data, final long offset, final int count, final long cardinality) {
+    protected SortedRangesPacked(final ArrayType data, final long offset, final int count,
+        final long cardinality) {
         super(data, count, cardinality);
         this.offset = offset;
     }
 
-    protected abstract SortedRanges makeMyType(ArrayType data, long offset, int count, long cardinality);
+    protected abstract SortedRanges makeMyType(ArrayType data, long offset, int count,
+        long cardinality);
 
     protected final long offset() {
         return offset;
@@ -67,7 +71,8 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
         return addPacked(this, packedValue, v, writeCheck);
     }
 
-    public final SortedRanges addRangeInternal(final long start, final long end, final boolean writeCheck) {
+    public final SortedRanges addRangeInternal(final long start, final long end,
+        final boolean writeCheck) {
         final long packedStart = pack(start);
         if (packedStart >= 0) {
             final long packedEnd = pack(end);
@@ -94,7 +99,8 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
         return appendPacked(this, packedValue, v, writeCheck);
     }
 
-    public final SortedRanges appendRangeInternal(final long start, final long end, final boolean writeCheck) {
+    public final SortedRanges appendRangeInternal(final long start, final long end,
+        final boolean writeCheck) {
         final long packedStart = pack(start);
         if (packedStart >= 0) {
             final long packedEnd = pack(end);
@@ -133,8 +139,8 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
     }
 
     protected abstract void rebaseAndShift(
-            final ArrayType dataOut, final long newOffset, final long shiftOffset,
-            final SortedRangesTyped<ArrayType> sar, final long first);
+        final ArrayType dataOut, final long newOffset, final long shiftOffset,
+        final SortedRangesTyped<ArrayType> sar, final long first);
 
     @Override
     public SortedRanges applyShift(final long shiftOffset) {
@@ -148,7 +154,8 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
         return applyShiftImpl(shiftOffset, v, !canWrite());
     }
 
-    private SortedRanges applyShiftImpl(final long shiftOffset, final long first, final boolean isNew) {
+    private SortedRanges applyShiftImpl(final long shiftOffset, final long first,
+        final boolean isNew) {
         long newOffset = offset + shiftOffset;
         if (newOffset >= first) {
             if (isNew) {
@@ -156,7 +163,8 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
                 return makeMyType(targetData, newOffset, count, cardinality);
             }
             offset = newOffset;
-            if (DEBUG) validate();
+            if (DEBUG)
+                validate();
             return this;
         }
         newOffset = first + shiftOffset;
@@ -167,7 +175,8 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
         }
         rebaseAndShift(data, newOffset, shiftOffset, this, first);
         offset = newOffset;
-        if (DEBUG) validate();
+        if (DEBUG)
+            validate();
         return this;
     }
 
@@ -184,7 +193,8 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
         return applyShiftImpl(shiftOffset, v, true);
     }
 
-    // try to convert this to a SortedArrayLong with enough space to accomodate deltaCapacity elements
+    // try to convert this to a SortedArrayLong with enough space to accomodate deltaCapacity
+    // elements
     // in its data array.
     private SortedRangesLong tryConvertToSrLong(final int deltaCapacity) {
         if (count == 0) {
@@ -195,7 +205,7 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
         }
         final int desiredCap = count + deltaCapacity;
         final int capacity = longArrayCapacityForLastIndex(
-                desiredCap - 1, isDenseLongSample(first(), last(), count));
+            desiredCap - 1, isDenseLongSample(first(), last(), count));
         if (capacity == 0) {
             return null;
         }

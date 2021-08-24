@@ -24,9 +24,9 @@ public interface TableLocationProvider extends NamedImplementation {
     interface Listener extends BasicTableDataListener {
 
         /**
-         * Notify the listener of a {@link TableLocationKey} encountered while initiating or maintaining the location
-         * subscription.  This should occur at most once per location, but the order of delivery is <i>not</i>
-         * guaranteed.
+         * Notify the listener of a {@link TableLocationKey} encountered while initiating or
+         * maintaining the location subscription. This should occur at most once per location, but
+         * the order of delivery is <i>not</i> guaranteed.
          *
          * @param tableLocationKey The new table location key
          */
@@ -41,16 +41,20 @@ public interface TableLocationProvider extends NamedImplementation {
     boolean supportsSubscriptions();
 
     /**
-     * <p>Subscribe to pushed location additions. Subscribing more than once with the same listener without an
-     * intervening unsubscribe is an error, and may result in undefined behavior.
-     * <p>This is a possibly asynchronous operation - listener will receive 0 or more handleTableLocationKey callbacks,
-     * followed by 0 or 1 handleException callbacks during invocation and continuing after completion, on a thread
-     * determined by the implementation. As noted in {@link Listener#handleException(TableDataException)}, an exception
-     * callback signifies that the subscription is no longer valid, and no unsubscribe is required in that case.
-     * Callers <b>must not</b> hold any lock that prevents notification delivery while subscribing.
-     * Callers <b>must</b> guard against duplicate notifications.
-     * <p>This method only guarantees eventually consistent state.  To force a state update, use refresh() after
-     * subscription completes.
+     * <p>
+     * Subscribe to pushed location additions. Subscribing more than once with the same listener
+     * without an intervening unsubscribe is an error, and may result in undefined behavior.
+     * <p>
+     * This is a possibly asynchronous operation - listener will receive 0 or more
+     * handleTableLocationKey callbacks, followed by 0 or 1 handleException callbacks during
+     * invocation and continuing after completion, on a thread determined by the implementation. As
+     * noted in {@link Listener#handleException(TableDataException)}, an exception callback
+     * signifies that the subscription is no longer valid, and no unsubscribe is required in that
+     * case. Callers <b>must not</b> hold any lock that prevents notification delivery while
+     * subscribing. Callers <b>must</b> guard against duplicate notifications.
+     * <p>
+     * This method only guarantees eventually consistent state. To force a state update, use
+     * refresh() after subscription completes.
      *
      * @param listener A listener.
      */
@@ -69,18 +73,18 @@ public interface TableLocationProvider extends NamedImplementation {
     void refresh();
 
     /**
-     * Ensure that this location provider is initialized. Mainly useful in cases where it cannot be otherwise
-     * guaranteed that {@link #refresh()} or {@link #subscribe(Listener)} has been called prior to calls to
-     * the various table location fetch methods.
+     * Ensure that this location provider is initialized. Mainly useful in cases where it cannot be
+     * otherwise guaranteed that {@link #refresh()} or {@link #subscribe(Listener)} has been called
+     * prior to calls to the various table location fetch methods.
      *
      * @return this, to allow method chaining
      */
     TableLocationProvider ensureInitialized();
 
     /**
-     * Get this provider's currently known location keys. The locations specified by the keys returned may have null size
-     * - that is, they may not "exist" for application purposes. {@link #getTableLocation(TableLocationKey)} is
-     * guaranteed to succeed for all results.
+     * Get this provider's currently known location keys. The locations specified by the keys
+     * returned may have null size - that is, they may not "exist" for application purposes.
+     * {@link #getTableLocation(TableLocationKey)} is guaranteed to succeed for all results.
      *
      * @return A collection of keys for locations available from this provider
      */

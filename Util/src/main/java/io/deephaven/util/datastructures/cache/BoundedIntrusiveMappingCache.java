@@ -15,26 +15,29 @@ import java.util.function.ToIntFunction;
 import java.util.function.ToLongFunction;
 
 /**
- * An LRU mapping cache that relies on an queue of intrusively doubly-linked nodes for keeping track of
- * eviction policy details.
+ * An LRU mapping cache that relies on an queue of intrusively doubly-linked nodes for keeping track
+ * of eviction policy details.
  */
 public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extends BoundedIntrusiveMappingCache.Mapping<KEY_TYPE, MAPPING_TYPE>> {
 
     final int maximumCachedMappings;
 
-    // TODO: Swap this Map out for a data structure with doubly-linked bucket lists, to enable eviction with no extra lookup.
+    // TODO: Swap this Map out for a data structure with doubly-linked bucket lists, to enable
+    // eviction with no extra lookup.
     final KeyedObjectIntrusiveChainedHashMap<KEY_TYPE, MAPPING_TYPE> mappingCache;
     final IntrusiveDoublyLinkedQueue<MAPPING_TYPE> evictionQueue;
 
     private BoundedIntrusiveMappingCache(final int maximumCachedMappings) {
         this.maximumCachedMappings = Require.gtZero(maximumCachedMappings, "maximumCachedMappings");
-        mappingCache = new KeyedObjectIntrusiveChainedHashMap<KEY_TYPE, MAPPING_TYPE>(MappingCacheAdapter.getInstance(), MappingKey.getInstance());
-        evictionQueue = new IntrusiveDoublyLinkedQueue<MAPPING_TYPE>(EvictionQueueAdapter.getInstance());
+        mappingCache = new KeyedObjectIntrusiveChainedHashMap<KEY_TYPE, MAPPING_TYPE>(
+            MappingCacheAdapter.getInstance(), MappingKey.getInstance());
+        evictionQueue =
+            new IntrusiveDoublyLinkedQueue<MAPPING_TYPE>(EvictionQueueAdapter.getInstance());
     }
 
-    //==================================================================================================================
+    // ==================================================================================================================
     // Mappings
-    //==================================================================================================================
+    // ==================================================================================================================
 
     /**
      * Re-usable struct to store our key->value records.
@@ -46,8 +49,8 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
 
         MAPPING_TYPE nextInMappingCacheBucket;
 
-        MAPPING_TYPE nextInEvictionQueue = (MAPPING_TYPE)this;
-        MAPPING_TYPE prevInEvictionQueue = (MAPPING_TYPE)this;
+        MAPPING_TYPE nextInEvictionQueue = (MAPPING_TYPE) this;
+        MAPPING_TYPE prevInEvictionQueue = (MAPPING_TYPE) this;
     }
 
     private static class ByteMapping<KEY_TYPE> extends Mapping<KEY_TYPE, ByteMapping<KEY_TYPE>> {
@@ -70,7 +73,8 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
         }
     }
 
-    private static class IntegerMapping<KEY_TYPE> extends Mapping<KEY_TYPE, IntegerMapping<KEY_TYPE>> {
+    private static class IntegerMapping<KEY_TYPE>
+        extends Mapping<KEY_TYPE, IntegerMapping<KEY_TYPE>> {
 
         private int value;
 
@@ -100,7 +104,8 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
         }
     }
 
-    private static class DoubleMapping<KEY_TYPE> extends Mapping<KEY_TYPE, DoubleMapping<KEY_TYPE>> {
+    private static class DoubleMapping<KEY_TYPE>
+        extends Mapping<KEY_TYPE, DoubleMapping<KEY_TYPE>> {
 
         private double value;
 
@@ -110,7 +115,8 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
         }
     }
 
-    private static class CharacterMapping<KEY_TYPE> extends Mapping<KEY_TYPE, CharacterMapping<KEY_TYPE>> {
+    private static class CharacterMapping<KEY_TYPE>
+        extends Mapping<KEY_TYPE, CharacterMapping<KEY_TYPE>> {
 
         private char value;
 
@@ -120,7 +126,8 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
         }
     }
 
-    private static class ObjectMapping<KEY_TYPE, VALUE_TYPE> extends Mapping<KEY_TYPE, ObjectMapping<KEY_TYPE, VALUE_TYPE>> {
+    private static class ObjectMapping<KEY_TYPE, VALUE_TYPE>
+        extends Mapping<KEY_TYPE, ObjectMapping<KEY_TYPE, VALUE_TYPE>> {
 
         private VALUE_TYPE value;
 
@@ -130,19 +137,21 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
         }
     }
 
-    //==================================================================================================================
+    // ==================================================================================================================
     // Keys and Adapters
-    //==================================================================================================================
+    // ==================================================================================================================
 
     /**
      * Key definition for Mappings.
      */
-    private static class MappingKey<KEY_TYPE, MAPPING_TYPE extends BoundedIntrusiveMappingCache.Mapping<KEY_TYPE, MAPPING_TYPE>> extends KeyedObjectKey.Basic<KEY_TYPE, MAPPING_TYPE> {
+    private static class MappingKey<KEY_TYPE, MAPPING_TYPE extends BoundedIntrusiveMappingCache.Mapping<KEY_TYPE, MAPPING_TYPE>>
+        extends KeyedObjectKey.Basic<KEY_TYPE, MAPPING_TYPE> {
 
         private static final MappingKey<?, ?> INSTANCE = new MappingKey<>();
+
         private static <KEY_TYPE, MAPPING_TYPE extends BoundedIntrusiveMappingCache.Mapping<KEY_TYPE, MAPPING_TYPE>> MappingKey<KEY_TYPE, MAPPING_TYPE> getInstance() {
-            //noinspection unchecked
-            return (MappingKey<KEY_TYPE, MAPPING_TYPE>)INSTANCE;
+            // noinspection unchecked
+            return (MappingKey<KEY_TYPE, MAPPING_TYPE>) INSTANCE;
         }
 
         @Override
@@ -154,12 +163,14 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
     /**
      * Adapter for the mapping cache.
      */
-    private static class MappingCacheAdapter<KEY_TYPE, MAPPING_TYPE extends BoundedIntrusiveMappingCache.Mapping<KEY_TYPE, MAPPING_TYPE>> implements IntrusiveChainedHashAdapter<MAPPING_TYPE> {
+    private static class MappingCacheAdapter<KEY_TYPE, MAPPING_TYPE extends BoundedIntrusiveMappingCache.Mapping<KEY_TYPE, MAPPING_TYPE>>
+        implements IntrusiveChainedHashAdapter<MAPPING_TYPE> {
 
         private static final MappingCacheAdapter<?, ?> INSTANCE = new MappingCacheAdapter<>();
+
         private static <KEY_TYPE, MAPPING_TYPE extends BoundedIntrusiveMappingCache.Mapping<KEY_TYPE, MAPPING_TYPE>> MappingCacheAdapter<KEY_TYPE, MAPPING_TYPE> getInstance() {
-            //noinspection unchecked
-            return (MappingCacheAdapter<KEY_TYPE, MAPPING_TYPE>)INSTANCE;
+            // noinspection unchecked
+            return (MappingCacheAdapter<KEY_TYPE, MAPPING_TYPE>) INSTANCE;
         }
 
         @Override
@@ -176,12 +187,14 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
     /**
      * Adapter for the eviction queue.
      */
-    private static class EvictionQueueAdapter<KEY_TYPE, MAPPING_TYPE extends BoundedIntrusiveMappingCache.Mapping<KEY_TYPE, MAPPING_TYPE>> implements IntrusiveDoublyLinkedStructureBase.Adapter<MAPPING_TYPE> {
+    private static class EvictionQueueAdapter<KEY_TYPE, MAPPING_TYPE extends BoundedIntrusiveMappingCache.Mapping<KEY_TYPE, MAPPING_TYPE>>
+        implements IntrusiveDoublyLinkedStructureBase.Adapter<MAPPING_TYPE> {
 
         private static final EvictionQueueAdapter<?, ?> INSTANCE = new EvictionQueueAdapter<>();
+
         private static <KEY_TYPE, MAPPING_TYPE extends BoundedIntrusiveMappingCache.Mapping<KEY_TYPE, MAPPING_TYPE>> EvictionQueueAdapter<KEY_TYPE, MAPPING_TYPE> getInstance() {
-            //noinspection unchecked
-            return (EvictionQueueAdapter<KEY_TYPE, MAPPING_TYPE>)INSTANCE;
+            // noinspection unchecked
+            return (EvictionQueueAdapter<KEY_TYPE, MAPPING_TYPE>) INSTANCE;
         }
 
         @Override
@@ -205,9 +218,9 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
         }
     }
 
-    //==================================================================================================================
+    // ==================================================================================================================
     // Extra functional interfaces for key->value mapping, since Java defines a limited set
-    //==================================================================================================================
+    // ==================================================================================================================
 
     @FunctionalInterface
     public interface ToByteFunction<T> {
@@ -232,19 +245,21 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
         char applyAsCharacter(T value);
     }
 
-    //==================================================================================================================
+    // ==================================================================================================================
     // Per-Type Implementations
-    //==================================================================================================================
+    // ==================================================================================================================
 
     @SuppressWarnings("unused")
-    public static class ByteImpl<KEY_TYPE> extends BoundedIntrusiveMappingCache<KEY_TYPE, ByteMapping<KEY_TYPE>> {
+    public static class ByteImpl<KEY_TYPE>
+        extends BoundedIntrusiveMappingCache<KEY_TYPE, ByteMapping<KEY_TYPE>> {
 
         @SuppressWarnings("WeakerAccess")
         public ByteImpl(final int maximumCachedMappings) {
             super(maximumCachedMappings);
         }
 
-        public byte computeIfAbsent(final KEY_TYPE key, @NotNull final ToByteFunction<KEY_TYPE> mapper) {
+        public byte computeIfAbsent(final KEY_TYPE key,
+            @NotNull final ToByteFunction<KEY_TYPE> mapper) {
             ByteMapping<KEY_TYPE> mapping = mappingCache.get(key);
             if (mapping == null) {
                 final byte value = mapper.applyAsByte(key);
@@ -265,14 +280,16 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
     }
 
     @SuppressWarnings("unused")
-    public static class ShortImpl<KEY_TYPE> extends BoundedIntrusiveMappingCache<KEY_TYPE, ShortMapping<KEY_TYPE>> {
+    public static class ShortImpl<KEY_TYPE>
+        extends BoundedIntrusiveMappingCache<KEY_TYPE, ShortMapping<KEY_TYPE>> {
 
         @SuppressWarnings("WeakerAccess")
         public ShortImpl(final int maximumCachedMappings) {
             super(maximumCachedMappings);
         }
 
-        public short computeIfAbsent(final KEY_TYPE key, @NotNull final ToShortFunction<KEY_TYPE> mapper) {
+        public short computeIfAbsent(final KEY_TYPE key,
+            @NotNull final ToShortFunction<KEY_TYPE> mapper) {
             ShortMapping<KEY_TYPE> mapping = mappingCache.get(key);
             if (mapping == null) {
                 final short value = mapper.applyAsShort(key);
@@ -294,17 +311,20 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
 
     /**
      * Mapping cache for {@code Object->int} mappings, with LRU eviction.
+     * 
      * @param <KEY_TYPE>
      */
     @SuppressWarnings("unused")
-    public static class IntegerImpl<KEY_TYPE> extends BoundedIntrusiveMappingCache<KEY_TYPE, IntegerMapping<KEY_TYPE>> {
+    public static class IntegerImpl<KEY_TYPE>
+        extends BoundedIntrusiveMappingCache<KEY_TYPE, IntegerMapping<KEY_TYPE>> {
 
         @SuppressWarnings("WeakerAccess")
         public IntegerImpl(final int maximumCachedMappings) {
             super(maximumCachedMappings);
         }
 
-        public int computeIfAbsent(final KEY_TYPE key, @NotNull final ToIntFunction<KEY_TYPE> mapper) {
+        public int computeIfAbsent(final KEY_TYPE key,
+            @NotNull final ToIntFunction<KEY_TYPE> mapper) {
             IntegerMapping<KEY_TYPE> mapping = mappingCache.get(key);
             if (mapping == null) {
                 final int value = mapper.applyAsInt(key);
@@ -326,16 +346,19 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
 
     /**
      * Mapping cache for {@code Object->int} mappings, with FIFO eviction.
+     * 
      * @param <KEY_TYPE>
      */
-    public static class FifoIntegerImpl<KEY_TYPE> extends BoundedIntrusiveMappingCache<KEY_TYPE, IntegerMapping<KEY_TYPE>> {
+    public static class FifoIntegerImpl<KEY_TYPE>
+        extends BoundedIntrusiveMappingCache<KEY_TYPE, IntegerMapping<KEY_TYPE>> {
 
         @SuppressWarnings("WeakerAccess")
         public FifoIntegerImpl(final int maximumCachedMappings) {
             super(maximumCachedMappings);
         }
 
-        public int computeIfAbsent(final KEY_TYPE key, @NotNull final ToIntFunction<KEY_TYPE> mapper) {
+        public int computeIfAbsent(final KEY_TYPE key,
+            @NotNull final ToIntFunction<KEY_TYPE> mapper) {
             IntegerMapping<KEY_TYPE> mapping = mappingCache.get(key);
             if (mapping == null) {
                 final int value = mapper.applyAsInt(key);
@@ -359,14 +382,16 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
     }
 
     @SuppressWarnings("unused")
-    public static class LongImpl<KEY_TYPE> extends BoundedIntrusiveMappingCache<KEY_TYPE, LongMapping<KEY_TYPE>> {
+    public static class LongImpl<KEY_TYPE>
+        extends BoundedIntrusiveMappingCache<KEY_TYPE, LongMapping<KEY_TYPE>> {
 
         @SuppressWarnings("WeakerAccess")
         public LongImpl(final int maximumCachedMappings) {
             super(maximumCachedMappings);
         }
 
-        public long computeIfAbsent(final KEY_TYPE key, @NotNull final ToLongFunction<KEY_TYPE> mapper) {
+        public long computeIfAbsent(final KEY_TYPE key,
+            @NotNull final ToLongFunction<KEY_TYPE> mapper) {
             LongMapping<KEY_TYPE> mapping = mappingCache.get(key);
             if (mapping == null) {
                 final long value = mapper.applyAsLong(key);
@@ -387,14 +412,16 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
     }
 
     @SuppressWarnings("unused")
-    public static class FloatImpl<KEY_TYPE> extends BoundedIntrusiveMappingCache<KEY_TYPE, FloatMapping<KEY_TYPE>> {
+    public static class FloatImpl<KEY_TYPE>
+        extends BoundedIntrusiveMappingCache<KEY_TYPE, FloatMapping<KEY_TYPE>> {
 
         @SuppressWarnings("WeakerAccess")
         public FloatImpl(final int maximumCachedMappings) {
             super(maximumCachedMappings);
         }
 
-        public float computeIfAbsent(final KEY_TYPE key, @NotNull final ToFloatFunction<KEY_TYPE> mapper) {
+        public float computeIfAbsent(final KEY_TYPE key,
+            @NotNull final ToFloatFunction<KEY_TYPE> mapper) {
             FloatMapping<KEY_TYPE> mapping = mappingCache.get(key);
             if (mapping == null) {
                 final float value = mapper.applyAsFloat(key);
@@ -415,14 +442,16 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
     }
 
     @SuppressWarnings("unused")
-    public static class DoubleImpl<KEY_TYPE> extends BoundedIntrusiveMappingCache<KEY_TYPE, DoubleMapping<KEY_TYPE>> {
+    public static class DoubleImpl<KEY_TYPE>
+        extends BoundedIntrusiveMappingCache<KEY_TYPE, DoubleMapping<KEY_TYPE>> {
 
         @SuppressWarnings("WeakerAccess")
         public DoubleImpl(final int maximumCachedMappings) {
             super(maximumCachedMappings);
         }
 
-        public double computeIfAbsent(final KEY_TYPE key, @NotNull final ToDoubleFunction<KEY_TYPE> mapper) {
+        public double computeIfAbsent(final KEY_TYPE key,
+            @NotNull final ToDoubleFunction<KEY_TYPE> mapper) {
             DoubleMapping<KEY_TYPE> mapping = mappingCache.get(key);
             if (mapping == null) {
                 final double value = mapper.applyAsDouble(key);
@@ -443,14 +472,16 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
     }
 
     @SuppressWarnings("unused")
-    public static class CharacterImpl<KEY_TYPE> extends BoundedIntrusiveMappingCache<KEY_TYPE, CharacterMapping<KEY_TYPE>> {
+    public static class CharacterImpl<KEY_TYPE>
+        extends BoundedIntrusiveMappingCache<KEY_TYPE, CharacterMapping<KEY_TYPE>> {
 
         @SuppressWarnings("WeakerAccess")
         public CharacterImpl(final int maximumCachedMappings) {
             super(maximumCachedMappings);
         }
 
-        public char computeIfAbsent(final KEY_TYPE key, @NotNull final ToCharacterFunction<KEY_TYPE> mapper) {
+        public char computeIfAbsent(final KEY_TYPE key,
+            @NotNull final ToCharacterFunction<KEY_TYPE> mapper) {
             CharacterMapping<KEY_TYPE> mapping = mappingCache.get(key);
             if (mapping == null) {
                 final char value = mapper.applyAsCharacter(key);
@@ -471,14 +502,16 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
     }
 
     @SuppressWarnings("unused")
-    public static class ObjectImpl<KEY_TYPE, VALUE_TYPE> extends BoundedIntrusiveMappingCache<KEY_TYPE, ObjectMapping<KEY_TYPE, VALUE_TYPE>> {
+    public static class ObjectImpl<KEY_TYPE, VALUE_TYPE>
+        extends BoundedIntrusiveMappingCache<KEY_TYPE, ObjectMapping<KEY_TYPE, VALUE_TYPE>> {
 
         @SuppressWarnings("WeakerAccess")
         public ObjectImpl(final int maximumCachedMappings) {
             super(maximumCachedMappings);
         }
 
-        public VALUE_TYPE computeIfAbsent(final KEY_TYPE key, @NotNull final Function<KEY_TYPE, VALUE_TYPE> mapper) {
+        public VALUE_TYPE computeIfAbsent(final KEY_TYPE key,
+            @NotNull final Function<KEY_TYPE, VALUE_TYPE> mapper) {
             ObjectMapping<KEY_TYPE, VALUE_TYPE> mapping = mappingCache.get(key);
             if (mapping == null) {
                 final VALUE_TYPE value = mapper.apply(key);
@@ -498,9 +531,9 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
         }
     }
 
-    //==================================================================================================================
+    // ==================================================================================================================
     // Code Generation Helpers
-    //==================================================================================================================
+    // ==================================================================================================================
 
     public static String getCacheDeclarationType(final Class<?> keyType, final Class<?> valueType) {
         final String keyClassName = TypeUtils.getBoxedType(keyType).getCanonicalName();
@@ -526,32 +559,41 @@ public abstract class BoundedIntrusiveMappingCache<KEY_TYPE, MAPPING_TYPE extend
             return "BoundedIntrusiveMappingCache.CharacterImpl<" + keyClassName + '>';
         }
         final String valueClassName = TypeUtils.getBoxedType(valueType).getCanonicalName();
-        return "BoundedIntrusiveMappingCache.ObjectImpl<" + keyClassName + ',' + valueClassName + '>';
+        return "BoundedIntrusiveMappingCache.ObjectImpl<" + keyClassName + ',' + valueClassName
+            + '>';
 
     }
 
     @SuppressWarnings("SameParameterValue")
-    public static String getCacheInitializer(final Class<?> valueType, final String maximumCachedMappingsString) {
+    public static String getCacheInitializer(final Class<?> valueType,
+        final String maximumCachedMappingsString) {
         if (valueType == byte.class || valueType == Byte.class) {
-            return "new BoundedIntrusiveMappingCache.ByteImpl<>(" + maximumCachedMappingsString + ")";
+            return "new BoundedIntrusiveMappingCache.ByteImpl<>(" + maximumCachedMappingsString
+                + ")";
         }
         if (valueType == short.class || valueType == Short.class) {
-            return "new BoundedIntrusiveMappingCache.ShortImpl<>(" + maximumCachedMappingsString + ")";
+            return "new BoundedIntrusiveMappingCache.ShortImpl<>(" + maximumCachedMappingsString
+                + ")";
         }
         if (valueType == int.class || valueType == Integer.class) {
-            return "new BoundedIntrusiveMappingCache.IntegerImpl<>(" + maximumCachedMappingsString + ")";
+            return "new BoundedIntrusiveMappingCache.IntegerImpl<>(" + maximumCachedMappingsString
+                + ")";
         }
         if (valueType == long.class || valueType == Long.class) {
-            return "new BoundedIntrusiveMappingCache.LongImpl<>(" + maximumCachedMappingsString + ")";
+            return "new BoundedIntrusiveMappingCache.LongImpl<>(" + maximumCachedMappingsString
+                + ")";
         }
         if (valueType == float.class || valueType == Float.class) {
-            return "new BoundedIntrusiveMappingCache.FloatImpl<>(" + maximumCachedMappingsString + ")";
+            return "new BoundedIntrusiveMappingCache.FloatImpl<>(" + maximumCachedMappingsString
+                + ")";
         }
         if (valueType == double.class || valueType == Double.class) {
-            return "new BoundedIntrusiveMappingCache.DoubleImpl<>(" + maximumCachedMappingsString + ")";
+            return "new BoundedIntrusiveMappingCache.DoubleImpl<>(" + maximumCachedMappingsString
+                + ")";
         }
         if (valueType == char.class || valueType == Character.class) {
-            return "new BoundedIntrusiveMappingCache.CharacterImpl<>(" + maximumCachedMappingsString + ")";
+            return "new BoundedIntrusiveMappingCache.CharacterImpl<>(" + maximumCachedMappingsString
+                + ")";
         }
         return "new BoundedIntrusiveMappingCache.ObjectImpl<>(" + maximumCachedMappingsString + ")";
     }

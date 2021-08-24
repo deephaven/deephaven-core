@@ -3,8 +3,8 @@ package io.deephaven.db.tables.utils;
 import java.util.ArrayList;
 
 /**
- * Helper class to support easier to read in-line column definitions.  You can obtain the array arguments to feed
- * the buildWriter methods in TableWriterFactory.
+ * Helper class to support easier to read in-line column definitions. You can obtain the array
+ * arguments to feed the buildWriter methods in TableWriterFactory.
  */
 public class ColumnsSpecHelper {
     private final ArrayList<String> names = new ArrayList<>();

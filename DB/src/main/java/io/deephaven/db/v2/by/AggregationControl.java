@@ -6,8 +6,8 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Stateless "control" class for giving external code (e.g. unit tests) knobs to turn w.r.t. to how aggregations
- * should be processed.
+ * Stateless "control" class for giving external code (e.g. unit tests) knobs to turn w.r.t. to how
+ * aggregations should be processed.
  */
 @VisibleForTesting
 public class AggregationControl {
@@ -33,7 +33,8 @@ public class AggregationControl {
         return IncrementalChunkedByAggregationStateManager.DEFAULT_MAX_LOAD_FACTOR;
     }
 
-    public boolean considerGrouping(@NotNull final Table inputTable, @NotNull final ColumnSource<?>[] sources) {
+    public boolean considerGrouping(@NotNull final Table inputTable,
+        @NotNull final ColumnSource<?>[] sources) {
         return !inputTable.isLive() && sources.length == 1;
     }
 
@@ -41,21 +42,25 @@ public class AggregationControl {
         return shiftSize <= numStates * 2;
     }
 
-//    boolean considerSymbolTables(@NotNull final Table inputTable, final boolean useGrouping, @NotNull final ColumnSource<?>[] sources) {
-//        return !inputTable.isLive() && !useGrouping && sources.length == 1 && sources[0] instanceof SymbolTableSource;
-//    }
-//
-//    boolean useSymbolTableLookupCaching() {
-//        return false;
-//    }
-//
-//    boolean useSymbolTables(final long inputTableSize, final long symbolTableSize) {
-//        return symbolTableSize <= inputTableSize / 2;
-//    }
-//
-//    boolean useUniqueTable(final boolean uniqueValues, final long maximumUniqueValue, final long minimumUniqueValue) {
-//        // We want to have one left over value for "no good" (Integer.MAX_VALUE), and then we need another value to
-//        // represent that (max - min + 1) is the number of slots required.
-//        return uniqueValues && (maximumUniqueValue - minimumUniqueValue) < (Integer.MAX_VALUE - 2);
-//    }
+    // boolean considerSymbolTables(@NotNull final Table inputTable, final boolean useGrouping,
+    // @NotNull final ColumnSource<?>[] sources) {
+    // return !inputTable.isLive() && !useGrouping && sources.length == 1 && sources[0] instanceof
+    // SymbolTableSource;
+    // }
+    //
+    // boolean useSymbolTableLookupCaching() {
+    // return false;
+    // }
+    //
+    // boolean useSymbolTables(final long inputTableSize, final long symbolTableSize) {
+    // return symbolTableSize <= inputTableSize / 2;
+    // }
+    //
+    // boolean useUniqueTable(final boolean uniqueValues, final long maximumUniqueValue, final long
+    // minimumUniqueValue) {
+    // // We want to have one left over value for "no good" (Integer.MAX_VALUE), and then we need
+    // another value to
+    // // represent that (max - min + 1) is the number of slots required.
+    // return uniqueValues && (maximumUniqueValue - minimumUniqueValue) < (Integer.MAX_VALUE - 2);
+    // }
 }

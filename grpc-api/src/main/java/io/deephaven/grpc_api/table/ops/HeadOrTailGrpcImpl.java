@@ -23,8 +23,8 @@ public abstract class HeadOrTailGrpcImpl extends GrpcTableOperation<HeadOrTailRe
     private final RealTableOperation realTableOperation;
 
     protected HeadOrTailGrpcImpl(
-            final Function<BatchTableRequest.Operation, HeadOrTailRequest> getRequest,
-            final RealTableOperation realTableOperation) {
+        final Function<BatchTableRequest.Operation, HeadOrTailRequest> getRequest,
+        final RealTableOperation realTableOperation) {
         super(getRequest, HeadOrTailRequest::getResultId, HeadOrTailRequest::getSourceId);
         this.realTableOperation = realTableOperation;
     }
@@ -33,12 +33,14 @@ public abstract class HeadOrTailGrpcImpl extends GrpcTableOperation<HeadOrTailRe
     public void validateRequest(final HeadOrTailRequest request) throws StatusRuntimeException {
         final long nRows = request.getNumRows();
         if (nRows < 0) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "numRows must be >= 0 (found: " + nRows + ")");
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                "numRows must be >= 0 (found: " + nRows + ")");
         }
     }
 
     @Override
-    public Table create(final HeadOrTailRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final HeadOrTailRequest request,
+        final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
         return realTableOperation.apply(sourceTables.get(0).get(), request.getNumRows());
     }

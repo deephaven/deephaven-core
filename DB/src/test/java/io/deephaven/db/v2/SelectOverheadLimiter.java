@@ -16,12 +16,14 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * The table {@link Table#select} or {@link Table#update} and operations produce sparse sources as of Treasure.  If you
- * have a sparse index, that means that you can have many blocks which only actually contain one or very few elements.
- * The {@link #clampSelectOverhead(Table, double)} method is intended to precede a select or update operation, to
- * limit the amount of memory overhead allowed.  For tables that are relatively dense, the original indices are
- * preserved.  If the overhead exceeds the allowable factor, then the table is flattened before passing updates to
- * select.  Once a table is made flat, it will not revert to it's original address space but rather remain flat.
+ * The table {@link Table#select} or {@link Table#update} and operations produce sparse sources as
+ * of Treasure. If you have a sparse index, that means that you can have many blocks which only
+ * actually contain one or very few elements. The {@link #clampSelectOverhead(Table, double)} method
+ * is intended to precede a select or update operation, to limit the amount of memory overhead
+ * allowed. For tables that are relatively dense, the original indices are preserved. If the
+ * overhead exceeds the allowable factor, then the table is flattened before passing updates to
+ * select. Once a table is made flat, it will not revert to it's original address space but rather
+ * remain flat.
  */
 public class SelectOverheadLimiter {
     @VisibleForTesting
@@ -62,8 +64,9 @@ public class SelectOverheadLimiter {
         }
 
         double overhead() {
-            final long minimumBlocks = (size() + SparseConstants.BLOCK_SIZE - 1) / SparseConstants.BLOCK_SIZE;
-            return (double)blockCount() / (double)minimumBlocks;
+            final long minimumBlocks =
+                (size() + SparseConstants.BLOCK_SIZE - 1) / SparseConstants.BLOCK_SIZE;
+            return (double) blockCount() / (double) minimumBlocks;
         }
 
         void clear() {
@@ -95,7 +98,7 @@ public class SelectOverheadLimiter {
         // now we know we are refreshing, so should update our overhead structure
         final OverheadTracker overheadTracker = new OverheadTracker();
         overheadTracker.addIndex(input.getIndex());
-        if (overheadTracker.overhead() >  permittedOverhead) {
+        if (overheadTracker.overhead() > permittedOverhead) {
             return input.flatten();
         }
 
@@ -103,18 +106,22 @@ public class SelectOverheadLimiter {
 
         final Index index = input.getIndex().clone();
         final Map<String, SwitchColumnSource> resultColumns = new LinkedHashMap<>();
-        //noinspection unchecked
-        input.getColumnSourceMap().forEach((name, cs) -> resultColumns.put(name, new SwitchColumnSource(cs)));
+        // noinspection unchecked
+        input.getColumnSourceMap()
+            .forEach((name, cs) -> resultColumns.put(name, new SwitchColumnSource(cs)));
         final QueryTable result = new QueryTable(index, resultColumns);
 
 
 
-        final MutableObject<ListenerRecorder> inputRecorder = new MutableObject<>(new ListenerRecorder("clampSelectOverhead.input()", (DynamicTable)input, result));
-        ((DynamicTable)input).listenForUpdates(inputRecorder.getValue());
+        final MutableObject<ListenerRecorder> inputRecorder = new MutableObject<>(
+            new ListenerRecorder("clampSelectOverhead.input()", (DynamicTable) input, result));
+        ((DynamicTable) input).listenForUpdates(inputRecorder.getValue());
         final List<ListenerRecorder> recorders = Collections.synchronizedList(new ArrayList<>());
         recorders.add(inputRecorder.getValue());
 
-        final MergedListener mergedListener = new MergedListener(recorders, Collections.singletonList((NotificationQueue.Dependency)input), "clampSelectOverhead", result) {
+        final MergedListener mergedListener = new MergedListener(recorders,
+            Collections.singletonList((NotificationQueue.Dependency) input), "clampSelectOverhead",
+            result) {
             Table flatResult = null;
             ListenerRecorder flatRecorder;
             ModifiedColumnSet.Transformer flatTransformer;
@@ -122,7 +129,9 @@ public class SelectOverheadLimiter {
 
             {
                 inputRecorder.getValue().setMergedListener(this);
-                inputTransformer = ((BaseTable)input).newModifiedColumnSetTransformer(result, result.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                inputTransformer = ((BaseTable) input).newModifiedColumnSetTransformer(result,
+                    result.getColumnSourceMap().keySet()
+                        .toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
             }
 
             @Override
@@ -134,7 +143,8 @@ public class SelectOverheadLimiter {
                     index.insert(upstream.added);
                     final ShiftAwareListener.Update copy = upstream.copy();
                     copy.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
-                    flatTransformer.clearAndTransform(upstream.modifiedColumnSet, copy.modifiedColumnSet);
+                    flatTransformer.clearAndTransform(upstream.modifiedColumnSet,
+                        copy.modifiedColumnSet);
                     result.notifyListeners(copy);
                     return;
                 }
@@ -150,7 +160,8 @@ public class SelectOverheadLimiter {
                 if (overheadTracker.overhead() <= permittedOverhead) {
                     final ShiftAwareListener.Update copy = upstream.copy();
                     copy.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
-                    inputTransformer.clearAndTransform(upstream.modifiedColumnSet, copy.modifiedColumnSet);
+                    inputTransformer.clearAndTransform(upstream.modifiedColumnSet,
+                        copy.modifiedColumnSet);
                     result.notifyListeners(copy);
                     return;
                 }
@@ -158,9 +169,12 @@ public class SelectOverheadLimiter {
                 // we need to convert this to the flat table
                 overheadTracker.clear();
                 flatResult = input.flatten();
-                flatRecorder = new ListenerRecorder("clampSelectOverhead.flatResult()", (DynamicTable)flatResult, result);
+                flatRecorder = new ListenerRecorder("clampSelectOverhead.flatResult()",
+                    (DynamicTable) flatResult, result);
                 flatRecorder.setMergedListener(this);
-                flatTransformer = ((BaseTable)flatResult).newModifiedColumnSetTransformer(result, result.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                flatTransformer = ((BaseTable) flatResult).newModifiedColumnSetTransformer(result,
+                    result.getColumnSourceMap().keySet()
+                        .toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
 
                 ((DynamicTable) flatResult).listenForUpdates(flatRecorder);
                 synchronized (recorders) {
@@ -168,13 +182,14 @@ public class SelectOverheadLimiter {
                     recorders.add(flatRecorder);
                     manage(flatRecorder);
                 }
-                ((DynamicTable)input).removeUpdateListener(inputRecorder.getValue());
+                ((DynamicTable) input).removeUpdateListener(inputRecorder.getValue());
                 unmanage(inputRecorder.getValue());
                 inputRecorder.setValue(null);
                 inputTransformer = null;
 
-                //noinspection unchecked
-                resultColumns.forEach((name, scs) -> scs.setNewCurrent(flatResult.getColumnSource(name)));
+                // noinspection unchecked
+                resultColumns
+                    .forEach((name, scs) -> scs.setNewCurrent(flatResult.getColumnSource(name)));
 
                 index.clear();
                 index.insert(flatResult.getIndex());

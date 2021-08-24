@@ -23,8 +23,7 @@ public class JsRollupConfig {
     public boolean includeDescriptions = true;
 
     @JsConstructor
-    public JsRollupConfig() {
-    }
+    public JsRollupConfig() {}
 
     @JsIgnore
     public JsRollupConfig(JsPropertyMap<Object> source) {
@@ -51,7 +50,8 @@ public class JsRollupConfig {
     public RollupTableRequest buildRequest() {
         RollupTableRequest rollupRequest = new RollupTableRequest();
         ArrayList<String> aggregations = new ArrayList<>();
-        this.aggregations.forEach(key -> aggregations.add("" + key + "=" + String.join(",", JsArrays.toStringArray(this.aggregations.get(key)))));
+        this.aggregations.forEach(key -> aggregations.add(
+            "" + key + "=" + String.join(",", JsArrays.toStringArray(this.aggregations.get(key)))));
         rollupRequest.setAggregations(aggregations.toArray(new String[0]));
         JsArrays.setArray(groupingColumns, rollupRequest::setGroupingColumns);
         rollupRequest.setIncludeConstituents(includeConstituents);

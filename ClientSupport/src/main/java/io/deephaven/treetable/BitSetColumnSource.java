@@ -6,12 +6,13 @@ import io.deephaven.db.v2.sources.ImmutableColumnSourceGetDefaults;
 import java.util.BitSet;
 
 /**
- * A {@link io.deephaven.db.v2.sources.ColumnSource} wrapping a bitset.  It does not
- * support previous values and is immutable.
+ * A {@link io.deephaven.db.v2.sources.ColumnSource} wrapping a bitset. It does not support previous
+ * values and is immutable.
  *
  * @implNote This is intended only for use with {@link TreeSnapshotQuery}.
  */
-public class BitSetColumnSource extends AbstractColumnSource<Boolean> implements ImmutableColumnSourceGetDefaults.ForBoolean {
+public class BitSetColumnSource extends AbstractColumnSource<Boolean>
+    implements ImmutableColumnSourceGetDefaults.ForBoolean {
     private final BitSet theSet;
 
     public BitSetColumnSource(BitSet theSet) {
@@ -21,7 +22,7 @@ public class BitSetColumnSource extends AbstractColumnSource<Boolean> implements
 
     @Override
     public Boolean get(long index) {
-        return theSet.get((int)index);
+        return theSet.get((int) index);
     }
 
     @Override

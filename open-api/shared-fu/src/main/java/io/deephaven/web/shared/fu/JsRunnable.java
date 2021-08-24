@@ -21,6 +21,7 @@ public interface JsRunnable {
     default JsRunnable beforeMe(JsRunnable second) {
         return second.andThen(this);
     }
+
     @JsOverlay
     @SuppressWarnings("Convert2Lambda") // using anonymous type to work around annoying compiler bug
     default JsRunnable andThen(JsRunnable second) {
@@ -40,7 +41,9 @@ public interface JsRunnable {
     }
 }
 
+
 class RunnableHelper {
     // We put this here, in a non-js-interop type to avoid annoying compiler bugs.
-    static final JsRunnable DO_NOTHING = ()->{};
+    static final JsRunnable DO_NOTHING = () -> {
+    };
 }

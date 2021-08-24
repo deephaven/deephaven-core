@@ -11,14 +11,14 @@ import io.deephaven.base.testing.BaseArrayTestCase;
  */
 public class TestAxesLocation extends BaseArrayTestCase {
 
-    public void testLocation(){
-        final BaseFigureImpl fig1 = new BaseFigureImpl(3,2);
-        final ChartImpl c11 = fig1.newChart(2,1);
+    public void testLocation() {
+        final BaseFigureImpl fig1 = new BaseFigureImpl(3, 2);
+        final ChartImpl c11 = fig1.newChart(2, 1);
         final AxesImpl a11 = c11.newAxes();
         final AxesImpl a12 = c11.newAxes();
 
-        final BaseFigureImpl fig2 = new BaseFigureImpl(3,2);
-        final ChartImpl c21 = fig2.newChart(2,1);
+        final BaseFigureImpl fig2 = new BaseFigureImpl(3, 2);
+        final ChartImpl c21 = fig2.newChart(2, 1);
         final AxesImpl a21 = c21.newAxes();
         final AxesImpl a22 = c21.newAxes();
 

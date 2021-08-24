@@ -10,7 +10,8 @@ import java.util.function.Consumer;
 /**
  * Parquet {@link TableLocationKeyFinder location finder} that will discover a single file.
  */
-public final class SingleParquetFileLayout implements TableLocationKeyFinder<ParquetTableLocationKey> {
+public final class SingleParquetFileLayout
+    implements TableLocationKeyFinder<ParquetTableLocationKey> {
 
     private final File parquetFile;
 
@@ -27,6 +28,7 @@ public final class SingleParquetFileLayout implements TableLocationKeyFinder<Par
 
     @Override
     public void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
-        PrivilegedFileAccessUtil.doFilesystemAction(() -> locationKeyObserver.accept(new ParquetTableLocationKey(parquetFile, 0, null)));
+        PrivilegedFileAccessUtil.doFilesystemAction(
+            () -> locationKeyObserver.accept(new ParquetTableLocationKey(parquetFile, 0, null)));
     }
 }

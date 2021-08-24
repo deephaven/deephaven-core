@@ -3,7 +3,8 @@ package io.deephaven.db.v2.by.ssmcountdistinct;
 import io.deephaven.db.v2.by.IterativeChunkedAggregationOperator;
 import io.deephaven.db.v2.sources.chunk.*;
 
-public class BucketSsmDistinctRollupContext extends SsmDistinctRollupContext implements IterativeChunkedAggregationOperator.BucketedContext {
+public class BucketSsmDistinctRollupContext extends SsmDistinctRollupContext
+    implements IterativeChunkedAggregationOperator.BucketedContext {
     public final WritableIntChunk<Attributes.ChunkLengths> lengthCopy;
     final WritableIntChunk<Attributes.ChunkLengths> countCopy;
     public final WritableIntChunk<Attributes.ChunkPositions> starts;

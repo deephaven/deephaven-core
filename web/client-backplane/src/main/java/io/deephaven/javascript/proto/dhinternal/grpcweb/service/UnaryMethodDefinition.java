@@ -12,20 +12,20 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.grpcWeb.service.UnaryMethodDefinition",
     namespace = JsPackage.GLOBAL)
 public interface UnaryMethodDefinition<TRequest, TResponse> extends MethodDefinition {
-  @JsOverlay
-  static UnaryMethodDefinition create() {
-    return Js.uncheckedCast(JsPropertyMap.of());
-  }
+    @JsOverlay
+    static UnaryMethodDefinition create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+    }
 
-  @JsProperty
-  boolean isRequestStream();
+    @JsProperty
+    boolean isRequestStream();
 
-  @JsProperty
-  boolean isResponseStream();
+    @JsProperty
+    boolean isResponseStream();
 
-  @JsProperty
-  void setRequestStream(boolean requestStream);
+    @JsProperty
+    void setRequestStream(boolean requestStream);
 
-  @JsProperty
-  void setResponseStream(boolean responseStream);
+    @JsProperty
+    void setResponseStream(boolean responseStream);
 }

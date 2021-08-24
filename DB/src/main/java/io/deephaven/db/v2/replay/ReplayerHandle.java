@@ -32,7 +32,8 @@ public interface ReplayerHandle extends Serializable {
             this.replayer = replayer;
         }
 
-        @Override public Replayer getReplayer() {
+        @Override
+        public Replayer getReplayer() {
             return replayer;
         }
     }

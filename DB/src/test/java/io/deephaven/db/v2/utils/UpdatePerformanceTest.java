@@ -17,31 +17,52 @@ public class UpdatePerformanceTest {
         mf.setGroupingUsed(true);
         mf.setGroupingSize(3);
     }
-    static String nf(final long v) { return nf.format(v); }
-    static String mf(final double v) { return mf.format(v); }
+
+    static String nf(final long v) {
+        return nf.format(v);
+    }
+
+    static String mf(final double v) {
+        return mf.format(v);
+    }
+
     interface UpdateStrategy {
         interface Factory {
             UpdateStrategy make();
         }
+
         Factory getFactory();
-        // Since tests will run multiple times, and creation time is high (higher than individual operations),
+
+        // Since tests will run multiple times, and creation time is high (higher than individual
+        // operations),
         // we create the base index one and clone it before every run of update.
         void cloneBase();
+
         TestValues.Builder baseBuilder();
+
         TestValues.Builder addBuilder();
+
         TestValues.Builder removeBuilder();
+
         void normalizeAddRemove();
+
         long baseSize();
+
         long addSize();
+
         long removeSize();
-        long optimizerBait();  // some value calculated from the result to prevent the optimizer from removing the code.
+
+        long optimizerBait(); // some value calculated from the result to prevent the optimizer from
+                              // removing the code.
+
         Runnable getRunner(int i);
+
         long getBaseCrc32();
     }
 
     static void updateCrc32(final CRC32 crc32, final long v) {
         for (int bi = 0; bi < 8; ++bi) {
-            final int b = (int) ((0x00000000000000FFL) & (v >> 8*bi));
+            final int b = (int) ((0x00000000000000FFL) & (v >> 8 * bi));
             crc32.update(b);
         }
     }
@@ -51,46 +72,109 @@ public class UpdatePerformanceTest {
         private final Runnable[] runners = new Runnable[] {
                 getParallelRunner(), getSequentialRunner()
         };
+
         private TestValues.Builder builder(final int i) {
             return new TestValues.Builder() {
                 private final Index.RandomBuilder b = Index.FACTORY.getRandomBuilder();
-                @Override public void add(long v) { b.addKey(v); }
-                @Override public void done() { ix[i] = b.getIndex(); }
+
+                @Override
+                public void add(long v) {
+                    b.addKey(v);
+                }
+
+                @Override
+                public void done() {
+                    ix[i] = b.getIndex();
+                }
             };
         }
-        @Override public Factory getFactory() { return () -> new IndexUpdateStrategy(); }
-        @Override public void cloneBase() { ix[0] = ix[3].clone(); }
-        @Override public TestValues.Builder baseBuilder() { return builder(3); }
-        @Override public TestValues.Builder addBuilder() { return builder(1); }
-        @Override public TestValues.Builder removeBuilder() { return builder(2); }
-        @Override public void normalizeAddRemove() {
+
+        @Override
+        public Factory getFactory() {
+            return () -> new IndexUpdateStrategy();
+        }
+
+        @Override
+        public void cloneBase() {
+            ix[0] = ix[3].clone();
+        }
+
+        @Override
+        public TestValues.Builder baseBuilder() {
+            return builder(3);
+        }
+
+        @Override
+        public TestValues.Builder addBuilder() {
+            return builder(1);
+        }
+
+        @Override
+        public TestValues.Builder removeBuilder() {
+            return builder(2);
+        }
+
+        @Override
+        public void normalizeAddRemove() {
             ix[1].remove(ix[2]);
         }
-        @Override public long baseSize() { return ix[3].size(); }
-        @Override public long addSize() { return ix[1].size(); }
-        @Override public long removeSize() { return ix[2].size(); }
-        @Override public long optimizerBait() { return ix[0].lastKey(); }
+
+        @Override
+        public long baseSize() {
+            return ix[3].size();
+        }
+
+        @Override
+        public long addSize() {
+            return ix[1].size();
+        }
+
+        @Override
+        public long removeSize() {
+            return ix[2].size();
+        }
+
+        @Override
+        public long optimizerBait() {
+            return ix[0].lastKey();
+        }
+
         private Runnable getParallelRunner() {
             return new Runnable() {
-                @Override public void run() { ix[0].update(ix[1], ix[2]); }
-                @Override public String toString() {
+                @Override
+                public void run() {
+                    ix[0].update(ix[1], ix[2]);
+                }
+
+                @Override
+                public String toString() {
                     return "Index Parallel Update";
                 }
             };
         }
+
         private Runnable getSequentialRunner() {
             return new Runnable() {
-                @Override public void run() {
+                @Override
+                public void run() {
                     ix[0].insert(ix[1]);
                     ix[0].remove(ix[2]);
                 }
-                @Override public String toString() {
+
+                @Override
+                public String toString() {
                     return "Index Sequential Update";
                 }
             };
         }
-        @Override public Runnable getRunner(int i) { return runners[i]; }
-        @Override public long getBaseCrc32() {
+
+        @Override
+        public Runnable getRunner(int i) {
+            return runners[i];
+        }
+
+        @Override
+        public long getBaseCrc32() {
             final CRC32 crc32 = new CRC32();
             Index.RangeIterator it = ix[0].rangeIterator();
             while (it.hasNext()) {
@@ -105,41 +189,94 @@ public class UpdatePerformanceTest {
 
     static class RspBitmapUpdateStrategy implements UpdateStrategy {
         private RspBitmap rbs[] = new RspBitmap[4];
+
         private TestValues.Builder builder(final int i) {
             return new TestValues.Builder() {
                 private RspBitmap r = new RspBitmap();
-                @Override public void add(final long v) { r.addUnsafe(v); }
-                @Override public void done() {
+
+                @Override
+                public void add(final long v) {
+                    r.addUnsafe(v);
+                }
+
+                @Override
+                public void done() {
                     r.finishMutationsAndOptimize();
                     rbs[i] = r;
                 }
             };
         }
-        @Override public Factory getFactory() { return () -> new RspBitmapUpdateStrategy(); }
-        @Override public void cloneBase() {
+
+        @Override
+        public Factory getFactory() {
+            return () -> new RspBitmapUpdateStrategy();
+        }
+
+        @Override
+        public void cloneBase() {
             rbs[0] = rbs[3].deepCopy();
         }
-        @Override public TestValues.Builder baseBuilder() { return builder(3); }
-        @Override public TestValues.Builder addBuilder() { return builder(1); }
-        @Override public TestValues.Builder removeBuilder() { return builder(2); }
-        @Override public void normalizeAddRemove() { rbs[1].andNotEquals(rbs[2]); }
-        @Override public long baseSize() { return rbs[3].getCardinality(); }
-        @Override public long addSize() { return rbs[1].getCardinality(); }
-        @Override public long removeSize() { return rbs[2].getCardinality(); }
-        @Override public long optimizerBait() { return rbs[0].last(); }
+
+        @Override
+        public TestValues.Builder baseBuilder() {
+            return builder(3);
+        }
+
+        @Override
+        public TestValues.Builder addBuilder() {
+            return builder(1);
+        }
+
+        @Override
+        public TestValues.Builder removeBuilder() {
+            return builder(2);
+        }
+
+        @Override
+        public void normalizeAddRemove() {
+            rbs[1].andNotEquals(rbs[2]);
+        }
+
+        @Override
+        public long baseSize() {
+            return rbs[3].getCardinality();
+        }
+
+        @Override
+        public long addSize() {
+            return rbs[1].getCardinality();
+        }
+
+        @Override
+        public long removeSize() {
+            return rbs[2].getCardinality();
+        }
+
+        @Override
+        public long optimizerBait() {
+            return rbs[0].last();
+        }
+
         private final Runnable runner = new Runnable() {
-            @Override public void run() {
+            @Override
+            public void run() {
                 rbs[0].orEquals(rbs[1]);
                 rbs[0].andNotEquals(rbs[2]);
             }
-            @Override public String toString() {
+
+            @Override
+            public String toString() {
                 return "RspBitmap Update";
             }
         };
-        @Override public Runnable getRunner(int unused) {
+
+        @Override
+        public Runnable getRunner(int unused) {
             return runner;
         }
-        @Override public long getBaseCrc32() {
+
+        @Override
+        public long getBaseCrc32() {
             final CRC32 crc32 = new CRC32();
             final RspRangeIterator it = rbs[0].getRangeIterator();
             while (it.hasNext()) {
@@ -156,7 +293,7 @@ public class UpdatePerformanceTest {
     }
 
     public static void setupStrategy(final UpdateStrategy s, final int sz,
-                                     final TestValues.Config c, final String pref, final boolean print) {
+        final TestValues.Config c, final String pref, final boolean print) {
         final TestValues.Builder baseBuilder = s.baseBuilder();
         final TestValues.Builder addBuilder = s.addBuilder();
         final TestValues.Builder removeBuilder = s.removeBuilder();
@@ -170,7 +307,8 @@ public class UpdatePerformanceTest {
         System.out.println(pref + "remove size = " + nf(s.removeSize()));
     }
 
-    static long runAndGetSamples(final UpdateStrategy s, final int ri, final int runs, final PerfStats stats) {
+    static long runAndGetSamples(final UpdateStrategy s, final int ri, final int runs,
+        final PerfStats stats) {
         long trick = 0; // to prevent the optimizer from eliminating unused steps.
         final PerfMeasure pm = new PerfMeasure(false);
         for (int i = 0; i < runs; ++i) {
@@ -213,15 +351,18 @@ public class UpdatePerformanceTest {
     final static boolean runIndexParallel = true;
     final static boolean runIndexSequential = false;
     final static boolean runRspBitmap = true;
-    static final TestValues.Config configs[] = { TestValues.dense };  // { TestValues.sparse, TestValues.dense, TestValues.asymmetric };
+    static final TestValues.Config configs[] = {TestValues.dense}; // { TestValues.sparse,
+                                                                   // TestValues.dense,
+                                                                   // TestValues.asymmetric };
     final static boolean doCrc32Check = true;
 
     static final String me = UpdatePerformanceTest.class.getSimpleName();
     static final double s2ns = 1e9;
 
     static void runStep(
-            final TestValues.Config c, final int sn, final UpdateStrategy[] ss, final int[][] rs,
-            final String stepName, final int sz, final int runs, final boolean check, final boolean print) {
+        final TestValues.Config c, final int sn, final UpdateStrategy[] ss, final int[][] rs,
+        final String stepName, final int sz, final int runs, final boolean check,
+        final boolean print) {
         final Runtime rt = Runtime.getRuntime();
         System.out.println(me + ": Running " + c.name + " " + stepName + " sz=" + nf(sz));
         final String pfx = me + "    ";
@@ -234,8 +375,9 @@ public class UpdatePerformanceTest {
             final double dMb = pm.dm() / (1024.0 * 1024.0);
             if (print) {
                 System.out.println(pfx + String.format(
-                        "Building values for " + ss[si].getClass().getSimpleName() +
-                                " done in %.3f secs, delta memory used %s", pm.dt() / s2ns, mf(dMb)));
+                    "Building values for " + ss[si].getClass().getSimpleName() +
+                        " done in %.3f secs, delta memory used %s",
+                    pm.dt() / s2ns, mf(dMb)));
             }
             pm.reset();
         }
@@ -254,7 +396,8 @@ public class UpdatePerformanceTest {
                 System.out.println(pfx + "trick optimizer value = " + nf(trick));
                 if (!(si == 0 && ri == 0)) {
                     PerfStats.comparePrint(
-                            pStats, ss[0].getRunner(0).toString(), sStats, ss[si].getRunner(rs[si][ri]).toString(), pfx);
+                        pStats, ss[0].getRunner(0).toString(), sStats,
+                        ss[si].getRunner(rs[si][ri]).toString(), pfx);
                 }
             }
         }
@@ -269,8 +412,8 @@ public class UpdatePerformanceTest {
                     final long crc32 = ss[si].getBaseCrc32();
                     final long ct1 = System.nanoTime();
                     System.out.println(
-                            pfx + ss[si].getRunner(rs[si][ri]).toString() + " crc32=" + nf(crc32) +
-                                    " done in " + (ct1 - ct0) / s2ns + " s.");
+                        pfx + ss[si].getRunner(rs[si][ri]).toString() + " crc32=" + nf(crc32) +
+                            " done in " + (ct1 - ct0) / s2ns + " s.");
                 }
             }
         }
@@ -278,19 +421,22 @@ public class UpdatePerformanceTest {
     }
 
     // Having separate warmup and full methods helps separate them in JProfiler.
-    static void runStepWarmup(final TestValues.Config c, final int sn, final UpdateStrategy ss[], final int[][] rs,
-                              final int sz, final int runs) {
+    static void runStepWarmup(final TestValues.Config c, final int sn, final UpdateStrategy ss[],
+        final int[][] rs,
+        final int sz, final int runs) {
         runStep(c, sn, ss, rs, "warmup", sz, runs, false, false);
     }
 
-    static void runStepFull(final TestValues.Config c, final int sn, final UpdateStrategy ss[], final int[][] rs,
-                            final int sz, final int runs, final boolean check) {
+    static void runStepFull(final TestValues.Config c, final int sn, final UpdateStrategy ss[],
+        final int[][] rs,
+        final int sz, final int runs, final boolean check) {
         runStep(c, sn, ss, rs, "full test", sz, runs, check, true);
     }
 
     static void run(
-            final TestValues.Config c, final int sn, final UpdateStrategy[] ss, final int[][] rs,
-            final int warmupSz, final int warmupRuns, final int fullSz, final int fullRuns, final boolean check) {
+        final TestValues.Config c, final int sn, final UpdateStrategy[] ss, final int[][] rs,
+        final int warmupSz, final int warmupRuns, final int fullSz, final int fullRuns,
+        final boolean check) {
         runStepWarmup(c, sn, ss, rs, warmupSz, warmupRuns);
         runStepFull(c, sn, ss, rs, fullSz, fullRuns, check);
     }
@@ -315,7 +461,7 @@ public class UpdatePerformanceTest {
         }
         if (runRspBitmap) {
             ss[sn] = new RspBitmapUpdateStrategy();
-            rs[sn] = new int[] { 0 };
+            rs[sn] = new int[] {0};
             ++sn;
         }
         System.out.println(me + ": Running code warmup...");
@@ -324,7 +470,8 @@ public class UpdatePerformanceTest {
             final double wo = codeWarmup(ss[si].getFactory(), rs[si]);
             final long t1 = System.nanoTime();
             final long dt = t1 - t0;
-            System.out.println(me + ": " + ss[si].getClass().getSimpleName() + " Code warmup ran in " +
+            System.out
+                .println(me + ": " + ss[si].getClass().getSimpleName() + " Code warmup ran in " +
                     dt / s2ns + " seconds, output=" + wo);
         }
         final int warmupSz = 1 * 1000 * 1000;

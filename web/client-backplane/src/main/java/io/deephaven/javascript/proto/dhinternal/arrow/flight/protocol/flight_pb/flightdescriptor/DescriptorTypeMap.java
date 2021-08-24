@@ -12,26 +12,26 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.arrow.flight.protocol.Flight_pb.FlightDescriptor.DescriptorTypeMap",
     namespace = JsPackage.GLOBAL)
 public interface DescriptorTypeMap {
-  @JsOverlay
-  static DescriptorTypeMap create() {
-    return Js.uncheckedCast(JsPropertyMap.of());
-  }
+    @JsOverlay
+    static DescriptorTypeMap create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+    }
 
-  @JsProperty(name = "CMD")
-  double getCMD();
+    @JsProperty(name = "CMD")
+    double getCMD();
 
-  @JsProperty(name = "PATH")
-  double getPATH();
+    @JsProperty(name = "PATH")
+    double getPATH();
 
-  @JsProperty(name = "UNKNOWN")
-  double getUNKNOWN();
+    @JsProperty(name = "UNKNOWN")
+    double getUNKNOWN();
 
-  @JsProperty(name = "CMD")
-  void setCMD(double CMD);
+    @JsProperty(name = "CMD")
+    void setCMD(double CMD);
 
-  @JsProperty(name = "PATH")
-  void setPATH(double PATH);
+    @JsProperty(name = "PATH")
+    void setPATH(double PATH);
 
-  @JsProperty(name = "UNKNOWN")
-  void setUNKNOWN(double UNKNOWN);
+    @JsProperty(name = "UNKNOWN")
+    void setUNKNOWN(double UNKNOWN);
 }

@@ -26,7 +26,8 @@ public abstract class PatternFilter extends SelectFilterImpl {
 
     private static final long serialVersionUID = 1L;
 
-    @NotNull protected final String columnName;
+    @NotNull
+    protected final String columnName;
     protected final String value;
     protected final boolean invertMatch;
     final boolean caseInsensitive;
@@ -41,7 +42,8 @@ public abstract class PatternFilter extends SelectFilterImpl {
         this(MatchType.Regular, columnName, value);
     }
 
-    public PatternFilter(CaseSensitivity sensitivity, MatchType matchType, @NotNull String columnName, String value) {
+    public PatternFilter(CaseSensitivity sensitivity, MatchType matchType,
+        @NotNull String columnName, String value) {
         this.columnName = columnName;
         this.value = value;
         this.caseInsensitive = (sensitivity == CaseSensitivity.IgnoreCase);
@@ -75,14 +77,16 @@ public abstract class PatternFilter extends SelectFilterImpl {
 
     @Override
     public void init(TableDefinition tableDefinition) {
-        synchronized(this) {
+        synchronized (this) {
             if (pattern != null) {
                 return;
             }
 
             final ColumnDefinition column = tableDefinition.getColumn(columnName);
             if (column == null) {
-                throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
+                throw new RuntimeException(
+                    "Column \"" + columnName + "\" doesn't exist in this table, available columns: "
+                        + tableDefinition.getColumnNames());
             }
             pattern = compile(value, caseInsensitive ? Pattern.CASE_INSENSITIVE : 0);
         }
@@ -92,37 +96,39 @@ public abstract class PatternFilter extends SelectFilterImpl {
 
     @Override
     public Index filter(Index selection, Index fullSet, Table table, boolean usePrev) {
-        //noinspection unchecked
+        // noinspection unchecked
         final ColumnSource<String> columnSource = table.getColumnSource(columnName);
 
         if (invertMatch) {
-            return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev, (ChunkFilter.ObjectChunkFilter) (values, keys, results) -> {
-                results.setSize(0);
-                for (int ii = 0; ii < values.size(); ++ii) {
-                    final String columnValue = (String) values.get(ii);
-                    if (columnValue == null) {
-                        continue;
-                    }
+            return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev,
+                (ChunkFilter.ObjectChunkFilter) (values, keys, results) -> {
+                    results.setSize(0);
+                    for (int ii = 0; ii < values.size(); ++ii) {
+                        final String columnValue = (String) values.get(ii);
+                        if (columnValue == null) {
+                            continue;
+                        }
 
-                    if (!match(columnValue)) {
-                        results.add(keys.get(ii));
+                        if (!match(columnValue)) {
+                            results.add(keys.get(ii));
+                        }
                     }
-                }
-            });
+                });
         } else {
-            return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev, (ChunkFilter.ObjectChunkFilter) (values, keys, results) -> {
-                results.setSize(0);
-                for (int ii = 0; ii < values.size(); ++ii) {
-                    final String columnValue = (String) values.get(ii);
-                    if (columnValue == null) {
-                        continue;
-                    }
+            return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev,
+                (ChunkFilter.ObjectChunkFilter) (values, keys, results) -> {
+                    results.setSize(0);
+                    for (int ii = 0; ii < values.size(); ++ii) {
+                        final String columnValue = (String) values.get(ii);
+                        if (columnValue == null) {
+                            continue;
+                        }
 
-                    if (match(columnValue)) {
-                        results.add(keys.get(ii));
+                        if (match(columnValue)) {
+                            results.add(keys.get(ii));
+                        }
                     }
-                }
-            });
+                });
         }
     }
 
@@ -134,19 +140,20 @@ public abstract class PatternFilter extends SelectFilterImpl {
     }
 
     @Override
-    public void setRecomputeListener(RecomputeListener listener) {
-    }
+    public void setRecomputeListener(RecomputeListener listener) {}
 
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         final PatternFilter that = (PatternFilter) o;
         return invertMatch == that.invertMatch &&
-                caseInsensitive == that.caseInsensitive &&
-                Objects.equals(columnName, that.columnName) &&
-                Objects.equals(value, that.value);
+            caseInsensitive == that.caseInsensitive &&
+            Objects.equals(columnName, that.columnName) &&
+            Objects.equals(value, that.value);
     }
 
     @Override

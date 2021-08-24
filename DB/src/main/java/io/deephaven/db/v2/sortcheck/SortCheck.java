@@ -14,7 +14,7 @@ public interface SortCheck {
     int sortCheck(Chunk<? extends Attributes.Values> valuesToCheck);
 
     static SortCheck make(ChunkType chunkType, boolean reverse) {
-        switch(chunkType) {
+        switch (chunkType) {
             case Char:
                 return reverse ? CharReverseSortCheck.INSTANCE : CharSortCheck.INSTANCE;
             case Byte:

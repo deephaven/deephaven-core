@@ -17,11 +17,11 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 1, time = 10)
 @Measurement(iterations = 3, time = 7)
-@Fork(value=1)
+@Fork(value = 1)
 
 public class IndexIterationBench {
 
-    @Param({"10000000"}) //"10000", "100000", "1000000"}) // , "10000000"})
+    @Param({"10000000"}) // "10000", "100000", "1000000"}) // , "10000000"})
     private static int sz;
     private long[] values;
     private RspBitmap rb;

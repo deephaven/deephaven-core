@@ -12,7 +12,8 @@ public class FilterPrinterTest {
         // simple double -> string and back again
         assertSameValue(1.5);
 
-        // make sure that if a "double" is passed instead of a more correct integer type, we still print something that matches
+        // make sure that if a "double" is passed instead of a more correct integer type, we still
+        // print something that matches
         assertSameValue(2.0);
 
         // other cases, make sure we match plain java expectations
@@ -22,7 +23,8 @@ public class FilterPrinterTest {
                 Math.E, Math.PI,
                 Double.MAX_VALUE, Double.MIN_VALUE, Double.MIN_NORMAL,
                 Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN}) {
-            // ensure the rendered value turns back into a double and equals _exactly_ the original value
+            // ensure the rendered value turns back into a double and equals _exactly_ the original
+            // value
             assertSameValue(val);
         }
 
@@ -63,14 +65,16 @@ public class FilterPrinterTest {
             if (str.contains(".")) {
                 assertEquals(Double.toString(expected), str);
             } else {
-                assertEquals("Provided value should have no decimal component " + expected, 0, expected - (long)expected, 0);
-                assertEquals(Long.toString((long)expected), str);
+                assertEquals("Provided value should have no decimal component " + expected, 0,
+                    expected - (long) expected, 0);
+                assertEquals(Long.toString((long) expected), str);
             }
         }
     }
 
     private static void assertSameValue(long expected) {
-        assertTrue("Must be in the range that a double value can represent", Math.abs(expected) < (1L << 53));
+        assertTrue("Must be in the range that a double value can represent",
+            Math.abs(expected) < (1L << 53));
         Literal literal = lit(expected);
         String str = FilterPrinter.printNoEscape(literal);
 

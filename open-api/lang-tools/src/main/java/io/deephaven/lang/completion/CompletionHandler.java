@@ -12,6 +12,6 @@ import java.util.Collection;
 /**
  * General API for returning a list of completion results from a given offset in a source command.
  */
-public interface CompletionHandler <ResultType extends ParsedResult<ChunkerDocument, ChunkerAssign, Node>> {
+public interface CompletionHandler<ResultType extends ParsedResult<ChunkerDocument, ChunkerAssign, Node>> {
     Collection<CompletionItem.Builder> runCompletion(ResultType doc, Position pos, int offset);
 }

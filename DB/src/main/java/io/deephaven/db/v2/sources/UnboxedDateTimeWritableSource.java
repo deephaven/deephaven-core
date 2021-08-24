@@ -2,7 +2,8 @@ package io.deephaven.db.v2.sources;
 
 import io.deephaven.db.tables.utils.DBDateTime;
 
-public class UnboxedDateTimeWritableSource extends UnboxedDateTimeColumnSource implements WritableSource<Long> {
+public class UnboxedDateTimeWritableSource extends UnboxedDateTimeColumnSource
+    implements WritableSource<Long> {
     private final WritableSource<DBDateTime> alternateWritableSource;
 
     public UnboxedDateTimeWritableSource(WritableSource<DBDateTime> alternateWritableSource) {

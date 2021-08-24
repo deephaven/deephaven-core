@@ -46,12 +46,12 @@ public class TestSingletonContainer {
     public void testFindRanges() {
         final SingletonContainer c = new SingletonContainer((short) 10);
         assertTrue(c.findRanges(
-                (final int start, final int end) -> {
-                    assertEquals(0, start);
-                    assertEquals(1, end);
-                },
-                c.getShortRangeIterator(0),
-                0));
+            (final int start, final int end) -> {
+                assertEquals(0, start);
+                assertEquals(1, end);
+            },
+            c.getShortRangeIterator(0),
+            0));
     }
 
     @Test
@@ -129,7 +129,8 @@ public class TestSingletonContainer {
                     final String m3 = m2 + " && i==" + i;
                     final boolean expectedContains = i == 10 || (first <= i && i <= last);
                     assertEquals(m3, expectedContains, r.contains((short) i));
-                    final int expectedCardinality = last - first + 1 + ((last < 10 || 10 < first) ? 1 : 0);
+                    final int expectedCardinality =
+                        last - first + 1 + ((last < 10 || 10 < first) ? 1 : 0);
                     assertEquals(m3, expectedCardinality, r.getCardinality());
                 }
                 if ((first <= 11 && 9 <= last)) {

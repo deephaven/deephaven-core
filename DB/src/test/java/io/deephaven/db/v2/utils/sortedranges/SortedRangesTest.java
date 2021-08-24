@@ -44,16 +44,16 @@ public class SortedRangesTest {
         for (long i = start; i <= end; i += step) {
             assertTrue("i==" + i, sar.contains(i));
             final long next = i + step;
-            for  (long j = i + 1; j < next; ++j) {
+            for (long j = i + 1; j < next; ++j) {
                 assertFalse("j == " + j, sar.contains(j));
             }
         }
         assertEquals(1 + (end - start) / step, sar.getCardinality());
         for (long i = start; i < end; i += step) {
             final long next = i + step;
-            for  (long j = i + 1; j < next; ++j) {
+            for (long j = i + 1; j < next; ++j) {
                 sar = sar.add(j);
-                assertNotNull("j =="  + j, sar);
+                assertNotNull("j ==" + j, sar);
             }
         }
         assertEquals(end - start + 1, sar.getCardinality());
@@ -141,25 +141,25 @@ public class SortedRangesTest {
         final long start = 1;
         final long end = 133;
         final int rlen = 3;
-        for (long i = start; i <= end - rlen + 1; i += 2*rlen) {
+        for (long i = start; i <= end - rlen + 1; i += 2 * rlen) {
             sar = sar.addRange(i, i + rlen - 1);
             assertNotNull("i == " + i, sar);
         }
-        for (long i = start; i <= end - rlen + 1; i += 2*rlen) {
+        for (long i = start; i <= end - rlen + 1; i += 2 * rlen) {
             for (long j = i; j <= i + rlen - 1; ++j) {
                 assertTrue("j==" + j, sar.contains(j));
             }
             final long next = i + 2 * rlen;
-            for  (long j = i + rlen; j < next; ++j) {
+            for (long j = i + rlen; j < next; ++j) {
                 assertFalse("j == " + j, sar.contains(j));
             }
         }
-        for (long i = start; i <= end - rlen + 1; i += 2*rlen) {
+        for (long i = start; i <= end - rlen + 1; i += 2 * rlen) {
             final long next = i + 2 * rlen;
             final long rend = Math.min(next - 1, end);
             sar = sar.addRange(i + rlen, rend);
             assertNotNull("i ==" + i, sar);
-            for  (long j = i + rlen; j <= rend; ++j) {
+            for (long j = i + rlen; j <= rend; ++j) {
                 assertTrue("j == " + j, sar.contains(j));
             }
         }
@@ -370,13 +370,13 @@ public class SortedRangesTest {
         final SortedRanges[] sars = new SortedRanges[] {
                 new SortedRangesLong(2),
                 new SortedRangesInt(2, 1),
-                new SortedRangesShort(2, 1) };
+                new SortedRangesShort(2, 1)};
         for (SortedRanges sar : sars) {
             TLongArrayList vs = new TLongArrayList(128);
             long rangeStart = 1;
             long rangeEnd = 2;
             long cardinality = 0;
-            final long[] rangeSteps = new long[]{0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4};
+            final long[] rangeSteps = new long[] {0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4};
             for (int i = 0; i < rangeSteps.length; ++i) {
                 final long step = rangeSteps[i];
                 final String m = "i==" + i;
@@ -460,8 +460,8 @@ public class SortedRangesTest {
         assertTrue(sar.contains(3));
         assertNotNull(sar);
 
-        final long[] vs = new long[]{ 1, 3, 5, 7, 9 };
-        final long[] nonvs = new long[]{ 2, 4, 6, 8 };
+        final long[] vs = new long[] {1, 3, 5, 7, 9};
+        final long[] nonvs = new long[] {2, 4, 6, 8};
         sar = new SortedRangesLong(2);
         long cardinality = 0;
         for (long v : vs) {
@@ -573,7 +573,8 @@ public class SortedRangesTest {
         assertEquals(3, sar.getCardinality());
     }
 
-    private static final long[] sar0vs = new long[] { 2, -4, 6, -12, 20, 22, -23, 25, 27, 30, -31, 40, -60 };
+    private static final long[] sar0vs =
+        new long[] {2, -4, 6, -12, 20, 22, -23, 25, 27, 30, -31, 40, -60};
 
     private static long[][] vs2segments(final long[] vs) {
         final ArrayList<long[]> buf = new ArrayList<>();
@@ -581,17 +582,17 @@ public class SortedRangesTest {
         for (int i = 0; i < vs.length; ++i) {
             final long v = vs[i];
             if (v < 0) {
-                buf.add(new long[] { pendingStart, -v });
+                buf.add(new long[] {pendingStart, -v});
                 pendingStart = -1;
             } else {
                 if (pendingStart != -1) {
-                    buf.add(new long[] { pendingStart, pendingStart });
+                    buf.add(new long[] {pendingStart, pendingStart});
                 }
                 pendingStart = v;
             }
         }
         if (pendingStart != -1) {
-            buf.add(new long[] { pendingStart, pendingStart });
+            buf.add(new long[] {pendingStart, pendingStart});
         }
         return buf.toArray(new long[buf.size()][]);
     }
@@ -620,30 +621,30 @@ public class SortedRangesTest {
         final SortedRanges sar = makeSortedArray0();
         long card = sar.getCardinality();
 
-        final long[][] removals = new long[][]{
+        final long[][] removals = new long[][] {
                 /* new long[]{ start, end, intersectionCard }, */
-                new long[] { 0, 7, 5 },
-                new long[] { 0, 0, 0 },
-                new long[] { 0, 1, 0 },
-                new long[] { 61, 61, 0 },
-                new long[] { 61, 62, 0 },
-                new long[] { 2, 3, 2 },
-                new long[] { 4, 5, 1 },
-                new long[] { 29, 30, 1 },
-                new long[] { 30, 30, 1 },
-                new long[] { 31, 31, 1 },
-                new long[] { 31, 32, 1 },
-                new long[] { 30, 40, 3 },
-                new long[] { 31, 41, 3 },
-                new long[] { 60, 60, 1 },
-                new long[] { 11, 15, 2 },
-                new long[] { 4, 6, 2 },
-                new long[] { 4, 11, 7 },
-                new long[] { 12, 22, 3 },
-                new long[] { 23, 30, 4 },
-                new long[] { 42, 44, 3 },
-                new long[] { 3, 3, 1 },
-                new long[] { 12, 12, 1 },
+                new long[] {0, 7, 5},
+                new long[] {0, 0, 0},
+                new long[] {0, 1, 0},
+                new long[] {61, 61, 0},
+                new long[] {61, 62, 0},
+                new long[] {2, 3, 2},
+                new long[] {4, 5, 1},
+                new long[] {29, 30, 1},
+                new long[] {30, 30, 1},
+                new long[] {31, 31, 1},
+                new long[] {31, 32, 1},
+                new long[] {30, 40, 3},
+                new long[] {31, 41, 3},
+                new long[] {60, 60, 1},
+                new long[] {11, 15, 2},
+                new long[] {4, 6, 2},
+                new long[] {4, 11, 7},
+                new long[] {12, 22, 3},
+                new long[] {23, 30, 4},
+                new long[] {42, 44, 3},
+                new long[] {3, 3, 1},
+                new long[] {12, 12, 1},
         };
         for (int i = 0; i < removals.length; ++i) {
             long[] removal = removals[i];
@@ -685,7 +686,7 @@ public class SortedRangesTest {
 
     @Test
     public void testIteratorCases() {
-        final long[] values = new long[]{ 3, 4, 5, 7 };
+        final long[] values = new long[] {3, 4, 5, 7};
 
         SortedRanges sar = new SortedRangesLong(2);
         for (long v : values) {
@@ -791,7 +792,7 @@ public class SortedRangesTest {
             final String m = "v==" + v;
             assertTrue(m, sit.hasNext());
             assertEquals(m, v, sit.nextLong());
-           return true;
+            return true;
         });
     }
 
@@ -893,7 +894,7 @@ public class SortedRangesTest {
             System.out.println(ValidationSet.set2str("s = ", set));
             System.out.println("a = " + arr);
         }
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         if (debug) {
             final long[] vs = new long[set.size()];
             set.toArray(vs);
@@ -902,15 +903,14 @@ public class SortedRangesTest {
                 final long v = vs[j];
                 final boolean c = arr.contains(v);
                 if (!c) {
-                    //noinspection ConstantConditions
+                    // noinspection ConstantConditions
                     assertTrue(msgPfx + " && v==" + v + " && j==" + j + " && vslen==" + vs.length +
-                            ", node.size()==" + arr.getCardinality(), c);
+                        ", node.size()==" + arr.getCardinality(), c);
                 }
             }
             minmax[min] = vs[0];
             minmax[max] = vs[vs.length - 1];
-        }
-        else {
+        } else {
             set.forEach(v -> {
                 if (v < minmax[min]) {
                     minmax[min] = v;
@@ -923,7 +923,8 @@ public class SortedRangesTest {
             });
         }
         if (set.size() != arr.getCardinality()) {
-            System.out.println("set.size() = " + set.size() + ", arr.size() = " + arr.getCardinality());
+            System.out
+                .println("set.size() = " + set.size() + ", arr.size() = " + arr.getCardinality());
             long lastv = -2;
             int iti = 0;
             final Index.RangeIterator it = arr.getRangeIterator();
@@ -946,9 +947,9 @@ public class SortedRangesTest {
     }
 
     private static SortedRanges populateRandom(
-            final String pfxMsg, final Random r, final int count, final int min, final int max,
-            final int clusterWidth, final int jumpPropOneIn, final TLongSet set,
-            @SuppressWarnings("SameParameterValue") final boolean check) {
+        final String pfxMsg, final Random r, final int count, final int min, final int max,
+        final int clusterWidth, final int jumpPropOneIn, final TLongSet set,
+        @SuppressWarnings("SameParameterValue") final boolean check) {
         assertEquals(0, set.size());
         SortedRanges sar = new SortedRangesLong(2);
         final int halfClusterWidth = clusterWidth / 2;
@@ -958,8 +959,7 @@ public class SortedRangesTest {
             final long k;
             if (r.nextInt(jumpPropOneIn) == 0) {
                 k = cluster1Mid = halfClusterWidth + r.nextInt(d);
-            }
-            else {
+            } else {
                 k = cluster1Mid + r.nextInt(halfClusterWidth);
             }
             final SortedRanges ans = sar.add(k);
@@ -982,7 +982,8 @@ public class SortedRangesTest {
         }
     }
 
-    @Test public void testGetFind() {
+    @Test
+    public void testGetFind() {
         doTestRuns(SortedRangesTest::doTestGetFind);
     }
 
@@ -992,8 +993,8 @@ public class SortedRangesTest {
         final String pfxMsg = "doTestGetFind seed == " + seed;
         System.out.println(pfxMsg);
         final SortedRanges sar = populateRandom(
-                pfxMsg, new Random(seed), count, 10, 3000000, 150, 50,
-                set, true);
+            pfxMsg, new Random(seed), count, 10, 3000000, 150, 50,
+            set, true);
         assertEquals(set.size(), sar.getCardinality());
         final long[] arr = new long[set.size()];
         set.toArray(arr);
@@ -1022,14 +1023,16 @@ public class SortedRangesTest {
         assertEquals(-arr.length - 1, sar.find(arr[arr.length - 1] + 1));
     }
 
-    @Test public void testFindCases() {
+    @Test
+    public void testFindCases() {
         SortedRanges sr = new SortedRangesLong();
         sr = sr.addRange(5, 9);
         assertEquals(~5, sr.find(10));
     }
 
     private static void searchRangeCheck(
-            final String msg, final long start, final long end, final long value, final long prev, final long result) {
+        final String msg, final long start, final long end, final long value, final long prev,
+        final long result) {
         if (value < start) {
             assertEquals(msg, prev, result);
         } else if (value <= end) {
@@ -1039,13 +1042,14 @@ public class SortedRangesTest {
         }
     }
 
-    @Test public void testSearchIteratorBinarySearch() {
+    @Test
+    public void testSearchIteratorBinarySearch() {
         SortedRanges sar = makeSortedArray0();
         final Index.SearchIterator sit = sar.getSearchIterator();
         long prev = -1L;
         final MutableLong mutVal = new MutableLong(-1L);
         final ReadOnlyIndex.TargetComparator comp =
-                (final long key, final int dir) -> Long.signum(dir * (mutVal.getValue() - key));
+            (final long key, final int dir) -> Long.signum(dir * (mutVal.getValue() - key));
         for (long[] segment : segments0) {
             final long start = segment[0];
             final long end = segment[1];
@@ -1066,7 +1070,8 @@ public class SortedRangesTest {
         }
     }
 
-    @Test public void testSearchIteratorBinarySearchCases() {
+    @Test
+    public void testSearchIteratorBinarySearchCases() {
         SortedRanges sar = new SortedRangesLong(2);
         sar.appendRange(4, 10);
         sar.append(25);
@@ -1074,12 +1079,13 @@ public class SortedRangesTest {
         final Index.SearchIterator sit = sar.getSearchIterator();
         final long v = sar.last();
         final ReadOnlyIndex.TargetComparator comp =
-                (final long key, final int dir) -> Long.signum(dir * (v - key));
+            (final long key, final int dir) -> Long.signum(dir * (v - key));
         final long r = sit.binarySearchValue(comp, 1);
         assertEquals(v, r);
     }
 
-    @Test public void testReverseIterator() {
+    @Test
+    public void testReverseIterator() {
         SortedRanges sar = makeSortedArray0();
         final long[] values = new long[(int) sar.getCardinality()];
         int i = 0;
@@ -1100,7 +1106,8 @@ public class SortedRangesTest {
         }
     }
 
-    @Test public void testEmptyIteratorCases() {
+    @Test
+    public void testEmptyIteratorCases() {
         SortedRanges sar = new SortedRangesLong(2);
         try (final Index.Iterator it = sar.getIterator()) {
             assertFalse(it.hasNext());
@@ -1116,19 +1123,21 @@ public class SortedRangesTest {
         }
     }
 
-    @Test public void testForEachLong() {
+    @Test
+    public void testForEachLong() {
         SortedRanges sar = makeSortedArray0();
         try (final Index.Iterator it = sar.getIterator()) {
             sar.forEachLong((final long v) -> {
                 assertTrue(it.hasNext());
                 assertEquals(it.nextLong(), v);
-               return true;
+                return true;
             });
             assertFalse(it.hasNext());
         }
     }
 
-    @Test public void testForEachLongRange() {
+    @Test
+    public void testForEachLongRange() {
         SortedRanges sar = makeSortedArray0();
         try (final Index.RangeIterator it = sar.getRangeIterator()) {
             sar.forEachLongRange((final long start, final long end) -> {
@@ -1153,9 +1162,10 @@ public class SortedRangesTest {
         return card.longValue();
     }
 
-    @Test public void testGetKeysForPositions() {
+    @Test
+    public void testGetKeysForPositions() {
         final SortedRanges sar = makeSortedArray0();
-        final long[] positions = new long[] { 1, 3, 5, 7, 8, 9, 14, 15, 20, 36 };
+        final long[] positions = new long[] {1, 3, 5, 7, 8, 9, 14, 15, 20, 36};
         PrimitiveIterator.OfLong iterator = Arrays.stream(positions).iterator();
         final MutableInt mi = new MutableInt(0);
         sar.getKeysForPositions(iterator, new LongConsumer() {
@@ -1172,25 +1182,39 @@ public class SortedRangesTest {
 
     private static class IterOfLongAdaptor implements PrimitiveIterator.OfLong {
         private final TLongIterator it;
-        public IterOfLongAdaptor(final TLongIterator it) { this.it = it; }
-        @Override public long nextLong() { return it.next(); }
-        @Override public boolean hasNext() { return it.hasNext(); }
+
+        public IterOfLongAdaptor(final TLongIterator it) {
+            this.it = it;
+        }
+
+        @Override
+        public long nextLong() {
+            return it.next();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return it.hasNext();
+        }
     }
 
-    @Test public void testGetKeysForPositionsTypes() {
+    @Test
+    public void testGetKeysForPositionsTypes() {
         for (int run = 0; run < runs; ++run) {
             final int seed = seed0 + run;
             final Random rand = new Random(seed);
             final String m = "run==" + run;
-            for (int count : new int[] { SortedRanges.LONG_DENSE_MAX_CAPACITY, SortedRanges.INT_DENSE_MAX_CAPACITY }) {
+            for (int count : new int[] {SortedRanges.LONG_DENSE_MAX_CAPACITY,
+                    SortedRanges.INT_DENSE_MAX_CAPACITY}) {
                 SortedRanges msar = populateRandom2(
-                        null, rand, count, 0.33, 1L << 33, 11, 15, 1, 6);
+                    null, rand, count, 0.33, 1L << 33, 11, 15, 1, 6);
                 if (rand.nextBoolean()) {
                     msar = msar.tryCompact(4);
                 }
                 final SortedRanges sar = msar;
                 final double p = 0.1;
-                final TLongArrayList positions = new TLongArrayList((int) Math.ceil(sar.getCardinality() * (p * 1.05)));
+                final TLongArrayList positions =
+                    new TLongArrayList((int) Math.ceil(sar.getCardinality() * (p * 1.05)));
                 for (int i = 0; i < sar.getCardinality(); ++i) {
                     if (rand.nextDouble() <= p) {
                         positions.add(i);
@@ -1202,7 +1226,7 @@ public class SortedRangesTest {
                     @Override
                     public void accept(final long v) {
                         final int miValue = mi.intValue();
-                        final String m2 =  m + " && v==" + v + ", miValue==" + miValue;
+                        final String m2 = m + " && v==" + v + ", miValue==" + miValue;
                         assertEquals(m2, sar.get(positions.get(miValue)), v);
                         mi.increment();
                     }
@@ -1219,10 +1243,10 @@ public class SortedRangesTest {
             final Random rand = new Random(seed);
             final String m = "run==" + run;
             final int oneIn = 12;
-            for (int d : new int[]{ -1, 0, +1 }) {
+            for (int d : new int[] {-1, 0, +1}) {
                 final int count = SortedRanges.LONG_DENSE_MAX_CAPACITY + d;
                 SortedRanges sar = populateRandom2(
-                        null, rand, count, 0.25, 1L << 33, 11, 15, 1, 6);
+                    null, rand, count, 0.25, 1L << 33, 11, 15, 1, 6);
                 if (rand.nextBoolean()) {
                     sar = sar.tryCompact(4);
                 }
@@ -1250,7 +1274,8 @@ public class SortedRangesTest {
                         try {
                             SortedRanges.checkEquals(byIntersect, subSar);
                         } catch (Exception ex) {
-                            fail(m3 + ", exception " + ex.getClass().getSimpleName() + ": " + ex.getMessage());
+                            fail(m3 + ", exception " + ex.getClass().getSimpleName() + ": "
+                                + ex.getMessage());
                         }
                     }
                 }
@@ -1258,7 +1283,8 @@ public class SortedRangesTest {
         }
     }
 
-    @Test public void testRetainRange() {
+    @Test
+    public void testRetainRange() {
         final SortedRanges sar = makeSortedArray0();
         final long last = sar.last();
         for (long s = sar.first() - 1; s <= last + 1; ++s) {
@@ -1279,7 +1305,8 @@ public class SortedRangesTest {
         }
     }
 
-    @Test public void testRetainRangeCases() {
+    @Test
+    public void testRetainRangeCases() {
         SortedRanges arr = SortedRanges.makeSingleRange(10, 20);
         arr = arr.retainRange(15, 21);
         assertEquals(6, arr.getCardinality());
@@ -1288,7 +1315,8 @@ public class SortedRangesTest {
         assertTrue(arr.containsRange(15, 20));
     }
 
-    private static TLongArrayList subRangeByPos(final SortedRanges sar, final long startPos, final long endPos) {
+    private static TLongArrayList subRangeByPos(final SortedRanges sar, final long startPos,
+        final long endPos) {
         TLongArrayList a = new TLongArrayList();
         long pos = -1;
         try (final Index.Iterator it = sar.getIterator()) {
@@ -1307,7 +1335,8 @@ public class SortedRangesTest {
         return a;
     }
 
-    @Test public void testSubArrayByPos() {
+    @Test
+    public void testSubArrayByPos() {
         final SortedRanges sar = makeSortedArray0();
         final long lastPos = sar.getCardinality() - 1;
         for (long s = 0; s <= lastPos + 1; ++s) {
@@ -1333,20 +1362,22 @@ public class SortedRangesTest {
         }
     }
 
-    @Test public void testSubArrayByPosCases() {
+    @Test
+    public void testSubArrayByPosCases() {
         final SortedRanges sar = SortedRanges.makeSingleRange(2, 2);
         final SortedRanges subSar = sar.subRangesByPos(0, 3);
         assertEquals(1, subSar.getCardinality());
         assertEquals(2, subSar.get(0));
     }
 
-    @Test public void testOverlapsRange() {
+    @Test
+    public void testOverlapsRange() {
         final SortedRanges sar = makeSortedArray0();
         final boolean Y = true;
         final boolean N = false;
-        final long[] starts  = { 0, 1, 1, 1, 1, 2, 3, 4, 4, 5, 12, 13, 13, 13, 61, 60, 60};
-        final long[] ends    = { 1, 2, 3, 4, 5, 4, 4, 4, 5, 5, 19, 19, 20, 21, 63, 60, 61};
-        final boolean[] exps = { N, Y, Y, Y, Y, Y, Y, Y, Y, N,  Y,  N,  Y,  Y,  N,  Y,  Y};
+        final long[] starts = {0, 1, 1, 1, 1, 2, 3, 4, 4, 5, 12, 13, 13, 13, 61, 60, 60};
+        final long[] ends = {1, 2, 3, 4, 5, 4, 4, 4, 5, 5, 19, 19, 20, 21, 63, 60, 61};
+        final boolean[] exps = {N, Y, Y, Y, Y, Y, Y, Y, Y, N, Y, N, Y, Y, N, Y, Y};
         assertEquals(starts.length, ends.length);
         assertEquals(ends.length, exps.length);
         for (int i = 0; i < starts.length; ++i) {
@@ -1358,7 +1389,8 @@ public class SortedRangesTest {
         }
     }
 
-    @Test public void testOverlaps() {
+    @Test
+    public void testOverlaps() {
         final SortedRanges sar = makeSortedArray0();
         final boolean Y = true;
         final boolean N = false;
@@ -1385,7 +1417,8 @@ public class SortedRangesTest {
         assertTrue(sar.overlaps(sar2.getRangeIterator()));
     }
 
-    @Test public void testRetain() {
+    @Test
+    public void testRetain() {
         SortedRanges sar = makeSortedArray0();
         SortedRanges other = SortedRanges.makeSingleRange(4, 6);
         other.add(2);
@@ -1415,7 +1448,8 @@ public class SortedRangesTest {
         }
     }
 
-    @Test public void testReverseIteratorAdvance() {
+    @Test
+    public void testReverseIteratorAdvance() {
         final SortedRanges sar = makeSortedArray0();
         final Index.RangeIterator forwardRangeIter = sar.getRangeIterator();
         long prevLast = -1;
@@ -1449,7 +1483,8 @@ public class SortedRangesTest {
         }
     }
 
-    @Test public void testReverseIteratorAdvanceCases() {
+    @Test
+    public void testReverseIteratorAdvanceCases() {
         SortedRanges sar = new SortedRangesLong(2);
         Index.SearchIterator reverseIter = sar.getReverseIterator();
         assertFalse(reverseIter.advance(1));
@@ -1489,7 +1524,8 @@ public class SortedRangesTest {
         assertFalse(reverseIter.hasNext());
     }
 
-    @Test public void testIntersect() {
+    @Test
+    public void testIntersect() {
         final SortedRanges sar = makeSortedArray0();
         SortedRanges other = SortedRanges.makeSingleRange(4, 6);
         other.add(2);
@@ -1505,7 +1541,7 @@ public class SortedRangesTest {
         // Ensure sarCopy wasn't modified.
         assertEquals(sar.getCardinality(), sarCopy.getCardinality());
         try (final Index.Iterator sarIter = sar.getIterator();
-             final Index.Iterator sarCopyIter = sarCopy.getIterator()) {
+            final Index.Iterator sarCopyIter = sarCopy.getIterator()) {
             while (sarIter.hasNext()) {
                 assertTrue(sarCopyIter.hasNext());
                 assertEquals(sarIter.nextLong(), sarCopyIter.nextLong());
@@ -1533,7 +1569,8 @@ public class SortedRangesTest {
         assertEquals(card, intersect.ixCardinality());
     }
 
-    @Test public void testSubsetOf() {
+    @Test
+    public void testSubsetOf() {
         final SortedRanges otherSar = makeSortedArray0();
         SortedRanges sar = SortedRanges.makeSingleRange(19, 19);
         assertFalse(sar.subsetOf(otherSar.getRangeIterator()));
@@ -1562,7 +1599,8 @@ public class SortedRangesTest {
         assertFalse(sar.subsetOf(otherSar.getRangeIterator()));
     }
 
-    @Test public void testInvertRange() {
+    @Test
+    public void testInvertRange() {
         for (int vsi = 0; vsi < vss.length; ++vsi) {
             final String m = "vsi==" + vsi;
             final SortedRanges sar = vs2sar(vss[vsi]);
@@ -1600,14 +1638,16 @@ public class SortedRangesTest {
         }
     }
 
-    private static final long[] vs0 = new long[] { 3, 6, 7, 9, 12, 20, 23, 40, 41, 51, 52, 53, 54, 55, 56, 57, 58, 59 };
-    private static final long[] vs1 = new long[] { 1, 5, 32, 39 };
-    private static final long[] vs2 = new long[] { 1, 2, 5, 13, 61 };
-    private static final long[] vs3 = new long[] { 27, 28, 29, 30, 39, 40, 41, 59, 60, 61, 62 };
-    private static final long[][] vss = new long[][] { sar0vs, vs0, vs1, vs2, vs3 };
+    private static final long[] vs0 =
+        new long[] {3, 6, 7, 9, 12, 20, 23, 40, 41, 51, 52, 53, 54, 55, 56, 57, 58, 59};
+    private static final long[] vs1 = new long[] {1, 5, 32, 39};
+    private static final long[] vs2 = new long[] {1, 2, 5, 13, 61};
+    private static final long[] vs3 = new long[] {27, 28, 29, 30, 39, 40, 41, 59, 60, 61, 62};
+    private static final long[][] vss = new long[][] {sar0vs, vs0, vs1, vs2, vs3};
 
     private static void checkInvert(
-            final String prefixMsg, final SortedRanges sar, final Index.RangeIterator ixrit, final Index.Iterator ixit, final long maxPosition) {
+        final String prefixMsg, final SortedRanges sar, final Index.RangeIterator ixrit,
+        final Index.Iterator ixit, final long maxPosition) {
         final TreeIndexImplSequentialBuilder b = new TreeIndexImplSequentialBuilder();
         final boolean r = sar.invertOnNew(ixrit, b, maxPosition);
         final String m = "maxPosition==" + maxPosition;
@@ -1627,17 +1667,20 @@ public class SortedRangesTest {
         assertFalse(rit.hasNext());
     }
 
-    @Test public void testInvert0() {
+    @Test
+    public void testInvert0() {
         final SortedRanges sar = makeSortedArray0();
         final long[] vs = vs0;
         final Index ix = Index.FACTORY.getIndexByValues(vs);
-        for (long maxPosition = 0; maxPosition <= ix.size(); ++maxPosition) {  // go one over the last position.
+        for (long maxPosition = 0; maxPosition <= ix.size(); ++maxPosition) { // go one over the
+                                                                              // last position.
             final Index.RangeIterator ixit = ix.rangeIterator();
             checkInvert("", sar, ixit, ix.iterator(), maxPosition);
         }
     }
 
-    @Test public void testInvert() {
+    @Test
+    public void testInvert() {
         final int nruns = 20;
         for (int seed = seed0; seed < seed0 + runs; ++seed) {
             final Random rand = new Random(seed);
@@ -1661,18 +1704,21 @@ public class SortedRangesTest {
                     }
                     for (long maxPosition = 0; maxPosition <= sarCard + 2; ++maxPosition) {
                         final String m4 = m3 + " && maxPosition==" + maxPosition;
-                        checkInvert(m4 + " && ", sar, invOp.getRangeIterator(), invOp.getIterator(), maxPosition);
+                        checkInvert(m4 + " && ", sar, invOp.getRangeIterator(), invOp.getIterator(),
+                            maxPosition);
                     }
                 }
             }
         }
     }
 
-    @Test public void testInsertSimple() {
+    @Test
+    public void testInsertSimple() {
         doTestInsertOrUnionSimple(true);
     }
 
-    @Test public void testUnionSimple() {
+    @Test
+    public void testUnionSimple() {
         doTestInsertOrUnionSimple(false);
     }
 
@@ -1698,7 +1744,8 @@ public class SortedRangesTest {
         }
     }
 
-    private static void doTestInsertOrUnion(final String m2, final boolean isInsert, final SortedRanges orig, final SortedRanges op1, final SortedRanges op2) {
+    private static void doTestInsertOrUnion(final String m2, final boolean isInsert,
+        final SortedRanges orig, final SortedRanges op1, final SortedRanges op2) {
         final TreeIndexImpl result;
         if (isInsert) {
             final TreeIndexImpl tix = op1.insertImpl(op2);
@@ -1707,7 +1754,7 @@ public class SortedRangesTest {
         } else {
             result = SortedRanges.unionOnNew(op1, op2);
         }
-        for (Index.RangeIterator rit = result.ixRangeIterator(); rit.hasNext(); ) {
+        for (Index.RangeIterator rit = result.ixRangeIterator(); rit.hasNext();) {
             rit.next();
             final long s = rit.currentRangeStart();
             final long e = rit.currentRangeEnd();
@@ -1721,11 +1768,11 @@ public class SortedRangesTest {
                 assertTrue(m3, inOp2);
             }
         }
-        final SortedRanges[] srs = new SortedRanges[]{op2, orig};
+        final SortedRanges[] srs = new SortedRanges[] {op2, orig};
         for (int i = 0; i < srs.length; ++i) {
             final String m3 = m2 + " && i==" + i;
             final SortedRanges sr = srs[i];
-            for (Index.RangeIterator rit = sr.getRangeIterator(); rit.hasNext(); ) {
+            for (Index.RangeIterator rit = sr.getRangeIterator(); rit.hasNext();) {
                 rit.next();
                 final long s = rit.currentRangeStart();
                 final long e = rit.currentRangeEnd();
@@ -1734,12 +1781,13 @@ public class SortedRangesTest {
             }
         }
         assertEquals(m2,
-                orig.getCardinality() + op2.getCardinality() - orig.intersectOnNew(op2).ixCardinality(),
-                result.ixCardinality());
+            orig.getCardinality() + op2.getCardinality() - orig.intersectOnNew(op2).ixCardinality(),
+            result.ixCardinality());
     }
 
-    @Test public void testRetainAndIntersect() {
-        for (final boolean isRetain : new boolean[] { false, true }) {
+    @Test
+    public void testRetainAndIntersect() {
+        for (final boolean isRetain : new boolean[] {false, true}) {
             final String m = "isRetain==" + isRetain;
             SortedRanges orig = makeSortedArray0();
             for (int vsi = 1; vsi < vss.length; ++vsi) {
@@ -1759,8 +1807,8 @@ public class SortedRangesTest {
                 if (isRetain) {
                     result = op1.retain(op2);
                     assertTrue(m2, result.ixIsEmpty() ||
-                            (result instanceof SingleRange) ||
-                            (result instanceof SortedRanges && op1 == result));
+                        (result instanceof SingleRange) ||
+                        (result instanceof SortedRanges && op1 == result));
                 } else {
                     result = op1.intersectOnNew(op2);
                 }
@@ -1799,8 +1847,9 @@ public class SortedRangesTest {
         }
     }
 
-    @Test public void testRemoveAndMinus() {
-        for (final boolean isRemove : new boolean[] { false, true }) {
+    @Test
+    public void testRemoveAndMinus() {
+        for (final boolean isRemove : new boolean[] {false, true}) {
             final String m = "isRemove==" + isRemove;
             SortedRanges orig = makeSortedArray0();
             for (int vsi = 1; vsi < vss.length; ++vsi) {
@@ -1830,7 +1879,7 @@ public class SortedRangesTest {
                     assertTrue(r instanceof SortedRanges);
                     result = (SortedRanges) r;
                 }
-                for (Index.RangeIterator rit = result.getRangeIterator(); rit.hasNext(); ) {
+                for (Index.RangeIterator rit = result.getRangeIterator(); rit.hasNext();) {
                     rit.next();
                     final long s = rit.currentRangeStart();
                     final long e = rit.currentRangeEnd();
@@ -1842,7 +1891,7 @@ public class SortedRangesTest {
                     }
                 }
                 long card = 0;
-                for (Index.RangeIterator rit = orig.getRangeIterator(); rit.hasNext(); ) {
+                for (Index.RangeIterator rit = orig.getRangeIterator(); rit.hasNext();) {
                     rit.next();
                     final long s = rit.currentRangeStart();
                     final long e = rit.currentRangeEnd();
@@ -1862,7 +1911,7 @@ public class SortedRangesTest {
 
     private static SortedRanges vs2sar(final long[] vs) {
         SortedRanges sar = SortedRanges.tryMakeForKnownRangeFinalCapacityLowerBound(
-                vs.length, vs.length, 0, Math.abs(vs[vs.length - 1]), false);
+            vs.length, vs.length, 0, Math.abs(vs[vs.length - 1]), false);
         long pendingStart = -1;
         for (long v : vs) {
             if (v < 0) {
@@ -1883,7 +1932,7 @@ public class SortedRangesTest {
 
     private static TLongSet sar2set(final SortedRanges sar) {
         final TLongSet s = new TLongHashSet((int) sar.getCardinality());
-        for (Index.Iterator it = sar.getIterator(); it.hasNext(); ) {
+        for (Index.Iterator it = sar.getIterator(); it.hasNext();) {
             final long v = it.nextLong();
             s.add(v);
         }
@@ -1904,8 +1953,9 @@ public class SortedRangesTest {
         }
     }
 
-    @Test public void testAddRageCases() {
-        final long[] vs = new long[] { 2, 3, 4, 6, 7, 8, 13, 15, 17, 21, 22 };
+    @Test
+    public void testAddRageCases() {
+        final long[] vs = new long[] {2, 3, 4, 6, 7, 8, 13, 15, 17, 21, 22};
         for (int i = 0; i < vs.length; ++i) {
             for (int j = i; j < vs.length; ++j) {
                 final long vi = vs[i];
@@ -1932,8 +1982,9 @@ public class SortedRangesTest {
         }
     }
 
-    @Test public void testAddCases2() {
-        final long[] vs = new long[] { 2, 3, 4, 6, 7, 8, 13, 15, 17, 21, 22 };
+    @Test
+    public void testAddCases2() {
+        final long[] vs = new long[] {2, 3, 4, 6, 7, 8, 13, 15, 17, 21, 22};
         for (int i = 0; i < vs.length; ++i) {
             final long vi = vs[i];
             final String m = "vi==" + vi;
@@ -1952,28 +2003,31 @@ public class SortedRangesTest {
         }
     }
 
-    @Test public void testManyRanges() {
+    @Test
+    public void testManyRanges() {
         SortedRanges sr = SortedRanges.makeEmpty();
         final long nRanges = SortedRanges.SHORT_MAX_CAPACITY / 2;
         final long v0 = (1 << 16) + 1;
         for (int i = 0; i < nRanges; ++i) {
-            final long s = v0 + 3*i;
-            final long e = v0 + 3*i + 1;
+            final long s = v0 + 3 * i;
+            final long e = v0 + 3 * i + 1;
             sr = sr.appendRange(s, e);
             assertNotNull(sr);
         }
-        assertEquals(2*nRanges, sr.getCardinality());
+        assertEquals(2 * nRanges, sr.getCardinality());
         assertEquals(v0, sr.first());
-        assertEquals(v0 + 3*(nRanges - 1) + 1, sr.last());
+        assertEquals(v0 + 3 * (nRanges - 1) + 1, sr.last());
         assertEquals(sr.first(), sr.get(0));
         assertEquals(sr.last(), sr.get(sr.getCardinality() - 1));
     }
 
-    private static void checkEquals(final String m, final TLongArrayList vs, final SortedRanges sr) {
+    private static void checkEquals(final String m, final TLongArrayList vs,
+        final SortedRanges sr) {
         checkEquals(m, vs, vs.size(), sr);
     }
 
-    private static void checkEquals(final String m, final TLongArrayList vs, final int vsSize, final SortedRanges sr) {
+    private static void checkEquals(final String m, final TLongArrayList vs, final int vsSize,
+        final SortedRanges sr) {
         sr.validate();
         assertEquals(m, vsSize, sr.getCardinality());
         final MutableInt pos = new MutableInt(0);
@@ -1991,7 +2045,8 @@ public class SortedRangesTest {
     @Test
     public void testTypeBoundaries() {
         final int[] counts = {
-                SortedRanges.LONG_DENSE_MAX_CAPACITY, SortedRanges.INT_DENSE_MAX_CAPACITY, SortedRanges.SHORT_MAX_CAPACITY };
+                SortedRanges.LONG_DENSE_MAX_CAPACITY, SortedRanges.INT_DENSE_MAX_CAPACITY,
+                SortedRanges.SHORT_MAX_CAPACITY};
         for (int run = 0; run < runs; ++run) {
             final String m = "run==" + run;
             final Random rand = new Random(seed0 + run);
@@ -2005,12 +2060,14 @@ public class SortedRangesTest {
                 final long lastData = sr.unpackedGet(sr.count - 1);
                 final boolean lastIsNeg = lastData < 0;
                 final long lastValue = lastIsNeg ? -lastData : lastData;
-                for (long newVal : new long[]{ lastValue, lastValue + 1, lastValue + 2, lastValue + 3 }) {
+                for (long newVal : new long[] {lastValue, lastValue + 1, lastValue + 2,
+                        lastValue + 3}) {
                     final String m3 = m2 + " && newVal==" + newVal;
                     SortedRanges sr2 = sr.deepCopy();
                     sr2 = sr2.add(newVal);
                     if (count == SortedRanges.SHORT_MAX_CAPACITY &&
-                            ((lastIsNeg && newVal > lastValue + 1) || (!lastIsNeg && newVal > lastValue))) {
+                        ((lastIsNeg && newVal > lastValue + 1)
+                            || (!lastIsNeg && newVal > lastValue))) {
                         assertNull(m3, sr2);
                     } else {
                         if (newVal != lastValue) {
@@ -2026,14 +2083,15 @@ public class SortedRangesTest {
         }
     }
 
-    @Test public void testSubsetOfTypes() {
+    @Test
+    public void testSubsetOfTypes() {
         final int[] counts = {
-                SortedRanges.LONG_DENSE_MAX_CAPACITY, SortedRanges.INT_DENSE_MAX_CAPACITY, SortedRanges.SHORT_MAX_CAPACITY - 2};
+                SortedRanges.LONG_DENSE_MAX_CAPACITY, SortedRanges.INT_DENSE_MAX_CAPACITY,
+                SortedRanges.SHORT_MAX_CAPACITY - 2};
         for (int run = 0; run < runs; ++run) {
             final String m = "run==" + run;
             final Random rand = new Random(seed0 + run);
-            COUNTS:
-            for (int count : counts) {
+            COUNTS: for (int count : counts) {
                 final String m2 = m + " && count==" + count;
                 final TLongArrayList vs = new TLongArrayList(count);
                 SortedRanges sr = populateRandom2(vs, rand, count, 0.3, 1L << 33, 1, 7, 1, 7);
@@ -2054,8 +2112,8 @@ public class SortedRangesTest {
                     ++i;
                 }
                 final TreeIndexImpl r = sr.ixMinusOnNew(
-                        SingleRange.make(
-                                sr2.first() - 2, sr2.last() + 2));
+                    SingleRange.make(
+                        sr2.first() - 2, sr2.last() + 2));
                 assertNotNull(r);
                 assertTrue(m2, r instanceof SortedRanges);
                 sr2 = (SortedRanges) r;
@@ -2069,7 +2127,8 @@ public class SortedRangesTest {
         }
     }
 
-    @Test public void testMinusWithTypeBoundaries() {
+    @Test
+    public void testMinusWithTypeBoundaries() {
         final long offset1 = 1L << 33;
         SortedRanges sr1 = new SortedRangesInt(2, offset1);
         sr1 = sr1.addRange(offset1, offset1 + (1 << 15) - 1);
@@ -2079,7 +2138,7 @@ public class SortedRangesTest {
         final int nelems = SortedRanges.INT_DENSE_MAX_CAPACITY - 1;
         SortedRanges sr2 = new SortedRangesInt(nelems, offset2);
         for (int i = 0; i < nelems; ++i) {
-            sr2 = sr2.add(offset2 + 3*i);
+            sr2 = sr2.add(offset2 + 3 * i);
         }
         assertEquals(nelems, sr2.getCardinality());
         final TreeIndexImpl r = sr1.minusOnNew(sr2);
@@ -2100,29 +2159,32 @@ public class SortedRangesTest {
         assertEquals(card.longValue(), sr3.getCardinality());
     }
 
-    @Test public void testUnionWithTypeChanges() {
+    @Test
+    public void testUnionWithTypeChanges() {
         for (int run = 0; run < runs; ++run) {
             final int seed = seed0 + run;
             final Random rand = new Random(seed);
             final String m = "run==" + run;
-            for (int size : new int[] { SortedRanges.LONG_DENSE_MAX_CAPACITY, SortedRanges.INT_DENSE_MAX_CAPACITY }) {
+            for (int size : new int[] {SortedRanges.LONG_DENSE_MAX_CAPACITY,
+                    SortedRanges.INT_DENSE_MAX_CAPACITY}) {
                 final String m2 = m + " && size==" + size;
                 SortedRanges msr1 = populateRandom2(
-                        null, rand, size, 0.25, 2, 2, 5, 1, 5);
+                    null, rand, size, 0.25, 2, 2, 5, 1, 5);
                 if (rand.nextBoolean()) {
                     msr1 = msr1.tryCompact(4);
                 }
                 final SortedRanges sr1 = msr1;
                 SortedRanges msr2 = populateRandom2(
-                        null, rand, size, 0.25, 2, 2, 5, 1, 5);
+                    null, rand, size, 0.25, 2, 2, 5, 1, 5);
                 if (rand.nextBoolean()) {
                     msr2 = msr2.tryCompact(4);
                 }
                 final SortedRanges sr2 = msr2;
                 final TreeIndexImpl union = SortedRanges.unionOnNew(sr1, sr2);
-                for (SortedRanges sr : new SortedRanges[] { sr1, sr2 }) {
+                for (SortedRanges sr : new SortedRanges[] {sr1, sr2}) {
                     sr.forEachLongRange((final long start, final long end) -> {
-                        assertTrue(m2 + " && start==" + start + " && end==" + end, union.ixContainsRange(start, end));
+                        assertTrue(m2 + " && start==" + start + " && end==" + end,
+                            union.ixContainsRange(start, end));
                         return true;
                     });
                 }
@@ -2135,30 +2197,32 @@ public class SortedRangesTest {
                     return true;
                 });
                 assertEquals(m2,
-                        sr1.getCardinality() + sr2.getCardinality() -
-                                sr1.intersectOnNew(sr2).ixCardinality(),
-                        union.ixCardinality());
+                    sr1.getCardinality() + sr2.getCardinality() -
+                        sr1.intersectOnNew(sr2).ixCardinality(),
+                    union.ixCardinality());
 
             }
         }
     }
 
-    @Test public void testInsertWithTypeChanges() {
+    @Test
+    public void testInsertWithTypeChanges() {
         for (int run = 0; run < runs; ++run) {
             final int seed = seed0 + run;
             final Random rand = new Random(seed);
             final String m = "run==" + run;
-            for (int size : new int[] { SortedRanges.LONG_DENSE_MAX_CAPACITY, SortedRanges.INT_DENSE_MAX_CAPACITY }) {
+            for (int size : new int[] {SortedRanges.LONG_DENSE_MAX_CAPACITY,
+                    SortedRanges.INT_DENSE_MAX_CAPACITY}) {
                 final String m2 = m + " && size==" + size;
                 final int spaceBase = rand.nextBoolean() ? 0 : Short.MAX_VALUE / 32;
                 SortedRanges msr1 = populateRandom2(
-                        null, rand, size, 0.25, 2, 2, 5, spaceBase + 1, spaceBase + 7);
+                    null, rand, size, 0.25, 2, 2, 5, spaceBase + 1, spaceBase + 7);
                 if (rand.nextBoolean()) {
                     msr1 = msr1.tryCompact(4);
                 }
                 final SortedRanges sr1 = msr1;
                 SortedRanges msr2 = populateRandom2(
-                        null, rand, size, 0.25, 2, 2, 5, spaceBase + 1, spaceBase + 7);
+                    null, rand, size, 0.25, 2, 2, 5, spaceBase + 1, spaceBase + 7);
                 if (rand.nextBoolean()) {
                     msr2 = msr2.tryCompact(4);
                 }
@@ -2170,9 +2234,10 @@ public class SortedRangesTest {
                     continue;
                 }
                 result.ixValidate();
-                for (SortedRanges sr : new SortedRanges[] { sr1, sr2 }) {
+                for (SortedRanges sr : new SortedRanges[] {sr1, sr2}) {
                     sr.forEachLongRange((final long start, final long end) -> {
-                        assertTrue(m2 + " && start==" + start + " && end==" + end, result.ixContainsRange(start, end));
+                        assertTrue(m2 + " && start==" + start + " && end==" + end,
+                            result.ixContainsRange(start, end));
                         return true;
                     });
                 }
@@ -2185,29 +2250,31 @@ public class SortedRangesTest {
                     return true;
                 });
                 assertEquals(m2,
-                        sr1.getCardinality() + sr2.getCardinality() -
-                                sr1.intersectOnNew(sr2).ixCardinality(),
-                        result.ixCardinality());
+                    sr1.getCardinality() + sr2.getCardinality() -
+                        sr1.intersectOnNew(sr2).ixCardinality(),
+                    result.ixCardinality());
 
             }
         }
     }
 
-    @Test public void testIntersectWithTypeChanges() {
+    @Test
+    public void testIntersectWithTypeChanges() {
         for (int run = 0; run < runs; ++run) {
             final int seed = seed0 + run;
             final Random rand = new Random(seed);
             final String m = "run==" + run;
-            for (int size : new int[] { SortedRanges.LONG_DENSE_MAX_CAPACITY, SortedRanges.INT_DENSE_MAX_CAPACITY }) {
+            for (int size : new int[] {SortedRanges.LONG_DENSE_MAX_CAPACITY,
+                    SortedRanges.INT_DENSE_MAX_CAPACITY}) {
                 final String m2 = m + " && size==" + size;
                 SortedRanges msr1 = populateRandom2(
-                        null, rand, size, 0.25, 2, 11, 15, 1, 9);
+                    null, rand, size, 0.25, 2, 11, 15, 1, 9);
                 if (rand.nextBoolean()) {
                     msr1 = msr1.tryCompact(4);
                 }
                 final SortedRanges sr1 = msr1;
                 SortedRanges msr2 = populateRandom2(
-                        null, rand, size, 0.25, 2, 7, 20, 1, 5);
+                    null, rand, size, 0.25, 2, 7, 20, 1, 5);
                 if (rand.nextBoolean()) {
                     msr2 = msr2.tryCompact(4);
                 }
@@ -2239,11 +2306,12 @@ public class SortedRangesTest {
             final int seed = seed0 + run;
             final Random rand = new Random(seed);
             final String m = "run==" + run;
-            for (int count : new int[]{
-                    SortedRanges.LONG_DENSE_MAX_CAPACITY, SortedRanges.INT_DENSE_MAX_CAPACITY, SortedRanges.SHORT_MAX_CAPACITY}) {
+            for (int count : new int[] {
+                    SortedRanges.LONG_DENSE_MAX_CAPACITY, SortedRanges.INT_DENSE_MAX_CAPACITY,
+                    SortedRanges.SHORT_MAX_CAPACITY}) {
                 final TLongArrayList arr = new TLongArrayList(count);
                 SortedRanges sar = populateRandom2(
-                        arr, rand, count, 0.25, 2, 7, 11, 1, 5);
+                    arr, rand, count, 0.25, 2, 7, 11, 1, 5);
                 if (rand.nextBoolean()) {
                     sar = sar.tryCompact(4);
                 }
@@ -2278,11 +2346,12 @@ public class SortedRangesTest {
             final int seed = seed0 + run;
             final Random rand = new Random(seed);
             final String m = "run==" + run;
-            for (int count : new int[]{
-                    SortedRanges.LONG_DENSE_MAX_CAPACITY, SortedRanges.INT_DENSE_MAX_CAPACITY, SortedRanges.SHORT_MAX_CAPACITY}) {
+            for (int count : new int[] {
+                    SortedRanges.LONG_DENSE_MAX_CAPACITY, SortedRanges.INT_DENSE_MAX_CAPACITY,
+                    SortedRanges.SHORT_MAX_CAPACITY}) {
                 final TLongArrayList arr = new TLongArrayList(count);
                 SortedRanges sar = populateRandom2(
-                        arr, rand, count, 0.25, 2,7, 11, 1, 5);
+                    arr, rand, count, 0.25, 2, 7, 11, 1, 5);
                 if (rand.nextBoolean()) {
                     sar = sar.tryCompact(4);
                 }
@@ -2319,18 +2388,20 @@ public class SortedRangesTest {
             final int seed = seed0 + run;
             final Random rand = new Random(seed);
             final String m = "run==" + run;
-            for (int count : new int[]{
-                    SortedRanges.LONG_DENSE_MAX_CAPACITY, SortedRanges.INT_DENSE_MAX_CAPACITY, SortedRanges.SHORT_MAX_CAPACITY}) {
+            for (int count : new int[] {
+                    SortedRanges.LONG_DENSE_MAX_CAPACITY, SortedRanges.INT_DENSE_MAX_CAPACITY,
+                    SortedRanges.SHORT_MAX_CAPACITY}) {
                 final TLongArrayList arr = new TLongArrayList(count);
                 SortedRanges sar = populateRandom2(
-                        arr, rand, count, 0.25, 2, 7, 11, 1, 5);
+                    arr, rand, count, 0.25, 2, 7, 11, 1, 5);
                 if (rand.nextBoolean()) {
                     sar = sar.tryCompact(4);
                 }
                 final TLongArrayList arrCopy = new TLongArrayList(arr);
                 while (arrCopy.size() > 1) {
                     final int posRmStart = rand.nextInt(arrCopy.size() - 1);
-                    final int posRmEnd = posRmStart + 1 + rand.nextInt(arrCopy.size() - 1 - posRmStart);
+                    final int posRmEnd =
+                        posRmStart + 1 + rand.nextInt(arrCopy.size() - 1 - posRmStart);
                     final int cardRm = posRmEnd - posRmStart + 1;
                     final long vRmStart = arrCopy.get(posRmStart);
                     final long vRmEnd = arrCopy.get(posRmEnd);
@@ -2355,20 +2426,20 @@ public class SortedRangesTest {
             final int seed = seed0 + run;
             final Random rand = new Random(seed);
             final String m = "run==" + run;
-            for (int count : new int[]{
-                SortedRanges.LONG_DENSE_MAX_CAPACITY, SortedRanges.INT_DENSE_MAX_CAPACITY}) {
+            for (int count : new int[] {
+                    SortedRanges.LONG_DENSE_MAX_CAPACITY, SortedRanges.INT_DENSE_MAX_CAPACITY}) {
                 SortedRanges sr1 = populateRandom2(
                     null, rand, count, 0.25, 2, 11, 15, 1, 6);
                 if (rand.nextBoolean()) {
                     sr1 = sr1.tryCompact(4);
                 }
                 SortedRanges sr2 = populateRandom2(
-                        null, rand, count, 0.25, 10, 14, 19, 3, 4);
+                    null, rand, count, 0.25, 10, 14, 19, 3, 4);
                 if (rand.nextBoolean()) {
                     sr2 = sr2.tryCompact(4);
                 }
                 final TreeIndexImpl result = SortedRanges.unionOnNew(sr1, sr2);
-                for (Index.RangeIterator rit = result.ixRangeIterator(); rit.hasNext(); ) {
+                for (Index.RangeIterator rit = result.ixRangeIterator(); rit.hasNext();) {
                     rit.next();
                     final long s = rit.currentRangeStart();
                     final long e = rit.currentRangeEnd();
@@ -2382,11 +2453,11 @@ public class SortedRangesTest {
                         assertTrue(m2, inSr2);
                     }
                 }
-                final SortedRanges[] srs = new SortedRanges[]{sr1, sr2};
+                final SortedRanges[] srs = new SortedRanges[] {sr1, sr2};
                 for (int i = 0; i < srs.length; ++i) {
                     final String m2 = m + " && i==" + i;
                     final SortedRanges sr = srs[i];
-                    for (Index.RangeIterator rit = sr.getRangeIterator(); rit.hasNext(); ) {
+                    for (Index.RangeIterator rit = sr.getRangeIterator(); rit.hasNext();) {
                         rit.next();
                         final long s = rit.currentRangeStart();
                         final long e = rit.currentRangeEnd();
@@ -2395,8 +2466,8 @@ public class SortedRangesTest {
                     }
                 }
                 assertEquals(m, sr1.getCardinality() + sr2.getCardinality() -
-                        sr1.intersectOnNew(sr2).ixCardinality(),
-                        result.ixCardinality());
+                    sr1.intersectOnNew(sr2).ixCardinality(),
+                    result.ixCardinality());
             }
         }
     }
@@ -2407,13 +2478,13 @@ public class SortedRangesTest {
             final int seed = seed0 + run;
             final Random rand = new Random(seed);
             final String m = "run==" + run;
-            for (int count : new int[]{
+            for (int count : new int[] {
                     SortedRanges.LONG_DENSE_MAX_CAPACITY,
                     SortedRanges.INT_DENSE_MAX_CAPACITY,
                     SortedRanges.SHORT_MAX_CAPACITY}) {
                 final String m2 = m + " && count==" + count;
                 SortedRanges sr = populateRandom2(
-                        null, rand, count, 0.25, 2, 1, 10, 1, 6);
+                    null, rand, count, 0.25, 2, 1, 10, 1, 6);
                 if (rand.nextBoolean()) {
                     sr = sr.tryCompact(4);
                 }
@@ -2437,13 +2508,13 @@ public class SortedRangesTest {
             final int seed = seed0 + run;
             final Random rand = new Random(seed);
             final String m = "run==" + run;
-            for (int count : new int[]{
+            for (int count : new int[] {
                     SortedRanges.LONG_DENSE_MAX_CAPACITY,
                     SortedRanges.INT_DENSE_MAX_CAPACITY,
                     SortedRanges.SHORT_MAX_CAPACITY}) {
                 final String m2 = m + " && count==" + count;
                 SortedRanges sr = populateRandom2(
-                        null, rand, count, 0.25, 2, 1, 10, 1, 6);
+                    null, rand, count, 0.25, 2, 1, 10, 1, 6);
                 if (rand.nextBoolean()) {
                     sr = sr.tryCompact(4);
                 }
@@ -2467,13 +2538,13 @@ public class SortedRangesTest {
             final int seed = seed0 + run;
             final Random rand = new Random(seed);
             final String m = "run==" + run;
-            for (int count : new int[]{
+            for (int count : new int[] {
                     SortedRanges.LONG_DENSE_MAX_CAPACITY,
                     SortedRanges.INT_DENSE_MAX_CAPACITY,
                     SortedRanges.SHORT_MAX_CAPACITY}) {
                 final String m2 = m + " && count==" + count;
                 SortedRanges sr = populateRandom2(
-                        null, rand, count, 0.25, 2, 1, 10, 1, 6);
+                    null, rand, count, 0.25, 2, 1, 10, 1, 6);
                 if (rand.nextBoolean()) {
                     sr = sr.tryCompact(4);
                 }
@@ -2525,11 +2596,11 @@ public class SortedRangesTest {
             final int seed = seed0 + run;
             final Random rand = new Random(seed);
             final String m = "run==" + run;
-            for (int count : new int[]{ Math.min(SortedRanges.LONG_DENSE_MAX_CAPACITY/2, 128) }) {
+            for (int count : new int[] {Math.min(SortedRanges.LONG_DENSE_MAX_CAPACITY / 2, 128)}) {
                 final String m2 = m + " && count==" + count;
                 final long offset = (1L << 33) + 2;
                 SortedRanges sr = populateRandom2(new SortedRangesInt(count, offset),
-                        null, rand, count, 0.25, offset, 1, 11, 5, 11);
+                    null, rand, count, 0.25, offset, 1, 11, 5, 11);
                 if (rand.nextBoolean()) {
                     sr = sr.tryCompact(4);
                 }
@@ -2544,7 +2615,7 @@ public class SortedRangesTest {
                     for (long end = start; end <= last + 1; ++end) {
                         final String m4 = m3 + " && end==" + end;
                         try (final OrderedKeys ok = sr.getOrderedKeysByKeyRange(start, end);
-                             final Index ix = new TreeIndex(sr.ixSubindexByKeyOnNew(start, end))) {
+                            final Index ix = new TreeIndex(sr.ixSubindexByKeyOnNew(start, end))) {
                             assertEquals(m4, ix.firstKey(), ok.firstKey());
                             assertEquals(m4, ix.lastKey(), ok.lastKey());
                             assertEquals(m4, ix.size(), ok.size());
@@ -2556,15 +2627,20 @@ public class SortedRangesTest {
                                     if (ok2End < ok2Start) {
                                         continue;
                                     }
-                                    final String m5 = m4 + " && dStart==" + dStart + " && dEnd==" + dEnd;
-                                    final OrderedKeys ok2 = ok.getOrderedKeysByKeyRange(ok2Start, ok2End);
+                                    final String m5 =
+                                        m4 + " && dStart==" + dStart + " && dEnd==" + dEnd;
+                                    final OrderedKeys ok2 =
+                                        ok.getOrderedKeysByKeyRange(ok2Start, ok2End);
                                     if (ok2End < ok.firstKey() || ok.lastKey() < ok2Start) {
                                         assertEquals(0, ok2.size());
                                         continue;
                                     }
-                                    final long rStart = Math.min(ok.lastKey(), Math.max(ok2Start, ok.firstKey()));
-                                    final long rEnd = Math.max(ok.firstKey(), Math.min(ok2End, ok.lastKey()));
-                                    final Index ix2 = new TreeIndex(sr.ixSubindexByKeyOnNew(rStart, rEnd));
+                                    final long rStart =
+                                        Math.min(ok.lastKey(), Math.max(ok2Start, ok.firstKey()));
+                                    final long rEnd =
+                                        Math.max(ok.firstKey(), Math.min(ok2End, ok.lastKey()));
+                                    final Index ix2 =
+                                        new TreeIndex(sr.ixSubindexByKeyOnNew(rStart, rEnd));
                                     checkOkAgainstIndex(m5, ok2, ix2);
                                 }
                             }
@@ -2581,13 +2657,13 @@ public class SortedRangesTest {
             final int seed = seed0 + run;
             final Random rand = new Random(seed);
             final String m = "run==" + run;
-            for (int count : new int[]{
+            for (int count : new int[] {
                     SortedRanges.LONG_DENSE_MAX_CAPACITY,
                     SortedRanges.INT_DENSE_MAX_CAPACITY,
                     SortedRanges.SHORT_MAX_CAPACITY}) {
                 final String m2 = m + " && count==" + count;
                 SortedRanges sr = populateRandom2(
-                        null, rand, count, 0.25, 1L << 33, 1, 10, 1, 11);
+                    null, rand, count, 0.25, 1L << 33, 1, 10, 1, 11);
                 if (rand.nextBoolean()) {
                     sr = sr.tryCompact(4);
                 }
@@ -2601,7 +2677,8 @@ public class SortedRangesTest {
                 final long okSrLastPos = sr.getCardinality() - 1 - dEnd;
                 final long okSrCard = okSrLastPos - dStart + 1;
                 try (final OrderedKeys okSr0 = sr.getOrderedKeysByPosition(dStart0, ok0SrCard);
-                        final OrderedKeys okSr = okSr0.getOrderedKeysByPosition(dStart - dStart0, okSrCard)) {
+                    final OrderedKeys okSr =
+                        okSr0.getOrderedKeysByPosition(dStart - dStart0, okSrCard)) {
                     try (final OrderedKeys.Iterator okit = okSr.getOrderedKeysIterator()) {
                         long accum = 0;
                         int i = 0;
@@ -2616,7 +2693,9 @@ public class SortedRangesTest {
                             final OrderedKeys ok = okit.getNextOrderedKeysWithLength(step);
                             final long okCard = Math.min(step, okSrCard - accum);
                             assertEquals(m3, okCard, ok.size());
-                            final Index subSr = new TreeIndex(sr.ixSubindexByPosOnNew(dStart + accum, dStart + accum + okCard /* exclusive */));
+                            final Index subSr =
+                                new TreeIndex(sr.ixSubindexByPosOnNew(dStart + accum,
+                                    dStart + accum + okCard /* exclusive */));
                             assertEquals(m3, okCard, subSr.size());
                             checkOkAgainstIndex(m3, ok, subSr);
                             accum += okCard;
@@ -2634,13 +2713,13 @@ public class SortedRangesTest {
             final int seed = seed0 + run;
             final Random rand = new Random(seed);
             final String m = "run==" + run;
-            for (int count : new int[]{
+            for (int count : new int[] {
                     SortedRanges.LONG_DENSE_MAX_CAPACITY,
                     SortedRanges.INT_DENSE_MAX_CAPACITY,
                     SortedRanges.SHORT_MAX_CAPACITY}) {
                 final String m2 = m + " && count==" + count;
                 SortedRanges sr = populateRandom2(
-                        null, rand, count, 0.25, 2, 1, 11, 1, 11);
+                    null, rand, count, 0.25, 2, 1, 11, 1, 11);
                 if (rand.nextBoolean()) {
                     sr = sr.tryCompact(4);
                 }
@@ -2661,7 +2740,9 @@ public class SortedRangesTest {
                                 break;
                             }
                             final long okCard = Math.min(1 + rand.nextInt(step), okSrCard - accum);
-                            final Index subSr = new TreeIndex(sr.ixSubindexByPosOnNew(dStart + accum, dStart + accum + okCard /* exclusive */));
+                            final Index subSr =
+                                new TreeIndex(sr.ixSubindexByPosOnNew(dStart + accum,
+                                    dStart + accum + okCard /* exclusive */));
                             final long last = subSr.lastKey();
                             final long target;
                             if (!sr.contains(last + 1) && rand.nextBoolean()) {
@@ -2681,24 +2762,25 @@ public class SortedRangesTest {
     }
 
     private static SortedRanges populateRandom2(
-            final TLongArrayList vsOut, final Random rand, final int count, final double singlesDensity,
-            final long offset,
-            final int rangeLenMin, final int rangeLenMax,
-            final int spaceMin, final int spaceMax) {
+        final TLongArrayList vsOut, final Random rand, final int count, final double singlesDensity,
+        final long offset,
+        final int rangeLenMin, final int rangeLenMax,
+        final int spaceMin, final int spaceMax) {
         return populateRandom2(SortedRanges.makeEmpty(),
-                vsOut, rand, count, singlesDensity, offset, rangeLenMin, rangeLenMax, spaceMin, spaceMax);
+            vsOut, rand, count, singlesDensity, offset, rangeLenMin, rangeLenMax, spaceMin,
+            spaceMax);
     }
 
     private static SortedRanges populateRandom2(
-            final SortedRanges srIn,
-            final TLongArrayList vsOut, final Random rand, final int count, final double singlesDensity,
-            final long offset,
-            final int rangeLenMin, final int rangeLenMax,
-            final int spaceMin, final int spaceMax) {
+        final SortedRanges srIn,
+        final TLongArrayList vsOut, final Random rand, final int count, final double singlesDensity,
+        final long offset,
+        final int rangeLenMin, final int rangeLenMax,
+        final int spaceMin, final int spaceMax) {
         SortedRanges sr = srIn;
         final int dRangeLen = rangeLenMax - rangeLenMin;
         final int dSpace = spaceMax - spaceMin;
-        long prevValue =  offset - 1;
+        long prevValue = offset - 1;
         while (sr.count < count) {
             final int spaceFromPrev = spaceMin + rand.nextInt(dSpace);
             final long v = prevValue + spaceFromPrev;
@@ -2758,11 +2840,13 @@ public class SortedRangesTest {
     }
 
     private static long[] rvs0 = new long[] {
-            2,4,-5,8,-12,14,-18,20,22,-23,26,-27,29,-30,32,-36,39,-43,45,-47,49,53,-56,60,62,-64,66,-67,69,71,
-            -73,75,-80,82,-83,85,-89,91,-92,94,-98,100,102,-106,109,112,-113
+            2, 4, -5, 8, -12, 14, -18, 20, 22, -23, 26, -27, 29, -30, 32, -36, 39, -43, 45, -47, 49,
+            53, -56, 60, 62, -64, 66, -67, 69, 71,
+            -73, 75, -80, 82, -83, 85, -89, 91, -92, 94, -98, 100, 102, -106, 109, 112, -113
     };
     private static long[] rvs1 = new long[] {
-            14,20,22,26,29,33,-34,36,39,45,-46,49,55,64,67,69,71,-73,78,-79,82,86,-88,91,94,102,-103,109
+            14, 20, 22, 26, 29, 33, -34, 36, 39, 45, -46, 49, 55, 64, 67, 69, 71, -73, 78, -79, 82,
+            86, -88, 91, 94, 102, -103, 109
     };
 
     @Test
@@ -2784,7 +2868,8 @@ public class SortedRangesTest {
     }
 
     // check base.minus(minusArg) == result
-    private static void checkMinus(final SortedRanges base, final SortedRanges minusArg, final SortedRanges result) {
+    private static void checkMinus(final SortedRanges base, final SortedRanges minusArg,
+        final SortedRanges result) {
         result.forEachLong((final long v) -> {
             final String m = "v==" + v;
             assertTrue(m, base.contains(v));
@@ -2801,17 +2886,20 @@ public class SortedRangesTest {
     @Test
     public void testIntersectRegression0() {
         final SortedRanges sr0 = rvs2sr(new long[] {
-                1073741776,-1073741798,1073741805,-1073741812,1073741824,-1073741860 });
+                1073741776, -1073741798, 1073741805, -1073741812, 1073741824, -1073741860});
         final SortedRanges sr1 = rvs2sr(new long[] {
-                1073741793,-1073741816,1073741818,1073741821,-1073741822,1073741824,-1073741854});
+                1073741793, -1073741816, 1073741818, 1073741821, -1073741822, 1073741824,
+                -1073741854});
         final TreeIndexImpl sr2 = sr0.intersectOnNew(sr1);
         sr2.ixValidate();
     }
 
     @Test
     public void testMinusRegression2() {
-        final SortedRanges sr0 = rvs2sr(new long[] { 0,-5,8,16,-19,22,27,29,34,-35,38,40,45,48,-50,53,-55,60,-106 });
-        final SortedRanges sr1 = rvs2sr(new long[] { 5,16,29,34,-35,40,45,50,54,62,66,77,80,-81,83,-85,88,-96,98,105 });
+        final SortedRanges sr0 = rvs2sr(new long[] {0, -5, 8, 16, -19, 22, 27, 29, 34, -35, 38, 40,
+                45, 48, -50, 53, -55, 60, -106});
+        final SortedRanges sr1 = rvs2sr(new long[] {5, 16, 29, 34, -35, 40, 45, 50, 54, 62, 66, 77,
+                80, -81, 83, -85, 88, -96, 98, 105});
         final TreeIndexImpl r = sr0.deepCopy().remove(sr1);
         assertNotNull(r);
         final SortedRanges sr2 = (SortedRanges) r;
@@ -2821,7 +2909,7 @@ public class SortedRangesTest {
     @Test
     public void testSubsetOfRegression0() {
         final SortedRanges sr0 = SortedRanges.makeSingleRange(0, 17);
-        final SortedRanges sr1 = rvs2sr(new long[]{1,-6,9,-11,13,-15});
+        final SortedRanges sr1 = rvs2sr(new long[] {1, -6, 9, -11, 13, -15});
         assertTrue(sr1.subsetOf(sr0.getRangeIterator()));
     }
 
@@ -2838,7 +2926,7 @@ public class SortedRangesTest {
         }
     }
 
-     @Test
+    @Test
     public void testNextOrderedKeysWithLengthForCoverage1() {
         SortedRanges sr = SortedRanges.makeEmpty();
         sr = sr.addRange(1, 3);
@@ -2954,7 +3042,7 @@ public class SortedRangesTest {
     @Test
     public void testInsertCoverage1() {
         final long offset = 10;
-        for (boolean singles : new boolean[] { false, true }) {
+        for (boolean singles : new boolean[] {false, true}) {
             final String m1 = "singles=" + Boolean.toString(singles);
             SortedRanges sr0 = SortedRanges.makeEmpty();
             if (singles) {
@@ -2976,7 +3064,8 @@ public class SortedRangesTest {
                 }
                 final TreeIndexImpl result = mu.getValue().insertImpl(sr1);
                 if (result instanceof SingleRange) {
-                    mu.setValue(SortedRanges.makeSingleRange(result.ixFirstKey(), result.ixLastKey()));
+                    mu.setValue(
+                        SortedRanges.makeSingleRange(result.ixFirstKey(), result.ixLastKey()));
                 } else {
                     assertTrue(m2, result instanceof SortedRanges);
                     mu.setValue((SortedRanges) result);
@@ -3002,14 +3091,14 @@ public class SortedRangesTest {
             final int seed = seed0 + run;
             final Random rand = new Random(seed);
             final String m = "run==" + run;
-            for (int count : new int[]{
+            for (int count : new int[] {
                     SortedRanges.LONG_DENSE_MAX_CAPACITY,
                     SortedRanges.INT_DENSE_MAX_CAPACITY,
                     SortedRanges.SHORT_MAX_CAPACITY}) {
                 final String m2 = m + " && count==" + count;
                 final int space = 11;
                 SortedRanges sr = populateRandom2(
-                        null, rand, count, 0.25, 2, 1, space, 1, space);
+                    null, rand, count, 0.25, 2, 1, space, 1, space);
                 if (rand.nextBoolean()) {
                     sr = sr.tryCompact(4);
                 }
@@ -3038,24 +3127,24 @@ public class SortedRangesTest {
             final int seed = seed0 + run;
             final Random rand = new Random(seed);
             final String m = "run==" + run;
-            for (int count : new int[]{
+            for (int count : new int[] {
                     SortedRanges.LONG_DENSE_MAX_CAPACITY,
                     SortedRanges.INT_DENSE_MAX_CAPACITY,
                     SortedRanges.SHORT_MAX_CAPACITY}) {
                 final String m2 = m + " && count==" + count;
                 final int space = 11;
                 SortedRanges sr = populateRandom2(
-                        null, rand, count, 0.25, 2, 1, space, 1, space);
+                    null, rand, count, 0.25, 2, 1, space, 1, space);
                 if (rand.nextBoolean()) {
                     sr = sr.tryCompact(4);
                 }
                 int c = 20;
-                SR_LOOP:
-                while (--c >= 0) {
+                SR_LOOP: while (--c >= 0) {
                     if (sr.getCardinality() == sr.last() - sr.first() + 1) {
                         break;
                     }
-                    final TreeIndexImpl complement = SortedRanges.makeSingleRange(sr.first(), sr.last()).ixMinusOnNew(sr);
+                    final TreeIndexImpl complement =
+                        SortedRanges.makeSingleRange(sr.first(), sr.last()).ixMinusOnNew(sr);
                     final Index.RangeIterator riter = complement.ixRangeIterator();
                     while (riter.hasNext()) {
                         riter.next();
@@ -3112,9 +3201,9 @@ public class SortedRangesTest {
 
     @Test
     public void testUnionCoverage1() {
-        SortedRanges sr0 = SortedRanges.makeSingleRange(45,45).addRange(55, 56);
+        SortedRanges sr0 = SortedRanges.makeSingleRange(45, 45).addRange(55, 56);
         SortedRanges sr1 = SortedRanges.makeSingleRange(10, 20).addRange(30, 40);
-        for (SortedRanges arg : new SortedRanges[] { sr0, sr1 }) {
+        for (SortedRanges arg : new SortedRanges[] {sr0, sr1}) {
             SortedRanges tis = (arg == sr0) ? sr1 : sr0;
             final TreeIndexImpl r = tis.ixUnionOnNew(arg);
             assertNotNull(r);
@@ -3130,10 +3219,10 @@ public class SortedRangesTest {
         SortedRanges sr0 = SortedRanges.makeSingleRange(10, 20).addRange(31, 40);
         SortedRanges sr1 = SortedRanges.makeSingleRange(20, 30).addRange(40, 50);
         final long expectedCard =
-                sr0.ixCardinality() +
-                        sr1.ixCardinality() -
-                        sr0.intersectOnNew(sr1).ixCardinality();
-        for (SortedRanges arg : new SortedRanges[] { sr0, sr1 }) {
+            sr0.ixCardinality() +
+                sr1.ixCardinality() -
+                sr0.intersectOnNew(sr1).ixCardinality();
+        for (SortedRanges arg : new SortedRanges[] {sr0, sr1}) {
             SortedRanges tis = (arg == sr0) ? sr1 : sr0;
             final TreeIndexImpl r = tis.ixUnionOnNew(arg);
             r.ixValidate();
@@ -3149,10 +3238,10 @@ public class SortedRangesTest {
         SortedRanges sr0 = SortedRanges.makeSingleRange(10, 20).addRange(31, 40);
         SortedRanges sr1 = SortedRanges.makeSingleRange(20, 30);
         final long expectedCard =
-                sr0.ixCardinality() +
-                        sr1.ixCardinality() -
-                        sr0.intersectOnNew(sr1).ixCardinality();
-        for (SortedRanges arg : new SortedRanges[] { sr0, sr1 }) {
+            sr0.ixCardinality() +
+                sr1.ixCardinality() -
+                sr0.intersectOnNew(sr1).ixCardinality();
+        for (SortedRanges arg : new SortedRanges[] {sr0, sr1}) {
             SortedRanges tis = (arg == sr0) ? sr1 : sr0;
             final TreeIndexImpl r = tis.ixUnionOnNew(arg);
             r.ixValidate();
@@ -3168,10 +3257,10 @@ public class SortedRangesTest {
         SortedRanges sr0 = SortedRanges.makeSingleRange(10, 20);
         SortedRanges sr1 = SortedRanges.makeSingleRange(20, 20);
         final long expectedCard =
-                sr0.ixCardinality() +
-                        sr1.ixCardinality() -
-                        sr0.ixUnionOnNew(sr1).ixCardinality();
-        for (SortedRanges arg : new SortedRanges[] { sr0, sr1 }) {
+            sr0.ixCardinality() +
+                sr1.ixCardinality() -
+                sr0.ixUnionOnNew(sr1).ixCardinality();
+        for (SortedRanges arg : new SortedRanges[] {sr0, sr1}) {
             SortedRanges tis = (arg == sr0) ? sr1 : sr0;
             final TreeIndexImpl r = tis.intersectOnNew(arg);
             r.ixValidate();
@@ -3188,7 +3277,7 @@ public class SortedRangesTest {
         sr0 = sr0.tryPack();
         assertTrue(sr0 instanceof SortedRangesShort);
         for (int i = 2; i < SortedRanges.LONG_DENSE_MAX_CAPACITY - 1; ++i) {
-            sr0 = sr0.append(30 + i*2);
+            sr0 = sr0.append(30 + i * 2);
         }
         assertTrue(sr0 instanceof SortedRangesShort);
         SortedRanges sr1 = sr0.deepCopy();
@@ -3209,7 +3298,7 @@ public class SortedRangesTest {
         sr0 = sr0.tryPack();
         assertTrue(sr0 instanceof SortedRangesShort);
         for (int i = 2; i < SortedRanges.LONG_DENSE_MAX_CAPACITY - 2; ++i) {
-            sr0 = sr0.append(30 + i*2);
+            sr0 = sr0.append(30 + i * 2);
         }
         assertTrue(sr0 instanceof SortedRangesShort);
         SortedRanges sr1 = sr0.deepCopy();
@@ -3231,7 +3320,8 @@ public class SortedRangesTest {
         SortedRangesShort srs0 = new SortedRangesShort(2, offset);
         SortedRanges sr = srs0.appendRange(offset, offset + 1);
         sr = sr.remove(offset + 1);
-        SortedRanges ans = sr.appendRange(offset + Short.MAX_VALUE + 10, offset + Short.MAX_VALUE + 20);
+        SortedRanges ans =
+            sr.appendRange(offset + Short.MAX_VALUE + 10, offset + Short.MAX_VALUE + 20);
         if (ans != null) {
             ans.validate();
         }
@@ -3239,8 +3329,8 @@ public class SortedRangesTest {
 
     @Test
     public void testRemoveSinglesLeavesEmpty() {
-        final SortedRanges sr0 = vs2sar(new long[] { 10, 20, 30, 40 });
-        final SortedRanges sr1 = vs2sar(new long[] { 8, 10, 15, 20, 30, 40 });
+        final SortedRanges sr0 = vs2sar(new long[] {10, 20, 30, 40});
+        final SortedRanges sr1 = vs2sar(new long[] {8, 10, 15, 20, 30, 40});
         final TreeIndexImpl tix = sr0.ixRemove(sr1);
         assertTrue(tix.ixIsEmpty());
     }
@@ -3251,7 +3341,7 @@ public class SortedRangesTest {
         // Offset and start do not match.
         final long start = 1 << 16;
         for (int i = 0; i < SortedRanges.INT_DENSE_MAX_CAPACITY - 2; ++i) {
-            sr0 = sr0.append(start + 2L*i);
+            sr0 = sr0.append(start + 2L * i);
         }
         final long lastRangeStart = start + Short.MAX_VALUE - 4;
         final long lastRangeEnd = lastRangeStart + 4;
@@ -3267,7 +3357,7 @@ public class SortedRangesTest {
     public void testAppendRangePacked() {
         SortedRanges sr0 = new SortedRangesLong(SortedRanges.LONG_DENSE_MAX_CAPACITY);
         for (int i = 0; i < SortedRanges.LONG_DENSE_MAX_CAPACITY; ++i) {
-            sr0 = sr0.append(2L*i);
+            sr0 = sr0.append(2L * i);
         }
         final long last = 2L * (SortedRanges.LONG_DENSE_MAX_CAPACITY - 1);
         sr0 = sr0.appendRange(last + 1, last + 3);
@@ -3277,7 +3367,7 @@ public class SortedRangesTest {
 
     @Test
     public void testSearchIteratorAdvaceRegression0() {
-        SortedRanges sr = vs2sar(new long[] { 10, -20, 30, -40, 1000, -1002 });
+        SortedRanges sr = vs2sar(new long[] {10, -20, 30, -40, 1000, -1002});
         try (ReadOnlyIndex.SearchIterator it = sr.getSearchIterator()) {
             boolean more = it.advance(30);
             assertTrue(more);
@@ -3294,7 +3384,7 @@ public class SortedRangesTest {
 
     @Test
     public void testRangeIteratorAdvaceRegression0() {
-        SortedRanges sr = vs2sar(new long[]{10, -20, 30, -40, 1000, -1002});
+        SortedRanges sr = vs2sar(new long[] {10, -20, 30, -40, 1000, -1002});
         try (ReadOnlyIndex.RangeIterator it = sr.getRangeIterator()) {
             boolean more = it.advance(30);
             assertTrue(more);
@@ -3311,7 +3401,7 @@ public class SortedRangesTest {
 
     @Test
     public void testReverseRangeIteratorAdvanceRegression0() {
-        SortedRanges sr = vs2sar(new long[]{10, -20, 30, -40, 1000, -1002});
+        SortedRanges sr = vs2sar(new long[] {10, -20, 30, -40, 1000, -1002});
         try (ReadOnlyIndex.SearchIterator it = sr.getReverseIterator()) {
             boolean more = it.advance(30);
             assertTrue(more);

@@ -16,12 +16,15 @@ import static io.deephaven.compilertools.ReplicateUtilities.globalReplacements;
 import static io.deephaven.compilertools.ReplicateUtilities.simpleFixup;
 
 public class ReplicateSortCheck {
-    public static void main(String [] args) throws IOException {
+    public static void main(String[] args) throws IOException {
         final List<String> invertList = new ArrayList<>();
 
-        invertList.add(ReplicatePrimitiveCode.pathForClass(CharSortCheck.class, ReplicatePrimitiveCode.MAIN_SRC));
-        invertList.addAll(ReplicatePrimitiveCode.charToAllButBoolean(CharSortCheck.class, ReplicatePrimitiveCode.MAIN_SRC));
-        final String objectPath = ReplicatePrimitiveCode.charToObject(CharSortCheck.class, ReplicatePrimitiveCode.MAIN_SRC);
+        invertList.add(ReplicatePrimitiveCode.pathForClass(CharSortCheck.class,
+            ReplicatePrimitiveCode.MAIN_SRC));
+        invertList.addAll(ReplicatePrimitiveCode.charToAllButBoolean(CharSortCheck.class,
+            ReplicatePrimitiveCode.MAIN_SRC));
+        final String objectPath = ReplicatePrimitiveCode.charToObject(CharSortCheck.class,
+            ReplicatePrimitiveCode.MAIN_SRC);
         invertList.add(objectPath);
         ReplicateUtilities.fixupChunkAttributes(objectPath);
 
@@ -33,7 +36,10 @@ public class ReplicateSortCheck {
     private static void invertSense(String path, String descendingPath) throws IOException {
         final File file = new File(path);
 
-        List<String> lines = simpleFixup(ascendingNameToDescendingName(path, FileUtils.readLines(file, Charset.defaultCharset())), "initialize last", "MIN_VALUE", "MAX_VALUE");
+        List<String> lines = simpleFixup(
+            ascendingNameToDescendingName(path,
+                FileUtils.readLines(file, Charset.defaultCharset())),
+            "initialize last", "MIN_VALUE", "MAX_VALUE");
 
         if (path.contains("Object")) {
             lines = ReplicateSortKernel.fixupObjectComparisons(lines, false);

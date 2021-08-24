@@ -24,12 +24,13 @@ public class RollingFileAppender extends FileAppender {
     }
 
     private void rollOver() {
-        //backup the old files just in case...
+        // backup the old files just in case...
 
         new File(fileName + ".5.bak").delete();
 
-        for (int i=5; i>1; i--){
-            new File(fileName + "." + (i-1) + ".bak").renameTo(new File(fileName + "." + i + ".bak"));
+        for (int i = 5; i > 1; i--) {
+            new File(fileName + "." + (i - 1) + ".bak")
+                .renameTo(new File(fileName + "." + i + ".bak"));
         }
 
         new File(fileName).renameTo(new File(fileName + ".1.bak"));

@@ -34,29 +34,29 @@ public class TestBaseFigureImpl extends BaseArrayTestCase {
         c2.setChartType(ChartType.XY);
         Axes az = c1.newAxes();
         Axes az2 = c2.newAxes();
-        az.plot("Test1", x->x);
-        az2.plot("Test2", x->x);
+        az.plot("Test1", x -> x);
+        az2.plot("Test2", x -> x);
 
         try {
-            az.plot("Test1", x->x);
-            az2.plot("Test2", x->x);
+            az.plot("Test1", x -> x);
+            az2.plot("Test2", x -> x);
             fail("Expected an exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("same name"));
         }
 
         fig1.figureRemoveSeries("Test1", "Test2");
-        az.plot("Test1", x->x);
-        az2.plot("Test2", x->x);
+        az.plot("Test1", x -> x);
+        az2.plot("Test2", x -> x);
 
         try {
-            new BaseFigureImpl(0,0);
+            new BaseFigureImpl(0, 0);
             TestCase.fail("Expected an exception");
-        } catch (RuntimeException e){
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains("Grid must be at least 1x1"));
         }
 
-        fig1 = new BaseFigureImpl(5,5);
+        fig1 = new BaseFigureImpl(5, 5);
         fig1.newChart(0);
         fig1.newChart(0, 0);
 
@@ -65,7 +65,7 @@ public class TestBaseFigureImpl extends BaseArrayTestCase {
         try {
             fig1.removeChart(0);
             TestCase.fail("Expected an exception");
-        } catch (RuntimeException e){
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains("exist"));
         }
 
@@ -75,28 +75,28 @@ public class TestBaseFigureImpl extends BaseArrayTestCase {
         try {
             c.rowSpan(100);
             TestCase.fail("Expected an exception");
-        } catch (RuntimeException e){
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains("not in grid"));
         }
 
         try {
             fig1.newChart(100);
             TestCase.fail("Expected an exception");
-        } catch (RuntimeException e){
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains("not in grid"));
         }
 
         try {
             fig1.newChart(-1);
             TestCase.fail("Expected an exception");
-        } catch (RuntimeException e){
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains("indices must be"));
         }
 
-        fig1 = new BaseFigureImpl(2,2);
-        c1 = fig1.newChart(1,0);
-        fig1.newChart(0,0);
-        c2 = fig1.newChart(0,1).span(2, 1);
+        fig1 = new BaseFigureImpl(2, 2);
+        c1 = fig1.newChart(1, 0);
+        fig1.newChart(0, 0);
+        c2 = fig1.newChart(0, 1).span(2, 1);
 
         try {
             fig1.newChart();
@@ -108,14 +108,14 @@ public class TestBaseFigureImpl extends BaseArrayTestCase {
         try {
             c2.colSpan(2);
             TestCase.fail("Expected an exception");
-        } catch (RuntimeException e){
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains("not in grid"));
         }
 
         try {
             c2.rowSpan(3);
             TestCase.fail("Expected an exception");
-        } catch (RuntimeException e){
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains("not in grid"));
         }
 
@@ -123,12 +123,12 @@ public class TestBaseFigureImpl extends BaseArrayTestCase {
         c1.colSpan(2);
     }
 
-    public void testCopy(){
+    public void testCopy() {
         final BaseFigureImpl figure = new BaseFigureImpl();
         final String title = "TEST";
         final Font font = new Font("Ariel", Font.FontStyle.PLAIN, 10);
-        final Color color = new io.deephaven.gui.color.Color(0,0,0);
-        figure.newChart(0).newAxes().plot("test", new int[]{1}, new int[]{1});
+        final Color color = new io.deephaven.gui.color.Color(0, 0, 0);
+        figure.newChart(0).newAxes().plot("test", new int[] {1}, new int[] {1});
 
         figure.figureTitle(title);
         figure.figureTitleColor(color);

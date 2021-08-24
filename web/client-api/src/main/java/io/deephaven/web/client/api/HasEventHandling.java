@@ -46,7 +46,8 @@ public class HasEventHandling {
             map.set(name, listeners);
         } else {
             if (hasListener(name, callback)) {
-                JsLog.warn(logPrefix() + "You are double-adding the callback " + name + " : ", callback + ", removing old instance.");
+                JsLog.warn(logPrefix() + "You are double-adding the callback " + name + " : ",
+                    callback + ", removing old instance.");
                 removeEventListener(name, callback);
             }
             listeners.push(callback);
@@ -58,10 +59,12 @@ public class HasEventHandling {
         /*
          * Hack to workaround how GWT creates js functions and manages binding "this". The "self"
          * instance is actually _not_ the same object as "this", as it represents the JS Function
-         * instead of the Java instance - effectively, "self" is something like this::onEvent.bind(this).
+         * instead of the Java instance - effectively, "self" is something like
+         * this::onEvent.bind(this).
          */
         final class WrappedCallback implements EventFn {
             private EventFn self;
+
             @Override
             public void onEvent(Event e) {
                 removeEventListener(name, self);
@@ -84,7 +87,8 @@ public class HasEventHandling {
             return pair;
         }
     }
-    public void addEventListenerOneShot(EventPair ... pairs) {
+
+    public void addEventListenerOneShot(EventPair... pairs) {
         boolean[] seen = {false};
         for (EventPair pair : pairs) {
             addEventListenerOneShot(pair.name, e -> {
@@ -123,12 +127,15 @@ public class HasEventHandling {
     public boolean removeEventListener(String name, EventFn callback) {
         final JsArray<EventFn> listeners = map.get(name);
         if (listeners == null) {
-            JsLog.warn(logPrefix() + "Asked to remove an event listener which wasn't present, ignoring.");
+            JsLog.warn(
+                logPrefix() + "Asked to remove an event listener which wasn't present, ignoring.");
             return false;
         }
         int index = listeners.indexOf(callback);
         if (index == -1) {
-            JsLog.warn(logPrefix() + "Asked to remove an event listener which wasn't present, ignoring. Present listeners for that event: ", listeners);
+            JsLog.warn(logPrefix()
+                + "Asked to remove an event listener which wasn't present, ignoring. Present listeners for that event: ",
+                listeners);
             return false;
         }
         // remove the item
@@ -143,7 +150,7 @@ public class HasEventHandling {
         fireEvent(type, CustomEventInit.create());
     }
 
-    public void fireEventWithDetail(String type, @DoNotAutobox  Object detail) {
+    public void fireEventWithDetail(String type, @DoNotAutobox Object detail) {
         final CustomEventInit evt = CustomEventInit.create();
         evt.setDetail(detail);
         fireEvent(type, evt);
@@ -159,12 +166,14 @@ public class HasEventHandling {
             return;
         }
         if (map.has(e.type)) {
-            final JsArray<EventFn> callbacks = Js.cast(JsArray.from((JsArrayLike<EventFn>)map.get(e.type)));
-            callbacks.forEach((item, ind, all)->{
+            final JsArray<EventFn> callbacks =
+                Js.cast(JsArray.from((JsArrayLike<EventFn>) map.get(e.type)));
+            callbacks.forEach((item, ind, all) -> {
                 try {
                     item.onEvent(e);
                 } catch (Throwable t) {
-                    DomGlobal.console.error(logPrefix() + "User callback (", item, ") of type ", type, " failed: ", t);
+                    DomGlobal.console.error(logPrefix() + "User callback (", item, ") of type ",
+                        type, " failed: ", t);
                     t.printStackTrace();
                 }
                 return true;

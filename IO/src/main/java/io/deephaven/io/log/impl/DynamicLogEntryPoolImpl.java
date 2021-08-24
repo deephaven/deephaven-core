@@ -10,12 +10,15 @@ import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.LogBufferPool;
 import io.deephaven.base.Function;
 
-public class DynamicLogEntryPoolImpl extends ThreadSafeLenientFixedSizePool<LogEntry> implements LogEntryPool {
+public class DynamicLogEntryPoolImpl extends ThreadSafeLenientFixedSizePool<LogEntry>
+    implements LogEntryPool {
     public DynamicLogEntryPoolImpl(String name, int entryCount, final LogBufferPool bufferPool) {
         super(name, entryCount,
-                new Function.Nullary<LogEntry>() {
-                    public LogEntry call() { return new LogEntryImpl(bufferPool); }
-                }, null);
+            new Function.Nullary<LogEntry>() {
+                public LogEntry call() {
+                    return new LogEntryImpl(bufferPool);
+                }
+            }, null);
     }
 
     @Override

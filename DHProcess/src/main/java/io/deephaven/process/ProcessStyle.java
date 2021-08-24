@@ -7,4 +7,5 @@ import org.immutables.value.Value.Style.ImplementationVisibility;
     visibility = ImplementationVisibility.PACKAGE,
     defaults = @Value.Immutable(copy = false),
     strictBuilder = true)
-public @interface ProcessStyle {}
+public @interface ProcessStyle {
+}

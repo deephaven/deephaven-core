@@ -11,8 +11,8 @@ import java.util.Map;
 import java.util.PriorityQueue;
 
 /**
- * A priority blocking queue that maintains one element per key.  If a later request comes in of higher priority,
- * the lower priority item is replaced by the higher priority item.
+ * A priority blocking queue that maintains one element per key. If a later request comes in of
+ * higher priority, the lower priority item is replaced by the higher priority item.
  *
  * The element type must be usable in a hash map.
  */
@@ -52,13 +52,13 @@ public class KeyedPriorityBlockingQueue<E> {
     private final Map<E, Enqueued> map = new HashMap<>();
 
     /**
-     * Add an element to the queue.  If the element is already in the queue, the element's priority will be the higher
-     * of the existing element and the new element.
+     * Add an element to the queue. If the element is already in the queue, the element's priority
+     * will be the higher of the existing element and the new element.
      *
      * @param element element to enqueue.
      * @param priority priority of the element.
-     * @return {@code true} if the {@code element} was newly inserted to the queue or reinserted with a higher priority,
-     * otherwise {@code false}.
+     * @return {@code true} if the {@code element} was newly inserted to the queue or reinserted
+     *         with a higher priority, otherwise {@code false}.
      */
     public synchronized boolean enqueue(final E element, final int priority) {
         final Enqueued e = map.get(element);
@@ -83,8 +83,8 @@ public class KeyedPriorityBlockingQueue<E> {
     }
 
     /**
-     * Retrieves and removes the head of this queue, waiting if necessary
-     * until an element becomes available.
+     * Retrieves and removes the head of this queue, waiting if necessary until an element becomes
+     * available.
      *
      * @return the head of this queue
      * @throws InterruptedException if interrupted while waiting
@@ -93,7 +93,7 @@ public class KeyedPriorityBlockingQueue<E> {
         Enqueued<E> e = takeHead();
 
         // marking as inactive and ignoring, rather than doing an O(N) remove
-        while(!e.isActive) {
+        while (!e.isActive) {
             e = takeHead();
         }
 
@@ -102,7 +102,7 @@ public class KeyedPriorityBlockingQueue<E> {
     }
 
     private void checkInterrupt() throws InterruptedException {
-        if(Thread.currentThread().isInterrupted()){
+        if (Thread.currentThread().isInterrupted()) {
             throw new InterruptedException();
         }
     }
@@ -122,7 +122,7 @@ public class KeyedPriorityBlockingQueue<E> {
      *
      * @return true if the queue is empty; false otherwise.
      */
-    public synchronized boolean isEmpty(){
+    public synchronized boolean isEmpty() {
         return fitterQueue.isEmpty();
     }
 }

@@ -11,7 +11,7 @@ public class FixedStepReplayer extends Replayer {
     private long incrementNanos;
     private DBDateTime currentTime;
 
-    public FixedStepReplayer(DBDateTime startTime, DBDateTime endTime,long incrementNanos) {
+    public FixedStepReplayer(DBDateTime startTime, DBDateTime endTime, long incrementNanos) {
         super(startTime, endTime);
         this.incrementNanos = incrementNanos;
         currentTime = startTime;
@@ -24,7 +24,7 @@ public class FixedStepReplayer extends Replayer {
 
     @Override
     public void refresh() {
-        currentTime = DBTimeUtils.plus(currentTime,incrementNanos);
+        currentTime = DBTimeUtils.plus(currentTime, incrementNanos);
         if (currentTime.getNanos() > endTime.getNanos()) {
             currentTime = endTime;
         }
@@ -33,6 +33,6 @@ public class FixedStepReplayer extends Replayer {
 
     @Override
     public void setTime(long updatedTime) {
-        currentTime = DBTimeUtils.millisToTime(Math.max(updatedTime,currentTime.getMillis()));
+        currentTime = DBTimeUtils.millisToTime(Math.max(updatedTime, currentTime.getMillis()));
     }
 }

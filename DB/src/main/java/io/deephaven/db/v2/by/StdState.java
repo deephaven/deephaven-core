@@ -20,6 +20,7 @@ class StdState implements PreviousStateProvider<StdState> {
     StdState createPrev() {
         return new StdState(true);
     }
+
     // only used in the current state
     private long changeTime;
     private final StdState prevValue;
@@ -29,7 +30,7 @@ class StdState implements PreviousStateProvider<StdState> {
     protected long nonNullCount;
 
     double currentValue() {
-        return Math.sqrt(sum2/(nonNullCount-1) - sum*sum/nonNullCount/(nonNullCount-1));
+        return Math.sqrt(sum2 / (nonNullCount - 1) - sum * sum / nonNullCount / (nonNullCount - 1));
     }
 
     @Override
@@ -54,9 +55,9 @@ class StdState implements PreviousStateProvider<StdState> {
     @Override
     public String toString() {
         return "Std{" +
-                "sum=" + sum +
-                ", sum2=" + sum2 +
-                ", nonNull=" + nonNullCount +
-                '}';
+            "sum=" + sum +
+            ", sum2=" + sum2 +
+            ", nonNull=" + nonNullCount +
+            '}';
     }
 }

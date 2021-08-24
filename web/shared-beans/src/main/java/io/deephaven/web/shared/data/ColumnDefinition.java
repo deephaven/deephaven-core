@@ -16,7 +16,7 @@ public class ColumnDefinition implements Serializable {
     private boolean isPartitionColumn;
     private boolean isRollupHierarchicalColumn;
 
-    //Indicates that this is a style column for the row
+    // Indicates that this is a style column for the row
     private boolean forRow;
 
     public String getName() {

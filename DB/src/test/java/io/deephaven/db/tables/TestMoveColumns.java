@@ -6,16 +6,17 @@ import junit.framework.TestCase;
 import java.util.stream.Collectors;
 
 public class TestMoveColumns extends TestCase {
-    private static final Table table = TableTools.emptyTable(1).update("a=1", "b=2", "c=3", "d=4", "e=5");
+    private static final Table table =
+        TableTools.emptyTable(1).update("a=1", "b=2", "c=3", "d=4", "e=5");
     private static final int numCols = table.getColumns().length;
 
     public void testMoveColumns() {
-        //Basic moving
+        // Basic moving
         Table temp = table.moveColumns(0, "a");
         checkColumnOrder(temp, "abcde");
         checkColumnValueOrder(temp, "12345");
 
-        temp = table.moveColumns(numCols-1, "a");
+        temp = table.moveColumns(numCols - 1, "a");
         checkColumnOrder(temp, "bcdea");
         checkColumnValueOrder(temp, "23451");
 
@@ -23,16 +24,16 @@ public class TestMoveColumns extends TestCase {
         checkColumnOrder(temp, "abcde");
         checkColumnValueOrder(temp, "12345");
 
-        temp = table.moveColumns(numCols-2, "a", "b");
+        temp = table.moveColumns(numCols - 2, "a", "b");
         checkColumnOrder(temp, "cdeab");
         checkColumnValueOrder(temp, "34512");
 
-        //Basic moving with renaming
+        // Basic moving with renaming
         temp = table.moveColumns(0, "x=a");
         checkColumnOrder(temp, "xbcde");
         checkColumnValueOrder(temp, "12345");
 
-        temp = table.moveColumns(numCols-1, "x=a");
+        temp = table.moveColumns(numCols - 1, "x=a");
         checkColumnOrder(temp, "bcdex");
         checkColumnValueOrder(temp, "23451");
 
@@ -52,7 +53,7 @@ public class TestMoveColumns extends TestCase {
         checkColumnOrder(temp, "xabde");
         checkColumnValueOrder(temp, "12345");
 
-        temp = table.moveColumns(numCols-3, "x=a", "a=b", "b=c");
+        temp = table.moveColumns(numCols - 3, "x=a", "a=b", "b=c");
         checkColumnOrder(temp, "dexab");
         checkColumnValueOrder(temp, "45123");
 
@@ -82,14 +83,14 @@ public class TestMoveColumns extends TestCase {
     }
 
     public void testMoveUpColumns() {
-        //basic moving
+        // basic moving
         checkColumnOrder(table.moveUpColumns("a"), "abcde");
 
         checkColumnOrder(table.moveUpColumns("b"), "bacde");
 
         checkColumnOrder(table.moveUpColumns("b", "c", "d", "e"), "bcdea");
 
-        //moving and renaming
+        // moving and renaming
         Table temp = table.moveUpColumns("x=a");
         checkColumnOrder(temp, "xbcde");
         checkColumnValueOrder(temp, "12345");
@@ -114,7 +115,7 @@ public class TestMoveColumns extends TestCase {
 
         checkColumnOrder(table.moveDownColumns("a", "b", "c", "d"), "eabcd");
 
-        //moving and renaming
+        // moving and renaming
         Table temp = table.moveDownColumns("x=a");
         checkColumnOrder(temp, "bcdex");
         checkColumnValueOrder(temp, "23451");
@@ -137,12 +138,15 @@ public class TestMoveColumns extends TestCase {
     }
 
     private void checkColumnOrder(Table t, String expectedOrder) {
-        final String order = t.getColumnSourceMap().keySet().stream().collect(Collectors.joining(""));
+        final String order =
+            t.getColumnSourceMap().keySet().stream().collect(Collectors.joining(""));
         assertEquals(expectedOrder, order);
     }
 
     private void checkColumnValueOrder(Table t, String expectedOrder) {
-        final String order = t.getColumnSourceMap().values().stream().mapToInt((col) -> col.getInt(0)).mapToObj(String::valueOf).collect(Collectors.joining(""));
+        final String order =
+            t.getColumnSourceMap().values().stream().mapToInt((col) -> col.getInt(0))
+                .mapToObj(String::valueOf).collect(Collectors.joining(""));
         assertEquals(expectedOrder, order);
     }
 

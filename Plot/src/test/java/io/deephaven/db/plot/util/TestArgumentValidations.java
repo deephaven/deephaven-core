@@ -17,7 +17,7 @@ import junit.framework.TestCase;
 
 import java.util.Date;
 
-public class TestArgumentValidations extends BaseArrayTestCase{
+public class TestArgumentValidations extends BaseArrayTestCase {
 
     public void testArgumentValidations() {
         final String NON_NULL = "TEST";
@@ -29,20 +29,21 @@ public class TestArgumentValidations extends BaseArrayTestCase{
         final String INVALID = "INVALID";
         final int[] ints = {1};
         final IndexableNumericData intData = new IndexableNumericDataArrayInt(ints, null);
-        final IndexableNumericData intData2 = new IndexableNumericDataArrayInt(new int[]{2,3}, null);
+        final IndexableNumericData intData2 =
+            new IndexableNumericDataArrayInt(new int[] {2, 3}, null);
         final DBDateTime[] dates = {new DBDateTime(1)};
         final Color[] colors = {new Color(1)};
         final Table table = TableTools.newTable(
-                TableTools.col(stringColumn, NON_NULL),
-                TableTools.col(dateColumn, dates),
-                TableTools.col(colorColumn, colors),
-                TableTools.intCol(intColumn, ints)).ungroup();
+            TableTools.col(stringColumn, NON_NULL),
+            TableTools.col(dateColumn, dates),
+            TableTools.col(colorColumn, colors),
+            TableTools.intCol(intColumn, ints)).ungroup();
 
         ArgumentValidations.assertInstance(String.class, String.class, message, null);
         try {
             ArgumentValidations.assertInstance(String.class, Number.class, message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(message));
         }
 
@@ -50,43 +51,51 @@ public class TestArgumentValidations extends BaseArrayTestCase{
         try {
             ArgumentValidations.assertInstance(table, INVALID, String.class, message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(INVALID));
         }
         try {
             ArgumentValidations.assertInstance(table, intColumn, String.class, message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(message));
         }
 
-        ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, intColumn, message, null);
-        ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, dateColumn, message, null);
-        ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, stringColumn, message, null);
+        ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, intColumn,
+            message, null);
+        ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, dateColumn,
+            message, null);
+        ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, stringColumn,
+            message, null);
         try {
-            ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, INVALID, message, null);
+            ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, INVALID,
+                message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(INVALID));
         }
         try {
-            ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, INVALID, message, null);
+            ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, INVALID,
+                message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(INVALID));
         }
 
-        ArgumentValidations.assertSameSize(new IndexableNumericData[]{intData}, new String[]{"TEST"}, null);
+        ArgumentValidations.assertSameSize(new IndexableNumericData[] {intData},
+            new String[] {"TEST"}, null);
         try {
-            ArgumentValidations.assertSameSize(new IndexableNumericData[]{null}, new String[]{message}, null);
+            ArgumentValidations.assertSameSize(new IndexableNumericData[] {null},
+                new String[] {message}, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(message));
         }
         try {
-            ArgumentValidations.assertSameSize(new IndexableNumericData[]{intData, intData2}, new String[]{"A", "B"}, null);
+            ArgumentValidations.assertSameSize(new IndexableNumericData[] {intData, intData2},
+                new String[] {"A", "B"}, null);
             TestCase.fail("Expected an exception");
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Input data"));
         }
 
@@ -94,7 +103,7 @@ public class TestArgumentValidations extends BaseArrayTestCase{
         try {
             ArgumentValidations.getColumnType(table, INVALID, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(INVALID));
         }
 
@@ -132,19 +141,19 @@ public class TestArgumentValidations extends BaseArrayTestCase{
         try {
             ArgumentValidations.assertIsTime(table, intColumn, message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(message));
         }
         try {
             ArgumentValidations.assertIsTime(table, stringColumn, message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(message));
         }
         try {
             ArgumentValidations.assertIsTime(table, INVALID, message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(INVALID));
         }
 
@@ -152,44 +161,44 @@ public class TestArgumentValidations extends BaseArrayTestCase{
         try {
             ArgumentValidations.assertIsPrimitiveNumeric(table, dateColumn, message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(message));
         }
         try {
             ArgumentValidations.assertIsPrimitiveNumeric(table, stringColumn, message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(message));
         }
         try {
             ArgumentValidations.assertIsPrimitiveNumeric(table, INVALID, message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(INVALID));
         }
 
         try {
             ArgumentValidations.assertIsBoxedNumeric(table, intColumn, message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(message));
         }
         try {
             ArgumentValidations.assertIsBoxedNumeric(table, dateColumn, message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(message));
         }
         try {
             ArgumentValidations.assertIsBoxedNumeric(table, stringColumn, message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(message));
         }
         try {
             ArgumentValidations.assertIsBoxedNumeric(table, INVALID, message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(INVALID));
         }
 
@@ -197,19 +206,19 @@ public class TestArgumentValidations extends BaseArrayTestCase{
         try {
             ArgumentValidations.assertIsNumeric(table, dateColumn, message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(message));
         }
         try {
             ArgumentValidations.assertIsNumeric(table, stringColumn, message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(message));
         }
         try {
             ArgumentValidations.assertIsNumeric(table, INVALID, message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(INVALID));
         }
 
@@ -218,13 +227,13 @@ public class TestArgumentValidations extends BaseArrayTestCase{
         try {
             ArgumentValidations.assertIsNumericOrTime(table, stringColumn, message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(message));
         }
         try {
             ArgumentValidations.assertIsNumericOrTime(table, INVALID, message, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(INVALID));
         }
 
@@ -232,17 +241,17 @@ public class TestArgumentValidations extends BaseArrayTestCase{
         try {
             ArgumentValidations.assertIsNumericOrTime(table, stringColumn, INVALID, null);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(INVALID));
         }
 
         final TableHandle handle =
-                new TableHandle( table, intColumn, stringColumn, dateColumn);
+            new TableHandle(table, intColumn, stringColumn, dateColumn);
         ArgumentValidations.assertColumnsInTable(handle, null, dateColumn, intColumn, stringColumn);
         try {
             ArgumentValidations.assertColumnsInTable(handle, null, stringColumn, INVALID);
             TestCase.fail("Expected an exception");
-        } catch(RuntimeException e) {
+        } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(INVALID));
         }
     }

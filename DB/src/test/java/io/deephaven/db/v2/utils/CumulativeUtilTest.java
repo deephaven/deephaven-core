@@ -16,14 +16,14 @@ public class CumulativeUtilTest extends BaseArrayTestCase {
         final String cumSum = "CumSum";
 
         Table t2 = CumulativeUtil.cumSum(t, cumSum, "Row");
-        assertColumnEquals(t2, cumSum, new double[]{0,1,3,6,10,15,21,28,36,45});
+        assertColumnEquals(t2, cumSum, new double[] {0, 1, 3, 6, 10, 15, 21, 28, 36, 45});
 
         t2 = CumulativeUtil.cumSum(t, cumSum, "i % 2 == 0 ? Row : 0");
-        assertColumnEquals(t2, cumSum, new double[]{0,0,2,2,6,6,12,12,20,20});
+        assertColumnEquals(t2, cumSum, new double[] {0, 0, 2, 2, 6, 6, 12, 12, 20, 20});
 
 
         t2 = CumulativeUtil.cumSum(t.updateView("Key = 45"), "Key", cumSum, "Row");
-        assertColumnEquals(t2, cumSum, new double[]{0,1,3,6,10,15,21,28,36,45});
+        assertColumnEquals(t2, cumSum, new double[] {0, 1, 3, 6, 10, 15, 21, 28, 36, 45});
     }
 
     public void testCumMin() {
@@ -31,10 +31,10 @@ public class CumulativeUtilTest extends BaseArrayTestCase {
         final String cumMin = "CumMin";
 
         Table t2 = CumulativeUtil.cumMin(t, cumMin, "Row");
-        assertColumnEquals(t2, cumMin, new double[]{0,0,0,0,0,0,0,0,0,0});
+        assertColumnEquals(t2, cumMin, new double[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
 
         t2 = CumulativeUtil.cumMin(t, cumMin, "-1*Row");
-        assertColumnEquals(t2, cumMin, new double[]{0,-1,-2,-3,-4,-5,-6,-7,-8,-9});
+        assertColumnEquals(t2, cumMin, new double[] {0, -1, -2, -3, -4, -5, -6, -7, -8, -9});
     }
 
     public void testRollingSum() {
@@ -42,10 +42,15 @@ public class CumulativeUtilTest extends BaseArrayTestCase {
 
         String rollingSum = "RollingSum";
         Table t2 = CumulativeUtil.rollingSum(t, 5, rollingSum, "Row");
-        assertColumnEquals(t2, rollingSum, new double[]{QueryConstants.NULL_DOUBLE,QueryConstants.NULL_DOUBLE,QueryConstants.NULL_DOUBLE,QueryConstants.NULL_DOUBLE,QueryConstants.NULL_DOUBLE,15,20,25,30,35});
+        assertColumnEquals(t2, rollingSum,
+            new double[] {QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE,
+                    QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE,
+                    QueryConstants.NULL_DOUBLE, 15, 20, 25, 30, 35});
 
         t2 = CumulativeUtil.rollingSum(t, 3, rollingSum, "Row * 2");
-        assertColumnEquals(t2, rollingSum, new double[]{QueryConstants.NULL_DOUBLE,QueryConstants.NULL_DOUBLE,QueryConstants.NULL_DOUBLE,12,18,24,30,36,42,48});
+        assertColumnEquals(t2, rollingSum,
+            new double[] {QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE,
+                    QueryConstants.NULL_DOUBLE, 12, 18, 24, 30, 36, 42, 48});
     }
 
     private void assertColumnEquals(final Table t, final String column, final double[] values) {

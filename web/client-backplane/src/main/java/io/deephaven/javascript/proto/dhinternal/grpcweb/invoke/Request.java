@@ -10,19 +10,19 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(isNative = true, name = "dhinternal.grpcWeb.invoke.Request", namespace = JsPackage.GLOBAL)
 public interface Request {
-  @JsFunction
-  public interface CloseFn {
-    void onInvoke();
-  }
+    @JsFunction
+    public interface CloseFn {
+        void onInvoke();
+    }
 
-  @JsOverlay
-  static Request create() {
-    return Js.uncheckedCast(JsPropertyMap.of());
-  }
+    @JsOverlay
+    static Request create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+    }
 
-  @JsProperty
-  Request.CloseFn getClose();
+    @JsProperty
+    Request.CloseFn getClose();
 
-  @JsProperty
-  void setClose(Request.CloseFn close);
+    @JsProperty
+    void setClose(Request.CloseFn close);
 }

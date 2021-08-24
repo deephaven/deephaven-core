@@ -5,12 +5,12 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.function.Supplier;
 
-public class ReverseListIterable <T> implements MappedIterable<T> {
+public class ReverseListIterable<T> implements MappedIterable<T> {
 
     private final Supplier<ListIterator<T>> itrSource;
 
     public ReverseListIterable(List<T> items) {
-        itrSource = ()->items.listIterator(items.size());
+        itrSource = () -> items.listIterator(items.size());
     }
 
     @Override

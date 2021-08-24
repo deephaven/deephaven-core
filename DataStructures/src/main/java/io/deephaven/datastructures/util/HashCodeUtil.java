@@ -9,8 +9,9 @@ import java.util.Date;
 public class HashCodeUtil {
 
     public static int toHashCode(double val) {
-        //many bit representations for NaN
-        if (Double.isNaN(val)) return 0;
+        // many bit representations for NaN
+        if (Double.isNaN(val))
+            return 0;
 
         long t = Double.doubleToLongBits(val);
         return (int) (t ^ (t >>> 32));
@@ -24,7 +25,7 @@ public class HashCodeUtil {
         return (obj == null) ? 0 : obj.hashCode();
     }
 
-    public static int combineHashCodes(Object ... values) {
+    public static int combineHashCodes(Object... values) {
         return createHashCode(values);
     }
 
@@ -39,13 +40,16 @@ public class HashCodeUtil {
 
                 if (type == String.class) {
                     String str = (String) values[i];
-                    if (str != null) hash = str.hashCode();
-                    else hash = 0;
+                    if (str != null)
+                        hash = str.hashCode();
+                    else
+                        hash = 0;
                 } else if (type == Integer.class) {
                     hash = ((Integer) values[i]);
                 } else if (type == Double.class) {
                     double val = ((Double) values[i]);
-                    if (Double.isNaN(val)) hash = 0;
+                    if (Double.isNaN(val))
+                        hash = 0;
                     else {
                         long t = Double.doubleToLongBits(val);
                         hash = (int) (t ^ (t >>> 32));
@@ -59,11 +63,10 @@ public class HashCodeUtil {
                 } else if (type == Byte.class) {
                     hash = ((Byte) values[i]);
                 } else if (type == Boolean.class) {
-                    hash = values[i].hashCode();   //the hashcode should be fine in this case
-                } else if (type.isEnum()){
+                    hash = values[i].hashCode(); // the hashcode should be fine in this case
+                } else if (type.isEnum()) {
                     hash = ((Enum<?>) values[i]).ordinal();
-                }
-                else {
+                } else {
                     hash = values[i].hashCode();
                 }
             }

@@ -16,8 +16,8 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
     private final BusinessCalendar calendar;
 
     /**
-     * Creates a new Default24HourBusinessCalendar instance. Assumes that {@code calendar}
-     * is a {@link BusinessCalendar} with no holidays and a 24 hour business day.
+     * Creates a new Default24HourBusinessCalendar instance. Assumes that {@code calendar} is a
+     * {@link BusinessCalendar} with no holidays and a 24 hour business day.
      *
      * @param calendar {@link BusinessCalendar} with no holidays and a 24 hour business day
      */
@@ -51,7 +51,9 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
     }
 
     @Override
-    public long standardBusinessDayLengthNanos() { return calendar.standardBusinessDayLengthNanos(); }
+    public long standardBusinessDayLengthNanos() {
+        return calendar.standardBusinessDayLengthNanos();
+    }
 
     @Override
     @Deprecated

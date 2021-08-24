@@ -54,16 +54,18 @@ public class TestRandomAccessDeque extends BaseArrayTestCase {
 
         show(values, deque);
 
-        values.removeIf(x -> x%3 == 0);
-        assertTrue( deque.removeIf(x -> x == 3) );
+        values.removeIf(x -> x % 3 == 0);
+        assertTrue(deque.removeIf(x -> x == 3));
 
         checkEquals(values, deque);
 
-        assertFalse( deque.removeIf(x -> x == 999) );
+        assertFalse(deque.removeIf(x -> x == 999));
 
         TestCase.assertTrue(Arrays.equals(values.toArray(), deque.toArray()));
-        TestCase.assertTrue(Arrays.equals(values.toArray(new Integer[0]), deque.toArray(new Integer[0])));
-        TestCase.assertTrue(Arrays.equals(values.toArray(new Integer[values.size()]), deque.toArray(new Integer[deque.size()])));
+        TestCase.assertTrue(
+            Arrays.equals(values.toArray(new Integer[0]), deque.toArray(new Integer[0])));
+        TestCase.assertTrue(Arrays.equals(values.toArray(new Integer[values.size()]),
+            deque.toArray(new Integer[deque.size()])));
 
         values.addAll(Arrays.asList(7, 8, 9));
         deque.addAll(Arrays.asList(7, 8, 9));
@@ -97,7 +99,7 @@ public class TestRandomAccessDeque extends BaseArrayTestCase {
         }
         checkEquals(values, deque);
 
-        //noinspection SimplifyStreamApiCallChains
+        // noinspection SimplifyStreamApiCallChains
         List<Integer> streamResult = deque.stream().collect(Collectors.toList());
         TestCase.assertEquals(values, streamResult);
 

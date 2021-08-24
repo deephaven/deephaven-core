@@ -10,7 +10,8 @@ public abstract class AbstractReplacingVisitorTest {
         assertEquals(message, input, execute(input));
     }
 
-    protected void assertFilterEquals(String message, FilterDescriptor input, FilterDescriptor output) {
+    protected void assertFilterEquals(String message, FilterDescriptor input,
+        FilterDescriptor output) {
 
         FilterDescriptor actual = execute(input);
         if (!output.equals(actual)) {
@@ -20,7 +21,8 @@ public abstract class AbstractReplacingVisitorTest {
     }
 
     private static String print(FilterDescriptor f) {
-        FilterPrinter p = new FilterPrinter(str -> "\"" + str + "\"");//not correct, but good enough for logging failures
+        FilterPrinter p = new FilterPrinter(str -> "\"" + str + "\"");// not correct, but good
+                                                                      // enough for logging failures
         return p.print(f);
     }
 

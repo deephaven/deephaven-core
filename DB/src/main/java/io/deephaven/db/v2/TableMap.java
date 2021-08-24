@@ -42,9 +42,9 @@ public interface TableMap extends TransformableTableMap, LivenessNode {
     }
 
     /**
-     * Gets a table with a given key.
-     * Note that this causes the current {@link io.deephaven.db.util.liveness.LivenessManager}
-     * (see {@link io.deephaven.db.util.liveness.LivenessScopeStack}) to manage the result if non-null.
+     * Gets a table with a given key. Note that this causes the current
+     * {@link io.deephaven.db.util.liveness.LivenessManager} (see
+     * {@link io.deephaven.db.util.liveness.LivenessScopeStack}) to manage the result if non-null.
      *
      * @param key key
      * @return table associated with the key, or null if the key is not present.
@@ -88,9 +88,10 @@ public interface TableMap extends TransformableTableMap, LivenessNode {
     int size();
 
     /**
-     * When creating the table map, some of the keys that we would like to be there eventually may not exist.  This
-     * call lets you pre-populate keys, so that at initialization time you can perform the appropriate joins, etc.,
-     * on empty tables that you expect to be populated in the future.
+     * When creating the table map, some of the keys that we would like to be there eventually may
+     * not exist. This call lets you pre-populate keys, so that at initialization time you can
+     * perform the appropriate joins, etc., on empty tables that you expect to be populated in the
+     * future.
      *
      * @param keys the keys to add to the map
      * @return this TableMap
@@ -106,6 +107,7 @@ public interface TableMap extends TransformableTableMap, LivenessNode {
 
     /**
      * Removes a map change listener.
+     * 
      * @param listener map change listener.
      */
     void removeListener(Listener listener);
@@ -132,8 +134,9 @@ public interface TableMap extends TransformableTableMap, LivenessNode {
     /**
      * Applies a function to this tableMap.
      *
-     * This is useful if you have a reference to a tableMap and want to run a series of operations against the table
-     * map without each individual operation resulting in a remote method invocation.
+     * This is useful if you have a reference to a tableMap and want to run a series of operations
+     * against the table map without each individual operation resulting in a remote method
+     * invocation.
      *
      * @param function the function to run, its single argument will be this table map.
      * @param <R> the return type of function
@@ -142,8 +145,8 @@ public interface TableMap extends TransformableTableMap, LivenessNode {
     <R> R apply(Function.Unary<R, TableMap> function);
 
     /**
-     * Applies a transformation function on all tables in the TableMap, producing a new TableMap which will update as
-     * new keys are added.
+     * Applies a transformation function on all tables in the TableMap, producing a new TableMap
+     * which will update as new keys are added.
      *
      * @param function the function to apply to each table in this TableMap
      * @return a new TableMap where each table has had function applied
@@ -160,18 +163,20 @@ public interface TableMap extends TransformableTableMap, LivenessNode {
      * @param function the function to apply to each table in this TableMap
      * @return a new TableMap where each table has had function applied
      */
-    default TableMap transformTables(TableDefinition returnDefinition, java.util.function.Function<Table, Table> function) {
+    default TableMap transformTables(TableDefinition returnDefinition,
+        java.util.function.Function<Table, Table> function) {
         return transformTablesWithKey(returnDefinition, TableMapFunctionAdapter.of(function));
     }
 
     /**
-     * Applies a transformation function on all tables in the TableMap, producing a new TableMap which will update as
-     * new keys are added.
+     * Applies a transformation function on all tables in the TableMap, producing a new TableMap
+     * which will update as new keys are added.
      * <p>
-     * The function may be passed a sentinel key, which can be checked with {@link TableMap#isSentinel(Object)}.
-     * On the sentinel key, the function will be passed in an empty table, and is expected to return
-     * an empty table of the proper definition. To avoid this sentinel invocation, callers can be
-     * explicit and use {@link #transformTablesWithKey(TableDefinition, BiFunction)}.
+     * The function may be passed a sentinel key, which can be checked with
+     * {@link TableMap#isSentinel(Object)}. On the sentinel key, the function will be passed in an
+     * empty table, and is expected to return an empty table of the proper definition. To avoid this
+     * sentinel invocation, callers can be explicit and use
+     * {@link #transformTablesWithKey(TableDefinition, BiFunction)}.
      *
      * @param function the bifunction to apply to each table in this TableMap
      * @return a new TableMap where each table has had function applied
@@ -186,19 +191,21 @@ public interface TableMap extends TransformableTableMap, LivenessNode {
      * @param function the bifunction to apply to each table in this TableMap
      * @return a new TableMap where each table has had function applied
      */
-    TableMap transformTablesWithKey(TableDefinition returnDefinition, java.util.function.BiFunction<Object, Table, Table> function);
+    TableMap transformTablesWithKey(TableDefinition returnDefinition,
+        java.util.function.BiFunction<Object, Table, Table> function);
 
     /**
-     * Applies a BiFunction function on all tables in this TableMap and otherMap that have matching keys, producing a
-     * new TableMap which will update as new keys are added.  Only applies the function to tables which exist in both
-     * maps.
+     * Applies a BiFunction function on all tables in this TableMap and otherMap that have matching
+     * keys, producing a new TableMap which will update as new keys are added. Only applies the
+     * function to tables which exist in both maps.
      *
      * @param otherMap the other TableMap
-     * @param function the function to apply to each table in this TableMap, the tables in this map are the first argument
-     *                 the tables in the other map are the second argument.
+     * @param function the function to apply to each table in this TableMap, the tables in this map
+     *        are the first argument the tables in the other map are the second argument.
      * @return a new TableMap where each table has had function applied
      */
-    TableMap transformTablesWithMap(TableMap otherMap, java.util.function.BiFunction<Table, Table, Table> function);
+    TableMap transformTablesWithMap(TableMap otherMap,
+        java.util.function.BiFunction<Table, Table, Table> function);
 
     /**
      * Table map change listener.

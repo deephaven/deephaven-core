@@ -24,8 +24,8 @@ import java.util.*;
  * Instances of this class are responsible for bringing CTS back to life.
  *
  * The {@link RequestBatcher} class has been refactored to take an interface,
- * {@link HasTableBinding}, which the TableReviver implements,
- * so that it can assemble "rebuild this state" requests.
+ * {@link HasTableBinding}, which the TableReviver implements, so that it can assemble "rebuild this
+ * state" requests.
  *
  */
 public class TableReviver implements HasTableBinding {
@@ -40,10 +40,10 @@ public class TableReviver implements HasTableBinding {
         this.connection = connection;
     }
 
-    public void revive(BrowserHeaders metadata, ClientTableState ... states) {
+    public void revive(BrowserHeaders metadata, ClientTableState... states) {
         if (enqueued == null) {
             enqueued = new IdentityHashSet<>();
-            LazyPromise.runLater(()->{
+            LazyPromise.runLater(() -> {
                 final ClientTableState[] toRevive = enqueued.stream()
                     .filter(ClientTableState::shouldResuscitate)
                     .toArray(ClientTableState[]::new);
@@ -74,18 +74,18 @@ public class TableReviver implements HasTableBinding {
         for (ClientTableState state : reviveFirst) {
             JsLog.debug("Attempting revive on ", state);
             state.maybeRevive(metadata).then(
-                success->{
-                    state.forActiveLifecycles(t->t.revive(state));
+                success -> {
+                    state.forActiveLifecycles(t -> t.revive(state));
                     return null;
-                }, failure->{
-                    state.forActiveLifecycles(t->t.die(failure));
+                }, failure -> {
+                    state.forActiveLifecycles(t -> t.die(failure));
                     return null;
-                }
-            );
+                });
         }
 
         if (!reviveLast.isEmpty()) {
-            // Instead of using RequestBatcher, we should just be rebuilding the SerializedTableOps directly.
+            // Instead of using RequestBatcher, we should just be rebuilding the SerializedTableOps
+            // directly.
             int cnt = 0, page = 6;
             BatchBuilder builder = new BatchBuilder();
             Map<TableTicket, ClientTableState> all = new LinkedHashMap<>();
@@ -96,7 +96,7 @@ public class TableReviver implements HasTableBinding {
                 rebuild.setAppendTo(s.getPrevious());
                 rebuild.setHandles(s.getPrevious().getHandle(), s.getHandle());
                 builder.doNextOp(rebuild);
-                if (++cnt==page) {
+                if (++cnt == page) {
                     cnt = 0;
                     page += 4;
                     sendRequest(builder, all);
@@ -118,7 +118,8 @@ public class TableReviver implements HasTableBinding {
         JsLog.debug("Sending revivification request", LazyString.of(req));
 
         // TODO core#242 - this isn't tested at all, and mostly doesn't make sense
-        ResponseStreamWrapper<ExportedTableCreationResponse> stream = ResponseStreamWrapper.of(connection.tableServiceClient().batch(req, connection.metadata()));
+        ResponseStreamWrapper<ExportedTableCreationResponse> stream = ResponseStreamWrapper
+            .of(connection.tableServiceClient().batch(req, connection.metadata()));
         stream.onData(response -> {
             TableReference resultid = response.getResultId();
             if (!resultid.hasTicket()) {

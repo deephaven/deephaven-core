@@ -14,17 +14,18 @@ public class TestTableValidator extends LiveTableTestCase {
     public void testValidator() {
         ChunkPoolReleaseTracking.enableStrict();
 
-        try (final SafeCloseable sc = LivenessScopeStack.open()){
+        try (final SafeCloseable sc = LivenessScopeStack.open()) {
 
             final Random random = new Random(0);
             final TstUtils.ColumnInfo[] columnInfo;
             final int size = 50;
-            final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(new String[]{"Sym", "intCol", "doubleCol"},
+            final QueryTable queryTable = getTable(size, random,
+                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
                     new TstUtils.SetGenerator<>("a", "b", "c", "d", "e"),
                     new TstUtils.IntGenerator(10, 100),
                     new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
 
-            final EvalNugget[] en = new EvalNugget[]{
+            final EvalNugget[] en = new EvalNugget[] {
                     new EvalNugget() {
                         public Table e() {
                             return queryTable;

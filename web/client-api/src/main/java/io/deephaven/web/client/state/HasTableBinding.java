@@ -4,9 +4,9 @@ import elemental2.dom.CustomEventInit;
 import io.deephaven.web.client.api.TableTicket;
 
 /**
- * In order to not-require a JsTable to be bound to a {@link ClientTableState},
- * we will use this interface, which exposes the parts of JsTable that we require
- * in managing handles and their lifecycles.
+ * In order to not-require a JsTable to be bound to a {@link ClientTableState}, we will use this
+ * interface, which exposes the parts of JsTable that we require in managing handles and their
+ * lifecycles.
  *
  */
 public interface HasTableBinding {
@@ -23,6 +23,7 @@ public interface HasTableBinding {
     boolean isAlive();
 
     void fireEvent(String name);
+
     void fireEvent(String name, CustomEventInit eventInit);
 
     void setState(ClientTableState appendTo);

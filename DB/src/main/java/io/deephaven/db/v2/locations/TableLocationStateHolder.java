@@ -5,15 +5,16 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Tool for generic multi-field "atomic" get/set of state values for a table location.
- * NB: Possibly-concurrent usages should be externally synchronized.
+ * Tool for generic multi-field "atomic" get/set of state values for a table location. NB:
+ * Possibly-concurrent usages should be externally synchronized.
  */
 public class TableLocationStateHolder implements TableLocationState {
 
     private ReadOnlyIndex index;
     private volatile long lastModifiedTimeMillis;
 
-    private TableLocationStateHolder(@Nullable final ReadOnlyIndex index, final long lastModifiedTimeMillis) {
+    private TableLocationStateHolder(@Nullable final ReadOnlyIndex index,
+        final long lastModifiedTimeMillis) {
         this.index = index;
         this.lastModifiedTimeMillis = lastModifiedTimeMillis;
     }
@@ -22,9 +23,9 @@ public class TableLocationStateHolder implements TableLocationState {
         this(null, NULL_TIME);
     }
 
-//------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // TableLocationState implementation
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
     @Override
     @NotNull
@@ -47,9 +48,9 @@ public class TableLocationStateHolder implements TableLocationState {
         return lastModifiedTimeMillis;
     }
 
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // Setters
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
     /**
      * Clear this holder, by reinitializing all fields to their "null" equivalents.
@@ -61,16 +62,18 @@ public class TableLocationStateHolder implements TableLocationState {
     /**
      * Set all state values.
      *
-     * @param index                 The new index. Ownership passes to this holder; callers should
-     *                              {@link ReadOnlyIndex#clone() clone} it if necessary.
+     * @param index The new index. Ownership passes to this holder; callers should
+     *        {@link ReadOnlyIndex#clone() clone} it if necessary.
      * @param lastModifiedTimeMillis The new modification time
      * @return Whether any of the values changed
      */
-    public final synchronized boolean setValues(@Nullable final ReadOnlyIndex index, final long lastModifiedTimeMillis) {
+    public final synchronized boolean setValues(@Nullable final ReadOnlyIndex index,
+        final long lastModifiedTimeMillis) {
         boolean changed = false;
 
         if (index != this.index) {
-            // Currently, locations *must* be add-only. Consequently, we assume that a size check is sufficient.
+            // Currently, locations *must* be add-only. Consequently, we assume that a size check is
+            // sufficient.
             changed = (index == null || this.index == null || index.size() != this.index.size());
             if (this.index != null) {
                 this.index.close();
