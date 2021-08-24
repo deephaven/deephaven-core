@@ -16,10 +16,10 @@ import java.util.concurrent.ScheduledExecutorService;
 public abstract class SessionImplConfig {
 
     private static final boolean DELEGATE_TO_BATCH_DEFAULT =
-        Boolean.getBoolean("SessionImplConfig.delegateToBatch");
+        Boolean.getBoolean("deephaven.session.batch");
 
     private static final boolean MIXIN_STACKTRACE_DEFAULT =
-        Boolean.getBoolean("SessionImplConfig.mixinStacktrace");
+        Boolean.getBoolean("deephaven.session.batch.stacktraces");
 
     public static Builder builder() {
         return ImmutableSessionImplConfig.builder();
@@ -33,11 +33,26 @@ public abstract class SessionImplConfig {
 
     public abstract ConsoleServiceStub consoleService();
 
+    /**
+     * Whether the {@link Session} implementation will implement a batch {@link TableHandleManager}.
+     * By default, is {@code false}. The default can be overridden via the system property
+     * {@code deephaven.session.batch}.
+     *
+     * @return true if the session will implement a batch manager, false if the session will
+     *         implement a serial manager
+     */
     @Default
     public boolean delegateToBatch() {
         return DELEGATE_TO_BATCH_DEFAULT;
     }
 
+    /**
+     * Whether the default batch {@link TableHandleManager} will use mix-in more relevant
+     * stacktraces. By default, is {@code false}. The default can be overridden via the system
+     * property {@code deephaven.session.batch.stacktraces}.
+     *
+     * @return true if the default batch manager will mix-in stacktraces, false otherwise
+     */
     @Default
     public boolean mixinStacktrace() {
         return MIXIN_STACKTRACE_DEFAULT;

@@ -93,8 +93,6 @@ public final class StackTraceMixInCreator<TOPS extends TableOperations<TOPS, TAB
             // StackTraceMixInCreator may provide useful context. We can try to be smarter about
             // this in the future.
             return Stream.of(elements).skip(lastMixInIndex).toArray(StackTraceElement[]::new);
-            // return Stream.of(elements).skip(lastMixInIndex +
-            // 1).toArray(StackTraceElement[]::new);
         }
         return elements;
     }
