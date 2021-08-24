@@ -34,19 +34,23 @@ public abstract class Column<T> {
     }
 
     public static <T> Column<T> empty(ColumnHeader<T> header) {
-        return of(header.name(), Array.empty(header.type()));
+        return of(header.name(), Array.empty(header.componentType()));
     }
 
     public static <T> Column<T> of(ColumnHeader<T> header, T... data) {
-        return of(header.name(), Array.of(header.type(), data));
+        return of(header.name(), Array.of(header.componentType(), data));
     }
 
     public static <T> Column<T> of(ColumnHeader<T> header, Collection<T> data) {
-        return of(header.name(), Array.of(header.type(), data));
+        return of(header.name(), Array.of(header.componentType(), data));
     }
 
     public static <T> Column<T> of(String name, Class<T> clazz, T... values) {
         return of(name, Array.of(Type.find(clazz), values));
+    }
+
+    public static <T> Column<T> of(String name, Type<T> type, T... values) {
+        return of(name, Array.of(type, values));
     }
 
     public static <T> Column<T> of(String name, Class<T> clazz, Collection<T> values) {
@@ -97,6 +101,34 @@ public abstract class Column<T> {
         return of(name, BooleanArray.of(values));
     }
 
+    public static Column<Byte> ofUnsafe(String name, byte[] values) {
+        return of(name, ByteArray.ofUnsafe(values));
+    }
+
+    public static Column<Character> ofUnsafe(String name, char[] values) {
+        return of(name, CharArray.ofUnsafe(values));
+    }
+
+    public static Column<Short> ofUnsafe(String name, short[] values) {
+        return of(name, ShortArray.ofUnsafe(values));
+    }
+
+    public static Column<Integer> ofUnsafe(String name, int[] values) {
+        return of(name, IntArray.ofUnsafe(values));
+    }
+
+    public static Column<Long> ofUnsafe(String name, long[] values) {
+        return of(name, LongArray.ofUnsafe(values));
+    }
+
+    public static Column<Float> ofUnsafe(String name, float[] values) {
+        return of(name, FloatArray.ofUnsafe(values));
+    }
+
+    public static Column<Double> ofUnsafe(String name, double[] values) {
+        return of(name, DoubleArray.ofUnsafe(values));
+    }
+
     public static Column<Byte> ofByte(String name, byte... values) {
         return of(name, ByteArray.of(values));
     }
@@ -141,7 +173,7 @@ public abstract class Column<T> {
     }
 
     public final Type<T> type() {
-        return array().type();
+        return array().componentType();
     }
 
     public final int size() {

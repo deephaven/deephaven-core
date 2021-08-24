@@ -15,8 +15,13 @@ public abstract class ByteType extends PrimitiveTypeBase<Byte> {
     }
 
     @Override
-    public final Class<Byte> primitiveClass() {
+    public final Class<Byte> clazz() {
         return byte.class;
+    }
+
+    @Override
+    public final NativeArrayType<byte[], Byte> arrayType() {
+        return NativeArrayType.of(byte[].class, this);
     }
 
     @Override

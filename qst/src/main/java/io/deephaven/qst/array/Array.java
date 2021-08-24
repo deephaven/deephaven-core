@@ -41,7 +41,7 @@ public interface Array<T> extends Serializable {
         return builder(type, data.size()).add(data).build();
     }
 
-    Type<T> type();
+    Type<T> componentType();
 
     int size();
 

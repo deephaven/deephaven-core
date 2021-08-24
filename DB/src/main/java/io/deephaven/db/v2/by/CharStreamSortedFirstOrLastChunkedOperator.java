@@ -49,7 +49,7 @@ public class CharStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
     @Override
     public void ensureCapacity(final long tableSize) {
         super.ensureCapacity(tableSize);
-        sortColumnValues.ensureCapacity(tableSize);
+        sortColumnValues.ensureCapacity(tableSize, false);
     }
 
     @Override

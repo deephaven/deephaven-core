@@ -9,10 +9,7 @@ import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
 import io.deephaven.web.client.api.i18n.JsDateTimeFormat;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.subscription.QueryConstants;
-import io.deephaven.web.shared.data.ColumnHolder;
 import io.deephaven.web.shared.data.LocalTime;
-import io.deephaven.web.shared.data.columns.*;
-import io.deephaven.web.shared.fu.JsArrays;
 import io.deephaven.web.shared.fu.JsConsumer;
 import jsinterop.base.Js;
 

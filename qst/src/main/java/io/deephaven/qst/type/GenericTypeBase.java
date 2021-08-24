@@ -7,4 +7,9 @@ public abstract class GenericTypeBase<T> extends ColumnTypeBase<T> implements Ge
         visitor.visit(this);
         return visitor;
     }
+
+    @Override
+    public final NativeArrayType<?, T> arrayType() {
+        return NativeArrayType.toArrayType(this);
+    }
 }

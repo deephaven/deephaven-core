@@ -56,7 +56,7 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
 
     @Override
     public void ensureCapacity(final long tableSize) {
-        redirections.ensureCapacity(tableSize - firstDestinationThisStep);
+        redirections.ensureCapacity(tableSize - firstDestinationThisStep, false);
     }
 
     @Override
@@ -161,7 +161,7 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
                 inputContexts[ci] = inputColumns[ci].makeGetContext(COPY_CHUNK_SIZE, inputSharedContext);
                 final WritableSource<?> outputColumn = outputColumns[ci];
                 outputContexts[ci] = outputColumn.makeFillFromContext(COPY_CHUNK_SIZE);
-                outputColumn.ensureCapacity(destinations.lastKey() + 1);
+                outputColumn.ensureCapacity(destinations.lastKey() + 1, false);
             }
 
             while (destinationsIterator.hasMore()) {

@@ -18,7 +18,10 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.util.LongSizedDataStructure;
+import io.deephaven.db.util.liveness.Liveness;
+import io.deephaven.db.util.liveness.LivenessReferent;
 import io.deephaven.db.util.liveness.SingletonLivenessManager;
+import io.deephaven.db.v2.DynamicNode;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.utils.BarrageMessage;
@@ -300,7 +303,7 @@ public class ArrowFlightUtil {
                     resultTable.dropReference();
                     GrpcUtil.safelyExecute(observer::onCompleted);
                     return resultTable;
-                }), () -> GrpcUtil.safelyError(observer, Code.INTERNAL, "Do put could not be sealed"));
+                }), () -> GrpcUtil.safelyError(observer, Code.DATA_LOSS, "Do put could not be sealed"));
             });
         }
 
@@ -445,7 +448,9 @@ public class ArrowFlightUtil {
                     updateIntervalMs = DEFAULT_UPDATE_INTERVAL_MS;
                 }
                 bmp = table.getResult(operationFactory.create(table, updateIntervalMs));
-                manage(bmp);
+                if (bmp.isRefreshing()) {
+                    manage(bmp);
+                }
             } else {
                 GrpcUtil.safelyError(listener, Code.FAILED_PRECONDITION, "Ticket ("
                         + ExportTicketHelper.toReadableString(subscriptionRequest.ticketAsByteBuffer())
@@ -496,7 +501,7 @@ public class ArrowFlightUtil {
             }
 
             if (!subscriptionFound) {
-                throw GrpcUtil.statusRuntimeException(Code.INTERNAL, "Subscription was not found.");
+                throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND, "Subscription was not found.");
             }
         }
 

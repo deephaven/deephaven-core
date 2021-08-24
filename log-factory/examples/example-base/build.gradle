@@ -1,15 +1,8 @@
 plugins {
 	id 'java-library'
-	id 'com.diffplug.spotless'
 }
 
 dependencies {
 	implementation project(':log-factory')
 	implementation 'org.slf4j:slf4j-api:1.7.30'
-}
-
-spotless {
-	java {
-		eclipse().configFile("${rootDir}/style/eclipse-java-google-style.xml")
-	}
 }

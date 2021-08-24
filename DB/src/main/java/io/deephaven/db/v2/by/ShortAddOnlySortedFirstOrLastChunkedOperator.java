@@ -37,7 +37,7 @@ public class ShortAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFir
     @Override
     public void ensureCapacity(final long tableSize) {
         super.ensureCapacity(tableSize);
-        sortColumnValues.ensureCapacity(tableSize);
+        sortColumnValues.ensureCapacity(tableSize, false);
     }
 
     @Override
@@ -48,12 +48,12 @@ public class ShortAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFir
                          @NotNull final IntChunk<ChunkPositions> startPositions,
                          @NotNull final IntChunk<ChunkLengths> length,
                          @NotNull final WritableBooleanChunk<Values> stateModified) {
-        final ShortChunk<? extends Values> shortValues = values.asShortChunk();
+        final ShortChunk<? extends Values> typedValues = values.asShortChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
             final long destination = destinations.get(startPosition);
-            stateModified.set(ii, addChunk(shortValues, inputIndices, startPosition, runLength, destination));
+            stateModified.set(ii, addChunk(typedValues, inputIndices, startPosition, runLength, destination));
         }
     }
 

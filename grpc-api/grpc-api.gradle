@@ -49,7 +49,7 @@ dependencies {
     testCompile TestTools.projectDependency(project, 'DB'),
                 TestTools.projectDependency(project, 'Util')
 
-    runtimeOnly project(':Numerics'), project(':Integrations'), project(':KafkaIngester')
+    runtimeOnly project(':Numerics'), project(':Integrations'), project(':Kafka')
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.30'

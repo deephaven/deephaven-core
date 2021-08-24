@@ -91,16 +91,22 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T> imp
      * Also in its own coordinate space (i.e. densely packed)
      */
     private WritableChunkSink delta;
+
+    @FunctionalInterface
+    private interface CapacityEnsurer {
+        void ensureCapacity(long capacity, boolean nullFilled);
+    }
+
     /**
      * A lambda that ensures the capacity of the baseline data structure. (We have this because the WritableChunkSink
      * does not have an 'ensureCapacity', but the underlying data structure we use does).
      */
-    private final LongConsumer baselineCapacityEnsurer;
+    private final CapacityEnsurer baselineCapacityEnsurer;
     /**
      * A lambda that ensures the capacity of the delta data structure. (We have this because the WritableChunkSink
      * does not have an 'ensureCapacity', but the underlying data structure we use does).
      */
-    private LongConsumer deltaCapacityEnsurer;
+    private CapacityEnsurer deltaCapacityEnsurer;
     /**
      * The "preferred chunk size" from the underlying SparseArrayColumnSource.
      */
@@ -515,7 +521,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T> imp
         final long newKey = dRows.size();
         if (newKey >= deltaCapacity) {
             deltaCapacity *= 2;
-            this.deltaCapacityEnsurer.accept(deltaCapacity);
+            this.deltaCapacityEnsurer.ensureCapacity(deltaCapacity, false);
         }
         dRows.insert(index);
         return newKey;
@@ -582,8 +588,8 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T> imp
     }
 
     @Override
-    public void ensureCapacity(long capacity) {
-        baselineCapacityEnsurer.accept(capacity);
+    public void ensureCapacity(long capacity, boolean nullFilled) {
+        baselineCapacityEnsurer.ensureCapacity(capacity, nullFilled);
     }
 
     @Override

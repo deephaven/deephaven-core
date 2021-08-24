@@ -7,9 +7,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Chunk-oriented consumer for streams of data.
  */
-@FunctionalInterface
-public interface StreamConsumer {
-
+public interface StreamConsumer extends StreamFailureConsumer {
     /**
      * <p>Accept a batch of rows splayed across per-column {@link WritableChunk chunks} of {@link Values values}.
      *

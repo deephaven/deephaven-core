@@ -41,7 +41,7 @@
 # The last command above should create a table with columns: [ KafkaPartition, KafkaOffset, KafkaTimestamp, Symbol, Price ]
 #
 # Run this script on the host (not on a docker image) to generate one row:
-# $ python3 ./kafka-produce-avro.py share_price str:Symbol=MSFT double:Price=274.82
+# $ python3 ./kafka-produce-avro.py share_price 0 avro/share_price.json str:Symbol=MSFT str:Side=BUY double:Price=274.82 int:Qty=200
 #
 # You should see a new row show up in the web IDE with data matching the data sent above.
 #
@@ -52,14 +52,15 @@ import sys
 
 value_arg_form = "python_type:field=value"
 
-if len(sys.argv) < 4:
-    print("Usage: " + sys.argv[0] + " topic-name avro-schema-file-path " +
+if len(sys.argv) < 5:
+    print("Usage: " + sys.argv[0] + " topic-name partition avro-schema-file-path " +
           value_arg_form + " [ " + value_arg_form + " ...]", file=sys.stderr)
     sys.exit(1)
 
 topic_name = sys.argv[1]
+partition = int(sys.argv[2])
 
-with open(sys.argv[2], 'r') as file:
+with open(sys.argv[3], 'r') as file:
     value_schema_str = file.read()
 
 value_schema = avro.loads(value_schema_str)
@@ -85,7 +86,7 @@ def wrong_form(value_arg):
     sys.exit(1)
 
 value = {}
-for value_arg in sys.argv[3:]:
+for value_arg in sys.argv[4:]:
     s = value_arg.split(':', 1)
     if len(s) != 2:
         wrong_form(value_arg)
@@ -110,5 +111,5 @@ for value_arg in sys.argv[3:]:
         exec("v=" + cast)
         value[s[0]] = v
 
-avroProducer.produce(topic=topic_name, key=None, value=value)
+avroProducer.produce(topic=topic_name, partition=partition, key=None, value=value)
 avroProducer.flush()

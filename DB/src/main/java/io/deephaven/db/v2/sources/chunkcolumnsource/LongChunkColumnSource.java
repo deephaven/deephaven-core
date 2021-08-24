@@ -29,7 +29,7 @@ public class LongChunkColumnSource extends AbstractColumnSource<Long> implements
     private long totalSize = 0;
 
     // region constructor
-    protected LongChunkColumnSource() {
+    public LongChunkColumnSource() {
         this(new TLongArrayList());
     }
 
@@ -148,7 +148,14 @@ public class LongChunkColumnSource extends AbstractColumnSource<Long> implements
         return index;
     }
 
-    private void addChunk(@NotNull final WritableLongChunk<? extends Attributes.Values> chunk) {
+    /**
+     * Append a chunk of data to this column source.
+     *
+     * The chunk must not be empty (i.e., the size must be greater than zero).
+     *
+     * @param chunk the chunk of data to add
+     */
+    public void addChunk(@NotNull final WritableLongChunk<? extends Attributes.Values> chunk) {
         Assert.gtZero(chunk.size(), "chunk.size()");
         data.add(chunk);
         if (data.size() > firstOffsetForData.size()) {
