@@ -18,3 +18,11 @@ task replicateDownsampleValueTrackers(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     main = 'io.deephaven.clientsupport.plotdownsampling.ReplicateDownsamplingValueTrackers'
 }
+
+spotless {
+    java {
+        targetExclude(
+                '**/**ValueTracker.java',
+        )
+    }
+}

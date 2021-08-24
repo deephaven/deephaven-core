@@ -48,3 +48,11 @@ sourceSets {
     }
   }
 }
+
+spotless {
+  java {
+    targetExclude(
+            'build/generated/**'
+    )
+  }
+}
