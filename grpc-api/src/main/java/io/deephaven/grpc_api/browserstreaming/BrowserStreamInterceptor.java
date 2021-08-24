@@ -8,7 +8,6 @@ import io.grpc.*;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Objects;
 
 /**
  * Interceptor to notice x-deephaven-stream headers in a request and provide them to
@@ -29,11 +28,6 @@ public class BrowserStreamInterceptor implements ServerInterceptor {
      */
     private static final Metadata.Key<String> HALF_CLOSE_HEADER = Metadata.Key.of("x-deephaven-stream-halfclose", Metadata.ASCII_STRING_MARSHALLER);
 
-    /**
-     * Provided access to the emulated stream metadata, if any.
-     */
-    public static final Context.Key<StreamData> STREAM_DATA_KEY = Context.key("stream-data");
-
     @Inject
     public BrowserStreamInterceptor() {
     }
@@ -51,13 +45,13 @@ public class BrowserStreamInterceptor implements ServerInterceptor {
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Cannot set x-deephaven-stream-ticket without also setting x-deephaven-stream-sequence");
             }
             StreamData data = new StreamData(rpcTicket, Integer.parseInt(sequenceString), hasHalfClose);
-            Context ctx = Context.current().withValue(STREAM_DATA_KEY, data);
+            Context ctx = Context.current().withValue(StreamData.STREAM_DATA_KEY, data);
             return Contexts.interceptCall(ctx, call, headers, next);
         } else if (hasHalfClose) {
             // This is an open call with halfclose set, and no ticket, and without a ticket, the sequence
             // is irrelevant.
             StreamData data = new StreamData(null, 0, hasHalfClose);
-            Context ctx = Context.current().withValue(STREAM_DATA_KEY, data);
+            Context ctx = Context.current().withValue(StreamData.STREAM_DATA_KEY, data);
             return Contexts.interceptCall(ctx, call, headers, next);
         }
 

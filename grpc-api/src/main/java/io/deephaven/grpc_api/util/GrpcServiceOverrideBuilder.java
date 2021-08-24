@@ -6,12 +6,14 @@ package io.deephaven.grpc_api.util;
 
 import com.google.rpc.Code;
 import io.deephaven.grpc_api.browserstreaming.BrowserStream;
-import io.deephaven.grpc_api.browserstreaming.BrowserStreamInterceptor;
 import io.deephaven.grpc_api.browserstreaming.StreamData;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.io.logger.Logger;
-import io.grpc.*;
+import io.grpc.MethodDescriptor;
+import io.grpc.ServerCallHandler;
+import io.grpc.ServerServiceDefinition;
+import io.grpc.ServiceDescriptor;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
@@ -229,7 +231,7 @@ public class GrpcServiceOverrideBuilder {
 
         public void invokeOpen(ReqT request, StreamObserver<RespT> responseObserver) {
             GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-                StreamData streamData = BrowserStreamInterceptor.STREAM_DATA_KEY.get();
+                StreamData streamData = StreamData.STREAM_DATA_KEY.get();
                 SessionState session = sessionService.getCurrentSession();
                 if (streamData == null) {
                     throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "no x-deephaven-stream headers, cannot handle open request");
@@ -248,7 +250,7 @@ public class GrpcServiceOverrideBuilder {
         }
 
         public void invokeNext(ReqT request, StreamObserver<NextRespT> responseObserver) {
-            StreamData streamData = BrowserStreamInterceptor.STREAM_DATA_KEY.get();
+            StreamData streamData = StreamData.STREAM_DATA_KEY.get();
             GrpcUtil.rpcWrapper(log, responseObserver, () -> {
                 final SessionState session = sessionService.getCurrentSession();
 

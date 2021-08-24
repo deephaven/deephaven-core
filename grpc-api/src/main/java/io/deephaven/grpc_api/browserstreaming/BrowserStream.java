@@ -28,7 +28,7 @@ public class BrowserStream<T> implements Closeable {
         BrowserStream<ReqT> create(SessionState sessionState, StreamObserver<RespT> responseObserver);
     }
 
-    public static class Message<T> {
+    private static class Message<T> {
         private int pos;
         private final T message;
         private final StreamData streamData;
@@ -47,7 +47,7 @@ public class BrowserStream<T> implements Closeable {
         }
     }
 
-    public interface Marshaller<T> {
+    private interface Marshaller<T> {
         void onMessageReceived(T message);
         void onCancel();
         void onError(Throwable err);
@@ -111,7 +111,7 @@ public class BrowserStream<T> implements Closeable {
     private StreamData queuedStreamData;
     private T queuedMessage;
 
-    public BrowserStream(final Mode mode, final SessionState session, final Marshaller<T> marshaller) {
+    private BrowserStream(final Mode mode, final SessionState session, final Marshaller<T> marshaller) {
         this.mode = mode;
         this.logIdentity = "BrowserStream(" + Integer.toHexString(System.identityHashCode(this)) + "): ";
         this.session = session;

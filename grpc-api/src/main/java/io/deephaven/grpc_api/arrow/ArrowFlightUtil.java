@@ -32,7 +32,6 @@ import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
 import io.deephaven.grpc_api.barrage.util.BarrageSchemaUtil;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.TicketRouter;
-import io.deephaven.grpc_api.browserstreaming.BrowserStream;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.GrpcUtil;
 import io.deephaven.grpc_api_client.barrage.chunk.ChunkInputStreamGenerator;
@@ -138,7 +137,7 @@ public class ArrowFlightUtil {
     /**
      * This is a stateful observer; a DoPut stream begins with its schema.
      */
-    public static class DoPutObserver extends SingletonLivenessManager implements BrowserStream.Marshaller<MessageInfo>, StreamObserver<InputStream>, Closeable {
+    public static class DoPutObserver extends SingletonLivenessManager implements StreamObserver<InputStream>, Closeable {
 
         private final SessionState session;
         private final TicketRouter ticketRouter;
@@ -171,94 +170,90 @@ public class ArrowFlightUtil {
         @Override
         public void onNext(final InputStream request) {
             GrpcUtil.rpcWrapper(log, observer, () -> {
-                onMessageReceived(parseProtoMessage(request));
+                final MessageInfo mi = parseProtoMessage(request);
+                if (mi.descriptor != null) {
+                    if (resultExportBuilder != null) {
+                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Only one descriptor definition allowed");
+                    }
+                    resultExportBuilder = ticketRouter
+                            .<Table>publish(session, mi.descriptor)
+                            .onError(observer::onError);
+                    manage(resultExportBuilder.getExport());
+                }
+
+                if (mi.app_metadata != null && mi.app_metadata.msgType() == BarrageMessageType.BarrageSerializationOptions) {
+                    options = ChunkInputStreamGenerator.Options.of(BarrageSerializationOptions.getRootAsBarrageSerializationOptions(mi.app_metadata.msgPayloadAsByteBuffer()));
+                }
+
+                if (mi.header == null) {
+                    return; // nothing to do!
+                }
+
+                if (mi.header.headerType() == MessageHeader.Schema) {
+                    parseSchema((Schema) mi.header.header(new Schema()));
+                    return;
+                }
+
+                if (mi.header.headerType() != MessageHeader.RecordBatch) {
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Only schema/record-batch messages supported");
+                }
+
+                final int numColumns = resultTable.getColumnSources().size();
+                final BarrageMessage msg = new BarrageMessage();
+                final RecordBatch batch = (RecordBatch) mi.header.header(new RecordBatch());
+
+                final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
+                        new FlatBufferIteratorAdapter<>(batch.nodesLength(), i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
+
+                final TLongArrayList bufferInfo = new TLongArrayList(batch.buffersLength());
+                for (int bi = 0; bi < batch.buffersLength(); ++bi) {
+                    int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
+                    int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
+
+                    if (bi < batch.buffersLength() - 1) {
+                        final int nextOffset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi + 1).offset());
+                        // our parsers handle overhanging buffers
+                        length += Math.max(0, nextOffset - offset - length);
+                    }
+                    bufferInfo.add(length);
+                }
+                final TLongIterator bufferInfoIter = bufferInfo.iterator();
+
+                msg.rowsRemoved = Index.FACTORY.getEmptyIndex();
+                msg.shifted = IndexShiftData.EMPTY;
+
+                // include all columns as add-columns
+                int numRowsAdded = LongSizedDataStructure.intSize("RecordBatch.length()", batch.length());
+                msg.addColumnData = new BarrageMessage.AddColumnData[numColumns];
+                for (int ci = 0; ci < numColumns; ++ci) {
+                    final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
+                    msg.addColumnData[ci] = acd;
+
+                    try {
+                        acd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(options, columnChunkTypes[ci], columnTypes[ci], fieldNodeIter, bufferInfoIter, mi.inputStream);
+                    } catch (final IOException unexpected) {
+                        throw new UncheckedDeephavenException(unexpected);
+                    }
+
+                    if (acd.data.size() != numRowsAdded) {
+                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Inconsistent num records per column: " + numRowsAdded + " != " + acd.data.size());
+                    }
+                    acd.type = columnTypes[ci];
+                    acd.componentType = componentTypes[ci];
+                }
+
+                msg.rowsAdded = Index.FACTORY.getIndexByRange(resultTable.size(), resultTable.size() + numRowsAdded - 1);
+                msg.rowsIncluded = msg.rowsAdded.clone();
+                msg.modColumnData = ZERO_MOD_COLUMNS;
+
+                resultTable.handleBarrageMessage(msg);
+
+                // no app_metadata to report; but ack the processing
+                GrpcUtil.safelyExecute(() -> observer.onNext(Flight.PutResult.newBuilder().build()));
             });
         }
 
-        // this is the entry point for browser streams; and we delegate to it for client-streams
-        public void onMessageReceived(final MessageInfo mi) {
-            if (mi.descriptor != null) {
-                if (resultExportBuilder != null) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Only one descriptor definition allowed");
-                }
-                resultExportBuilder = ticketRouter
-                        .<Table>publish(session, mi.descriptor)
-                        .onError(observer::onError);
-                manage(resultExportBuilder.getExport());
-            }
-
-            if (mi.app_metadata != null && mi.app_metadata.msgType() == BarrageMessageType.BarrageSerializationOptions) {
-                options = ChunkInputStreamGenerator.Options.of(BarrageSerializationOptions.getRootAsBarrageSerializationOptions(mi.app_metadata.msgPayloadAsByteBuffer()));
-            }
-
-            if (mi.header == null) {
-                return; // nothing to do!
-            }
-
-            if (mi.header.headerType() == MessageHeader.Schema) {
-                parseSchema((Schema) mi.header.header(new Schema()));
-                return;
-            }
-
-            if (mi.header.headerType() != MessageHeader.RecordBatch) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Only schema/record-batch messages supported");
-            }
-
-            final int numColumns = resultTable.getColumnSources().size();
-            final BarrageMessage msg = new BarrageMessage();
-            final RecordBatch batch = (RecordBatch) mi.header.header(new RecordBatch());
-
-            final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
-                    new FlatBufferIteratorAdapter<>(batch.nodesLength(), i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
-
-            final TLongArrayList bufferInfo = new TLongArrayList(batch.buffersLength());
-            for (int bi = 0; bi < batch.buffersLength(); ++bi) {
-                int offset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).offset());
-                int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
-
-                if (bi < batch.buffersLength() - 1) {
-                    final int nextOffset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi + 1).offset());
-                    // our parsers handle overhanging buffers
-                    length += Math.max(0, nextOffset - offset - length);
-                }
-                bufferInfo.add(length);
-            }
-            final TLongIterator bufferInfoIter = bufferInfo.iterator();
-
-            msg.rowsRemoved = Index.FACTORY.getEmptyIndex();
-            msg.shifted = IndexShiftData.EMPTY;
-
-            // include all columns as add-columns
-            int numRowsAdded = LongSizedDataStructure.intSize("RecordBatch.length()", batch.length());
-            msg.addColumnData = new BarrageMessage.AddColumnData[numColumns];
-            for (int ci = 0; ci < numColumns; ++ci) {
-                final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
-                msg.addColumnData[ci] = acd;
-
-                try {
-                    acd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(options, columnChunkTypes[ci], columnTypes[ci], fieldNodeIter, bufferInfoIter, mi.inputStream);
-                } catch (final IOException unexpected) {
-                    throw new UncheckedDeephavenException(unexpected);
-                }
-
-                if (acd.data.size() != numRowsAdded) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Inconsistent num records per column: " + numRowsAdded + " != " + acd.data.size());
-                }
-                acd.type = columnTypes[ci];
-                acd.componentType = componentTypes[ci];
-            }
-
-            msg.rowsAdded = Index.FACTORY.getIndexByRange(resultTable.size(), resultTable.size() + numRowsAdded - 1);
-            msg.rowsIncluded = msg.rowsAdded.clone();
-            msg.modColumnData = ZERO_MOD_COLUMNS;
-
-            resultTable.handleBarrageMessage(msg);
-
-            // no app_metadata to report; but ack the processing
-            GrpcUtil.safelyExecute(() -> observer.onNext(Flight.PutResult.newBuilder().build()));
-        }
-
-        public void onCancel() {
+        private void onCancel() {
             if (resultTable != null) {
                 resultTable.dropReference();
                 resultTable = null;
@@ -271,6 +266,7 @@ public class ArrowFlightUtil {
             }
         }
 
+        @Override
         public void onError(Throwable t) {
             // ok; we're done then
             if (resultTable != null) {
@@ -332,7 +328,7 @@ public class ArrowFlightUtil {
      * and will not send out-of-order requests (due to out-of-band requests). The client should already anticipate
      * subscription changes may be coalesced by the BarrageMessageProducer.
      */
-    public static class DoExchangeMarshaller<Options, View> extends SingletonLivenessManager implements BrowserStream.Marshaller<MessageInfo>, StreamObserver<InputStream>, Closeable {
+    public static class DoExchangeMarshaller<Options, View> extends SingletonLivenessManager implements StreamObserver<InputStream>, Closeable {
         @AssistedFactory
         public interface Factory<Options, View> {
             DoExchangeMarshaller<Options, View> openExchange(SessionState session, StreamObserver<InputStream> observer);
@@ -371,7 +367,7 @@ public class ArrowFlightUtil {
 
             this.session.addOnCloseCallback(this);
             if (responseObserver instanceof ServerCallStreamObserver) {
-                ((ServerCallStreamObserver<InputStream>) responseObserver).setOnCancelHandler(this::tryClose);
+                ((ServerCallStreamObserver<InputStream>) responseObserver).setOnCancelHandler(this::onCancel);
             }
         }
 
@@ -379,52 +375,46 @@ public class ArrowFlightUtil {
         @Override
         public void onNext(final InputStream request) {
             GrpcUtil.rpcWrapper(log, listener, () -> {
-                try {
-                    onMessageReceived(parseProtoMessage(request));
-                } catch (final IOException unexpected) {
-                    throw GrpcUtil.securelyWrapError(log, unexpected);
+                MessageInfo message = parseProtoMessage(request);
+                synchronized (this) {
+                    if (message.app_metadata.magic() != BarrageStreamGenerator.FLATBUFFER_MAGIC
+                            || message.app_metadata.msgType() != BarrageMessageType.BarrageSubscriptionRequest) {
+                        log.warn().append(myPrefix).append("received a message without app_metadata").endl();
+                        return;
+                    }
+                    final BarrageSubscriptionRequest subscriptionRequest =
+                            BarrageSubscriptionRequest.getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
+
+                    if (bmp != null) {
+                        apply(subscriptionRequest);
+                        return;
+                    }
+
+                    if (isClosed) {
+                        return;
+                    }
+
+                    // have we already created the queue?
+                    if (preExportSubscriptions != null) {
+                        preExportSubscriptions.add(subscriptionRequest);
+                        return;
+                    }
+
+                    if (subscriptionRequest.ticketVector() == null) {
+                        GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT, "Ticket not specified.");
+                        return;
+                    }
+
+                    preExportSubscriptions = new ArrayDeque<>();
+                    preExportSubscriptions.add(subscriptionRequest);
+                    final SessionState.ExportObject<Object> parent = ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer());
+
+                    onExportResolvedContinuation = session.nonExport()
+                            .require(parent)
+                            .onError(listener::onError)
+                            .submit(() -> onExportResolved(parent));
                 }
             });
-        }
-
-        // this is the entry point for browser streams; and client-streams delegate to this
-        public synchronized void onMessageReceived(final MessageInfo message) {
-            if (message.app_metadata.magic() != BarrageStreamGenerator.FLATBUFFER_MAGIC
-                    || message.app_metadata.msgType() != BarrageMessageType.BarrageSubscriptionRequest) {
-                log.warn().append(myPrefix).append("received a message without app_metadata").endl();
-                return;
-            }
-            final BarrageSubscriptionRequest subscriptionRequest =
-                    BarrageSubscriptionRequest.getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
-
-            if (bmp != null) {
-                apply(subscriptionRequest);
-                return;
-            }
-
-            if (isClosed) {
-                return;
-            }
-
-            // have we already created the queue?
-            if (preExportSubscriptions != null) {
-                preExportSubscriptions.add(subscriptionRequest);
-                return;
-            }
-
-            if (subscriptionRequest.ticketVector() == null) {
-                GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT, "Ticket not specified.");
-                return;
-            }
-
-            preExportSubscriptions = new ArrayDeque<>();
-            preExportSubscriptions.add(subscriptionRequest);
-            final SessionState.ExportObject<Object> parent = ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer());
-
-            onExportResolvedContinuation = session.nonExport()
-                    .require(parent)
-                    .onError(listener::onError)
-                    .submit(() -> onExportResolved(parent));
         }
 
         private synchronized void onExportResolved(final SessionState.ExportObject<Object> parent) {
