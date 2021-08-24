@@ -17,11 +17,11 @@ import static guru.nidi.graphviz.model.Factory.mutGraph;
 import static guru.nidi.graphviz.model.Factory.mutNode;
 import static guru.nidi.graphviz.model.Factory.to;
 
-class GraphVizBuilder {
+public class GraphVizBuilder {
 
-    static MutableGraph of(Iterable<TableSpec> tables) {
+    public static MutableGraph of(Iterable<TableSpec> tables) {
         NodesBuilder consumer = new NodesBuilder();
-        ParentsVisitor.postOrderWalk(tables, consumer);
+        ParentsVisitor.postOrderList(tables).forEach(consumer);
         MutableGraph graph = mutGraph().setDirected(true);
         for (MutableNode node : consumer.identifiers.values()) {
             graph.add(node);
@@ -30,16 +30,15 @@ class GraphVizBuilder {
         return graph;
     }
 
-    static MutableGraph of(LabeledTables tables) {
+    public static MutableGraph of(LabeledTables tables) {
         NodesBuilder consumer = new NodesBuilder();
-        ParentsVisitor.postOrderWalk(tables.tables(), consumer);
+        ParentsVisitor.postOrderList(tables.tables()).forEach(consumer);
         MutableGraph graph = mutGraph().setDirected(true);
         for (MutableNode node : consumer.identifiers.values()) {
             graph.add(node);
         }
         AppendLinks.ofAll(consumer.identifiers);
 
-        int argIndex = 0;
         for (LabeledTable e : tables) {
             String label = e.label();
             TableSpec table = e.table();
@@ -48,9 +47,7 @@ class GraphVizBuilder {
             graph.add(argNode);
 
             MutableNode other = Objects.requireNonNull(consumer.identifiers.get(table));
-            argNode.addLink(to(other).with(Label.of(Integer.toString(argIndex))));
-
-            ++argIndex;
+            argNode.addLink(to(other));
         }
 
         return graph;

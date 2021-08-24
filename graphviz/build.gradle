@@ -12,7 +12,6 @@ dependencies {
     implementation 'guru.nidi:graphviz-java:0.18.1'
 
     implementation 'info.picocli:picocli:4.6.1'
-    //annotationProcessor 'info.picocli:picocli-codegen:4.6.1'
 
     testImplementation(platform('org.junit:junit-bom:5.7.2'))
     testImplementation 'org.junit.jupiter:junit-jupiter'

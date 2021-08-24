@@ -6,6 +6,7 @@ import guru.nidi.graphviz.model.MutableGraph;
 import io.deephaven.qst.table.LabeledTables;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TimeTable;
+import io.deephaven.qst.table.ViewTable;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
@@ -22,23 +23,36 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class GraphVizBuilderTest {
 
     @Test
-    void ij() throws IOException {
-        TableSpec i = TimeTable.of(Duration.ofMillis(1234L)).view("I=i").tail(1);
-        TableSpec j = TimeTable.of(Duration.ofMillis(4321)).view("J=i").tail(1);
-        TableSpec ij = i.naturalJoin(j, Collections.emptyList(), Collections.emptyList());
-
-        check(ij, "ij.dot");
+    void example1() throws IOException {
+        // Each step in the output must depend on the previous output to ensure canonical ordering
+        // for unit testing; otherwise we are testing the specific ordering of
+        // io.deephaven.qst.table.ParentsVisitor.postOrderList
+        TableSpec t1 = TimeTable.of(Duration.ofSeconds(1)).view("I=i");
+        TableSpec t2 = t1.tail(10);
+        TableSpec t3 = t2.head(1);
+        TableSpec t4 = TableSpec.merge(t2, t3);
+        TableSpec t5 = TableSpec.merge(t4, t4);
+        check(t5, "example-1.dot");
     }
 
     @Test
-    void ijLabeled() throws IOException {
-        TableSpec i = TimeTable.of(Duration.ofMillis(1234L)).view("I=i").tail(1);
-        TableSpec j = TimeTable.of(Duration.ofMillis(4321)).view("J=i").tail(1);
-        TableSpec ij = i.naturalJoin(j, Collections.emptyList(), Collections.emptyList());
+    void example1Labeled() throws IOException {
+        // Each step in the output must depend on the previous output to ensure canonical ordering
+        // for unit testing; otherwise we are testing the specific ordering of
+        // io.deephaven.qst.table.ParentsVisitor.postOrderList
+        TableSpec t1 = TimeTable.of(Duration.ofSeconds(1)).view("I=i");
+        TableSpec t2 = t1.tail(10);
+        TableSpec t3 = t2.head(1);
+        TableSpec t4 = TableSpec.merge(t2, t3);
+        TableSpec t5 = TableSpec.merge(t4, t4);
+        check(LabeledTables.builder().putMap("t1", t1).putMap("t2", t2).putMap("t3", t3)
+            .putMap("t4", t4).putMap("t5", t5).build(), "example-1-labeled.dot");
+    }
 
-        LabeledTables ijLabeled =
-            LabeledTables.builder().putMap("i", i).putMap("j", j).putMap("ij", ij).build();
-        check(ijLabeled, "ij-labeled.dot");
+    @Test
+    void example2() throws IOException {
+        TableSpec needsEscaping = TableSpec.empty(1).view("I=`some \"\n string stuff\uD83D\uDC7D`");
+        check(needsEscaping, "example-2.dot");
     }
 
     private static void check(TableSpec t, String resource) throws IOException {

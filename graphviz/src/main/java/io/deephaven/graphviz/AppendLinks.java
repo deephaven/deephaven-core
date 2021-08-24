@@ -11,15 +11,15 @@ import java.util.Objects;
 
 import static guru.nidi.graphviz.model.Factory.to;
 
-class AppendLinks implements LinkConsumer {
+public class AppendLinks implements LinkConsumer {
 
-    static void ofAll(Map<TableSpec, MutableNode> identifiers) {
+    public static void ofAll(Map<TableSpec, MutableNode> identifiers) {
         for (TableSpec table : identifiers.keySet()) {
             of(identifiers, table);
         }
     }
 
-    static void of(Map<TableSpec, MutableNode> identifiers, TableSpec table) {
+    public static void of(Map<TableSpec, MutableNode> identifiers, TableSpec table) {
         new AppendLinks(identifiers, table).appendLinks();
     }
 

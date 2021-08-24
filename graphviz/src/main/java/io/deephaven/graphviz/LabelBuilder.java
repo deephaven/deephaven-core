@@ -28,7 +28,7 @@ import java.util.Iterator;
 import java.util.Objects;
 import java.util.function.Function;
 
-class LabelBuilder extends TableVisitorGeneric {
+public class LabelBuilder extends TableVisitorGeneric {
 
     public static String of(TableSpec table) {
         return table.walk(new LabelBuilder(new StringBuilder())).sb.toString();
@@ -133,6 +133,7 @@ class LabelBuilder extends TableVisitorGeneric {
 
     @Override
     public void visit(AggregationTable aggregationTable) {
+        // TODO(deephaven-core#1116): Add labeling, or structuring, for qst graphviz aggregations
         sb.append("by([");
         append(Strings::of, aggregationTable.columns(), sb);
         sb.append("],[ todo ])");
