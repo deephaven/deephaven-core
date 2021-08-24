@@ -265,7 +265,6 @@ configure modsRegular,
 configure subprojects - [ ':ParquetHadoop', ':deephaven-jpy' ].collect( { project(it) }), { Project p ->
     p.apply plugin: 'com.diffplug.spotless'
     p.spotless {
-        ratchetFrom 'pre-style-guide-apply'
         java {
             eclipse().configFile("${rootDir}/style/eclipse-java-google-style.xml")
         }
