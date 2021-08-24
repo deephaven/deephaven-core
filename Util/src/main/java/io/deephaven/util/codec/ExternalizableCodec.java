@@ -11,7 +11,7 @@ public class ExternalizableCodec<T extends Externalizable> implements ObjectCode
 
     public ExternalizableCodec(String className) {
         try {
-            //noinspection unchecked
+            // noinspection unchecked
             this.externalizableClass = (Class<T>) Class.forName(className);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);

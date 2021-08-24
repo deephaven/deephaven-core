@@ -29,12 +29,14 @@ public class TestXYDataSeriesArray extends BaseArrayTestCase {
         final double[] valueArray2 = {4, 5, 6};
         final IndexableNumericData values = new IndexableNumericDataArrayDouble(valueArray, null);
         final IndexableNumericData values2 = new IndexableNumericDataArrayDouble(valueArray2, null);
-        final XYDataSeriesInternal x1 = new XYDataSeriesArray(chart.newAxes(),1, "Test", values, values2);
-        final XYDataSeriesInternal x2 = new XYDataSeriesArray(chart.newAxes(), 2, "Test2", values2, values);
+        final XYDataSeriesInternal x1 =
+            new XYDataSeriesArray(chart.newAxes(), 1, "Test", values, values2);
+        final XYDataSeriesInternal x2 =
+            new XYDataSeriesArray(chart.newAxes(), 2, "Test2", values2, values);
 
         assertEquals(x1.size(), valueArray.length);
         assertEquals(x2.size(), valueArray.length);
-        for(int i = 0; i < valueArray.length; i++) {
+        for (int i = 0; i < valueArray.length; i++) {
             assertEquals(x1.getX(i), valueArray[i]);
             assertEquals(x1.getY(i), valueArray2[i]);
             assertEquals(x2.getX(i), valueArray2[i]);
@@ -42,26 +44,30 @@ public class TestXYDataSeriesArray extends BaseArrayTestCase {
         }
 
         final double[] misSized = {1, 2};
-        final IndexableNumericData misSizedValues = new IndexableNumericDataArrayDouble(misSized, null);
+        final IndexableNumericData misSizedValues =
+            new IndexableNumericDataArrayDouble(misSized, null);
 
         try {
-            new XYDataSeriesArray(new BaseFigureImpl().newChart().newAxes(), 3, "Test", misSizedValues, values2);
+            new XYDataSeriesArray(new BaseFigureImpl().newChart().newAxes(), 3, "Test",
+                misSizedValues, values2);
             TestCase.fail("Expected an exception");
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("inconsistent size"));
         }
 
         try {
-            new XYDataSeriesArray(new BaseFigureImpl().newChart().newAxes(), 4, "Test", null, values2);
+            new XYDataSeriesArray(new BaseFigureImpl().newChart().newAxes(), 4, "Test", null,
+                values2);
             TestCase.fail("Expected an exception");
-        } catch(PlotIllegalArgumentException e) {
+        } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
 
         try {
-            new XYDataSeriesArray(new BaseFigureImpl().newChart().newAxes(), 5, "Test", misSizedValues, null);
+            new XYDataSeriesArray(new BaseFigureImpl().newChart().newAxes(), 5, "Test",
+                misSizedValues, null);
             TestCase.fail("Expected an exception");
-        } catch(PlotIllegalArgumentException e) {
+        } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
 
@@ -83,12 +89,17 @@ public class TestXYDataSeriesArray extends BaseArrayTestCase {
         final IndexableNumericData values = new IndexableNumericDataArrayDouble(valueArray, null);
         final IndexableNumericData values2 = new IndexableNumericDataArrayDouble(valueArray2, null);
 
-        final XYDataSeriesArray x1 = new XYDataSeriesArray(new BaseFigureImpl().newChart().newAxes(),1, "Test", values, values2);
-        final XYDataSeriesArray x2 = new XYDataSeriesArray(new BaseFigureImpl().newChart().newAxes(),2, "Test2", values2, values);
+        final XYDataSeriesArray x1 = new XYDataSeriesArray(
+            new BaseFigureImpl().newChart().newAxes(), 1, "Test", values, values2);
+        final XYDataSeriesArray x2 = new XYDataSeriesArray(
+            new BaseFigureImpl().newChart().newAxes(), 2, "Test2", values2, values);
 
-        x1.addTableHandle(new TableHandle(TableTools.emptyTable(2).updateView("A=i","B=i"), "A", "B"));
+        x1.addTableHandle(
+            new TableHandle(TableTools.emptyTable(2).updateView("A=i", "B=i"), "A", "B"));
         x1.addTableHandle(new TableHandle(TableTools.emptyTable(2).updateView("C=i"), "C"));
-        final SwappableTable swappableTable = new SwappableTable(new TableBackedTableMapHandle(TableTools.emptyTable(2).updateView("A=i", "B=i"), new ArrayList<>(), new String[0], null)) {
+        final SwappableTable swappableTable = new SwappableTable(
+            new TableBackedTableMapHandle(TableTools.emptyTable(2).updateView("A=i", "B=i"),
+                new ArrayList<>(), new String[0], null)) {
             @Override
             public void addColumn(String column) {
 

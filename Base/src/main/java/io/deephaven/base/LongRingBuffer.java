@@ -8,36 +8,34 @@ import java.io.Serializable;
 import java.util.NoSuchElementException;
 
 /**
- * A trivial circular buffer for primitive longs, like java.util.concurrent.ArrayBlockingQueue
- * but without all the synchronization and collection cruft.  Storage is between head (incl.)
- * and tail (excl.) wrapping around the end of the array. If the buffer is *not* growable, it will
- * make room for a new element by dropping off the oldest element in the buffer instead.
+ * A trivial circular buffer for primitive longs, like java.util.concurrent.ArrayBlockingQueue but
+ * without all the synchronization and collection cruft. Storage is between head (incl.) and tail
+ * (excl.) wrapping around the end of the array. If the buffer is *not* growable, it will make room
+ * for a new element by dropping off the oldest element in the buffer instead.
  */
 public class LongRingBuffer implements Serializable {
 
-    public static final boolean GROWABLE_NO=false;
-    public static final boolean GROWABLE_YES=true;
+    public static final boolean GROWABLE_NO = false;
+    public static final boolean GROWABLE_YES = true;
 
     protected final boolean growable;
-    protected long [] storage;
+    protected long[] storage;
     protected int head, tail;
 
     private void grow() {
-        if ( growable ) {
+        if (growable) {
             long[] newStorage = new long[storage.length * 2];
-            if ( tail > head ) {
+            if (tail > head) {
                 System.arraycopy(storage, head, newStorage, 0, tail - head);
                 tail = tail - head;
-            }
-            else {
+            } else {
                 System.arraycopy(storage, head, newStorage, 0, storage.length - head);
                 System.arraycopy(storage, 0, newStorage, storage.length - head, tail);
                 tail += storage.length - head;
             }
             head = 0;
             storage = newStorage;
-        }
-        else {
+        } else {
             head = (head + 1) % storage.length;
         }
     }
@@ -47,7 +45,7 @@ public class LongRingBuffer implements Serializable {
     }
 
     public LongRingBuffer(int capacity) {
-        this(capacity,  true);
+        this(capacity, true);
     }
 
     public LongRingBuffer(int capacity, boolean growable) {
@@ -61,7 +59,7 @@ public class LongRingBuffer implements Serializable {
     }
 
     public int size() {
-        return tail >= head? (tail - head) : (tail+ (storage.length - head));
+        return tail >= head ? (tail - head) : (tail + (storage.length - head));
     }
 
     public int capacity() {
@@ -77,7 +75,7 @@ public class LongRingBuffer implements Serializable {
     }
 
     public boolean add(long e) {
-        if ( isFull() ) {
+        if (isFull()) {
             grow();
         }
         storage[tail] = e;
@@ -87,7 +85,7 @@ public class LongRingBuffer implements Serializable {
 
     public long addOverwrite(long e, long notFullResult) {
         long result = notFullResult;
-        if ( isFull() ) {
+        if (isFull()) {
             result = remove();
         }
         storage[tail] = e;
@@ -96,7 +94,7 @@ public class LongRingBuffer implements Serializable {
     }
 
     public boolean offer(long e) {
-        if ( isFull() ) {
+        if (isFull()) {
             return false;
         }
         storage[tail] = e;
@@ -105,7 +103,7 @@ public class LongRingBuffer implements Serializable {
     }
 
     public long remove() {
-        if ( isEmpty() ) {
+        if (isEmpty()) {
             throw new NoSuchElementException();
         }
         long e = storage[head];
@@ -114,7 +112,7 @@ public class LongRingBuffer implements Serializable {
     }
 
     public long poll(long onEmpty) {
-        if ( isEmpty() ) {
+        if (isEmpty()) {
             return onEmpty;
         }
         long e = storage[head];
@@ -123,14 +121,14 @@ public class LongRingBuffer implements Serializable {
     }
 
     public long element() {
-        if ( isEmpty() ) {
+        if (isEmpty()) {
             throw new NoSuchElementException();
         }
         return storage[head];
     }
 
     public long peek(long onEmpty) {
-        if ( isEmpty() ) {
+        if (isEmpty()) {
             return onEmpty;
         }
         return storage[head];
@@ -141,24 +139,24 @@ public class LongRingBuffer implements Serializable {
     }
 
     public long front(int offset) {
-        if ( offset >= size() ) {
+        if (offset >= size()) {
             throw new NoSuchElementException();
         }
         return storage[(head + offset) % storage.length];
     }
 
     public long back() {
-        if ( isEmpty() ) {
+        if (isEmpty()) {
             throw new NoSuchElementException();
         }
-        return tail == 0 ? storage[storage.length - 1] : storage[tail-1];
+        return tail == 0 ? storage[storage.length - 1] : storage[tail - 1];
     }
 
     public long peekBack(long onEmpty) {
         if (isEmpty()) {
             return onEmpty;
         }
-        return tail == 0 ? storage[storage.length - 1] : storage[tail-1];
+        return tail == 0 ? storage[storage.length - 1] : storage[tail - 1];
     }
 
     public Iterator iterator() {
@@ -167,13 +165,16 @@ public class LongRingBuffer implements Serializable {
 
     public class Iterator {
         int count = -1;
+
         public boolean hasNext() {
             return count + 1 < size();
         }
+
         public long next() {
             count++;
             return storage[(head + count) % storage.length];
         }
+
         public void remove() {
             throw new UnsupportedOperationException();
         }
@@ -182,9 +183,9 @@ public class LongRingBuffer implements Serializable {
     public long[] getAll() {
         int n = size(), h = head;
         long[] result = new long[n];
-        for ( int i = 0; i < n; ++i ) {
+        for (int i = 0; i < n; ++i) {
             result[i] = storage[h];
-            h = (h+1) % storage.length;
+            h = (h + 1) % storage.length;
         }
         return result;
     }

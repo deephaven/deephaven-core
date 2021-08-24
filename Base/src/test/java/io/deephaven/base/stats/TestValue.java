@@ -7,16 +7,15 @@ package io.deephaven.base.stats;
 import io.deephaven.base.Function;
 import junit.framework.TestCase;
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 /**
- * Tests for {@link Value}, {@link State}, {@link Counter}, and
- * {@link History}
+ * Tests for {@link Value}, {@link State}, {@link Counter}, and {@link History}
  */
 public class TestValue extends TestCase {
 
-    private static final int[] SAMPLES=new int [] {3, 1, 5, 2, 4};
+    private static final int[] SAMPLES = new int[] {3, 1, 5, 2, 4};
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     public void testState() {
         State state = State.FACTORY.call(0L);
         assertEquals('S', state.getTypeTag());
@@ -33,7 +32,7 @@ public class TestValue extends TestCase {
         checkValue(State.FACTORY);
     }
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     public void testCounter() {
         Counter counter = Counter.FACTORY.call(0L);
         assertEquals('C', counter.getTypeTag());
@@ -50,9 +49,9 @@ public class TestValue extends TestCase {
         checkValue(Counter.FACTORY);
     }
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     private void checkValue(Function.Unary<? extends Value, Long> factory) {
-        Value value=factory.call(1000L);
+        Value value = factory.call(1000L);
 
         for (int nSample : SAMPLES) {
             value.sample(nSample);
@@ -64,8 +63,9 @@ public class TestValue extends TestCase {
         assertEquals(1, value.getMin());
         assertEquals(5, value.getMax());
 
-        History history=value.getHistory();
-        // issue: actually, interval 0 did not turn over, so this should probably return -1 (and fix Value.update too)
+        History history = value.getHistory();
+        // issue: actually, interval 0 did not turn over, so this should probably return -1 (and fix
+        // Value.update too)
         assertEquals(0, history.update(value, 1000L));
 
         assertEquals(5, history.getN(History.INTERVAL_1S_INDEX, 0));

@@ -10,9 +10,8 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.grpcWeb.transports.Transport",
     namespace = JsPackage.GLOBAL)
 public class Transport {
-  public static native io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport
-          .Transport
-      makeDefaultTransport(TransportOptions options);
+    public static native io.deephaven.javascript.proto.dhinternal.grpcweb.transports.transport.Transport makeDefaultTransport(
+        TransportOptions options);
 
-  public static native void setDefaultTransportFactory(TransportFactory t);
+    public static native void setDefaultTransportFactory(TransportFactory t);
 }

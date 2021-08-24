@@ -82,13 +82,13 @@ public enum PlotStyle {
      */
     @SuppressWarnings("ConstantConditions")
     public static PlotStyle plotStyle(final String style) {
-        if(style == null) {
+        if (style == null) {
             throw new IllegalArgumentException("PlotStyle can not be null!");
         }
 
         try {
             return PlotStyle.valueOf(style.toUpperCase());
-        } catch (IllegalArgumentException e){
+        } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("PlotStyle " + style + " is not defined");
         }
     }
@@ -98,6 +98,8 @@ public enum PlotStyle {
      *
      * @return array of the PlotStyle names
      */
-    public static String[] plotStyleNames(){ return Arrays.stream(PlotStyle.values()).map(Enum::name).toArray(String[]::new); }
+    public static String[] plotStyleNames() {
+        return Arrays.stream(PlotStyle.values()).map(Enum::name).toArray(String[]::new);
+    }
 
 }

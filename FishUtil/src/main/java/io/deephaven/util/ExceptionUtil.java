@@ -8,8 +8,8 @@ import org.jetbrains.annotations.NotNull;
 public class ExceptionUtil {
     public static boolean causedBy(@NotNull Throwable t, Class<? extends Throwable> cause) {
         Throwable curr = t;
-        while(curr != null) {
-            if(cause.isAssignableFrom(curr.getClass())) {
+        while (curr != null) {
+            if (cause.isAssignableFrom(curr.getClass())) {
                 return true;
             }
             curr = curr.getCause();

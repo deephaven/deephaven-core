@@ -1,37 +1,37 @@
 package io.deephaven.internals;
 
 public interface Unsafe {
-  long allocateMemory(long size);
+    long allocateMemory(long size);
 
-  void freeMemory(long address);
+    void freeMemory(long address);
 
-  long reallocateMemory(long address, long newSize);
+    long reallocateMemory(long address, long newSize);
 
-  byte getByte(long address);
+    byte getByte(long address);
 
-  void putByte(long address, byte value);
+    void putByte(long address, byte value);
 
-  short getShort(long address);
+    short getShort(long address);
 
-  void putShort(long address, short value);
+    void putShort(long address, short value);
 
-  char getChar(long address);
+    char getChar(long address);
 
-  void putChar(long address, char value);
+    void putChar(long address, char value);
 
-  int getInt(long address);
+    int getInt(long address);
 
-  void putInt(long address, int value);
+    void putInt(long address, int value);
 
-  long getLong(long address);
+    long getLong(long address);
 
-  void putLong(long address, long value);
+    void putLong(long address, long value);
 
-  float getFloat(long address);
+    float getFloat(long address);
 
-  void putFloat(long address, float value);
+    void putFloat(long address, float value);
 
-  double getDouble(long address);
+    double getDouble(long address);
 
-  void putDouble(long address, double value);
+    void putDouble(long address, double value);
 }

@@ -3,8 +3,8 @@ package io.deephaven.db.v2.by;
 import java.util.Objects;
 
 /**
- * An Iterative state factory that displays the singular unique value of the  items within a particular state, or default values
- * if none are present, or the values are not unique.
+ * An Iterative state factory that displays the singular unique value of the items within a
+ * particular state, or default values if none are present, or the values are not unique.
  */
 public class UniqueStateFactory extends IterativeOperatorStateFactory {
     private final boolean secondRollup;
@@ -25,10 +25,13 @@ public class UniqueStateFactory extends IterativeOperatorStateFactory {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
             AggUniqueMemoKey that = (AggUniqueMemoKey) o;
-            return countNulls == that.countNulls && Objects.equals(noKeyValue, that.noKeyValue) && Objects.equals(nonUniqueValue, that.nonUniqueValue);
+            return countNulls == that.countNulls && Objects.equals(noKeyValue, that.noKeyValue)
+                && Objects.equals(nonUniqueValue, that.nonUniqueValue);
         }
 
         @Override
@@ -49,7 +52,8 @@ public class UniqueStateFactory extends IterativeOperatorStateFactory {
         this(false, countNulls, noKeyValue, nonUniqueValue);
     }
 
-    private UniqueStateFactory(boolean secondRollup, boolean countNulls, Object noKeyValue, Object nonUniqueValue) {
+    private UniqueStateFactory(boolean secondRollup, boolean countNulls, Object noKeyValue,
+        Object nonUniqueValue) {
         this.secondRollup = secondRollup;
         this.countNulls = countNulls;
         this.noKeyValue = noKeyValue;
@@ -85,8 +89,10 @@ public class UniqueStateFactory extends IterativeOperatorStateFactory {
     }
 
     @Override
-    public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name, boolean exposeInternalColumns) {
-        return getUniqueChunked(type, name, countNulls, exposeInternalColumns, noKeyValue, nonUniqueValue, secondRollup);
+    public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name,
+        boolean exposeInternalColumns) {
+        return getUniqueChunked(type, name, countNulls, exposeInternalColumns, noKeyValue,
+            nonUniqueValue, secondRollup);
     }
 
     public boolean countNulls() {

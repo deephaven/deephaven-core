@@ -8,6 +8,6 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.grpcWeb.ChunkParser.ChunkType",
     namespace = JsPackage.GLOBAL)
 public class ChunkType {
-  public static int MESSAGE,
-  TRAILERS;
+    public static int MESSAGE,
+        TRAILERS;
 }

@@ -10,6 +10,7 @@ public class PyLibNullArgTest extends PythonTest {
 
     interface SomeModule extends AutoCloseable {
         String some_function();
+
         String some_function(String x);
     }
 

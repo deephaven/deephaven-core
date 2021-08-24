@@ -23,7 +23,8 @@ import java.util.function.Supplier;
  * Iterative average operator.
  */
 public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOperator {
-    private static final int NODE_SIZE = Configuration.getInstance().getIntegerWithDefault("SsmChunkedMinMaxOperator.nodeSize", 4096);
+    private static final int NODE_SIZE = Configuration.getInstance()
+        .getIntegerWithDefault("SsmChunkedMinMaxOperator.nodeSize", 4096);
     private final ArrayBackedColumnSource resultColumn;
     private final ObjectArraySource<SegmentedSortedMultiSet> ssms;
     private final String name;
@@ -34,10 +35,10 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
     private final SetResult setResult;
 
     public SsmChunkedMinMaxOperator(
-            // region extra constructor params
-            Class<?> type,
-            // endregion extra constructor params
-            boolean minimum, String name) {
+        // region extra constructor params
+        Class<?> type,
+        // endregion extra constructor params
+        boolean minimum, String name) {
         this.name = name;
         this.ssms = new ObjectArraySource<>(SegmentedSortedMultiSet.class);
         // region resultColumn initialization
@@ -54,7 +55,8 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
         setResult = makeSetResult(chunkType, type, minimum, resultColumn);
     }
 
-    private static SetResult makeSetResult(ChunkType chunkType, Class<?> type, boolean minimum, ArrayBackedColumnSource resultColumn) {
+    private static SetResult makeSetResult(ChunkType chunkType, Class<?> type, boolean minimum,
+        ArrayBackedColumnSource resultColumn) {
         if (type == DBDateTime.class) {
             return new DateTimeSetResult(minimum, resultColumn);
         } else if (type == Boolean.class) {
@@ -85,12 +87,16 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
 
     interface SetResult {
         boolean setResult(SegmentedSortedMultiSet ssm, long destination);
+
         boolean setResultNull(long destination);
     }
 
     @Override
-    public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
-        final BucketSsmMinMaxContext context = (BucketSsmMinMaxContext)bucketedContext;
+    public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
+        LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+        IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+        WritableBooleanChunk<Values> stateModified) {
+        final BucketSsmMinMaxContext context = (BucketSsmMinMaxContext) bucketedContext;
 
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
@@ -98,7 +104,8 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
         context.lengthCopy.setSize(length.size());
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy);
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions,
+            context.lengthCopy);
 
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
@@ -110,8 +117,10 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
 
 
             final SegmentedSortedMultiSet ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
+            final WritableChunk<? extends Values> valueSlice =
+                context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
+            final WritableIntChunk<ChunkLengths> countSlice =
+                context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.insert(valueSlice, countSlice);
 
             stateModified.set(ii, setResult.setResult(ssm, destination));
@@ -119,8 +128,11 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
     }
 
     @Override
-    public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
-        final BucketSsmMinMaxContext context = (BucketSsmMinMaxContext)bucketedContext;
+    public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
+        LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+        IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+        WritableBooleanChunk<Values> stateModified) {
+        final BucketSsmMinMaxContext context = (BucketSsmMinMaxContext) bucketedContext;
 
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
@@ -128,7 +140,8 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
         context.lengthCopy.setSize(length.size());
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy);
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions,
+            context.lengthCopy);
 
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
@@ -140,8 +153,10 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
             final long destination = destinations.get(startPosition);
 
             final SegmentedSortedMultiSet ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
+            final WritableChunk<? extends Values> valueSlice =
+                context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
+            final WritableIntChunk<ChunkLengths> countSlice =
+                context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
             if (ssm.size() == 0) {
                 clearSsm(destination);
@@ -152,8 +167,11 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
 
 
     @Override
-    public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> preValues, Chunk<? extends Values> postValues, LongChunk<? extends KeyIndices> postShiftIndices, IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
-        final BucketSsmMinMaxContext context = (BucketSsmMinMaxContext)bucketedContext;
+    public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> preValues,
+        Chunk<? extends Values> postValues, LongChunk<? extends KeyIndices> postShiftIndices,
+        IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions,
+        IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+        final BucketSsmMinMaxContext context = (BucketSsmMinMaxContext) bucketedContext;
 
         context.valueCopy.setSize(preValues.size());
         context.valueCopy.copyFromChunk(preValues, 0, 0, preValues.size());
@@ -161,7 +179,8 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
         context.lengthCopy.setSize(length.size());
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy);
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions,
+            context.lengthCopy);
 
         final SegmentedSortedMultiSet.RemoveContext removeContext = removeContextFactory.get();
         context.ssmsToMaybeClear.fillWithValue(0, destinations.size(), false);
@@ -174,8 +193,10 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
             final long destination = destinations.get(startPosition);
 
             final SegmentedSortedMultiSet ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
+            final WritableChunk<? extends Values> valueSlice =
+                context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
+            final WritableIntChunk<ChunkLengths> countSlice =
+                context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
             if (ssm.size() == 0) {
                 context.ssmsToMaybeClear.set(ii, true);
@@ -188,7 +209,8 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
         context.lengthCopy.setSize(length.size());
         context.lengthCopy.copyFromChunk(length, 0, 0, length.size());
 
-        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions, context.lengthCopy);
+        compactAndCountKernel.compactAndCount(context.valueCopy, context.counts, startPositions,
+            context.lengthCopy);
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int runLength = context.lengthCopy.get(ii);
             final int startPosition = startPositions.get(ii);
@@ -199,22 +221,27 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
                     clearSsm(destination);
                     stateModified.set(ii, setResult.setResultNull(destination));
                 } else {
-                    stateModified.set(ii, setResult.setResult(ssmForSlot(destination), destination));
+                    stateModified.set(ii,
+                        setResult.setResult(ssmForSlot(destination), destination));
                 }
                 continue;
             }
 
             final SegmentedSortedMultiSet ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
+            final WritableChunk<? extends Values> valueSlice =
+                context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
+            final WritableIntChunk<ChunkLengths> countSlice =
+                context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.insert(valueSlice, countSlice);
             stateModified.set(ii, setResult.setResult(ssm, destination));
         }
     }
 
     @Override
-    public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, long destination) {
-        final SsmMinMaxContext context = (SsmMinMaxContext)singletonContext;
+    public boolean addChunk(SingletonContext singletonContext, int chunkSize,
+        Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices,
+        long destination) {
+        final SsmMinMaxContext context = (SsmMinMaxContext) singletonContext;
 
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
@@ -227,8 +254,10 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
     }
 
     @Override
-    public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, long destination) {
-        final SsmMinMaxContext context = (SsmMinMaxContext)singletonContext;
+    public boolean removeChunk(SingletonContext singletonContext, int chunkSize,
+        Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices,
+        long destination) {
+        final SsmMinMaxContext context = (SsmMinMaxContext) singletonContext;
 
         context.valueCopy.setSize(values.size());
         context.valueCopy.copyFromChunk(values, 0, 0, values.size());
@@ -245,8 +274,10 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
     }
 
     @Override
-    public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> preValues, Chunk<? extends Values> postValues, LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
-        final SsmMinMaxContext context = (SsmMinMaxContext)singletonContext;
+    public boolean modifyChunk(SingletonContext singletonContext, int chunkSize,
+        Chunk<? extends Values> preValues, Chunk<? extends Values> postValues,
+        LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
+        final SsmMinMaxContext context = (SsmMinMaxContext) singletonContext;
 
         context.valueCopy.setSize(preValues.size());
         context.valueCopy.copyFromChunk(preValues, 0, 0, preValues.size());
@@ -315,7 +346,8 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
     }
 
     private static class SsmMinMaxContext implements SingletonContext {
-        final SegmentedSortedMultiSet.RemoveContext removeContext = SegmentedSortedMultiSet.makeRemoveContext(NODE_SIZE);
+        final SegmentedSortedMultiSet.RemoveContext removeContext =
+            SegmentedSortedMultiSet.makeRemoveContext(NODE_SIZE);
         final WritableChunk<Values> valueCopy;
         final WritableIntChunk<ChunkLengths> counts;
 
@@ -331,7 +363,8 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
         }
     }
 
-    private static class BucketSsmMinMaxContext extends SsmMinMaxContext implements BucketedContext {
+    private static class BucketSsmMinMaxContext extends SsmMinMaxContext
+        implements BucketedContext {
         final WritableIntChunk<ChunkLengths> lengthCopy;
         final ResettableWritableChunk<Values> valueResettable;
         final ResettableWritableIntChunk<ChunkLengths> countResettable;
@@ -355,7 +388,8 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
         }
     }
 
-    public IterativeChunkedAggregationOperator makeSecondaryOperator(boolean isMinimum, String resultName) {
+    public IterativeChunkedAggregationOperator makeSecondaryOperator(boolean isMinimum,
+        String resultName) {
         return new SecondaryOperator(isMinimum, resultName);
     }
 
@@ -365,28 +399,39 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
         private final SetResult setResult;
 
         private SecondaryOperator(boolean isMinimum, String resultName) {
-            //noinspection unchecked
-            this.resultColumn = ArrayBackedColumnSource.getMemoryColumnSource(0, SsmChunkedMinMaxOperator.this.resultColumn.getType());
+            // noinspection unchecked
+            this.resultColumn = ArrayBackedColumnSource.getMemoryColumnSource(0,
+                SsmChunkedMinMaxOperator.this.resultColumn.getType());
             setResult = makeSetResult(chunkType, resultColumn.getType(), isMinimum, resultColumn);
             this.resultName = resultName;
         }
 
         @Override
-        public void addChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+        public void addChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
             updateBucketed(destinations, startPositions, stateModified);
         }
 
         @Override
-        public void removeChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+        public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
             updateBucketed(destinations, startPositions, stateModified);
         }
 
         @Override
-        public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices, IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+        public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues,
+            Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices,
+            IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions,
+            IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
             updateBucketed(destinations, startPositions, stateModified);
         }
 
-        private void updateBucketed(IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, WritableBooleanChunk<Values> stateModified) {
+        private void updateBucketed(IntChunk<KeyIndices> destinations,
+            IntChunk<ChunkPositions> startPositions, WritableBooleanChunk<Values> stateModified) {
             for (int ii = 0; ii < startPositions.size(); ++ii) {
                 final int startPosition = startPositions.get(ii);
                 final long destination = destinations.get(startPosition);
@@ -394,19 +439,26 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
                 stateModified.set(ii, setResult.setResult(ssm, destination));
             }
         }
+
         @Override
-        public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, long destination) {
+        public boolean addChunk(SingletonContext context, int chunkSize,
+            Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices,
+            long destination) {
             return updateSingleton(destination);
         }
 
 
         @Override
-        public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, long destination) {
+        public boolean removeChunk(SingletonContext context, int chunkSize,
+            Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices,
+            long destination) {
             return updateSingleton(destination);
         }
 
         @Override
-        public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
+        public boolean modifyChunk(SingletonContext context, int chunkSize,
+            Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues,
+            LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
             return updateSingleton(destination);
         }
 

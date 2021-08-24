@@ -8,10 +8,10 @@ import org.jetbrains.annotations.NotNull;
 public interface BasicTableDataListener {
 
     /**
-     * Notify the listener that an exception was encountered while initiating or maintaining the subscription.
-     * Delivery of an exception implies that the subscription is no longer valid.
-     * This might happen <i>during</i> subscription establishment, and consequently should be checked for after
-     * subscribe completes.
+     * Notify the listener that an exception was encountered while initiating or maintaining the
+     * subscription. Delivery of an exception implies that the subscription is no longer valid. This
+     * might happen <i>during</i> subscription establishment, and consequently should be checked for
+     * after subscribe completes.
      *
      * @param exception The exception
      */

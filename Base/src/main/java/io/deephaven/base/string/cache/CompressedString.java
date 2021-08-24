@@ -13,8 +13,7 @@ import java.nio.ByteBuffer;
  */
 public final class CompressedString extends AbstractCompressedString<CompressedString> {
 
-    public CompressedString() {
-    }
+    public CompressedString() {}
 
     public CompressedString(String data) {
         super(data);
@@ -62,12 +61,14 @@ public final class CompressedString extends AbstractCompressedString<CompressedS
     }
 
     @Override
-    protected final CompressedString convertValue(final byte[] data, final int offset, final int length) {
+    protected final CompressedString convertValue(final byte[] data, final int offset,
+        final int length) {
         return new CompressedString(data, offset, length);
     }
 
     /**
      * Helper to be statically imported for groovy scripting.
+     * 
      * @param value The String to convert
      * @return A new CompressedString with the same contents as value, assuming ISO-8859-1 encoding
      */

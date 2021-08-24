@@ -10,6 +10,7 @@ public class QueryCancellationException extends UncheckedDeephavenException {
     public QueryCancellationException(String message) {
         super(message);
     }
+
     public QueryCancellationException(String message, Throwable cause) {
         super(message, cause);
     }

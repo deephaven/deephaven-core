@@ -91,7 +91,8 @@ public class Position implements Serializable {
     @JsIgnore
     public int extend(Position requested) {
         if (line != requested.line) {
-            throw new IllegalArgumentException("Can only extend on same-line; " + this + " and " + requested + " are not on same line");
+            throw new IllegalArgumentException("Can only extend on same-line; " + this + " and "
+                + requested + " are not on same line");
         }
         int delta = requested.character - character;
         character = requested.character;

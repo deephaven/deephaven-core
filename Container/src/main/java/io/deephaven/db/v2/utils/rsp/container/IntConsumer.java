@@ -1,8 +1,7 @@
 package io.deephaven.db.v2.utils.rsp.container;
 
 /**
- * An IntConsumer receives the int values contained in a data structure.
- * Each value is visited once.
+ * An IntConsumer receives the int values contained in a data structure. Each value is visited once.
  * <p>
  * Usage:
  *

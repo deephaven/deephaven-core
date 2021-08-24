@@ -12,8 +12,8 @@ import jsinterop.annotations.JsType;
  *
  * We do not extend Promise as js interop is not yet good enough to extend native types.
  *
- * So, instead, we just hack on a "cancel" property pointing to a function that can
- * be invoked only from javascript.
+ * So, instead, we just hack on a "cancel" property pointing to a function that can be invoked only
+ * from javascript.
  */
 @JsType(namespace = JsPackage.GLOBAL, name = "Promise", isNative = true)
 public class CancellablePromise<T> extends Promise<T> {
@@ -26,7 +26,8 @@ public class CancellablePromise<T> extends Promise<T> {
     }
 
     @JsOverlay
-    public static <T> CancellablePromise<T> from(PromiseExecutorCallbackFn<T> exe, JsRunnable cancel) {
+    public static <T> CancellablePromise<T> from(PromiseExecutorCallbackFn<T> exe,
+        JsRunnable cancel) {
         CancellablePromise<T> promise = new CancellablePromise<>(exe);
         promise.cancel = cancel;
         return promise;

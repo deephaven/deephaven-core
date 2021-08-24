@@ -19,16 +19,22 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 1, time = 28)
 @Measurement(iterations = 3, time = 21)
-@Timeout(time=40)
+@Timeout(time = 40)
 @Fork(1)
 public class ConditionFilterMultipleColumnsFillChunkBench extends RedirectionBenchBase {
     private boolean skipResultsProcessing = true;
-    @Param({"4000000"}) private int tableSize;
-    @Param({"true"}) private boolean doSort;
-    @Param({"10"}) private int steps;
-    @Param({"10"}) private int numberOfFilterColumns;
-    @Param({"0"}) private int numberOfAdditionalColumns;
-    @Param({"4096"}) private int chunkCapacity;
+    @Param({"4000000"})
+    private int tableSize;
+    @Param({"true"})
+    private boolean doSort;
+    @Param({"10"})
+    private int steps;
+    @Param({"10"})
+    private int numberOfFilterColumns;
+    @Param({"0"})
+    private int numberOfAdditionalColumns;
+    @Param({"4096"})
+    private int chunkCapacity;
 
     @Override
     protected QueryData getQuery() {
@@ -40,7 +46,7 @@ public class ConditionFilterMultipleColumnsFillChunkBench extends RedirectionBen
         final String tPartCol = "TPartCol";
         builder = BenchmarkTools.persistentTableBuilder("T", tableSize);
         builder.setSeed(0xDEADB00F)
-                .addColumn(BenchmarkTools.stringCol(tPartCol, 4, 5, 7, 0xFEEDBEEF));
+            .addColumn(BenchmarkTools.stringCol(tPartCol, 4, 5, 7, 0xFEEDBEEF));
         final String[] tCols = new String[2 + numberOfFilterColumns + numberOfAdditionalColumns];
         int nT1Cols = 0;
         tCols[nT1Cols++] = tPartCol;
@@ -66,12 +72,14 @@ public class ConditionFilterMultipleColumnsFillChunkBench extends RedirectionBen
         final BenchmarkTable bmTable = builder.build();
         final Table inputTable = bmTable.getTable().coalesce();
         final long sizePerStep = Math.max(inputTable.size() / steps, 1);
-        final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(sizePerStep, sizePerStep);
+        final IncrementalReleaseFilter incrementalReleaseFilter =
+            new IncrementalReleaseFilter(sizePerStep, sizePerStep);
         final Table inputReleased = inputTable.where(incrementalReleaseFilter);
 
         final SelectFilter filter = ConditionFilter.createConditionFilter(filterExpression);
         final Table live = inputReleased.sort(sortCol).where(filter);
-        return new QueryData(live, incrementalReleaseFilter, steps, new String[]{ sortCol }, WritableLongChunk.makeWritableChunk(chunkCapacity));
+        return new QueryData(live, incrementalReleaseFilter, steps, new String[] {sortCol},
+            WritableLongChunk.makeWritableChunk(chunkCapacity));
     }
 
     @TearDown(Level.Trial)
@@ -96,7 +104,7 @@ public class ConditionFilterMultipleColumnsFillChunkBench extends RedirectionBen
         state.processResult(params);
     }
 
-    public static void main(String [] args) {
+    public static void main(String[] args) {
         BenchUtil.run(ConditionFilterMultipleColumnsFillChunkBench.class);
     }
 }

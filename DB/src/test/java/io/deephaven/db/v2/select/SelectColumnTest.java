@@ -29,7 +29,8 @@ public class SelectColumnTest extends TestCase {
         expect(Selectable.of(FOO, RawString.of("foo(X-13)")), SwitchColumn.class, "Foo=foo(X-13)");
     }
 
-    private static void expect(Selectable selectable, Class<? extends SelectColumn> clazz, String expected) {
+    private static void expect(Selectable selectable, Class<? extends SelectColumn> clazz,
+        String expected) {
         SelectColumn impl = SelectColumn.of(selectable);
         assertThat(impl).isInstanceOf(clazz);
         // SelectColumn doesn't necessary implement equals, so we need to use the string repr

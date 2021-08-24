@@ -4,9 +4,9 @@ import java.util.*;
 import java.util.function.Function;
 
 @FunctionalInterface
-public interface MappedIterable <T> extends Iterable<T> {
+public interface MappedIterable<T> extends Iterable<T> {
 
-    MappedIterable EMPTY = ()-> new Iterator() {
+    MappedIterable EMPTY = () -> new Iterator() {
         @Override
         public boolean hasNext() {
             return false;
@@ -33,10 +33,11 @@ public interface MappedIterable <T> extends Iterable<T> {
 
     default MappedIterable<T> filter(Function<T, Boolean> filter) {
 
-        return ()->{
+        return () -> {
             Iterator<T> source = MappedIterable.this.iterator();
             return new Iterator<T>() {
                 T next;
+
                 @Override
                 public boolean hasNext() {
                     if (next != null) {
@@ -97,7 +98,7 @@ public interface MappedIterable <T> extends Iterable<T> {
     }
 
     default <V> MappedIterable<V> mapped(Function<T, V> mapper) {
-        return ()->{
+        return () -> {
             Iterator<T> source = MappedIterable.this.iterator();
             return new Iterator<V>() {
                 @Override
@@ -120,11 +121,12 @@ public interface MappedIterable <T> extends Iterable<T> {
     }
 
     default MappedIterable<T> plus(Iterable<T> more) {
-        return ()->{
+        return () -> {
             final Iterator<T> mine = MappedIterable.this.iterator();
             final Iterator<T> yours = more.iterator();
             return new Iterator<T>() {
                 Iterator<T> delegate = mine;
+
                 @Override
                 public boolean hasNext() {
                     if (delegate.hasNext()) {
@@ -165,7 +167,7 @@ public interface MappedIterable <T> extends Iterable<T> {
     }
 
     default MappedIterable<T> reverse() {
-        return ()->new Iterator<T>() {
+        return () -> new Iterator<T>() {
             private final ListIterator<T> itr;
 
             {
@@ -178,6 +180,7 @@ public interface MappedIterable <T> extends Iterable<T> {
                 forEach(items::add);
                 itr = items.listIterator(items.size());
             }
+
             @Override
             public boolean hasNext() {
                 return itr.hasPrevious();

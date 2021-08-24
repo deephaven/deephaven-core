@@ -21,11 +21,12 @@ public class ProcessInfoConfig {
     public static final String PROCESS_INFO_ID_KEY = "process.info.id";
 
     /**
-     * The lookup key to see if {@link ProcessInfo#getSystemInfo()} is enabled. If not present,
-     * will default to {@link #SYSTEM_INFO_ENABLED_DEFAULT}.
+     * The lookup key to see if {@link ProcessInfo#getSystemInfo()} is enabled. If not present, will
+     * default to {@link #SYSTEM_INFO_ENABLED_DEFAULT}.
      */
     @SuppressWarnings("WeakerAccess")
-    public static final String PROCESS_INFO_SYSTEM_INFO_ENABLED_KEY = "process.info.system-info.enabled";
+    public static final String PROCESS_INFO_SYSTEM_INFO_ENABLED_KEY =
+        "process.info.system-info.enabled";
 
     /**
      * The default value to see if {@link ProcessInfo#getSystemInfo()} is enabled.
@@ -63,7 +64,8 @@ public class ProcessInfoConfig {
         return localThisProcessId == null ? null : localThisProcessId.value();
     }
 
-    public static synchronized ProcessInfo createForCurrentProcess(Configuration config) throws IOException {
+    public static synchronized ProcessInfo createForCurrentProcess(Configuration config)
+        throws IOException {
         if (thisProcessId != null) {
             throw new IllegalStateException("ProcessInfo already created with ID " + thisProcessId);
         }

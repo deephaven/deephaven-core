@@ -14,135 +14,135 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.table_pb.Literal",
     namespace = JsPackage.GLOBAL)
 public class Literal {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
-    @JsOverlay
-    static Literal.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType {
+        @JsOverlay
+        static Literal.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        double getDoubleValue();
+
+        @JsProperty
+        String getLongValue();
+
+        @JsProperty
+        String getNanoTimeValue();
+
+        @JsProperty
+        String getStringValue();
+
+        @JsProperty
+        boolean isBoolValue();
+
+        @JsProperty
+        void setBoolValue(boolean boolValue);
+
+        @JsProperty
+        void setDoubleValue(double doubleValue);
+
+        @JsProperty
+        void setLongValue(String longValue);
+
+        @JsProperty
+        void setNanoTimeValue(String nanoTimeValue);
+
+        @JsProperty
+        void setStringValue(String stringValue);
     }
 
-    @JsProperty
-    double getDoubleValue();
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType0 {
+        @JsOverlay
+        static Literal.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
 
-    @JsProperty
-    String getLongValue();
+        @JsProperty
+        double getDoubleValue();
 
-    @JsProperty
-    String getNanoTimeValue();
+        @JsProperty
+        String getLongValue();
 
-    @JsProperty
-    String getStringValue();
+        @JsProperty
+        String getNanoTimeValue();
 
-    @JsProperty
-    boolean isBoolValue();
+        @JsProperty
+        String getStringValue();
 
-    @JsProperty
-    void setBoolValue(boolean boolValue);
+        @JsProperty
+        boolean isBoolValue();
 
-    @JsProperty
-    void setDoubleValue(double doubleValue);
+        @JsProperty
+        void setBoolValue(boolean boolValue);
 
-    @JsProperty
-    void setLongValue(String longValue);
+        @JsProperty
+        void setDoubleValue(double doubleValue);
 
-    @JsProperty
-    void setNanoTimeValue(String nanoTimeValue);
+        @JsProperty
+        void setLongValue(String longValue);
 
-    @JsProperty
-    void setStringValue(String stringValue);
-  }
+        @JsProperty
+        void setNanoTimeValue(String nanoTimeValue);
 
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsOverlay
-    static Literal.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+        @JsProperty
+        void setStringValue(String stringValue);
     }
 
-    @JsProperty
-    double getDoubleValue();
+    public static native Literal deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    String getLongValue();
+    public static native Literal deserializeBinaryFromReader(Literal message, Object reader);
 
-    @JsProperty
-    String getNanoTimeValue();
+    public static native void serializeBinaryToWriter(Literal message, Object writer);
 
-    @JsProperty
-    String getStringValue();
+    public static native Literal.ToObjectReturnType toObject(boolean includeInstance, Literal msg);
 
-    @JsProperty
-    boolean isBoolValue();
+    public native void clearBoolValue();
 
-    @JsProperty
-    void setBoolValue(boolean boolValue);
+    public native void clearDoubleValue();
 
-    @JsProperty
-    void setDoubleValue(double doubleValue);
+    public native void clearLongValue();
 
-    @JsProperty
-    void setLongValue(String longValue);
+    public native void clearNanoTimeValue();
 
-    @JsProperty
-    void setNanoTimeValue(String nanoTimeValue);
+    public native void clearStringValue();
 
-    @JsProperty
-    void setStringValue(String stringValue);
-  }
+    public native boolean getBoolValue();
 
-  public static native Literal deserializeBinary(Uint8Array bytes);
+    public native double getDoubleValue();
 
-  public static native Literal deserializeBinaryFromReader(Literal message, Object reader);
+    public native String getLongValue();
 
-  public static native void serializeBinaryToWriter(Literal message, Object writer);
+    public native String getNanoTimeValue();
 
-  public static native Literal.ToObjectReturnType toObject(boolean includeInstance, Literal msg);
+    public native String getStringValue();
 
-  public native void clearBoolValue();
+    public native ValueCase getValueCase();
 
-  public native void clearDoubleValue();
+    public native boolean hasBoolValue();
 
-  public native void clearLongValue();
+    public native boolean hasDoubleValue();
 
-  public native void clearNanoTimeValue();
+    public native boolean hasLongValue();
 
-  public native void clearStringValue();
+    public native boolean hasNanoTimeValue();
 
-  public native boolean getBoolValue();
+    public native boolean hasStringValue();
 
-  public native double getDoubleValue();
+    public native Uint8Array serializeBinary();
 
-  public native String getLongValue();
+    public native void setBoolValue(boolean value);
 
-  public native String getNanoTimeValue();
+    public native void setDoubleValue(double value);
 
-  public native String getStringValue();
+    public native void setLongValue(String value);
 
-  public native ValueCase getValueCase();
+    public native void setNanoTimeValue(String value);
 
-  public native boolean hasBoolValue();
+    public native void setStringValue(String value);
 
-  public native boolean hasDoubleValue();
+    public native Literal.ToObjectReturnType0 toObject();
 
-  public native boolean hasLongValue();
-
-  public native boolean hasNanoTimeValue();
-
-  public native boolean hasStringValue();
-
-  public native Uint8Array serializeBinary();
-
-  public native void setBoolValue(boolean value);
-
-  public native void setDoubleValue(double value);
-
-  public native void setLongValue(String value);
-
-  public native void setNanoTimeValue(String value);
-
-  public native void setStringValue(String value);
-
-  public native Literal.ToObjectReturnType0 toObject();
-
-  public native Literal.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native Literal.ToObjectReturnType0 toObject(boolean includeInstance);
 }

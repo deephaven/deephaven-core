@@ -21,12 +21,14 @@ public abstract class DependencyLayerBase extends SelectAndViewAnalyzer {
     private final String[] dependencies;
     final ModifiedColumnSet myModifiedColumnSet;
 
-    DependencyLayerBase(SelectAndViewAnalyzer inner, String name, SelectColumn selectColumn, ColumnSource columnSource,
-            String[] dependencies, ModifiedColumnSet mcsBuilder) {
+    DependencyLayerBase(SelectAndViewAnalyzer inner, String name, SelectColumn selectColumn,
+        ColumnSource columnSource,
+        String[] dependencies, ModifiedColumnSet mcsBuilder) {
         this.inner = inner;
         this.name = name;
         this.selectColumn = selectColumn;
-        selectColumnHoldsDbArray = DbArrayBase.class.isAssignableFrom(selectColumn.getReturnedType());
+        selectColumnHoldsDbArray =
+            DbArrayBase.class.isAssignableFrom(selectColumn.getReturnedType());
         this.columnSource = columnSource;
         this.dependencies = dependencies;
         final Set<String> remainingDepsToSatisfy = new HashSet<>(Arrays.asList(dependencies));
@@ -36,15 +38,19 @@ public abstract class DependencyLayerBase extends SelectAndViewAnalyzer {
 
 
     @Override
-    public void updateColumnDefinitionsFromTopLayer(Map<String, ColumnDefinition> columnDefinitions) {
+    public void updateColumnDefinitionsFromTopLayer(
+        Map<String, ColumnDefinition> columnDefinitions) {
         // noinspection unchecked
-        final ColumnDefinition cd = ColumnDefinition.fromGenericType(name, columnSource.getType(), columnSource.getComponentType());
+        final ColumnDefinition cd = ColumnDefinition.fromGenericType(name, columnSource.getType(),
+            columnSource.getComponentType());
         columnDefinitions.put(name, cd);
     }
 
     @Override
-    void populateModifiedColumnSetRecurse(ModifiedColumnSet mcsBuilder, Set<String> remainingDepsToSatisfy) {
-        // Later-defined columns override earlier-defined columns. So we satisfy column dependencies "on the way
+    void populateModifiedColumnSetRecurse(ModifiedColumnSet mcsBuilder,
+        Set<String> remainingDepsToSatisfy) {
+        // Later-defined columns override earlier-defined columns. So we satisfy column dependencies
+        // "on the way
         // down" the recursion.
         if (remainingDepsToSatisfy.remove(name)) {
             // Caller had a depenency on us, so caller gets our dependencies

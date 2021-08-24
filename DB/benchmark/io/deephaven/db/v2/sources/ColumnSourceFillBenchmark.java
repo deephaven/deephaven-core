@@ -79,7 +79,7 @@ public class ColumnSourceFillBenchmark {
 
         final TIntSet seen = new TIntHashSet(fetchSize);
         int accepted = 0;
-        final long [] keyArray = new long[fetchSize];
+        final long[] keyArray = new long[fetchSize];
         while (accepted < fetchSize) {
             final int value = random.nextInt(FULL_SIZE);
             if (seen.add(value)) {
@@ -114,12 +114,14 @@ public class ColumnSourceFillBenchmark {
 
     public static void main(String[] args) throws RunnerException {
         final Options opt = new OptionsBuilder()
-                .include(ColumnSourceFillBenchmark.class.getSimpleName())
-                .param("typeName","char", "byte", "short", "int", "long", "float", "double")
-                .param("fetchSize", IntStream.range(6, 25).filter(exp -> exp % 2 == 0).map(exp -> 1<<exp).mapToObj(Integer::toString).toArray(String[]::new))
-                .jvmArgs("-Xmx8g", "-Xms8g")
-                .forks(1)
-                .build();
+            .include(ColumnSourceFillBenchmark.class.getSimpleName())
+            .param("typeName", "char", "byte", "short", "int", "long", "float", "double")
+            .param("fetchSize",
+                IntStream.range(6, 25).filter(exp -> exp % 2 == 0).map(exp -> 1 << exp)
+                    .mapToObj(Integer::toString).toArray(String[]::new))
+            .jvmArgs("-Xmx8g", "-Xms8g")
+            .forks(1)
+            .build();
 
         final Collection<RunResult> results = new Runner(opt).run();
         CsvResultWriter.recordResults(results, ColumnSourceFillBenchmark.class);

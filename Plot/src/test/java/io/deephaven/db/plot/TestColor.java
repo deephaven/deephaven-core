@@ -18,7 +18,7 @@ public class TestColor extends BaseArrayTestCase {
     }
 
     public void testColorDefinitions() {
-        //string
+        // string
         assertEquals(new Color("BLUE"), new Color(0, 0, 255));
         assertEquals(new Color("BLUE"), new Color("blUe"));
         assertEquals(new Color("BLUE"), new Color("#0000FF"));
@@ -26,14 +26,14 @@ public class TestColor extends BaseArrayTestCase {
         try {
             new Color("Blu e");
             TestCase.fail("Expected an exception");
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Invalid color name"));
         }
 
         try {
             new Color(null);
             TestCase.fail("Expected an exception");
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("null"));
         }
 
@@ -42,19 +42,20 @@ public class TestColor extends BaseArrayTestCase {
 
 
 
-        //rgba
-        assertEquals(new Color(1, 2, 3).javaColor(), new java.awt.Color(1,2,3));
-        assertEquals(new Color(1, 2, 3, 4).javaColor(), new java.awt.Color(1,2,3, 4));
-        assertEquals(new Color(1, 2, 3, 4).javaColor(), new java.awt.Color(1,2,3, 4));
-        assertEquals(new Color(1, 2, 3, 4).javaColor(), new java.awt.Color(1,2,3, 4));
+        // rgba
+        assertEquals(new Color(1, 2, 3).javaColor(), new java.awt.Color(1, 2, 3));
+        assertEquals(new Color(1, 2, 3, 4).javaColor(), new java.awt.Color(1, 2, 3, 4));
+        assertEquals(new Color(1, 2, 3, 4).javaColor(), new java.awt.Color(1, 2, 3, 4));
+        assertEquals(new Color(1, 2, 3, 4).javaColor(), new java.awt.Color(1, 2, 3, 4));
         assertEquals(new Color(0x11223344).javaColor(), new java.awt.Color(0x11223344));
         assertEquals(new Color(0x11223344, true).javaColor(), new java.awt.Color(0x11223344, true));
-        assertEquals(new Color(0.1f, 0.2f, 0.3f).javaColor(), new java.awt.Color(0.1f,0.2f,0.3f));
-        assertEquals(new Color(0.1f, 0.2f, 0.3f, 0.4f).javaColor(), new java.awt.Color(0.1f,0.2f,0.3f, 0.4f));
+        assertEquals(new Color(0.1f, 0.2f, 0.3f).javaColor(), new java.awt.Color(0.1f, 0.2f, 0.3f));
+        assertEquals(new Color(0.1f, 0.2f, 0.3f, 0.4f).javaColor(),
+            new java.awt.Color(0.1f, 0.2f, 0.3f, 0.4f));
     }
 
     public void testStaticHelpers() {
-        //string
+        // string
         assertEquals(Color.color("BLUE"), new Color(0, 0, 255));
         assertEquals(Color.color("BLUE"), Color.color("blUe"));
         assertEquals(Color.color("BLUE"), Color.color("#0000FF"));
@@ -62,14 +63,14 @@ public class TestColor extends BaseArrayTestCase {
         try {
             Color.color("Blu e");
             TestCase.fail("Expected an exception");
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Invalid color name"));
         }
 
         try {
             Color.color(null);
             TestCase.fail("Expected an exception");
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("null"));
         }
 
@@ -78,17 +79,21 @@ public class TestColor extends BaseArrayTestCase {
 
 
 
-        //rgba
-        assertEquals(Color.colorRGB(1, 2, 3).javaColor(), new java.awt.Color(1,2,3));
-        assertEquals(Color.colorRGB(1, 2, 3, 4).javaColor(), new java.awt.Color(1,2,3, 4));
-        assertEquals(Color.colorRGB(1, 2, 3, 4).javaColor(), new java.awt.Color(1,2,3, 4));
-        assertEquals(Color.colorRGB(1, 2, 3, 4).javaColor(), new java.awt.Color(1,2,3, 4));
+        // rgba
+        assertEquals(Color.colorRGB(1, 2, 3).javaColor(), new java.awt.Color(1, 2, 3));
+        assertEquals(Color.colorRGB(1, 2, 3, 4).javaColor(), new java.awt.Color(1, 2, 3, 4));
+        assertEquals(Color.colorRGB(1, 2, 3, 4).javaColor(), new java.awt.Color(1, 2, 3, 4));
+        assertEquals(Color.colorRGB(1, 2, 3, 4).javaColor(), new java.awt.Color(1, 2, 3, 4));
         assertEquals(Color.colorRGB(0x11223344).javaColor(), new java.awt.Color(0x11223344));
-        assertEquals(Color.colorRGB(0x11223344, true).javaColor(), new java.awt.Color(0x11223344, true));
-        assertEquals(Color.colorRGB(0.1f, 0.2f, 0.3f).javaColor(), new java.awt.Color(0.1f,0.2f,0.3f));
-        assertEquals(Color.colorRGB(0.1f, 0.2f, 0.3f, 0.4f).javaColor(), new java.awt.Color(0.1f,0.2f,0.3f, 0.4f));
-        assertEquals(Color.colorHSL(36f, 20, 20).javaColor(), new java.awt.Color(61,53,41));
-        assertEquals(Color.colorHSL(36f, 20, 20, 0.5f).javaColor(), new java.awt.Color(61,53,41, 128));
+        assertEquals(Color.colorRGB(0x11223344, true).javaColor(),
+            new java.awt.Color(0x11223344, true));
+        assertEquals(Color.colorRGB(0.1f, 0.2f, 0.3f).javaColor(),
+            new java.awt.Color(0.1f, 0.2f, 0.3f));
+        assertEquals(Color.colorRGB(0.1f, 0.2f, 0.3f, 0.4f).javaColor(),
+            new java.awt.Color(0.1f, 0.2f, 0.3f, 0.4f));
+        assertEquals(Color.colorHSL(36f, 20, 20).javaColor(), new java.awt.Color(61, 53, 41));
+        assertEquals(Color.colorHSL(36f, 20, 20, 0.5f).javaColor(),
+            new java.awt.Color(61, 53, 41, 128));
 
 
         try {
@@ -112,11 +117,11 @@ public class TestColor extends BaseArrayTestCase {
 
     public void testEquals() {
         final Color color1 = new Color(0, 0, 0, 0);
-        final Color color2 = new Color(0,0,0, 0);
-        final Color color3 = new Color(1,0,0, 0);
-        final Color color4 = new Color(0,1,0, 0);
-        final Color color5 = new Color(0,0,1, 0);
-        final Color color6 = new Color(0,0,0, 1);
+        final Color color2 = new Color(0, 0, 0, 0);
+        final Color color3 = new Color(1, 0, 0, 0);
+        final Color color4 = new Color(0, 1, 0, 0);
+        final Color color5 = new Color(0, 0, 1, 0);
+        final Color color6 = new Color(0, 0, 0, 1);
 
         assertEquals(color1, color2);
         assertFalse(color1.equals(color3));

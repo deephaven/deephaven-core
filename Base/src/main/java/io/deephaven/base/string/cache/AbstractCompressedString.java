@@ -17,7 +17,8 @@ import java.util.regex.Pattern;
 /**
  * Base class for immutable byte[]-backed String replacements.
  */
-public abstract class AbstractCompressedString<TYPE extends AbstractCompressedString> implements StringAlike<TYPE> {
+public abstract class AbstractCompressedString<TYPE extends AbstractCompressedString>
+    implements StringAlike<TYPE> {
     private static final long serialVersionUID = -2596527344240947333L;
 
     private static final Charset ENCODING = StandardCharsets.ISO_8859_1;
@@ -37,7 +38,7 @@ public abstract class AbstractCompressedString<TYPE extends AbstractCompressedSt
     AbstractCompressedString(final char[] data, final int offset, final int length) {
         this.data = new byte[length];
         for (int bi = 0; bi < length; ++bi) {
-            this.data[bi] = (byte)data[offset + bi];
+            this.data[bi] = (byte) data[offset + bi];
         }
     }
 
@@ -78,10 +79,12 @@ public abstract class AbstractCompressedString<TYPE extends AbstractCompressedSt
 
     /**
      * Convert a byte array to this type, assuming ISO-8859-1
+     * 
      * @param data The data to convert
      * @param offset The starting index from data to convert
      * @param length The length to convert
-     * @return A new TYPE with the same contents as the specified region of data, assuming ISO-8859-1 encoding
+     * @return A new TYPE with the same contents as the specified region of data, assuming
+     *         ISO-8859-1 encoding
      */
     protected abstract TYPE convertValue(byte[] data, int offset, int length);
 
@@ -94,8 +97,8 @@ public abstract class AbstractCompressedString<TYPE extends AbstractCompressedSt
         for (int si = 0; si < strings.length; ++si) {
             result[si] = convertValue(strings[si]);
         }
-        //noinspection unchecked
-        return (TYPE[])result;
+        // noinspection unchecked
+        return (TYPE[]) result;
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -103,7 +106,8 @@ public abstract class AbstractCompressedString<TYPE extends AbstractCompressedSt
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * Note: This is an API for trusted code to use.  The data array must not be modified.
+     * Note: This is an API for trusted code to use. The data array must not be modified.
+     * 
      * @return The internal data array for this instance.
      */
     public final byte[] getData() {
@@ -121,7 +125,7 @@ public abstract class AbstractCompressedString<TYPE extends AbstractCompressedSt
 
     @Override
     public final char charAt(final int index) {
-        return (char)(data[index] & 0xFF);
+        return (char) (data[index] & 0xFF);
     }
 
     @Override
@@ -148,7 +152,7 @@ public abstract class AbstractCompressedString<TYPE extends AbstractCompressedSt
     public final int hashCode() {
         int hashCode = cachedHashCode;
         if (hashCode == 0 && data.length > 0) {
-            //noinspection ForLoopReplaceableByForEach
+            // noinspection ForLoopReplaceableByForEach
             for (int bi = 0; bi < data.length; ++bi) {
                 hashCode = 31 * hashCode + data[bi];
             }
@@ -171,8 +175,8 @@ public abstract class AbstractCompressedString<TYPE extends AbstractCompressedSt
             return false;
         }
 
-        //noinspection unchecked
-        final TYPE thatType = (TYPE)that;
+        // noinspection unchecked
+        final TYPE thatType = (TYPE) that;
         if (data.length != thatType.length()) {
             return false;
         }
@@ -185,7 +189,8 @@ public abstract class AbstractCompressedString<TYPE extends AbstractCompressedSt
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // String-alike methods with real implementations (implemented in terms of CharSequences whenever appropriate)
+    // String-alike methods with real implementations (implemented in terms of CharSequences
+    // whenever appropriate)
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
@@ -206,7 +211,8 @@ public abstract class AbstractCompressedString<TYPE extends AbstractCompressedSt
     }
 
     @Override
-    public final void getChars(final int srcBegin, final int srcEnd, final char dst[], final int dstBegin) {
+    public final void getChars(final int srcBegin, final int srcEnd, final char dst[],
+        final int dstBegin) {
         for (int si = srcBegin, di = dstBegin; si < srcEnd; ++si) {
             dst[di++] = charAt(si);
         }
@@ -219,7 +225,8 @@ public abstract class AbstractCompressedString<TYPE extends AbstractCompressedSt
 
     @Override
     public final boolean contentEquals(@NotNull final CharSequence cs) {
-        return data.length == cs.length() && (cs.equals(this) || CharSequenceUtils.contentEquals(this, cs));
+        return data.length == cs.length()
+            && (cs.equals(this) || CharSequenceUtils.contentEquals(this, cs));
     }
 
     @Override
@@ -234,10 +241,10 @@ public abstract class AbstractCompressedString<TYPE extends AbstractCompressedSt
 
     @Override
     public final boolean regionMatches(final boolean ignoreCase,
-                                       final int offset,
-                                       final CharSequence that,
-                                       final int thatOffset,
-                                       final int length) {
+        final int offset,
+        final CharSequence that,
+        final int thatOffset,
+        final int length) {
         return CharSequenceUtils.regionMatches(ignoreCase, this, offset, that, thatOffset, length);
     }
 
@@ -309,8 +316,9 @@ public abstract class AbstractCompressedString<TYPE extends AbstractCompressedSt
         if (beginIndex > endIndex) {
             throw new StringIndexOutOfBoundsException(endIndex - beginIndex);
         }
-        //noinspection unchecked
-        return (TYPE)(beginIndex == 0 && endIndex == data.length ? this : convertValue(data, beginIndex, endIndex - beginIndex));
+        // noinspection unchecked
+        return (TYPE) (beginIndex == 0 && endIndex == data.length ? this
+            : convertValue(data, beginIndex, endIndex - beginIndex));
     }
 
     @Override
@@ -321,8 +329,8 @@ public abstract class AbstractCompressedString<TYPE extends AbstractCompressedSt
     @Override
     public final TYPE concat(final String other) {
         if (other.length() == 0) {
-            //noinspection unchecked
-            return (TYPE)this;
+            // noinspection unchecked
+            return (TYPE) this;
         }
         final byte[] otherData = other.getBytes(ENCODING);
         final byte[] concatenatedData = Arrays.copyOf(data, data.length + otherData.length);
@@ -333,8 +341,8 @@ public abstract class AbstractCompressedString<TYPE extends AbstractCompressedSt
     @Override
     public final TYPE concat(final TYPE other) {
         if (other.length() == 0) {
-            //noinspection unchecked
-            return (TYPE)this;
+            // noinspection unchecked
+            return (TYPE) this;
         }
         final byte[] concatenatedData = Arrays.copyOf(data, data.length + other.length());
         System.arraycopy(other.getData(), 0, concatenatedData, data.length, other.length());
@@ -356,8 +364,8 @@ public abstract class AbstractCompressedString<TYPE extends AbstractCompressedSt
         while (eii > bii && charAt(eii) <= ' ') {
             --eii;
         }
-        //noinspection unchecked
-        return (TYPE)(bii == 0 && eii == data.length - 1 ? this : substring(bii, eii + 1));
+        // noinspection unchecked
+        return (TYPE) (bii == 0 && eii == data.length - 1 ? this : substring(bii, eii + 1));
     }
 
     @Override
@@ -368,7 +376,8 @@ public abstract class AbstractCompressedString<TYPE extends AbstractCompressedSt
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // String-alike method implementations that delegate to String (because they're complicated by encoding or other
+    // String-alike method implementations that delegate to String (because they're complicated by
+    // encoding or other
     // issues and/or likely not used often)
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -404,17 +413,20 @@ public abstract class AbstractCompressedString<TYPE extends AbstractCompressedSt
 
     @Override
     public final TYPE replaceFirst(final CharSequence regex, final CharSequence replacement) {
-        return convertValue(Pattern.compile(regex.toString()).matcher(this).replaceFirst(replacement.toString()));
+        return convertValue(
+            Pattern.compile(regex.toString()).matcher(this).replaceFirst(replacement.toString()));
     }
 
     @Override
     public final TYPE replaceAll(final CharSequence regex, final CharSequence replacement) {
-        return convertValue(Pattern.compile(regex.toString()).matcher(this).replaceAll(replacement.toString()));
+        return convertValue(
+            Pattern.compile(regex.toString()).matcher(this).replaceAll(replacement.toString()));
     }
 
     @Override
     public final TYPE replace(final CharSequence target, final CharSequence replacement) {
-        return convertValue(Pattern.compile(target.toString(), Pattern.LITERAL).matcher(toString()).replaceAll(Matcher.quoteReplacement(replacement.toString())));
+        return convertValue(Pattern.compile(target.toString(), Pattern.LITERAL).matcher(toString())
+            .replaceAll(Matcher.quoteReplacement(replacement.toString())));
     }
 
     @Override

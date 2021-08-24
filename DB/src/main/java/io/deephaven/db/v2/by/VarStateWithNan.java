@@ -27,11 +27,12 @@ class VarStateWithNan extends VarState {
     @Override
     void savePrevious() {
         super.savePrevious();
-        ((VarStateWithNan)prev()).nanCount = nanCount;
+        ((VarStateWithNan) prev()).nanCount = nanCount;
     }
 
     @Override
     public String toString() {
-        return "Var{" + "sum=" + sum + ", sum2=" + sum2 + ", nan=" + nanCount + ", nonNull=" + nonNullCount + '}';
+        return "Var{" + "sum=" + sum + ", sum2=" + sum2 + ", nan=" + nanCount + ", nonNull="
+            + nonNullCount + '}';
     }
 }

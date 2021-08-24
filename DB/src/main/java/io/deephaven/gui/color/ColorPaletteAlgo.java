@@ -28,7 +28,7 @@ public class ColorPaletteAlgo implements ColorPalette, Serializable {
     public ColorPaletteAlgo(final ColorPaletteAlgorithm colorAlgorithm) {
         Require.neqNull(colorAlgorithm, "colorAlgorithm");
         this.colorAlgorithm = colorAlgorithm;
-        if(colorAlgorithm.getInitialColor() != null) {
+        if (colorAlgorithm.getInitialColor() != null) {
             this.colorCache.add(colorAlgorithm.getInitialColor());
         } else {
             this.colorCache.add(colorAlgorithm.nextColor(null));
@@ -37,7 +37,7 @@ public class ColorPaletteAlgo implements ColorPalette, Serializable {
 
     @Override
     public synchronized Color nextColor() {
-        final Color current = colorCache.get(colorCache.size()-1);
+        final Color current = colorCache.get(colorCache.size() - 1);
         final Color next = colorAlgorithm.nextColor(current);
         colorCache.add(next);
         return next;
@@ -45,11 +45,11 @@ public class ColorPaletteAlgo implements ColorPalette, Serializable {
 
     @Override
     public Color get(int index) {
-        if(index < 0){
+        if (index < 0) {
             throw new IllegalArgumentException("Negative index: " + index);
         }
 
-        while(colorCache.size() <= index){
+        while (colorCache.size() <= index) {
             nextColor();
         }
 

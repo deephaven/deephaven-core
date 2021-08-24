@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ * * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  *
  */
 
@@ -20,10 +20,10 @@ class Comparators {
     public static class AscendingOrderComparator<T> implements Comparator<T> {
 
         private static AscendingOrderComparator comparator = new AscendingOrderComparator<>();
-        private static Comparator<Object> reverseComparator = new AscendingOrderComparator<>().reversed();
+        private static Comparator<Object> reverseComparator =
+            new AscendingOrderComparator<>().reversed();
 
-        private AscendingOrderComparator() {
-        }
+        private AscendingOrderComparator() {}
 
         public static AscendingOrderComparator getInstance() {
             return comparator;
@@ -41,11 +41,12 @@ class Comparators {
 
     public static class AscendingOrderComparatorNumber<T extends Number> implements Comparator<T> {
 
-        private static AscendingOrderComparatorNumber comparatorNumber = new AscendingOrderComparatorNumber<>();
-        private static Comparator<Number> reverseComparatorNumber = new AscendingOrderComparatorNumber<>().reversed();
+        private static AscendingOrderComparatorNumber comparatorNumber =
+            new AscendingOrderComparatorNumber<>();
+        private static Comparator<Number> reverseComparatorNumber =
+            new AscendingOrderComparatorNumber<>().reversed();
 
-        private AscendingOrderComparatorNumber() {
-        }
+        private AscendingOrderComparatorNumber() {}
 
         public static AscendingOrderComparatorNumber getInstance() {
             return comparatorNumber;
@@ -70,16 +71,19 @@ class Comparators {
             return -1;
         } else if (dhNull2) {
             return 1;
-        } else if (o1.getClass() == o2.getClass() && Comparable.class.isAssignableFrom(o1.getClass())) {
+        } else if (o1.getClass() == o2.getClass()
+            && Comparable.class.isAssignableFrom(o1.getClass())) {
             return ((Comparable) o1).compareTo(o2);
         } else if (o1.getClass() == Double.class && o2.getClass() == Long.class) {
             return compareDoubleAndLong((Double) o1, (Long) o2);
         } else if (o1.getClass() == Long.class && o2.getClass() == Double.class) {
             return -compareDoubleAndLong((Double) o2, (Long) o1);
-        } else if (Number.class.isAssignableFrom(o1.getClass()) && Number.class.isAssignableFrom(o2.getClass())) {
+        } else if (Number.class.isAssignableFrom(o1.getClass())
+            && Number.class.isAssignableFrom(o2.getClass())) {
             return Double.compare(((Number) o1).doubleValue(), ((Number) o2).doubleValue());
         } else {
-            throw new IllegalArgumentException("Can not compare classes : " + o1.getClass() + " and " + o2.getClass());
+            throw new IllegalArgumentException(
+                "Can not compare classes : " + o1.getClass() + " and " + o2.getClass());
         }
     }
 
@@ -91,7 +95,8 @@ class Comparators {
             return 0;
         } else if (o1Prim == NULL_DOUBLE) {
             return -1;
-        } else if (o2Prim == NULL_LONG || Double.isNaN(o1Prim)) {//As Double.NaN is considered the greatest
+        } else if (o2Prim == NULL_LONG || Double.isNaN(o1Prim)) {// As Double.NaN is considered the
+                                                                 // greatest
             return 1;
         } else {
             if (o1PrimLong < o2Prim) {

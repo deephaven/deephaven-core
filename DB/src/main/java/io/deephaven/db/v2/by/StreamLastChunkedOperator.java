@@ -26,7 +26,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastChunkedOperator {
 
-    StreamLastChunkedOperator(@NotNull final MatchPair[] resultPairs, @NotNull final Table streamTable) {
+    StreamLastChunkedOperator(@NotNull final MatchPair[] resultPairs,
+        @NotNull final Table streamTable) {
         super(resultPairs, streamTable);
     }
 
@@ -37,12 +38,12 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
 
     @Override
     public void addChunk(final BucketedContext context, // Unused
-                         final Chunk<? extends Values> values, // Unused
-                         @NotNull final LongChunk<? extends KeyIndices> inputIndices,
-                         @NotNull final IntChunk<KeyIndices> destinations,
-                         @NotNull final IntChunk<ChunkPositions> startPositions,
-                         @NotNull final IntChunk<ChunkLengths> length,
-                         @NotNull final WritableBooleanChunk<Values> stateModified) {
+        final Chunk<? extends Values> values, // Unused
+        @NotNull final LongChunk<? extends KeyIndices> inputIndices,
+        @NotNull final IntChunk<KeyIndices> destinations,
+        @NotNull final IntChunk<ChunkPositions> startPositions,
+        @NotNull final IntChunk<ChunkLengths> length,
+        @NotNull final WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
@@ -54,10 +55,10 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
 
     @Override
     public boolean addChunk(final SingletonContext context, // Unused
-                            final int chunkSize,
-                            final Chunk<? extends Values> values, // Unused
-                            @NotNull final LongChunk<? extends KeyIndices> inputIndices,
-                            final long destination) {
+        final int chunkSize,
+        final Chunk<? extends Values> values, // Unused
+        @NotNull final LongChunk<? extends KeyIndices> inputIndices,
+        final long destination) {
         if (chunkSize == 0) {
             return false;
         }
@@ -67,8 +68,8 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
 
     @Override
     public boolean addIndex(final SingletonContext context,
-                            @NotNull final Index index,
-                            final long destination) {
+        @NotNull final Index index,
+        final long destination) {
         if (index.isEmpty()) {
             return false;
         }
@@ -84,9 +85,9 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
 
     @Override
     public void propagateUpdates(@NotNull final ShiftAwareListener.Update downstream,
-                                 @NotNull final ReadOnlyIndex newDestinations) {
+        @NotNull final ReadOnlyIndex newDestinations) {
         Assert.assertion(downstream.removed.empty() && downstream.shifted.empty(),
-                "downstream.removed.empty() && downstream.shifted.empty()");
+            "downstream.removed.empty() && downstream.shifted.empty()");
         try (final OrderedKeys changedDestinations = downstream.modified.union(downstream.added)) {
             copyStreamToResult(changedDestinations);
         }

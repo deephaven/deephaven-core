@@ -13,69 +13,69 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.console_pb.VersionedTextDocumentIdentifier",
     namespace = JsPackage.GLOBAL)
 public class VersionedTextDocumentIdentifier {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
-    @JsOverlay
-    static VersionedTextDocumentIdentifier.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType {
+        @JsOverlay
+        static VersionedTextDocumentIdentifier.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getUri();
+
+        @JsProperty
+        double getVersion();
+
+        @JsProperty
+        void setUri(String uri);
+
+        @JsProperty
+        void setVersion(double version);
     }
 
-    @JsProperty
-    String getUri();
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType0 {
+        @JsOverlay
+        static VersionedTextDocumentIdentifier.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
 
-    @JsProperty
-    double getVersion();
+        @JsProperty
+        String getUri();
 
-    @JsProperty
-    void setUri(String uri);
+        @JsProperty
+        double getVersion();
 
-    @JsProperty
-    void setVersion(double version);
-  }
+        @JsProperty
+        void setUri(String uri);
 
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsOverlay
-    static VersionedTextDocumentIdentifier.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+        @JsProperty
+        void setVersion(double version);
     }
 
-    @JsProperty
-    String getUri();
+    public static native VersionedTextDocumentIdentifier deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    double getVersion();
+    public static native VersionedTextDocumentIdentifier deserializeBinaryFromReader(
+        VersionedTextDocumentIdentifier message, Object reader);
 
-    @JsProperty
-    void setUri(String uri);
+    public static native void serializeBinaryToWriter(
+        VersionedTextDocumentIdentifier message, Object writer);
 
-    @JsProperty
-    void setVersion(double version);
-  }
+    public static native VersionedTextDocumentIdentifier.ToObjectReturnType toObject(
+        boolean includeInstance, VersionedTextDocumentIdentifier msg);
 
-  public static native VersionedTextDocumentIdentifier deserializeBinary(Uint8Array bytes);
+    public native String getUri();
 
-  public static native VersionedTextDocumentIdentifier deserializeBinaryFromReader(
-      VersionedTextDocumentIdentifier message, Object reader);
+    public native double getVersion();
 
-  public static native void serializeBinaryToWriter(
-      VersionedTextDocumentIdentifier message, Object writer);
+    public native Uint8Array serializeBinary();
 
-  public static native VersionedTextDocumentIdentifier.ToObjectReturnType toObject(
-      boolean includeInstance, VersionedTextDocumentIdentifier msg);
+    public native void setUri(String value);
 
-  public native String getUri();
+    public native void setVersion(double value);
 
-  public native double getVersion();
+    public native VersionedTextDocumentIdentifier.ToObjectReturnType0 toObject();
 
-  public native Uint8Array serializeBinary();
-
-  public native void setUri(String value);
-
-  public native void setVersion(double value);
-
-  public native VersionedTextDocumentIdentifier.ToObjectReturnType0 toObject();
-
-  public native VersionedTextDocumentIdentifier.ToObjectReturnType0 toObject(
-      boolean includeInstance);
+    public native VersionedTextDocumentIdentifier.ToObjectReturnType0 toObject(
+        boolean includeInstance);
 }

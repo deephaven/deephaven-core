@@ -25,8 +25,9 @@ public class ProcessStatusSubrange implements StatusCallback {
     }
 
     /**
-     * This object has been assigned a range of the parents range.
-     * Adjust the stepProgress value from 0-100 to the value in the full range of the parent object.
+     * This object has been assigned a range of the parents range. Adjust the stepProgress value
+     * from 0-100 to the value in the full range of the parent object.
+     * 
      * @param progress percent complete (0-100)
      * @param status optional message text
      */
@@ -34,7 +35,8 @@ public class ProcessStatusSubrange implements StatusCallback {
     public void update(final int progress, final Supplier<String> status) {
         Require.geqZero(progress, "progress");
         Require.leq(progress, "progress", 100);
-        //Require.geq(getStepValue(), "current progress", progress, "progress"); // Needed?  probably not.
+        // Require.geq(getStepValue(), "current progress", progress, "progress"); // Needed?
+        // probably not.
 
         this.stepProgress = progress;
         int adjustedProgress = (int) ((progress / 100.0) * (end - begin) + begin);

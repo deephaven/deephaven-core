@@ -16,25 +16,32 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Watch for ticks and when initialization is complete forward to the eventual listener.
  *
- * The SwapListenerBase is attached to a table so that we can listen for updates during the LTM cycle; and if any updates
- * occur, we'll be able to notice them and retry initialization.  If no ticks were received before the result is ready,
- * then we should forward all calls to our eventual listener.
+ * The SwapListenerBase is attached to a table so that we can listen for updates during the LTM
+ * cycle; and if any updates occur, we'll be able to notice them and retry initialization. If no
+ * ticks were received before the result is ready, then we should forward all calls to our eventual
+ * listener.
  *
- * Callers should use our start and end functions.  The start function is called at the beginning of a data snapshot;
- * and allows us to setup our state variables.  At the end of the snapshot attempt, end() is called; and if there were
- * no clock changes, we were not gotNotification, and no notifications were enqueued; then we have a successful snapshot and
- * can return true.  We then set the currentListener, so that all future calls are forwarded to the listener.
+ * Callers should use our start and end functions. The start function is called at the beginning of
+ * a data snapshot; and allows us to setup our state variables. At the end of the snapshot attempt,
+ * end() is called; and if there were no clock changes, we were not gotNotification, and no
+ * notifications were enqueued; then we have a successful snapshot and can return true. We then set
+ * the currentListener, so that all future calls are forwarded to the listener.
  *
- * Use either {@link SwapListener} or {@link ShiftAwareSwapListener} depending on which Listener interface you are using.
+ * Use either {@link SwapListener} or {@link ShiftAwareSwapListener} depending on which Listener
+ * interface you are using.
  */
-public abstract class SwapListenerBase <T extends ListenerBase> extends LivenessArtifact implements ListenerBase {
-    protected static final boolean DEBUG = Configuration.getInstance().getBooleanWithDefault("SwapListener.debug", false);
-    static final boolean DEBUG_NOTIFICATIONS = Configuration.getInstance().getBooleanWithDefault("SwapListener.debugNotifications", false);
+public abstract class SwapListenerBase<T extends ListenerBase> extends LivenessArtifact
+    implements ListenerBase {
+    protected static final boolean DEBUG =
+        Configuration.getInstance().getBooleanWithDefault("SwapListener.debug", false);
+    static final boolean DEBUG_NOTIFICATIONS =
+        Configuration.getInstance().getBooleanWithDefault("SwapListener.debugNotifications", false);
 
     private static final Logger log = LoggerFactory.getLogger(SwapListenerBase.class);
 
     /**
-     * The listener that will be called if this operation is successful.  If we have a successful snapshot, then success is set to true.
+     * The listener that will be called if this operation is successful. If we have a successful
+     * snapshot, then success is set to true.
      */
     T eventualListener;
     private NotificationStepReceiver eventualResult;
@@ -56,12 +63,12 @@ public abstract class SwapListenerBase <T extends ListenerBase> extends Liveness
     }
 
     public ConstructSnapshot.SnapshotControl makeSnapshotControl() {
-        //noinspection AutoBoxing
+        // noinspection AutoBoxing
         return ConstructSnapshot.makeSnapshotControl(
-                this::start,
-                (final long currentClockValue, final boolean usingPreviousValues) -> isInInitialNotificationWindow(),
-                (final long afterClockValue, final boolean usedPreviousValues) -> end(afterClockValue)
-        );
+            this::start,
+            (final long currentClockValue,
+                final boolean usingPreviousValues) -> isInInitialNotificationWindow(),
+            (final long afterClockValue, final boolean usedPreviousValues) -> end(afterClockValue));
     }
 
     /**
@@ -78,18 +85,18 @@ public abstract class SwapListenerBase <T extends ListenerBase> extends Liveness
         final boolean updating = LogicalClock.getState(clockCycle) == LogicalClock.State.Updating;
         if (DEBUG) {
             log.info().append("Swap Listener source=")
-                    .append(System.identityHashCode(sourceTable))
-                    .append(" swap=")
-                    .append(System.identityHashCode(this))
-                    .append(" start: ")
-                    .append(currentStep)
-                    .append(" ")
-                    .append(LogicalClock.getState(clockCycle).toString())
-                    .append(", last=").append(lastNotificationStep)
-                    .append(", updating=")
-                    .append(updating)
-                    .append(", updatedOnThisCycle=")
-                    .append(updatedOnThisCycle).endl();
+                .append(System.identityHashCode(sourceTable))
+                .append(" swap=")
+                .append(System.identityHashCode(this))
+                .append(" start: ")
+                .append(currentStep)
+                .append(" ")
+                .append(LogicalClock.getState(clockCycle).toString())
+                .append(", last=").append(lastNotificationStep)
+                .append(", updating=")
+                .append(updating)
+                .append(", updatedOnThisCycle=")
+                .append(updatedOnThisCycle).endl();
         }
         return updating && !updatedOnThisCycle;
     }
@@ -99,8 +106,8 @@ public abstract class SwapListenerBase <T extends ListenerBase> extends Liveness
      *
      * @param clockCycle The {@link LogicalClock logical clock} cycle we are ending a snapshot on
      * @return true if the snapshot was successful, false if we should try again.
-     * @throws IllegalStateException If the snapshot was successful (consistent), but the snapshot function failed to
-     *                               set the eventual listener or eventual result
+     * @throws IllegalStateException If the snapshot was successful (consistent), but the snapshot
+     *         function failed to set the eventual listener or eventual result
      */
     protected synchronized boolean end(@SuppressWarnings("unused") final long clockCycle) {
         if (isInInitialNotificationWindow()) {
@@ -117,13 +124,13 @@ public abstract class SwapListenerBase <T extends ListenerBase> extends Liveness
 
         if (DEBUG) {
             log.info().append("Swap Listener ")
-                    .append(System.identityHashCode(sourceTable))
-                    .append(" swap=")
-                    .append(System.identityHashCode(this))
-                    .append(" End: success=")
-                    .append(success)
-                    .append(", last=")
-                    .append(lastNotificationStep).endl();
+                .append(System.identityHashCode(sourceTable))
+                .append(" swap=")
+                .append(System.identityHashCode(this))
+                .append(" End: success=")
+                .append(success)
+                .append(", last=")
+                .append(lastNotificationStep).endl();
         }
 
         if (success) {
@@ -135,14 +142,14 @@ public abstract class SwapListenerBase <T extends ListenerBase> extends Liveness
 
     @Override
     public synchronized void onFailure(
-            final Throwable originalException, final UpdatePerformanceTracker.Entry sourceEntry) {
+        final Throwable originalException, final UpdatePerformanceTracker.Entry sourceEntry) {
         // not a direct listener
         throw new UnsupportedOperationException();
     }
 
     @Override
     public synchronized NotificationQueue.Notification getErrorNotification(
-            final Throwable originalException, final UpdatePerformanceTracker.Entry sourceEntry) {
+        final Throwable originalException, final UpdatePerformanceTracker.Entry sourceEntry) {
         if (success && !isInInitialNotificationWindow()) {
             return eventualListener.getErrorNotification(originalException, sourceEntry);
         } else {
@@ -157,24 +164,26 @@ public abstract class SwapListenerBase <T extends ListenerBase> extends Liveness
 
     /**
      * Set the listener that will eventually become the listener, if we have a successful swap.
-     * @param listener    The listener that we will eventually forward all updates to
+     * 
+     * @param listener The listener that we will eventually forward all updates to
      * @param resultTable The table that will result from this operation
      */
     public synchronized void setListenerAndResult(@NotNull final T listener,
-                                                  @NotNull final NotificationStepReceiver resultTable) {
+        @NotNull final NotificationStepReceiver resultTable) {
         eventualListener = listener;
         eventualResult = resultTable;
         if (DEBUG) {
             log.info().append("SwapListener source=")
-                    .append(System.identityHashCode(sourceTable))
-                    .append(", swap=")
-                    .append(System.identityHashCode(this)).append(", result=")
-                    .append(System.identityHashCode(resultTable)).endl();
+                .append(System.identityHashCode(sourceTable))
+                .append(", swap=")
+                .append(System.identityHashCode(this)).append(", result=")
+                .append(System.identityHashCode(resultTable)).endl();
         }
     }
 
     /**
-     * Invoke {@link QueryTable#listenForUpdates(Listener)} for the appropriate subclass of {@link SwapListenerBase}.
+     * Invoke {@link QueryTable#listenForUpdates(Listener)} for the appropriate subclass of
+     * {@link SwapListenerBase}.
      */
     public abstract void subscribeForUpdates();
 
@@ -202,27 +211,27 @@ public abstract class SwapListenerBase <T extends ListenerBase> extends Liveness
             @Override
             public LogOutput append(final LogOutput logOutput) {
                 return logOutput.append("Wrapped(ShiftAwareSwapListener=")
-                        .append(System.identityHashCode(sourceTable))
-                        .append(" swap=")
-                        .append(System.identityHashCode(SwapListenerBase.this))
-                        .append("){")
-                        .append(notification)
-                        .append("}");
+                    .append(System.identityHashCode(sourceTable))
+                    .append(" swap=")
+                    .append(System.identityHashCode(SwapListenerBase.this))
+                    .append("){")
+                    .append(notification)
+                    .append("}");
             }
 
             @Override
             public void run() {
                 log.info().append("ShiftAwareSwapListener: Firing notification ")
-                        .append(System.identityHashCode(sourceTable))
-                        .append(" swap=")
-                        .append(System.identityHashCode(SwapListenerBase.this))
-                        .append(", clock=")
-                        .append(LogicalClock.DEFAULT.currentStep()).endl();
+                    .append(System.identityHashCode(sourceTable))
+                    .append(" swap=")
+                    .append(System.identityHashCode(SwapListenerBase.this))
+                    .append(", clock=")
+                    .append(LogicalClock.DEFAULT.currentStep()).endl();
                 notification.run();
                 log.info().append("ShiftAwareSwapListener: Complete notification ")
-                        .append(System.identityHashCode(sourceTable))
-                        .append(" swap=")
-                        .append(System.identityHashCode(SwapListenerBase.this)).endl();
+                    .append(System.identityHashCode(sourceTable))
+                    .append(" swap=")
+                    .append(System.identityHashCode(SwapListenerBase.this)).endl();
             }
         };
     }

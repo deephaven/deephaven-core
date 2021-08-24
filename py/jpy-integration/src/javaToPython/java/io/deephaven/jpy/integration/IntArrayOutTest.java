@@ -14,12 +14,15 @@ public class IntArrayOutTest extends PythonTest {
 
     // we need to choose a value that the python runtime does *not* have a reference to
     private static final int UNIQ_INT = 0xbadc0fee;
-    private static final int[] INTS = new int[] { 31337, 42, UNIQ_INT };
+    private static final int[] INTS = new int[] {31337, 42, UNIQ_INT};
 
     interface IntArrayOut extends IdentityOut {
         int[] identity(int[] object);
+
         int[] identity(Integer[] object);
+
         int[] identity(PyObject object);
+
         int[] identity(Object object);
     }
 
@@ -32,12 +35,12 @@ public class IntArrayOutTest extends PythonTest {
         out = IdentityOut.create(getCreateModule(), IntArrayOut.class);
         ref = ReferenceCounting.create();
         jpy = JpyModule.create();
-        //jpy.setFlags(EnumSet.of(Flag.ALL));
+        // jpy.setFlags(EnumSet.of(Flag.ALL));
     }
 
     @After
     public void tearDown() {
-        //jpy.setFlags(EnumSet.of(Flag.OFF));
+        // jpy.setFlags(EnumSet.of(Flag.OFF));
         jpy.close();
         ref.close();
         out.close();
@@ -54,7 +57,7 @@ public class IntArrayOutTest extends PythonTest {
     @Ignore // currently fails
     @Test
     public void implicitIntsToInts() {
-        Assert.assertArrayEquals(INTS, out.identity((Object)INTS));
+        Assert.assertArrayEquals(INTS, out.identity((Object) INTS));
     }
 
     // ----------

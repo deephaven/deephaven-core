@@ -15,8 +15,10 @@ import java.util.Random;
 public class FastArrayMapTest extends TestCase {
 
     private FastArrayMap<LongWrapper, TrialClassA> constructTestMap() {
-        Function.Nullary<KeyValuePair<LongWrapper, TrialClassA>> factoryObjectToObject = new FactoryObjectToObject();
-        FastArrayMap<LongWrapper, TrialClassA> map = new FastArrayMap<LongWrapper, TrialClassA>(factoryObjectToObject);
+        Function.Nullary<KeyValuePair<LongWrapper, TrialClassA>> factoryObjectToObject =
+            new FactoryObjectToObject();
+        FastArrayMap<LongWrapper, TrialClassA> map =
+            new FastArrayMap<LongWrapper, TrialClassA>(factoryObjectToObject);
         return map;
     }
 
@@ -42,7 +44,7 @@ public class FastArrayMapTest extends TestCase {
 
         Random myRandom = new Random(454546L);
 
-        //add a value
+        // add a value
         LongWrapper key1 = new LongWrapper(1L);
         TrialClassA value1 = FastArrayTest.makeRandomTestObject(myRandom);
         TrialClassA prevValue = map.put(key1, value1);
@@ -55,7 +57,7 @@ public class FastArrayMapTest extends TestCase {
         assertTrue(map.containsKey(key1));
         assertTrue(map.get(key1).equals(value1));
 
-        //repeat adding this same item again
+        // repeat adding this same item again
         prevValue = map.put(key1, value1);
         assertTrue(prevValue.equals(value1));
         assertEquals(1, map.size());
@@ -66,7 +68,7 @@ public class FastArrayMapTest extends TestCase {
         assertTrue(map.containsKey(key1));
         assertTrue(map.get(key1).equals(value1));
 
-        //add a value
+        // add a value
         LongWrapper key2 = new LongWrapper(2L);
         TrialClassA value2 = FastArrayTest.makeRandomTestObject(myRandom);
         prevValue = map.put(key2, value2);
@@ -82,7 +84,7 @@ public class FastArrayMapTest extends TestCase {
         assertTrue(map.get(key1).equals(value1));
         assertTrue(map.get(key2).equals(value2));
 
-        //add this value again
+        // add this value again
         prevValue = map.put(key2, value2);
         assertTrue(prevValue.equals(value2));
         assertEquals(2, map.size());
@@ -96,7 +98,7 @@ public class FastArrayMapTest extends TestCase {
         assertTrue(map.get(key1).equals(value1));
         assertTrue(map.get(key2).equals(value2));
 
-        //add the 1st item again
+        // add the 1st item again
         prevValue = map.put(key1, value1);
         assertTrue(prevValue.equals(value1));
         assertEquals(2, map.size());
@@ -110,7 +112,7 @@ public class FastArrayMapTest extends TestCase {
         assertTrue(map.get(key1).equals(value1));
         assertTrue(map.get(key2).equals(value2));
 
-        //add a value
+        // add a value
         LongWrapper key10 = new LongWrapper(10L);
         TrialClassA value10 = FastArrayTest.makeRandomTestObject(myRandom);
         prevValue = map.put(key10, value10);
@@ -129,7 +131,7 @@ public class FastArrayMapTest extends TestCase {
         assertTrue(map.get(key2).equals(value2));
         assertTrue(map.get(key10).equals(value10));
 
-        //add a value out of key order
+        // add a value out of key order
         LongWrapper key5 = new LongWrapper(5L);
         TrialClassA value5 = FastArrayTest.makeRandomTestObject(myRandom);
         prevValue = map.put(key5, value5);
@@ -151,7 +153,7 @@ public class FastArrayMapTest extends TestCase {
         assertTrue(map.get(key5).equals(value5));
         assertTrue(map.get(key10).equals(value10));
 
-        //add the 5 item again
+        // add the 5 item again
         prevValue = map.put(key5, value5);
         assertTrue(prevValue.equals(value5));
         assertEquals(4, map.size());
@@ -171,7 +173,7 @@ public class FastArrayMapTest extends TestCase {
         assertTrue(map.get(key5).equals(value5));
         assertTrue(map.get(key10).equals(value10));
 
-        //add the 10 item again
+        // add the 10 item again
         prevValue = map.put(key10, value10);
         assertTrue(prevValue.equals(value10));
         assertEquals(4, map.size());
@@ -191,7 +193,7 @@ public class FastArrayMapTest extends TestCase {
         assertTrue(map.get(key5).equals(value5));
         assertTrue(map.get(key10).equals(value10));
 
-        //add the 1 item again
+        // add the 1 item again
         prevValue = map.put(key1, value1);
         assertTrue(prevValue.equals(value1));
         assertEquals(4, map.size());
@@ -211,7 +213,7 @@ public class FastArrayMapTest extends TestCase {
         assertTrue(map.get(key5).equals(value5));
         assertTrue(map.get(key10).equals(value10));
 
-        //add value2 into key1
+        // add value2 into key1
         prevValue = map.put(key1, value2);
         assertTrue(prevValue.equals(value1));
         assertEquals(4, map.size());
@@ -241,7 +243,7 @@ public class FastArrayMapTest extends TestCase {
 
         Random myRandom = new Random(454546L);
 
-        //add a bunch of values
+        // add a bunch of values
         LongWrapper key1 = new LongWrapper(1L);
         TrialClassA value1 = FastArrayTest.makeRandomTestObject(myRandom);
         map.put(key1, value1);
@@ -267,7 +269,7 @@ public class FastArrayMapTest extends TestCase {
         assertTrue(map.get(key5).equals(value5));
         assertTrue(map.get(new LongWrapper(6L)) == null);
 
-        //clear it and see what is left
+        // clear it and see what is left
         map.clear();
         assertEquals(0, map.size());
         assertTrue(map.get(new LongWrapper(0L)) == null);
@@ -288,7 +290,7 @@ public class FastArrayMapTest extends TestCase {
 
         Random myRandom = new Random(454546L);
 
-        //add a bunch of values
+        // add a bunch of values
         LongWrapper key1 = new LongWrapper(1L);
         TrialClassA value1 = FastArrayTest.makeRandomTestObject(myRandom);
         map.put(key1, value1);
@@ -314,7 +316,7 @@ public class FastArrayMapTest extends TestCase {
         assertTrue(map.get(key5).equals(value5));
         assertTrue(map.get(new LongWrapper(6L)) == null);
 
-        //delete something and see what is left
+        // delete something and see what is left
         TrialClassA prevValue = map.remove(key3);
         assertTrue(prevValue.equals(value3));
         assertEquals(4, map.size());
@@ -326,7 +328,7 @@ public class FastArrayMapTest extends TestCase {
         assertTrue(map.get(key5).equals(value5));
         assertTrue(map.get(new LongWrapper(6L)) == null);
 
-        //delete the same item again
+        // delete the same item again
         prevValue = map.remove(key3);
         assertTrue(prevValue == null);
         assertEquals(4, map.size());
@@ -371,7 +373,7 @@ public class FastArrayMapTest extends TestCase {
         assertTrue(map.get(key5) == null);
         assertTrue(map.get(new LongWrapper(6L)) == null);
 
-        //remove final item
+        // remove final item
         prevValue = map.remove(key4);
         assertTrue(prevValue.equals(value4));
         assertEquals(0, map.size());
@@ -383,7 +385,7 @@ public class FastArrayMapTest extends TestCase {
         assertTrue(map.get(key5) == null);
         assertTrue(map.get(new LongWrapper(6L)) == null);
 
-        //remove something from an empty map
+        // remove something from an empty map
         prevValue = map.remove(key4);
         assertTrue(prevValue == null);
         assertEquals(0, map.size());
@@ -396,14 +398,15 @@ public class FastArrayMapTest extends TestCase {
         assertTrue(map.get(new LongWrapper(6L)) == null);
     }
 
-    public void checkExternalization(FastArrayMap<LongWrapper, TrialClassA> mapInput, FastArrayMap<LongWrapper, TrialClassA> mapReceiver) throws Exception {
+    public void checkExternalization(FastArrayMap<LongWrapper, TrialClassA> mapInput,
+        FastArrayMap<LongWrapper, TrialClassA> mapReceiver) throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(bos);
         try {
             FastArrayMap.writeExternal(mapInput, oos, KeyValuePairTest.writer);
         } catch (IllegalArgumentException e) {
             if (mapInput == null) {
-                //this is an expected failure
+                // this is an expected failure
                 return;
             } else {
                 throw e;
@@ -417,7 +420,7 @@ public class FastArrayMapTest extends TestCase {
             FastArrayMap.readExternal(mapReceiver, ois, KeyValuePairTest.reader);
         } catch (IllegalArgumentException e) {
             if (mapReceiver == null) {
-                //this is an expected failure
+                // this is an expected failure
                 return;
             } else {
                 throw e;
@@ -488,7 +491,7 @@ public class FastArrayMapTest extends TestCase {
         assertEquals(0, arrayInput.size());
         assertEquals(0, arrayReceiver.size());
 
-        //put items into input array
+        // put items into input array
         for (int i = 0; i < nItems; i++) {
             LongWrapper key = new LongWrapper(myRandom.nextLong());
             arrayInput.put(key, FastArrayTest.makeRandomTestObject(myRandom));
@@ -497,10 +500,10 @@ public class FastArrayMapTest extends TestCase {
         assertEquals(nItems, arrayInput.size());
         assertEquals(0, arrayReceiver.size());
 
-        //copy them into receive
+        // copy them into receive
         arrayReceiver = arrayInput.cloneDeep();
 
-        //check the receive array against the input array
+        // check the receive array against the input array
         assertEquals(nItems, arrayInput.size());
         assertEquals(nItems, arrayReceiver.size());
         for (int i = 0; i < nItems; i++) {
@@ -514,14 +517,15 @@ public class FastArrayMapTest extends TestCase {
             assertTrue(itemReceive.equals(itemInput));
         }
 
-        //change the values in the receive array
+        // change the values in the receive array
         for (int i = 0; i < nItems; i++) {
             LongWrapper key = new LongWrapper(myRandom.nextLong());
             TrialClassA val = FastArrayTest.makeRandomTestObject(myRandom);
-            arrayReceiver.getArray().getUnsafeArray()[i] = new KeyValuePair<LongWrapper, TrialClassA>(key, val);
+            arrayReceiver.getArray().getUnsafeArray()[i] =
+                new KeyValuePair<LongWrapper, TrialClassA>(key, val);
         }
 
-        //verify they are not equal
+        // verify they are not equal
         for (int i = 0; i < nItems; i++) {
             LongWrapper keyInput = arrayInput.getArray().getUnsafeArray()[i].getKey();
             LongWrapper keyReceive = arrayReceiver.getArray().getUnsafeArray()[i].getKey();
@@ -533,10 +537,11 @@ public class FastArrayMapTest extends TestCase {
             assertFalse(itemReceive.equals(itemInput));
         }
 
-        //copy the value from the input back into the receive array (now that we already have values in there
+        // copy the value from the input back into the receive array (now that we already have
+        // values in there
         arrayReceiver = arrayInput.cloneDeep();
 
-        //check the receive array against the input array
+        // check the receive array against the input array
         assertEquals(nItems, arrayInput.size());
         assertEquals(nItems, arrayReceiver.size());
         for (int i = 0; i < nItems; i++) {
@@ -613,13 +618,15 @@ public class FastArrayMapTest extends TestCase {
     }
 }
 
+
 class FactoryObjectToObject implements Function.Nullary<KeyValuePair<LongWrapper, TrialClassA>> {
 
     @Override
     public KeyValuePair<LongWrapper, TrialClassA> call() {
         LongWrapper key = new LongWrapper(Long.MIN_VALUE);
         TrialClassA value = TrialClassA.makeNull();
-        KeyValuePair<LongWrapper, TrialClassA> result = new KeyValuePair<LongWrapper, TrialClassA>(key, value);
+        KeyValuePair<LongWrapper, TrialClassA> result =
+            new KeyValuePair<LongWrapper, TrialClassA>(key, value);
         return result;
     }
 }

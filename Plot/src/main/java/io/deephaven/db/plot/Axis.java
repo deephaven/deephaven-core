@@ -138,9 +138,12 @@ public interface Axis extends Serializable {
     /**
      * Sets this Axis's {@link AxisTransform} as an {@link AxisTransformBusinessCalendar}.
      *
-     * @param sds selectable data set (e.g. OneClick filterable table) containing the business calendar.
-     * @param valueColumn name of a column containing String values, where each value is the name of a {@link BusinessCalendar}.
-     * @return this Axis using the business calendar from row 0 of the filtered {@code sds} for the business calendar.  If no value is found, no transform will be applied.
+     * @param sds selectable data set (e.g. OneClick filterable table) containing the business
+     *        calendar.
+     * @param valueColumn name of a column containing String values, where each value is the name of
+     *        a {@link BusinessCalendar}.
+     * @return this Axis using the business calendar from row 0 of the filtered {@code sds} for the
+     *         business calendar. If no value is found, no transform will be applied.
      */
     Axis businessTime(final SelectableDataSet sds, final String valueColumn);
 
@@ -165,7 +168,8 @@ public interface Axis extends Serializable {
     /**
      * Inverts this Axis so that larger values are closer to the origin.
      *
-     * @param invert if true, larger values will be closer to the origin; otherwise, smaller values will be closer to the origin.
+     * @param invert if true, larger values will be closer to the origin; otherwise, smaller values
+     *        will be closer to the origin.
      * @return this Axes
      */
     Axis invert(final boolean invert);
@@ -229,7 +233,8 @@ public interface Axis extends Serializable {
     /**
      * Sets the tick locations.
      *
-     * @param gapBetweenTicks the distance between ticks.  For example, if {@code gapBetweenTicks} is 5.0, and the first tick is at 10.0, the next will be drawn at 15.0.
+     * @param gapBetweenTicks the distance between ticks. For example, if {@code gapBetweenTicks} is
+     *        5.0, and the first tick is at 10.0, the next will be drawn at 15.0.
      * @return this Axis
      */
     Axis ticks(double gapBetweenTicks);
@@ -251,8 +256,8 @@ public interface Axis extends Serializable {
     Axis minorTicksVisible(boolean visible);
 
     /**
-     * Sets the number of minor ticks between consecutive major ticks.
-     * These minor ticks are equally spaced.
+     * Sets the number of minor ticks between consecutive major ticks. These minor ticks are equally
+     * spaced.
      *
      * @param count number of minor ticks between consecutive major ticks.
      * @return this Axis

@@ -13,183 +13,183 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.table_pb.Value",
     namespace = JsPackage.GLOBAL)
 public class Value {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface LiteralFieldType {
-      @JsOverlay
-      static Value.ToObjectReturnType.LiteralFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
+    public interface ToObjectReturnType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface LiteralFieldType {
+            @JsOverlay
+            static Value.ToObjectReturnType.LiteralFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
 
-      @JsProperty
-      double getDoubleValue();
+            @JsProperty
+            double getDoubleValue();
 
-      @JsProperty
-      String getLongValue();
+            @JsProperty
+            String getLongValue();
 
-      @JsProperty
-      String getNanoTimeValue();
+            @JsProperty
+            String getNanoTimeValue();
 
-      @JsProperty
-      String getStringValue();
+            @JsProperty
+            String getStringValue();
 
-      @JsProperty
-      boolean isBoolValue();
+            @JsProperty
+            boolean isBoolValue();
 
-      @JsProperty
-      void setBoolValue(boolean boolValue);
+            @JsProperty
+            void setBoolValue(boolean boolValue);
 
-      @JsProperty
-      void setDoubleValue(double doubleValue);
+            @JsProperty
+            void setDoubleValue(double doubleValue);
 
-      @JsProperty
-      void setLongValue(String longValue);
+            @JsProperty
+            void setLongValue(String longValue);
 
-      @JsProperty
-      void setNanoTimeValue(String nanoTimeValue);
+            @JsProperty
+            void setNanoTimeValue(String nanoTimeValue);
 
-      @JsProperty
-      void setStringValue(String stringValue);
-    }
+            @JsProperty
+            void setStringValue(String stringValue);
+        }
 
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ReferenceFieldType {
-      @JsOverlay
-      static Value.ToObjectReturnType.ReferenceFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ReferenceFieldType {
+            @JsOverlay
+            static Value.ToObjectReturnType.ReferenceFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
 
-      @JsProperty
-      String getColumnName();
+            @JsProperty
+            String getColumnName();
 
-      @JsProperty
-      void setColumnName(String columnName);
-    }
+            @JsProperty
+            void setColumnName(String columnName);
+        }
 
-    @JsOverlay
-    static Value.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
+        @JsOverlay
+        static Value.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
 
-    @JsProperty
-    Value.ToObjectReturnType.LiteralFieldType getLiteral();
+        @JsProperty
+        Value.ToObjectReturnType.LiteralFieldType getLiteral();
 
-    @JsProperty
-    Value.ToObjectReturnType.ReferenceFieldType getReference();
+        @JsProperty
+        Value.ToObjectReturnType.ReferenceFieldType getReference();
 
-    @JsProperty
-    void setLiteral(Value.ToObjectReturnType.LiteralFieldType literal);
+        @JsProperty
+        void setLiteral(Value.ToObjectReturnType.LiteralFieldType literal);
 
-    @JsProperty
-    void setReference(Value.ToObjectReturnType.ReferenceFieldType reference);
-  }
-
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface LiteralFieldType {
-      @JsOverlay
-      static Value.ToObjectReturnType0.LiteralFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      double getDoubleValue();
-
-      @JsProperty
-      String getLongValue();
-
-      @JsProperty
-      String getNanoTimeValue();
-
-      @JsProperty
-      String getStringValue();
-
-      @JsProperty
-      boolean isBoolValue();
-
-      @JsProperty
-      void setBoolValue(boolean boolValue);
-
-      @JsProperty
-      void setDoubleValue(double doubleValue);
-
-      @JsProperty
-      void setLongValue(String longValue);
-
-      @JsProperty
-      void setNanoTimeValue(String nanoTimeValue);
-
-      @JsProperty
-      void setStringValue(String stringValue);
+        @JsProperty
+        void setReference(Value.ToObjectReturnType.ReferenceFieldType reference);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ReferenceFieldType {
-      @JsOverlay
-      static Value.ToObjectReturnType0.ReferenceFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
+    public interface ToObjectReturnType0 {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface LiteralFieldType {
+            @JsOverlay
+            static Value.ToObjectReturnType0.LiteralFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
 
-      @JsProperty
-      String getColumnName();
+            @JsProperty
+            double getDoubleValue();
 
-      @JsProperty
-      void setColumnName(String columnName);
+            @JsProperty
+            String getLongValue();
+
+            @JsProperty
+            String getNanoTimeValue();
+
+            @JsProperty
+            String getStringValue();
+
+            @JsProperty
+            boolean isBoolValue();
+
+            @JsProperty
+            void setBoolValue(boolean boolValue);
+
+            @JsProperty
+            void setDoubleValue(double doubleValue);
+
+            @JsProperty
+            void setLongValue(String longValue);
+
+            @JsProperty
+            void setNanoTimeValue(String nanoTimeValue);
+
+            @JsProperty
+            void setStringValue(String stringValue);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ReferenceFieldType {
+            @JsOverlay
+            static Value.ToObjectReturnType0.ReferenceFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            String getColumnName();
+
+            @JsProperty
+            void setColumnName(String columnName);
+        }
+
+        @JsOverlay
+        static Value.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        Value.ToObjectReturnType0.LiteralFieldType getLiteral();
+
+        @JsProperty
+        Value.ToObjectReturnType0.ReferenceFieldType getReference();
+
+        @JsProperty
+        void setLiteral(Value.ToObjectReturnType0.LiteralFieldType literal);
+
+        @JsProperty
+        void setReference(Value.ToObjectReturnType0.ReferenceFieldType reference);
     }
 
-    @JsOverlay
-    static Value.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
+    public static native Value deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    Value.ToObjectReturnType0.LiteralFieldType getLiteral();
+    public static native Value deserializeBinaryFromReader(Value message, Object reader);
 
-    @JsProperty
-    Value.ToObjectReturnType0.ReferenceFieldType getReference();
+    public static native void serializeBinaryToWriter(Value message, Object writer);
 
-    @JsProperty
-    void setLiteral(Value.ToObjectReturnType0.LiteralFieldType literal);
+    public static native Value.ToObjectReturnType toObject(boolean includeInstance, Value msg);
 
-    @JsProperty
-    void setReference(Value.ToObjectReturnType0.ReferenceFieldType reference);
-  }
+    public native void clearLiteral();
 
-  public static native Value deserializeBinary(Uint8Array bytes);
+    public native void clearReference();
 
-  public static native Value deserializeBinaryFromReader(Value message, Object reader);
+    public native int getDataCase();
 
-  public static native void serializeBinaryToWriter(Value message, Object writer);
+    public native Literal getLiteral();
 
-  public static native Value.ToObjectReturnType toObject(boolean includeInstance, Value msg);
+    public native Reference getReference();
 
-  public native void clearLiteral();
+    public native boolean hasLiteral();
 
-  public native void clearReference();
+    public native boolean hasReference();
 
-  public native int getDataCase();
+    public native Uint8Array serializeBinary();
 
-  public native Literal getLiteral();
+    public native void setLiteral();
 
-  public native Reference getReference();
+    public native void setLiteral(Literal value);
 
-  public native boolean hasLiteral();
+    public native void setReference();
 
-  public native boolean hasReference();
+    public native void setReference(Reference value);
 
-  public native Uint8Array serializeBinary();
+    public native Value.ToObjectReturnType0 toObject();
 
-  public native void setLiteral();
-
-  public native void setLiteral(Literal value);
-
-  public native void setReference();
-
-  public native void setReference(Reference value);
-
-  public native Value.ToObjectReturnType0 toObject();
-
-  public native Value.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native Value.ToObjectReturnType0 toObject(boolean includeInstance);
 }

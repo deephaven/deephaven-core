@@ -68,7 +68,8 @@ public class JpyConfigExt implements LogOutputAppendable {
                 throw new IllegalStateException("PyLib has not been initialized");
             }
             if (!initialized) {
-                throw new IllegalStateException("PyLib has been initialized, but not by the current JpyConfigExt!");
+                throw new IllegalStateException(
+                    "PyLib has been initialized, but not by the current JpyConfigExt!");
             }
         }
         if (PyLib.isPythonRunning()) {
@@ -80,7 +81,8 @@ public class JpyConfigExt implements LogOutputAppendable {
         for (Flag flag : config.getFlags()) {
             bitset |= flag.bitset;
         }
-        PyLib.startPython(bitset, config.getExtraPaths().stream().map(Path::toString).toArray(String[]::new));
+        PyLib.startPython(bitset,
+            config.getExtraPaths().stream().map(Path::toString).toArray(String[]::new));
     }
 
     public void stopPython(Duration cleanupTimeout) {
@@ -89,7 +91,8 @@ public class JpyConfigExt implements LogOutputAppendable {
                 throw new IllegalStateException("PyLib has not been initialized");
             }
             if (!initialized) {
-                throw new IllegalStateException("PyLib has been initialized, but not by the current JpyConfigExt!");
+                throw new IllegalStateException(
+                    "PyLib has been initialized, but not by the current JpyConfigExt!");
             }
         }
         if (!PyLib.isPythonRunning()) {
@@ -106,8 +109,10 @@ public class JpyConfigExt implements LogOutputAppendable {
     public LogOutput append(LogOutput logOutput) {
         return logOutput
             .append("flags=").append(JpyConfigExt::format, config.getFlags())
-            .append(",programName=").append(JpyConfigExt::format, config.getProgramName().orElse(null))
-            .append(",pythonHome=").append(JpyConfigExt::format, config.getPythonHome().orElse(null))
+            .append(",programName=")
+            .append(JpyConfigExt::format, config.getProgramName().orElse(null))
+            .append(",pythonHome=")
+            .append(JpyConfigExt::format, config.getPythonHome().orElse(null))
             .append(",pythonLib=").append(JpyConfigExt::format, config.getPythonLib().orElse(null))
             .append(",jpyLib=").append(JpyConfigExt::format, config.getJpyLib().orElse(null))
             .append(",jdlLib=").append(JpyConfigExt::format, config.getJdlLib().orElse(null))

@@ -26,15 +26,19 @@ public class XYDataSeriesArray extends AbstractXYDataSeries {
      * @param x x-values
      * @param y y-values
      */
-    public XYDataSeriesArray(final AxesImpl axes, final int id, final Comparable name, final IndexableNumericData x, final IndexableNumericData y) {
+    public XYDataSeriesArray(final AxesImpl axes, final int id, final Comparable name,
+        final IndexableNumericData x, final IndexableNumericData y) {
         this(axes, id, name, x, y, null);
     }
 
-    public XYDataSeriesArray(final AxesImpl axes, final int id, final Comparable name, final IndexableNumericData x, final IndexableNumericData y, final AbstractXYDataSeries series) {
+    public XYDataSeriesArray(final AxesImpl axes, final int id, final Comparable name,
+        final IndexableNumericData x, final IndexableNumericData y,
+        final AbstractXYDataSeries series) {
         super(axes, id, name, series);
-        ArgumentValidations.assertNotNull(x , "x", getPlotInfo());
+        ArgumentValidations.assertNotNull(x, "x", getPlotInfo());
         ArgumentValidations.assertNotNull(y, "y", getPlotInfo());
-        ArgumentValidations.assertSameSize(new IndexableNumericData[]{x,y}, new String[]{"x","y"}, getPlotInfo());
+        ArgumentValidations.assertSameSize(new IndexableNumericData[] {x, y},
+            new String[] {"x", "y"}, getPlotInfo());
 
         this.x = x;
         this.y = y;
@@ -58,17 +62,23 @@ public class XYDataSeriesArray extends AbstractXYDataSeries {
     }
 
 
-    //////////////////////////  internal  //////////////////////////
+    ////////////////////////// internal //////////////////////////
 
 
     @Override
-    public int size() { return x.size(); }
+    public int size() {
+        return x.size();
+    }
 
     @Override
-    public double getX(int i){ return x.get(i); }
+    public double getX(int i) {
+        return x.get(i);
+    }
 
     @Override
-    public double getY(int i){ return y.get(i); }
+    public double getY(int i) {
+        return y.get(i);
+    }
 
     public IndexableNumericData getX() {
         return x;

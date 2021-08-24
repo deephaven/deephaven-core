@@ -15,11 +15,12 @@ import static io.deephaven.db.plot.util.PlotUtils.intToColor;
 /**
  * Base class for {@link DataSeriesInternal}.
  */
-public abstract class AbstractDataSeries extends AbstractSeriesInternal implements DataSeriesInternal, Serializable {
+public abstract class AbstractDataSeries extends AbstractSeriesInternal
+    implements DataSeriesInternal, Serializable {
 
     private static final long serialVersionUID = 8733895549099825055L;
 
-    //want different defaults for different PlotStyles
+    // want different defaults for different PlotStyles
     private Boolean linesVisible = null;
     private Boolean shapesVisible = null;
 
@@ -43,7 +44,7 @@ public abstract class AbstractDataSeries extends AbstractSeriesInternal implemen
     public AbstractDataSeries(AxesImpl axes, int id, Comparable name, AbstractDataSeries series) {
         super(axes, id, name);
 
-        if(series != null) {
+        if (series != null) {
             this.pointLabelFormat = series.pointLabelFormat;
             this.linesVisible = series.linesVisible;
             this.shapesVisible = series.shapesVisible;
@@ -78,7 +79,7 @@ public abstract class AbstractDataSeries extends AbstractSeriesInternal implemen
     }
 
 
-    //////////////////////////  internal  //////////////////////////
+    ////////////////////////// internal //////////////////////////
 
 
     @Override
@@ -117,17 +118,24 @@ public abstract class AbstractDataSeries extends AbstractSeriesInternal implemen
     }
 
     @Override
-    public String getPointLabelFormat() { return pointLabelFormat; }
+    public String getPointLabelFormat() {
+        return pointLabelFormat;
+    }
 
     @Override
-    public String getXToolTipPattern() { return xToolTipPattern; }
+    public String getXToolTipPattern() {
+        return xToolTipPattern;
+    }
 
     @Override
-    public String getYToolTipPattern() { return yToolTipPattern; }
+    public String getYToolTipPattern() {
+        return yToolTipPattern;
+    }
 
-    // below is done as setters so that when the associated methods are implemented, they return the most precise type for the builder
+    // below is done as setters so that when the associated methods are implemented, they return the
+    // most precise type for the builder
 
-    //////////////////////////  visibility  //////////////////////////
+    ////////////////////////// visibility //////////////////////////
 
 
     /**
@@ -135,7 +143,9 @@ public abstract class AbstractDataSeries extends AbstractSeriesInternal implemen
      *
      * @param visible whether lines will be visible
      */
-    protected void setLinesVisible(final Boolean visible) { this.linesVisible = visible; }
+    protected void setLinesVisible(final Boolean visible) {
+        this.linesVisible = visible;
+    }
 
     /**
      * Sets the points visibility for this dataset.
@@ -151,16 +161,18 @@ public abstract class AbstractDataSeries extends AbstractSeriesInternal implemen
      *
      * @param visible whether the bar-gradient will be visible
      */
-    protected void setGradientVisible(boolean visible) { this.gradientVisible = visible; }
+    protected void setGradientVisible(boolean visible) {
+        this.gradientVisible = visible;
+    }
 
 
-    //////////////////////////  point sizes  //////////////////////////
+    ////////////////////////// point sizes //////////////////////////
 
 
-    //////////////////////////  point colors  //////////////////////////
+    ////////////////////////// point colors //////////////////////////
 
 
-    //////////////////////////  line color  //////////////////////////
+    ////////////////////////// line color //////////////////////////
 
 
     /**
@@ -168,48 +180,60 @@ public abstract class AbstractDataSeries extends AbstractSeriesInternal implemen
      *
      * @param color color
      */
-    protected void setLineColor(Paint color) { this.lineColor = color; }
+    protected void setLineColor(Paint color) {
+        this.lineColor = color;
+    }
 
     /**
      * Sets the line color for this dataset.
      *
      * @param color color
      */
-    protected void setLineColor(int color) { this.lineColor = intToColor(chart(), color); }
+    protected void setLineColor(int color) {
+        this.lineColor = intToColor(chart(), color);
+    }
 
     /**
      * Sets the line color for this dataset.
      *
      * @param color color
      */
-    protected void setLineColor(String color) { this.lineColor = Color.color(color); }
+    protected void setLineColor(String color) {
+        this.lineColor = Color.color(color);
+    }
 
 
-    //////////////////////////  error bar color  //////////////////////////
-
-    /**
-     * Sets the error bar color for this dataset.
-     *
-     * @param color color
-     */
-    protected void setErrorBarColor(final Paint color) { this.errorBarColor = color; }
+    ////////////////////////// error bar color //////////////////////////
 
     /**
      * Sets the error bar color for this dataset.
      *
      * @param color color
      */
-    protected void setErrorBarColor(final int color) { setErrorBarColor(intToColor(chart(), color)); }
+    protected void setErrorBarColor(final Paint color) {
+        this.errorBarColor = color;
+    }
 
     /**
      * Sets the error bar color for this dataset.
      *
      * @param color color
      */
-    protected void setErrorBarColor(final String color) { setErrorBarColor(Color.color(color)); }
+    protected void setErrorBarColor(final int color) {
+        setErrorBarColor(intToColor(chart(), color));
+    }
+
+    /**
+     * Sets the error bar color for this dataset.
+     *
+     * @param color color
+     */
+    protected void setErrorBarColor(final String color) {
+        setErrorBarColor(Color.color(color));
+    }
 
 
-    //////////////////////////  line style  //////////////////////////
+    ////////////////////////// line style //////////////////////////
 
 
     /**
@@ -217,10 +241,12 @@ public abstract class AbstractDataSeries extends AbstractSeriesInternal implemen
      *
      * @param style style
      */
-    protected void setLineStyle(LineStyle style) { this.lineStyle = style; }
+    protected void setLineStyle(LineStyle style) {
+        this.lineStyle = style;
+    }
 
 
-    //////////////////////////  tool tip style  //////////////////////////
+    ////////////////////////// tool tip style //////////////////////////
 
 
     /**
@@ -228,20 +254,26 @@ public abstract class AbstractDataSeries extends AbstractSeriesInternal implemen
      *
      * @param format format
      */
-    protected void setPointLabelFormat(String format) { this.pointLabelFormat = format; }
+    protected void setPointLabelFormat(String format) {
+        this.pointLabelFormat = format;
+    }
 
     /**
      * Sets the x-value tooltip format for this dataset.
      *
      * @param format format
      */
-    protected void setXToolTipPattern(String format) { this.xToolTipPattern = format; }
+    protected void setXToolTipPattern(String format) {
+        this.xToolTipPattern = format;
+    }
 
     /**
      * Sets the y-value tooltip format for this dataset.
      *
      * @param format format
      */
-    protected void setYToolTipPattern(String format) { this.yToolTipPattern = format; }
+    protected void setYToolTipPattern(String format) {
+        this.yToolTipPattern = format;
+    }
 
 }

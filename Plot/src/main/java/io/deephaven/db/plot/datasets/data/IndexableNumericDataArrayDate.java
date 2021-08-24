@@ -12,8 +12,8 @@ import java.util.Date;
 /**
  * {@link IndexableNumericData} dataset comprised of an array of {@link Date}s.
  *
- * Date values are accessed as nanoseconds from epoch.
- * Data conversion to double means these values are accurate to about 250 nanoseconds.
+ * Date values are accessed as nanoseconds from epoch. Data conversion to double means these values
+ * are accurate to about 250 nanoseconds.
  */
 public class IndexableNumericDataArrayDate extends IndexableNumericData {
     private static final long serialVersionUID = 7132588196200176807L;

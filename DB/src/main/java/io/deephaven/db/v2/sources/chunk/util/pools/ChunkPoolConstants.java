@@ -10,10 +10,12 @@ import io.deephaven.util.annotations.VisibleForTesting;
 final class ChunkPoolConstants {
 
     static final int SMALLEST_POOLED_CHUNK_LOG2_CAPACITY = 5;
-    // NB: It's probably best for this to allow Barrage delta chunks to be poolable. See BarrageMessageProducer.DELTA_CHUNK_SIZE.
+    // NB: It's probably best for this to allow Barrage delta chunks to be poolable. See
+    // BarrageMessageProducer.DELTA_CHUNK_SIZE.
     @VisibleForTesting
     static final int LARGEST_POOLED_CHUNK_LOG2_CAPACITY = 16;
-    static final int NUM_POOLED_CHUNK_CAPACITIES = LARGEST_POOLED_CHUNK_LOG2_CAPACITY - SMALLEST_POOLED_CHUNK_LOG2_CAPACITY + 1;
+    static final int NUM_POOLED_CHUNK_CAPACITIES =
+        LARGEST_POOLED_CHUNK_LOG2_CAPACITY - SMALLEST_POOLED_CHUNK_LOG2_CAPACITY + 1;
 
     static int checkCapacityBounds(final int chunkCapacity) {
         return Require.geqZero(chunkCapacity, "chunkCapacity");
@@ -29,7 +31,8 @@ final class ChunkPoolConstants {
         if (minimumChunkCapacity == 0) {
             return 0;
         }
-        final int roundedChunkLog2Capacity = Math.max(MathUtil.ceilLog2(minimumChunkCapacity), SMALLEST_POOLED_CHUNK_LOG2_CAPACITY);
+        final int roundedChunkLog2Capacity =
+            Math.max(MathUtil.ceilLog2(minimumChunkCapacity), SMALLEST_POOLED_CHUNK_LOG2_CAPACITY);
         if (roundedChunkLog2Capacity > LARGEST_POOLED_CHUNK_LOG2_CAPACITY) {
             return -1;
         }
@@ -47,7 +50,8 @@ final class ChunkPoolConstants {
             return -1;
         }
         final int chunkLog2Capacity = MathUtil.ceilLog2(actualChunkCapacity);
-        if (chunkLog2Capacity < SMALLEST_POOLED_CHUNK_LOG2_CAPACITY || chunkLog2Capacity > LARGEST_POOLED_CHUNK_LOG2_CAPACITY) {
+        if (chunkLog2Capacity < SMALLEST_POOLED_CHUNK_LOG2_CAPACITY
+            || chunkLog2Capacity > LARGEST_POOLED_CHUNK_LOG2_CAPACITY) {
             return -1;
         }
         return getChunkLog2CapacityOffset(chunkLog2Capacity);
@@ -59,6 +63,5 @@ final class ChunkPoolConstants {
 
     static final int SUB_POOL_SEGMENT_CAPACITY = 10;
 
-    private ChunkPoolConstants() {
-    }
+    private ChunkPoolConstants() {}
 }

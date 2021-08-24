@@ -9,18 +9,18 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.io.deephaven.proto.console_pb.CloseDocumentResponse",
     namespace = JsPackage.GLOBAL)
 public class CloseDocumentResponse {
-  public static native CloseDocumentResponse deserializeBinary(Uint8Array bytes);
+    public static native CloseDocumentResponse deserializeBinary(Uint8Array bytes);
 
-  public static native CloseDocumentResponse deserializeBinaryFromReader(
-      CloseDocumentResponse message, Object reader);
+    public static native CloseDocumentResponse deserializeBinaryFromReader(
+        CloseDocumentResponse message, Object reader);
 
-  public static native void serializeBinaryToWriter(CloseDocumentResponse message, Object writer);
+    public static native void serializeBinaryToWriter(CloseDocumentResponse message, Object writer);
 
-  public static native Object toObject(boolean includeInstance, CloseDocumentResponse msg);
+    public static native Object toObject(boolean includeInstance, CloseDocumentResponse msg);
 
-  public native Uint8Array serializeBinary();
+    public native Uint8Array serializeBinary();
 
-  public native Object toObject();
+    public native Object toObject();
 
-  public native Object toObject(boolean includeInstance);
+    public native Object toObject(boolean includeInstance);
 }

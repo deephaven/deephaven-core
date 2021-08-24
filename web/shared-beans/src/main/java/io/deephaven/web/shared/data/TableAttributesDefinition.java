@@ -7,16 +7,18 @@ import java.util.Map;
 
 public class TableAttributesDefinition implements Serializable {
     public static final String INPUT_TABLE_ATTRIBUTE = "InputTable",
-            TOTALS_TABLE_ATTRIBUTE = "TotalsTable",
-            TABLE_DESCRIPTION_ATTRIBUTE = "TableDescription",
-            COLUMN_DESCRIPTIONS_ATTRIBUTE = "ColumnDescriptions",
-            HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE = "HierarchicalSourceTable",
-            HIERARCHICAL_SOURCE_INFO_ATTRIBUTE = "HierarchicalSourceTableInfo",
-            PLUGIN_NAME = "PluginName";
+        TOTALS_TABLE_ATTRIBUTE = "TotalsTable",
+        TABLE_DESCRIPTION_ATTRIBUTE = "TableDescription",
+        COLUMN_DESCRIPTIONS_ATTRIBUTE = "ColumnDescriptions",
+        HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE = "HierarchicalSourceTable",
+        HIERARCHICAL_SOURCE_INFO_ATTRIBUTE = "HierarchicalSourceTableInfo",
+        PLUGIN_NAME = "PluginName";
 
     // special cased attributes that have a complex type yet are always sent
     private RollupDefinition rollupDefinition;// rollup subtype of "HierarchicalSourceTableInfo"
-    private String treeHierarchicalColumnName;// technically a part of "HierarchicalSourceTableInfo", won't be copied separately
+    private String treeHierarchicalColumnName;// technically a part of
+                                              // "HierarchicalSourceTableInfo", won't be copied
+                                              // separately
     private String[][] columnDescriptions;// "ColumnDescriptions"
 
     // enumerate the plain keys/values

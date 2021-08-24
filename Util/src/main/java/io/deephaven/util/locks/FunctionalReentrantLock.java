@@ -7,8 +7,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class FunctionalReentrantLock extends ReentrantLock implements FunctionalLock {
 
-    public FunctionalReentrantLock() {
-    }
+    public FunctionalReentrantLock() {}
 
     public FunctionalReentrantLock(final boolean fair) {
         super(fair);

@@ -9,60 +9,60 @@ import org.jetbrains.annotations.NotNull;
 
 final class MultipleOutputStreams extends OutputStream {
 
-  public static OutputStream of(List<OutputStream> streams) {
-    if (streams.size() == 1) {
-      return streams.get(0);
+    public static OutputStream of(List<OutputStream> streams) {
+        if (streams.size() == 1) {
+            return streams.get(0);
+        }
+        return new MultipleOutputStreams(streams);
     }
-    return new MultipleOutputStreams(streams);
-  }
 
-  private final List<OutputStream> outputs;
+    private final List<OutputStream> outputs;
 
-  MultipleOutputStreams(List<OutputStream> outputs) {
-    this.outputs = Objects.requireNonNull(outputs);
-  }
-
-  @Override
-  public synchronized void write(int b) throws IOException {
-    for (OutputStream output : outputs) {
-      output.write(b);
+    MultipleOutputStreams(List<OutputStream> outputs) {
+        this.outputs = Objects.requireNonNull(outputs);
     }
-  }
 
-  @Override
-  public synchronized void write(@NotNull byte[] b) throws IOException {
-    for (OutputStream output : outputs) {
-      output.write(b);
+    @Override
+    public synchronized void write(int b) throws IOException {
+        for (OutputStream output : outputs) {
+            output.write(b);
+        }
     }
-  }
 
-  @Override
-  public synchronized void write(@NotNull byte[] b, int off, int len) throws IOException {
-    for (OutputStream output : outputs) {
-      output.write(b, off, len);
+    @Override
+    public synchronized void write(@NotNull byte[] b) throws IOException {
+        for (OutputStream output : outputs) {
+            output.write(b);
+        }
     }
-  }
 
-  @Override
-  public synchronized void flush() throws IOException {
-    for (OutputStream output : outputs) {
-      output.flush();
+    @Override
+    public synchronized void write(@NotNull byte[] b, int off, int len) throws IOException {
+        for (OutputStream output : outputs) {
+            output.write(b, off, len);
+        }
     }
-  }
 
-  @Override
-  public synchronized void close() throws IOException {
-    close(outputs.iterator());
-  }
-
-  private static void close(Iterator<OutputStream> it) throws IOException {
-    if (it.hasNext()) {
-      OutputStream next = it.next();
-      try {
-        next.close();
-      } finally {
-        close(it);
-      }
+    @Override
+    public synchronized void flush() throws IOException {
+        for (OutputStream output : outputs) {
+            output.flush();
+        }
     }
-  }
+
+    @Override
+    public synchronized void close() throws IOException {
+        close(outputs.iterator());
+    }
+
+    private static void close(Iterator<OutputStream> it) throws IOException {
+        if (it.hasNext()) {
+            OutputStream next = it.next();
+            try {
+                next.close();
+            } finally {
+                close(it);
+            }
+        }
+    }
 }

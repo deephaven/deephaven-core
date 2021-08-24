@@ -7,8 +7,8 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
- * Uses {@link ServiceLoader#load(Class)} to find the best {@link PropertyInputStreamLoader}
- * (the loader with the smallest priority).
+ * Uses {@link ServiceLoader#load(Class)} to find the best {@link PropertyInputStreamLoader} (the
+ * loader with the smallest priority).
  */
 public class PropertyInputStreamLoaderFactory {
 

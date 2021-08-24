@@ -13,7 +13,8 @@ public abstract class AbstractColumnLocation implements ColumnLocation {
     private final TableLocation tableLocation;
     private final String name;
 
-    protected AbstractColumnLocation(@NotNull final TableLocation tableLocation, @NotNull final String name) {
+    protected AbstractColumnLocation(@NotNull final TableLocation tableLocation,
+        @NotNull final String name) {
         this.tableLocation = Require.neqNull(tableLocation, "tableLocation");
         this.name = Require.neqNull(name, "name");
     }
@@ -23,9 +24,9 @@ public abstract class AbstractColumnLocation implements ColumnLocation {
         return toStringHelper();
     }
 
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // Partial ColumnLocation implementation
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
     @Override
     public @NotNull final TableLocation getTableLocation() {

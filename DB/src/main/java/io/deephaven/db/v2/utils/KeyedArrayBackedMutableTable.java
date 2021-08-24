@@ -27,11 +27,12 @@ import java.util.stream.Stream;
 public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
     static final String DEFAULT_DESCRIPTION = "In-Memory Input Table";
 
-    private final String [] keyColumnNames;
+    private final String[] keyColumnNames;
     private final Set<String> keyColumnSet;
     protected final ObjectArraySource<?>[] arrayValueSources;
 
-    private final TObjectLongMap<Object> keyToRowMap = new TObjectLongHashMap<>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, Long.MIN_VALUE);
+    private final TObjectLongMap<Object> keyToRowMap = new TObjectLongHashMap<>(
+        Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, Long.MIN_VALUE);
 
     /**
      * Create an empty KeyedArrayBackedMutableTable.
@@ -41,8 +42,10 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
      *
      * @return an empty KeyedArrayBackedMutableTable with the given definition and key columns
      */
-    public static KeyedArrayBackedMutableTable make(@NotNull TableDefinition definition, final String ... keyColumnNames) {
-        return make(new QueryTable(definition, Index.FACTORY.getEmptyIndex(), NullValueColumnSource.createColumnSourceMap(definition)), keyColumnNames);
+    public static KeyedArrayBackedMutableTable make(@NotNull TableDefinition definition,
+        final String... keyColumnNames) {
+        return make(new QueryTable(definition, Index.FACTORY.getEmptyIndex(),
+            NullValueColumnSource.createColumnSourceMap(definition)), keyColumnNames);
     }
 
     /**
@@ -54,30 +57,35 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
      *
      * @return an empty KeyedArrayBackedMutableTable with the given definition and key columns
      */
-    public static KeyedArrayBackedMutableTable make(@NotNull TableDefinition definition, final Map<String, Object[]> enumValues, final String ... keyColumnNames) {
-        return make(new QueryTable(definition, Index.FACTORY.getEmptyIndex(), NullValueColumnSource.createColumnSourceMap(definition)), enumValues, keyColumnNames);
+    public static KeyedArrayBackedMutableTable make(@NotNull TableDefinition definition,
+        final Map<String, Object[]> enumValues, final String... keyColumnNames) {
+        return make(
+            new QueryTable(definition, Index.FACTORY.getEmptyIndex(),
+                NullValueColumnSource.createColumnSourceMap(definition)),
+            enumValues, keyColumnNames);
     }
 
     /**
      * Create an empty KeyedArrayBackedMutableTable.
      *
-     * The initialTable is processed in order, so if there are duplicate keys only the last row is reflected in the
-     * output.
+     * The initialTable is processed in order, so if there are duplicate keys only the last row is
+     * reflected in the output.
      *
      * @param initialTable the initial values to copy into the KeyedArrayBackedMutableTable
      * @param keyColumnNames the name of the key columns
      *
      * @return an empty KeyedArrayBackedMutableTable with the given definition and key columns
      */
-    public static KeyedArrayBackedMutableTable make(final Table initialTable, final String ... keyColumnNames) {
+    public static KeyedArrayBackedMutableTable make(final Table initialTable,
+        final String... keyColumnNames) {
         return make(initialTable, Collections.emptyMap(), keyColumnNames);
     }
 
     /**
      * Create an empty KeyedArrayBackedMutableTable.
      *
-     * The initialTable is processed in order, so if there are duplicate keys only the last row is reflected in the
-     * output.
+     * The initialTable is processed in order, so if there are duplicate keys only the last row is
+     * reflected in the output.
      *
      * @param initialTable the initial values to copy into the KeyedArrayBackedMutableTable
      * @param enumValues a map of column names to enumeration values
@@ -85,26 +93,35 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
      *
      * @return an empty KeyedArrayBackedMutableTable with the given definition and key columns
      */
-    public static KeyedArrayBackedMutableTable make(final Table initialTable, final Map<String, Object[]> enumValues, final String ... keyColumnNames) {
-        final KeyedArrayBackedMutableTable result = new KeyedArrayBackedMutableTable(initialTable.getDefinition(), keyColumnNames, enumValues, new ProcessPendingUpdater());
+    public static KeyedArrayBackedMutableTable make(final Table initialTable,
+        final Map<String, Object[]> enumValues, final String... keyColumnNames) {
+        final KeyedArrayBackedMutableTable result = new KeyedArrayBackedMutableTable(
+            initialTable.getDefinition(), keyColumnNames, enumValues, new ProcessPendingUpdater());
         processInitial(initialTable, result);
         result.startTrackingPrev();
         return result;
     }
 
-    private KeyedArrayBackedMutableTable(@NotNull TableDefinition definition, final String [] keyColumnNames, final Map<String, Object[]> enumValues, final ProcessPendingUpdater processPendingUpdater) {
-        super(Index.FACTORY.getEmptyIndex(), makeColumnSourceMap(definition), enumValues, processPendingUpdater);
+    private KeyedArrayBackedMutableTable(@NotNull TableDefinition definition,
+        final String[] keyColumnNames, final Map<String, Object[]> enumValues,
+        final ProcessPendingUpdater processPendingUpdater) {
+        super(Index.FACTORY.getEmptyIndex(), makeColumnSourceMap(definition), enumValues,
+            processPendingUpdater);
         final List<String> missingKeyColumns = new ArrayList<>(Arrays.asList(keyColumnNames));
         missingKeyColumns.removeAll(definition.getColumnNames());
         if (!missingKeyColumns.isEmpty()) {
-            throw new ArgumentException("Missing key columns in definition: " + missingKeyColumns + ", available columns: " + definition.getColumnNames());
+            throw new ArgumentException("Missing key columns in definition: " + missingKeyColumns
+                + ", available columns: " + definition.getColumnNames());
         }
 
         this.keyColumnNames = keyColumnNames;
         this.keyColumnSet = new HashSet<>(Arrays.asList(keyColumnNames));
         inputTableDefinition.setKeys(keyColumnNames);
-        inputTableDefinition.setValues(definition.getColumnNames().stream().filter(n -> !keyColumnSet.contains(n)).toArray(String[]::new));
-        final Stream<ObjectArraySource<?>> objectArraySourceStream = Arrays.stream(inputTableDefinition.getValues()).map(this::getColumnSource).filter(cs -> cs instanceof ObjectArraySource).map(cs -> (ObjectArraySource<?>) cs);
+        inputTableDefinition.setValues(definition.getColumnNames().stream()
+            .filter(n -> !keyColumnSet.contains(n)).toArray(String[]::new));
+        final Stream<ObjectArraySource<?>> objectArraySourceStream =
+            Arrays.stream(inputTableDefinition.getValues()).map(this::getColumnSource)
+                .filter(cs -> cs instanceof ObjectArraySource).map(cs -> (ObjectArraySource<?>) cs);
         arrayValueSources = objectArraySourceStream.toArray(ObjectArraySource[]::new);
     }
 
@@ -113,7 +130,8 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
     }
 
     @Override
-    protected void processPendingTable(Table table, boolean allowEdits, IndexChangeRecorder indexChangeRecorder, Consumer<String> errorNotifier) {
+    protected void processPendingTable(Table table, boolean allowEdits,
+        IndexChangeRecorder indexChangeRecorder, Consumer<String> errorNotifier) {
         final ChunkSource<Attributes.Values> keySource = makeKeySource(table);
         final int chunkCapacity = table.intSize();
 
@@ -124,10 +142,15 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
         long rowToInsert = nextRow;
         final StringBuilder errorBuilder = new StringBuilder();
 
-        try (final WritableLongChunk<Attributes.KeyIndices> destinations = WritableLongChunk.makeWritableChunk(chunkCapacity)) {
-            try (final ChunkSource.GetContext getContext = keySource.makeGetContext(chunkCapacity, sharedContext);
-                 final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(keySource.getChunkType(), chunkCapacity)) {
-                final Chunk<? extends Attributes.Values> keys = keySource.getChunk(getContext, addIndex);
+        try (final WritableLongChunk<Attributes.KeyIndices> destinations =
+            WritableLongChunk.makeWritableChunk(chunkCapacity)) {
+            try (
+                final ChunkSource.GetContext getContext =
+                    keySource.makeGetContext(chunkCapacity, sharedContext);
+                final ChunkBoxer.BoxerKernel boxer =
+                    ChunkBoxer.getBoxer(keySource.getChunkType(), chunkCapacity)) {
+                final Chunk<? extends Attributes.Values> keys =
+                    keySource.getChunk(getContext, addIndex);
                 final ObjectChunk<?, ? extends Attributes.Values> boxed = boxer.box(keys);
                 for (int ii = 0; ii < boxed.size(); ++ii) {
                     final Object key = boxed.get(ii);
@@ -167,12 +190,17 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
             sharedContext.reset();
 
             getColumnSourceMap().forEach((name, cs) -> {
-                final ArrayBackedColumnSource<?> arrayBackedColumnSource = (ArrayBackedColumnSource<?>) cs;
+                final ArrayBackedColumnSource<?> arrayBackedColumnSource =
+                    (ArrayBackedColumnSource<?>) cs;
                 arrayBackedColumnSource.ensureCapacity(nextRow);
                 final ColumnSource<?> sourceColumnSource = table.getColumnSource(name);
-                try (final WritableChunkSink.FillFromContext ffc = arrayBackedColumnSource.makeFillFromContext(chunkCapacity);
-                     final ChunkSource.GetContext getContext = sourceColumnSource.makeGetContext(chunkCapacity, sharedContext)) {
-                    final Chunk<? extends Attributes.Values> valuesChunk = sourceColumnSource.getChunk(getContext, addIndex);
+                try (
+                    final WritableChunkSink.FillFromContext ffc =
+                        arrayBackedColumnSource.makeFillFromContext(chunkCapacity);
+                    final ChunkSource.GetContext getContext =
+                        sourceColumnSource.makeGetContext(chunkCapacity, sharedContext)) {
+                    final Chunk<? extends Attributes.Values> valuesChunk =
+                        sourceColumnSource.getChunk(getContext, addIndex);
                     arrayBackedColumnSource.fillFromChunkUnordered(ffc, valuesChunk, destinations);
                 }
             });
@@ -186,16 +214,22 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
 
         final SharedContext sharedContext = SharedContext.makeSharedContext();
 
-        try (final WritableLongChunk<Attributes.KeyIndices> destinations = WritableLongChunk.makeWritableChunk(chunkCapacity)) {
-            try (final ChunkSource.GetContext getContext = keySource.makeGetContext(chunkCapacity, sharedContext);
-                 final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(keySource.getChunkType(), chunkCapacity)) {
-                final Chunk<? extends Attributes.Values> keys = keySource.getChunk(getContext, table.getIndex());
+        try (final WritableLongChunk<Attributes.KeyIndices> destinations =
+            WritableLongChunk.makeWritableChunk(chunkCapacity)) {
+            try (
+                final ChunkSource.GetContext getContext =
+                    keySource.makeGetContext(chunkCapacity, sharedContext);
+                final ChunkBoxer.BoxerKernel boxer =
+                    ChunkBoxer.getBoxer(keySource.getChunkType(), chunkCapacity)) {
+                final Chunk<? extends Attributes.Values> keys =
+                    keySource.getChunk(getContext, table.getIndex());
                 final ObjectChunk<?, ? extends Attributes.Values> boxed = boxer.box(keys);
                 destinations.setSize(0);
                 for (int ii = 0; ii < boxed.size(); ++ii) {
                     final Object key = boxed.get(ii);
                     long rowNumber = keyToRowMap.get(key);
-                    if (rowNumber != keyToRowMap.getNoEntryValue() && !isDeletedRowNumber(rowNumber)) {
+                    if (rowNumber != keyToRowMap.getNoEntryValue()
+                        && !isDeletedRowNumber(rowNumber)) {
                         indexChangeRecorder.removeIndex(rowNumber);
                         destinations.add(rowNumber);
                         keyToRowMap.put(key, rowNumberToDeletedRowNumber(rowNumber));
@@ -205,8 +239,10 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
 
             // null out the values, so that we do not hold onto garbage forever, we keep the keys
             for (ObjectArraySource<?> objectArraySource : arrayValueSources) {
-                try (final WritableChunkSink.FillFromContext ffc = objectArraySource.makeFillFromContext(chunkCapacity)) {
-                    final WritableObjectChunk<?, Attributes.Values> nullChunk = WritableObjectChunk.makeWritableChunk(chunkCapacity);
+                try (final WritableChunkSink.FillFromContext ffc =
+                    objectArraySource.makeFillFromContext(chunkCapacity)) {
+                    final WritableObjectChunk<?, Attributes.Values> nullChunk =
+                        WritableObjectChunk.makeWritableChunk(chunkCapacity);
                     nullChunk.fillWithNullValue(0, chunkCapacity);
                     objectArraySource.fillFromChunkUnordered(ffc, nullChunk, destinations);
                 }
@@ -215,8 +251,9 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
     }
 
     private ChunkSource<Attributes.Values> makeKeySource(Table table) {
-        //noinspection unchecked
-        return TupleSourceFactory.makeTupleSource(Arrays.stream(keyColumnNames).map(table::getColumnSource).toArray(ColumnSource[]::new));
+        // noinspection unchecked
+        return TupleSourceFactory.makeTupleSource(
+            Arrays.stream(keyColumnNames).map(table::getColumnSource).toArray(ColumnSource[]::new));
     }
 
     @Override
@@ -237,7 +274,8 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
                 error.append("Key Column \"").append(keyColumn).append("\" is not compatible.\n");
             }
         }
-        final List<String> extraKeys = keyDefinition.getColumnNames().stream().filter(kd -> !keyColumnSet.contains(kd)).collect(Collectors.toList());
+        final List<String> extraKeys = keyDefinition.getColumnNames().stream()
+            .filter(kd -> !keyColumnSet.contains(kd)).collect(Collectors.toList());
         if (!extraKeys.isEmpty()) {
             error.append("Unknown key columns: ").append(extraKeys);
         }
@@ -258,7 +296,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
     }
 
     /**
-     * Is the rowNumber a deleted row?  Should not be called with noEntryValue.
+     * Is the rowNumber a deleted row? Should not be called with noEntryValue.
      *
      * @param rowNumber the row number to check for deletion
      *

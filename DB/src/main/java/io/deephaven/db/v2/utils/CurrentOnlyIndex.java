@@ -21,7 +21,8 @@ import java.util.PrimitiveIterator;
 import java.util.Set;
 import java.util.function.LongConsumer;
 
-public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl implements ImplementedByTreeIndexImpl, Index, Externalizable {
+public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl
+    implements ImplementedByTreeIndexImpl, Index, Externalizable {
 
     private static final long serialVersionUID = 1L;
 
@@ -63,7 +64,8 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl implements Implemen
     }
 
     @Override
-    public void insert(final LongChunk<OrderedKeyIndices> keys, final int offset, final int length) {
+    public void insert(final LongChunk<OrderedKeyIndices> keys, final int offset,
+        final int length) {
         Assert.leq(offset + length, "offset + length", keys.size(), "keys.size()");
         assign(impl.ixInsert(keys, offset, length));
     }
@@ -84,7 +86,8 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl implements Implemen
     }
 
     @Override
-    public void remove(final LongChunk<OrderedKeyIndices> keys, final int offset, final int length) {
+    public void remove(final LongChunk<OrderedKeyIndices> keys, final int offset,
+        final int length) {
         Assert.leq(offset + length, "offset + length", keys.size(), "keys.size()");
         assign(impl.ixRemove(keys, offset, length));
     }
@@ -131,12 +134,14 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl implements Implemen
     }
 
     @Override
-    public OrderedKeys getOrderedKeysByPosition(final long startPositionInclusive, final long length) {
+    public OrderedKeys getOrderedKeysByPosition(final long startPositionInclusive,
+        final long length) {
         return impl.ixGetOrderedKeysByPosition(startPositionInclusive, length);
     }
 
     @Override
-    public OrderedKeys getOrderedKeysByKeyRange(final long startKeyInclusive, final long endKeyInclusive) {
+    public OrderedKeys getOrderedKeysByKeyRange(final long startKeyInclusive,
+        final long endKeyInclusive) {
         return impl.ixGetOrderedKeysByKeyRange(startKeyInclusive, endKeyInclusive);
     }
 
@@ -229,11 +234,11 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl implements Implemen
     }
 
     @Override
-    public void copyImmutableGroupings(TupleSource source, TupleSource dest) {
-    }
+    public void copyImmutableGroupings(TupleSource source, TupleSource dest) {}
 
     @Override
-    public Map<Object, Index> getGroupingForKeySet(final Set<Object> keys, final TupleSource tupleSource) {
+    public Map<Object, Index> getGroupingForKeySet(final Set<Object> keys,
+        final TupleSource tupleSource) {
         throw new UnsupportedOperationException();
     }
 
@@ -277,7 +282,8 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl implements Implemen
         return impl.ixGet(pos);
     }
 
-    @Override public void getKeysForPositions(PrimitiveIterator.OfLong positions, LongConsumer outputKeys) {
+    @Override
+    public void getKeysForPositions(PrimitiveIterator.OfLong positions, LongConsumer outputKeys) {
         impl.ixGetKeysForPositions(positions, outputKeys);
     }
 
@@ -395,7 +401,8 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl implements Implemen
     }
 
     @Override
-    public void fillKeyIndicesChunk(final WritableLongChunk<? extends Attributes.KeyIndices> chunkToFill) {
+    public void fillKeyIndicesChunk(
+        final WritableLongChunk<? extends Attributes.KeyIndices> chunkToFill) {
         IndexUtilities.fillKeyIndicesChunk(this, chunkToFill);
     }
 

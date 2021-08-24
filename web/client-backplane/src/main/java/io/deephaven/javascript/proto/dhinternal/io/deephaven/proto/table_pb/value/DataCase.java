@@ -8,7 +8,7 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.io.deephaven.proto.table_pb.Value.DataCase",
     namespace = JsPackage.GLOBAL)
 public class DataCase {
-  public static int DATA_NOT_SET,
-  LITERAL,
-  REFERENCE;
+    public static int DATA_NOT_SET,
+        LITERAL,
+        REFERENCE;
 }

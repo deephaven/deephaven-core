@@ -26,8 +26,8 @@ import java.util.function.Function;
 public abstract class WrappedDelegatingTable extends BaseTable {
 
     /**
-     * Marks a {@link io.deephaven.base.Function.Unary#call(Object)} method as opting out of being re-wrapped, as
-     * a WrappedDelegatingTable would normally do.
+     * Marks a {@link io.deephaven.base.Function.Unary#call(Object)} method as opting out of being
+     * re-wrapped, as a WrappedDelegatingTable would normally do.
      */
     @Target(ElementType.METHOD)
     @Retention(RetentionPolicy.RUNTIME)
@@ -37,7 +37,8 @@ public abstract class WrappedDelegatingTable extends BaseTable {
     protected final Table parent;
     Function<Table, Table> wrapTable;
 
-    public WrappedDelegatingTable(final Table parent, final String wrapperSuffix, final Function<Table, Table> wrapTable) {
+    public WrappedDelegatingTable(final Table parent, final String wrapperSuffix,
+        final Function<Table, Table> wrapTable) {
         super(parent.getDefinition(), parent.getDescription() + "-" + wrapperSuffix);
         this.parent = parent;
         this.wrapTable = wrapTable;
@@ -48,15 +49,18 @@ public abstract class WrappedDelegatingTable extends BaseTable {
         final R result = parent.apply(function);
         if (result instanceof Table) {
             try {
-                if (function.getClass().getMethod("call", Object.class).getAnnotation(DoNotWrap.class) != null) {
+                if (function.getClass().getMethod("call", Object.class)
+                    .getAnnotation(DoNotWrap.class) != null) {
                     return result;
                 }
             } catch (final NoSuchMethodException e) {
                 // Function.Unary no longer has a call() method?
                 throw new IllegalStateException("Function.Unary.call() method is missing?", e);
             }
-            // We can't reflectively check if R is Table or is some unexpected subclass that doesn't match what wrapTable
-            // returns, so we just have to "cast to R" and let the calling code potentially fail with a ClassCastException.
+            // We can't reflectively check if R is Table or is some unexpected subclass that doesn't
+            // match what wrapTable
+            // returns, so we just have to "cast to R" and let the calling code potentially fail
+            // with a ClassCastException.
             return (R) wrapTable.apply((Table) result);
         }
         return result;
@@ -98,8 +102,10 @@ public abstract class WrappedDelegatingTable extends BaseTable {
     }
 
     @Override
-    public Table whereIn(GroupStrategy groupStrategy, Table rightTable, boolean inclusion, MatchPair... columnsToMatch) {
-        return wrapTable.apply(parent.whereIn(groupStrategy, rightTable, inclusion, columnsToMatch));
+    public Table whereIn(GroupStrategy groupStrategy, Table rightTable, boolean inclusion,
+        MatchPair... columnsToMatch) {
+        return wrapTable
+            .apply(parent.whereIn(groupStrategy, rightTable, inclusion, columnsToMatch));
     }
 
     @Override
@@ -183,27 +189,33 @@ public abstract class WrappedDelegatingTable extends BaseTable {
     }
 
     @Override
-    public Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, AsOfMatchRule asOfMatchRule) {
+    public Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+        AsOfMatchRule asOfMatchRule) {
         return wrapTable.apply(parent.aj(rightTable, columnsToMatch, columnsToAdd, asOfMatchRule));
     }
 
     @Override
-    public Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, AsOfMatchRule asOfMatchRule) {
+    public Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+        AsOfMatchRule asOfMatchRule) {
         return wrapTable.apply(parent.raj(rightTable, columnsToMatch, columnsToAdd, asOfMatchRule));
     }
 
     @Override
-    public Table naturalJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    public Table naturalJoin(Table rightTable, MatchPair[] columnsToMatch,
+        MatchPair[] columnsToAdd) {
         return wrapTable.apply(parent.naturalJoin(rightTable, columnsToMatch, columnsToAdd));
     }
 
     @Override
-    public Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, int numRightBitsToReserve) {
-        return wrapTable.apply(parent.join(rightTable, columnsToMatch, columnsToAdd, numRightBitsToReserve));
+    public Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+        int numRightBitsToReserve) {
+        return wrapTable
+            .apply(parent.join(rightTable, columnsToMatch, columnsToAdd, numRightBitsToReserve));
     }
 
     @Override
-    public Table by(AggregationStateFactory aggregationStateFactory, SelectColumn... groupByColumns) {
+    public Table by(AggregationStateFactory aggregationStateFactory,
+        SelectColumn... groupByColumns) {
         return wrapTable.apply(parent.by(aggregationStateFactory, groupByColumns));
     }
 
@@ -218,7 +230,8 @@ public abstract class WrappedDelegatingTable extends BaseTable {
     }
 
     @Override
-    public Table applyToAllBy(String formulaColumn, String columnParamName, SelectColumn... groupByColumns) {
+    public Table applyToAllBy(String formulaColumn, String columnParamName,
+        SelectColumn... groupByColumns) {
         return wrapTable.apply(parent.applyToAllBy(formulaColumn, columnParamName, groupByColumns));
     }
 
@@ -298,7 +311,8 @@ public abstract class WrappedDelegatingTable extends BaseTable {
     }
 
     @Override
-    public Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents, SelectColumn... columns) {
+    public Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents,
+        SelectColumn... columns) {
         return wrapTable.apply(parent.rollup(comboAggregateFactory, includeConstituents, columns));
     }
 
@@ -323,8 +337,10 @@ public abstract class WrappedDelegatingTable extends BaseTable {
     }
 
     @Override
-    public Table snapshotIncremental(Table rightTable, boolean doInitialSnapshot, String... stampColumns) {
-        return wrapTable.apply(parent.snapshotIncremental(rightTable, doInitialSnapshot, stampColumns));
+    public Table snapshotIncremental(Table rightTable, boolean doInitialSnapshot,
+        String... stampColumns) {
+        return wrapTable
+            .apply(parent.snapshotIncremental(rightTable, doInitialSnapshot, stampColumns));
     }
 
     @Override
@@ -340,7 +356,7 @@ public abstract class WrappedDelegatingTable extends BaseTable {
 
     @Override
     public SelectValidationResult validateSelect(SelectColumn... columns) {
-       return parent.validateSelect(columns);
+        return parent.validateSelect(columns);
     }
 
 }

@@ -11,9 +11,14 @@ public class SingleRangeOrderedKeys extends OrderedKeysAsChunkImpl implements Si
     private long rangeEnd;
 
     @Override
-    public long rangeStart() { return rangeStart; }
+    public long rangeStart() {
+        return rangeStart;
+    }
+
     @Override
-    public long rangeEnd() { return rangeEnd; }
+    public long rangeEnd() {
+        return rangeEnd;
+    }
 
     SingleRangeOrderedKeys(final long rangeStart, final long rangeEnd) {
         this.rangeStart = rangeStart;

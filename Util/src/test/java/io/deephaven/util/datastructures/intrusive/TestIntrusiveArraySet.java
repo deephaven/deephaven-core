@@ -11,8 +11,9 @@ public class TestIntrusiveArraySet extends TestCase {
             this.sentinel = sentinel;
         }
 
-        private static List<IntrusiveValue> make(int ... sentinel) {
-            return Arrays.stream(sentinel).mapToObj(IntrusiveValue::new).collect(Collectors.toList());
+        private static List<IntrusiveValue> make(int... sentinel) {
+            return Arrays.stream(sentinel).mapToObj(IntrusiveValue::new)
+                .collect(Collectors.toList());
         }
 
         int sentinel;
@@ -21,9 +22,9 @@ public class TestIntrusiveArraySet extends TestCase {
         @Override
         public String toString() {
             return "IntrusiveValue{" +
-                    "sentinel=" + sentinel +
-                    ", slot=" + slot +
-                    '}';
+                "sentinel=" + sentinel +
+                ", slot=" + slot +
+                '}';
         }
     }
 
@@ -41,7 +42,8 @@ public class TestIntrusiveArraySet extends TestCase {
     }
 
     public void testSimple() {
-        final IntrusiveArraySet<IntrusiveValue> set = new IntrusiveArraySet<>(new Adapter(), IntrusiveValue.class);
+        final IntrusiveArraySet<IntrusiveValue> set =
+            new IntrusiveArraySet<>(new Adapter(), IntrusiveValue.class);
         final IntrusiveValue twentyThree = new IntrusiveValue(23);
 
         assertFalse(set.contains(twentyThree));
@@ -72,7 +74,7 @@ public class TestIntrusiveArraySet extends TestCase {
         set.add(nineteen);
         assertEquals(values.size(), set.size());
 
-        for (final Iterator<IntrusiveValue> it = set.iterator(); it.hasNext(); ) {
+        for (final Iterator<IntrusiveValue> it = set.iterator(); it.hasNext();) {
             final IntrusiveValue next = it.next();
             if (next.sentinel == 1 || next.sentinel == 7 || next.sentinel == 19) {
                 it.remove();

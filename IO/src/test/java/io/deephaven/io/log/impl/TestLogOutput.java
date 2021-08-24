@@ -9,11 +9,11 @@ import junit.framework.TestCase;
 
 
 /**
- * TODO: This class never existed until the potential NPE bug when logging boxed primitives that are null was
- * TODO: exposed, so those cases are the only ones tested here.  But this should be expanded to include all
- * TODO: LogOutput methods, and since StringsLoggerImpl can easily be instantiated with arbitrary LogEntry
- * TODO: implenmentations, it should also be made into an abstract base class with concrete subclasses for
- * TODO: entry entry impl.
+ * TODO: This class never existed until the potential NPE bug when logging boxed primitives that are
+ * null was TODO: exposed, so those cases are the only ones tested here. But this should be expanded
+ * to include all TODO: LogOutput methods, and since StringsLoggerImpl can easily be instantiated
+ * with arbitrary LogEntry TODO: implenmentations, it should also be made into an abstract base
+ * class with concrete subclasses for TODO: entry entry impl.
  */
 public class TestLogOutput extends TestCase {
     LogBufferPoolImpl buffers;
@@ -26,7 +26,7 @@ public class TestLogOutput extends TestCase {
         this.buffers = new LogBufferPoolImpl(16, 256);
         this.outputBuffer = new LogOutputCsvImpl(buffers);
 
-        //Function.Nullary<LogEntry> entryFactory = DelayedLogEntryUnsafeImpl::new;
+        // Function.Nullary<LogEntry> entryFactory = DelayedLogEntryUnsafeImpl::new;
         Function.Nullary<LogEntry> entryFactory = () -> new LogEntryImpl(buffers);
 
         this.logger = new StringsLoggerImpl<>(entryFactory, 16, outputBuffer, LogLevel.INFO);

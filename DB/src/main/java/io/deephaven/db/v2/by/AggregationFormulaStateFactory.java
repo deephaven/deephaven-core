@@ -35,11 +35,13 @@ public class AggregationFormulaStateFactory extends AggregationIndexStateFactory
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
             final MemoKey memoKey = (MemoKey) o;
             return Objects.equals(formula, memoKey.formula) &&
-                    Objects.equals(columnParamName, memoKey.columnParamName);
+                Objects.equals(columnParamName, memoKey.columnParamName);
         }
 
         @Override

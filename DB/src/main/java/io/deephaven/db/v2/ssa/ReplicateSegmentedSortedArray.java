@@ -16,17 +16,21 @@ import static io.deephaven.compilertools.ReplicateUtilities.globalReplacements;
 import static io.deephaven.compilertools.ReplicateUtilities.simpleFixup;
 
 public class ReplicateSegmentedSortedArray {
-    public static void main(String [] args) throws IOException {
-        final List<String> ssas = ReplicatePrimitiveCode.charToAllButBoolean(CharSegmentedSortedArray.class, ReplicatePrimitiveCode.MAIN_SRC);
+    public static void main(String[] args) throws IOException {
+        final List<String> ssas = ReplicatePrimitiveCode
+            .charToAllButBoolean(CharSegmentedSortedArray.class, ReplicatePrimitiveCode.MAIN_SRC);
 
-        final String charSsaPath = ReplicatePrimitiveCode.pathForClass(CharSegmentedSortedArray.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String charSsaPath = ReplicatePrimitiveCode
+            .pathForClass(CharSegmentedSortedArray.class, ReplicatePrimitiveCode.MAIN_SRC);
         ssas.add(charSsaPath);
         invertSense(charSsaPath, descendingPath(charSsaPath));
 
-        final String charNullSsaPath = ReplicateDupCompactKernel.fixupCharNullComparisons(CharSegmentedSortedArray.class, charSsaPath);
+        final String charNullSsaPath = ReplicateDupCompactKernel
+            .fixupCharNullComparisons(CharSegmentedSortedArray.class, charSsaPath);
         invertSense(charNullSsaPath, descendingPath(charNullSsaPath));
 
-        final String objectSsa = ReplicatePrimitiveCode.charToObject(CharSegmentedSortedArray.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String objectSsa = ReplicatePrimitiveCode.charToObject(CharSegmentedSortedArray.class,
+            ReplicatePrimitiveCode.MAIN_SRC);
         fixupObjectSsa(objectSsa, true);
 
         ssas.add(objectSsa);
@@ -37,24 +41,31 @@ public class ReplicateSegmentedSortedArray {
             if (ssa.contains("Double")) {
                 ReplicateDupCompactKernel.nanFixup(ssa, "Double", true);
                 ReplicateDupCompactKernel.nanFixup(ssaReverse, "Double", false);
-            }
-            else if (ssa.contains("Float")) {
+            } else if (ssa.contains("Float")) {
                 ReplicateDupCompactKernel.nanFixup(ssa, "Float", true);
                 ReplicateDupCompactKernel.nanFixup(ssaReverse, "Float", false);
             }
         }
 
-        final List<String> chunkSsaStamps = ReplicatePrimitiveCode.charToAllButBoolean(CharChunkSsaStamp.class, ReplicatePrimitiveCode.MAIN_SRC);
-        final String charChunkSsaStampPath = ReplicatePrimitiveCode.pathForClass(CharChunkSsaStamp.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final List<String> chunkSsaStamps = ReplicatePrimitiveCode
+            .charToAllButBoolean(CharChunkSsaStamp.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String charChunkSsaStampPath = ReplicatePrimitiveCode
+            .pathForClass(CharChunkSsaStamp.class, ReplicatePrimitiveCode.MAIN_SRC);
         invertSense(charChunkSsaStampPath, descendingPath(charChunkSsaStampPath));
 
-        final String charNullChunkSsaStampPath = ReplicateDupCompactKernel.fixupCharNullComparisons(CharChunkSsaStamp.class, charChunkSsaStampPath);
-        final String descendingCharNullChunkSsaStampPath = descendingPath(charNullChunkSsaStampPath);
+        final String charNullChunkSsaStampPath = ReplicateDupCompactKernel
+            .fixupCharNullComparisons(CharChunkSsaStamp.class, charChunkSsaStampPath);
+        final String descendingCharNullChunkSsaStampPath =
+            descendingPath(charNullChunkSsaStampPath);
         invertSense(charNullChunkSsaStampPath, descendingCharNullChunkSsaStampPath);
-        fixupSsaName(charNullChunkSsaStampPath, CharSegmentedSortedArray.class.getSimpleName(), NullAwareCharSegmentedSortedArray.class.getSimpleName());
-        fixupSsaName(descendingCharNullChunkSsaStampPath, CharReverseSegmentedSortedArray.class.getSimpleName(), NullAwareCharReverseSegmentedSortedArray.class.getSimpleName());
+        fixupSsaName(charNullChunkSsaStampPath, CharSegmentedSortedArray.class.getSimpleName(),
+            NullAwareCharSegmentedSortedArray.class.getSimpleName());
+        fixupSsaName(descendingCharNullChunkSsaStampPath,
+            CharReverseSegmentedSortedArray.class.getSimpleName(),
+            NullAwareCharReverseSegmentedSortedArray.class.getSimpleName());
 
-        final String objectSsaStamp = ReplicatePrimitiveCode.charToObject(CharChunkSsaStamp.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String objectSsaStamp = ReplicatePrimitiveCode.charToObject(CharChunkSsaStamp.class,
+            ReplicatePrimitiveCode.MAIN_SRC);
         fixupObjectSsa(objectSsaStamp, true);
         chunkSsaStamps.add(objectSsaStamp);
 
@@ -65,24 +76,30 @@ public class ReplicateSegmentedSortedArray {
             if (chunkSsaStamp.contains("Double")) {
                 ReplicateDupCompactKernel.nanFixup(chunkSsaStamp, "Double", true);
                 ReplicateDupCompactKernel.nanFixup(chunkSsaStampReverse, "Double", false);
-            }
-            else if (chunkSsaStamp.contains("Float")) {
+            } else if (chunkSsaStamp.contains("Float")) {
                 ReplicateDupCompactKernel.nanFixup(chunkSsaStamp, "Float", true);
                 ReplicateDupCompactKernel.nanFixup(chunkSsaStampReverse, "Float", false);
             }
         }
-        
-        final List<String> ssaSsaStamps = ReplicatePrimitiveCode.charToAllButBoolean(CharSsaSsaStamp.class, ReplicatePrimitiveCode.MAIN_SRC);
-        final String charSsaSsaStampPath = ReplicatePrimitiveCode.pathForClass(CharSsaSsaStamp.class, ReplicatePrimitiveCode.MAIN_SRC);
+
+        final List<String> ssaSsaStamps = ReplicatePrimitiveCode
+            .charToAllButBoolean(CharSsaSsaStamp.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String charSsaSsaStampPath = ReplicatePrimitiveCode
+            .pathForClass(CharSsaSsaStamp.class, ReplicatePrimitiveCode.MAIN_SRC);
         invertSense(charSsaSsaStampPath, descendingPath(charSsaSsaStampPath));
 
-        final String charNullSsaSsaStampPath = ReplicateDupCompactKernel.fixupCharNullComparisons(CharSsaSsaStamp.class, charSsaSsaStampPath);
+        final String charNullSsaSsaStampPath = ReplicateDupCompactKernel
+            .fixupCharNullComparisons(CharSsaSsaStamp.class, charSsaSsaStampPath);
         final String descendingCharNullSsaSsaStampPath = descendingPath(charNullSsaSsaStampPath);
         invertSense(charNullSsaSsaStampPath, descendingCharNullSsaSsaStampPath);
-        fixupSsaName(charNullSsaSsaStampPath, CharSegmentedSortedArray.class.getSimpleName(), NullAwareCharSegmentedSortedArray.class.getSimpleName());
-        fixupSsaName(descendingCharNullSsaSsaStampPath, CharReverseSegmentedSortedArray.class.getSimpleName(), NullAwareCharReverseSegmentedSortedArray.class.getSimpleName());
+        fixupSsaName(charNullSsaSsaStampPath, CharSegmentedSortedArray.class.getSimpleName(),
+            NullAwareCharSegmentedSortedArray.class.getSimpleName());
+        fixupSsaName(descendingCharNullSsaSsaStampPath,
+            CharReverseSegmentedSortedArray.class.getSimpleName(),
+            NullAwareCharReverseSegmentedSortedArray.class.getSimpleName());
 
-        final String objectSsaSsaStamp = ReplicatePrimitiveCode.charToObject(CharSsaSsaStamp.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String objectSsaSsaStamp = ReplicatePrimitiveCode.charToObject(CharSsaSsaStamp.class,
+            ReplicatePrimitiveCode.MAIN_SRC);
         fixupObjectSsa(objectSsaSsaStamp, true);
         ssaSsaStamps.add(objectSsaSsaStamp);
 
@@ -93,18 +110,20 @@ public class ReplicateSegmentedSortedArray {
             if (ssaSsaStamp.contains("Double")) {
                 ReplicateDupCompactKernel.nanFixup(ssaSsaStamp, "Double", true);
                 ReplicateDupCompactKernel.nanFixup(ssaSsaStampReverse, "Double", false);
-            }
-            else if (ssaSsaStamp.contains("Float")) {
+            } else if (ssaSsaStamp.contains("Float")) {
                 ReplicateDupCompactKernel.nanFixup(ssaSsaStamp, "Float", true);
                 ReplicateDupCompactKernel.nanFixup(ssaSsaStampReverse, "Float", false);
             }
         }
 
-        final List<String> ssaCheckers = ReplicatePrimitiveCode.charToAllButBoolean(CharSsaChecker.class, ReplicatePrimitiveCode.MAIN_SRC);
-        final String charSsaCheckerPath = ReplicatePrimitiveCode.pathForClass(CharSsaChecker.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final List<String> ssaCheckers = ReplicatePrimitiveCode
+            .charToAllButBoolean(CharSsaChecker.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String charSsaCheckerPath = ReplicatePrimitiveCode.pathForClass(CharSsaChecker.class,
+            ReplicatePrimitiveCode.MAIN_SRC);
         invertSense(charSsaCheckerPath, descendingPath(charSsaCheckerPath));
 
-        final String objectSsaChecker = ReplicatePrimitiveCode.charToObject(CharSsaChecker.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String objectSsaChecker = ReplicatePrimitiveCode.charToObject(CharSsaChecker.class,
+            ReplicatePrimitiveCode.MAIN_SRC);
         fixupObjectSsa(objectSsaChecker, true);
         ssaCheckers.add(objectSsaChecker);
 
@@ -115,8 +134,7 @@ public class ReplicateSegmentedSortedArray {
             if (ssaChecker.contains("Double")) {
                 ReplicateDupCompactKernel.nanFixup(ssaChecker, "Double", true);
                 ReplicateDupCompactKernel.nanFixup(ssaCheckerReverse, "Double", false);
-            }
-            else if (ssaChecker.contains("Float")) {
+            } else if (ssaChecker.contains("Float")) {
                 ReplicateDupCompactKernel.nanFixup(ssaChecker, "Float", true);
                 ReplicateDupCompactKernel.nanFixup(ssaCheckerReverse, "Float", false);
             }
@@ -126,10 +144,13 @@ public class ReplicateSegmentedSortedArray {
     private static void invertSense(String path, String descendingPath) throws IOException {
         final File file = new File(path);
 
-        List<String> lines = ascendingNameToDescendingName(path, FileUtils.readLines(file, Charset.defaultCharset()));
+        List<String> lines = ascendingNameToDescendingName(path,
+            FileUtils.readLines(file, Charset.defaultCharset()));
 
-        if (path.contains("ChunkSsaStamp") || path.contains("SsaSsaStamp") || path.contains("SsaChecker")) {
-            lines = globalReplacements(3, lines, "\\BSegmentedSortedArray", "ReverseSegmentedSortedArray");
+        if (path.contains("ChunkSsaStamp") || path.contains("SsaSsaStamp")
+            || path.contains("SsaChecker")) {
+            lines = globalReplacements(3, lines, "\\BSegmentedSortedArray",
+                "ReverseSegmentedSortedArray");
         }
 
         if (path.contains("SegmentedSortedArray")) {
@@ -149,7 +170,8 @@ public class ReplicateSegmentedSortedArray {
         FileUtils.writeLines(new File(descendingPath), lines);
     }
 
-    private static void fixupSsaName(String path, String oldName, String newName) throws IOException {
+    private static void fixupSsaName(String path, String oldName, String newName)
+        throws IOException {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
         lines = globalReplacements(3, lines, oldName, newName);
@@ -167,15 +189,19 @@ public class ReplicateSegmentedSortedArray {
     @NotNull
     private static String descendingPath(String className) {
         return className.replace("SegmentedSortedArray", "ReverseSegmentedSortedArray")
-                    .replace("SsaSsaStamp", "ReverseSsaSsaStamp")
-                    .replace("ChunkSsaStamp", "ReverseChunkSsaStamp")
-                    .replace("SsaChecker", "ReverseSsaChecker");
+            .replace("SsaSsaStamp", "ReverseSsaSsaStamp")
+            .replace("ChunkSsaStamp", "ReverseChunkSsaStamp")
+            .replace("SsaChecker", "ReverseSsaChecker");
     }
 
 
     private static void fixupObjectSsa(String objectPath, boolean ascending) throws IOException {
         final File objectFile = new File(objectPath);
         final List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-        FileUtils.writeLines(objectFile, ReplicateUtilities.simpleFixup(ReplicateSortKernel.fixupObjectComparisons(ReplicateUtilities.fixupChunkAttributes(lines), ascending), "fillValue", "Object.MIN_VALUE", "null"));
+        FileUtils.writeLines(objectFile,
+            ReplicateUtilities.simpleFixup(
+                ReplicateSortKernel.fixupObjectComparisons(
+                    ReplicateUtilities.fixupChunkAttributes(lines), ascending),
+                "fillValue", "Object.MIN_VALUE", "null"));
     }
 }

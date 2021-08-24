@@ -11,19 +11,19 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Warmup(timeUnit = TimeUnit.MILLISECONDS,iterations = 1, time = 500)
-@Measurement(timeUnit = TimeUnit.MILLISECONDS,iterations = 1, time = 500)
+@Warmup(timeUnit = TimeUnit.MILLISECONDS, iterations = 1, time = 500)
+@Measurement(timeUnit = TimeUnit.MILLISECONDS, iterations = 1, time = 500)
 @Fork(1)
 public class IndexCreation {
 
     @Param({"10000000"})
     private int indexCount;
 
-    //@Param({"1", "4", "16", "64","256","1024","1000000"})
+    // @Param({"1", "4", "16", "64","256","1024","1000000"})
     @Param({"64", "10000"})
     private int avgElementsPerRange;
 
-    //@Param({"1", "2", "4", "10", "100", "1000"})
+    // @Param({"1", "2", "4", "10", "100", "1000"})
     @Param({"1", "1000"})
     private int sparsityFactor;
 
@@ -50,8 +50,10 @@ public class IndexCreation {
         int remainingCount = indexCount;
         int j = 0;
         for (int i = 0; i < rangeCount - 1; i++) {
-            indexRanges[2 * i] = lastPos + 1 + random.nextInt(2 * avgElementsPerRange - 1)*sparsityFactor;
-            int step = 1 + Math.max(0, Math.min(random.nextInt(2 * avgElementsPerRange - 1), remainingCount - rangeCount));
+            indexRanges[2 * i] =
+                lastPos + 1 + random.nextInt(2 * avgElementsPerRange - 1) * sparsityFactor;
+            int step = 1 + Math.max(0,
+                Math.min(random.nextInt(2 * avgElementsPerRange - 1), remainingCount - rangeCount));
             lastPos = indexRanges[2 * i + 1] = indexRanges[2 * i] + step;
             remainingCount -= step;
             indexPoints[j++] = indexRanges[2 * i];
@@ -67,7 +69,7 @@ public class IndexCreation {
             indexPoints[j] = indexPoints[j - 1] + 1;
             j++;
         }
-        bmpsPool = new long[(int) (indexPoints[indexPoints.length - 1] >> 4)+1];
+        bmpsPool = new long[(int) (indexPoints[indexPoints.length - 1] >> 4) + 1];
 
     }
 
@@ -116,7 +118,7 @@ public class IndexCreation {
         ranges[0] = indexPoints[0];
 
         for (int i = 1; i < indexPoints.length; i++) {
-            if (indexPoints[i] == indexPoints[i-1] + 1) {
+            if (indexPoints[i] == indexPoints[i - 1] + 1) {
                 ranges[pos] = indexPoints[i];
             } else {
                 ranges[pos]++;
@@ -151,8 +153,8 @@ public class IndexCreation {
 
     private void rangesToValueInternal(Blackhole bh, long[] index) {
         int pos = 0;
-        for (int i = 0; i < indexRanges.length; i+=2) {
-            for (long j = indexRanges[i];j < indexRanges[i+1];j++) {
+        for (int i = 0; i < indexRanges.length; i += 2) {
+            for (long j = indexRanges[i]; j < indexRanges[i + 1]; j++) {
                 index[pos++] = j;
             }
         }

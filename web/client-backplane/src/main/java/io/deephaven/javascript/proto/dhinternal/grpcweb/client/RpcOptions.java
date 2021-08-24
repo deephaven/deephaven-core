@@ -13,20 +13,20 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.grpcWeb.client.RpcOptions",
     namespace = JsPackage.GLOBAL)
 public interface RpcOptions {
-  @JsOverlay
-  static RpcOptions create() {
-    return Js.uncheckedCast(JsPropertyMap.of());
-  }
+    @JsOverlay
+    static RpcOptions create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+    }
 
-  @JsProperty
-  TransportFactory getTransport();
+    @JsProperty
+    TransportFactory getTransport();
 
-  @JsProperty
-  boolean isDebug();
+    @JsProperty
+    boolean isDebug();
 
-  @JsProperty
-  void setDebug(boolean debug);
+    @JsProperty
+    void setDebug(boolean debug);
 
-  @JsProperty
-  void setTransport(TransportFactory transport);
+    @JsProperty
+    void setTransport(TransportFactory transport);
 }

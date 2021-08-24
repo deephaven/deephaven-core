@@ -19,6 +19,7 @@ public class SystemStreamAdapter {
 
     /**
      * Redirect System.out to the specified logger, at level STDOUT.
+     * 
      * @param logger the receiving logger
      */
     public static void sendSystemOutToLogger(final Logger logger) {
@@ -27,6 +28,7 @@ public class SystemStreamAdapter {
 
     /**
      * Redirect System.err to the specified logger, at level STDERR.
+     * 
      * @param logger the receiving logger
      */
     public static void sendSystemErrToLogger(final Logger logger) {

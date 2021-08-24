@@ -34,16 +34,19 @@ public class TimeTableGrpcImpl extends GrpcTableOperation<TimeTableRequest> {
     public void validateRequest(final TimeTableRequest request) throws StatusRuntimeException {
         final long periodNanos = request.getPeriodNanos();
         if (periodNanos <= 0) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "periodNanos must be >= 0 (found: " + periodNanos + ")");
+            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                "periodNanos must be >= 0 (found: " + periodNanos + ")");
         }
     }
 
     @Override
-    public Table create(final TimeTableRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final TimeTableRequest request,
+        final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 0);
         final long startTime = request.getStartTimeNanos();
         final long periodValue = request.getPeriodNanos();
-        final TimeTable timeTable = new TimeTable(scheduler, startTime <= 0 ? null : DBTimeUtils.nanosToTime(startTime), periodValue);
+        final TimeTable timeTable = new TimeTable(scheduler,
+            startTime <= 0 ? null : DBTimeUtils.nanosToTime(startTime), periodValue);
         liveTableMonitor.addTable(timeTable);
         return timeTable;
     }

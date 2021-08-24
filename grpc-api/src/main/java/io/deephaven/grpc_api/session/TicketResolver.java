@@ -17,8 +17,8 @@ public interface TicketResolver {
     byte ticketRoute();
 
     /**
-     * The first path entry on a route indicates which resolver to use. The remaining path elements are used to resolve
-     * the descriptor.
+     * The first path entry on a route indicates which resolver to use. The remaining path elements
+     * are used to resolve the descriptor.
      *
      * @return the string that will route from flight descriptor to this resolver
      */
@@ -42,7 +42,8 @@ public interface TicketResolver {
      * @param <T> the expected return type of the ticket; this is not validated
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
-    <T> SessionState.ExportObject<T> resolve(@Nullable SessionState session, Flight.FlightDescriptor descriptor);
+    <T> SessionState.ExportObject<T> resolve(@Nullable SessionState session,
+        Flight.FlightDescriptor descriptor);
 
     /**
      * Publish a new result as a flight ticket to an export object future.
@@ -66,7 +67,8 @@ public interface TicketResolver {
      * @param <T> the type of the result the export will publish
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
-    <T> SessionState.ExportBuilder<T> publish(SessionState session, Flight.FlightDescriptor descriptor);
+    <T> SessionState.ExportBuilder<T> publish(SessionState session,
+        Flight.FlightDescriptor descriptor);
 
     /**
      * Retrieve a FlightInfo for a given FlightDescriptor.
@@ -74,21 +76,25 @@ public interface TicketResolver {
      * @param descriptor the flight descriptor to retrieve a ticket for
      * @return a FlightInfo describing this flight
      */
-    SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(@Nullable SessionState session, Flight.FlightDescriptor descriptor);
+    SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(@Nullable SessionState session,
+        Flight.FlightDescriptor descriptor);
 
     /**
      * Create a human readable string to identify this ticket.
      *
      * @param ticket the ticket to parse
      * @return a string that is good for log/error messages
-     * @apiNote There is not a {@link Flight.FlightDescriptor} equivalent as the path must already be displayable.
+     * @apiNote There is not a {@link Flight.FlightDescriptor} equivalent as the path must already
+     *          be displayable.
      */
     String getLogNameFor(ByteBuffer ticket);
 
     /**
-     * This invokes the provided visitor for each valid flight descriptor this ticket resolver exposes via flight.
+     * This invokes the provided visitor for each valid flight descriptor this ticket resolver
+     * exposes via flight.
      *
-     * @param session optional session that the resolver can use to filter which flights a visitor sees
+     * @param session optional session that the resolver can use to filter which flights a visitor
+     *        sees
      * @param visitor the callback to invoke per descriptor path
      */
     void forAllFlightInfo(@Nullable SessionState session, Consumer<Flight.FlightInfo> visitor);

@@ -37,32 +37,37 @@ public class RangeConditionFilter extends SelectFilterImpl {
     /**
      * Creates a RangeConditionFilter.
      *
-     * @param columnName          the column to filter
-     * @param condition           the condition for filtering
-     * @param value               a String representation of the numeric filter value
-     * @param expression          the original expression prior to being parsed
+     * @param columnName the column to filter
+     * @param condition the condition for filtering
+     * @param value a String representation of the numeric filter value
+     * @param expression the original expression prior to being parsed
      * @param parserConfiguration
      */
-    public RangeConditionFilter(String columnName, Condition condition, String value, String expression, FormulaParserConfiguration parserConfiguration) {
+    public RangeConditionFilter(String columnName, Condition condition, String value,
+        String expression, FormulaParserConfiguration parserConfiguration) {
         this(columnName, condition, value, expression, null, parserConfiguration);
     }
 
     /**
      * Creates a RangeConditionFilter.
      *
-     * @param columnName          the column to filter
-     * @param conditionString     the String representation of a condition for filtering
-     * @param value               a String representation of the numeric filter value
-     * @param expression          the original expression prior to being parsed
+     * @param columnName the column to filter
+     * @param conditionString the String representation of a condition for filtering
+     * @param value a String representation of the numeric filter value
+     * @param expression the original expression prior to being parsed
      * @param parserConfiguration
      */
-    public RangeConditionFilter(String columnName, String conditionString, String value, String expression, FormulaParserConfiguration parserConfiguration) {
-        this(columnName, conditionFromString(conditionString), value, expression, parserConfiguration);
+    public RangeConditionFilter(String columnName, String conditionString, String value,
+        String expression, FormulaParserConfiguration parserConfiguration) {
+        this(columnName, conditionFromString(conditionString), value, expression,
+            parserConfiguration);
     }
 
     // Used for copy method
-    private RangeConditionFilter(String columnName, Condition condition, String value, String expression, SelectFilter filter, FormulaParserConfiguration parserConfiguration) {
-        Assert.eqTrue(conditionSupported(condition), condition + " is not supported by RangeConditionFilter");
+    private RangeConditionFilter(String columnName, Condition condition, String value,
+        String expression, SelectFilter filter, FormulaParserConfiguration parserConfiguration) {
+        Assert.eqTrue(conditionSupported(condition),
+            condition + " is not supported by RangeConditionFilter");
         this.columnName = columnName;
         this.condition = condition;
         this.value = value;
@@ -94,7 +99,8 @@ public class RangeConditionFilter extends SelectFilterImpl {
             case ">=":
                 return Condition.GREATER_THAN_OR_EQUAL;
             default:
-                throw new IllegalArgumentException(conditionString + " is not supported by RangeConditionFilter");
+                throw new IllegalArgumentException(
+                    conditionString + " is not supported by RangeConditionFilter");
         }
     }
 
@@ -116,7 +122,9 @@ public class RangeConditionFilter extends SelectFilterImpl {
 
         final ColumnDefinition def = tableDefinition.getColumn(columnName);
         if (def == null) {
-            throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
+            throw new RuntimeException(
+                "Column \"" + columnName + "\" doesn't exist in this table, available columns: "
+                    + tableDefinition.getColumnNames());
         }
 
         final Class colClass = def.getDataType();
@@ -142,7 +150,8 @@ public class RangeConditionFilter extends SelectFilterImpl {
         } else if (BigInteger.class.isAssignableFrom(colClass)) {
             filter = makeComparableRangeFilter(columnName, condition, new BigInteger(value));
         } else if (io.deephaven.util.type.TypeUtils.isString(colClass)) {
-            final String stringValue = MatchFilter.ColumnTypeConvertorFactory.getConvertor(String.class, columnName).convertStringLiteral(value).toString();
+            final String stringValue = MatchFilter.ColumnTypeConvertorFactory
+                .getConvertor(String.class, columnName).convertStringLiteral(value).toString();
             filter = makeComparableRangeFilter(columnName, condition, stringValue);
         } else if (TypeUtils.isBoxedBoolean(colClass) || colClass == boolean.class) {
             filter = makeComparableRangeFilter(columnName, condition, Boolean.valueOf(value));
@@ -152,7 +161,8 @@ public class RangeConditionFilter extends SelectFilterImpl {
             if (expression != null) {
                 filter = ConditionFilter.createConditionFilter(expression, parserConfiguration);
             } else {
-                throw new IllegalArgumentException("RangeConditionFilter does not support type " + colClass.getSimpleName() + " for column " + columnName);
+                throw new IllegalArgumentException("RangeConditionFilter does not support type "
+                    + colClass.getSimpleName() + " for column " + columnName);
             }
         }
 
@@ -166,7 +176,7 @@ public class RangeConditionFilter extends SelectFilterImpl {
         if (value.startsWith("\"") && value.endsWith("\"") && value.length() == 3) {
             return value.charAt(1);
         }
-        return (char)Long.parseLong(value);
+        return (char) Long.parseLong(value);
     }
 
     public static byte parseByteFilter(String value) {
@@ -185,18 +195,24 @@ public class RangeConditionFilter extends SelectFilterImpl {
         return Long.parseLong(value);
     }
 
-    private static LongRangeFilter makeDateTimeRangeFilter(String columnName, Condition condition, String value) {
+    private static LongRangeFilter makeDateTimeRangeFilter(String columnName, Condition condition,
+        String value) {
         switch (condition) {
             case LESS_THAN:
-                return new DateTimeRangeFilter(columnName, parseDateTimeNanos(value), Long.MIN_VALUE, true, false);
+                return new DateTimeRangeFilter(columnName, parseDateTimeNanos(value),
+                    Long.MIN_VALUE, true, false);
             case LESS_THAN_OR_EQUAL:
-                return new DateTimeRangeFilter(columnName, parseDateTimeNanos(value), Long.MIN_VALUE, true, true);
+                return new DateTimeRangeFilter(columnName, parseDateTimeNanos(value),
+                    Long.MIN_VALUE, true, true);
             case GREATER_THAN:
-                return new DateTimeRangeFilter(columnName, parseDateTimeNanos(value), Long.MAX_VALUE, false, true);
+                return new DateTimeRangeFilter(columnName, parseDateTimeNanos(value),
+                    Long.MAX_VALUE, false, true);
             case GREATER_THAN_OR_EQUAL:
-                return new DateTimeRangeFilter(columnName, parseDateTimeNanos(value), Long.MAX_VALUE, true, true);
+                return new DateTimeRangeFilter(columnName, parseDateTimeNanos(value),
+                    Long.MAX_VALUE, true, true);
             default:
-                throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
+                throw new IllegalArgumentException(
+                    "RangeConditionFilter does not support condition " + condition);
         }
     }
 
@@ -207,7 +223,8 @@ public class RangeConditionFilter extends SelectFilterImpl {
         return Long.parseLong(value);
     }
 
-    private static SingleSidedComparableRangeFilter makeComparableRangeFilter(String columnName, Condition condition, Comparable<?> comparable) {
+    private static SingleSidedComparableRangeFilter makeComparableRangeFilter(String columnName,
+        Condition condition, Comparable<?> comparable) {
         switch (condition) {
             case LESS_THAN:
                 return new SingleSidedComparableRangeFilter(columnName, comparable, false, false);
@@ -218,7 +235,8 @@ public class RangeConditionFilter extends SelectFilterImpl {
             case GREATER_THAN_OR_EQUAL:
                 return new SingleSidedComparableRangeFilter(columnName, comparable, true, true);
             default:
-                throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
+                throw new IllegalArgumentException(
+                    "RangeConditionFilter does not support condition " + condition);
         }
     }
 
@@ -233,16 +251,17 @@ public class RangeConditionFilter extends SelectFilterImpl {
     }
 
     @Override
-    public void setRecomputeListener(RecomputeListener listener) {
-    }
+    public void setRecomputeListener(RecomputeListener listener) {}
 
     @Override
     public SelectFilter copy() {
-        return new RangeConditionFilter(columnName, condition, value, expression, filter, parserConfiguration);
+        return new RangeConditionFilter(columnName, condition, value, expression, filter,
+            parserConfiguration);
     }
 
     @Override
     public String toString() {
-        return "RangeConditionFilter(" + columnName + " " + condition.description + " " + value + ")";
+        return "RangeConditionFilter(" + columnName + " " + condition.description + " " + value
+            + ")";
     }
 }

@@ -13,10 +13,10 @@ public class ArgTest extends PythonTest {
     private static final int UNIQ_INT = 0xbadc0fee;
     private static final String UNIQ_STR = "bad coffee";
     private static final SomeJavaClass SJC = new SomeJavaClass();
-    private static final int[] INTS = new int[]{31337, 42, UNIQ_INT};
-    private static final Integer[] INTEGERS = new Integer[]{31337, 42, UNIQ_INT};
-    private static final String[] STRINGS = new String[] { UNIQ_STR, "good coffee" };
-    private static final SomeJavaClass[] SJCS = new SomeJavaClass[] { SJC, new SomeJavaClass() };
+    private static final int[] INTS = new int[] {31337, 42, UNIQ_INT};
+    private static final Integer[] INTEGERS = new Integer[] {31337, 42, UNIQ_INT};
+    private static final String[] STRINGS = new String[] {UNIQ_STR, "good coffee"};
+    private static final SomeJavaClass[] SJCS = new SomeJavaClass[] {SJC, new SomeJavaClass()};
 
     private NoopModule noop;
     private ReferenceCounting ref;
@@ -27,12 +27,12 @@ public class ArgTest extends PythonTest {
         noop = NoopModule.create(getCreateModule());
         ref = ReferenceCounting.create();
         jpy = JpyModule.create();
-        //jpy.setFlags(EnumSet.of(Flag.ALL));
+        // jpy.setFlags(EnumSet.of(Flag.ALL));
     }
 
     @After
     public void tearDown() {
-        //jpy.setFlags(EnumSet.of(Flag.OFF));
+        // jpy.setFlags(EnumSet.of(Flag.OFF));
         jpy.close();
         ref.close();
         noop.close();
@@ -60,7 +60,7 @@ public class ArgTest extends PythonTest {
 
     @Test
     public void implicitString() {
-        noop.noop((Object)UNIQ_STR);
+        noop.noop((Object) UNIQ_STR);
     }
 
     @Test
@@ -70,7 +70,7 @@ public class ArgTest extends PythonTest {
 
     @Test
     public void implicitSJC() {
-        noop.noop((Object)SJC);
+        noop.noop((Object) SJC);
     }
 
     @Test
@@ -80,7 +80,7 @@ public class ArgTest extends PythonTest {
 
     @Test
     public void implicitInts() {
-        noop.noop((Object)INTS);
+        noop.noop((Object) INTS);
     }
 
     @Test
@@ -90,7 +90,7 @@ public class ArgTest extends PythonTest {
 
     @Test
     public void implicitIntegers() {
-        noop.noop((Object)INTEGERS);
+        noop.noop((Object) INTEGERS);
     }
 
     @Test
@@ -100,7 +100,7 @@ public class ArgTest extends PythonTest {
 
     @Test
     public void implicitStrings() {
-        noop.noop((Object)STRINGS);
+        noop.noop((Object) STRINGS);
     }
 
     @Test
@@ -110,7 +110,7 @@ public class ArgTest extends PythonTest {
 
     @Test
     public void implicitSJCS() {
-        noop.noop((Object)SJCS);
+        noop.noop((Object) SJCS);
     }
 
     // todo: all these tests as PyObject inputs

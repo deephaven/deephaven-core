@@ -21,17 +21,21 @@ import java.nio.file.StandardOpenOption;
  */
 public class TestFileHandle {
 
-    private static final byte[] DATA = new byte[]{(byte) -1, (byte) 1, Byte.MIN_VALUE, Byte.MAX_VALUE, (byte) 0};
+    private static final byte[] DATA =
+        new byte[] {(byte) -1, (byte) 1, Byte.MIN_VALUE, Byte.MAX_VALUE, (byte) 0};
 
     private File file;
     private FileHandle FHUT;
 
     @Before
     public void setup() throws IOException {
-        file = File.createTempFile("TestFileHandle-", ".dat", new File(Configuration.getInstance().getWorkspacePath()));
+        file = File.createTempFile("TestFileHandle-", ".dat",
+            new File(Configuration.getInstance().getWorkspacePath()));
         FHUT = new FileHandle(FileChannel.open(file.toPath(),
-                StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE),
-                () -> {});
+            StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING,
+            StandardOpenOption.CREATE),
+            () -> {
+            });
     }
 
     @After
@@ -87,10 +91,10 @@ public class TestFileHandle {
     }
 
     /**
-     * Utility for file deletion in unit tests.
-     * <b>Note:</b> Each attempt after the first failure is preceded by an invocation of the garbage collector.
+     * Utility for file deletion in unit tests. <b>Note:</b> Each attempt after the first failure is
+     * preceded by an invocation of the garbage collector.
      *
-     * @param file       The file to delete
+     * @param file The file to delete
      * @param maxRetries The number of retries
      */
     private static void tryToDelete(final File file, final int maxRetries) {

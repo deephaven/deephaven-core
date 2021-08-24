@@ -23,7 +23,8 @@ public class RedirectionIndexLockFreeTest extends LiveTableTestCase {
     private static final int testDurationInSeconds = 15;
 
     public void testRedirectionIndex() throws InterruptedException {
-        final RedirectionIndexLockFreeImpl index = new RedirectionIndexLockFreeFactory().createRedirectionIndex(10);
+        final RedirectionIndexLockFreeImpl index =
+            new RedirectionIndexLockFreeFactory().createRedirectionIndex(10);
         index.startTrackingPrevValues();
         final long initialStep = LogicalClock.DEFAULT.currentStep();
         Writer writer = new Writer("writer", initialStep, index);
@@ -33,7 +34,7 @@ public class RedirectionIndexLockFreeTest extends LiveTableTestCase {
         // Run one iteration of the writer so the prev values exist.
         writer.doOneIteration();
 
-        RWBase[] participants = { writer, r0, r1 };
+        RWBase[] participants = {writer, r0, r1};
         Thread[] threads = Arrays.stream(participants).map(Thread::new).toArray(Thread[]::new);
         for (Thread thread : threads) {
             thread.start();
@@ -88,6 +89,7 @@ public class RedirectionIndexLockFreeTest extends LiveTableTestCase {
         }
 
         protected abstract void doOneIteration();
+
         public abstract boolean hasFailed();
 
     }
@@ -114,9 +116,10 @@ public class RedirectionIndexLockFreeTest extends LiveTableTestCase {
             final long logicalClockStartValue = LogicalClock.DEFAULT.currentValue();
             final long stepFromCycle = LogicalClock.getStep(logicalClockStartValue);
             final LogicalClock.State state = LogicalClock.getState(logicalClockStartValue);
-            final long step = state == LogicalClock.State.Updating ? stepFromCycle - 1 : stepFromCycle;
+            final long step =
+                state == LogicalClock.State.Updating ? stepFromCycle - 1 : stepFromCycle;
 
-            final int keysInThisGeneration = (int)((step - initialStep) * 1000 + 1000);
+            final int keysInThisGeneration = (int) ((step - initialStep) * 1000 + 1000);
             final Random rng = new Random(step);
             final int numKeysToInsert = rng.nextInt(keysInThisGeneration);
             long[] keys = fillAndShuffle(rng, keysInThisGeneration);
@@ -127,11 +130,13 @@ public class RedirectionIndexLockFreeTest extends LiveTableTestCase {
             final TLongArrayList mmExpect = new TLongArrayList();
             final TLongArrayList mmActual = new TLongArrayList();
 
-            // Look at the map in the reverse order of the writer, just to avoid any unintended synchronization.
+            // Look at the map in the reverse order of the writer, just to avoid any unintended
+            // synchronization.
             // These keys are expected to not exist.
             for (int ii = keys.length - 1; ii >= numKeysToInsert; --ii) {
                 final long key = keys[ii];
-                final long actualValue = state == LogicalClock.State.Updating ? ix.getPrev(key) : ix.get(key);
+                final long actualValue =
+                    state == LogicalClock.State.Updating ? ix.getPrev(key) : ix.get(key);
                 if (actualValue != -1) {
                     mmKeys.add(key);
                     mmExpect.add(-1);
@@ -143,7 +148,8 @@ public class RedirectionIndexLockFreeTest extends LiveTableTestCase {
             for (int ii = numKeysToInsert - 1; ii >= 0; --ii) {
                 final long key = keys[ii];
                 final long expectedValue = step * oneBillion + ii;
-                final long actualValue = state == LogicalClock.State.Updating ? ix.getPrev(key) : ix.get(key);
+                final long actualValue =
+                    state == LogicalClock.State.Updating ? ix.getPrev(key) : ix.get(key);
                 if (expectedValue != actualValue) {
                     mmKeys.add(key);
                     mmExpect.add(expectedValue);
@@ -179,8 +185,10 @@ public class RedirectionIndexLockFreeTest extends LiveTableTestCase {
 
         @Override
         public String toString() {
-            return String.format("--- %s: iterations: %d, good update: %d, good idle: %d, bad update: %d, bad idle: %d, incoherent (no judgment): %d ---",
-              name, numIterations, goodUpdateCycles, goodIdleCycles, badUpdateCycles, badIdleCycles, incoherentCycles);
+            return String.format(
+                "--- %s: iterations: %d, good update: %d, good idle: %d, bad update: %d, bad idle: %d, incoherent (no judgment): %d ---",
+                name, numIterations, goodUpdateCycles, goodIdleCycles, badUpdateCycles,
+                badIdleCycles, incoherentCycles);
         }
     }
 
@@ -197,7 +205,8 @@ public class RedirectionIndexLockFreeTest extends LiveTableTestCase {
                 keysInThisGeneration.setValue((int) ((step - initialStep) * 1000 + 1000));
                 final Random rng = new Random(step);
                 final int numKeysToInsert = rng.nextInt(keysInThisGeneration.getValue());
-                // A bit of a waste because we only look at the first 'numKeysToInsert' keys, but that's ok.
+                // A bit of a waste because we only look at the first 'numKeysToInsert' keys, but
+                // that's ok.
                 long[] keys = fillAndShuffle(rng, keysInThisGeneration.getValue());
                 final RedirectionIndexLockFreeImpl ix = index;
                 for (int ii = 0; ii < numKeysToInsert; ++ii) {
@@ -212,7 +221,8 @@ public class RedirectionIndexLockFreeTest extends LiveTableTestCase {
             });
 
             // waste some time doing something else
-            final RedirectionIndexLockFreeImpl privateIndex = new RedirectionIndexLockFreeFactory().createRedirectionIndex(10);
+            final RedirectionIndexLockFreeImpl privateIndex =
+                new RedirectionIndexLockFreeFactory().createRedirectionIndex(10);
             for (long ii = 0; ii < keysInThisGeneration.getValue() * 4; ++ii) {
                 privateIndex.put(ii, ii);
             }

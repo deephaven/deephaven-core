@@ -9,7 +9,8 @@ import io.deephaven.db.tables.live.NotificationQueue;
 /**
  * Common base class for index update notifications.
  */
-public abstract class AbstractIndexUpdateNotification extends AbstractNotification implements NotificationQueue.IndexUpdateNotification {
+public abstract class AbstractIndexUpdateNotification extends AbstractNotification
+    implements NotificationQueue.IndexUpdateNotification {
 
     protected AbstractIndexUpdateNotification(final boolean isTerminal) {
         super(isTerminal);

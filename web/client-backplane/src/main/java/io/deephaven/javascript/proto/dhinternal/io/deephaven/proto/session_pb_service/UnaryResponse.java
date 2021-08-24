@@ -8,5 +8,5 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.io.deephaven.proto.session_pb_service.UnaryResponse",
     namespace = JsPackage.GLOBAL)
 public interface UnaryResponse {
-  void cancel();
+    void cancel();
 }

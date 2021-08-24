@@ -23,7 +23,7 @@ public class MatchPairFactoryTest extends TestCase {
         try {
             MatchPairFactory.getExpressions("0a==a0");
             fail("MatchPairFactory accepted invalid expression \"0a==a0\"");
-        } catch(final ExpressionException e) {
+        } catch (final ExpressionException e) {
             assertEquals(e.getMessage(), "Unable to parse expression: \"0a==a0\"");
         }
     }

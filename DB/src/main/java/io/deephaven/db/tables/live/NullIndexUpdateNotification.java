@@ -6,8 +6,8 @@ import io.deephaven.db.v2.utils.AbstractIndexUpdateNotification;
 /**
  * This is a notification that does not actually notify anything.
  *
- * It is useful for the {@link io.deephaven.db.v2.SwapListener} to have the ability to create a notification
- * for its parent before there is anything to notify.
+ * It is useful for the {@link io.deephaven.db.v2.SwapListener} to have the ability to create a
+ * notification for its parent before there is anything to notify.
  */
 public class NullIndexUpdateNotification extends AbstractIndexUpdateNotification {
     public NullIndexUpdateNotification() {
@@ -31,6 +31,5 @@ public class NullIndexUpdateNotification extends AbstractIndexUpdateNotification
     }
 
     @Override
-    public final void run() {
-    }
+    public final void run() {}
 }

@@ -4,7 +4,8 @@
 
 package io.deephaven.db.v2.sources;
 
-public class UngroupedArrayColumnSource<T> extends UngroupedColumnSource<T> implements MutableColumnSourceGetDefaults.ForObject<T> {
+public class UngroupedArrayColumnSource<T> extends UngroupedColumnSource<T>
+    implements MutableColumnSourceGetDefaults.ForObject<T> {
     private ColumnSource innerSource;
 
     @Override
@@ -13,7 +14,7 @@ public class UngroupedArrayColumnSource<T> extends UngroupedColumnSource<T> impl
     }
 
     public UngroupedArrayColumnSource(ColumnSource innerSource) {
-        //noinspection unchecked
+        // noinspection unchecked
         super(innerSource.getComponentType());
         this.innerSource = innerSource;
     }
@@ -23,11 +24,11 @@ public class UngroupedArrayColumnSource<T> extends UngroupedColumnSource<T> impl
         if (index < 0) {
             return null;
         }
-        long segment = index>>base;
-        long offset = index & ((1<<base) - 1);
-        //noinspection unchecked
-        T[] array = (T[])innerSource.get(segment);
-        if(offset >= array.length) {
+        long segment = index >> base;
+        long offset = index & ((1 << base) - 1);
+        // noinspection unchecked
+        T[] array = (T[]) innerSource.get(segment);
+        if (offset >= array.length) {
             return null;
         }
         return array[(int) offset];
@@ -39,11 +40,11 @@ public class UngroupedArrayColumnSource<T> extends UngroupedColumnSource<T> impl
         if (index < 0) {
             return null;
         }
-        long segment = index>>getPrevBase();
-        long offset = index & ((1<<getPrevBase()) - 1);
-        //noinspection unchecked
-        T[] array = (T[])innerSource.getPrev(segment);
-        if(offset >= array.length) {
+        long segment = index >> getPrevBase();
+        long offset = index & ((1 << getPrevBase()) - 1);
+        // noinspection unchecked
+        T[] array = (T[]) innerSource.getPrev(segment);
+        if (offset >= array.length) {
             return null;
         }
         return array[(int) offset];

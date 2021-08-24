@@ -12,7 +12,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class AbstractBusinessCalendar extends AbstractCalendar implements BusinessCalendar {
+public abstract class AbstractBusinessCalendar extends AbstractCalendar
+    implements BusinessCalendar {
 
     public boolean isBusinessDay(final DBDateTime time) {
         return fractionOfStandardBusinessDay(time) > 0.0;
@@ -26,10 +27,12 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
         return date != null && getBusinessSchedule(date).isBusinessDay();
     }
 
-    public boolean isBusinessTime(final DBDateTime time) { return time != null && getBusinessSchedule(time).isBusinessTime(time); }
+    public boolean isBusinessTime(final DBDateTime time) {
+        return time != null && getBusinessSchedule(time).isBusinessTime(time);
+    }
 
     public String previousBusinessDay(final DBDateTime time) {
-        if(time == null) {
+        if (time == null) {
             return null;
         }
 
@@ -42,21 +45,21 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public String previousBusinessDay(final DBDateTime time, int days) {
-        if(time == null) {
+        if (time == null) {
             return null;
         }
 
-        if(days < 0){
+        if (days < 0) {
             return nextBusinessDay(time, -days);
-        } else if ( days == 0 && !isBusinessDay(time)){
+        } else if (days == 0 && !isBusinessDay(time)) {
             return null;
-        } else if ( days == 0 ){
+        } else if (days == 0) {
             return time.toDateString(timeZone());
         }
 
         String date = null;
-        while(days > 0) {
-            if(date == null) {
+        while (days > 0) {
+            if (date == null) {
                 date = previousBusinessDay(time);
             } else {
                 date = previousBusinessDay(date);
@@ -68,13 +71,13 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public String previousBusinessDay(String date) {
-        if(date == null) {
+        if (date == null) {
             return null;
         }
 
         date = DateStringUtils.minusDays(date, 1);
         while (!isBusinessDay(date)) {
-            //first minusDays ensures the date strings will be of the correct format
+            // first minusDays ensures the date strings will be of the correct format
             date = DateStringUtils.minusDaysQuiet(date, 1);
         }
 
@@ -82,19 +85,19 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public String previousBusinessDay(String date, int days) {
-        if(date == null) {
+        if (date == null) {
             return null;
         }
 
-        if(days < 0){
+        if (days < 0) {
             return nextBusinessDay(date, -days);
-        } else if ( days == 0 && !isBusinessDay(date)){
+        } else if (days == 0 && !isBusinessDay(date)) {
             return null;
-        } else if ( days == 0 ){
+        } else if (days == 0) {
             return date;
         }
 
-        while(days > 0) {
+        while (days > 0) {
             date = previousBusinessDay(date);
             days--;
         }
@@ -119,7 +122,7 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public String previousNonBusinessDay(final DBDateTime time) {
-        if(time == null) {
+        if (time == null) {
             return null;
         }
 
@@ -132,21 +135,21 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public String previousNonBusinessDay(final DBDateTime time, int days) {
-        if(time == null) {
+        if (time == null) {
             return null;
         }
 
-        if(days < 0){
+        if (days < 0) {
             return nextNonBusinessDay(time, -days);
-        } else if ( days == 0 && isBusinessDay(time)){
+        } else if (days == 0 && isBusinessDay(time)) {
             return null;
-        } else if ( days == 0 ){
+        } else if (days == 0) {
             return time.toDateString(timeZone());
         }
 
         String date = null;
-        while(days > 0) {
-            if(date == null) {
+        while (days > 0) {
+            if (date == null) {
                 date = previousNonBusinessDay(time);
             } else {
                 date = previousNonBusinessDay(date);
@@ -158,13 +161,13 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public String previousNonBusinessDay(String date) {
-        if(date == null) {
+        if (date == null) {
             return null;
         }
 
         date = DateStringUtils.minusDays(date, 1);
         while (isBusinessDay(date)) {
-            //first minusDays ensures the date strings will be of the correct format
+            // first minusDays ensures the date strings will be of the correct format
             date = DateStringUtils.minusDaysQuiet(date, 1);
         }
 
@@ -172,19 +175,19 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public String previousNonBusinessDay(String date, int days) {
-        if(date == null) {
+        if (date == null) {
             return null;
         }
 
-        if(days < 0){
+        if (days < 0) {
             return nextNonBusinessDay(date, -days);
-        } else if ( days == 0 && isBusinessDay(date)){
+        } else if (days == 0 && isBusinessDay(date)) {
             return null;
-        } else if ( days == 0 ){
+        } else if (days == 0) {
             return date;
         }
 
-        while(days > 0) {
+        while (days > 0) {
             date = previousNonBusinessDay(date);
             days--;
         }
@@ -193,7 +196,7 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public String nextBusinessDay(final DBDateTime time) {
-        if(time == null) {
+        if (time == null) {
             return null;
         }
 
@@ -206,21 +209,21 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public String nextBusinessDay(final DBDateTime time, int days) {
-        if(time == null) {
+        if (time == null) {
             return null;
         }
 
-        if(days < 0){
+        if (days < 0) {
             return previousBusinessDay(time, -days);
-        } else if ( days == 0 && !isBusinessDay(time)){
+        } else if (days == 0 && !isBusinessDay(time)) {
             return null;
-        } else if ( days == 0 ){
+        } else if (days == 0) {
             return time.toDateString(timeZone());
         }
 
         String date = null;
-        while(days > 0) {
-            if(date == null) {
+        while (days > 0) {
+            if (date == null) {
                 date = nextBusinessDay(time);
             } else {
                 date = nextBusinessDay(date);
@@ -232,13 +235,13 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public String nextBusinessDay(String date) {
-        if(date == null) {
+        if (date == null) {
             return null;
         }
 
         date = DateStringUtils.plusDays(date, 1);
         while (!isBusinessDay(date)) {
-            //first plusDays ensures the date strings will be of the correct format
+            // first plusDays ensures the date strings will be of the correct format
             date = DateStringUtils.plusDaysQuiet(date, 1);
         }
 
@@ -246,19 +249,19 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public String nextBusinessDay(String date, int days) {
-        if(date == null) {
+        if (date == null) {
             return null;
         }
 
-        if(days < 0){
+        if (days < 0) {
             return previousBusinessDay(date, -days);
-        } else if ( days == 0 && !isBusinessDay(date)){
+        } else if (days == 0 && !isBusinessDay(date)) {
             return null;
-        } else if ( days == 0 ){
+        } else if (days == 0) {
             return date;
         }
 
-        while(days > 0) {
+        while (days > 0) {
             date = nextBusinessDay(date);
             days--;
         }
@@ -284,7 +287,7 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public String nextNonBusinessDay(final DBDateTime time) {
-        if(time == null) {
+        if (time == null) {
             return null;
         }
 
@@ -297,21 +300,21 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public String nextNonBusinessDay(final DBDateTime time, int days) {
-        if(time == null) {
+        if (time == null) {
             return null;
         }
 
-        if(days < 0){
+        if (days < 0) {
             return previousNonBusinessDay(time, -days);
-        } else if ( days == 0 && isBusinessDay(time)){
+        } else if (days == 0 && isBusinessDay(time)) {
             return null;
-        } else if ( days == 0 ){
+        } else if (days == 0) {
             return time.toDateString(timeZone());
         }
 
         String date = null;
-        while(days > 0) {
-            if(date == null) {
+        while (days > 0) {
+            if (date == null) {
                 date = nextNonBusinessDay(time);
             } else {
                 date = nextNonBusinessDay(date);
@@ -323,13 +326,13 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public String nextNonBusinessDay(String date) {
-        if(date == null) {
+        if (date == null) {
             return null;
         }
 
         date = DateStringUtils.plusDays(date, 1);
         while (isBusinessDay(date)) {
-            //first plusDays ensures the date strings will be of the correct format
+            // first plusDays ensures the date strings will be of the correct format
             date = DateStringUtils.plusDaysQuiet(date, 1);
         }
 
@@ -337,19 +340,19 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public String nextNonBusinessDay(String date, int days) {
-        if(date == null) {
+        if (date == null) {
             return null;
         }
 
-        if(days < 0){
+        if (days < 0) {
             return previousNonBusinessDay(date, -days);
-        } else if ( days == 0 && isBusinessDay(date)){
+        } else if (days == 0 && isBusinessDay(date)) {
             return null;
-        } else if ( days == 0 ){
+        } else if (days == 0) {
             return date;
         }
 
-        while(days > 0) {
+        while (days > 0) {
             date = nextNonBusinessDay(date);
             days--;
         }
@@ -358,15 +361,15 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public String[] businessDaysInRange(final DBDateTime start, final DBDateTime end) {
-        if(start == null || end == null) {
+        if (start == null || end == null) {
             return new String[0];
         }
         LocalDate day = DBTimeUtils.getZonedDateTime(start, timeZone()).toLocalDate();
         LocalDate day2 = DBTimeUtils.getZonedDateTime(end, timeZone()).toLocalDate();
 
         List<String> dateList = new ArrayList<>();
-        while(!day.isAfter(day2)) {
-            if(isBusinessDay(day)) {
+        while (!day.isAfter(day2)) {
+            if (isBusinessDay(day)) {
                 dateList.add(DateStringUtils.format(day));
             }
             day = day.plusDays(1);
@@ -376,13 +379,13 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public String[] businessDaysInRange(String start, String end) {
-        if(start == null || end == null) {
+        if (start == null || end == null) {
             return new String[0];
         }
 
         List<String> dateList = new ArrayList<>();
-        if(!DateStringUtils.isAfter(start, end)) {
-            if(isBusinessDay(start)) {
+        if (!DateStringUtils.isAfter(start, end)) {
+            if (isBusinessDay(start)) {
                 dateList.add(start);
             }
             start = nextBusinessDay(start);
@@ -390,9 +393,9 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
             return new String[0];
         }
 
-        //first isAfter ensures the date strings will be of the correct format
-        while(!DateStringUtils.isAfterQuiet(start, end)) {
-            if(isBusinessDay(start)) {
+        // first isAfter ensures the date strings will be of the correct format
+        while (!DateStringUtils.isAfterQuiet(start, end)) {
+            if (isBusinessDay(start)) {
                 dateList.add(start);
             }
             start = DateStringUtils.plusDaysQuiet(start, 1);
@@ -402,15 +405,15 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public String[] nonBusinessDaysInRange(final DBDateTime start, final DBDateTime end) {
-        if(start == null || end == null) {
+        if (start == null || end == null) {
             return new String[0];
         }
         LocalDate day = DBTimeUtils.getZonedDateTime(start, timeZone()).toLocalDate();
         LocalDate day2 = DBTimeUtils.getZonedDateTime(end, timeZone()).toLocalDate();
 
         List<String> dateList = new ArrayList<>();
-        while(!day.isAfter(day2)) {
-            if(!isBusinessDay(day)) {
+        while (!day.isAfter(day2)) {
+            if (!isBusinessDay(day)) {
                 dateList.add(DateStringUtils.format(day));
             }
             day = day.plusDays(1);
@@ -420,13 +423,13 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public String[] nonBusinessDaysInRange(String start, String end) {
-        if(start == null || end == null) {
+        if (start == null || end == null) {
             return new String[0];
         }
 
         List<String> dateList = new ArrayList<>();
-        if(!DateStringUtils.isAfter(start, end)) {
-            if(!isBusinessDay(start)) {
+        if (!DateStringUtils.isAfter(start, end)) {
+            if (!isBusinessDay(start)) {
                 dateList.add(start);
             }
             start = nextNonBusinessDay(start);
@@ -434,8 +437,8 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
             return new String[0];
         }
 
-        //first isAfter ensures the date strings will be of the correct format
-        while(!DateStringUtils.isAfterQuiet(start, end)) {
+        // first isAfter ensures the date strings will be of the correct format
+        while (!DateStringUtils.isAfterQuiet(start, end)) {
             dateList.add(start);
             start = nextNonBusinessDay(start);
         }
@@ -444,11 +447,11 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public long diffNonBusinessNanos(final DBDateTime start, final DBDateTime end) {
-        if(start == null || end == null) {
+        if (start == null || end == null) {
             return QueryConstants.NULL_LONG;
         }
 
-        if(DBTimeUtils.isAfter(start, end)) {
+        if (DBTimeUtils.isAfter(start, end)) {
             return -diffNonBusinessNanos(end, start);
         }
 
@@ -456,7 +459,7 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public double diffBusinessDay(final DBDateTime start, final DBDateTime end) {
-        if(start == null || end == null) {
+        if (start == null || end == null) {
             return QueryConstants.NULL_DOUBLE;
         }
 
@@ -464,11 +467,12 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public double diffNonBusinessDay(final DBDateTime start, final DBDateTime end) {
-        if(start == null || end == null) {
+        if (start == null || end == null) {
             return QueryConstants.NULL_DOUBLE;
         }
 
-        return (double) diffNonBusinessNanos(start, end) / (double) standardBusinessDayLengthNanos();
+        return (double) diffNonBusinessNanos(start, end)
+            / (double) standardBusinessDayLengthNanos();
     }
 
     public int numberOfBusinessDays(DBDateTime start, DBDateTime end) {
@@ -476,7 +480,8 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public int numberOfBusinessDays(DBDateTime start, DBDateTime end, final boolean endInclusive) {
-        return numberOfBusinessDays(start == null ? null : start.toDateString(timeZone()), end == null ? null : end.toDateString(timeZone()), endInclusive);
+        return numberOfBusinessDays(start == null ? null : start.toDateString(timeZone()),
+            end == null ? null : end.toDateString(timeZone()), endInclusive);
     }
 
     public int numberOfBusinessDays(String start, String end) {
@@ -484,21 +489,21 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public int numberOfBusinessDays(String start, String end, final boolean endInclusive) {
-        if(start == null || end == null) {
+        if (start == null || end == null) {
             return QueryConstants.NULL_INT;
         }
 
         int days = 0;
-        if(DateStringUtils.isBefore(start, end)) {
-            if(isBusinessDay(start)) {
+        if (DateStringUtils.isBefore(start, end)) {
+            if (isBusinessDay(start)) {
                 days++;
             }
             start = nextBusinessDay(start);
-        } else if(DateStringUtils.isAfter(start, end)){
+        } else if (DateStringUtils.isAfter(start, end)) {
             return -numberOfBusinessDays(end, start, endInclusive);
         }
 
-        while(DateStringUtils.isBeforeQuiet(start, end)) {
+        while (DateStringUtils.isBeforeQuiet(start, end)) {
             days++;
             start = nextBusinessDay(start);
         }
@@ -510,48 +515,55 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
         return numberOfNonBusinessDays(start, end, false);
     }
 
-    public int numberOfNonBusinessDays(DBDateTime start, DBDateTime end, final boolean endInclusive) {
-        return numberOfNonBusinessDays(start == null ? null : start.toDateString(timeZone()), end == null ? null : end.toDateString(timeZone()), endInclusive);
+    public int numberOfNonBusinessDays(DBDateTime start, DBDateTime end,
+        final boolean endInclusive) {
+        return numberOfNonBusinessDays(start == null ? null : start.toDateString(timeZone()),
+            end == null ? null : end.toDateString(timeZone()), endInclusive);
     }
 
-    public int numberOfNonBusinessDays(final String start, final String end){
+    public int numberOfNonBusinessDays(final String start, final String end) {
         return numberOfNonBusinessDays(start, end, false);
     }
 
-    public int numberOfNonBusinessDays(final String start, final String end, final boolean endInclusive){
-        if(start == null || end == null) {
+    public int numberOfNonBusinessDays(final String start, final String end,
+        final boolean endInclusive) {
+        if (start == null || end == null) {
             return QueryConstants.NULL_INT;
         }
 
-        return numberOfDays(start, end, endInclusive) - numberOfBusinessDays(start, end, endInclusive);
+        return numberOfDays(start, end, endInclusive)
+            - numberOfBusinessDays(start, end, endInclusive);
     }
 
     public double fractionOfStandardBusinessDay(final DBDateTime time) {
         final BusinessSchedule businessDate = getBusinessSchedule(time);
-        return businessDate == null ? 0.0 : (double) businessDate.getLOBD() / (double) standardBusinessDayLengthNanos();
+        return businessDate == null ? 0.0
+            : (double) businessDate.getLOBD() / (double) standardBusinessDayLengthNanos();
     }
 
     public double fractionOfStandardBusinessDay(final String date) {
         final BusinessSchedule businessDate = getBusinessSchedule(date);
-        return businessDate == null ? 0.0 : (double) businessDate.getLOBD() / (double) standardBusinessDayLengthNanos();
+        return businessDate == null ? 0.0
+            : (double) businessDate.getLOBD() / (double) standardBusinessDayLengthNanos();
     }
 
     public double fractionOfBusinessDayRemaining(final DBDateTime time) {
         final BusinessSchedule businessDate = getBusinessSchedule(time);
-        if(businessDate == null) {
+        if (businessDate == null) {
             return QueryConstants.NULL_DOUBLE;
         }
 
-        if(businessDate.getLOBD() == 0) {
+        if (businessDate.getLOBD() == 0) {
             return 0;
         }
 
         long businessDaySoFar = businessDate.businessTimeElapsed(time);
-        return (double) (businessDate.getLOBD() - businessDaySoFar) /  (double) businessDate.getLOBD();
+        return (double) (businessDate.getLOBD() - businessDaySoFar)
+            / (double) businessDate.getLOBD();
     }
 
     public double fractionOfBusinessDayComplete(final DBDateTime time) {
-        if(time == null){
+        if (time == null) {
             return QueryConstants.NULL_DOUBLE;
         }
 
@@ -563,14 +575,15 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public boolean isLastBusinessDayOfMonth(final String date) {
-        if(!isBusinessDay(date)) {
+        if (!isBusinessDay(date)) {
             return false;
         }
 
         String nextBusAfterDate = nextBusinessDay(date);
 
-        //covers case December to January
-        return (DateStringUtils.monthOfYear(date) - DateStringUtils.monthOfYear(nextBusAfterDate)) != 0;
+        // covers case December to January
+        return (DateStringUtils.monthOfYear(date)
+            - DateStringUtils.monthOfYear(nextBusAfterDate)) != 0;
     }
 
     public boolean isLastBusinessDayOfWeek(final DBDateTime time) {
@@ -578,12 +591,13 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public boolean isLastBusinessDayOfWeek(final String date) {
-        if(!isBusinessDay(date)) {
+        if (!isBusinessDay(date)) {
             return false;
         }
 
         String nextBusinessDay = nextBusinessDay(date);
-        return dayOfWeek(date).compareTo(dayOfWeek(nextBusinessDay)) > 0 || numberOfDays(date, nextBusinessDay) > 6;
+        return dayOfWeek(date).compareTo(dayOfWeek(nextBusinessDay)) > 0
+            || numberOfDays(date, nextBusinessDay) > 6;
     }
 
 }

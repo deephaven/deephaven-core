@@ -21,15 +21,16 @@ public class LogOutputCsvImpl extends LogOutputBaseImpl implements LogOutput, By
 
     /**
      * Constructor
+     * 
      * @param bufferPool where we get our buffers
      */
     public LogOutputCsvImpl(LogBufferPool bufferPool) {
         super(bufferPool);
     }
 
-    //------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------
     // LogOutput implementation - append methods
-    //------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------
 
     @Override
     public LogOutput append(boolean b) {
@@ -42,31 +43,51 @@ public class LogOutputCsvImpl extends LogOutputBaseImpl implements LogOutput, By
 
     @Override
     public LogOutput append(char c) {
-        try { stream.appendByte((byte) c); } catch ( IOException x ) { throw new UncheckedIOException(x); }
+        try {
+            stream.appendByte((byte) c);
+        } catch (IOException x) {
+            throw new UncheckedIOException(x);
+        }
         return this;
     }
 
     @Override
     public LogOutput append(short s) {
-        try { stream.appendShort(s); } catch ( IOException x ) { throw new UncheckedIOException(x);  }
+        try {
+            stream.appendShort(s);
+        } catch (IOException x) {
+            throw new UncheckedIOException(x);
+        }
         return this;
     }
 
     @Override
     public LogOutput append(int i) {
-        try { stream.appendInt(i); } catch ( IOException x ) { throw new UncheckedIOException(x);  }
+        try {
+            stream.appendInt(i);
+        } catch (IOException x) {
+            throw new UncheckedIOException(x);
+        }
         return this;
     }
 
     @Override
     public LogOutput append(long l) {
-        try { stream.appendLong(l); } catch ( IOException x ) { throw new UncheckedIOException(x); }
+        try {
+            stream.appendLong(l);
+        } catch (IOException x) {
+            throw new UncheckedIOException(x);
+        }
         return this;
     }
 
     @Override
     public LogOutput appendDouble(double f) {
-        try { stream.appendDouble(f); } catch ( IOException x ) { throw new UncheckedIOException(x); }
+        try {
+            stream.appendDouble(f);
+        } catch (IOException x) {
+            throw new UncheckedIOException(x);
+        }
         return this;
     }
 
@@ -101,16 +122,22 @@ public class LogOutputCsvImpl extends LogOutputBaseImpl implements LogOutput, By
 
     @Override
     public LogOutput append(CharSequence seq) {
-        try { stream.appendBytes(seq == null ? "null" : seq); } catch ( IOException x ) { throw new UncheckedIOException(x); }
+        try {
+            stream.appendBytes(seq == null ? "null" : seq);
+        } catch (IOException x) {
+            throw new UncheckedIOException(x);
+        }
         return this;
     }
 
     @Override
     public LogOutput append(final CharSequence seq, final int start, final int length) {
         try {
-            if (seq == null) stream.appendBytes("null");
-            else stream.appendBytes(seq, start, length);
-        } catch ( IOException x ) {
+            if (seq == null)
+                stream.appendBytes("null");
+            else
+                stream.appendBytes(seq, start, length);
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
         return this;
@@ -119,9 +146,11 @@ public class LogOutputCsvImpl extends LogOutputBaseImpl implements LogOutput, By
     @Override
     public LogOutput append(final ByteBuffer bb) {
         try {
-            if (bb == null) stream.appendBytes("null");
-            else stream.appendByteBuffer(bb);
-        } catch ( IOException x ) {
+            if (bb == null)
+                stream.appendBytes("null");
+            else
+                stream.appendByteBuffer(bb);
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
         return this;
@@ -129,13 +158,21 @@ public class LogOutputCsvImpl extends LogOutputBaseImpl implements LogOutput, By
 
     @Override
     public LogOutput appendTimestamp(long utcMillis, TimestampBuffer tb) {
-        try { stream.write(tb.getTimestamp(utcMillis)); } catch ( IOException x ) { throw new UncheckedIOException(x); }
+        try {
+            stream.write(tb.getTimestamp(utcMillis));
+        } catch (IOException x) {
+            throw new UncheckedIOException(x);
+        }
         return this;
     }
 
     @Override
     public LogOutput appendTimestampMicros(long utcMicros, TimestampBufferMicros tb) {
-        try { stream.write(tb.getTimestamp(utcMicros)); } catch ( IOException x ) { throw new UncheckedIOException(x); }
+        try {
+            stream.write(tb.getTimestamp(utcMicros));
+        } catch (IOException x) {
+            throw new UncheckedIOException(x);
+        }
         return this;
     }
 
@@ -143,21 +180,20 @@ public class LogOutputCsvImpl extends LogOutputBaseImpl implements LogOutput, By
     public LogOutput append(Throwable t) {
         boolean root = true;
         do {
-            if ( !root ) {
+            if (!root) {
                 append("caused by:").nl();
-            }
-            else {
+            } else {
                 root = false;
             }
             append(t.getClass().getName()).append(": ").append(t.getMessage());
-            for ( StackTraceElement e : t.getStackTrace() ) {
+            for (StackTraceElement e : t.getStackTrace()) {
                 nl().append("        at ")
-                        .append(e.getClassName()).append(".").append(e.getMethodName())
-                        .append("(").append(e.getFileName()).append(":").append(e.getLineNumber()).append(")");
+                    .append(e.getClassName()).append(".").append(e.getMethodName())
+                    .append("(").append(e.getFileName()).append(":").append(e.getLineNumber())
+                    .append(")");
             }
             nl();
-        }
-        while ( (t = t.getCause()) != null );
+        } while ((t = t.getCause()) != null);
         return this;
     }
 
@@ -165,7 +201,7 @@ public class LogOutputCsvImpl extends LogOutputBaseImpl implements LogOutput, By
     public LogOutput append(final byte[] ba) {
         try {
             stream.write(ba);
-        } catch ( IOException x ) {
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
         return this;
@@ -175,7 +211,7 @@ public class LogOutputCsvImpl extends LogOutputBaseImpl implements LogOutput, By
     public LogOutput append(final byte[] ba, int pos, int length) {
         try {
             stream.write(ba, pos, length);
-        } catch ( IOException x ) {
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
         return this;
@@ -184,10 +220,10 @@ public class LogOutputCsvImpl extends LogOutputBaseImpl implements LogOutput, By
     @Override
     public LogOutput append(final byte[] ba, byte terminator) {
         try {
-            for ( int i = 0; i < ba.length && ba[i] != terminator; ++i ) {
+            for (int i = 0; i < ba.length && ba[i] != terminator; ++i) {
                 stream.appendByte(ba[i]);
             }
-        } catch ( IOException x ) {
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
         return this;

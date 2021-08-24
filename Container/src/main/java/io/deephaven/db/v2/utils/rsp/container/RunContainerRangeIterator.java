@@ -7,7 +7,8 @@ final class RunContainerRangeIterator implements SearchRangeIterator {
 
     private int pos;
     private int start;
-    private int end;  // end == -1 marks a just initialized iterator for which hasNext()/next() have not been called yet.
+    private int end; // end == -1 marks a just initialized iterator for which hasNext()/next() have
+                     // not been called yet.
 
     RunContainerRangeIterator(final RunContainer p) {
         this(p, 0);

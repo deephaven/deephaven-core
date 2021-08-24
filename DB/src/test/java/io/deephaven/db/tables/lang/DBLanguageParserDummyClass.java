@@ -79,8 +79,9 @@ public class DBLanguageParserDummyClass {
     public final InnerClass innerClassInstance = new InnerClass();
     public final InnerClass2 innerClass2Instance = new InnerClass2();
 
-    public static double[] interpolate(double[] x, double[] y, double[] xi, NestedEnum anEnumArg, boolean extrapolate) {
-        return new double[]{0};
+    public static double[] interpolate(double[] x, double[] y, double[] xi, NestedEnum anEnumArg,
+        boolean extrapolate) {
+        return new double[] {0};
     }
 
     public enum NestedEnum {
@@ -88,7 +89,9 @@ public class DBLanguageParserDummyClass {
     }
 
     public interface SubclassOfDBLanguageParserDummyClass {
-        enum EnumInInterface { THING_ONE, THING_TWO }
+        enum EnumInInterface {
+            THING_ONE, THING_TWO
+        }
     }
 
     public class InnerClass implements SubclassOfDBLanguageParserDummyClass {
@@ -111,7 +114,7 @@ public class DBLanguageParserDummyClass {
 
     public class InnerClass2 implements SubclassOfDBLanguageParserDummyClass {
         public final InnerClass innerClassAsInstanceOfAnotherInnerClass =
-                new InnerClass("InnerClass2.innerClassAsInstanceOfAnotherInnerClass.instancevar");
+            new InnerClass("InnerClass2.innerClassAsInstanceOfAnotherInnerClass.instancevar");
     }
 
     public static class StaticNestedClass implements SubclassOfDBLanguageParserDummyClass {

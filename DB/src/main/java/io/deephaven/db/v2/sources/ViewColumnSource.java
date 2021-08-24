@@ -20,7 +20,8 @@ import static io.deephaven.util.QueryConstants.*;
 
 public class ViewColumnSource<T> extends AbstractColumnSource<T> {
     private final Formula formula;
-    // We explicitly want all Groovy commands to run under the 'file:/groovy/shell' source, so explicitly create that.
+    // We explicitly want all Groovy commands to run under the 'file:/groovy/shell' source, so
+    // explicitly create that.
     private static URL groovyShellUrl;
     static {
         try {
@@ -31,11 +32,16 @@ public class ViewColumnSource<T> extends AbstractColumnSource<T> {
         }
     }
 
-    private static final CodeSource codeSource = new CodeSource(groovyShellUrl, (java.security.cert.Certificate[]) null);
-    // The permission collection should not be static, because the class loader might take place before the
+    private static final CodeSource codeSource =
+        new CodeSource(groovyShellUrl, (java.security.cert.Certificate[]) null);
+    // The permission collection should not be static, because the class loader might take place
+    // before the
     // custom policy object is assigned.
     private final PermissionCollection perms = Policy.getPolicy().getPermissions(codeSource);
-    private final AccessControlContext context = AccessController.doPrivileged((PrivilegedAction<AccessControlContext>) () -> new AccessControlContext(new ProtectionDomain[]{new ProtectionDomain(new CodeSource(groovyShellUrl, (java.security.cert.Certificate[]) null), perms)}));
+    private final AccessControlContext context = AccessController
+        .doPrivileged((PrivilegedAction<AccessControlContext>) () -> new AccessControlContext(
+            new ProtectionDomain[] {new ProtectionDomain(
+                new CodeSource(groovyShellUrl, (java.security.cert.Certificate[]) null), perms)}));
 
     public ViewColumnSource(Class<T> type, Formula formula) {
         super(type);
@@ -59,12 +65,12 @@ public class ViewColumnSource<T> extends AbstractColumnSource<T> {
         }
         final SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
-            return AccessController.doPrivileged((PrivilegedAction<T>)() -> {
-                //noinspection unchecked
+            return AccessController.doPrivileged((PrivilegedAction<T>) () -> {
+                // noinspection unchecked
                 return (T) formula.get(index);
             }, context);
         } else {
-            //noinspection unchecked
+            // noinspection unchecked
             return (T) formula.get(index);
         }
     }
@@ -138,7 +144,7 @@ public class ViewColumnSource<T> extends AbstractColumnSource<T> {
         if (index < 0) {
             return null;
         }
-        //noinspection unchecked
+        // noinspection unchecked
         return (T) formula.getPrev(index);
     }
 
@@ -223,31 +229,33 @@ public class ViewColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public Chunk<Values> getChunk(@NotNull final GetContext context,
-                                  @NotNull final OrderedKeys orderedKeys) {
-        return formula.getChunk(((VCSGetContext)context).underlyingGetContext, orderedKeys);
+        @NotNull final OrderedKeys orderedKeys) {
+        return formula.getChunk(((VCSGetContext) context).underlyingGetContext, orderedKeys);
 
     }
 
     @Override
     public Chunk<Values> getPrevChunk(@NotNull final GetContext context,
-                                      @NotNull final OrderedKeys orderedKeys) {
-        return formula.getPrevChunk(((VCSGetContext)context).underlyingGetContext, orderedKeys);
+        @NotNull final OrderedKeys orderedKeys) {
+        return formula.getPrevChunk(((VCSGetContext) context).underlyingGetContext, orderedKeys);
 
     }
 
     @Override
     public void fillChunk(@NotNull final FillContext context,
-                          @NotNull final WritableChunk<? super Values> destination,
-                          @NotNull final OrderedKeys orderedKeys) {
-        formula.fillChunk(((VCSFillContext)context).underlyingFillContext, destination, orderedKeys);
+        @NotNull final WritableChunk<? super Values> destination,
+        @NotNull final OrderedKeys orderedKeys) {
+        formula.fillChunk(((VCSFillContext) context).underlyingFillContext, destination,
+            orderedKeys);
     }
 
 
     @Override
     public void fillPrevChunk(@NotNull final FillContext context,
-                              @NotNull final WritableChunk<? super Values> destination,
-                              @NotNull final OrderedKeys orderedKeys) {
-        formula.fillPrevChunk(((VCSFillContext)context).underlyingFillContext, destination, orderedKeys);
+        @NotNull final WritableChunk<? super Values> destination,
+        @NotNull final OrderedKeys orderedKeys) {
+        formula.fillPrevChunk(((VCSFillContext) context).underlyingFillContext, destination,
+            orderedKeys);
     }
 
     public static class VCSGetContext implements GetContext {

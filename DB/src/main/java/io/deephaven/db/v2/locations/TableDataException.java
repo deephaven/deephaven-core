@@ -27,15 +27,15 @@ public class TableDataException extends RuntimeException {
 
     public TableDataException(@NotNull final String message, @Nullable final Throwable cause) {
         super(message, cause);
-        wasInterrupted = cause != null && ( // This null check isn't strictly necessary, but enhances clarity and perceived performance.
-                (cause instanceof TableDataException && ((TableDataException)cause).wasInterrupted)
-                        || cause instanceof InterruptedException
-                        || cause instanceof ClosedByInterruptException
-                        || cause instanceof FileLockInterruptionException
-                        || cause instanceof InterruptedIOException
-                        || cause instanceof InterruptedNamingException
-                        || cause instanceof QueryCancellationException
-        );
+        wasInterrupted = cause != null && ( // This null check isn't strictly necessary, but
+                                            // enhances clarity and perceived performance.
+        (cause instanceof TableDataException && ((TableDataException) cause).wasInterrupted)
+            || cause instanceof InterruptedException
+            || cause instanceof ClosedByInterruptException
+            || cause instanceof FileLockInterruptionException
+            || cause instanceof InterruptedIOException
+            || cause instanceof InterruptedNamingException
+            || cause instanceof QueryCancellationException);
     }
 
     public TableDataException(@NotNull final String message) {

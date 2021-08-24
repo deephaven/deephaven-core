@@ -16,108 +16,168 @@ public final class IterPerformanceTest {
         mf.setGroupingUsed(true);
         mf.setGroupingSize(3);
     }
-    static String nf(final long v) { return nf.format(v); }
-    static String mf(final double v) { return mf.format(v); }
+
+    static String nf(final long v) {
+        return nf.format(v);
+    }
+
+    static String mf(final double v) {
+        return mf.format(v);
+    }
+
     interface IterStrategy {
         interface Factory {
             IterStrategy make();
         }
         interface ValuesBuilder {
             void add(long v);
+
             void done();
         }
+
         IterStrategy.Factory getFactory();
+
         ValuesBuilder builder();
-        // Since tests will run multiple times, and creation time is high (higher than individual operations),
+
+        // Since tests will run multiple times, and creation time is high (higher than individual
+        // operations),
         // we create the base index one and clone it before every run of update.
         long getBaseCrc32(long toBeOred);
+
         long size();
     }
 
     static void updateCrc32(final CRC32 crc32, final long v) {
         for (int bi = 0; bi < 8; ++bi) {
-            final int b = (int) ((0x00000000000000FFL) & (v >> 8*bi));
+            final int b = (int) ((0x00000000000000FFL) & (v >> 8 * bi));
             crc32.update(b);
         }
     }
 
     static abstract class IndexIterStrategy implements IterStrategy {
         protected Index ix;
-        @Override public ValuesBuilder builder() {
+
+        @Override
+        public ValuesBuilder builder() {
             return new ValuesBuilder() {
                 private final Index.RandomBuilder b = Index.FACTORY.getRandomBuilder();
-                @Override public void add(long v) { b.addKey(v); }
-                @Override public void done() { ix = b.getIndex(); }
+
+                @Override
+                public void add(long v) {
+                    b.addKey(v);
+                }
+
+                @Override
+                public void done() {
+                    ix = b.getIndex();
+                }
             };
         }
-        @Override public long size() {
+
+        @Override
+        public long size() {
             return ix.size();
         }
     }
 
     static class IndexRangeIterStrategy extends IndexIterStrategy {
-        @Override public long getBaseCrc32(final long x) {
+        @Override
+        public long getBaseCrc32(final long x) {
             final CRC32 crc32 = new CRC32();
             final Index.RangeIterator it = ix.rangeIterator();
             while (it.hasNext()) {
                 it.next();
                 for (long v = it.currentRangeStart(); v <= it.currentRangeEnd(); ++v) {
-                    updateCrc32(crc32, v|x);
+                    updateCrc32(crc32, v | x);
                 }
             }
             return crc32.getValue();
         }
-        @Override public Factory getFactory() { return () -> new IndexRangeIterStrategy(); }
-        @Override public String toString() {
+
+        @Override
+        public Factory getFactory() {
+            return () -> new IndexRangeIterStrategy();
+        }
+
+        @Override
+        public String toString() {
             return "IndexRange";
         }
     }
 
     static class IndexBasicIterStrategy extends IndexIterStrategy {
-        @Override public long getBaseCrc32(final long x) {
+        @Override
+        public long getBaseCrc32(final long x) {
             final CRC32 crc32 = new CRC32();
             final Index.Iterator it = ix.iterator();
             while (it.hasNext()) {
                 final long v = it.nextLong();
-                updateCrc32(crc32, v|x);
+                updateCrc32(crc32, v | x);
             }
             return crc32.getValue();
         }
-        @Override public Factory getFactory() { return () -> new IndexBasicIterStrategy(); }
-        @Override public String toString() {
+
+        @Override
+        public Factory getFactory() {
+            return () -> new IndexBasicIterStrategy();
+        }
+
+        @Override
+        public String toString() {
             return "IndexBasic";
         }
     }
 
     static class IndexForEachStrategy extends IndexIterStrategy {
-        @Override public long getBaseCrc32(final long x) {
+        @Override
+        public long getBaseCrc32(final long x) {
             final CRC32 crc32 = new CRC32();
             ix.forEachLong((long v) -> {
-                updateCrc32(crc32, v|x);
+                updateCrc32(crc32, v | x);
                 return true;
             });
             return crc32.getValue();
         }
-        @Override public Factory getFactory() { return () -> new IndexForEachStrategy(); }
-        @Override public String toString() {
+
+        @Override
+        public Factory getFactory() {
+            return () -> new IndexForEachStrategy();
+        }
+
+        @Override
+        public String toString() {
             return "IndexForEach";
         }
     }
 
     static class RspBitmapIterStrategy implements IterStrategy {
         private RspBitmap rb;
-        @Override public IterStrategy.ValuesBuilder builder() {
+
+        @Override
+        public IterStrategy.ValuesBuilder builder() {
             return new ValuesBuilder() {
                 private RspBitmap r = new RspBitmap();
-                @Override public void add(final long v) { r.addUnsafeNoWriteCheck(v); }
-                @Override public void done() {
+
+                @Override
+                public void add(final long v) {
+                    r.addUnsafeNoWriteCheck(v);
+                }
+
+                @Override
+                public void done() {
                     r.finishMutationsAndOptimize();
                     rb = r;
                 }
             };
         }
-        @Override public Factory getFactory() { return () -> new RspBitmapIterStrategy(); }
-        @Override public long getBaseCrc32(final long x) {
+
+        @Override
+        public Factory getFactory() {
+            return () -> new RspBitmapIterStrategy();
+        }
+
+        @Override
+        public long getBaseCrc32(final long x) {
             final CRC32 crc32 = new CRC32();
             final RspRangeIterator it = rb.getRangeIterator();
             while (it.hasNext()) {
@@ -125,16 +185,20 @@ public final class IterPerformanceTest {
                 final long s = it.start();
                 final long e = it.end();
                 for (long v = s; v <= e; ++v) {
-                    updateCrc32(crc32, v|x);
+                    updateCrc32(crc32, v | x);
                 }
             }
             it.close();
             return crc32.getValue();
         }
-        @Override public long size() {
+
+        @Override
+        public long size() {
             return rb.getCardinality();
         }
-        @Override public String toString() {
+
+        @Override
+        public String toString() {
             return "RspBitmap";
         }
     }
@@ -148,7 +212,8 @@ public final class IterPerformanceTest {
             this.clusterMid = clusterMid;
         }
 
-        long populateFirstArgStep(final int jumpPropOneIn, final int d, final int halfClusterWidth, final Random r) {
+        long populateFirstArgStep(final int jumpPropOneIn, final int d, final int halfClusterWidth,
+            final Random r) {
             final long k;
             if (r.nextInt(jumpPropOneIn) == 0) {
                 k = clusterMid = halfClusterWidth + r.nextInt(d);
@@ -160,7 +225,7 @@ public final class IterPerformanceTest {
         }
 
         void populateSecondArgStep(final int sizePropOneIn, final int sharePropOneIn, final long k,
-                                   int cluster1Mid, final int halfClusterWidth, final Random r) {
+            int cluster1Mid, final int halfClusterWidth, final Random r) {
             if (sizePropOneIn != 1 && r.nextInt(sizePropOneIn) != 0) {
                 return;
             }
@@ -176,8 +241,9 @@ public final class IterPerformanceTest {
     }
 
     private static class Config {
-        Config(final String name, final int min, final int max, final int clusterWidth, final int sizePropOneIn,
-               final int sharePropOneIn, final int jumpPropOneIn) {
+        Config(final String name, final int min, final int max, final int clusterWidth,
+            final int sizePropOneIn,
+            final int sharePropOneIn, final int jumpPropOneIn) {
             this.name = name;
             this.clusterWidth = clusterWidth;
             this.sizePropOneIn = sizePropOneIn;
@@ -186,6 +252,7 @@ public final class IterPerformanceTest {
             this.min = min;
             this.max = max;
         }
+
         private final String name;
         private final int clusterWidth;
         private final int sizePropOneIn;
@@ -196,13 +263,14 @@ public final class IterPerformanceTest {
     };
 
     private static final Config sparse =
-            new Config("sparse", 10, 300000000, 50, 1, 1000, 25);
+        new Config("sparse", 10, 300000000, 50, 1, 1000, 25);
     private static final Config dense =
-            new Config("dense", 20, 30000000, 20, 1, 3, 20);
+        new Config("dense", 20, 30000000, 20, 1, 3, 20);
     private static final Config asymmetric =
-            new Config("asymmetric", 10, 300000000, 30000000, 160000, 1000, 25);
+        new Config("asymmetric", 10, 300000000, 30000000, 160000, 1000, 25);
 
-    public static void setupStrategy(final IterStrategy s, final int sz, final Config c, final String pref, final boolean print) {
+    public static void setupStrategy(final IterStrategy s, final int sz, final Config c,
+        final String pref, final boolean print) {
         final int halfClusterWidth = c.clusterWidth / 2;
         final IterStrategy.ValuesBuilder b = s.builder();
         final ValuesBuilder vb = new ValuesBuilder(c.min + halfClusterWidth, b);
@@ -210,7 +278,8 @@ public final class IterPerformanceTest {
         final int d = c.max - c.min + 1 - c.clusterWidth;
         for (int i = 0; i < sz; ++i) {
             final long k = vb.populateFirstArgStep(c.jumpPropOneIn, d, halfClusterWidth, r);
-            vb.populateSecondArgStep(c.sizePropOneIn, c.sharePropOneIn, k, vb.clusterMid, halfClusterWidth, r);
+            vb.populateSecondArgStep(c.sizePropOneIn, c.sharePropOneIn, k, vb.clusterMid,
+                halfClusterWidth, r);
         }
         b.done();
         if (!print) {
@@ -244,7 +313,7 @@ public final class IterPerformanceTest {
             b.add(ra.nextInt(max));
             b.done();
             final PerfStats s = new PerfStats(2);
-            trick += runAndGetSamples(st,1, s);
+            trick += runAndGetSamples(st, 1, s);
             sum += s.avg();
         }
         return sum / steps / trick;
@@ -254,13 +323,13 @@ public final class IterPerformanceTest {
     final static boolean runIndexRange = true;
     final static boolean runIndexForEach = true;
     final static boolean runRspBitmap = true;
-    static final Config configs[] = { sparse, dense, asymmetric };
+    static final Config configs[] = {sparse, dense, asymmetric};
     static final String me = IterPerformanceTest.class.getSimpleName();
     static final double s2ns = 1e9;
 
     static void runStep(
-            final Config c, final int sn, final IterStrategy[] ss,
-            final String stepName, final int sz, final int runs, final boolean print) {
+        final Config c, final int sn, final IterStrategy[] ss,
+        final String stepName, final int sz, final int runs, final boolean print) {
         final Runtime rt = Runtime.getRuntime();
         System.out.println(me + ": Running " + c.name + " " + stepName + " sz=" + nf(sz));
         final String pfx = me + "    ";
@@ -273,8 +342,9 @@ public final class IterPerformanceTest {
             final double dMb = pm.dm() / (1024.0 * 1024.0);
             if (print) {
                 System.out.println(pfx + String.format(
-                        "Building values for " + ss[si].toString() +
-                                " done in %.3f secs, delta memory used %s", pm.dt() / s2ns, mf(dMb)));
+                    "Building values for " + ss[si].toString() +
+                        " done in %.3f secs, delta memory used %s",
+                    pm.dt() / s2ns, mf(dMb)));
             }
             pm.reset();
         }
@@ -292,7 +362,7 @@ public final class IterPerformanceTest {
             System.out.println(pfx + "trick optimizer value = " + nf(trick));
             if (si != 0) {
                 PerfStats.comparePrint(
-                        pStats, ss[0].toString(), sStats, ss[si].toString(), pfx);
+                    pStats, ss[0].toString(), sStats, ss[si].toString(), pfx);
             }
         }
         final long t1 = System.nanoTime();
@@ -302,18 +372,18 @@ public final class IterPerformanceTest {
 
     // Having separate warmup and full methods helps separate them in JProfiler.
     static void runStepWarmup(final Config c, final int sn, final IterStrategy ss[],
-                              final int sz, final int runs) {
-        runStep(c, sn, ss,"warmup", sz, runs, false);
+        final int sz, final int runs) {
+        runStep(c, sn, ss, "warmup", sz, runs, false);
     }
 
     static void runStepFull(final Config c, final int sn, final IterStrategy ss[],
-                            final int sz, final int runs) {
-        runStep(c, sn, ss,"full test", sz, runs, true);
+        final int sz, final int runs) {
+        runStep(c, sn, ss, "full test", sz, runs, true);
     }
 
     static void run(
-            final Config c, final int sn, final IterStrategy[] ss,
-            final int warmupSz, final int warmupRuns, final int fullSz, final int fullRuns) {
+        final Config c, final int sn, final IterStrategy[] ss,
+        final int warmupSz, final int warmupRuns, final int fullSz, final int fullRuns) {
         runStepWarmup(c, sn, ss, warmupSz, warmupRuns);
         runStepFull(c, sn, ss, fullSz, fullRuns);
     }
@@ -346,7 +416,7 @@ public final class IterPerformanceTest {
             final long t1 = System.nanoTime();
             final long dt = t1 - t0;
             System.out.println(me + ": " + ss[si].toString() + " Code warmup ran in " +
-                    dt / s2ns + " seconds, output=" + wo);
+                dt / s2ns + " seconds, output=" + wo);
         }
         final int warmupSz = 1 * 1000 * 1000;
         final int warmupRuns = 20;

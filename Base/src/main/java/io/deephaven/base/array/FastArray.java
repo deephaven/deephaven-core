@@ -52,13 +52,16 @@ public class FastArray<T> {
         }, initialSize, true);
     }
 
-    // newInstance shouldn't use a pool or any special mechanism! (Sharing happens w/ newInstance w/ other cloned/copied instances)
+    // newInstance shouldn't use a pool or any special mechanism! (Sharing happens w/ newInstance w/
+    // other cloned/copied instances)
     // need to use clazz b/c we want array to actually be an array of type T
-    public FastArray(final Class<? extends T> clazz, final Function.Nullary<? extends T> newInstance) {
+    public FastArray(final Class<? extends T> clazz,
+        final Function.Nullary<? extends T> newInstance) {
         this(clazz, newInstance, 0, true);
     }
 
-    public FastArray(final Class<? extends T> clazz, final Function.Nullary<? extends T> newInstance, int initialSize, boolean preallocate) {
+    public FastArray(final Class<? extends T> clazz,
+        final Function.Nullary<? extends T> newInstance, int initialSize, boolean preallocate) {
         this.clazz = clazz;
         this.newInstance = newInstance;
         this.length = 0;
@@ -95,7 +98,7 @@ public class FastArray<T> {
     // useful for maintaining small sets based on object identity
     public final boolean addUnique(T t) {
         for (int i = 0; i < length; ++i) {
-            if ( array[i] == t ) {
+            if (array[i] == t) {
                 return false;
             }
         }
@@ -103,7 +106,8 @@ public class FastArray<T> {
         return true;
     }
 
-    // useful when using FastArray w/ immutable objects. enums, string, etc. or when you must remember a previous value
+    // useful when using FastArray w/ immutable objects. enums, string, etc. or when you must
+    // remember a previous value
     public final void fastAdd(T t) {
         array = ArrayUtil.put(array, length, t, clazz);
         ++length;
@@ -114,7 +118,8 @@ public class FastArray<T> {
         length += len;
     }
 
-    // useful when using FastArray as a cache / when FastArray is managing memory. must remember to reset or copy over returned value
+    // useful when using FastArray as a cache / when FastArray is managing memory. must remember to
+    // reset or copy over returned value
     public final T next() {
         T t;
         if ((length >= array.length) || ((t = array[length]) == null)) {
@@ -186,15 +191,17 @@ public class FastArray<T> {
 
     public T removeThisIndex(int index) {
         if (index >= length) {
-            throw new IllegalArgumentException("you tried to remove this index: " + index + " when the array is only this long: " + length);
+            throw new IllegalArgumentException("you tried to remove this index: " + index
+                + " when the array is only this long: " + length);
         } else if (index < 0) {
-            throw new IllegalArgumentException("you tried to remove this index: " + index + " when we can only remove positive indices");
+            throw new IllegalArgumentException("you tried to remove this index: " + index
+                + " when we can only remove positive indices");
         } else {
 
             final T t = array[index];
 
-            //move all the items ahead one index and reduce the length
-            for (int i = index; i < length-1; i++) {
+            // move all the items ahead one index and reduce the length
+            for (int i = index; i < length - 1; i++) {
                 array[i] = array[i + 1];
             }
             length--;
@@ -207,9 +214,11 @@ public class FastArray<T> {
 
     public T removeThisIndexDontCareAboutOrder(int index) {
         if (index >= length) {
-            throw new IllegalArgumentException("you tried to remove this index: " + index + " when the array is only this long: " + length);
+            throw new IllegalArgumentException("you tried to remove this index: " + index
+                + " when the array is only this long: " + length);
         } else if (index < 0) {
-            throw new IllegalArgumentException("you tried to remove this index: " + index + " when we can only remove positive indices");
+            throw new IllegalArgumentException("you tried to remove this index: " + index
+                + " when we can only remove positive indices");
         } else {
 
             final T t = array[index];
@@ -222,13 +231,18 @@ public class FastArray<T> {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         final FastArray other = (FastArray) o;
 
-        if (clazz != null ? !clazz.equals(other.clazz) : other.clazz != null) return false;
-        if (length != other.length) return false;
-        if (!ArrayUtil.equals(array, other.array, 0, 0, length)) return false;
+        if (clazz != null ? !clazz.equals(other.clazz) : other.clazz != null)
+            return false;
+        if (length != other.length)
+            return false;
+        if (!ArrayUtil.equals(array, other.array, 0, 0, length))
+            return false;
 
         return true;
     }
@@ -252,7 +266,8 @@ public class FastArray<T> {
         msg.append(pre).append(extra).append("<length>").append(length).append("</length>\n");
         msg.append(pre).append(extra).append("<array>\n");
         for (int i = 0; i < array.length; i++) {
-            msg.append(pre).append(extra).append(extra).append("<index>").append(i).append("</index>\n");
+            msg.append(pre).append(extra).append(extra).append("<index>").append(i)
+                .append("</index>\n");
             msg.append(pre).append(extra).append(extra).append("<entry>\n");
             if (array[i] == null) {
                 msg.append(pre).append(extra).append(extra).append(extra).append("null");
@@ -282,27 +297,33 @@ public class FastArray<T> {
     }
 
     /**
-     * @param THIS  array will hold copies of right's content. Modified
-     * @param right content holder.  Not-modified
+     * @param THIS array will hold copies of right's content. Modified
+     * @param right content holder. Not-modified
      * @param <C>
      */
-    public static <C extends Copyable<C>> void copyValuesDeep(final FastArray<C> THIS, final FastArray<C> right) {
+    public static <C extends Copyable<C>> void copyValuesDeep(final FastArray<C> THIS,
+        final FastArray<C> right) {
         Assert.eqTrue(maybeCopyValuesDeep(THIS, right), "maybeCopyValuesDeep(THIS, right)");
     }
 
     // Even if this returns true, it doesn't mean that it was successfully copied!
     // Right still might have changed... use other methods to detect
     // However, if it returns false, we know right has changed!
-    public static <C extends Copyable<C>> boolean maybeCopyValuesDeep(final FastArray<C> THIS, final FastArray<C> right) {
-        if (THIS == right) return true;
+    public static <C extends Copyable<C>> boolean maybeCopyValuesDeep(final FastArray<C> THIS,
+        final FastArray<C> right) {
+        if (THIS == right)
+            return true;
 
         THIS.length = right.length;
         THIS.array = ArrayUtil.ensureSize(THIS.array, THIS.length, THIS.clazz);
         for (int i = 0; i < THIS.length; ++i) {
             final C rightItem = right.array[i];
-            if (rightItem == null) return false; // something changed on us!
-            else if (THIS.array[i] == null) THIS.array[i] = rightItem.safeClone();
-            else THIS.array[i].copyValues(rightItem);
+            if (rightItem == null)
+                return false; // something changed on us!
+            else if (THIS.array[i] == null)
+                THIS.array[i] = rightItem.safeClone();
+            else
+                THIS.array[i].copyValues(rightItem);
         }
         return THIS.length == right.length;
     }
@@ -313,11 +334,13 @@ public class FastArray<T> {
         return clone;
     }
 
-    public static <C extends Externalizable> void writeExternal(final FastArray<C> THIS, ObjectOutput out) throws IOException {
+    public static <C extends Externalizable> void writeExternal(final FastArray<C> THIS,
+        ObjectOutput out) throws IOException {
         writeExternal(THIS, out, THIS.getLength());
     }
 
-    public static <C extends Externalizable> void writeExternal(final FastArray<C> THIS, ObjectOutput out, int maxToWrite) throws IOException {
+    public static <C extends Externalizable> void writeExternal(final FastArray<C> THIS,
+        ObjectOutput out, int maxToWrite) throws IOException {
         maxToWrite = Math.min(maxToWrite, THIS.getLength());
         out.writeInt(maxToWrite);
         for (int i = 0; i < maxToWrite; ++i) {
@@ -325,7 +348,8 @@ public class FastArray<T> {
         }
     }
 
-    public static <C extends Externalizable> void readExternal(final FastArray<C> THIS, ObjectInput in) throws IOException, ClassNotFoundException {
+    public static <C extends Externalizable> void readExternal(final FastArray<C> THIS,
+        ObjectInput in) throws IOException, ClassNotFoundException {
         THIS.quickReset();
         final int len = in.readInt();
         for (int i = 0; i < len; ++i) {
@@ -337,9 +361,11 @@ public class FastArray<T> {
         public void writeExternal(final ObjectOutput out, final C item) throws IOException;
     }
 
-    public static <C> void writeExternal(final FastArray<C> THIS, ObjectOutput out, WriteExternalFunction<C> writeExternalFunction) throws IOException {
+    public static <C> void writeExternal(final FastArray<C> THIS, ObjectOutput out,
+        WriteExternalFunction<C> writeExternalFunction) throws IOException {
         if (THIS == null) {
-            throw new IllegalArgumentException("FastArray.writeExternal(): THIS was null and is not supported");
+            throw new IllegalArgumentException(
+                "FastArray.writeExternal(): THIS was null and is not supported");
         }
         out.writeInt(THIS.length);
         for (int i = 0; i < THIS.length; ++i) {
@@ -348,12 +374,15 @@ public class FastArray<T> {
     }
 
     public static interface ReadExternalFunction<C> {
-        public void readExternal(final ObjectInput in, final C item) throws IOException, ClassNotFoundException;
+        public void readExternal(final ObjectInput in, final C item)
+            throws IOException, ClassNotFoundException;
     }
 
-    public static <C> void readExternal(final FastArray<C> THIS, ObjectInput in, ReadExternalFunction<C> readExternalFunction) throws IOException, ClassNotFoundException {
+    public static <C> void readExternal(final FastArray<C> THIS, ObjectInput in,
+        ReadExternalFunction<C> readExternalFunction) throws IOException, ClassNotFoundException {
         if (THIS == null) {
-            throw new IllegalArgumentException("FastArray.readExternal(): THIS was null and is not supported");
+            throw new IllegalArgumentException(
+                "FastArray.readExternal(): THIS was null and is not supported");
         }
         THIS.quickReset();
         final int len = in.readInt();

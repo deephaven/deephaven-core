@@ -61,7 +61,7 @@ public class JsInputTable {
     }
 
     public Promise<JsInputTable> addRow(JsPropertyMap row) {
-        return addRows(new JsPropertyMap[]{row});
+        return addRows(new JsPropertyMap[] {row});
     }
 
     public Promise<JsInputTable> addRows(JsPropertyMap[] rows) {
@@ -73,7 +73,8 @@ public class JsInputTable {
                 // assert that all keys are filled in...
                 for (String key : keys) {
                     if (!row.has(key)) {
-                        throw new IllegalStateException("Missing key " + key + " in " + Global.JSON.stringify(row));
+                        throw new IllegalStateException(
+                            "Missing key " + key + " in " + Global.JSON.stringify(row));
                     }
                 }
 
@@ -88,25 +89,25 @@ public class JsInputTable {
 
                 rowValues[i] = new RowValues(v.toArray(new ColumnValue[v.size()]));
             }
-//            table.getServer().addRowsToInputTable(table.getHeadHandle(), rowValues, c);
+            // table.getServer().addRowsToInputTable(table.getHeadHandle(), rowValues, c);
             throw new UnsupportedOperationException("addRowsToInputTable");
         }).then(response -> Promise.resolve(this));
     }
 
     public Promise<JsInputTable> addTable(JsTable tableToAdd) {
-        return addTables(new JsTable[]{ tableToAdd });
+        return addTables(new JsTable[] {tableToAdd});
     }
 
     public Promise<JsInputTable> addTables(JsTable[] tablesToAdd) {
         return Callbacks.<Void, String>promise(this.table, c -> {
-//                    table.getServer().addTablesToInputTable(table.getHeadHandle(), Arrays.stream(tablesToAdd).map(t -> t.getHandle()).toArray(TableHandle[]::new), c);
-                    throw new UnsupportedOperationException("addTablesToInputTable");
-                }
-        ).then(response -> Promise.resolve(this));
+            // table.getServer().addTablesToInputTable(table.getHeadHandle(),
+            // Arrays.stream(tablesToAdd).map(t -> t.getHandle()).toArray(TableHandle[]::new), c);
+            throw new UnsupportedOperationException("addTablesToInputTable");
+        }).then(response -> Promise.resolve(this));
     }
 
     public Promise<JsInputTable> deleteTable(JsTable tableToDelete) {
-        return deleteTables(new JsTable[]{ tableToDelete });
+        return deleteTables(new JsTable[] {tableToDelete});
     }
 
     public Promise<JsInputTable> deleteTables(JsTable[] tablesToDelete) {
@@ -122,28 +123,31 @@ public class JsInputTable {
             final ClientTableState cts = connection.newState(tableToDelete.state(), op);
             cleanups.add(cts.retain(this));
 
-//            final HandleMapping mapping = new HandleMapping(tableToDelete.getHandle(), cts.getHandle());
-//            op.fromState(cts);
-//            op.setAppendTo(cts.getPrevious());
-//            op.setHandles(mapping);
-//            builder.setViewColumns(keysList);
-//            builder.nextOp(connection, op);
+            // final HandleMapping mapping = new HandleMapping(tableToDelete.getHandle(),
+            // cts.getHandle());
+            // op.fromState(cts);
+            // op.setAppendTo(cts.getPrevious());
+            // op.setHandles(mapping);
+            // builder.setViewColumns(keysList);
+            // builder.nextOp(connection, op);
             throw new UnsupportedOperationException("Can't build batch");
         }
 
         // TODO core#273
         BatchTableRequest req = new BatchTableRequest();
-//        req.setOps(builder.serializable());
+        // req.setOps(builder.serializable());
 
         return Callbacks.<BatchTableResponse, String>promise(this.table, c -> {
-//            table.getServer().batch(req, c);
+            // table.getServer().batch(req, c);
             throw new UnsupportedOperationException("batch");
         }).then(response -> {
             if (response.getFailureMessages().length > 0) {
-                return (Promise)Promise.reject("Unable to delete tables: " + Arrays.toString(response.getFailureMessages()));
+                return (Promise) Promise.reject(
+                    "Unable to delete tables: " + Arrays.toString(response.getFailureMessages()));
             }
             return Callbacks.<Void, String>promise(this.table, c -> {
-//                table.getServer().deleteTablesFromInputTable(table.getHeadHandle(), response.getSuccess(), c);
+                // table.getServer().deleteTablesFromInputTable(table.getHeadHandle(),
+                // response.getSuccess(), c);
                 throw new UnsupportedOperationException("deleteTablesFromInputTable");
             });
         }).then(success -> {
@@ -151,7 +155,7 @@ public class JsInputTable {
             return Promise.resolve(this);
         }, err -> {
             cleanups.forEach(JsRunnable::run);
-            return (Promise)Promise.reject(err);
+            return (Promise) Promise.reject(err);
         });
     }
 

@@ -70,7 +70,8 @@ public class ColumnRenderersBuilder {
     }
 
     @ScriptApi
-    public ColumnRenderersBuilder setRenderer(String columnName, Class<? extends TableCellRenderer> rendererClass) {
+    public ColumnRenderersBuilder setRenderer(String columnName,
+        Class<? extends TableCellRenderer> rendererClass) {
         return setRenderer(columnName, rendererClass.getCanonicalName());
     }
 
@@ -100,7 +101,7 @@ public class ColumnRenderersBuilder {
      * @param columnName the name of the column to check
      * @return true if it is set, false otherwise
      */
-    public boolean isColumnRendererSet(String columnName){
+    public boolean isColumnRendererSet(String columnName) {
         return columnToRendererMap.containsKey(columnName);
     }
 
@@ -113,7 +114,7 @@ public class ColumnRenderersBuilder {
     public String getRenderClassName(String columnName) {
         ColumnRendererType type = getRendererType(columnName);
 
-        if(type == null) {
+        if (type == null) {
             return columnToRendererMap.get(columnName);
         }
 
@@ -121,7 +122,8 @@ public class ColumnRenderersBuilder {
     }
 
     /**
-     * Gets the column renderer type assigned to a given column name.  Returns null if none is assigned.
+     * Gets the column renderer type assigned to a given column name. Returns null if none is
+     * assigned.
      *
      * @param columnName the name of the column
      * @return the renderer type, null if none is assigned
@@ -131,8 +133,7 @@ public class ColumnRenderersBuilder {
 
         try {
             return EnumValue.caseInsensitiveValueOf(ColumnRendererType.class, text);
-        }
-        catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             return null;
         }
     }
@@ -142,8 +143,8 @@ public class ColumnRenderersBuilder {
     }
 
     /**
-     * Identifies if this builder-instance contains any renderer-definitions. If not, then the calling method should
-     * not attempt to add our directive an an attribute to a table
+     * Identifies if this builder-instance contains any renderer-definitions. If not, then the
+     * calling method should not attempt to add our directive an an attribute to a table
      *
      * @return true if there are no renderers defined, else false
      */
@@ -152,8 +153,8 @@ public class ColumnRenderersBuilder {
     }
 
     /**
-     * Returns a Set of column-names, which may be verified as valid prior to setting our directive as an attribute to
-     * the table
+     * Returns a Set of column-names, which may be verified as valid prior to setting our directive
+     * as an attribute to the table
      *
      * @return An iterable Set of column-names identified by this builder-instance
      */
@@ -168,7 +169,7 @@ public class ColumnRenderersBuilder {
      * @return the ColumnRenderersBuilder from the Table
      */
     public static ColumnRenderersBuilder get(Table source) {
-        return fromDirective((String)source.getAttribute(COLUMN_RENDERERS_ATTRIBUTE));
+        return fromDirective((String) source.getAttribute(COLUMN_RENDERERS_ATTRIBUTE));
     }
 
     /**
@@ -184,12 +185,13 @@ public class ColumnRenderersBuilder {
         }
 
         final String[] pairs = directive.split(",");
-        for(final String pair : pairs) {
+        for (final String pair : pairs) {
             if (pair.trim().isEmpty())
                 continue;
             final String[] kv = pair.split("=");
-            if(kv.length != 2) {
-                throw new IllegalArgumentException("Invalid " + COLUMN_RENDERERS_ATTRIBUTE + ": " + directive + ", bad column renderer pair " + pair);
+            if (kv.length != 2) {
+                throw new IllegalArgumentException("Invalid " + COLUMN_RENDERERS_ATTRIBUTE + ": "
+                    + directive + ", bad column renderer pair " + pair);
             }
             builder.setRenderer(kv[0], kv[1]);
         }

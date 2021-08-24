@@ -23,16 +23,18 @@ import java.util.Map;
 
 public class SourceColumn implements SelectColumn {
 
-    @NotNull private final String sourceName;
-    @NotNull private final String destName;
+    @NotNull
+    private final String sourceName;
+    @NotNull
+    private final String destName;
     private ColumnDefinition sourceDefinition;
     private ColumnSource sourceColumn;
 
     public SourceColumn(String columnName) {
-        this(columnName,columnName);
+        this(columnName, columnName);
     }
 
-    public SourceColumn(String sourceName,String destName) {
+    public SourceColumn(String sourceName, String destName) {
         this.sourceName = NameValidator.validateColumnName(sourceName);
         this.destName = NameValidator.validateColumnName(destName);
     }
@@ -47,7 +49,8 @@ public class SourceColumn implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(Index index, Map<String, ? extends ColumnSource> columnsOfInterest) {
+    public List<String> initInputs(Index index,
+        Map<String, ? extends ColumnSource> columnsOfInterest) {
         this.sourceColumn = columnsOfInterest.get(sourceName);
         if (sourceColumn == null) {
             throw new NoSuchColumnException(columnsOfInterest.keySet(), sourceName);
@@ -104,7 +107,9 @@ public class SourceColumn implements SelectColumn {
     }
 
     @NotNull
-    public String getSourceName() { return sourceName; }
+    public String getSourceName() {
+        return sourceName;
+    }
 
     @Override
     public MatchPair getMatchPair() {
@@ -115,7 +120,8 @@ public class SourceColumn implements SelectColumn {
     public WritableSource newDestInstance(long size) {
         Class type = sourceColumn.getType();
         if (DbArrayBase.class.isAssignableFrom(type)) {
-            return SparseArrayColumnSource.getSparseMemoryColumnSource(size, type, sourceColumn.getComponentType());
+            return SparseArrayColumnSource.getSparseMemoryColumnSource(size, type,
+                sourceColumn.getComponentType());
         } else {
             return SparseArrayColumnSource.getSparseMemoryColumnSource(size, type);
         }
@@ -133,8 +139,10 @@ public class SourceColumn implements SelectColumn {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         SourceColumn that = (SourceColumn) o;
 

@@ -8,10 +8,10 @@ import java.io.*;
 import java.util.zip.*;
 
 public class ZipInputStream extends FilterInputStream {
-    final public static int BUFFER_LIMIT = 64*1024*1024; // 64MB
+    final public static int BUFFER_LIMIT = 64 * 1024 * 1024; // 64MB
 
-    protected DataInputStream dataIn;  // InputStream being read
-    protected InflaterInputStream iis;	// Inflater on compressed data
+    protected DataInputStream dataIn; // InputStream being read
+    protected InflaterInputStream iis; // Inflater on compressed data
 
     public ZipInputStream(InputStream in) throws IOException {
         super(in);
@@ -29,7 +29,8 @@ public class ZipInputStream extends FilterInputStream {
         try {
             noBytes = dataIn.readInt();
             if (noBytes < 0 || noBytes > BUFFER_LIMIT)
-                throw new ZipException("io.deephaven.io.streams.ZipInputStream was asked to read " + noBytes + " which exceeded buffer limit.  Is this a Zip file?");
+                throw new ZipException("io.deephaven.io.streams.ZipInputStream was asked to read "
+                    + noBytes + " which exceeded buffer limit.  Is this a Zip file?");
             buf = new byte[noBytes];
         } catch (EOFException ee) {
             return;
@@ -55,13 +56,12 @@ public class ZipInputStream extends FilterInputStream {
     }
 
     public synchronized int read(byte b[])
-            throws IOException {
-        return read(b,0,b.length);
+        throws IOException {
+        return read(b, 0, b.length);
     }
 
     public synchronized int read(byte b[], int off, int len)
-            throws IOException
-    {
+        throws IOException {
         if (iis.available() == 0) {
             fill();
             if (iis == null) {
@@ -70,24 +70,25 @@ public class ZipInputStream extends FilterInputStream {
             }
         }
         int i = 0;
-        for (i=0; i<len; i++) {
+        for (i = 0; i < len; i++) {
             int data = iis.read();
-            if (data == -1) break;
-            b[i+off]=(byte)data;
+            if (data == -1)
+                break;
+            b[i + off] = (byte) data;
         }
         return i;
     }
 
     public synchronized long skip(long n) throws IOException {
         ensureOpen();
-        for (int i=0; i<n; i++)
+        for (int i = 0; i < n; i++)
             read();
         return n;
     }
 
     // Returns non-zero if more data available.
     public synchronized int available() throws IOException {
-        return in.available()+iis.available();
+        return in.available() + iis.available();
     }
 
     public boolean markSupported() {

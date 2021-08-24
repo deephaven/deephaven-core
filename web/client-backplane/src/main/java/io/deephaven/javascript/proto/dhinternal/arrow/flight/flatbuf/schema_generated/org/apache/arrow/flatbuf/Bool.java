@@ -10,22 +10,22 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Bool",
     namespace = JsPackage.GLOBAL)
 public class Bool {
-  public static native double createBool(Builder builder);
+    public static native double createBool(Builder builder);
 
-  public static native double endBool(Builder builder);
+    public static native double endBool(Builder builder);
 
-  public static native Bool getRootAsBool(ByteBuffer bb, Bool obj);
+    public static native Bool getRootAsBool(ByteBuffer bb, Bool obj);
 
-  public static native Bool getRootAsBool(ByteBuffer bb);
+    public static native Bool getRootAsBool(ByteBuffer bb);
 
-  public static native Bool getSizePrefixedRootAsBool(ByteBuffer bb, Bool obj);
+    public static native Bool getSizePrefixedRootAsBool(ByteBuffer bb, Bool obj);
 
-  public static native Bool getSizePrefixedRootAsBool(ByteBuffer bb);
+    public static native Bool getSizePrefixedRootAsBool(ByteBuffer bb);
 
-  public static native void startBool(Builder builder);
+    public static native void startBool(Builder builder);
 
-  public ByteBuffer bb;
-  public double bb_pos;
+    public ByteBuffer bb;
+    public double bb_pos;
 
-  public native Bool __init(double i, ByteBuffer bb);
+    public native Bool __init(double i, ByteBuffer bb);
 }

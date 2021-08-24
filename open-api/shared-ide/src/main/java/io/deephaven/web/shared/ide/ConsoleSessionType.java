@@ -13,6 +13,7 @@ public enum ConsoleSessionType {
             case "groovy":
                 return Groovy;
         }
-        throw new UnsupportedOperationException("Session type " + type + " not supported; valid options are ['groovy' or 'python']");
+        throw new UnsupportedOperationException(
+            "Session type " + type + " not supported; valid options are ['groovy' or 'python']");
     }
 }

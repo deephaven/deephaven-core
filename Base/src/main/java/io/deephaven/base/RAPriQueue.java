@@ -37,7 +37,7 @@ public class RAPriQueue<T> {
     private int size = 0;
 
     public RAPriQueue(int initialSize, Adapter<? super T> adapter, Class<? super T> elementClass) {
-        this.queue = (T[]) java.lang.reflect.Array.newInstance(elementClass, initialSize+1);
+        this.queue = (T[]) java.lang.reflect.Array.newInstance(elementClass, initialSize + 1);
         this.adapter = adapter;
         this.elementClass = elementClass;
     }
@@ -61,22 +61,22 @@ public class RAPriQueue<T> {
     /** Adds an element to the queue, or moves to appropriate place if already there */
     public void enter(T el) {
         int k = adapter.getPos(el);
-        if ( k <= 0 ) {
-            if ( ++size == queue.length ) {
-                T[] newQueue = (T[]) java.lang.reflect.Array.newInstance(elementClass, 2*queue.length);
+        if (k <= 0) {
+            if (++size == queue.length) {
+                T[] newQueue =
+                    (T[]) java.lang.reflect.Array.newInstance(elementClass, 2 * queue.length);
                 System.arraycopy(queue, 0, newQueue, 0, size);
                 queue = newQueue;
             }
             queue[size] = el;
             adapter.setPos(el, size);
             fixUp(size);
-            //assert testInvariant("after fixUp in enter-add");
-        }
-        else {
+            // assert testInvariant("after fixUp in enter-add");
+        } else {
             assert queue[k] == el;
             fixDown(k);
             fixUp(k);
-            //assert testInvariant("after fixDown/fixUp in enter-change");
+            // assert testInvariant("after fixDown/fixUp in enter-change");
         }
     }
 
@@ -88,18 +88,17 @@ public class RAPriQueue<T> {
     /** Remove the top element from the queue, or null if the queue is empty */
     public T removeTop() {
         T el = queue[1];
-        if ( el != null ) {
+        if (el != null) {
             adapter.setPos(el, 0);
-            if ( --size == 0 ) {
+            if (--size == 0) {
                 queue[1] = null;
-            }
-            else {
-                queue[1] = queue[size+1];
-                queue[size+1] = null;  // Drop extra reference to prevent memory leak
+            } else {
+                queue[1] = queue[size + 1];
+                queue[size + 1] = null; // Drop extra reference to prevent memory leak
                 adapter.setPos(queue[1], 1);
                 fixDown(1);
             }
-            //assert testInvariant("after removeTop()");
+            // assert testInvariant("after removeTop()");
         }
         return el;
     }
@@ -107,38 +106,39 @@ public class RAPriQueue<T> {
     /** remove an arbitrary element from the queue */
     public void remove(T el) {
         int k = adapter.getPos(el);
-        if ( k != 0 ) {
+        if (k != 0) {
             assert queue[k] == el;
             adapter.setPos(el, 0);
-            if ( k == size ) {
+            if (k == size) {
                 queue[size--] = null;
-            }
-            else {
+            } else {
                 queue[k] = queue[size];
                 adapter.setPos(queue[k], k);
                 queue[size--] = null;
                 fixDown(k);
                 fixUp(k);
-                //assert testInvariant("after fixDown/fixUp in remove()");
+                // assert testInvariant("after fixDown/fixUp in remove()");
             }
         }
-        //assert testInvariant("at end of remove()");
+        // assert testInvariant("at end of remove()");
     }
 
     /** move queue[k] up the heap until it compares >= that of its parent. */
     private void fixUp(int k) {
-        if ( k > 1 ) {
+        if (k > 1) {
             T el = queue[k];
             int j = k >> 1;
             T parent = queue[j];
-            if ( adapter.less(el, parent) ) {
+            if (adapter.less(el, parent)) {
                 queue[k] = parent;
                 adapter.setPos(parent, k);
-                k = j; j = k >> 1;
-                while ( k > 1 && adapter.less(el, parent = queue[j]) ) {
+                k = j;
+                j = k >> 1;
+                while (k > 1 && adapter.less(el, parent = queue[j])) {
                     queue[k] = parent;
                     adapter.setPos(parent, k);
-                    k = j; j = k >> 1;
+                    k = j;
+                    j = k >> 1;
                 }
                 queue[k] = el;
                 adapter.setPos(el, k);
@@ -149,28 +149,30 @@ public class RAPriQueue<T> {
     /** move queue[k] down the heap until it compares <= those of its children. */
     private void fixDown(int k) {
         int j = k << 1;
-        if ( j <= size ) {
+        if (j <= size) {
             T el = queue[k], child = queue[j], child2;
-            if ( j < size && adapter.less(child2 = queue[j+1], child) ) {
+            if (j < size && adapter.less(child2 = queue[j + 1], child)) {
                 child = child2;
                 j++;
             }
-            if ( adapter.less(child, el) ) {
+            if (adapter.less(child, el)) {
                 queue[k] = child;
                 adapter.setPos(child, k);
-                k = j; j = k << 1;
-                while ( j <= size ) {
+                k = j;
+                j = k << 1;
+                while (j <= size) {
                     child = queue[j];
-                    if ( j < size && adapter.less(child2 = queue[j+1], child) ) {
+                    if (j < size && adapter.less(child2 = queue[j + 1], child)) {
                         child = child2;
                         j++;
                     }
-                    if ( !adapter.less(child, el) ) {
+                    if (!adapter.less(child, el)) {
                         break;
                     }
                     queue[k] = child;
                     adapter.setPos(child, k);
-                    k = j; j = k << 1;
+                    k = j;
+                    j = k << 1;
                 }
                 queue[k] = el;
                 adapter.setPos(el, k);
@@ -179,37 +181,39 @@ public class RAPriQueue<T> {
     }
 
     public int dump(T[] result, int startIndex) {
-        for ( int i = 0; i < size; i++ ) {
-            result[startIndex++] = queue[i+1];
+        for (int i = 0; i < size; i++) {
+            result[startIndex++] = queue[i + 1];
         }
         return startIndex;
     }
 
     public T get(int index) { // index is the "standard" 0..size-1
-        return(index<size) ? queue[index+1] : null;
+        return (index < size) ? queue[index + 1] : null;
     }
 
     public <T2> int dump(T2[] result, int startIndex, Function.Unary<T2, T> f) {
-        for ( int i = 0; i < size; i++ ) {
-            result[startIndex++] = f.call(queue[i+1]);
+        for (int i = 0; i < size; i++) {
+            result[startIndex++] = f.call(queue[i + 1]);
         }
         return startIndex;
     }
 
     boolean testInvariantAux(int i, String what) {
-        if ( i <= size ) {
-            if ( adapter.getPos(queue[i])  != i ) {
-                System.err.println(what+": queue["+i+"].tqPos="+(adapter.getPos(queue[i]))+" != "+i);
+        if (i <= size) {
+            if (adapter.getPos(queue[i]) != i) {
+                System.err.println(
+                    what + ": queue[" + i + "].tqPos=" + (adapter.getPos(queue[i])) + " != " + i);
             }
-            if ( !testInvariantAux(i*2, what) ) {
+            if (!testInvariantAux(i * 2, what)) {
                 return false;
             }
-            if ( !testInvariantAux(i*2+1, what) ) {
+            if (!testInvariantAux(i * 2 + 1, what)) {
                 return false;
             }
-            if ( i > 1 ) {
-                if ( adapter.less(queue[i], queue[i/2]) ) {
-                    System.err.println(what+": child["+i+"]="+queue[i]+" < parent["+(i/2)+"]="+queue[i/2]);
+            if (i > 1) {
+                if (adapter.less(queue[i], queue[i / 2])) {
+                    System.err.println(what + ": child[" + i + "]=" + queue[i] + " < parent["
+                        + (i / 2) + "]=" + queue[i / 2]);
                     return false;
                 }
             }
@@ -219,10 +223,11 @@ public class RAPriQueue<T> {
 
     boolean testInvariant(String what) {
         boolean result = testInvariantAux(1, what);
-        if ( result ) {
-            for ( int i = size+1; i < queue.length; ++i ) {
-                if ( queue[i] != null ) {
-                    System.err.println(what+": size = "+size+", child["+i+"]="+queue[i]+" != null");
+        if (result) {
+            for (int i = size + 1; i < queue.length; ++i) {
+                if (queue[i] != null) {
+                    System.err.println(
+                        what + ": size = " + size + ", child[" + i + "]=" + queue[i] + " != null");
                     result = false;
                 }
             }

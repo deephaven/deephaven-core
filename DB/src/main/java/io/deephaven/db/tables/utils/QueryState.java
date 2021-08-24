@@ -6,7 +6,5 @@ package io.deephaven.db.tables.utils;
 
 public enum QueryState {
 
-    RUNNING,
-    FINISHED,
-    INTERRUPTED
+    RUNNING, FINISHED, INTERRUPTED
 }

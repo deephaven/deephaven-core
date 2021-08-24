@@ -27,9 +27,13 @@ public interface DbArray<T> extends DbArrayBase<DbArray<T>> {
     }
 
     T get(long i);
+
     DbArray<T> subArray(long fromIndexInclusive, long toIndexExclusive);
-    DbArray<T> subArrayByPositions(long [] positions);
+
+    DbArray<T> subArrayByPositions(long[] positions);
+
     T[] toArray();
+
     Class<T> getComponentType();
 
     @Override
@@ -41,7 +45,7 @@ public interface DbArray<T> extends DbArrayBase<DbArray<T>> {
     T getPrev(long offset);
 
     @Override
-    default Chunk<Attributes.Values> toChunk()  {
+    default Chunk<Attributes.Values> toChunk() {
         return ObjectChunk.chunkWrap(toArray());
     }
 
@@ -49,7 +53,8 @@ public interface DbArray<T> extends DbArrayBase<DbArray<T>> {
 
     @Override
     default void fillChunk(WritableChunk destChunk) {
-        destChunk.asWritableObjectChunk().copyFromTypedArray(toArray(), 0, destChunk.size(), (int)size());
+        destChunk.asWritableObjectChunk().copyFromTypedArray(toArray(), 0, destChunk.size(),
+            (int) size());
     }
 
     static String defaultValToString(final Object val) {
@@ -59,7 +64,7 @@ public interface DbArray<T> extends DbArrayBase<DbArray<T>> {
     /**
      * Helper method for implementing {@link Object#toString()}.
      *
-     * @param array       The DbArray to convert to a String
+     * @param array The DbArray to convert to a String
      * @param prefixLength The maximum prefix of the array to convert
      * @return The String representation of array
      */
@@ -68,7 +73,8 @@ public interface DbArray<T> extends DbArrayBase<DbArray<T>> {
             return "[]";
         }
 
-        final Function<Object, String> valToString = DbArrayBase.classToHelper(array.getComponentType());
+        final Function<Object, String> valToString =
+            DbArrayBase.classToHelper(array.getComponentType());
 
         final StringBuilder builder = new StringBuilder("[");
         final int displaySize = (int) Math.min(array.size(), prefixLength);
@@ -88,7 +94,7 @@ public interface DbArray<T> extends DbArrayBase<DbArray<T>> {
      * Helper method for implementing {@link Object#equals(Object)}.
      *
      * @param aArray The LHS of the equality test (always a DbArray)
-     * @param b      The RHS of the equality test
+     * @param b The RHS of the equality test
      * @return Whether the two inputs are equal
      */
     static boolean equals(@NotNull final DbArray aArray, @Nullable final Object b) {

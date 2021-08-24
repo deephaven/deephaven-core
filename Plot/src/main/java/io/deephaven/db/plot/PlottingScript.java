@@ -6,8 +6,7 @@ import javax.inject.Inject;
 public class PlottingScript implements InitScript {
 
     @Inject
-    public PlottingScript() {
-    }
+    public PlottingScript() {}
 
     @Override
     public String getScriptPath() {

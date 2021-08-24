@@ -8,8 +8,8 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.TimeUnit",
     namespace = JsPackage.GLOBAL)
 public class TimeUnit {
-  public static int MICROSECOND,
-  MILLISECOND,
-  NANOSECOND,
-  SECOND;
+    public static int MICROSECOND,
+        MILLISECOND,
+        NANOSECOND,
+        SECOND;
 }

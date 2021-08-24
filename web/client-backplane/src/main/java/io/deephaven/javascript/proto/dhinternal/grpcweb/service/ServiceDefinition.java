@@ -12,14 +12,14 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.grpcWeb.service.ServiceDefinition",
     namespace = JsPackage.GLOBAL)
 public interface ServiceDefinition {
-  @JsOverlay
-  static ServiceDefinition create() {
-    return Js.uncheckedCast(JsPropertyMap.of());
-  }
+    @JsOverlay
+    static ServiceDefinition create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+    }
 
-  @JsProperty
-  String getServiceName();
+    @JsProperty
+    String getServiceName();
 
-  @JsProperty
-  void setServiceName(String serviceName);
+    @JsProperty
+    void setServiceName(String serviceName);
 }

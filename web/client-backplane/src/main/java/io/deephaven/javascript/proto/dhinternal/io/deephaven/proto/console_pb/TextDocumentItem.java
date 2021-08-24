@@ -13,99 +13,99 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.console_pb.TextDocumentItem",
     namespace = JsPackage.GLOBAL)
 public class TextDocumentItem {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
-    @JsOverlay
-    static TextDocumentItem.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType {
+        @JsOverlay
+        static TextDocumentItem.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getLanguageId();
+
+        @JsProperty
+        String getText();
+
+        @JsProperty
+        String getUri();
+
+        @JsProperty
+        double getVersion();
+
+        @JsProperty
+        void setLanguageId(String languageId);
+
+        @JsProperty
+        void setText(String text);
+
+        @JsProperty
+        void setUri(String uri);
+
+        @JsProperty
+        void setVersion(double version);
     }
 
-    @JsProperty
-    String getLanguageId();
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType0 {
+        @JsOverlay
+        static TextDocumentItem.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
 
-    @JsProperty
-    String getText();
+        @JsProperty
+        String getLanguageId();
 
-    @JsProperty
-    String getUri();
+        @JsProperty
+        String getText();
 
-    @JsProperty
-    double getVersion();
+        @JsProperty
+        String getUri();
 
-    @JsProperty
-    void setLanguageId(String languageId);
+        @JsProperty
+        double getVersion();
 
-    @JsProperty
-    void setText(String text);
+        @JsProperty
+        void setLanguageId(String languageId);
 
-    @JsProperty
-    void setUri(String uri);
+        @JsProperty
+        void setText(String text);
 
-    @JsProperty
-    void setVersion(double version);
-  }
+        @JsProperty
+        void setUri(String uri);
 
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsOverlay
-    static TextDocumentItem.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+        @JsProperty
+        void setVersion(double version);
     }
 
-    @JsProperty
-    String getLanguageId();
+    public static native TextDocumentItem deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    String getText();
+    public static native TextDocumentItem deserializeBinaryFromReader(
+        TextDocumentItem message, Object reader);
 
-    @JsProperty
-    String getUri();
+    public static native void serializeBinaryToWriter(TextDocumentItem message, Object writer);
 
-    @JsProperty
-    double getVersion();
+    public static native TextDocumentItem.ToObjectReturnType toObject(
+        boolean includeInstance, TextDocumentItem msg);
 
-    @JsProperty
-    void setLanguageId(String languageId);
+    public native String getLanguageId();
 
-    @JsProperty
-    void setText(String text);
+    public native String getText();
 
-    @JsProperty
-    void setUri(String uri);
+    public native String getUri();
 
-    @JsProperty
-    void setVersion(double version);
-  }
+    public native double getVersion();
 
-  public static native TextDocumentItem deserializeBinary(Uint8Array bytes);
+    public native Uint8Array serializeBinary();
 
-  public static native TextDocumentItem deserializeBinaryFromReader(
-      TextDocumentItem message, Object reader);
+    public native void setLanguageId(String value);
 
-  public static native void serializeBinaryToWriter(TextDocumentItem message, Object writer);
+    public native void setText(String value);
 
-  public static native TextDocumentItem.ToObjectReturnType toObject(
-      boolean includeInstance, TextDocumentItem msg);
+    public native void setUri(String value);
 
-  public native String getLanguageId();
+    public native void setVersion(double value);
 
-  public native String getText();
+    public native TextDocumentItem.ToObjectReturnType0 toObject();
 
-  public native String getUri();
-
-  public native double getVersion();
-
-  public native Uint8Array serializeBinary();
-
-  public native void setLanguageId(String value);
-
-  public native void setText(String value);
-
-  public native void setUri(String value);
-
-  public native void setVersion(double value);
-
-  public native TextDocumentItem.ToObjectReturnType0 toObject();
-
-  public native TextDocumentItem.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native TextDocumentItem.ToObjectReturnType0 toObject(boolean includeInstance);
 }

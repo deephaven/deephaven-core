@@ -29,7 +29,7 @@ public class TestNanosAxisFormat extends BaseArrayTestCase {
         assertEquals(tokyoNumberFormat.format(dNanos), time.toDateString(DBTimeZone.TZ_JP));
 
         try {
-            nyNumberFormat.parse("TEST",null);
+            nyNumberFormat.parse("TEST", null);
             TestCase.fail("Expected an exception");
         } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("Not implemented"));
@@ -57,10 +57,10 @@ public class TestNanosAxisFormat extends BaseArrayTestCase {
         assertEquals("14:32:12.3456", formatMN.getNumberFormatter().format(time.getNanos()));
         assertEquals("15:32:12.3456", formatNY.getNumberFormatter().format(time.getNanos()));
 
-        try{
+        try {
             formatMN.setPattern("junkpattern");
-        }catch (IllegalArgumentException e){
-            //pass
+        } catch (IllegalArgumentException e) {
+            // pass
         }
 
         formatNY.setPattern(null);

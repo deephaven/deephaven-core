@@ -7,7 +7,8 @@ import java.util.function.BiFunction;
 /**
  * This object can be merged to produce a single coalesced Table.
  * <p>
- * This is used by TableMap and TableMapProxyHandlers to expose the {@link TransformableTableMap#merge} operation to users.
+ * This is used by TableMap and TableMapProxyHandlers to expose the
+ * {@link TransformableTableMap#merge} operation to users.
  */
 public interface TransformableTableMap {
 
@@ -29,25 +30,36 @@ public interface TransformableTableMap {
     /**
      * Create a Table out of this TableMap's values.
      *
-     * <p>Creates a proxy object that in many respects acts like a Table, you can perform many of the table operations
-     * on it, which are then applied using {@link TableMap#transformTables(java.util.function.Function)} or
-     * {@link TableMap#transformTablesWithMap(TableMap, BiFunction)} if the right hand side of an operation is another TableMap.</p>
+     * <p>
+     * Creates a proxy object that in many respects acts like a Table, you can perform many of the
+     * table operations on it, which are then applied using
+     * {@link TableMap#transformTables(java.util.function.Function)} or
+     * {@link TableMap#transformTablesWithMap(TableMap, BiFunction)} if the right hand side of an
+     * operation is another TableMap.
+     * </p>
      *
-     * <p>The returned table acts as if it were an uncoalesced table; when two of our Proxy objects are operated on
-     * together, e.g., by a {@link Table#join}) operation, then tables with identical keys are used.  If strictKeys
-     * is set, an error occurs if the two TableMaps do not have identical keySets.</p>
+     * <p>
+     * The returned table acts as if it were an uncoalesced table; when two of our Proxy objects are
+     * operated on together, e.g., by a {@link Table#join}) operation, then tables with identical
+     * keys are used. If strictKeys is set, an error occurs if the two TableMaps do not have
+     * identical keySets.
+     * </p>
      *
-     * <p>Supported operations include those which return a {@link io.deephaven.db.tables.Table},
-     * {@link Table#size()}, {@link Table#getDefinition()} and operations to retrieve attributes. Operations which
-     * retrieve data (such as {@link Table#getIndex()}} or {@link Table#getColumn(int)} require a coalesce operation.
-     * If allowCoalesce is not set to true, then the coalescing operations will fail with an
-     * {@link IllegalArgumentException}.</p>
+     * <p>
+     * Supported operations include those which return a {@link io.deephaven.db.tables.Table},
+     * {@link Table#size()}, {@link Table#getDefinition()} and operations to retrieve attributes.
+     * Operations which retrieve data (such as {@link Table#getIndex()}} or
+     * {@link Table#getColumn(int)} require a coalesce operation. If allowCoalesce is not set to
+     * true, then the coalescing operations will fail with an {@link IllegalArgumentException}.
+     * </p>
      *
-     * @param strictKeys       if we should fail when our RHS TableMap does not have the same keySet
-     * @param allowCoalesce    if we should allow this TableMap to be automatically coalesced into a table
-     * @param sanityCheckJoins if we should sanity check join keys, meaning that we should refuse to perform any joins
-     *                         if the join keys would span two segments of the TableMap.  This option is safer, but
-     *                         requires additional work on the query engine to perform the safety checks.
+     * @param strictKeys if we should fail when our RHS TableMap does not have the same keySet
+     * @param allowCoalesce if we should allow this TableMap to be automatically coalesced into a
+     *        table
+     * @param sanityCheckJoins if we should sanity check join keys, meaning that we should refuse to
+     *        perform any joins if the join keys would span two segments of the TableMap. This
+     *        option is safer, but requires additional work on the query engine to perform the
+     *        safety checks.
      * @return a Table object that performs operations by segment
      */
     Table asTable(boolean strictKeys, boolean allowCoalesce, boolean sanityCheckJoins);
@@ -73,8 +85,8 @@ public interface TransformableTableMap {
     /**
      * Builder object for a TableMapProxy.
      * <p>
-     * By default strict keys and join sanity check are enabled; but coalescing is not.  This gives you the safest
-     * possible asTable call.
+     * By default strict keys and join sanity check are enabled; but coalescing is not. This gives
+     * you the safest possible asTable call.
      */
     class AsTableBuilder {
         private final TransformableTableMap transformableTableMap;
@@ -104,9 +116,12 @@ public interface TransformableTableMap {
         /**
          * Set if operations should fail when our RHS TableMap does not have the same keySet.
          *
-         * <p>True by default.</p>
+         * <p>
+         * True by default.
+         * </p>
          *
-         * @param strictKeys if operations should fail when our RHS TableMap does not have the same keySet
+         * @param strictKeys if operations should fail when our RHS TableMap does not have the same
+         *        keySet
          * @return this builder
          */
         public AsTableBuilder strictKeys(boolean strictKeys) {
@@ -117,9 +132,12 @@ public interface TransformableTableMap {
         /**
          * Set if operations should allow this TableMap to be automatically coalesced into a table.
          *
-         * <p>False by default.</p>
+         * <p>
+         * False by default.
+         * </p>
          *
-         * @param allowCoalesce if operations should allow this TableMap to be automatically coalesced into a table
+         * @param allowCoalesce if operations should allow this TableMap to be automatically
+         *        coalesced into a table
          * @return this builder
          */
         public AsTableBuilder allowCoalesce(boolean allowCoalesce) {
@@ -130,11 +148,14 @@ public interface TransformableTableMap {
         /**
          * Set if join operations should include additional sanity checking.
          *
-         * <p>True by default.</p>
+         * <p>
+         * True by default.
+         * </p>
          *
-         * @param sanityCheckJoins if we should sanity check join keys, meaning that we should refuse to perform any joins
-         *                         if the join keys would span two segments of the TableMap.  This option is safer, but
-         *                         requires additional work on the query engine to perform the safety checks.
+         * @param sanityCheckJoins if we should sanity check join keys, meaning that we should
+         *        refuse to perform any joins if the join keys would span two segments of the
+         *        TableMap. This option is safer, but requires additional work on the query engine
+         *        to perform the safety checks.
          * @return this builder
          */
         public AsTableBuilder sanityCheckJoin(boolean sanityCheckJoins) {

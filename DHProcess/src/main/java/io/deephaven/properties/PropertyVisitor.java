@@ -107,7 +107,8 @@ public interface PropertyVisitor {
      * @param key the key
      * @param value the optional value
      */
-    default void maybeVisit(String key, @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<String> value) {
+    default void maybeVisit(String key,
+        @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<String> value) {
         value.ifPresent(x -> visit(key, x));
     }
 
@@ -118,7 +119,8 @@ public interface PropertyVisitor {
      * @param key the key
      * @param value the optional value
      */
-    default void maybeVisit(String key, @SuppressWarnings("OptionalUsedAsFieldOrParameterType") OptionalInt value) {
+    default void maybeVisit(String key,
+        @SuppressWarnings("OptionalUsedAsFieldOrParameterType") OptionalInt value) {
         value.ifPresent(x -> visit(key, x));
     }
 
@@ -129,18 +131,21 @@ public interface PropertyVisitor {
      * @param key the key
      * @param value the optional value
      */
-    default void maybeVisit(String key, @SuppressWarnings("OptionalUsedAsFieldOrParameterType") OptionalLong value) {
+    default void maybeVisit(String key,
+        @SuppressWarnings("OptionalUsedAsFieldOrParameterType") OptionalLong value) {
         value.ifPresent(x -> visit(key, x));
     }
 
     /**
      * A helper method that makes {@link PropertySet#traverse(PropertyVisitor)} implementations
-     * cleaner. Equivalent to {@code properties.ifPresent(x -> visitProperties(key, x))}. Must not be overridden.
+     * cleaner. Equivalent to {@code properties.ifPresent(x -> visitProperties(key, x))}. Must not
+     * be overridden.
      *
      * @param key the key
      * @param properties the optional value
      */
-    default void maybeVisitProperties(String key, @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<? extends PropertySet> properties) {
+    default void maybeVisitProperties(String key,
+        @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<? extends PropertySet> properties) {
         properties.ifPresent(x -> visitProperties(key, x));
     }
 }

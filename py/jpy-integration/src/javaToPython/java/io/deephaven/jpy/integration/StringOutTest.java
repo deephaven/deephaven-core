@@ -17,7 +17,9 @@ public class StringOutTest extends PythonTest {
 
     interface StringOut extends IdentityOut {
         String identity(String object);
+
         String identity(PyObject object);
+
         String identity(Object object);
     }
 
@@ -30,12 +32,12 @@ public class StringOutTest extends PythonTest {
         out = IdentityOut.create(getCreateModule(), StringOut.class);
         ref = ReferenceCounting.create();
         jpy = JpyModule.create();
-        //jpy.setFlags(EnumSet.of(Flag.ALL));
+        // jpy.setFlags(EnumSet.of(Flag.ALL));
     }
 
     @After
     public void tearDown() {
-        //jpy.setFlags(EnumSet.of(Flag.OFF));
+        // jpy.setFlags(EnumSet.of(Flag.OFF));
         jpy.close();
         ref.close();
         out.close();
@@ -66,7 +68,7 @@ public class StringOutTest extends PythonTest {
     public void implicitPyObjectToString() {
         try (final PyObject in = expr(UNIQ_STR)) {
             check(1, in);
-            Assert.assertEquals(UNIQ_STR, out.identity((Object)in));
+            Assert.assertEquals(UNIQ_STR, out.identity((Object) in));
             check(1, in);
         }
     }

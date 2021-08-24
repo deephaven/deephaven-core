@@ -5,8 +5,7 @@ import java.util.Arrays;
 public class StringArrayArrayColumnData extends ColumnData {
     private String[][] data;
 
-    public StringArrayArrayColumnData() {
-    }
+    public StringArrayArrayColumnData() {}
 
     public StringArrayArrayColumnData(String[][] data) {
         this.data = data;
@@ -22,8 +21,10 @@ public class StringArrayArrayColumnData extends ColumnData {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         StringArrayArrayColumnData that = (StringArrayArrayColumnData) o;
 

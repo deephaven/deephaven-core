@@ -4,7 +4,7 @@ import io.deephaven.db.util.IterableUtils;
 import java.util.Arrays;
 
 public class RichType {
-    public static RichType createGeneric(Class type, Class ...typeAttributes) {
+    public static RichType createGeneric(Class type, Class... typeAttributes) {
         return new RichType(type, true, typeAttributes);
     }
 
@@ -39,7 +39,8 @@ public class RichType {
         sb.append(bareType.getCanonicalName());
         if (isGeneric) {
             sb.append('<');
-            sb.append(IterableUtils.makeSeparatedList(Arrays.asList(typeAttributes), ", ", Class::getCanonicalName));
+            sb.append(IterableUtils.makeSeparatedList(Arrays.asList(typeAttributes), ", ",
+                Class::getCanonicalName));
             sb.append('>');
         }
         return sb.toString();

@@ -15,7 +15,7 @@ public class SeriesLocation implements Serializable {
     private final AxesLocation axesLocation;
     private final int id;
 
-    public SeriesLocation(final SeriesInternal series){
+    public SeriesLocation(final SeriesInternal series) {
         this.axesLocation = new AxesLocation(series.axes());
         this.id = series.id();
     }
@@ -27,13 +27,17 @@ public class SeriesLocation implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         SeriesLocation that = (SeriesLocation) o;
 
-        if (id != that.id) return false;
-        return axesLocation != null ? axesLocation.equals(that.axesLocation) : that.axesLocation == null;
+        if (id != that.id)
+            return false;
+        return axesLocation != null ? axesLocation.equals(that.axesLocation)
+            : that.axesLocation == null;
     }
 
     @Override

@@ -22,7 +22,7 @@ import static io.deephaven.benchmarking.BenchmarkTools.applySparsity;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 1, time = 1)
 @Measurement(iterations = 5, time = 1)
-@Timeout(time=3)
+@Timeout(time = 3)
 @Fork(1)
 public class SparseSelectBenchmark {
     private TableBenchmarkState state;
@@ -46,23 +46,25 @@ public class SparseSelectBenchmark {
 
         System.out.println("Actual Size: " + actualSize);
 
-        final BenchmarkTableBuilder builder = BenchmarkTools.persistentTableBuilder("Carlos", actualSize);
+        final BenchmarkTableBuilder builder =
+            BenchmarkTools.persistentTableBuilder("Carlos", actualSize);
         bmTable = builder
-                .setSeed(0xDEADBEEF)
-                .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF))
-                .addColumn(BenchmarkTools.stringCol("Stringy", 1, 10))
-                .addColumn(BenchmarkTools.numberCol("I1", int.class))
-                .addColumn(BenchmarkTools.numberCol("D1", double.class, -10e6, 10e6))
-                .addColumn(BenchmarkTools.numberCol("L1", long.class))
-                .addColumn(BenchmarkTools.numberCol("B1", byte.class))
-                .addColumn(BenchmarkTools.numberCol("S1", short.class))
-                .addColumn(BenchmarkTools.numberCol("F1", float.class))
-                .addColumn(BenchmarkTools.charCol("C1", 'A', 'Z'))
-                .build();
+            .setSeed(0xDEADBEEF)
+            .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF))
+            .addColumn(BenchmarkTools.stringCol("Stringy", 1, 10))
+            .addColumn(BenchmarkTools.numberCol("I1", int.class))
+            .addColumn(BenchmarkTools.numberCol("D1", double.class, -10e6, 10e6))
+            .addColumn(BenchmarkTools.numberCol("L1", long.class))
+            .addColumn(BenchmarkTools.numberCol("B1", byte.class))
+            .addColumn(BenchmarkTools.numberCol("S1", short.class))
+            .addColumn(BenchmarkTools.numberCol("F1", float.class))
+            .addColumn(BenchmarkTools.charCol("C1", 'A', 'Z'))
+            .build();
 
-        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
+        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()),
+            params.getWarmup().getCount());
 
-        inputTable = applySparsity(bmTable.getTable(),tableSize,sparsity,0).coalesce();
+        inputTable = applySparsity(bmTable.getTable(), tableSize, sparsity, 0).coalesce();
     }
 
     @TearDown(Level.Trial)
@@ -87,14 +89,17 @@ public class SparseSelectBenchmark {
 
     @Benchmark
     public Table incrementalSparseSelect() {
-        final Table result = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() ->  IncrementalBenchmark.incrementalBenchmark(SparseSelect::sparseSelect, inputTable, 10));
+        final Table result =
+            LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> IncrementalBenchmark
+                .incrementalBenchmark(SparseSelect::sparseSelect, inputTable, 10));
         Assert.eq(result.size(), "result.size()", inputTable.size(), "inputTable.size()");
         return state.setResult(result);
     }
 
     @Benchmark
     public Table sparseSelect() {
-        return state.setResult(LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> SparseSelect.sparseSelect(inputTable)));
+        return state.setResult(LiveTableMonitor.DEFAULT.exclusiveLock()
+            .computeLocked(() -> SparseSelect.sparseSelect(inputTable)));
     }
 
     public static void main(final String[] args) {

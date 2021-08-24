@@ -18,9 +18,11 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * An in-memory table that allows you to add rows as if it were an InputTable, which can be updated on the LTM.
+ * An in-memory table that allows you to add rows as if it were an InputTable, which can be updated
+ * on the LTM.
  *
- * The table is not keyed, all rows are added to the end of the table.  Deletions and edits are not permitted.
+ * The table is not keyed, all rows are added to the end of the table. Deletions and edits are not
+ * permitted.
  */
 public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTable {
     static final String DEFAULT_DESCRIPTION = "Append Only In-Memory Input Table";
@@ -44,8 +46,10 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
      *
      * @return an empty AppendOnlyArrayBackedMutableTable with the given definition
      */
-    public static AppendOnlyArrayBackedMutableTable make(@NotNull TableDefinition definition, final Map<String, Object[]> enumValues) {
-        return make(new QueryTable(definition, Index.FACTORY.getEmptyIndex(), NullValueColumnSource.createColumnSourceMap(definition)), enumValues);
+    public static AppendOnlyArrayBackedMutableTable make(@NotNull TableDefinition definition,
+        final Map<String, Object[]> enumValues) {
+        return make(new QueryTable(definition, Index.FACTORY.getEmptyIndex(),
+            NullValueColumnSource.createColumnSourceMap(definition)), enumValues);
     }
 
     /**
@@ -67,22 +71,27 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
      *
      * @return an empty AppendOnlyArrayBackedMutableTable with the given definition
      */
-    public static AppendOnlyArrayBackedMutableTable make(final Table initialTable, final Map<String, Object[]> enumValues) {
-        final AppendOnlyArrayBackedMutableTable result = new AppendOnlyArrayBackedMutableTable(initialTable.getDefinition(), enumValues, new ProcessPendingUpdater());
+    public static AppendOnlyArrayBackedMutableTable make(final Table initialTable,
+        final Map<String, Object[]> enumValues) {
+        final AppendOnlyArrayBackedMutableTable result = new AppendOnlyArrayBackedMutableTable(
+            initialTable.getDefinition(), enumValues, new ProcessPendingUpdater());
         result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
         result.setFlat();
         processInitial(initialTable, result);
         return result;
     }
 
-    private AppendOnlyArrayBackedMutableTable(@NotNull TableDefinition definition, final Map<String, Object[]> enumValues, final ProcessPendingUpdater processPendingUpdater) {
-        super(Index.FACTORY.getEmptyIndex(), makeColumnSourceMap(definition), enumValues, processPendingUpdater);
+    private AppendOnlyArrayBackedMutableTable(@NotNull TableDefinition definition,
+        final Map<String, Object[]> enumValues, final ProcessPendingUpdater processPendingUpdater) {
+        super(Index.FACTORY.getEmptyIndex(), makeColumnSourceMap(definition), enumValues,
+            processPendingUpdater);
         inputTableDefinition.setKeys(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
         inputTableDefinition.setValues(definition.getColumnNamesArray());
     }
 
     @Override
-    protected void processPendingTable(Table table, boolean allowEdits, IndexChangeRecorder indexChangeRecorder, Consumer<String> errorNotifier) {
+    protected void processPendingTable(Table table, boolean allowEdits,
+        IndexChangeRecorder indexChangeRecorder, Consumer<String> errorNotifier) {
         final Index addIndex = table.getIndex();
         final long firstRow = nextRow;
         final long lastRow = firstRow + addIndex.intSize() - 1;
@@ -94,12 +103,17 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
         final int chunkCapacity = table.intSize();
 
         getColumnSourceMap().forEach((name, cs) -> {
-            final ArrayBackedColumnSource<?> arrayBackedColumnSource = (ArrayBackedColumnSource<?>) cs;
+            final ArrayBackedColumnSource<?> arrayBackedColumnSource =
+                (ArrayBackedColumnSource<?>) cs;
             arrayBackedColumnSource.ensureCapacity(nextRow);
             final ColumnSource<?> sourceColumnSource = table.getColumnSource(name);
-            try (final WritableChunkSink.FillFromContext ffc = arrayBackedColumnSource.makeFillFromContext(chunkCapacity);
-                 final ChunkSource.GetContext getContext = sourceColumnSource.makeGetContext(chunkCapacity, sharedContext)) {
-                final Chunk<? extends Attributes.Values> valuesChunk = sourceColumnSource.getChunk(getContext, addIndex);
+            try (
+                final WritableChunkSink.FillFromContext ffc =
+                    arrayBackedColumnSource.makeFillFromContext(chunkCapacity);
+                final ChunkSource.GetContext getContext =
+                    sourceColumnSource.makeGetContext(chunkCapacity, sharedContext)) {
+                final Chunk<? extends Attributes.Values> valuesChunk =
+                    sourceColumnSource.getChunk(getContext, addIndex);
                 arrayBackedColumnSource.fillFromChunk(ffc, valuesChunk, destinations);
             }
         });
@@ -132,12 +146,14 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
         }
 
         @Override
-        public void setRows(@NotNull Table defaultValues, int[] rowArray, Map<String, Object>[] valueArray, InputTableStatusListener listener) {
+        public void setRows(@NotNull Table defaultValues, int[] rowArray,
+            Map<String, Object>[] valueArray, InputTableStatusListener listener) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void addRows(Map<String, Object>[] valueArray, boolean allowEdits, InputTableStatusListener listener) {
+        public void addRows(Map<String, Object>[] valueArray, boolean allowEdits,
+            InputTableStatusListener listener) {
             if (allowEdits) {
                 throw new UnsupportedOperationException();
             }

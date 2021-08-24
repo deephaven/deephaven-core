@@ -21,11 +21,12 @@ public abstract class AbstractCalendar implements Calendar {
     }
 
     public String previousDay(final DBDateTime time, final int days) {
-        if(time == null) {
+        if (time == null) {
             return null;
         }
 
-        final LocalDate t = DBTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().minusDays(days);
+        final LocalDate t =
+            DBTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().minusDays(days);
 
         return DateStringUtils.format(t);
     }
@@ -35,7 +36,7 @@ public abstract class AbstractCalendar implements Calendar {
     }
 
     public String previousDay(final String date, final int days) {
-        if(date == null) {
+        if (date == null) {
             return null;
         }
 
@@ -48,11 +49,12 @@ public abstract class AbstractCalendar implements Calendar {
     }
 
     public String nextDay(final DBDateTime time, final int days) {
-        if(time == null) {
+        if (time == null) {
             return null;
         }
 
-        final LocalDate t = DBTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().plusDays(days);
+        final LocalDate t =
+            DBTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().plusDays(days);
 
         return DateStringUtils.format(t);
     }
@@ -62,7 +64,7 @@ public abstract class AbstractCalendar implements Calendar {
     }
 
     public String nextDay(final String date, final int days) {
-        if(date == null) {
+        if (date == null) {
             return null;
         }
 
@@ -71,14 +73,14 @@ public abstract class AbstractCalendar implements Calendar {
     }
 
     public String[] daysInRange(DBDateTime start, DBDateTime end) {
-        if(start == null || end == null) {
+        if (start == null || end == null) {
             return new String[0];
         }
         LocalDate day = DBTimeUtils.getZonedDateTime(start, timeZone()).toLocalDate();
         final LocalDate day2 = DBTimeUtils.getZonedDateTime(end, timeZone()).toLocalDate();
 
         List<String> dateList = new ArrayList<>();
-        while(!day.isAfter(day2)) {
+        while (!day.isAfter(day2)) {
             dateList.add(DateStringUtils.format(day));
             day = day.plusDays(1);
         }
@@ -90,13 +92,13 @@ public abstract class AbstractCalendar implements Calendar {
         try {
             DateStringUtils.parseLocalDate(start);
             DateStringUtils.parseLocalDate(end);
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             return new String[0];
         }
 
         List<String> dateList = new ArrayList<>();
         String date = start;
-        while(!DateStringUtils.isAfterQuiet(date, end)) {
+        while (!DateStringUtils.isAfterQuiet(date, end)) {
             dateList.add(date);
             date = DateStringUtils.plusDaysQuiet(date, 1);
         }
@@ -104,12 +106,14 @@ public abstract class AbstractCalendar implements Calendar {
         return dateList.toArray(new String[dateList.size()]);
     }
 
-    public int numberOfDays(final DBDateTime start, final DBDateTime end){
+    public int numberOfDays(final DBDateTime start, final DBDateTime end) {
         return numberOfDays(start, end, false);
     }
 
-    public int numberOfDays(final DBDateTime start, final DBDateTime end, final boolean endInclusive){
-        return numberOfDays(start == null ? null : start.toDateString(timeZone()), end == null ? null : end.toDateString(timeZone()), endInclusive);
+    public int numberOfDays(final DBDateTime start, final DBDateTime end,
+        final boolean endInclusive) {
+        return numberOfDays(start == null ? null : start.toDateString(timeZone()),
+            end == null ? null : end.toDateString(timeZone()), endInclusive);
     }
 
     public int numberOfDays(final String start, final String end) {
@@ -117,7 +121,7 @@ public abstract class AbstractCalendar implements Calendar {
     }
 
     public int numberOfDays(final String start, final String end, final boolean endInclusive) {
-        if(start == null || end == null) {
+        if (start == null || end == null) {
             return QueryConstants.NULL_INT;
         }
 
@@ -125,7 +129,7 @@ public abstract class AbstractCalendar implements Calendar {
         LocalDate endDay = DateStringUtils.parseLocalDate(end);
 
         int days = (int) ChronoUnit.DAYS.between(startDay, endDay);
-        if(days < 0) {
+        if (days < 0) {
             days = days - (endInclusive ? 1 : 0);
         } else {
             days = days + (endInclusive ? 1 : 0);
@@ -138,7 +142,7 @@ public abstract class AbstractCalendar implements Calendar {
     }
 
     public double diffDay(final DBDateTime start, final DBDateTime end) {
-        if(start == null || end == null) {
+        if (start == null || end == null) {
             return QueryConstants.NULL_DOUBLE;
         }
 
@@ -146,7 +150,7 @@ public abstract class AbstractCalendar implements Calendar {
     }
 
     public double diffYear(DBDateTime start, DBDateTime end) {
-        if(start == null || end == null) {
+        if (start == null || end == null) {
             return QueryConstants.NULL_DOUBLE;
         }
 
@@ -154,14 +158,14 @@ public abstract class AbstractCalendar implements Calendar {
     }
 
     public DayOfWeek dayOfWeek(final DBDateTime time) {
-        if(time == null) {
+        if (time == null) {
             return null;
         }
         return DayOfWeek.of(DBTimeUtils.dayOfWeek(time, timeZone()));
     }
 
     public DayOfWeek dayOfWeek(final String date) {
-        if(date == null) {
+        if (date == null) {
             return null;
         }
         LocalDate localDate = LocalDate.parse(date);

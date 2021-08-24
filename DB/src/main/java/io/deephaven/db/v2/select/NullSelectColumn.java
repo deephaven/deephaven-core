@@ -12,7 +12,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A SelectColumn implementation that can be used to replace columns with {@link NullValueColumnSource}s
+ * A SelectColumn implementation that can be used to replace columns with
+ * {@link NullValueColumnSource}s
  */
 public class NullSelectColumn<T> implements SelectColumn {
     private final String name;
@@ -29,7 +30,8 @@ public class NullSelectColumn<T> implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(final Index index, final Map<String, ? extends ColumnSource> columnsOfInterest) {
+    public List<String> initInputs(final Index index,
+        final Map<String, ? extends ColumnSource> columnsOfInterest) {
         return Collections.emptyList();
     }
 
@@ -92,7 +94,7 @@ public class NullSelectColumn<T> implements SelectColumn {
 
     @Override
     public SelectColumn copy() {
-        //noinspection unchecked
+        // noinspection unchecked
         return new NullSelectColumn<>(getReturnedType(), nvcs.getComponentType(), name);
     }
 }

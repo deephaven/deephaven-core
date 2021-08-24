@@ -23,7 +23,7 @@ public class JpyModuleByteArrayTest extends JpyModuleArrayTestBase<byte[]> {
     @Override
     void fillAsDesired(byte[] array) {
         for (int i = 0; i < array.length; ++i) {
-            array[i] = (byte)i;
+            array[i] = (byte) i;
         }
     }
 }

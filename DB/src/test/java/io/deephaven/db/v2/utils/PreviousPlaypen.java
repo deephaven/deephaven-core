@@ -3,17 +3,17 @@ package io.deephaven.db.v2.utils;
 import io.deephaven.db.v2.sources.LogicalClock;
 
 public class PreviousPlaypen {
-    public static void main(String [] args) {
-//        LogicalClock.DEFAULT.startUpdateCycle();
+    public static void main(String[] args) {
+        // LogicalClock.DEFAULT.startUpdateCycle();
 
-//        final Index i = Index.FACTORY.getFlatIndex(100);
-//        System.out.println(i);
-//        System.out.println(i.getPrevIndex());
-//
-//        LogicalClock.DEFAULT.completeUpdateCycle();
-//
-//        System.out.println(i);
-//        System.out.println(i.getPrevIndex());
+        // final Index i = Index.FACTORY.getFlatIndex(100);
+        // System.out.println(i);
+        // System.out.println(i.getPrevIndex());
+        //
+        // LogicalClock.DEFAULT.completeUpdateCycle();
+        //
+        // System.out.println(i);
+        // System.out.println(i.getPrevIndex());
 
 
         LogicalClock.DEFAULT.startUpdateCycle();

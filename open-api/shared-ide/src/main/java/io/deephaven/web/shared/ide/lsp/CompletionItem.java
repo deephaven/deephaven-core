@@ -36,20 +36,25 @@ public class CompletionItem implements Serializable {
     }
 
     /**
-     * This constructor matches CompletionFragment semantics; it is here to ease the transition to the LSP model.
+     * This constructor matches CompletionFragment semantics; it is here to ease the transition to
+     * the LSP model.
      */
     @JsIgnore
-    public CompletionItem(int start, int length, String completion, String displayed, String source) {
-        this(start, length, completion, displayed, DocumentRange.rangeFromSource(source, start, length));
+    public CompletionItem(int start, int length, String completion, String displayed,
+        String source) {
+        this(start, length, completion, displayed,
+            DocumentRange.rangeFromSource(source, start, length));
     }
 
     @JsIgnore
-    public CompletionItem(int start, int length, String completion, String displayed, DocumentRange range) {
+    public CompletionItem(int start, int length, String completion, String displayed,
+        DocumentRange range) {
         this();
         textEdit = new TextEdit();
         textEdit.text = completion;
         textEdit.range = range;
-        insertTextFormat = 2; // snippet format is insertTextFormat=2 in lsp, and insertTextRules=4.  See MonacoCompletionProvider.jsx.
+        insertTextFormat = 2; // snippet format is insertTextFormat=2 in lsp, and insertTextRules=4.
+                              // See MonacoCompletionProvider.jsx.
         label = displayed == null ? completion : displayed;
         this.start = start;
         this.length = length;
@@ -67,13 +72,15 @@ public class CompletionItem implements Serializable {
 
     @JsProperty
     public void setCommitCharacters(Object args) {
-        setArray(args, a->this.commitCharacters=a);
+        setArray(args, a -> this.commitCharacters = a);
     }
 
     @JsProperty(name = "additionalTextEdits")
     public Object additionalTextEdits_() {
         if (additionalTextEdits != null) {
-            return Js.cast(Js.<JsArray<TextDocumentContentChangeEvent>>uncheckedCast(additionalTextEdits).slice());
+            return Js
+                .cast(Js.<JsArray<TextDocumentContentChangeEvent>>uncheckedCast(additionalTextEdits)
+                    .slice());
         } else {
             return null;
         }
@@ -90,7 +97,7 @@ public class CompletionItem implements Serializable {
         return this;
     }
 
-    public void addAdditionalTextEdits(TextEdit ... edit) {
+    public void addAdditionalTextEdits(TextEdit... edit) {
         if (this.additionalTextEdits == null) {
             setAdditionalTextEdits(edit);
         } else {
@@ -103,9 +110,9 @@ public class CompletionItem implements Serializable {
     @JsProperty
     public void setAdditionalTextEdits(Object args) {
         if (args == null || args instanceof TextEdit[]) {
-            additionalTextEdits = (TextEdit[])args;
-        } else if (args instanceof JavaScriptObject){
-            // this is actually javascript.  We can do terrible things here and it's ok
+            additionalTextEdits = (TextEdit[]) args;
+        } else if (args instanceof JavaScriptObject) {
+            // this is actually javascript. We can do terrible things here and it's ok
             final int length = Array.getLength(args);
             final TextEdit[] typed = new TextEdit[length];
             System.arraycopy(args, 0, typed, 0, length);
@@ -122,6 +129,7 @@ public class CompletionItem implements Serializable {
     public int getStart() {
         return start;
     }
+
     @JsIgnore
     public void setStart(int start) {
         this.start = start;
@@ -134,6 +142,7 @@ public class CompletionItem implements Serializable {
     public int getLength() {
         return length;
     }
+
     @JsIgnore
     public void setLength(int length) {
         this.length = length;

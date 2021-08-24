@@ -13,66 +13,66 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.session_pb.BasicAuth",
     namespace = JsPackage.GLOBAL)
 public class BasicAuth {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
-    @JsOverlay
-    static BasicAuth.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType {
+        @JsOverlay
+        static BasicAuth.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getPassword();
+
+        @JsProperty
+        String getUsername();
+
+        @JsProperty
+        void setPassword(String password);
+
+        @JsProperty
+        void setUsername(String username);
     }
 
-    @JsProperty
-    String getPassword();
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType0 {
+        @JsOverlay
+        static BasicAuth.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
 
-    @JsProperty
-    String getUsername();
+        @JsProperty
+        String getPassword();
 
-    @JsProperty
-    void setPassword(String password);
+        @JsProperty
+        String getUsername();
 
-    @JsProperty
-    void setUsername(String username);
-  }
+        @JsProperty
+        void setPassword(String password);
 
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsOverlay
-    static BasicAuth.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+        @JsProperty
+        void setUsername(String username);
     }
 
-    @JsProperty
-    String getPassword();
+    public static native BasicAuth deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    String getUsername();
+    public static native BasicAuth deserializeBinaryFromReader(BasicAuth message, Object reader);
 
-    @JsProperty
-    void setPassword(String password);
+    public static native void serializeBinaryToWriter(BasicAuth message, Object writer);
 
-    @JsProperty
-    void setUsername(String username);
-  }
+    public static native BasicAuth.ToObjectReturnType toObject(
+        boolean includeInstance, BasicAuth msg);
 
-  public static native BasicAuth deserializeBinary(Uint8Array bytes);
+    public native String getPassword();
 
-  public static native BasicAuth deserializeBinaryFromReader(BasicAuth message, Object reader);
+    public native String getUsername();
 
-  public static native void serializeBinaryToWriter(BasicAuth message, Object writer);
+    public native Uint8Array serializeBinary();
 
-  public static native BasicAuth.ToObjectReturnType toObject(
-      boolean includeInstance, BasicAuth msg);
+    public native void setPassword(String value);
 
-  public native String getPassword();
+    public native void setUsername(String value);
 
-  public native String getUsername();
+    public native BasicAuth.ToObjectReturnType0 toObject();
 
-  public native Uint8Array serializeBinary();
-
-  public native void setPassword(String value);
-
-  public native void setUsername(String value);
-
-  public native BasicAuth.ToObjectReturnType0 toObject();
-
-  public native BasicAuth.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native BasicAuth.ToObjectReturnType0 toObject(boolean includeInstance);
 }

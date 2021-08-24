@@ -6,7 +6,8 @@ import javax.annotation.Nonnull;
 import java.math.BigInteger;
 
 /**
- * Wrap BigInteger values for use in JS. Provides text formatting for display and access to the underlying value.
+ * Wrap BigInteger values for use in JS. Provides text formatting for display and access to the
+ * underlying value.
  */
 public class BigIntegerWrapper {
     private final BigInteger value;

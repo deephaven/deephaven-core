@@ -34,11 +34,13 @@ public class PercentileByStateFactoryImpl implements Serializable, AggregationSt
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
             final MemoKey memoKey = (MemoKey) o;
             return Double.compare(memoKey.percentile, percentile) == 0 &&
-                    averageMedian == memoKey.averageMedian;
+                averageMedian == memoKey.averageMedian;
         }
 
         @Override

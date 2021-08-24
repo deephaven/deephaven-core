@@ -10,7 +10,8 @@ import java.io.*;
 
 public class DbImageImplTest extends BaseArrayTestCase {
 
-    final private String file = Configuration.getInstance().getDevRootPath() + "/DbTypesImpl/src/test/resources/io/deephaven/dbtypes/white.jpg";
+    final private String file = Configuration.getInstance().getDevRootPath()
+        + "/DbTypesImpl/src/test/resources/io/deephaven/dbtypes/white.jpg";
 
     private void assertEquals(DbImage image1, DbImage image2) {
         assertEquals(image1.getName(), image2.getName());
@@ -21,7 +22,7 @@ public class DbImageImplTest extends BaseArrayTestCase {
     }
 
     private DbImageImpl[] loadImages() throws IOException {
-        return new DbImageImpl[]{
+        return new DbImageImpl[] {
                 new DbImageImpl(file),
                 new DbImageImpl(new java.io.File(file)),
                 new DbImageImpl(DbFileImpl.loadBytes(new java.io.File(file))),
@@ -30,32 +31,32 @@ public class DbImageImplTest extends BaseArrayTestCase {
     }
 
     public void testNullConstructors() throws IOException {
-        try{
+        try {
             new DbImageImpl((byte[]) null);
             fail("Should have thrown an exception.");
         } catch (NullPointerException e) {
-            //pass
+            // pass
         }
 
-        try{
+        try {
             new DbImageImpl((String) null);
             fail("Should have thrown an exception.");
         } catch (NullPointerException e) {
-            //pass
+            // pass
         }
 
-        try{
+        try {
             new DbImageImpl((java.io.File) null);
             fail("Should have thrown an exception.");
         } catch (NullPointerException e) {
-            //pass
+            // pass
         }
 
-        try{
+        try {
             new DbImageImpl((BufferedImage) null);
             fail("Should have thrown an exception.");
         } catch (NullPointerException e) {
-            //pass
+            // pass
         }
     }
 
@@ -64,18 +65,18 @@ public class DbImageImplTest extends BaseArrayTestCase {
         assertEquals(null, img.getName());
         assertEquals(null, img.getType());
 
-        try{
+        try {
             img.getBytes();
             fail("Should have thrown an exception.");
-        } catch (IllegalStateException e){
-            //pass
+        } catch (IllegalStateException e) {
+            // pass
         }
 
-        try{
+        try {
             img.getBufferedImage();
             fail("Should have thrown an exception.");
-        } catch (IllegalStateException e){
-            //pass
+        } catch (IllegalStateException e) {
+            // pass
         }
     }
 
@@ -101,7 +102,7 @@ public class DbImageImplTest extends BaseArrayTestCase {
         final DbImageImpl[] images = loadImages();
         final byte[] bytes = DbFileImpl.loadBytes(new java.io.File(file));
 
-        for(int i=0; i<3; i++){
+        for (int i = 0; i < 3; i++) {
             final DbImageImpl image = images[i];
             assertEquals(bytes, image.getBytes());
             i++;
@@ -180,7 +181,8 @@ public class DbImageImplTest extends BaseArrayTestCase {
             final ObjectOutputStream oos = new ObjectOutputStream(bos);
             oos.writeObject(image);
             oos.close();
-            final ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray()));
+            final ObjectInputStream ois =
+                new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray()));
             final DbImageImpl img = (DbImageImpl) ois.readObject();
             assertNotNull(img);
             assertEquals(image, img);
@@ -235,11 +237,11 @@ public class DbImageImplTest extends BaseArrayTestCase {
             assertEquals(1, img.getHeight());
             assertEquals(1, img.getWidth());
 
-            try{
+            try {
                 image.write("JUNK", filename);
                 fail("Should have thrown an exception");
-            } catch(IllegalArgumentException e){
-                //pass
+            } catch (IllegalArgumentException e) {
+                // pass
             }
         }
     }
@@ -256,11 +258,11 @@ public class DbImageImplTest extends BaseArrayTestCase {
         final BufferedImage image2 = ImageIO.read(new ByteArrayInputStream(b));
         assertNotNull(image2);
 
-        try{
+        try {
             DbImageImpl.image2Bytes(image, "JUNK");
             fail("Should have thrown an exception");
-        } catch (IllegalArgumentException e){
-            //pass
+        } catch (IllegalArgumentException e) {
+            // pass
         }
     }
 

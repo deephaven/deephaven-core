@@ -10,6 +10,5 @@ public class IdeConnectionOptions {
     public String serviceId;
 
     @JsConstructor
-    public IdeConnectionOptions() {
-    }
+    public IdeConnectionOptions() {}
 }

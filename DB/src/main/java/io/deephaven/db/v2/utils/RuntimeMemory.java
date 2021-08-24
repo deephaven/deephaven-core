@@ -9,14 +9,17 @@ import java.text.DecimalFormat;
 /**
  * Cache memory utilization.
  *
- * <p>>Calling Runtime.getRuntime().getFreeMemory() is expensive; and we may do it a lot when we have automatically
- * computed tables, such as in a byExternal.  Instead of calling the runtime directly from the performance
- * instrumentation framework, we call this class's methods; which cache the result for a configurable number of
- * milliseconds to avoid repeated calls that are not likely any different./p>
+ * <p>
+ * >Calling Runtime.getRuntime().getFreeMemory() is expensive; and we may do it a lot when we have
+ * automatically computed tables, such as in a byExternal. Instead of calling the runtime directly
+ * from the performance instrumentation framework, we call this class's methods; which cache the
+ * result for a configurable number of milliseconds to avoid repeated calls that are not likely any
+ * different./p>
  *
- * <p>A
- * dditionally, we log our JVM heap usage on a regular basis; to enable users to quickly examine their worker
- * logs and understand memory issues.</p>
+ * <p>
+ * A dditionally, we log our JVM heap usage on a regular basis; to enable users to quickly examine
+ * their worker logs and understand memory issues.
+ * </p>
  */
 public class RuntimeMemory {
     /** The singleton instance. */
@@ -48,9 +51,11 @@ public class RuntimeMemory {
     private RuntimeMemory(Logger log) {
         this.log = log;
         this.runtime = Runtime.getRuntime();
-        logInterval = Configuration.getInstance().getIntegerWithDefault("RuntimeMemory.logIntervalMillis", 60 * 1000);
+        logInterval = Configuration.getInstance()
+            .getIntegerWithDefault("RuntimeMemory.logIntervalMillis", 60 * 1000);
         this.nextLog = System.currentTimeMillis() + logInterval;
-        cacheInterval = Configuration.getInstance().getIntegerWithDefault("RuntimeMemory.cacheIntervalMillis", 1);
+        cacheInterval = Configuration.getInstance()
+            .getIntegerWithDefault("RuntimeMemory.cacheIntervalMillis", 1);
         maxMemory = runtime.maxMemory();
 
         commaFormat = new DecimalFormat();
@@ -106,9 +111,10 @@ public class RuntimeMemory {
             nextCheck = now + cacheInterval;
         }
         if (logInterval > 0 && now >= nextLog) {
-            log.info().append("Jvm Heap: ").append(commaFormat.format(lastFreeMemory)).append(" Free / ")
-                    .append(commaFormat.format(lastTotalMemory)).append(" Total (")
-                    .append(commaFormat.format(maxMemory)).append(" Max)").endl();
+            log.info().append("Jvm Heap: ").append(commaFormat.format(lastFreeMemory))
+                .append(" Free / ")
+                .append(commaFormat.format(lastTotalMemory)).append(" Total (")
+                .append(commaFormat.format(maxMemory)).append(" Max)").endl();
             nextLog = now + logInterval;
         }
     }

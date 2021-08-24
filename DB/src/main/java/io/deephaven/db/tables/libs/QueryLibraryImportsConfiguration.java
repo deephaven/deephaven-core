@@ -11,7 +11,8 @@ public class QueryLibraryImportsConfiguration implements QueryLibraryImports {
     @Override
     public Set<Package> packages() {
         try {
-            return new HashSet<>(ClassList.readPackageList(Configuration.getInstance().getProperty("QueryLibrary.defaultPackageImportList")));
+            return new HashSet<>(ClassList.readPackageList(
+                Configuration.getInstance().getProperty("QueryLibrary.defaultPackageImportList")));
         } catch (IOException e) {
             throw new RuntimeException("Can not load default class imports", e);
         }
@@ -20,7 +21,8 @@ public class QueryLibraryImportsConfiguration implements QueryLibraryImports {
     @Override
     public Set<Class<?>> classes() {
         try {
-            return new HashSet<>(ClassList.readClassListAsCollection(Configuration.getInstance().getProperty("QueryLibrary.defaultClassImportList")));
+            return new HashSet<>(ClassList.readClassListAsCollection(
+                Configuration.getInstance().getProperty("QueryLibrary.defaultClassImportList")));
         } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException("Can not load default class imports", e);
         }
@@ -29,7 +31,8 @@ public class QueryLibraryImportsConfiguration implements QueryLibraryImports {
     @Override
     public Set<Class<?>> statics() {
         try {
-            return new HashSet<>(ClassList.readClassListAsCollection(Configuration.getInstance().getProperty("QueryLibrary.defaultStaticImportList")));
+            return new HashSet<>(ClassList.readClassListAsCollection(
+                Configuration.getInstance().getProperty("QueryLibrary.defaultStaticImportList")));
         } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException("Can not load default static imports", e);
         }

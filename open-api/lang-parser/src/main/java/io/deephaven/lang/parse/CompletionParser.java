@@ -14,10 +14,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * A specialized parser for autocompletion;
- * maybe better to call it a chunker than a parser...
+ * A specialized parser for autocompletion; maybe better to call it a chunker than a parser...
  */
-public class CompletionParser implements CompletionParseService<ParsedDocument, ChangeDocumentRequest.TextDocumentContentChangeEvent, ParseException> {
+public class CompletionParser implements
+    CompletionParseService<ParsedDocument, ChangeDocumentRequest.TextDocumentContentChangeEvent, ParseException> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CompletionParser.class);
     private Map<String, PendingParse> docs = new ConcurrentHashMap<>();
@@ -32,16 +32,16 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
     public void open(final String text, final String uri, final String version) {
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace()
-                    .append("Opening document ")
-                    .append(uri)
-                    .append("[")
-                    .append(version)
-                    .append("] ->\n")
-                    .append(text)
-                    .endl();
+                .append("Opening document ")
+                .append(uri)
+                .append("[")
+                .append(version)
+                .append("] ->\n")
+                .append(text)
+                .endl();
         }
         startParse(uri)
-                .requestParse(String.valueOf(version), text, false);
+            .requestParse(String.valueOf(version), text, false);
     }
 
     private PendingParse startParse(String uri) {
@@ -49,18 +49,19 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
     }
 
     @Override
-    public void update(final String uri, final String version, final List<ChangeDocumentRequest.TextDocumentContentChangeEvent> changes) {
+    public void update(final String uri, final String version,
+        final List<ChangeDocumentRequest.TextDocumentContentChangeEvent> changes) {
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace()
-                    .append("Updating document ")
-                    .append(uri)
-                    .append(" [")
-                    .append(version)
-                    .append("] all docs: ")
-                    .append(docs.keySet().toString())
-                    .append(" changes: ")
-                    .append(changes.toString())
-                    .endl();
+                .append("Updating document ")
+                .append(uri)
+                .append(" [")
+                .append(version)
+                .append("] all docs: ")
+                .append(docs.keySet().toString())
+                .append(" changes: ")
+                .append(changes.toString())
+                .endl();
         }
         PendingParse doc = docs.get(uri);
         final boolean forceParse;
@@ -68,7 +69,8 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
             doc = startParse(uri);
             forceParse = false;
         } else {
-            // let the parser know that we have an incoming change, so it can clear out its worker thread asap
+            // let the parser know that we have an incoming change, so it can clear out its worker
+            // thread asap
             doc.invalidate();
             forceParse = true;
         }
@@ -81,32 +83,34 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
             if (offset < 0) {
                 if (LOGGER.isWarnEnabled()) {
                     LOGGER.warn()
-                            .append("Invalid change in document ")
-                            .append(uri)
-                            .append("[")
-                            .append(version)
-                            .append("] @")
-                            .append(range.getStart().getLine())
-                            .append(":")
-                            .append(range.getStart().getCharacter())
-                            .endl();
+                        .append("Invalid change in document ")
+                        .append(uri)
+                        .append("[")
+                        .append(version)
+                        .append("] @")
+                        .append(range.getStart().getLine())
+                        .append(":")
+                        .append(range.getStart().getCharacter())
+                        .endl();
                 }
                 return;
             }
 
-            String prefix = offset > 0 && offset <= document.length() ? document.substring(0, offset) : "";
-            String suffix = offset + length < document.length() ? document.substring(offset + length) : "";
+            String prefix =
+                offset > 0 && offset <= document.length() ? document.substring(0, offset) : "";
+            String suffix =
+                offset + length < document.length() ? document.substring(offset + length) : "";
             document = prefix + change.getText() + suffix;
         }
         doc.requestParse(version, document, forceParse);
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace()
-                    .append("Finished updating ")
-                    .append(uri)
-                    .append(" [")
-                    .append(version)
-                    .append("]")
-                    .endl();
+                .append("Finished updating ")
+                .append(uri)
+                .append(" [")
+                .append(version)
+                .append("]")
+                .endl();
         }
     }
 
@@ -124,7 +128,8 @@ public class CompletionParser implements CompletionParseService<ParsedDocument, 
         if (doc == null) {
             throw new IllegalStateException("Unable to find parsed document " + uri);
         }
-        return doc.finishParse().orElseThrow(() -> new IllegalStateException("Unable to complete document parsing for " + uri));
+        return doc.finishParse().orElseThrow(
+            () -> new IllegalStateException("Unable to complete document parsing for " + uri));
     }
 
     @Override

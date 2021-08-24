@@ -9,15 +9,15 @@ import junit.framework.TestCase;
 
 import java.util.HashMap;
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 /**
  * Tests for {@link LowGarbageArrayIntegerMap}
  */
 public class TestLowGarbageArrayIntegerMap extends TestCase {
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     public void testLowGarbageArrayIntegerMap() {
-        HashMap integerToStringMap=new LowGarbageArrayIntegerMap<String>();
+        HashMap integerToStringMap = new LowGarbageArrayIntegerMap<String>();
 
         // check empty get
         assertNull(integerToStringMap.get(5));

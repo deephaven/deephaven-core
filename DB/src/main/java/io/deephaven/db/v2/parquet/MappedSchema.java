@@ -16,10 +16,9 @@ import static io.deephaven.db.v2.parquet.TypeInfos.getTypeInfo;
 class MappedSchema {
 
     static MappedSchema create(
-            final TableDefinition definition,
-            final ParquetInstructions instructions,
-            final ColumnDefinition... extraColumns
-    ) {
+        final TableDefinition definition,
+        final ParquetInstructions instructions,
+        final ColumnDefinition... extraColumns) {
         final MessageTypeBuilder builder = Types.buildMessage();
         for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
             TypeInfos.TypeInfo typeInfo = getTypeInfo(columnDefinition, instructions);
@@ -27,7 +26,8 @@ class MappedSchema {
             builder.addField(schemaType);
         }
         for (final ColumnDefinition<?> extraColumn : extraColumns) {
-            builder.addField(getTypeInfo(extraColumn, instructions).createSchemaType(extraColumn, instructions));
+            builder.addField(
+                getTypeInfo(extraColumn, instructions).createSchemaType(extraColumn, instructions));
         }
         MessageType schema = builder.named("root");
         return new MappedSchema(definition, schema);

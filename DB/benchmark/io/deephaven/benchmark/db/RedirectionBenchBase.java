@@ -41,12 +41,13 @@ public abstract class RedirectionBenchBase {
         public final int steps;
         public final String[] fillCols;
         public final WritableChunk<Attributes.Values> chunk;
+
         public QueryData(
-                final Table live,
-                final IncrementalReleaseFilter incrementalReleaseFilter,
-                final int steps,
-                final String[] fillCol,
-                final WritableChunk<Attributes.Values> chunk) {
+            final Table live,
+            final IncrementalReleaseFilter incrementalReleaseFilter,
+            final int steps,
+            final String[] fillCol,
+            final WritableChunk<Attributes.Values> chunk) {
             this.live = live;
             this.incrementalReleaseFilter = incrementalReleaseFilter;
             this.steps = steps;
@@ -65,11 +66,13 @@ public abstract class RedirectionBenchBase {
 
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
 
-        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
+        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()),
+            params.getWarmup().getCount());
 
         final QueryData queryData = getQuery();
         for (int step = 0; step < queryData.steps; ++step) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(queryData.incrementalReleaseFilter::refresh);
+            LiveTableMonitor.DEFAULT
+                .runWithinUnitTestCycle(queryData.incrementalReleaseFilter::refresh);
         }
         inputTable = queryData.live;
         nFillCols = queryData.fillCols.length;

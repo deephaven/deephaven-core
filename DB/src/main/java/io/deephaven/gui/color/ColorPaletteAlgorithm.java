@@ -10,8 +10,7 @@ package io.deephaven.gui.color;
 public interface ColorPaletteAlgorithm {
 
     /**
-     * Gets the next {@link Color} after {@code c}
-     * in the algorithm.
+     * Gets the next {@link Color} after {@code c} in the algorithm.
      *
      * @param c color
      * @return result of plugging {@code c} in the algorithm

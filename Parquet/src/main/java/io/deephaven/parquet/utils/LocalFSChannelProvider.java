@@ -16,11 +16,12 @@ public class LocalFSChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SeekableByteChannel getWriteChannel(@NotNull final Path filePath, final boolean append) throws IOException {
+    public SeekableByteChannel getWriteChannel(@NotNull final Path filePath, final boolean append)
+        throws IOException {
         final FileChannel result = FileChannel.open(filePath,
-                StandardOpenOption.WRITE,
-                StandardOpenOption.CREATE,
-                append ? StandardOpenOption.APPEND : StandardOpenOption.TRUNCATE_EXISTING);
+            StandardOpenOption.WRITE,
+            StandardOpenOption.CREATE,
+            append ? StandardOpenOption.APPEND : StandardOpenOption.TRUNCATE_EXISTING);
         if (append) {
             result.position(result.size());
         } else {

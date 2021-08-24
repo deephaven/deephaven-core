@@ -14,12 +14,14 @@ import java.util.concurrent.ForkJoinPool;
 /**
  * A lookup object for various values that the {@link ChunkerCompleter} might be interested in.
  *
- * This is extracted into its own class, so preloading can start as soon as the console session starts.
+ * This is extracted into its own class, so preloading can start as soon as the console session
+ * starts.
  *
  */
 public class CompletionLookups {
 
-    private static final WeakHashMap<ScriptSession, CompletionLookups> lookups = new WeakHashMap<>();
+    private static final WeakHashMap<ScriptSession, CompletionLookups> lookups =
+        new WeakHashMap<>();
 
     private final Lazy<QueryLibrary> ql;
     private final Lazy<Collection<Class>> statics;
@@ -27,7 +29,7 @@ public class CompletionLookups {
 
     public CompletionLookups() {
         ql = new Lazy<>(QueryLibrary::getLibrary);
-        statics = new Lazy<>(()->{
+        statics = new Lazy<>(() -> {
             ql.get();
             return QueryLibrary.getStaticImports();
         });
@@ -39,7 +41,7 @@ public class CompletionLookups {
     }
 
     public static CompletionLookups preload(ScriptSession session) {
-        return lookups.computeIfAbsent(session, s->new CompletionLookups());
+        return lookups.computeIfAbsent(session, s -> new CompletionLookups());
     }
 
     public Collection<Class> getStatics() {

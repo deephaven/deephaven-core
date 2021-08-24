@@ -14,61 +14,61 @@ import jsinterop.base.Js;
     name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Timestamp",
     namespace = JsPackage.GLOBAL)
 public class Timestamp {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface TimezoneUnionType {
-    @JsOverlay
-    static Timestamp.TimezoneUnionType of(Object o) {
-      return Js.cast(o);
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface TimezoneUnionType {
+        @JsOverlay
+        static Timestamp.TimezoneUnionType of(Object o) {
+            return Js.cast(o);
+        }
+
+        @JsOverlay
+        default String asString() {
+            return Js.asString(this);
+        }
+
+        @JsOverlay
+        default Uint8Array asUint8Array() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default boolean isString() {
+            return (Object) this instanceof String;
+        }
+
+        @JsOverlay
+        default boolean isUint8Array() {
+            return (Object) this instanceof Uint8Array;
+        }
     }
 
-    @JsOverlay
-    default String asString() {
-      return Js.asString(this);
-    }
+    public static native void addTimezone(Builder builder, double timezoneOffset);
 
-    @JsOverlay
-    default Uint8Array asUint8Array() {
-      return Js.cast(this);
-    }
+    public static native void addUnit(Builder builder, int unit);
 
-    @JsOverlay
-    default boolean isString() {
-      return (Object) this instanceof String;
-    }
+    public static native double createTimestamp(
+        Builder builder, int unit, double timezoneOffset);
 
-    @JsOverlay
-    default boolean isUint8Array() {
-      return (Object) this instanceof Uint8Array;
-    }
-  }
+    public static native double endTimestamp(Builder builder);
 
-  public static native void addTimezone(Builder builder, double timezoneOffset);
+    public static native Timestamp getRootAsTimestamp(ByteBuffer bb, Timestamp obj);
 
-  public static native void addUnit(Builder builder, int unit);
+    public static native Timestamp getRootAsTimestamp(ByteBuffer bb);
 
-  public static native double createTimestamp(
-      Builder builder, int unit, double timezoneOffset);
+    public static native Timestamp getSizePrefixedRootAsTimestamp(ByteBuffer bb, Timestamp obj);
 
-  public static native double endTimestamp(Builder builder);
+    public static native Timestamp getSizePrefixedRootAsTimestamp(ByteBuffer bb);
 
-  public static native Timestamp getRootAsTimestamp(ByteBuffer bb, Timestamp obj);
+    public static native void startTimestamp(Builder builder);
 
-  public static native Timestamp getRootAsTimestamp(ByteBuffer bb);
+    public ByteBuffer bb;
+    public double bb_pos;
 
-  public static native Timestamp getSizePrefixedRootAsTimestamp(ByteBuffer bb, Timestamp obj);
+    public native Timestamp __init(double i, ByteBuffer bb);
 
-  public static native Timestamp getSizePrefixedRootAsTimestamp(ByteBuffer bb);
+    public native Timestamp.TimezoneUnionType timezone();
 
-  public static native void startTimestamp(Builder builder);
+    public native Timestamp.TimezoneUnionType timezone(Encoding optionalEncoding);
 
-  public ByteBuffer bb;
-  public double bb_pos;
-
-  public native Timestamp __init(double i, ByteBuffer bb);
-
-  public native Timestamp.TimezoneUnionType timezone();
-
-  public native Timestamp.TimezoneUnionType timezone(Encoding optionalEncoding);
-
-  public native int unit();
+    public native int unit();
 }

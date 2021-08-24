@@ -29,7 +29,8 @@ public class ByEmaTest extends TestCase {
         @Override
         protected void processDoubleLocal(long timestamp, double data) {
             nSamples++;
-            logger.recordActivity("MA.processDoubleLocal(" + key + "," + timestamp + "," + data + ") = " + nSamples + "\n");
+            logger.recordActivity("MA.processDoubleLocal(" + key + "," + timestamp + "," + data
+                + ") = " + nSamples + "\n");
         }
 
         @Override
@@ -73,7 +74,8 @@ public class ByEmaTest extends TestCase {
         BE emaActual = new BE(nullBehavior, nanBehavior);
         RecordingMockObject target = new RecordingMockObject();
 
-        assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
+        assertEquals(target.getActivityRecordAndReset(),
+            emaActual.logger.getActivityRecordAndReset());
 
         DBDateTime ts0 = new DBDateTime(DAY * 1000000);
         ByEma.Key k0 = new ByEma.Key("A", "B");
@@ -81,13 +83,15 @@ public class ByEmaTest extends TestCase {
         ma0.processDoubleLocal(ts0.getNanos(), 1);
         ma0.getCurrent();
         emaActual.update(ts0, 1, "A", "B");
-        assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
+        assertEquals(target.getActivityRecordAndReset(),
+            emaActual.logger.getActivityRecordAndReset());
 
         DBDateTime ts1 = new DBDateTime(2 * DAY * 1000000);
         ma0.processDoubleLocal(ts1.getNanos(), 2);
         ma0.getCurrent();
         emaActual.update(ts1, 2, "A", "B");
-        assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
+        assertEquals(target.getActivityRecordAndReset(),
+            emaActual.logger.getActivityRecordAndReset());
 
         DBDateTime ts2 = new DBDateTime(3 * DAY * 1000000);
         ByEma.Key k1 = new ByEma.Key("A", "C");
@@ -95,53 +99,62 @@ public class ByEmaTest extends TestCase {
         ma1.processDoubleLocal(ts2.getNanos(), 3);
         ma1.getCurrent();
         emaActual.update(ts2, 3, "A", "C");
-        assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
+        assertEquals(target.getActivityRecordAndReset(),
+            emaActual.logger.getActivityRecordAndReset());
 
         DBDateTime ts3 = new DBDateTime(4 * DAY * 1000000);
         ma0.processDoubleLocal(ts3.getNanos(), 4);
         ma0.getCurrent();
         emaActual.update(ts3, 4, "A", "B");
-        assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
+        assertEquals(target.getActivityRecordAndReset(),
+            emaActual.logger.getActivityRecordAndReset());
 
         DBDateTime ts4 = new DBDateTime(5 * DAY * 1000000);
         MA ma2 = new MA(target, k0);
         emaActual.update(ts4, NULL, "A", "B");
-        assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
+        assertEquals(target.getActivityRecordAndReset(),
+            emaActual.logger.getActivityRecordAndReset());
 
         DBDateTime ts5 = new DBDateTime(6 * DAY * 1000000);
         ma1.processDoubleLocal(ts5.getNanos(), 6);
         ma1.getCurrent();
         emaActual.update(ts5, 6, "A", "C");
-        assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
+        assertEquals(target.getActivityRecordAndReset(),
+            emaActual.logger.getActivityRecordAndReset());
 
         DBDateTime ts6 = new DBDateTime(5 * DAY * 1000000);
         ma2.processDoubleLocal(ts6.getNanos(), 7);
         ma2.getCurrent();
         emaActual.update(ts6, 7, "A", "B");
-        assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
+        assertEquals(target.getActivityRecordAndReset(),
+            emaActual.logger.getActivityRecordAndReset());
 
         DBDateTime ts7 = new DBDateTime(6 * DAY * 1000000);
         MA ma3 = new MA(target, k0);
         emaActual.update(ts7, NAN, "A", "B");
-        assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
+        assertEquals(target.getActivityRecordAndReset(),
+            emaActual.logger.getActivityRecordAndReset());
 
         DBDateTime ts8 = new DBDateTime(7 * DAY * 1000000);
         ma3.processDoubleLocal(ts8.getNanos(), 8);
         ma3.getCurrent();
         emaActual.update(ts8, 8, "A", "B");
-        assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
+        assertEquals(target.getActivityRecordAndReset(),
+            emaActual.logger.getActivityRecordAndReset());
 
         DBDateTime ts9 = new DBDateTime(8 * DAY * 1000000);
         ma1.processDoubleLocal(ts9.getNanos(), 8);
         ma1.getCurrent();
         emaActual.update(ts9, 8, "A", "C");
-        assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
+        assertEquals(target.getActivityRecordAndReset(),
+            emaActual.logger.getActivityRecordAndReset());
 
         // test no time version
         DBDateTime ts10 = new DBDateTime(9 * DAY * 1000000);
         ma1.processDoubleLocal(Long.MIN_VALUE, 9);
         ma1.getCurrent();
         emaActual.update(9, "A", "C");
-        assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
+        assertEquals(target.getActivityRecordAndReset(),
+            emaActual.logger.getActivityRecordAndReset());
     }
 }

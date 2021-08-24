@@ -10,8 +10,8 @@ import io.deephaven.db.v2.utils.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Wrapper {@link ColumnSource} that maps current data accessors to previous data accessors (and disables previous data
- * accessors).
+ * Wrapper {@link ColumnSource} that maps current data accessors to previous data accessors (and
+ * disables previous data accessors).
  */
 @AbstractColumnSource.IsSerializable(value = true)
 public final class PrevColumnSource<T> extends AbstractColumnSource<T> {
@@ -134,32 +134,40 @@ public final class PrevColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public final GetContext makeGetContext(final int chunkCapacity, final SharedContext sharedContext) {
+    public final GetContext makeGetContext(final int chunkCapacity,
+        final SharedContext sharedContext) {
         return originalSource.makeGetContext(chunkCapacity, sharedContext);
     }
 
     @Override
-    public final Chunk<? extends Values> getChunk(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
+    public final Chunk<? extends Values> getChunk(@NotNull final GetContext context,
+        @NotNull final OrderedKeys orderedKeys) {
         return originalSource.getPrevChunk(context, orderedKeys);
     }
 
     @Override
-    public final Chunk<? extends Values> getPrevChunk(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
+    public final Chunk<? extends Values> getPrevChunk(@NotNull final GetContext context,
+        @NotNull final OrderedKeys orderedKeys) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public final FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
+    public final FillContext makeFillContext(final int chunkCapacity,
+        final SharedContext sharedContext) {
         return originalSource.makeFillContext(chunkCapacity, sharedContext);
     }
 
     @Override
-    public final void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+    public final void fillChunk(@NotNull final FillContext context,
+        @NotNull final WritableChunk<? super Values> destination,
+        @NotNull final OrderedKeys orderedKeys) {
         originalSource.fillPrevChunk(context, destination, orderedKeys);
     }
 
     @Override
-    public final void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+    public final void fillPrevChunk(@NotNull final FillContext context,
+        @NotNull final WritableChunk<? super Values> destination,
+        @NotNull final OrderedKeys orderedKeys) {
         throw new UnsupportedOperationException();
     }
 }

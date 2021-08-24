@@ -23,8 +23,8 @@ import static io.deephaven.db.tables.utils.DBTimeUtils.nanosToTime;
  */
 @SuppressWarnings("rawtypes")
 public class DbDateTimeSsmSourceWrapper extends AbstractColumnSource<DbArray>
-                                 implements ColumnSourceGetDefaults.ForObject<DbArray>,
-                                            MutableColumnSourceGetDefaults.ForObject<DbArray> {
+    implements ColumnSourceGetDefaults.ForObject<DbArray>,
+    MutableColumnSourceGetDefaults.ForObject<DbArray> {
     private final LongSsmBackedSource underlying;
 
     public DbDateTimeSsmSourceWrapper(@NotNull final LongSsmBackedSource underlying) {
@@ -45,11 +45,11 @@ public class DbDateTimeSsmSourceWrapper extends AbstractColumnSource<DbArray>
     @Override
     public DbArray<DBDateTime> getPrev(long index) {
         final DbLongArray maybePrev = underlying.getPrev(index);
-        if(maybePrev == null) {
+        if (maybePrev == null) {
             return null;
         }
 
-        if(maybePrev instanceof LongSegmentedSortedMultiset) {
+        if (maybePrev instanceof LongSegmentedSortedMultiset) {
             return new ValueWrapper((LongSegmentedSortedMultiset) maybePrev);
         }
 
@@ -135,7 +135,7 @@ public class DbDateTimeSsmSourceWrapper extends AbstractColumnSource<DbArray>
 
         public static DbArray<DBDateTime> getPrevValues(DbLongArray previousLongs) {
             final DBDateTime[] asDates = new DBDateTime[previousLongs.intSize()];
-            for(int ii = 0; ii < asDates.length; ii++) {
+            for (int ii = 0; ii < asDates.length; ii++) {
                 asDates[ii] = nanosToTime(previousLongs.get(ii));
             }
 
@@ -149,8 +149,10 @@ public class DbDateTimeSsmSourceWrapper extends AbstractColumnSource<DbArray>
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
             ValueWrapper that = (ValueWrapper) o;
             return underlying.equals(that.underlying);
         }

@@ -5,8 +5,8 @@ import io.deephaven.base.verify.Require;
 /**
  * Simple utility class for managing the indentation of generated code.
  * <p>
- * Pass the indenter to your StringBuilder; calling increaseLevel or decreaseLevel as you start and finish your
- * indentation blocks.
+ * Pass the indenter to your StringBuilder; calling increaseLevel or decreaseLevel as you start and
+ * finish your indentation blocks.
  */
 public class Indenter {
 

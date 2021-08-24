@@ -25,16 +25,18 @@ public class TableMapBackedTableMapHandle extends TableMapHandle {
     private transient Table tableDefinitionTable;;
     private Set<String> viewColumns;
 
-    public TableMapBackedTableMapHandle(final TableMap tableMap, final TableDefinition tableDefinition, final String[] keyColumns, final PlotInfo plotInfo, Collection<String> columns) {
+    public TableMapBackedTableMapHandle(final TableMap tableMap,
+        final TableDefinition tableDefinition, final String[] keyColumns, final PlotInfo plotInfo,
+        Collection<String> columns) {
         this(tableMap, tableDefinition, keyColumns, plotInfo, columns, null);
     }
 
     public TableMapBackedTableMapHandle(@NotNull final TableMap tableMap,
-                                        @NotNull final TableDefinition tableDefinition,
-                                        @NotNull final String[] keyColumns,
-                                        final PlotInfo plotInfo,
-                                        @NotNull Collection<String> columns,
-                                        @Nullable Collection<String> viewColumns) {
+        @NotNull final TableDefinition tableDefinition,
+        @NotNull final String[] keyColumns,
+        final PlotInfo plotInfo,
+        @NotNull Collection<String> columns,
+        @Nullable Collection<String> viewColumns) {
         super(columns, keyColumns, plotInfo);
 
         ArgumentValidations.assertNotNull(tableMap, "tableMap", plotInfo);

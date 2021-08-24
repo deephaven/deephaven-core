@@ -9,15 +9,16 @@ package io.deephaven.db.v2.by;
  * Factory for iterative absolute sum aggregations.
  */
 public class AbsSumStateFactory extends IterativeOperatorStateFactory {
-    public AbsSumStateFactory() {
-    }
+    public AbsSumStateFactory() {}
 
     @Override
-    public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name, boolean exposeInternalColumns) {
+    public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name,
+        boolean exposeInternalColumns) {
         return getAbsSumChunked(type, name);
     }
 
     private static final AggregationMemoKey ABS_SUM_INSTANCE = new AggregationMemoKey() {};
+
     @Override
     public AggregationMemoKey getMemoKey() {
         return ABS_SUM_INSTANCE;

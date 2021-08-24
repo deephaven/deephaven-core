@@ -7,7 +7,7 @@ package io.deephaven.io.sched;
 import java.nio.channels.SelectableChannel;
 
 /**
- * The per-scheduler state for a job.  Note that this class is package-private.
+ * The per-scheduler state for a job. Note that this class is package-private.
  */
 class JobState implements Cloneable {
     /** the job */

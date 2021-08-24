@@ -28,7 +28,7 @@ public abstract class CompletionBuilder {
         return completer;
     }
 
-    protected void addTokens(StringBuilder b, Token tok, String ... suffix) {
+    protected void addTokens(StringBuilder b, Token tok, String... suffix) {
         for (int ind = 0; ind < suffix.length; ind++) {
             final String nextToken = suffix[ind];
             String check = nextToken.trim();
@@ -65,7 +65,8 @@ public abstract class CompletionBuilder {
 
     }
 
-    protected io.deephaven.proto.backplane.script.grpc.DocumentRange.Builder replaceNode(Node node, CompletionRequest request) {
+    protected io.deephaven.proto.backplane.script.grpc.DocumentRange.Builder replaceNode(Node node,
+        CompletionRequest request) {
         start = node.getStartIndex();
         len = node.getEndIndex() - node.getStartIndex();
         return node.asRange();
@@ -75,7 +76,8 @@ public abstract class CompletionBuilder {
         return replaceTokens(startToken, startToken, request);
     }
 
-    protected DocumentRange.Builder replaceTokens(Token startToken, Token endToken, CompletionRequest request) {
+    protected DocumentRange.Builder replaceTokens(Token startToken, Token endToken,
+        CompletionRequest request) {
         if (endToken == null) {
             endToken = startToken;
         }
@@ -83,8 +85,8 @@ public abstract class CompletionBuilder {
         start = startToken.getStartIndex();
         len = endToken.getEndIndex() - start;
         return DocumentRange.newBuilder()
-                .setStart(startToken.positionStart())
-                .setEnd(endToken.positionEnd());
+            .setStart(startToken.positionStart())
+            .setEnd(endToken.positionEnd());
     }
 
     protected DocumentRange.Builder placeAfter(Node node, CompletionRequest request) {
@@ -92,13 +94,14 @@ public abstract class CompletionBuilder {
         len = 1;
         final DocumentRange.Builder range = node.asRange();
         Position.Builder pos = Position.newBuilder()
-                .setLine(range.getEnd().getLine())
-                .setCharacter(range.getEnd().getCharacter() - 1);
+            .setLine(range.getEnd().getLine())
+            .setCharacter(range.getEnd().getCharacter() - 1);
         range.setStart(pos.build());
         return range;
     }
 
-    protected void addMatch(Collection<CompletionItem.Builder> results, Token startToken, Token endToken, String match, CompletionRequest index, CompletionOptions options) {
+    protected void addMatch(Collection<CompletionItem.Builder> results, Token startToken,
+        Token endToken, String match, CompletionRequest index, CompletionOptions options) {
         if (endToken == null) {
             endToken = startToken;
         }
@@ -109,7 +112,8 @@ public abstract class CompletionBuilder {
             String check = startToken.image.trim();
             for (final String prefix : prefixes) {
                 if (prefix.trim().equals(check)) {
-                    // keep the user's version of this token, and keep looking for required prefixes.
+                    // keep the user's version of this token, and keep looking for required
+                    // prefixes.
                     completion.append(startToken.image);
                     startToken = startToken.next;
                     check = startToken.image.trim();
@@ -135,11 +139,11 @@ public abstract class CompletionBuilder {
                     break;
                 }
                 if (!missing && tokenCheck.equals(check)) {
-                    // the end token matches the suffix.  Use the user's image.
+                    // the end token matches the suffix. Use the user's image.
                     completion.append(endToken.image);
                     endToken = endToken.next;
                 } else {
-                    // the suffix is missing.  simply add it.
+                    // the suffix is missing. simply add it.
                     missing = true;
                     completion.append(suffix);
                 }
@@ -149,12 +153,12 @@ public abstract class CompletionBuilder {
         final String displayed = completion.toString();
         final CompletionItem.Builder result = CompletionItem.newBuilder();
         result
-                .setStart(start)
-                .setLength(len)
-                .setLabel(displayed)
-                .getTextEditBuilder()
-                        .setText(displayed)
-                        .setRange(replacement.build());
+            .setStart(start)
+            .setLength(len)
+            .setLabel(displayed)
+            .getTextEditBuilder()
+            .setText(displayed)
+            .setRange(replacement.build());
         results.add(result);
     }
 }

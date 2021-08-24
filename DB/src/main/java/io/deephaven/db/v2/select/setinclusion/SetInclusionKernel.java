@@ -10,7 +10,8 @@ import java.util.Collection;
 public interface SetInclusionKernel {
     void matchValues(Chunk<Attributes.Values> values, WritableBooleanChunk matches);
 
-    static SetInclusionKernel makeKernel(ChunkType type, Collection<Object> values, boolean inclusion) {
+    static SetInclusionKernel makeKernel(ChunkType type, Collection<Object> values,
+        boolean inclusion) {
         switch (type) {
             case Object:
                 return new ObjectSetInclusionKernel(values, inclusion);

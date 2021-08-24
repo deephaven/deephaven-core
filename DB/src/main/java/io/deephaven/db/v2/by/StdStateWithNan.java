@@ -27,11 +27,12 @@ class StdStateWithNan extends StdState {
     @Override
     void savePrevious() {
         super.savePrevious();
-        ((StdStateWithNan)prev()).nanCount = nanCount;
+        ((StdStateWithNan) prev()).nanCount = nanCount;
     }
 
     @Override
     public String toString() {
-        return "Std{" + "sum=" + sum + ", sum2=" + sum2 + ", nan=" + nanCount + ", nonNull=" + nonNullCount + '}';
+        return "Std{" + "sum=" + sum + ", sum2=" + sum2 + ", nan=" + nanCount + ", nonNull="
+            + nonNullCount + '}';
     }
 }

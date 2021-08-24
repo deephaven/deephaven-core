@@ -10,9 +10,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
-public abstract class AbstractTupleSource<TUPLE_TYPE> implements TupleSource<TUPLE_TYPE>, DefaultChunkSource.WithPrev<Attributes.Values> {
+public abstract class AbstractTupleSource<TUPLE_TYPE>
+    implements TupleSource<TUPLE_TYPE>, DefaultChunkSource.WithPrev<Attributes.Values> {
 
-    private final ColumnSource [] columnSources;
+    private final ColumnSource[] columnSources;
     private final List<ColumnSource> listColumnSources;
 
     public AbstractTupleSource(ColumnSource... columnSources) {
@@ -36,14 +37,16 @@ public abstract class AbstractTupleSource<TUPLE_TYPE> implements TupleSource<TUP
     }
 
     @Override
-    public final void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
-        //noinspection unchecked
+    public final void fillChunk(@NotNull FillContext context,
+        @NotNull WritableChunk<? super Attributes.Values> destination,
+        @NotNull OrderedKeys orderedKeys) {
+        // noinspection unchecked
         TupleFillContext tupleFillContext = (TupleFillContext) context;
-        GetContext [] getContexts = tupleFillContext.getContexts;
-        Chunk<Attributes.Values> [] chunks = tupleFillContext.chunks;
+        GetContext[] getContexts = tupleFillContext.getContexts;
+        Chunk<Attributes.Values>[] chunks = tupleFillContext.chunks;
 
         for (int i = 0; i < columnSources.length; ++i) {
-            //noinspection unchecked
+            // noinspection unchecked
             chunks[i] = columnSources[i].getChunk(getContexts[i], orderedKeys);
         }
 
@@ -51,31 +54,37 @@ public abstract class AbstractTupleSource<TUPLE_TYPE> implements TupleSource<TUP
     }
 
     @Override
-    public final void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
-        //noinspection unchecked
+    public final void fillPrevChunk(@NotNull FillContext context,
+        @NotNull WritableChunk<? super Attributes.Values> destination,
+        @NotNull OrderedKeys orderedKeys) {
+        // noinspection unchecked
         TupleFillContext tupleFillContext = (TupleFillContext) context;
-        GetContext [] getContexts = tupleFillContext.getContexts;
-        Chunk<Attributes.Values> [] chunks = tupleFillContext.chunks;
+        GetContext[] getContexts = tupleFillContext.getContexts;
+        Chunk<Attributes.Values>[] chunks = tupleFillContext.chunks;
 
         for (int i = 0; i < columnSources.length; ++i) {
-            //noinspection unchecked
+            // noinspection unchecked
             chunks[i] = columnSources[i].getPrevChunk(getContexts[i], orderedKeys);
         }
 
         convertChunks(destination, orderedKeys.intSize(), chunks);
     }
 
-    protected abstract void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks);
+    protected abstract void convertChunks(
+        @NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize,
+        Chunk<Attributes.Values>[] chunks);
 
     class TupleFillContext implements FillContext {
 
-        GetContext [] getContexts;
-        Chunk<Attributes.Values> [] chunks;
+        GetContext[] getContexts;
+        Chunk<Attributes.Values>[] chunks;
 
         TupleFillContext(int chunkCapacity, SharedContext sharedContext) {
 
-            this.getContexts = Stream.of(columnSources).map(cs -> cs.makeGetContext(chunkCapacity, sharedContext)).toArray(GetContext[]::new);
-            //noinspection unchecked
+            this.getContexts =
+                Stream.of(columnSources).map(cs -> cs.makeGetContext(chunkCapacity, sharedContext))
+                    .toArray(GetContext[]::new);
+            // noinspection unchecked
             this.chunks = new Chunk[columnSources.length];
         }
 

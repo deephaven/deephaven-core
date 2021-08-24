@@ -52,7 +52,8 @@ public class ProcessInfoStoreDBImpl implements ProcessInfoStore {
             }
         }
 
-        private void log(final String type, final String key, final String value) throws IOException {
+        private void log(final String type, final String key, final String value)
+            throws IOException {
             logger.log(id.value(), type, key, value);
         }
     }

@@ -13,67 +13,67 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.console_pb.CompletionContext",
     namespace = JsPackage.GLOBAL)
 public class CompletionContext {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
-    @JsOverlay
-    static CompletionContext.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType {
+        @JsOverlay
+        static CompletionContext.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getTriggerCharacter();
+
+        @JsProperty
+        double getTriggerKind();
+
+        @JsProperty
+        void setTriggerCharacter(String triggerCharacter);
+
+        @JsProperty
+        void setTriggerKind(double triggerKind);
     }
 
-    @JsProperty
-    String getTriggerCharacter();
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType0 {
+        @JsOverlay
+        static CompletionContext.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
 
-    @JsProperty
-    double getTriggerKind();
+        @JsProperty
+        String getTriggerCharacter();
 
-    @JsProperty
-    void setTriggerCharacter(String triggerCharacter);
+        @JsProperty
+        double getTriggerKind();
 
-    @JsProperty
-    void setTriggerKind(double triggerKind);
-  }
+        @JsProperty
+        void setTriggerCharacter(String triggerCharacter);
 
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsOverlay
-    static CompletionContext.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+        @JsProperty
+        void setTriggerKind(double triggerKind);
     }
 
-    @JsProperty
-    String getTriggerCharacter();
+    public static native CompletionContext deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    double getTriggerKind();
+    public static native CompletionContext deserializeBinaryFromReader(
+        CompletionContext message, Object reader);
 
-    @JsProperty
-    void setTriggerCharacter(String triggerCharacter);
+    public static native void serializeBinaryToWriter(CompletionContext message, Object writer);
 
-    @JsProperty
-    void setTriggerKind(double triggerKind);
-  }
+    public static native CompletionContext.ToObjectReturnType toObject(
+        boolean includeInstance, CompletionContext msg);
 
-  public static native CompletionContext deserializeBinary(Uint8Array bytes);
+    public native String getTriggerCharacter();
 
-  public static native CompletionContext deserializeBinaryFromReader(
-      CompletionContext message, Object reader);
+    public native double getTriggerKind();
 
-  public static native void serializeBinaryToWriter(CompletionContext message, Object writer);
+    public native Uint8Array serializeBinary();
 
-  public static native CompletionContext.ToObjectReturnType toObject(
-      boolean includeInstance, CompletionContext msg);
+    public native void setTriggerCharacter(String value);
 
-  public native String getTriggerCharacter();
+    public native void setTriggerKind(double value);
 
-  public native double getTriggerKind();
+    public native CompletionContext.ToObjectReturnType0 toObject();
 
-  public native Uint8Array serializeBinary();
-
-  public native void setTriggerCharacter(String value);
-
-  public native void setTriggerKind(double value);
-
-  public native CompletionContext.ToObjectReturnType0 toObject();
-
-  public native CompletionContext.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native CompletionContext.ToObjectReturnType0 toObject(boolean includeInstance);
 }

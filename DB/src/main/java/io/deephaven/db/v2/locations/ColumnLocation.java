@@ -18,7 +18,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Per-TableLocation, per-column key, state, and factory object.
  */
-public interface ColumnLocation extends StringUtils.StringKeyedObject, NamedImplementation, LogOutputAppendable {
+public interface ColumnLocation
+    extends StringUtils.StringKeyedObject, NamedImplementation, LogOutputAppendable {
 
     /**
      * Get the {@link TableLocation} enclosing this ColumnLocation.
@@ -44,19 +45,21 @@ public interface ColumnLocation extends StringUtils.StringKeyedObject, NamedImpl
     boolean exists();
 
     /**
-     * <p>Get the metadata object stored with this column, or null if no such data exists.
-     * <p>This is typically a value to range map (grouping metadata). The value to range map, if non-null, is a map from
-     * unique (boxed) column values for this location to the associated ranges in which they occur.
-     * Ranges are either 2-element int[]s, or 2-element long[]s.
+     * <p>
+     * Get the metadata object stored with this column, or null if no such data exists.
+     * <p>
+     * This is typically a value to range map (grouping metadata). The value to range map, if
+     * non-null, is a map from unique (boxed) column values for this location to the associated
+     * ranges in which they occur. Ranges are either 2-element int[]s, or 2-element long[]s.
      *
      * @return The metadata stored with this column, or null if no such data exists
      */
     @Nullable
     <METADATA_TYPE> METADATA_TYPE getMetadata(@NotNull ColumnDefinition<?> columnDefinition);
 
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // ColumnRegion Factories
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
     /**
      * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
@@ -105,40 +108,42 @@ public interface ColumnLocation extends StringUtils.StringKeyedObject, NamedImpl
      * @return A {@link ColumnRegionDouble} for reading data from this ColumnLocation
      * @throws UnsupportedOperationException If this ColumnLocation does not contain double data
      */
-    ColumnRegionDouble<Values> makeColumnRegionDouble(@NotNull ColumnDefinition<?> columnDefinition);
+    ColumnRegionDouble<Values> makeColumnRegionDouble(
+        @NotNull ColumnDefinition<?> columnDefinition);
 
     /**
      * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
      * @return A {@link ColumnRegionObject} for reading data from this ColumnLocation
      * @throws UnsupportedOperationException If this ColumnLocation does not contain object data
      */
-    <TYPE> ColumnRegionObject<TYPE, Values> makeColumnRegionObject(@NotNull ColumnDefinition<TYPE> columnDefinition);
+    <TYPE> ColumnRegionObject<TYPE, Values> makeColumnRegionObject(
+        @NotNull ColumnDefinition<TYPE> columnDefinition);
 
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // StringKeyedObject implementation
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
     @Override
     default String getStringRepresentation() {
         return getName();
     }
 
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // LogOutputAppendable implementation / toString() override helper
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
     @Override
     default LogOutput append(@NotNull final LogOutput logOutput) {
         return logOutput.append(getTableLocation())
-                .append(':').append(getImplementationName())
-                .append('[').append(getName())
-                .append(']');
+            .append(':').append(getImplementationName())
+            .append('[').append(getName())
+            .append(']');
     }
 
     default String toStringHelper() {
         return getTableLocation().toString()
-                + ':' + getImplementationName()
-                + '[' + getName()
-                + ']';
+            + ':' + getImplementationName()
+            + '[' + getName()
+            + ']';
     }
 }

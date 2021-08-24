@@ -21,13 +21,18 @@ public class TestFreezeBy extends LiveTableTestCase {
     public void testSimpleTypes() {
         final DBDateTime timeBase = DBTimeUtils.convertDateTime("2020-09-10T09:00:00 NY");
         QueryScope.addParam("freezeByTimeBase", timeBase);
-        final QueryTable input = TstUtils.testRefreshingTable(stringCol("Key", "A", "B", "C"), intCol("Sentinel", 1, 2, 3));
-        final List<String> updates = Arrays.asList("SStr=Integer.toString(Sentinel)", "SByte=(byte)Sentinel", "SChar=(char)('A' + (char)Sentinel)", "SShort=(short)Sentinel", "SLong=(long)Sentinel", "SDouble=Sentinel/4", "SFloat=(float)(Sentinel/2)", "SDateTime=freezeByTimeBase + (Sentinel * 3600L*1000000000L)", "SBoolean=Sentinel%3==0?true:(Sentinel%3==1?false:null)");
+        final QueryTable input = TstUtils.testRefreshingTable(stringCol("Key", "A", "B", "C"),
+            intCol("Sentinel", 1, 2, 3));
+        final List<String> updates = Arrays.asList("SStr=Integer.toString(Sentinel)",
+            "SByte=(byte)Sentinel", "SChar=(char)('A' + (char)Sentinel)", "SShort=(short)Sentinel",
+            "SLong=(long)Sentinel", "SDouble=Sentinel/4", "SFloat=(float)(Sentinel/2)",
+            "SDateTime=freezeByTimeBase + (Sentinel * 3600L*1000000000L)",
+            "SBoolean=Sentinel%3==0?true:(Sentinel%3==1?false:null)");
         final Table inputUpdated = input.updateView(Selectable.from(updates));
         final Table frozen = FreezeBy.freezeBy(inputUpdated, "Key");
         TableTools.showWithIndex(frozen);
 
-        final TableUpdateValidator tuv = TableUpdateValidator.make("frozen", (QueryTable)frozen);
+        final TableUpdateValidator tuv = TableUpdateValidator.make("frozen", (QueryTable) frozen);
         final FailureListener failureListener = new FailureListener();
         tuv.getResultTable().listenForUpdates(failureListener);
 
@@ -50,34 +55,42 @@ public class TestFreezeBy extends LiveTableTestCase {
         });
         TableTools.showWithIndex(frozen);
 
-        assertTableEquals(TableTools.newTable(stringCol("Key", "B", "C"), intCol("Sentinel", 2, 3)).updateView(Selectable.from(updates)), frozen);
+        assertTableEquals(TableTools.newTable(stringCol("Key", "B", "C"), intCol("Sentinel", 2, 3))
+            .updateView(Selectable.from(updates)), frozen);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(input, i(3, 4), stringCol("Key", "D", "A"), intCol("Sentinel", 5, 6));
+            TstUtils.addToTable(input, i(3, 4), stringCol("Key", "D", "A"),
+                intCol("Sentinel", 5, 6));
             input.notifyListeners(i(3, 4), i(), i());
         });
         TableTools.showWithIndex(frozen);
 
-        assertTableEquals(TableTools.newTable(stringCol("Key", "A", "B", "C", "D"), intCol("Sentinel", 6, 2, 3, 5)).updateView(Selectable.from(updates)), frozen);
+        assertTableEquals(TableTools
+            .newTable(stringCol("Key", "A", "B", "C", "D"), intCol("Sentinel", 6, 2, 3, 5))
+            .updateView(Selectable.from(updates)), frozen);
 
         // swap two keys
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(input, i(3, 4), stringCol("Key", "A", "D"), intCol("Sentinel", 7, 8));
+            TstUtils.addToTable(input, i(3, 4), stringCol("Key", "A", "D"),
+                intCol("Sentinel", 7, 8));
             input.notifyListeners(i(), i(), i(4, 3));
         });
         TableTools.showWithIndex(frozen);
 
-        assertTableEquals(TableTools.newTable(stringCol("Key", "A", "B", "C", "D"), intCol("Sentinel", 6, 2, 3, 5)).updateView(Selectable.from(updates)), frozen);
+        assertTableEquals(TableTools
+            .newTable(stringCol("Key", "A", "B", "C", "D"), intCol("Sentinel", 6, 2, 3, 5))
+            .updateView(Selectable.from(updates)), frozen);
 
         QueryScope.addParam("freezeByTimeBase", null);
     }
 
     public void testCompositeKeys() {
-        final QueryTable input = TstUtils.testRefreshingTable(stringCol("Key", "A", "A", "C"), intCol("Key2", 101, 102, 103), intCol("Sentinel", 1, 2, 3));
+        final QueryTable input = TstUtils.testRefreshingTable(stringCol("Key", "A", "A", "C"),
+            intCol("Key2", 101, 102, 103), intCol("Sentinel", 1, 2, 3));
         final Table frozen = FreezeBy.freezeBy(input, "Key", "Key2");
         TableTools.showWithIndex(frozen);
 
-        final TableUpdateValidator tuv = TableUpdateValidator.make("frozen", (QueryTable)frozen);
+        final TableUpdateValidator tuv = TableUpdateValidator.make("frozen", (QueryTable) frozen);
         final FailureListener failureListener = new FailureListener();
         tuv.getResultTable().listenForUpdates(failureListener);
 
@@ -85,23 +98,27 @@ public class TestFreezeBy extends LiveTableTestCase {
 
         // swap two keys
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(input, i(0, 4), stringCol("Key", "A", "D"), intCol("Key2", 101, 101), intCol("Sentinel", 4, 5));
+            TstUtils.addToTable(input, i(0, 4), stringCol("Key", "A", "D"),
+                intCol("Key2", 101, 101), intCol("Sentinel", 4, 5));
             input.notifyListeners(i(4), i(), i(0));
         });
         TableTools.showWithIndex(frozen);
 
-        assertTableEquals(TableTools.newTable(stringCol("Key", "A", "A", "C", "D"), intCol("Key2", 101, 102, 103, 101), intCol("Sentinel", 1, 2, 3, 5)), frozen);
+        assertTableEquals(TableTools.newTable(stringCol("Key", "A", "A", "C", "D"),
+            intCol("Key2", 101, 102, 103, 101), intCol("Sentinel", 1, 2, 3, 5)), frozen);
     }
 
     public void testNoKeys() {
-        final QueryTable input = TstUtils.testRefreshingTable(stringCol("Key", "A"), intCol("Sentinel", 1));
+        final QueryTable input =
+            TstUtils.testRefreshingTable(stringCol("Key", "A"), intCol("Sentinel", 1));
         final Table frozen = FreezeBy.freezeBy(input);
         TableTools.showWithIndex(frozen);
 
-        final Table originalExpect = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(input));
+        final Table originalExpect = LiveTableMonitor.DEFAULT.sharedLock()
+            .computeLocked(() -> TableTools.emptyTable(1).snapshot(input));
         assertTableEquals(input, originalExpect);
 
-        final TableUpdateValidator tuv = TableUpdateValidator.make("frozen", (QueryTable)frozen);
+        final TableUpdateValidator tuv = TableUpdateValidator.make("frozen", (QueryTable) frozen);
         final FailureListener failureListener = new FailureListener();
         tuv.getResultTable().listenForUpdates(failureListener);
         assertTableEquals(input, frozen);
@@ -133,7 +150,8 @@ public class TestFreezeBy extends LiveTableTestCase {
             input.notifyListeners(i(2), i(), i());
         });
         TableTools.showWithIndex(frozen);
-        final Table newExpect = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(input));
+        final Table newExpect = LiveTableMonitor.DEFAULT.sharedLock()
+            .computeLocked(() -> TableTools.emptyTable(1).snapshot(input));
         assertTableEquals(input, newExpect);
         assertTableEquals(newExpect, frozen);
 
@@ -152,7 +170,8 @@ public class TestFreezeBy extends LiveTableTestCase {
     }
 
     public void testDuplicates() {
-        final QueryTable input = TstUtils.testRefreshingTable(stringCol("Key", "A", "B", "C"), intCol("Sentinel", 1, 2, 3));
+        final QueryTable input = TstUtils.testRefreshingTable(stringCol("Key", "A", "B", "C"),
+            intCol("Sentinel", 1, 2, 3));
         try {
             FreezeBy.freezeBy(input);
             TestCase.fail("Expected exception.");

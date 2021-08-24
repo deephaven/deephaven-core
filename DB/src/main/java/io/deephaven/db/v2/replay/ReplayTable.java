@@ -23,7 +23,8 @@ public class ReplayTable extends QueryTable implements LiveTable {
     private boolean done;
     private final Replayer replayer;
 
-    public ReplayTable(Index index, Map<String, ? extends ColumnSource> result,String timeColumn,Replayer replayer) {
+    public ReplayTable(Index index, Map<String, ? extends ColumnSource> result, String timeColumn,
+        Replayer replayer) {
         super(Index.FACTORY.getIndexByValues(), result);
         Require.requirement(replayer != null, "replayer != null");
         replayer.registerTimeSource(index, result.get(timeColumn));
@@ -38,6 +39,7 @@ public class ReplayTable extends QueryTable implements LiveTable {
         this.replayer = replayer;
         refresh();
     }
+
     long nextTime = -1;
 
     @Override

@@ -22,23 +22,27 @@ public class TestThreadProfiler {
     private static ThreadProfiler SUT;
 
     /**
-     * Depending on the environment and architecture, it can be very hard to have strict guarantees about predictable
-     * memory allocation or CPU usage. Rather than introduce unpredictable tests to CI, we disable such assertions
-     * unless specifically desired.
+     * Depending on the environment and architecture, it can be very hard to have strict guarantees
+     * about predictable memory allocation or CPU usage. Rather than introduce unpredictable tests
+     * to CI, we disable such assertions unless specifically desired.
      */
     private static final boolean STRICT_MODE = false;
 
     @BeforeClass
     public static void setUpOnce() {
         threadMXBean = (com.sun.management.ThreadMXBean) ManagementFactory.getThreadMXBean();
-        final ThreadMXBean threadMXBean = (com.sun.management.ThreadMXBean) ManagementFactory.getThreadMXBean();
+        final ThreadMXBean threadMXBean =
+            (com.sun.management.ThreadMXBean) ManagementFactory.getThreadMXBean();
         if (threadMXBean.isCurrentThreadCpuTimeSupported()) {
-            if (ThreadMXBeanThreadProfiler.TRY_ENABLE_THREAD_CPU_TIME && (oldThreadCpuTimeEnabled = threadMXBean.isThreadCpuTimeEnabled())) {
+            if (ThreadMXBeanThreadProfiler.TRY_ENABLE_THREAD_CPU_TIME
+                && (oldThreadCpuTimeEnabled = threadMXBean.isThreadCpuTimeEnabled())) {
                 threadMXBean.setThreadCpuTimeEnabled(false);
             }
         }
         if (threadMXBean.isThreadAllocatedMemorySupported()) {
-            if (SunThreadMXBeanThreadProfiler.TRY_ENABLE_THREAD_ALLOCATED_MEMORY && (oldThreadAllocatedMemoryEnabled = threadMXBean.isThreadAllocatedMemoryEnabled())) {
+            if (SunThreadMXBeanThreadProfiler.TRY_ENABLE_THREAD_ALLOCATED_MEMORY
+                && (oldThreadAllocatedMemoryEnabled =
+                    threadMXBean.isThreadAllocatedMemoryEnabled())) {
                 threadMXBean.setThreadAllocatedMemoryEnabled(false);
             }
         }
@@ -47,10 +51,13 @@ public class TestThreadProfiler {
 
     @AfterClass
     public static void tearDownOnce() {
-        if (threadMXBean.isCurrentThreadCpuTimeSupported() && ThreadMXBeanThreadProfiler.TRY_ENABLE_THREAD_CPU_TIME && oldThreadCpuTimeEnabled) {
+        if (threadMXBean.isCurrentThreadCpuTimeSupported()
+            && ThreadMXBeanThreadProfiler.TRY_ENABLE_THREAD_CPU_TIME && oldThreadCpuTimeEnabled) {
             threadMXBean.setThreadCpuTimeEnabled(true);
         }
-        if (threadMXBean.isThreadAllocatedMemorySupported() && SunThreadMXBeanThreadProfiler.TRY_ENABLE_THREAD_ALLOCATED_MEMORY && oldThreadAllocatedMemoryEnabled) {
+        if (threadMXBean.isThreadAllocatedMemorySupported()
+            && SunThreadMXBeanThreadProfiler.TRY_ENABLE_THREAD_ALLOCATED_MEMORY
+            && oldThreadAllocatedMemoryEnabled) {
             threadMXBean.setThreadAllocatedMemoryEnabled(true);
         }
     }
@@ -76,11 +83,13 @@ public class TestThreadProfiler {
         TestCase.assertFalse(endBytes == QueryConstants.NULL_LONG);
         final long allocatedBytes = endBytes - startBytes;
 
-        System.out.println("TestThreadProfiler: Allocated " + allocatedBytes + " with items hash " + items.hashCode());
+        System.out.println("TestThreadProfiler: Allocated " + allocatedBytes + " with items hash "
+            + items.hashCode());
         if (STRICT_MODE) {
             final long minimumExpectedBytes = count * size;
             final long maximumExpectedBytes = count * (128 + size);
-            TestCase.assertTrue(allocatedBytes >= minimumExpectedBytes && allocatedBytes <= maximumExpectedBytes);
+            TestCase.assertTrue(
+                allocatedBytes >= minimumExpectedBytes && allocatedBytes <= maximumExpectedBytes);
         } else {
             TestCase.assertTrue(allocatedBytes >= 0);
         }
@@ -113,7 +122,8 @@ public class TestThreadProfiler {
         final long elapsedCpuNanos = endCpuNanos - startCpuNanos;
         final long elapsedUserNanos = endUserNanos - startUserNanos;
 
-        System.out.println("TestThreadProfiler: Spent " + elapsedCpuNanos + "ns (" + elapsedUserNanos + " ns user) calculating fib(92) == " + fib_curr);
+        System.out.println("TestThreadProfiler: Spent " + elapsedCpuNanos + "ns ("
+            + elapsedUserNanos + " ns user) calculating fib(92) == " + fib_curr);
         TestCase.assertEquals(7540113804746346429L, fib_curr);
         if (STRICT_MODE) {
             TestCase.assertTrue(elapsedUserNanos <= elapsedCpuNanos);

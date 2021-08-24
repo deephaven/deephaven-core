@@ -16,15 +16,16 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable {
     }
 
     abstract class Null<ATTR extends Any>
-            extends GenericColumnRegionBase<ATTR>
-            implements ColumnRegion<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
+        extends GenericColumnRegionBase<ATTR>
+        implements ColumnRegion<ATTR>, WithDefaultsForRepeatingValues<ATTR> {
 
         Null(final long pageMask) {
             super(pageMask);
         }
 
         @Override
-        public void fillChunkAppend(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination, final int length) {
+        public void fillChunkAppend(@NotNull final FillContext context,
+            @NotNull final WritableChunk<? super ATTR> destination, final int length) {
             final int offset = destination.size();
 
             destination.fillWithNullValue(offset, length);

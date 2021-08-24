@@ -21,7 +21,8 @@ public interface SingleRangeMixin extends OrderedKeys {
         return larc.accept(rangeStart(), rangeEnd());
     }
 
-    default OrderedKeys getOrderedKeysByPosition(final long startPositionInclusive, final long length) {
+    default OrderedKeys getOrderedKeysByPosition(final long startPositionInclusive,
+        final long length) {
         if (startPositionInclusive >= size() || length == 0) {
             return OrderedKeys.EMPTY;
         }
@@ -30,15 +31,16 @@ public interface SingleRangeMixin extends OrderedKeys {
         return new SingleRangeOrderedKeys(s, e);
     }
 
-    default OrderedKeys getOrderedKeysByKeyRange(final long startKeyInclusive, final long endKeyInclusive) {
+    default OrderedKeys getOrderedKeysByKeyRange(final long startKeyInclusive,
+        final long endKeyInclusive) {
         if (startKeyInclusive > rangeEnd() ||
-                endKeyInclusive < rangeStart() ||
-                endKeyInclusive < startKeyInclusive) {
+            endKeyInclusive < rangeStart() ||
+            endKeyInclusive < startKeyInclusive) {
             return OrderedKeys.EMPTY;
         }
         return new SingleRangeOrderedKeys(
-                Math.max(startKeyInclusive, rangeStart()),
-                Math.min(endKeyInclusive, rangeEnd()));
+            Math.max(startKeyInclusive, rangeStart()),
+            Math.min(endKeyInclusive, rangeEnd()));
     }
 
     default OrderedKeys.Iterator getOrderedKeysIterator() {
@@ -58,6 +60,8 @@ public interface SingleRangeMixin extends OrderedKeys {
     }
 
     long size();
+
     long rangeStart();
+
     long rangeEnd();
 }

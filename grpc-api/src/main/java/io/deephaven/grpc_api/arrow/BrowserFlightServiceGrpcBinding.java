@@ -27,28 +27,36 @@ public class BrowserFlightServiceGrpcBinding implements BindableService {
     private final BrowserFlightServiceGrpcImpl<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> delegate;
 
     @Inject
-    public BrowserFlightServiceGrpcBinding(final BrowserFlightServiceGrpcImpl<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> service) {
+    public BrowserFlightServiceGrpcBinding(
+        final BrowserFlightServiceGrpcImpl<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> service) {
         this.delegate = service;
     }
 
     @Override
     public ServerServiceDefinition bindService() {
-        return GrpcServiceOverrideBuilder.newBuilder(delegate.bindService(), BrowserFlightServiceGrpc.SERVICE_NAME)
-                .onOpenOverride(delegate::openHandshakeCustom, "OpenHandshake", BrowserFlightServiceGrpc.getOpenHandshakeMethod(),
-                        ProtoUtils.marshaller(Flight.HandshakeRequest.getDefaultInstance()),
-                        ProtoUtils.marshaller(Flight.HandshakeResponse.getDefaultInstance()))
-                .onNextOverride(delegate::nextHandshakeCustom, "NextHandshake", BrowserFlightServiceGrpc.getNextHandshakeMethod(),
-                        ProtoUtils.marshaller(Flight.HandshakeRequest.getDefaultInstance()))
-                .onOpenOverride(delegate::openDoPutCustom, "OpenDoPut", BrowserFlightServiceGrpc.getOpenDoPutMethod(),
-                        UnaryInputStreamMarshaller.INSTANCE,
-                        ProtoUtils.marshaller(Flight.PutResult.getDefaultInstance()))
-                .onNextOverride(delegate::nextDoPutCustom, "NextDoPut", BrowserFlightServiceGrpc.getNextDoPutMethod(),
-                        UnaryInputStreamMarshaller.INSTANCE)
-                .onOpenOverride(delegate::openDoExchangeCustom, "OpenDoExchange", BrowserFlightServiceGrpc.getOpenDoExchangeMethod(),
-                        UnaryInputStreamMarshaller.INSTANCE,
-                        PassthroughInputStreamMarshaller.INSTANCE)
-                .onNextOverride(delegate::nextDoExchangeCustom, "NextDoExchange", BrowserFlightServiceGrpc.getNextDoExchangeMethod(),
-                        UnaryInputStreamMarshaller.INSTANCE)
-                .build();
+        return GrpcServiceOverrideBuilder
+            .newBuilder(delegate.bindService(), BrowserFlightServiceGrpc.SERVICE_NAME)
+            .onOpenOverride(delegate::openHandshakeCustom, "OpenHandshake",
+                BrowserFlightServiceGrpc.getOpenHandshakeMethod(),
+                ProtoUtils.marshaller(Flight.HandshakeRequest.getDefaultInstance()),
+                ProtoUtils.marshaller(Flight.HandshakeResponse.getDefaultInstance()))
+            .onNextOverride(delegate::nextHandshakeCustom, "NextHandshake",
+                BrowserFlightServiceGrpc.getNextHandshakeMethod(),
+                ProtoUtils.marshaller(Flight.HandshakeRequest.getDefaultInstance()))
+            .onOpenOverride(delegate::openDoPutCustom, "OpenDoPut",
+                BrowserFlightServiceGrpc.getOpenDoPutMethod(),
+                UnaryInputStreamMarshaller.INSTANCE,
+                ProtoUtils.marshaller(Flight.PutResult.getDefaultInstance()))
+            .onNextOverride(delegate::nextDoPutCustom, "NextDoPut",
+                BrowserFlightServiceGrpc.getNextDoPutMethod(),
+                UnaryInputStreamMarshaller.INSTANCE)
+            .onOpenOverride(delegate::openDoExchangeCustom, "OpenDoExchange",
+                BrowserFlightServiceGrpc.getOpenDoExchangeMethod(),
+                UnaryInputStreamMarshaller.INSTANCE,
+                PassthroughInputStreamMarshaller.INSTANCE)
+            .onNextOverride(delegate::nextDoExchangeCustom, "NextDoExchange",
+                BrowserFlightServiceGrpc.getNextDoExchangeMethod(),
+                UnaryInputStreamMarshaller.INSTANCE)
+            .build();
     }
 }

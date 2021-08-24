@@ -14,6 +14,7 @@ public interface InputTableStatusListener {
      */
     InputTableStatusListener DEFAULT = new InputTableStatusListener() {
         final Logger log = ProcessEnvironment.getDefaultLog(InputTableStatusListener.class);
+
         @Override
         public void onError(Throwable t) {
             log.error().append("Error writing to Input Table: ").append(t).endl();
@@ -34,6 +35,7 @@ public interface InputTableStatusListener {
 
     /**
      * Handle an error that occured during an input table write.
+     * 
      * @param t the error.
      */
     void onError(Throwable t);

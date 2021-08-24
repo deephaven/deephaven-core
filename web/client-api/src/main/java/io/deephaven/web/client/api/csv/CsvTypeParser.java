@@ -24,6 +24,7 @@ import java.util.function.Function;
  */
 public class CsvTypeParser {
     private static final Uint8Array EMPTY = new Uint8Array(0);
+
     enum ArrowType implements CsvColumn {
         STRING(Type.Utf8, "java.lang.String") {
             @Override
@@ -32,12 +33,14 @@ public class CsvTypeParser {
             }
 
             @Override
-            public void writeColumn(String[] strings, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
+            public void writeColumn(String[] strings, JsConsumer<Node> addNode,
+                JsConsumer<Uint8Array> addBuffer) {
                 int nullCount = 0;
                 BitSet nulls = new BitSet(strings.length);
                 Int32Array positions = ArrowType.makeBuffer(strings.length + 1, 4, Int32Array::new);
-                //work out the total length we'll need for the payload, plus padding
-                int payloadLength = Arrays.stream(strings).filter(Objects::nonNull).mapToInt(String::length).sum();
+                // work out the total length we'll need for the payload, plus padding
+                int payloadLength =
+                    Arrays.stream(strings).filter(Objects::nonNull).mapToInt(String::length).sum();
                 Uint8Array payload = makeBuffer(payloadLength);
 
                 int lastOffset = 0;
@@ -65,7 +68,8 @@ public class CsvTypeParser {
             }
 
             @Override
-            public void writeColumn(String[] strings, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
+            public void writeColumn(String[] strings, JsConsumer<Node> addNode,
+                JsConsumer<Uint8Array> addBuffer) {
                 // TODO #1041 this type is expected to work
                 throw new IllegalArgumentException("Can't serialize DateTime for CSV");
             }
@@ -77,16 +81,19 @@ public class CsvTypeParser {
             }
 
             @Override
-            public void writeColumn(String[] strings, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
+            public void writeColumn(String[] strings, JsConsumer<Node> addNode,
+                JsConsumer<Uint8Array> addBuffer) {
                 int nullCount = 0;
                 BitSet nulls = new BitSet(strings.length);
-                Int32Array payload = ArrowType.makeBuffer(strings.length, Int32Array.BYTES_PER_ELEMENT, Int32Array::new);
+                Int32Array payload = ArrowType.makeBuffer(strings.length,
+                    Int32Array.BYTES_PER_ELEMENT, Int32Array::new);
                 for (int i = 0; i < strings.length; i++) {
                     if (strings[i] == null || strings[i].trim().isEmpty()) {
                         payload.setAt(i, (double) QueryConstants.NULL_INT);
                         nullCount++;
                     } else {
-                        payload.setAt(i, (double) Integer.parseInt(strings[i].trim().replaceAll(",", "")));
+                        payload.setAt(i,
+                            (double) Integer.parseInt(strings[i].trim().replaceAll(",", "")));
                         nulls.set(i);
                     }
                 }
@@ -111,10 +118,14 @@ public class CsvTypeParser {
             }
 
             @Override
-            public void writeColumn(String[] strings, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
+            public void writeColumn(String[] strings, JsConsumer<Node> addNode,
+                JsConsumer<Uint8Array> addBuffer) {
                 int nullCount = 0;
                 BitSet nulls = new BitSet(strings.length);
-                Float64Array payload = new Float64Array(strings.length);// using float because we can convert longs to doubles, though not cheaply
+                Float64Array payload = new Float64Array(strings.length);// using float because we
+                                                                        // can convert longs to
+                                                                        // doubles, though not
+                                                                        // cheaply
                 for (int i = 0; i < strings.length; i++) {
                     long value;
                     if (strings[i] == null || strings[i].trim().isEmpty()) {
@@ -159,10 +170,11 @@ public class CsvTypeParser {
             }
 
             @Override
-            public void writeColumn(String[] strings, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
+            public void writeColumn(String[] strings, JsConsumer<Node> addNode,
+                JsConsumer<Uint8Array> addBuffer) {
                 int nullCount = 0;
                 BitSet nulls = new BitSet(strings.length);
-                Float64Array payload = new Float64Array(strings.length);//64 bits, already aligned
+                Float64Array payload = new Float64Array(strings.length);// 64 bits, already aligned
                 for (int i = 0; i < strings.length; i++) {
                     if (strings[i] == null || strings[i].trim().isEmpty()) {
                         payload.setAt(i, QueryConstants.NULL_DOUBLE);
@@ -214,7 +226,8 @@ public class CsvTypeParser {
             }
 
             @Override
-            public void writeColumn(String[] strings, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
+            public void writeColumn(String[] strings, JsConsumer<Node> addNode,
+                JsConsumer<Uint8Array> addBuffer) {
                 // TODO #1041 this type is expected to work
                 throw new IllegalArgumentException("Can't serialize DateTime for CSV");
             }
@@ -237,9 +250,12 @@ public class CsvTypeParser {
                 return EMPTY;
             }
         }
-        private static <T> T makeBuffer(int elementCount, double bytesPerElement, Function<ArrayBuffer, T> constructor) {
+
+        private static <T> T makeBuffer(int elementCount, double bytesPerElement,
+            Function<ArrayBuffer, T> constructor) {
             return constructor.apply(makeBuffer(elementCount * (int) bytesPerElement).buffer);
         }
+
         public static Uint8Array makeBuffer(int length) {
             int bytesExtended = length & 0x7;
             if (bytesExtended > 0) {
@@ -255,9 +271,10 @@ public class CsvTypeParser {
             this.typeType = typeType;
             this.deephavenType = deephavenType;
         }
+
         ArrowType(int typeType) {
             this.typeType = typeType;
-            this.deephavenType = "unknown";//TODO remove this
+            this.deephavenType = "unknown";// TODO remove this
         }
 
         @Override
@@ -272,11 +289,15 @@ public class CsvTypeParser {
 
         @Override
         public abstract double writeType(Builder builder);
+
         @Override
-        public void writeColumn(String[] strings, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
-            throw new IllegalArgumentException("Type " + this + " not yet supported for CSV upload");
+        public void writeColumn(String[] strings, JsConsumer<Node> addNode,
+            JsConsumer<Uint8Array> addBuffer) {
+            throw new IllegalArgumentException(
+                "Type " + this + " not yet supported for CSV upload");
         }
     }
+
     // CSV Column types
     public static final String INTEGER = "int";
     public static final String LONG = "long";
@@ -305,6 +326,7 @@ public class CsvTypeParser {
         public int length() {
             return length;
         }
+
         public int nullCount() {
             return nullCount;
         }
@@ -312,10 +334,13 @@ public class CsvTypeParser {
 
     public interface CsvColumn {
         String deephavenType();
+
         int typeType();
+
         double writeType(Builder builder);
 
-        void writeColumn(String[] strings, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer);
+        void writeColumn(String[] strings, JsConsumer<Node> addNode,
+            JsConsumer<Uint8Array> addBuffer);
     }
 
     public static CsvColumn getColumn(String columnType) {
@@ -372,13 +397,13 @@ public class CsvTypeParser {
         }
     }
 
-    @SuppressWarnings("unused")//TODO #1041
+    @SuppressWarnings("unused") // TODO #1041
     private static long parseDateTime(String str, String userTimeZone) {
         final String s = ensureSeparator(str);
         final int spaceIndex = s.indexOf(' ');
         final String dateTimeString;
         final String timeZoneString;
-        if (spaceIndex == - 1) {
+        if (spaceIndex == -1) {
             // Zulu is an exception to the space rule
             if (s.endsWith("Z")) {
                 dateTimeString = s.substring(0, s.length() - 1);
@@ -388,13 +413,15 @@ public class CsvTypeParser {
                 timeZoneString = null;
             }
         } else {
-            dateTimeString =  s.substring(0, spaceIndex);
+            dateTimeString = s.substring(0, spaceIndex);
             timeZoneString = s.substring(spaceIndex + 1);
         }
         final String pattern = getSubsecondPattern(dateTimeString);
         final String tzString = timeZoneString == null ? userTimeZone : timeZoneString;
-        final com.google.gwt.i18n.client.TimeZone timeZone = JsTimeZone.getTimeZone(tzString).unwrap();
-        return JsDateTimeFormat.getFormat(pattern).parseWithTimezoneAsLong(dateTimeString, timeZone, JsTimeZone.needsDstAdjustment(timeZoneString));
+        final com.google.gwt.i18n.client.TimeZone timeZone =
+            JsTimeZone.getTimeZone(tzString).unwrap();
+        return JsDateTimeFormat.getFormat(pattern).parseWithTimezoneAsLong(dateTimeString, timeZone,
+            JsTimeZone.needsDstAdjustment(timeZoneString));
     }
 
     // Updates the pattern for the correct number of subsecond digits 'S'
@@ -420,7 +447,7 @@ public class CsvTypeParser {
         return s;
     }
 
-    @SuppressWarnings("unused")//TODO #1041
+    @SuppressWarnings("unused") // TODO #1041
     private static LocalTime parseLocalTime(String s) {
         long dayNanos = 0;
         long subsecondNanos = 0;
@@ -433,15 +460,17 @@ public class CsvTypeParser {
 
         final int decimalIndex = s.indexOf('.');
         if (decimalIndex != -1) {
-            subsecondNanos = parseNanos(s.substring(decimalIndex+1));
+            subsecondNanos = parseNanos(s.substring(decimalIndex + 1));
             s = s.substring(0, decimalIndex);
         }
 
         final String[] tokens = s.split(":");
-        if (tokens.length == 2) {   //hh:mm
-            return new LocalTime(Byte.parseByte(tokens[0]), Byte.parseByte(tokens[1]), (byte) 0, (int) (dayNanos + subsecondNanos));
-        } else if (tokens.length == 3) {   //hh:mm:ss
-            return new LocalTime(Byte.parseByte(tokens[0]), Byte.parseByte(tokens[1]), Byte.parseByte(tokens[2]), (int) (dayNanos + subsecondNanos));
+        if (tokens.length == 2) { // hh:mm
+            return new LocalTime(Byte.parseByte(tokens[0]), Byte.parseByte(tokens[1]), (byte) 0,
+                (int) (dayNanos + subsecondNanos));
+        } else if (tokens.length == 3) { // hh:mm:ss
+            return new LocalTime(Byte.parseByte(tokens[0]), Byte.parseByte(tokens[1]),
+                Byte.parseByte(tokens[2]), (int) (dayNanos + subsecondNanos));
         }
 
         return null;
@@ -449,7 +478,7 @@ public class CsvTypeParser {
 
     private static long parseNanos(final String input) {
         long result = 0;
-        for (int i=0; i<9; i++) {
+        for (int i = 0; i < 9; i++) {
             result *= 10;
             final int digit;
             if (i >= input.length()) {
@@ -457,7 +486,8 @@ public class CsvTypeParser {
             } else {
                 digit = Character.digit(input.charAt(i), 10);
                 if (digit < 0) {
-                    throw new NumberFormatException("Invalid character for nanoseconds conversion: " + input.charAt(i));
+                    throw new NumberFormatException(
+                        "Invalid character for nanoseconds conversion: " + input.charAt(i));
                 }
             }
             result += digit;

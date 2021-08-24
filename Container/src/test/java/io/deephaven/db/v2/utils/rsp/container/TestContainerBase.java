@@ -109,10 +109,10 @@ public abstract class TestContainerBase {
 
     @Test
     public void testOverlaps() {
-        ContainerTestCommon.BoolContainerOp testOp = (Container c1, Container c2) ->
-                c1.overlaps(c2);
-        ContainerTestCommon.BoolContainerOp validateOp = (Container c1, Container c2) ->
-                c1.and(c2).getCardinality() > 0;
+        ContainerTestCommon.BoolContainerOp testOp =
+            (Container c1, Container c2) -> c1.overlaps(c2);
+        ContainerTestCommon.BoolContainerOp validateOp =
+            (Container c1, Container c2) -> c1.and(c2).getCardinality() > 0;
         ContainerTestCommon.doTestBoolOp(testOp, validateOp);
     }
 

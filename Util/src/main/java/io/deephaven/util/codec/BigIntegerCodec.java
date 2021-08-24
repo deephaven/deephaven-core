@@ -9,8 +9,8 @@ import java.math.BigInteger;
 /**
  * Simple ObjectCodec for BigIntegers.
  *
- * For now this just wraps BigDecimalCodec with scale=0. At some point we might reimplement this directly
- * but the encoded format is likely the same.
+ * For now this just wraps BigDecimalCodec with scale=0. At some point we might reimplement this
+ * directly but the encoded format is likely the same.
  */
 @SuppressWarnings("unused")
 public class BigIntegerCodec implements ObjectCodec<BigInteger> {
@@ -26,19 +26,21 @@ public class BigIntegerCodec implements ObjectCodec<BigInteger> {
 
     @SuppressWarnings("WeakerAccess")
     public BigIntegerCodec(@Nullable String arguments) {
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         try {
             int _precision = 0; // zero indicates unlimited precision, variable width encoding
-            if(arguments != null && arguments.trim().length() > 0) {
+            if (arguments != null && arguments.trim().length() > 0) {
                 _precision = Integer.parseInt(arguments.trim());
-                if(_precision < 1) {
+                if (_precision < 1) {
                     throw new IllegalArgumentException("Specified precision must be >= 1");
                 }
             }
-            // we pass strict=true, rounding isn't relevant for BigInteger and we always want exceptions if precision is exceeded
+            // we pass strict=true, rounding isn't relevant for BigInteger and we always want
+            // exceptions if precision is exceeded
             this.codec = new BigDecimalCodec(_precision, 0, true);
-        } catch(Exception ex) {
-            throw new IllegalArgumentException("Error parsing codec argument(s): " + ex.getMessage(), ex);
+        } catch (Exception ex) {
+            throw new IllegalArgumentException(
+                "Error parsing codec argument(s): " + ex.getMessage(), ex);
         }
     }
 
@@ -61,8 +63,8 @@ public class BigIntegerCodec implements ObjectCodec<BigInteger> {
     @Override
     public byte[] encode(@Nullable final BigInteger input) {
         return input == null
-                ? codec.encodedNullValue()
-                : codec.encode(new BigDecimal(input));
+            ? codec.encodedNullValue()
+            : codec.encode(new BigDecimal(input));
     }
 
     @Nullable

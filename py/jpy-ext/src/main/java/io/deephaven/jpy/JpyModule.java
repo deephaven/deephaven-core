@@ -22,9 +22,11 @@ public final class JpyModule implements AutoCloseable {
         PrimitiveArrayType<T> getType();
 
         PyObject newPyCopy(T values);
+
         T newCopy(T values);
 
         PyObject newPyInstance(int len);
+
         T newInstance(int len);
     }
 
@@ -68,7 +70,7 @@ public final class JpyModule implements AutoCloseable {
         // this is ugly - PyObject.getObjectArrayValue(), or new primitive method, should be able to
         // support this without resorting to jpy specific methods.
         try (final PyObject out = module.call(ARRAY_METHOD_NAME, "boolean", pyObject)) {
-            return (boolean[])out.getObjectValue();
+            return (boolean[]) out.getObjectValue();
         }
     }
 

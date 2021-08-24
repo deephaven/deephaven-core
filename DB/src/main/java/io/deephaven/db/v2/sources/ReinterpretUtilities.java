@@ -6,7 +6,8 @@ import org.jetbrains.annotations.NotNull;
 public class ReinterpretUtilities {
 
     /**
-     * Given a DateTime column source turn it into a long column source, either via reinterpretation or wrapping.
+     * Given a DateTime column source turn it into a long column source, either via reinterpretation
+     * or wrapping.
      *
      * @param source the source to turn into a long source
      *
@@ -16,13 +17,14 @@ public class ReinterpretUtilities {
         if (source.allowsReinterpret(long.class)) {
             return source.reinterpret(long.class);
         } else {
-            //noinspection unchecked
+            // noinspection unchecked
             return new DatetimeAsLongColumnSource((ColumnSource<DBDateTime>) source);
         }
     }
 
     /**
-     * Given a Boolean column source turn it into a byte column source, either via reinterpretation or wrapping.
+     * Given a Boolean column source turn it into a byte column source, either via reinterpretation
+     * or wrapping.
      *
      * @param source the source to turn into a byte source
      *
@@ -32,13 +34,14 @@ public class ReinterpretUtilities {
         if (source.allowsReinterpret(byte.class)) {
             return source.reinterpret(byte.class);
         } else {
-            //noinspection unchecked
+            // noinspection unchecked
             return new BooleanAsByteColumnSource((ColumnSource<Boolean>) source);
         }
     }
 
     /**
-     * If source is something that we prefer to handle as a primitive, do the appropriate conversion.
+     * If source is something that we prefer to handle as a primitive, do the appropriate
+     * conversion.
      *
      * @param source The source to convert
      * @return If possible, the source converted to a primitive, otherwise the source
@@ -57,23 +60,28 @@ public class ReinterpretUtilities {
      * Reinterpret or box {@link ColumnSource} back to its original type.
      *
      * @param originalType The type to convert to
-     * @param source       The source to convert
+     * @param source The source to convert
      * @return Reinterpret or box source back to the original type if possible
      */
-    public static ColumnSource<?> convertToOriginal(@NotNull final Class<?> originalType, @NotNull final ColumnSource<?> source) {
+    public static ColumnSource<?> convertToOriginal(@NotNull final Class<?> originalType,
+        @NotNull final ColumnSource<?> source) {
         if (originalType == Boolean.class) {
             if (source.getType() != byte.class) {
-                throw new UnsupportedOperationException("Cannot convert column of type " + source.getType() + " to Boolean");
+                throw new UnsupportedOperationException(
+                    "Cannot convert column of type " + source.getType() + " to Boolean");
             }
-            //noinspection unchecked
-            return source.allowsReinterpret(Boolean.class) ? source.reinterpret(Boolean.class) : new BoxedColumnSource.OfBoolean((ColumnSource<Byte>) source);
+            // noinspection unchecked
+            return source.allowsReinterpret(Boolean.class) ? source.reinterpret(Boolean.class)
+                : new BoxedColumnSource.OfBoolean((ColumnSource<Byte>) source);
         }
         if (originalType == DBDateTime.class) {
             if (source.getType() != long.class) {
-                throw new UnsupportedOperationException("Cannot convert column of type " + source.getType() + " to DBDateTime");
+                throw new UnsupportedOperationException(
+                    "Cannot convert column of type " + source.getType() + " to DBDateTime");
             }
-            //noinspection unchecked
-            return source.allowsReinterpret(DBDateTime.class) ? source.reinterpret(DBDateTime.class) : new BoxedColumnSource.OfDateTime((ColumnSource<Long>) source);
+            // noinspection unchecked
+            return source.allowsReinterpret(DBDateTime.class) ? source.reinterpret(DBDateTime.class)
+                : new BoxedColumnSource.OfDateTime((ColumnSource<Long>) source);
         }
         throw new UnsupportedOperationException("Unsupported original type " + originalType);
     }

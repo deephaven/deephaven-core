@@ -10,6 +10,6 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.io.deephaven.proto.table_pb",
     namespace = JsPackage.GLOBAL)
 public class Table_pb {
-  public static CaseSensitivityMap CaseSensitivity;
-  public static MatchTypeMap MatchType;
+    public static CaseSensitivityMap CaseSensitivity;
+    public static MatchTypeMap MatchType;
 }

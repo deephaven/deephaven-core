@@ -36,7 +36,8 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
     private PlotInfo plotInfo;
     private String figureName;
     private int sessionId;
-    private long updateInterval = Configuration.getInstance().getLongWithDefault("plot.update.interval", 1000L);
+    private long updateInterval =
+        Configuration.getInstance().getLongWithDefault("plot.update.interval", 1000L);
 
     private transient Map<Table, Set<Function<Table, Table>>> tableFunctionMap;
     private transient Map<TableMap, Set<Function<TableMap, TableMap>>> tableMapFunctionMap;
@@ -44,9 +45,8 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
 
 
     /**
-     * Creates a new Figure instance with a 1x1 grid.
-     * If newChart() with no arguments is called on this new Figure, the Figure
-     * will resize itself to hold the new {@link Chart}.
+     * Creates a new Figure instance with a 1x1 grid. If newChart() with no arguments is called on
+     * this new Figure, the Figure will resize itself to hold the new {@link Chart}.
      */
     public BaseFigureImpl() {
         this(1, 1, true);
@@ -109,8 +109,7 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
 
 
     /**
-     * Gets the width of this Figure.
-     * This is equal to the number of columns.
+     * Gets the width of this Figure. This is equal to the number of columns.
      *
      * @return this Figure's width
      */
@@ -119,8 +118,7 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
     }
 
     /**
-     * Gets the numRows of this Figure.
-     * This is equal to the number of rows.
+     * Gets the numRows of this Figure. This is equal to the number of rows.
      *
      * @return this Figure's height
      */
@@ -187,18 +185,20 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
      *
      * @return table handles associated with this figure.
      */
-    public Set<TableHandle> getTableHandles(){
+    public Set<TableHandle> getTableHandles() {
         final Set<TableHandle> result = new HashSet<>();
 
         for (ChartImpl chart : getCharts().getCharts()) {
             for (AxesImpl axes : chart.getAxes()) {
-                for (SeriesCollection.SeriesDescription seriesDescription : axes.dataSeries().getSeriesDescriptions().values()) {
+                for (SeriesCollection.SeriesDescription seriesDescription : axes.dataSeries()
+                    .getSeriesDescriptions().values()) {
                     result.addAll(seriesDescription.getSeries().getTableHandles());
                 }
             }
 
-            if(chart.getChartTitle() instanceof DynamicChartTitle.ChartTitleTable){
-                result.add(((DynamicChartTitle.ChartTitleTable)chart.getChartTitle()).getTableHandle());
+            if (chart.getChartTitle() instanceof DynamicChartTitle.ChartTitleTable) {
+                result.add(
+                    ((DynamicChartTitle.ChartTitleTable) chart.getChartTitle()).getTableHandle());
             }
         }
 
@@ -210,7 +210,7 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
      *
      * @return table handles associated with this figure.
      */
-    public Set<TableMapHandle> getTableMapHandles(){
+    public Set<TableMapHandle> getTableMapHandles() {
         final Set<TableMapHandle> result = new HashSet<>();
 
         for (ChartImpl chart : getCharts().getCharts()) {
@@ -218,8 +218,9 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
                 result.addAll(axes.getTableMapHandles());
             }
 
-            if(chart.getChartTitle() instanceof DynamicChartTitle.ChartTitleSwappableTable){
-                result.add(((DynamicChartTitle.ChartTitleSwappableTable)chart.getChartTitle()).getTableMapHandle());
+            if (chart.getChartTitle() instanceof DynamicChartTitle.ChartTitleSwappableTable) {
+                result.add(((DynamicChartTitle.ChartTitleSwappableTable) chart.getChartTitle())
+                    .getTableMapHandle());
             }
         }
 
@@ -231,7 +232,7 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
 
 
     @Override
-    public BaseFigureImpl figureRemoveSeries(final String... names){
+    public BaseFigureImpl figureRemoveSeries(final String... names) {
         for (Chart chart : charts.getCharts()) {
             chart.chartRemoveSeries(names);
         }
@@ -240,7 +241,7 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
     }
 
     public void registerTableFunction(final Table t, final Function<Table, Table> function) {
-        if(tableFunctionMap == null) {
+        if (tableFunctionMap == null) {
             tableFunctionMap = new HashMap<>();
         }
 
@@ -249,26 +250,28 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
     }
 
     public Map<Table, Set<Function<Table, Table>>> getTableFunctionMap() {
-        if(tableFunctionMap == null) {
+        if (tableFunctionMap == null) {
             tableFunctionMap = new HashMap<>();
         }
 
         return tableFunctionMap;
     }
 
-    public void registerTableMapFunction(final TableMapHandle tableMapHandle, final Function<Table, Table> tableTransform) {
-        if(tableMapFunctionMap == null) {
+    public void registerTableMapFunction(final TableMapHandle tableMapHandle,
+        final Function<Table, Table> tableTransform) {
+        if (tableMapFunctionMap == null) {
             tableMapFunctionMap = new HashMap<>();
         }
 
         final TableMap tMap = tableMapHandle.getTableMap();
-        tableMapHandle.applyFunction(tableTransform); //allows the signature of the TableMapHandle to be changed if necessary
+        tableMapHandle.applyFunction(tableTransform); // allows the signature of the TableMapHandle
+                                                      // to be changed if necessary
         tableMapFunctionMap.putIfAbsent(tMap, new LinkedHashSet<>());
         tableMapFunctionMap.get(tMap).add(tm -> tm.transformTables(tableTransform));
     }
 
     public Map<TableMap, Set<Function<TableMap, TableMap>>> getTableMapFunctionMap() {
-        if(tableMapFunctionMap == null) {
+        if (tableMapFunctionMap == null) {
             tableMapFunctionMap = new HashMap<>();
         }
 
@@ -276,7 +279,7 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
     }
 
     public void registerFigureFunction(final FigureImplFunction function) {
-        if(figureFunctionList == null) {
+        if (figureFunctionList == null) {
             figureFunctionList = new ArrayList<>();
         }
 
@@ -284,7 +287,7 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
     }
 
     public List<FigureImplFunction> getFigureFunctionList() {
-        if(figureFunctionList == null) {
+        if (figureFunctionList == null) {
             figureFunctionList = new ArrayList<>();
         }
 
@@ -406,21 +409,23 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
 
     private int toCoordinate(int chart, int coord, int gridWidth) {
         if (gridWidth == 0) {
-            throw new PlotIllegalArgumentException("Can not determine chart location in grid; chart = " + chart, this);
+            throw new PlotIllegalArgumentException(
+                "Can not determine chart location in grid; chart = " + chart, this);
         }
 
         switch (coord) {
-            case 0: //x coordinate inside grid
+            case 0: // x coordinate inside grid
                 return chart % gridWidth;
-            case 1: //y coordinate
+            case 1: // y coordinate
                 return chart / gridWidth;
             default:
-                throw new PlotIllegalArgumentException("Can not determine chart location in grid; coord = " + coord, this);
+                throw new PlotIllegalArgumentException(
+                    "Can not determine chart location in grid; coord = " + coord, this);
         }
     }
 
     private void resize() {
-        if(!resizable) {
+        if (!resizable) {
             throw new PlotUnsupportedOperationException("Can't resize figure!", this);
         }
 
@@ -439,14 +444,15 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
 
     /**
      * Checks if the figure can be instantiated. Throws an error if not.
+     * 
      * @throws RuntimeException if no charts or no plots have been created
      */
     public void validateInitialization() {
-        if(charts == null) {
+        if (charts == null) {
             throw new PlotRuntimeException("No charts created yet.", this);
         }
 
-        if(!charts.isInitialized()) {
+        if (!charts.isInitialized()) {
             throw new PlotRuntimeException("No plots created yet.", this);
         }
     }
@@ -476,9 +482,10 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
         final long updateInterval = getUpdateInterval();
         final Map<Table, Set<TableMapHandle>> thMap = new IdentityHashMap<>();
 
-        for(final TableMapHandle h : getTableMapHandles()) {
-            if(h instanceof TableBackedTableMapHandle) {
-                thMap.computeIfAbsent(((TableBackedTableMapHandle) h).getTable(), t -> new HashSet<>()).add(h);
+        for (final TableMapHandle h : getTableMapHandles()) {
+            if (h instanceof TableBackedTableMapHandle) {
+                thMap.computeIfAbsent(((TableBackedTableMapHandle) h).getTable(),
+                    t -> new HashSet<>()).add(h);
             }
         }
 
@@ -489,13 +496,14 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
             final Map<Set<String>, TableMap> byColMap = new HashMap<>();
             for (final TableMapHandle h : hs) {
                 final Set<String> keyColumns = h.getKeyColumns();
-                final String[] keyColumnsArray = keyColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                final String[] keyColumnsArray =
+                    keyColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
                 final TableMap map = byColMap.computeIfAbsent(keyColumns,
-                        x -> {
-                            final TableMap handleMap = h.getTableMap();
-                            return handleMap == null ? table.byExternal(keyColumnsArray) : handleMap;
-                        });
+                    x -> {
+                        final TableMap handleMap = h.getTableMap();
+                        return handleMap == null ? table.byExternal(keyColumnsArray) : handleMap;
+                    });
 
                 h.setTableMap(map);
                 h.setKeyColumnsOrdered(keyColumnsArray);
@@ -503,7 +511,8 @@ public class BaseFigureImpl implements BaseFigure, PlotExceptionCause {
         }
     }
 
-    // Find the common tables and common columns across the figure so that the minimum set of table data can be defined for this figure widget
+    // Find the common tables and common columns across the figure so that the minimum set of table
+    // data can be defined for this figure widget
     public void consolidateTables() {
         final Map<Table, Set<String>> colMap = new IdentityHashMap<>();
         final Map<Table, Set<TableHandle>> thMap = new IdentityHashMap<>();

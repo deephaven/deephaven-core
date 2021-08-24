@@ -13,11 +13,12 @@ import io.deephaven.util.type.NamedImplementation;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Building block for Deephaven "source" tables, with helper methods for discovering locations and their sizes.
- * A location allows access to columns, size, and possibly other metadata for a single partition that may be included
- * in a source table.
+ * Building block for Deephaven "source" tables, with helper methods for discovering locations and
+ * their sizes. A location allows access to columns, size, and possibly other metadata for a single
+ * partition that may be included in a source table.
  */
-public interface TableLocation extends NamedImplementation, LogOutputAppendable, TableLocationState {
+public interface TableLocation
+    extends NamedImplementation, LogOutputAppendable, TableLocationState {
 
     /**
      * Listener interface for anything that wants to know about changes to a location.
@@ -25,9 +26,10 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
     interface Listener extends BasicTableDataListener {
 
         /**
-         * Notify the listener that the table location has been updated.  This may be called "spuriously," i.e. in cases
-         * where there has been no substantive update since the last handleUpdate() invocation.  Implementations should
-         * use appropriate measures to avoid reacting to spurious updates.
+         * Notify the listener that the table location has been updated. This may be called
+         * "spuriously," i.e. in cases where there has been no substantive update since the last
+         * handleUpdate() invocation. Implementations should use appropriate measures to avoid
+         * reacting to spurious updates.
          */
         void handleUpdate();
     }
@@ -52,13 +54,17 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
     boolean supportsSubscriptions();
 
     /**
-     * <p>Subscribe to pushed location updates. Subscribing more than once with the same listener without an
-     * intervening unsubscribe is an error, and may result in undefined behavior.
-     * <p>This is a possibly asynchronous operation - listener will receive 1 or more handleUpdate callbacks,
-     * followed by 0 or 1 handleException callbacks during invocation and continuing after completion, on a thread
-     * determined by the implementation.  Don't hold a lock that prevents notification delivery while subscribing!
-     * <p>This method only guarantees eventually consistent state.  To force a state update, use refresh() after
-     * subscription completes.
+     * <p>
+     * Subscribe to pushed location updates. Subscribing more than once with the same listener
+     * without an intervening unsubscribe is an error, and may result in undefined behavior.
+     * <p>
+     * This is a possibly asynchronous operation - listener will receive 1 or more handleUpdate
+     * callbacks, followed by 0 or 1 handleException callbacks during invocation and continuing
+     * after completion, on a thread determined by the implementation. Don't hold a lock that
+     * prevents notification delivery while subscribing!
+     * <p>
+     * This method only guarantees eventually consistent state. To force a state update, use
+     * refresh() after subscription completes.
      *
      * @param listener A listener
      */
@@ -83,17 +89,17 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
     @NotNull
     ColumnLocation getColumnLocation(@NotNull CharSequence name);
 
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // LogOutputAppendable implementation / toString() override helper
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
     @Override
     @FinalDefault
     default LogOutput append(@NotNull final LogOutput logOutput) {
         return logOutput.append(getTableKey())
-                .append(':').append(getImplementationName())
-                .append('[').append(getKey())
-                .append(']');
+            .append(':').append(getImplementationName())
+            .append('[').append(getKey())
+            .append(']');
     }
 
     @FinalDefault

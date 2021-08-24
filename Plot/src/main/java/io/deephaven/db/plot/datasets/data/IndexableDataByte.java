@@ -12,8 +12,7 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
 /**
  * {@link IndexableData} dataset with {@link Byte} values.
  *
- * Dataset values equal to {@link io.deephaven.util.QueryConstants#NULL_BYTE}
- * are treated as null.
+ * Dataset values equal to {@link io.deephaven.util.QueryConstants#NULL_BYTE} are treated as null.
  */
 public class IndexableDataByte extends IndexableData<Byte> {
     private static final long serialVersionUID = 8301093013116624033L;
@@ -22,8 +21,8 @@ public class IndexableDataByte extends IndexableData<Byte> {
     /**
      * Creates an IndexableDataByte instance.
      *
-     * Values in {@code data} equal to {@link io.deephaven.util.QueryConstants#NULL_INT}
-     * are treated as null.
+     * Values in {@code data} equal to {@link io.deephaven.util.QueryConstants#NULL_INT} are treated
+     * as null.
      *
      * @param data data
      * @param plotInfo plot information
@@ -40,5 +39,7 @@ public class IndexableDataByte extends IndexableData<Byte> {
     }
 
     @Override
-    public Byte get(int index) { return data[index] == NULL_BYTE ? null : data[index]; }
+    public Byte get(int index) {
+        return data[index] == NULL_BYTE ? null : data[index];
+    }
 }

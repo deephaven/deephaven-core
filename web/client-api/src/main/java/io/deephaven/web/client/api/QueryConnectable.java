@@ -33,12 +33,14 @@ import static io.deephaven.web.shared.fu.PromiseLike.CANCELLATION_MESSAGE;
  * JS-exposed supertype handling details about connecting to a deephaven query worker. Wraps the
  * WorkerConnection instance, which manages the connection to the API server.
  */
-public abstract class QueryConnectable <Self extends QueryConnectable<Self>> extends HasEventHandling {
+public abstract class QueryConnectable<Self extends QueryConnectable<Self>>
+    extends HasEventHandling {
     public interface AuthTokenPromiseSupplier extends Supplier<Promise<ConnectToken>> {
         default AuthTokenPromiseSupplier withInitialToken(ConnectToken initialToken) {
             AuthTokenPromiseSupplier original = this;
             return new AuthTokenPromiseSupplier() {
                 boolean usedInitialToken = false;
+
                 @Override
                 public Promise<ConnectToken> get() {
                     if (!usedInitialToken) {
@@ -49,9 +51,11 @@ public abstract class QueryConnectable <Self extends QueryConnectable<Self>> ext
                 }
             };
         }
+
         static AuthTokenPromiseSupplier oneShot(ConnectToken initialToken) {
-            //noinspection unchecked
-            return ((AuthTokenPromiseSupplier) () -> (Promise) Promise.reject("Only one token provided, cannot reconnect"))
+            // noinspection unchecked
+            return ((AuthTokenPromiseSupplier) () -> (Promise) Promise
+                .reject("Only one token provided, cannot reconnect"))
                     .withInitialToken(initialToken);
         }
     }
@@ -84,10 +88,9 @@ public abstract class QueryConnectable <Self extends QueryConnectable<Self>> ext
     public void notifyConnectionError(ResponseStreamWrapper.Status status) {
         CustomEventInit event = CustomEventInit.create();
         event.setDetail(JsPropertyMap.of(
-                "status", status.getCode(),
-                "details", status.getDetails(),
-                "metadata", status.getMetadata()
-        ));
+            "status", status.getCode(),
+            "details", status.getDetails(),
+            "metadata", status.getMetadata()));
         fireEvent(HACK_CONNECTION_FAILURE, event);
     }
 
@@ -99,16 +102,15 @@ public abstract class QueryConnectable <Self extends QueryConnectable<Self>> ext
 
     private Promise<Void> onConnected() {
         if (connected) {
-            return Promise.resolve((Void)null);
+            return Promise.resolve((Void) null);
         }
         if (closed) {
-            return (Promise)Promise.reject("Connection already closed");
+            return (Promise) Promise.reject("Connection already closed");
         }
 
         return new Promise<>((resolve, reject) -> addEventListenerOneShot(
-                EventPair.of(EVENT_CONNECT, e -> resolve.onInvoke((Void)null)),
-                EventPair.of(EVENT_DISCONNECT, e -> reject.onInvoke("Connection disconnected"))
-        ));
+            EventPair.of(EVENT_CONNECT, e -> resolve.onInvoke((Void) null)),
+            EventPair.of(EVENT_DISCONNECT, e -> reject.onInvoke("Connection disconnected"))));
     }
 
     @JsIgnore
@@ -125,14 +127,14 @@ public abstract class QueryConnectable <Self extends QueryConnectable<Self>> ext
         final JsRunnable DO_NOTHING = JsRunnable.doNothing();
         // we'll use this array to handle async nature of connections.
         JsRunnable[] cancel = {DO_NOTHING};
-        connect.onOpen((s,f)->{
+        connect.onOpen((s, f) -> {
             // if the open did not fail, and the cancel array has not been modified...
-            if (f == null && cancel[0] == DO_NOTHING){
+            if (f == null && cancel[0] == DO_NOTHING) {
                 // then go ahead and subscribe, plus stash the removal callback.
                 cancel[0] = connect.subscribeToLogs(callback);
             }
         });
-        return ()-> {
+        return () -> {
             if (cancel[0] != null) {
                 // if we have subscribed, this will cancel that subscription.
                 cancel[0].run();
@@ -150,7 +152,7 @@ public abstract class QueryConnectable <Self extends QueryConnectable<Self>> ext
         final Ticket ticket = new Ticket();
         ticket.setTicket(config.newTicket());
 
-        final JsRunnable closer = ()-> {
+        final JsRunnable closer = () -> {
             boolean run = !cancelled.has(ticket);
             if (run) {
                 cancelled.add(ticket);
@@ -162,16 +164,17 @@ public abstract class QueryConnectable <Self extends QueryConnectable<Self>> ext
             StartConsoleRequest request = new StartConsoleRequest();
             request.setSessionType(type);
             request.setResultId(ticket);
-            connection.get().consoleServiceClient().startConsole(request, connection.get().metadata(), callback::apply);
+            connection.get().consoleServiceClient().startConsole(request,
+                connection.get().metadata(), callback::apply);
         })).then(result -> {
             promise.succeed(ticket);
             return null;
-        },error -> {
+        }, error -> {
             promise.fail(error);
             return null;
         });
 
-        return promise.asPromise(result-> {
+        return promise.asPromise(result -> {
             if (cancelled.has(ticket)) {
                 // this is caught and turned into a promise failure.
                 // a bit hacky, but it works...
@@ -188,7 +191,8 @@ public abstract class QueryConnectable <Self extends QueryConnectable<Self>> ext
     public Promise<JsArray<String>> getConsoleTypes() {
         Promise<GetConsoleTypesResponse> promise = Callbacks.grpcUnaryPromise(callback -> {
             GetConsoleTypesRequest request = new GetConsoleTypesRequest();
-            connection.get().consoleServiceClient().getConsoleTypes(request, connection.get().metadata(), callback::apply);
+            connection.get().consoleServiceClient().getConsoleTypes(request,
+                connection.get().metadata(), callback::apply);
         });
 
         return promise.then(result -> Promise.resolve(result.getConsoleTypesList()));
@@ -211,7 +215,8 @@ public abstract class QueryConnectable <Self extends QueryConnectable<Self>> ext
             if (hasListeners(EVENT_RECONNECT)) {
                 fireEvent(EVENT_RECONNECT);
             } else {
-                DomGlobal.console.log(logPrefix() + "Query reconnected (to prevent this log message, handle the EVENT_RECONNECT event)");
+                DomGlobal.console.log(logPrefix()
+                    + "Query reconnected (to prevent this log message, handle the EVENT_RECONNECT event)");
             }
         }
     }
@@ -239,7 +244,8 @@ public abstract class QueryConnectable <Self extends QueryConnectable<Self>> ext
         if (hasListeners(EVENT_DISCONNECT)) {
             this.fireEvent(QueryConnectable.EVENT_DISCONNECT);
         } else {
-            DomGlobal.console.log(logPrefix() + "Query disconnected (to prevent this log message, handle the EVENT_DISCONNECT event)");
+            DomGlobal.console.log(logPrefix()
+                + "Query disconnected (to prevent this log message, handle the EVENT_DISCONNECT event)");
         }
     }
 }

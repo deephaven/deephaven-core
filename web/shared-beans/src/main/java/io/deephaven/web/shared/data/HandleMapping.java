@@ -10,8 +10,7 @@ public class HandleMapping implements Serializable {
     private TableHandle source;
     private TableHandle newId;
 
-    public HandleMapping() {
-    }
+    public HandleMapping() {}
 
     public HandleMapping(TableHandle source, TableHandle newId) {
         this.source = source;

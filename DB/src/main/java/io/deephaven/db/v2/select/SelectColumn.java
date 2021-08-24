@@ -24,7 +24,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * The interface for a query table to perform retrieve values from a column for select like operations.
+ * The interface for a query table to perform retrieve values from a column for select like
+ * operations.
  */
 public interface SelectColumn {
 
@@ -37,13 +38,14 @@ public interface SelectColumn {
     }
 
     /**
-     * Convenient static final instance of a zero length Array of SelectColumns for use in toArray calls.
+     * Convenient static final instance of a zero length Array of SelectColumns for use in toArray
+     * calls.
      */
     SelectColumn[] ZERO_LENGTH_SELECT_COLUMN_ARRAY = new SelectColumn[0];
 
     /**
-     * Initialize the SelectColumn using the input table and return a list of underlying columns that this SelectColumn
-     * is dependent upon.
+     * Initialize the SelectColumn using the input table and return a list of underlying columns
+     * that this SelectColumn is dependent upon.
      *
      * @param table the table to initialize internals from
      * @return a list containing all columns from 'table' that the result depends on
@@ -77,13 +79,17 @@ public interface SelectColumn {
     Class getReturnedType();
 
     /**
-     * Get a list of the names of columns used in this SelectColumn.  Behavior is undefined if none of the init* methods have been called yet.
+     * Get a list of the names of columns used in this SelectColumn. Behavior is undefined if none
+     * of the init* methods have been called yet.
+     * 
      * @return the columns used in this SelectColumn
      */
     List<String> getColumns();
 
     /**
-     * Get a list of the names of column arrays used in this SelectColumn.  Behavior is undefined if none of the init* methods have been called yet.
+     * Get a list of the names of column arrays used in this SelectColumn. Behavior is undefined if
+     * none of the init* methods have been called yet.
+     * 
      * @return the list of column arrays used
      */
     List<String> getColumnArrays();
@@ -113,6 +119,7 @@ public interface SelectColumn {
 
     /**
      * Get a MatchPair for this column, if applicable.
+     * 
      * @return
      */
     MatchPair getMatchPair();
@@ -135,7 +142,8 @@ public interface SelectColumn {
     /**
      * Should we disallow use of this column for refreshing tables?
      *
-     * Some formulas can not be reliably computed with a refreshing table, therefore we will refuse to compute those values.
+     * Some formulas can not be reliably computed with a refreshing table, therefore we will refuse
+     * to compute those values.
      */
     boolean disallowRefresh();
 
@@ -160,7 +168,7 @@ public interface SelectColumn {
 
         @Override
         public void visit(Value rhs) {
-            rhs.walk((Value.Visitor)this);
+            rhs.walk((Value.Visitor) this);
         }
 
         @Override
@@ -170,7 +178,8 @@ public interface SelectColumn {
 
         @Override
         public void visit(RawString rhs) {
-            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), rhs.value()));
+            out =
+                SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), rhs.value()));
         }
 
         @Override

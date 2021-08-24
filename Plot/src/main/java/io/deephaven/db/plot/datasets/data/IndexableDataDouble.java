@@ -19,13 +19,13 @@ public class IndexableDataDouble extends IndexableData<Double> {
     /**
      * Creates an IndexableDataDouble instance.
      *
-     * If mapNanToNull is true, Double.NaN values in {@code data}
-     * are mapped to null.
+     * If mapNanToNull is true, Double.NaN values in {@code data} are mapped to null.
      *
      * @param data data
      * @param mapNanToNull if true, Double.NaN values are mapped to null
      */
-    public IndexableDataDouble(IndexableNumericData data, boolean mapNanToNull, final PlotInfo plotInfo) {
+    public IndexableDataDouble(IndexableNumericData data, boolean mapNanToNull,
+        final PlotInfo plotInfo) {
         super(plotInfo);
         ArgumentValidations.assertNotNull(data, "data", getPlotInfo());
 
@@ -36,22 +36,21 @@ public class IndexableDataDouble extends IndexableData<Double> {
     /**
      * Creates an IndexableDataDouble instance.
      *
-     * If mapNanToNull is true, Double.NaN values in {@code values}
-     * are mapped to null.
+     * If mapNanToNull is true, Double.NaN values in {@code values} are mapped to null.
      *
      * @param values data
      * @param mapNanToNull if true, Double.NaN values are mapped to null
      * @param <T> type of the data in {@code values}
      */
-    public <T extends Number> IndexableDataDouble(T[] values, boolean mapNanToNull, final PlotInfo plotInfo) {
+    public <T extends Number> IndexableDataDouble(T[] values, boolean mapNanToNull,
+        final PlotInfo plotInfo) {
         this(new IndexableNumericDataArrayNumber<>(values, plotInfo), mapNanToNull, plotInfo);
     }
 
     /**
      * Creates an IndexableDataDouble instance.
      *
-     * If mapNanToNull is true, Double.NaN values in {@code values}
-     * are mapped to null.
+     * If mapNanToNull is true, Double.NaN values in {@code values} are mapped to null.
      *
      * @param values data
      * @param mapNanToNull if true, Double.NaN values are mapped to null
@@ -63,8 +62,7 @@ public class IndexableDataDouble extends IndexableData<Double> {
     /**
      * Creates an IndexableDataDouble instance.
      *
-     * If mapNanToNull is true, Double.NaN values in {@code values}
-     * are mapped to null.
+     * If mapNanToNull is true, Double.NaN values in {@code values} are mapped to null.
      *
      * @param values data
      * @param mapNanToNull if true, Double.NaN values are mapped to null
@@ -77,8 +75,7 @@ public class IndexableDataDouble extends IndexableData<Double> {
     /**
      * Creates an IndexableDataDouble instance.
      *
-     * If mapNanToNull is true, Double.NaN values in {@code values}
-     * are mapped to null.
+     * If mapNanToNull is true, Double.NaN values in {@code values} are mapped to null.
      *
      * @param values data
      * @param mapNanToNull if true, Double.NaN values are mapped to null
@@ -91,8 +88,7 @@ public class IndexableDataDouble extends IndexableData<Double> {
     /**
      * Creates an IndexableDataDouble instance.
      *
-     * If mapNanToNull is true, Double.NaN values in {@code values}
-     * are mapped to null.
+     * If mapNanToNull is true, Double.NaN values in {@code values} are mapped to null.
      *
      * @param values data
      * @param mapNanToNull if true, Double.NaN values are mapped to null
@@ -105,8 +101,7 @@ public class IndexableDataDouble extends IndexableData<Double> {
     /**
      * Creates an IndexableDataDouble instance.
      *
-     * If mapNanToNull is true, Double.NaN values in {@code values}
-     * are mapped to null.
+     * If mapNanToNull is true, Double.NaN values in {@code values} are mapped to null.
      *
      * @param values data
      * @param mapNanToNull if true, Double.NaN values are mapped to null

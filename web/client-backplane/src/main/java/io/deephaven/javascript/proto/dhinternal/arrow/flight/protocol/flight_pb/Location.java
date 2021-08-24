@@ -13,49 +13,50 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.arrow.flight.protocol.Flight_pb.Location",
     namespace = JsPackage.GLOBAL)
 public class Location {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
-    @JsOverlay
-    static Location.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType {
+        @JsOverlay
+        static Location.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getUri();
+
+        @JsProperty
+        void setUri(String uri);
     }
 
-    @JsProperty
-    String getUri();
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType0 {
+        @JsOverlay
+        static Location.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
 
-    @JsProperty
-    void setUri(String uri);
-  }
+        @JsProperty
+        String getUri();
 
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsOverlay
-    static Location.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+        @JsProperty
+        void setUri(String uri);
     }
 
-    @JsProperty
-    String getUri();
+    public static native Location deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    void setUri(String uri);
-  }
+    public static native Location deserializeBinaryFromReader(Location message, Object reader);
 
-  public static native Location deserializeBinary(Uint8Array bytes);
+    public static native void serializeBinaryToWriter(Location message, Object writer);
 
-  public static native Location deserializeBinaryFromReader(Location message, Object reader);
+    public static native Location.ToObjectReturnType toObject(boolean includeInstance,
+        Location msg);
 
-  public static native void serializeBinaryToWriter(Location message, Object writer);
+    public native String getUri();
 
-  public static native Location.ToObjectReturnType toObject(boolean includeInstance, Location msg);
+    public native Uint8Array serializeBinary();
 
-  public native String getUri();
+    public native void setUri(String value);
 
-  public native Uint8Array serializeBinary();
+    public native Location.ToObjectReturnType0 toObject();
 
-  public native void setUri(String value);
-
-  public native Location.ToObjectReturnType0 toObject();
-
-  public native Location.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native Location.ToObjectReturnType0 toObject(boolean includeInstance);
 }

@@ -10,7 +10,7 @@ public class QueryConstants {
     protected QueryConstants() {}
 
     public static final Boolean NULL_BOOLEAN = null;
-    public static final char NULL_CHAR = Character.MAX_VALUE-1;
+    public static final char NULL_CHAR = Character.MAX_VALUE - 1;
     public static final byte NULL_BYTE = Byte.MIN_VALUE;
     public static final short NULL_SHORT = Short.MIN_VALUE;
     public static final int NULL_INT = Integer.MIN_VALUE;
@@ -37,9 +37,9 @@ public class QueryConstants {
     public static final double POS_INF_DOUBLE = Double.POSITIVE_INFINITY;
 
     public static final byte NEG_INF_BYTE = Byte.MIN_VALUE;
-    public static final short NEG_INF_SHORT = Short.MIN_VALUE+1;
-    public static final int NEG_INF_INT = Integer.MIN_VALUE+1;
-    public static final long NEG_INF_LONG = Long.MIN_VALUE+1;
+    public static final short NEG_INF_SHORT = Short.MIN_VALUE + 1;
+    public static final int NEG_INF_INT = Integer.MIN_VALUE + 1;
+    public static final long NEG_INF_LONG = Long.MIN_VALUE + 1;
     public static final float NEG_INF_FLOAT = Float.NEGATIVE_INFINITY;
     public static final double NEG_INF_DOUBLE = Double.NEGATIVE_INFINITY;
 }

@@ -17,9 +17,13 @@ import java.util.List;
 
 /**
  * Utilities for downsampling non-ticking time series data within a query. The input table must be
- * sorted by the {@link DBDateTime} column to be used for binning rows.<p></p>
- * <p>Usage is of the form:
- * {@code downsampledX = x.where(new DownsampledWhereFilter("Timestamp", 5 * DBTimeUtils.MINUTE));}</p>
+ * sorted by the {@link DBDateTime} column to be used for binning rows.
+ * <p>
+ * </p>
+ * <p>
+ * Usage is of the form:
+ * {@code downsampledX = x.where(new DownsampledWhereFilter("Timestamp", 5 * DBTimeUtils.MINUTE));}
+ * </p>
  */
 
 public class DownsampledWhereFilter extends SelectFilterImpl {
@@ -29,20 +33,24 @@ public class DownsampledWhereFilter extends SelectFilterImpl {
 
     /**
      * Enum to use when selecting downsampling behavior:
-     *<p>LOWERFIRST is the constant for lowerBin/firstBy.</p>
-     *<p>UPPERLAST is the constant for upperBin/lastBy. (Default) </p>
+     * <p>
+     * LOWERFIRST is the constant for lowerBin/firstBy.
+     * </p>
+     * <p>
+     * UPPERLAST is the constant for upperBin/lastBy. (Default)
+     * </p>
      */
     public enum SampleOrder {
-        UPPERLAST,
-        LOWERFIRST
+        UPPERLAST, LOWERFIRST
     }
 
     /**
      * Creates a {@link DownsampledWhereFilter} which can be used in a .where clause to downsample
      * time series rows.
+     * 
      * @param column {@link DBDateTime} column to use for filtering.
-     * @param binSize Size in nanoseconds for the time bins. Constants like {@link DBTimeUtils#MINUTE}
-     *                are typically used.
+     * @param binSize Size in nanoseconds for the time bins. Constants like
+     *        {@link DBTimeUtils#MINUTE} are typically used.
      * @param order {@link SampleOrder} to set desired behavior.
      */
     public DownsampledWhereFilter(String column, long binSize, SampleOrder order) {
@@ -54,9 +62,10 @@ public class DownsampledWhereFilter extends SelectFilterImpl {
     /**
      * Creates a {@link DownsampledWhereFilter} which can be used in a .where clause to downsample
      * time series rows.
+     * 
      * @param column {@link DBDateTime} column to use for filtering.
-     * @param binSize Size in nanoseconds for the time bins. Constants like {@link DBTimeUtils#MINUTE}
-     *                are typically used.
+     * @param binSize Size in nanoseconds for the time bins. Constants like
+     *        {@link DBTimeUtils#MINUTE} are typically used.
      */
     public DownsampledWhereFilter(String column, long binSize) {
         this.column = column;
@@ -75,18 +84,18 @@ public class DownsampledWhereFilter extends SelectFilterImpl {
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
-    }
+    public void init(TableDefinition tableDefinition) {}
 
     @Override
     public Index filter(Index selection, Index fullSet, Table table, boolean usePrev) {
         if (DynamicNode.isDynamicAndIsRefreshing(table)) {
-            throw new UnsupportedOperationException("Can not do a DownsampledWhereFilter on a refreshing table!");
+            throw new UnsupportedOperationException(
+                "Can not do a DownsampledWhereFilter on a refreshing table!");
         }
 
         // NB: because our source is not refreshing, we don't care about the previous values
 
-        //noinspection unchecked
+        // noinspection unchecked
         ColumnSource<DBDateTime> timestampColumn = table.getColumnSource(column);
 
         Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
@@ -103,7 +112,9 @@ public class DownsampledWhereFilter extends SelectFilterImpl {
             hasNext = it.hasNext();
 
             DBDateTime timestamp = timestampColumn.get(next);
-            DBDateTime bin = (order == SampleOrder.UPPERLAST) ? DBTimeUtils.upperBin(timestamp, binSize) : DBTimeUtils.lowerBin(timestamp, binSize);
+            DBDateTime bin =
+                (order == SampleOrder.UPPERLAST) ? DBTimeUtils.upperBin(timestamp, binSize)
+                    : DBTimeUtils.lowerBin(timestamp, binSize);
             if (!hasNext) {
                 if (order == SampleOrder.UPPERLAST) {
                     if (lastKey != -1 && (lastBin != null && !lastBin.equals(bin))) {
@@ -117,7 +128,7 @@ public class DownsampledWhereFilter extends SelectFilterImpl {
                 if (lastBin == null || !bin.equals(lastBin)) {
                     if (order == SampleOrder.UPPERLAST && lastKey != -1) {
                         builder.appendKey(lastKey);
-                    } else if (order == SampleOrder.LOWERFIRST){
+                    } else if (order == SampleOrder.LOWERFIRST) {
                         builder.appendKey(next);
                     }
                     lastBin = bin;

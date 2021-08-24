@@ -14,7 +14,8 @@ import java.util.*;
 /**
  * A {@link ScriptPathLoader} that will load paths from multiple underlying loaders.
  */
-public class MultiScriptPathLoader<LOADER_TYPE extends ScriptPathLoader> implements ScriptPathLoader {
+public class MultiScriptPathLoader<LOADER_TYPE extends ScriptPathLoader>
+    implements ScriptPathLoader {
 
     private final List<LOADER_TYPE> loaders;
     private volatile SoftReference<Set<String>> availableScriptDisplayPathsReference;
@@ -29,7 +30,9 @@ public class MultiScriptPathLoader<LOADER_TYPE extends ScriptPathLoader> impleme
 
         @Override
         public String toAbbreviatedString() {
-            final String stateString = StringUtils.joinStrings(states.stream().map(state -> (state == null) ? "--" : state.toAbbreviatedString())," , ");
+            final String stateString = StringUtils.joinStrings(
+                states.stream().map(state -> (state == null) ? "--" : state.toAbbreviatedString()),
+                " , ");
             return '[' + stateString + ']';
         }
 
@@ -68,14 +71,17 @@ public class MultiScriptPathLoader<LOADER_TYPE extends ScriptPathLoader> impleme
         SoftReference<Set<String>> localRef;
         Set<String> localSet;
 
-        if (((localRef = availableScriptDisplayPathsReference) == null) || (localSet = localRef.get()) == null) {
+        if (((localRef = availableScriptDisplayPathsReference) == null)
+            || (localSet = localRef.get()) == null) {
             synchronized (this) {
-                if (((localRef = availableScriptDisplayPathsReference) == null) || (localSet = localRef.get()) == null) {
+                if (((localRef = availableScriptDisplayPathsReference) == null)
+                    || (localSet = localRef.get()) == null) {
                     localSet = new HashSet<>();
                     for (final ScriptPathLoader loader : loaders) {
                         localSet.addAll(loader.getAvailableScriptDisplayPaths());
                     }
-                    availableScriptDisplayPathsReference = new SoftReference<>(localSet = Collections.unmodifiableSet(localSet));
+                    availableScriptDisplayPathsReference =
+                        new SoftReference<>(localSet = Collections.unmodifiableSet(localSet));
                 }
             }
         }
@@ -106,27 +112,31 @@ public class MultiScriptPathLoader<LOADER_TYPE extends ScriptPathLoader> impleme
     }
 
     @Override
-    public Set<String> getAvailableScriptDisplayPaths(final ScriptPathLoaderState state) throws IOException {
-        if(!hasStateInfo(state)) {
+    public Set<String> getAvailableScriptDisplayPaths(final ScriptPathLoaderState state)
+        throws IOException {
+        if (!hasStateInfo(state)) {
             return getAvailableScriptDisplayPaths();
         }
 
         final Set<String> paths = new HashSet<>();
-        for(int i = 0; i<loaders.size(); i++) {
-            paths.addAll(loaders.get(i).getAvailableScriptDisplayPaths(((MultiPathLoaderState)state).states.get(i)));
+        for (int i = 0; i < loaders.size(); i++) {
+            paths.addAll(loaders.get(i)
+                .getAvailableScriptDisplayPaths(((MultiPathLoaderState) state).states.get(i)));
         }
 
         return paths;
     }
 
     @Override
-    public String getScriptBodyByDisplayPath(final String displayPath, final ScriptPathLoaderState state) throws IOException {
-        if(!hasStateInfo(state)) {
+    public String getScriptBodyByDisplayPath(final String displayPath,
+        final ScriptPathLoaderState state) throws IOException {
+        if (!hasStateInfo(state)) {
             return getScriptBodyByDisplayPath(displayPath);
         }
 
-        for (int i = 0; i<loaders.size(); i++) {
-            final String result = loaders.get(i).getScriptBodyByDisplayPath(displayPath, ((MultiPathLoaderState)state).states.get(i));
+        for (int i = 0; i < loaders.size(); i++) {
+            final String result = loaders.get(i).getScriptBodyByDisplayPath(displayPath,
+                ((MultiPathLoaderState) state).states.get(i));
             if (result != null) {
                 return result;
             }
@@ -136,13 +146,15 @@ public class MultiScriptPathLoader<LOADER_TYPE extends ScriptPathLoader> impleme
     }
 
     @Override
-    public String getScriptBodyByRelativePath(final String relativePath, final ScriptPathLoaderState state) throws IOException {
-        if(!hasStateInfo(state)) {
+    public String getScriptBodyByRelativePath(final String relativePath,
+        final ScriptPathLoaderState state) throws IOException {
+        if (!hasStateInfo(state)) {
             return getScriptBodyByRelativePath(relativePath);
         }
 
-        for (int i = 0; i<loaders.size(); i++) {
-            final String result = loaders.get(i).getScriptBodyByRelativePath(relativePath, ((MultiPathLoaderState)state).states.get(i));
+        for (int i = 0; i < loaders.size(); i++) {
+            final String result = loaders.get(i).getScriptBodyByRelativePath(relativePath,
+                ((MultiPathLoaderState) state).states.get(i));
             if (result != null) {
                 return result;
             }
@@ -152,12 +164,13 @@ public class MultiScriptPathLoader<LOADER_TYPE extends ScriptPathLoader> impleme
     }
 
     private boolean hasStateInfo(final ScriptPathLoaderState state) {
-        if(state == null) {
+        if (state == null) {
             return false;
         }
 
-        if(!(state instanceof MultiPathLoaderState)) {
-            throw new IllegalArgumentException("Incorrect state type (" + state.getClass() + ") for MultiScriptPathLoader");
+        if (!(state instanceof MultiPathLoaderState)) {
+            throw new IllegalArgumentException(
+                "Incorrect state type (" + state.getClass() + ") for MultiScriptPathLoader");
         }
 
         return true;

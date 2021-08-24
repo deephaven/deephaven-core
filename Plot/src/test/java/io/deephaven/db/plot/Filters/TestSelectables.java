@@ -18,11 +18,12 @@ import io.deephaven.db.v2.TableMap;
 import java.util.*;
 
 public class TestSelectables extends BaseArrayTestCase {
-    private final String[] categories ={"A", "B", "C"};
+    private final String[] categories = {"A", "B", "C"};
     private final double[] values = {1, 2, 3};
     private final String byColumn = "Cats";
     private final String valueColumn = "Values";
-    private final Table table = TableTools.newTable(TableTools.col(byColumn, categories), TableTools.doubleCol(valueColumn, values));
+    private final Table table = TableTools.newTable(TableTools.col(byColumn, categories),
+        TableTools.doubleCol(valueColumn, values));
     private final BaseFigureImpl figure = new BaseFigureImpl();
 
     public void testFilteredTableOneClick() {
@@ -39,16 +40,19 @@ public class TestSelectables extends BaseArrayTestCase {
             assertTrue(e.getMessage().contains("empty"));
         }
         testFilteredTable(Selectables.oneClick(table, byColumn));
-        testFilteredTable(new SelectableDataSetOneClick(table.byExternal(byColumn), table.getDefinition(), new String[] {byColumn}));
+        testFilteredTable(new SelectableDataSetOneClick(table.byExternal(byColumn),
+            table.getDefinition(), new String[] {byColumn}));
     }
 
     private void testFilteredTable(SelectableDataSet<String, Set<Object>> selectableDataSet) {
-        SwappableTable swappableTable = selectableDataSet.getSwappableTable("M", figure.newChart(), t -> t, byColumn, valueColumn);
-        testTableMapEquals(table.byExternal(byColumn), swappableTable.getTableMapHandle().getTableMap());
+        SwappableTable swappableTable = selectableDataSet.getSwappableTable("M", figure.newChart(),
+            t -> t, byColumn, valueColumn);
+        testTableMapEquals(table.byExternal(byColumn),
+            swappableTable.getTableMapHandle().getTableMap());
     }
 
     private void testTableMapEquals(final TableMap t1, final TableMap t2) {
-        for(final String c : categories) {
+        for (final String c : categories) {
             testTableEquals(t1.get(c), t2.get(c));
         }
     }

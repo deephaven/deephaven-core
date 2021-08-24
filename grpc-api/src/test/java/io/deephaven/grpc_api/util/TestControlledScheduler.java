@@ -17,7 +17,8 @@ public class TestControlledScheduler implements Scheduler {
 
     private long currentTimeInNs = 0;
 
-    private final TreeMultimap<DBDateTime, Runnable> workQueue = TreeMultimap.create(Ordering.natural(), Ordering.arbitrary());
+    private final TreeMultimap<DBDateTime, Runnable> workQueue =
+        TreeMultimap.create(Ordering.natural(), Ordering.arbitrary());
 
     /**
      * Runs the first queued command if there are any.
@@ -28,7 +29,8 @@ public class TestControlledScheduler implements Scheduler {
         }
 
         try {
-            final Map.Entry<DBDateTime, Collection<Runnable>> entry = workQueue.asMap().firstEntry();
+            final Map.Entry<DBDateTime, Collection<Runnable>> entry =
+                workQueue.asMap().firstEntry();
             final Runnable runner = entry.getValue().iterator().next();
 
             currentTimeInNs = Math.max(currentTimeInNs, entry.getKey().getNanos());
@@ -42,8 +44,8 @@ public class TestControlledScheduler implements Scheduler {
     }
 
     /**
-     * Will run commands until all work items that should be run before Max(currentTime, untilTime) have run. Does not
-     * execute events scheduled at the provided time.
+     * Will run commands until all work items that should be run before Max(currentTime, untilTime)
+     * have run. Does not execute events scheduled at the provided time.
      *
      * @param untilTime time to run until
      */
@@ -61,8 +63,8 @@ public class TestControlledScheduler implements Scheduler {
     }
 
     /**
-     * Will run commands until all work items that should be run through Max(currentTime, untilTime) have run. Does
-     * execute events scheduled at the provided time.
+     * Will run commands until all work items that should be run through Max(currentTime, untilTime)
+     * have run. Does execute events scheduled at the provided time.
      *
      * @param throughTime time to run through
      */

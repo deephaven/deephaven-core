@@ -5,14 +5,13 @@ import io.deephaven.web.shared.data.LocalTime;
 import java.util.Arrays;
 
 /**
- * Holder for data associated with a column of type java.time.LocalTime.
- * This type is serialized with a custom LocalTime type for efficiency and GWT compatibility.
+ * Holder for data associated with a column of type java.time.LocalTime. This type is serialized
+ * with a custom LocalTime type for efficiency and GWT compatibility.
  */
 public class LocalTimeArrayColumnData extends ColumnData {
     private LocalTime[] data;
 
-    public LocalTimeArrayColumnData() {
-    }
+    public LocalTimeArrayColumnData() {}
 
     public LocalTimeArrayColumnData(LocalTime[] data) {
         this.data = data;
@@ -28,8 +27,10 @@ public class LocalTimeArrayColumnData extends ColumnData {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         final LocalTimeArrayColumnData that = (LocalTimeArrayColumnData) o;
         return Arrays.deepEquals(data, that.data);
     }

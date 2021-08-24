@@ -17,7 +17,7 @@ import static io.deephaven.benchmarking.BenchmarkTools.applySparsity;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Warmup(iterations = 0, time = 1)
 @Measurement(iterations = 3, time = 1)
-@Timeout(time=3)
+@Timeout(time = 3)
 @Fork(1)
 public class SortMultiBenchmark {
     private TableBenchmarkState state;
@@ -36,26 +36,28 @@ public class SortMultiBenchmark {
     @Param({"25000000"})
     private int tableSize;
 
-    @Param({"90"}) //, "10", "5", "1"})
+    @Param({"90"}) // , "10", "5", "1"})
     private int sparsity;
     private Table inputTable;
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        final EnumStringColumnGenerator enumStringCol1 = (EnumStringColumnGenerator)BenchmarkTools.stringCol("Enum1", 10000, 6, 6, 0xB00FB00F);
-        final EnumStringColumnGenerator enumStringCol2 = (EnumStringColumnGenerator)BenchmarkTools.stringCol("Enum2", 1000, 6, 6, 0xF00DF00D);
+        final EnumStringColumnGenerator enumStringCol1 =
+            (EnumStringColumnGenerator) BenchmarkTools.stringCol("Enum1", 10000, 6, 6, 0xB00FB00F);
+        final EnumStringColumnGenerator enumStringCol2 =
+            (EnumStringColumnGenerator) BenchmarkTools.stringCol("Enum2", 1000, 6, 6, 0xF00DF00D);
 
         final BenchmarkTableBuilder builder;
         final int actualSize = BenchmarkTools.sizeWithSparsity(tableSize, sparsity);
 
         System.out.println("Actual Size: " + actualSize);
 
-        switch(tableType) {
+        switch (tableType) {
             case "Historical":
                 builder = BenchmarkTools.persistentTableBuilder("Carlos", actualSize)
-                        .addGroupingColumns("Enum1")
-                        .setPartitioningFormula("${autobalance_single}")
-                        .setPartitionCount(10);
+                    .addGroupingColumns("Enum1")
+                    .setPartitioningFormula("${autobalance_single}")
+                    .setPartitionCount(10);
                 break;
             case "Intraday":
                 builder = BenchmarkTools.persistentTableBuilder("Carlos", actualSize);
@@ -66,16 +68,17 @@ public class SortMultiBenchmark {
         }
 
         bmTable = builder
-                .setSeed(0xDEADBEEF)
-                .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF))
-                .addColumn(BenchmarkTools.numberCol("I1", int.class))
-                .addColumn(BenchmarkTools.numberCol("D1", double.class, -10e6, 10e6))
-                .addColumn(BenchmarkTools.numberCol("L1", long.class))
-                .addColumn(enumStringCol1)
-                .addColumn(enumStringCol2)
-                .build();
+            .setSeed(0xDEADBEEF)
+            .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF))
+            .addColumn(BenchmarkTools.numberCol("I1", int.class))
+            .addColumn(BenchmarkTools.numberCol("D1", double.class, -10e6, 10e6))
+            .addColumn(BenchmarkTools.numberCol("L1", long.class))
+            .addColumn(enumStringCol1)
+            .addColumn(enumStringCol2)
+            .build();
 
-        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
+        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()),
+            params.getWarmup().getCount());
     }
 
     @TearDown(Level.Trial)
@@ -90,7 +93,7 @@ public class SortMultiBenchmark {
     @Setup(Level.Iteration)
     public void setupIteration() {
         state.init();
-        inputTable = applySparsity(bmTable.getTable(),tableSize,sparsity,0);
+        inputTable = applySparsity(bmTable.getTable(), tableSize, sparsity, 0);
     }
 
     @TearDown(Level.Iteration)
