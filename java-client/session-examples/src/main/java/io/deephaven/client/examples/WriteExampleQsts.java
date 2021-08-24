@@ -1,6 +1,5 @@
 package io.deephaven.client.examples;
 
-import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.TableSpec;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
