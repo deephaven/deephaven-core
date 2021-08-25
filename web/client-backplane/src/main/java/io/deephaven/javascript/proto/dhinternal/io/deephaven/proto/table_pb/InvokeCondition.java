@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.InvokeCondition",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.InvokeCondition",
+        namespace = JsPackage.GLOBAL)
 public class InvokeCondition {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -82,12 +82,11 @@ public class InvokeCondition {
             InvokeCondition.ToObjectReturnType.TargetFieldType.ReferenceFieldType getReference();
 
             @JsProperty
-            void setLiteral(
-                InvokeCondition.ToObjectReturnType.TargetFieldType.LiteralFieldType literal);
+            void setLiteral(InvokeCondition.ToObjectReturnType.TargetFieldType.LiteralFieldType literal);
 
             @JsProperty
             void setReference(
-                InvokeCondition.ToObjectReturnType.TargetFieldType.ReferenceFieldType reference);
+                    InvokeCondition.ToObjectReturnType.TargetFieldType.ReferenceFieldType reference);
         }
 
         @JsOverlay
@@ -187,12 +186,11 @@ public class InvokeCondition {
             InvokeCondition.ToObjectReturnType0.TargetFieldType.ReferenceFieldType getReference();
 
             @JsProperty
-            void setLiteral(
-                InvokeCondition.ToObjectReturnType0.TargetFieldType.LiteralFieldType literal);
+            void setLiteral(InvokeCondition.ToObjectReturnType0.TargetFieldType.LiteralFieldType literal);
 
             @JsProperty
             void setReference(
-                InvokeCondition.ToObjectReturnType0.TargetFieldType.ReferenceFieldType reference);
+                    InvokeCondition.ToObjectReturnType0.TargetFieldType.ReferenceFieldType reference);
         }
 
         @JsOverlay
@@ -227,12 +225,12 @@ public class InvokeCondition {
     public static native InvokeCondition deserializeBinary(Uint8Array bytes);
 
     public static native InvokeCondition deserializeBinaryFromReader(
-        InvokeCondition message, Object reader);
+            InvokeCondition message, Object reader);
 
     public static native void serializeBinaryToWriter(InvokeCondition message, Object writer);
 
     public static native InvokeCondition.ToObjectReturnType toObject(
-        boolean includeInstance, InvokeCondition msg);
+            boolean includeInstance, InvokeCondition msg);
 
     public native Value addArguments();
 

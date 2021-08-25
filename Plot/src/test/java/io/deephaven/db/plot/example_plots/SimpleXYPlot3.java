@@ -20,22 +20,22 @@ public class SimpleXYPlot3 {
 
         Figure fig = FigureFactory.figure();
         Figure cht = fig.newChart(0)
-            .chartTitle("Chart Title")
+                .chartTitle("Chart Title")
 
-            .newAxes()
-            .xLabel("X1")
-            .yLabel("Y1")
-            .plot("Test1", x1, y1)
+                .newAxes()
+                .xLabel("X1")
+                .yLabel("Y1")
+                .plot("Test1", x1, y1)
 
-            .newAxes()
-            .xLabel("X2")
-            .yLabel("Y2")
-            .plot("Test2", x2, y2)
+                .newAxes()
+                .xLabel("X2")
+                .yLabel("Y2")
+                .plot("Test2", x2, y2)
 
-            .newAxes()
-            .xLabel("X3")
-            .yLabel("Y3")
-            .plot("Test3", x3, y3);
+                .newAxes()
+                .xLabel("X3")
+                .yLabel("Y3")
+                .plot("Test3", x3, y3);
 
         ExamplePlotUtils.display(cht);
     }

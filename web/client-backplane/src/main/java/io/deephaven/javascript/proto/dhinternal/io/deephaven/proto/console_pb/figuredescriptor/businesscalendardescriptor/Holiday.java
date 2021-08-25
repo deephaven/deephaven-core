@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.BusinessCalendarDescriptor.Holiday",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.BusinessCalendarDescriptor.Holiday",
+        namespace = JsPackage.GLOBAL)
 public class Holiday {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -75,15 +75,15 @@ public class Holiday {
 
         @JsOverlay
         default void setBusinessPeriodsList(
-            Holiday.ToObjectReturnType.BusinessPeriodsListFieldType[] businessPeriodsList) {
+                Holiday.ToObjectReturnType.BusinessPeriodsListFieldType[] businessPeriodsList) {
             setBusinessPeriodsList(
-                Js.<JsArray<Holiday.ToObjectReturnType.BusinessPeriodsListFieldType>>uncheckedCast(
-                    businessPeriodsList));
+                    Js.<JsArray<Holiday.ToObjectReturnType.BusinessPeriodsListFieldType>>uncheckedCast(
+                            businessPeriodsList));
         }
 
         @JsProperty
         void setBusinessPeriodsList(
-            JsArray<Holiday.ToObjectReturnType.BusinessPeriodsListFieldType> businessPeriodsList);
+                JsArray<Holiday.ToObjectReturnType.BusinessPeriodsListFieldType> businessPeriodsList);
 
         @JsProperty
         void setDate(Holiday.ToObjectReturnType.DateFieldType date);
@@ -150,15 +150,15 @@ public class Holiday {
 
         @JsOverlay
         default void setBusinessPeriodsList(
-            Holiday.ToObjectReturnType0.BusinessPeriodsListFieldType[] businessPeriodsList) {
+                Holiday.ToObjectReturnType0.BusinessPeriodsListFieldType[] businessPeriodsList) {
             setBusinessPeriodsList(
-                Js.<JsArray<Holiday.ToObjectReturnType0.BusinessPeriodsListFieldType>>uncheckedCast(
-                    businessPeriodsList));
+                    Js.<JsArray<Holiday.ToObjectReturnType0.BusinessPeriodsListFieldType>>uncheckedCast(
+                            businessPeriodsList));
         }
 
         @JsProperty
         void setBusinessPeriodsList(
-            JsArray<Holiday.ToObjectReturnType0.BusinessPeriodsListFieldType> businessPeriodsList);
+                JsArray<Holiday.ToObjectReturnType0.BusinessPeriodsListFieldType> businessPeriodsList);
 
         @JsProperty
         void setDate(Holiday.ToObjectReturnType0.DateFieldType date);

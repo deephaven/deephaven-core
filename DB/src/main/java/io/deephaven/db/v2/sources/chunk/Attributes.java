@@ -43,8 +43,8 @@ public class Attributes {
     /**
      * The chunk contains index ranges.
      *
-     * These are to be represented as pairs of an inclusive start and an inclusive end in even and
-     * odd slots, respectively.
+     * These are to be represented as pairs of an inclusive start and an inclusive end in even and odd slots,
+     * respectively.
      */
     public interface OrderedKeyRanges extends Keys {
     }

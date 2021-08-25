@@ -14,9 +14,9 @@ public interface CompletionParseService<ResultType extends ParsedResult, ChangeT
     void open(String text, String uri, String version);
 
     void update(
-        String uri,
-        String version,
-        List<ChangeType> changes);
+            String uri,
+            String version,
+            List<ChangeType> changes);
 
     void remove(String uri);
 

@@ -23,8 +23,7 @@ public class JsAxis {
         this.axis = descriptor;
         this.jsFigure = jsFigure;
 
-        final BusinessCalendarDescriptor businessCalendarDescriptor =
-            descriptor.getBusinessCalendarDescriptor();
+        final BusinessCalendarDescriptor businessCalendarDescriptor = descriptor.getBusinessCalendarDescriptor();
         if (businessCalendarDescriptor != null) {
             businessCalendar = new JsBusinessCalendar(businessCalendarDescriptor);
         } else {
@@ -156,12 +155,10 @@ public class JsAxis {
     }
 
     @JsMethod
-    public void range(@JsOptional Double pixelCount, @JsOptional Object min,
-        @JsOptional Object max) {
+    public void range(@JsOptional Double pixelCount, @JsOptional Object min, @JsOptional Object max) {
         if (pixelCount == null || !Js.typeof(Js.asAny(pixelCount)).equals("number")) {
             if (this.pixels != null) {
-                JsLog.warn(
-                    "Turning off downsampling on a chart where it is running is not currently supported");
+                JsLog.warn("Turning off downsampling on a chart where it is running is not currently supported");
                 return;
             }
             JsLog.warn("Ignoring Axis.range() call with non-numeric pixel count");
@@ -175,17 +172,15 @@ public class JsAxis {
 
         if (min != null || max != null) {
             if (min == null || max == null) {
-                throw new IllegalArgumentException(
-                    "If min or max are provided, both must be provided");
+                throw new IllegalArgumentException("If min or max are provided, both must be provided");
             }
-            if (min instanceof Number && (double) min < 10
-                || max instanceof Number && (double) max < 10) {
+            if (min instanceof Number && (double) min < 10 || max instanceof Number && (double) max < 10) {
                 JsLog.warn("Ignoring max/min, at least one doesn't make sense", max, min);
             } else {
-                this.min = JsDateTimeFormat.longFromDate(min).orElseThrow(
-                    () -> new IllegalArgumentException("Cannot interpret min as a date: " + min));
-                this.max = JsDateTimeFormat.longFromDate(max).orElseThrow(
-                    () -> new IllegalArgumentException("Cannot interpret max as a date: " + max));
+                this.min = JsDateTimeFormat.longFromDate(min)
+                        .orElseThrow(() -> new IllegalArgumentException("Cannot interpret min as a date: " + min));
+                this.max = JsDateTimeFormat.longFromDate(max)
+                        .orElseThrow(() -> new IllegalArgumentException("Cannot interpret max as a date: " + max));
             }
         } else {
             this.min = null;

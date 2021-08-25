@@ -28,13 +28,12 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Live
     final Replayer replayer;
     protected PriorityQueue<IteratorsAndNextTime> allIterators = new PriorityQueue<>();
 
-    private static Map<String, ColumnSource> getResultSources(
-        Map<String, ? extends ColumnSource> input, RedirectionIndex redirectionIndex) {
+    private static Map<String, ColumnSource> getResultSources(Map<String, ? extends ColumnSource> input,
+            RedirectionIndex redirectionIndex) {
         Map<String, ColumnSource> result = new LinkedHashMap<>();
         for (Map.Entry<String, ? extends ColumnSource> stringEntry : input.entrySet()) {
             ColumnSource value = stringEntry.getValue();
-            result.put(stringEntry.getKey(),
-                new ReadOnlyRedirectedColumnSource<>(redirectionIndex, value));
+            result.put(stringEntry.getKey(), new ReadOnlyRedirectedColumnSource<>(redirectionIndex, value));
         }
         return result;
     }
@@ -47,8 +46,7 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Live
         long lastIndex;
         public final long pos;
 
-        private IteratorsAndNextTime(Index.Iterator iterator, ColumnSource<DBDateTime> columnSource,
-            long pos) {
+        private IteratorsAndNextTime(Index.Iterator iterator, ColumnSource<DBDateTime> columnSource, long pos) {
             this.iterator = iterator;
             this.columnSource = columnSource;
             this.pos = pos;
@@ -76,15 +74,14 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Live
     }
 
     protected QueryReplayGroupedTable(Index index, Map<String, ? extends ColumnSource> input,
-        String timeColumn, Replayer replayer, RedirectionIndex redirectionIndex,
-        String[] groupingColumns) {
+            String timeColumn, Replayer replayer, RedirectionIndex redirectionIndex, String[] groupingColumns) {
 
         super(Index.FACTORY.getIndexByValues(), getResultSources(input, redirectionIndex));
         this.redirectionIndex = redirectionIndex;
         Map<Object, Index> grouping;
 
         final ColumnSource[] columnSources =
-            Arrays.stream(groupingColumns).map(gc -> input.get(gc)).toArray(ColumnSource[]::new);
+                Arrays.stream(groupingColumns).map(gc -> input.get(gc)).toArray(ColumnSource[]::new);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(columnSources);
         grouping = index.getGrouping(tupleSource);
 

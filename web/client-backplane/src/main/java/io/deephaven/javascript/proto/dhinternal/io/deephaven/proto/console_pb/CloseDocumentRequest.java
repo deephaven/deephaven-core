@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.CloseDocumentRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.CloseDocumentRequest",
+        namespace = JsPackage.GLOBAL)
 public class CloseDocumentRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -22,7 +22,7 @@ public class CloseDocumentRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static CloseDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -57,20 +57,20 @@ public class CloseDocumentRequest {
 
             @JsProperty
             void setTicket(
-                CloseDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    CloseDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<CloseDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<CloseDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<CloseDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<CloseDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -110,7 +110,7 @@ public class CloseDocumentRequest {
 
         @JsProperty
         void setTextDocument(
-            CloseDocumentRequest.ToObjectReturnType.TextDocumentFieldType textDocument);
+                CloseDocumentRequest.ToObjectReturnType.TextDocumentFieldType textDocument);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -121,7 +121,7 @@ public class CloseDocumentRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static CloseDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -156,20 +156,20 @@ public class CloseDocumentRequest {
 
             @JsProperty
             void setTicket(
-                CloseDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    CloseDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<CloseDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<CloseDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<CloseDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<CloseDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -209,18 +209,18 @@ public class CloseDocumentRequest {
 
         @JsProperty
         void setTextDocument(
-            CloseDocumentRequest.ToObjectReturnType0.TextDocumentFieldType textDocument);
+                CloseDocumentRequest.ToObjectReturnType0.TextDocumentFieldType textDocument);
     }
 
     public static native CloseDocumentRequest deserializeBinary(Uint8Array bytes);
 
     public static native CloseDocumentRequest deserializeBinaryFromReader(
-        CloseDocumentRequest message, Object reader);
+            CloseDocumentRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(CloseDocumentRequest message, Object writer);
 
     public static native CloseDocumentRequest.ToObjectReturnType toObject(
-        boolean includeInstance, CloseDocumentRequest msg);
+            boolean includeInstance, CloseDocumentRequest msg);
 
     public native void clearConsoleId();
 

@@ -53,8 +53,7 @@ public interface DbArray<T> extends DbArrayBase<DbArray<T>> {
 
     @Override
     default void fillChunk(WritableChunk destChunk) {
-        destChunk.asWritableObjectChunk().copyFromTypedArray(toArray(), 0, destChunk.size(),
-            (int) size());
+        destChunk.asWritableObjectChunk().copyFromTypedArray(toArray(), 0, destChunk.size(), (int) size());
     }
 
     static String defaultValToString(final Object val) {
@@ -73,8 +72,7 @@ public interface DbArray<T> extends DbArrayBase<DbArray<T>> {
             return "[]";
         }
 
-        final Function<Object, String> valToString =
-            DbArrayBase.classToHelper(array.getComponentType());
+        final Function<Object, String> valToString = DbArrayBase.classToHelper(array.getComponentType());
 
         final StringBuilder builder = new StringBuilder("[");
         final int displaySize = (int) Math.min(array.size(), prefixLength);

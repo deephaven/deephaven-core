@@ -49,8 +49,7 @@ public class SourceColumn implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(Index index,
-        Map<String, ? extends ColumnSource> columnsOfInterest) {
+    public List<String> initInputs(Index index, Map<String, ? extends ColumnSource> columnsOfInterest) {
         this.sourceColumn = columnsOfInterest.get(sourceName);
         if (sourceColumn == null) {
             throw new NoSuchColumnException(columnsOfInterest.keySet(), sourceName);
@@ -120,8 +119,7 @@ public class SourceColumn implements SelectColumn {
     public WritableSource newDestInstance(long size) {
         Class type = sourceColumn.getType();
         if (DbArrayBase.class.isAssignableFrom(type)) {
-            return SparseArrayColumnSource.getSparseMemoryColumnSource(size, type,
-                sourceColumn.getComponentType());
+            return SparseArrayColumnSource.getSparseMemoryColumnSource(size, type, sourceColumn.getComponentType());
         } else {
             return SparseArrayColumnSource.getSparseMemoryColumnSource(size, type);
         }

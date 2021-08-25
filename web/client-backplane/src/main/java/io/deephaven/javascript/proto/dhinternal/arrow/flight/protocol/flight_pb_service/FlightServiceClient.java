@@ -23,9 +23,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.Flight_pb_service.FlightServiceClient",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.Flight_pb_service.FlightServiceClient",
+        namespace = JsPackage.GLOBAL)
 public class FlightServiceClient {
     @JsFunction
     public interface GetFlightInfoCallbackFn {
@@ -86,8 +86,7 @@ public class FlightServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(FlightServiceClient.GetFlightInfoMetadata_or_callbackFn.P0Type p0,
-            FlightInfo p1);
+        void onInvoke(FlightServiceClient.GetFlightInfoMetadata_or_callbackFn.P0Type p0, FlightInfo p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -177,8 +176,7 @@ public class FlightServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(FlightServiceClient.GetSchemaMetadata_or_callbackFn.P0Type p0,
-            SchemaResult p1);
+        void onInvoke(FlightServiceClient.GetSchemaMetadata_or_callbackFn.P0Type p0, SchemaResult p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -233,120 +231,120 @@ public class FlightServiceClient {
 
     @JsOverlay
     public final UnaryResponse getFlightInfo(
-        FlightDescriptor requestMessage,
-        BrowserHeaders metadata_or_callback,
-        FlightServiceClient.GetFlightInfoCallbackFn callback) {
+            FlightDescriptor requestMessage,
+            BrowserHeaders metadata_or_callback,
+            FlightServiceClient.GetFlightInfoCallbackFn callback) {
         return getFlightInfo(
-            requestMessage,
-            Js.<FlightServiceClient.GetFlightInfoMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<FlightServiceClient.GetFlightInfoMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse getFlightInfo(
-        FlightDescriptor requestMessage, BrowserHeaders metadata_or_callback) {
+            FlightDescriptor requestMessage, BrowserHeaders metadata_or_callback) {
         return getFlightInfo(
-            requestMessage,
-            Js.<FlightServiceClient.GetFlightInfoMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<FlightServiceClient.GetFlightInfoMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse getFlightInfo(
-        FlightDescriptor requestMessage,
-        FlightServiceClient.GetFlightInfoMetadata_or_callbackFn metadata_or_callback,
-        FlightServiceClient.GetFlightInfoCallbackFn callback) {
+            FlightDescriptor requestMessage,
+            FlightServiceClient.GetFlightInfoMetadata_or_callbackFn metadata_or_callback,
+            FlightServiceClient.GetFlightInfoCallbackFn callback) {
         return getFlightInfo(
-            requestMessage,
-            Js.<FlightServiceClient.GetFlightInfoMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<FlightServiceClient.GetFlightInfoMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse getFlightInfo(
-        FlightDescriptor requestMessage,
-        FlightServiceClient.GetFlightInfoMetadata_or_callbackFn metadata_or_callback) {
+            FlightDescriptor requestMessage,
+            FlightServiceClient.GetFlightInfoMetadata_or_callbackFn metadata_or_callback) {
         return getFlightInfo(
-            requestMessage,
-            Js.<FlightServiceClient.GetFlightInfoMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<FlightServiceClient.GetFlightInfoMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse getFlightInfo(
-        FlightDescriptor requestMessage,
-        FlightServiceClient.GetFlightInfoMetadata_or_callbackUnionType metadata_or_callback,
-        FlightServiceClient.GetFlightInfoCallbackFn callback);
+            FlightDescriptor requestMessage,
+            FlightServiceClient.GetFlightInfoMetadata_or_callbackUnionType metadata_or_callback,
+            FlightServiceClient.GetFlightInfoCallbackFn callback);
 
     public native UnaryResponse getFlightInfo(
-        FlightDescriptor requestMessage,
-        FlightServiceClient.GetFlightInfoMetadata_or_callbackUnionType metadata_or_callback);
+            FlightDescriptor requestMessage,
+            FlightServiceClient.GetFlightInfoMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse getSchema(
-        FlightDescriptor requestMessage,
-        BrowserHeaders metadata_or_callback,
-        FlightServiceClient.GetSchemaCallbackFn callback) {
+            FlightDescriptor requestMessage,
+            BrowserHeaders metadata_or_callback,
+            FlightServiceClient.GetSchemaCallbackFn callback) {
         return getSchema(
-            requestMessage,
-            Js.<FlightServiceClient.GetSchemaMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<FlightServiceClient.GetSchemaMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse getSchema(
-        FlightDescriptor requestMessage, BrowserHeaders metadata_or_callback) {
+            FlightDescriptor requestMessage, BrowserHeaders metadata_or_callback) {
         return getSchema(
-            requestMessage,
-            Js.<FlightServiceClient.GetSchemaMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<FlightServiceClient.GetSchemaMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse getSchema(
-        FlightDescriptor requestMessage,
-        FlightServiceClient.GetSchemaMetadata_or_callbackFn metadata_or_callback,
-        FlightServiceClient.GetSchemaCallbackFn callback) {
+            FlightDescriptor requestMessage,
+            FlightServiceClient.GetSchemaMetadata_or_callbackFn metadata_or_callback,
+            FlightServiceClient.GetSchemaCallbackFn callback) {
         return getSchema(
-            requestMessage,
-            Js.<FlightServiceClient.GetSchemaMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<FlightServiceClient.GetSchemaMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse getSchema(
-        FlightDescriptor requestMessage,
-        FlightServiceClient.GetSchemaMetadata_or_callbackFn metadata_or_callback) {
+            FlightDescriptor requestMessage,
+            FlightServiceClient.GetSchemaMetadata_or_callbackFn metadata_or_callback) {
         return getSchema(
-            requestMessage,
-            Js.<FlightServiceClient.GetSchemaMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<FlightServiceClient.GetSchemaMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse getSchema(
-        FlightDescriptor requestMessage,
-        FlightServiceClient.GetSchemaMetadata_or_callbackUnionType metadata_or_callback,
-        FlightServiceClient.GetSchemaCallbackFn callback);
+            FlightDescriptor requestMessage,
+            FlightServiceClient.GetSchemaMetadata_or_callbackUnionType metadata_or_callback,
+            FlightServiceClient.GetSchemaCallbackFn callback);
 
     public native UnaryResponse getSchema(
-        FlightDescriptor requestMessage,
-        FlightServiceClient.GetSchemaMetadata_or_callbackUnionType metadata_or_callback);
+            FlightDescriptor requestMessage,
+            FlightServiceClient.GetSchemaMetadata_or_callbackUnionType metadata_or_callback);
 
     public native BidirectionalStream<HandshakeRequest, HandshakeResponse> handshake();
 
     public native BidirectionalStream<HandshakeRequest, HandshakeResponse> handshake(
-        BrowserHeaders metadata);
+            BrowserHeaders metadata);
 
     public native ResponseStream<ActionType> listActions(
-        Empty requestMessage, BrowserHeaders metadata);
+            Empty requestMessage, BrowserHeaders metadata);
 
     public native ResponseStream<ActionType> listActions(Empty requestMessage);
 
     public native ResponseStream<FlightInfo> listFlights(
-        Criteria requestMessage, BrowserHeaders metadata);
+            Criteria requestMessage, BrowserHeaders metadata);
 
     public native ResponseStream<FlightInfo> listFlights(Criteria requestMessage);
 }

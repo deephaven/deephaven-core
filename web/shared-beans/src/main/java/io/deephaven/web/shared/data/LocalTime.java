@@ -3,9 +3,9 @@ package io.deephaven.web.shared.data;
 import java.io.Serializable;
 
 /**
- * A simple container for serializing local time values. This should be better for serialization
- * than java.time.LocalTime since we use bytes for hour, minute and second, and is compatible with
- * GWT (java.time is not available in GWT).
+ * A simple container for serializing local time values. This should be better for serialization than
+ * java.time.LocalTime since we use bytes for hour, minute and second, and is compatible with GWT (java.time is not
+ * available in GWT).
  */
 public class LocalTime implements Serializable {
     private byte hour, minute, second;

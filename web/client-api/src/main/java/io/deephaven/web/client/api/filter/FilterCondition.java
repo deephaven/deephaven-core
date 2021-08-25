@@ -31,8 +31,8 @@ public class FilterCondition {
         SearchCondition search = new SearchCondition();
         search.setSearchString(value.descriptor.getLiteral().getStringValue());
         if (columns != null) {
-            search.setOptionalReferencesList(Arrays.stream(columns)
-                .map(v -> v.descriptor.getReference()).toArray(Reference[]::new));
+            search.setOptionalReferencesList(
+                    Arrays.stream(columns).map(v -> v.descriptor.getReference()).toArray(Reference[]::new));
         }
 
         Condition c = new Condition();
@@ -58,16 +58,14 @@ public class FilterCondition {
 
     @JsIgnore
     protected static FilterCondition createAndValidate(Condition descriptor) {
-        // TODO (deephaven-core#723) re-introduce client-side validation so that a client knows
-        // right away when
+        // TODO (deephaven-core#723) re-introduce client-side validation so that a client knows right away when
         // they build something invalid
         return new FilterCondition(descriptor);
     }
 
     public FilterCondition and(FilterCondition... filters) {
         AndCondition and = new AndCondition();
-        and.setFiltersList(
-            Stream.concat(Stream.of(descriptor), Arrays.stream(filters).map(v -> v.descriptor))
+        and.setFiltersList(Stream.concat(Stream.of(descriptor), Arrays.stream(filters).map(v -> v.descriptor))
                 .toArray(Condition[]::new));
 
         Condition c = new Condition();
@@ -79,8 +77,7 @@ public class FilterCondition {
 
     public FilterCondition or(FilterCondition... filters) {
         OrCondition or = new OrCondition();
-        or.setFiltersList(
-            Stream.concat(Stream.of(descriptor), Arrays.stream(filters).map(v -> v.descriptor))
+        or.setFiltersList(Stream.concat(Stream.of(descriptor), Arrays.stream(filters).map(v -> v.descriptor))
                 .toArray(Condition[]::new));
 
         Condition c = new Condition();
@@ -97,8 +94,7 @@ public class FilterCondition {
 
     @JsMethod
     public String toString() {
-        // TODO (deephaven-core#723) implement a readable tostring rather than turning the pb object
-        // into a string
+        // TODO (deephaven-core#723) implement a readable tostring rather than turning the pb object into a string
         return descriptor.toString();
     }
 

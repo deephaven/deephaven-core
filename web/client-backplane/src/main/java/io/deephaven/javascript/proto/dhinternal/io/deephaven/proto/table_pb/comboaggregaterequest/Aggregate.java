@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.ComboAggregateRequest.Aggregate",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.ComboAggregateRequest.Aggregate",
+        namespace = JsPackage.GLOBAL)
 public class Aggregate {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -107,7 +107,7 @@ public class Aggregate {
     public static native void serializeBinaryToWriter(Aggregate message, Object writer);
 
     public static native Aggregate.ToObjectReturnType toObject(
-        boolean includeInstance, Aggregate msg);
+            boolean includeInstance, Aggregate msg);
 
     public native String addMatchPairs(String value, double index);
 

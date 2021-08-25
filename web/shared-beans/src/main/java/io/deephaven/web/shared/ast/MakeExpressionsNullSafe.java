@@ -4,8 +4,8 @@ import io.deephaven.web.shared.data.FilterDescriptor;
 import io.deephaven.web.shared.data.FilterDescriptor.FilterOperation;
 
 /**
- * Rewrites logical expressions into an actual version that does what would be expected. Right now
- * this is just equalsIgnoreCase and its negation, to support null values.
+ * Rewrites logical expressions into an actual version that does what would be expected. Right now this is just
+ * equalsIgnoreCase and its negation, to support null values.
  */
 public class MakeExpressionsNullSafe extends ReplacingVisitor {
     public static FilterDescriptor execute(FilterDescriptor descriptor) {
@@ -31,18 +31,17 @@ public class MakeExpressionsNullSafe extends ReplacingVisitor {
         FilterDescriptor rhs = descriptor.getChildren()[1];
 
         return node(
-            FilterOperation.OR,
-            node(FilterOperation.AND,
-                node(FilterOperation.IS_NULL, lhs),
-                node(FilterOperation.IS_NULL, rhs)),
-            node(FilterOperation.AND,
-                node(FilterOperation.NOT,
-                    node(FilterOperation.IS_NULL, lhs)),
-                nodeEqIgnoreCase(FilterOperation.INVOKE, lhs, rhs)));
+                FilterOperation.OR,
+                node(FilterOperation.AND,
+                        node(FilterOperation.IS_NULL, lhs),
+                        node(FilterOperation.IS_NULL, rhs)),
+                node(FilterOperation.AND,
+                        node(FilterOperation.NOT,
+                                node(FilterOperation.IS_NULL, lhs)),
+                        nodeEqIgnoreCase(FilterOperation.INVOKE, lhs, rhs)));
     }
 
-    private FilterDescriptor nodeEqIgnoreCase(FilterOperation invoke, FilterDescriptor lhs,
-        FilterDescriptor rhs) {
+    private FilterDescriptor nodeEqIgnoreCase(FilterOperation invoke, FilterDescriptor lhs, FilterDescriptor rhs) {
         FilterDescriptor node = node(invoke, lhs, rhs);
         node.setValue("equalsIgnoreCase");// note that this would fail validation
         return node;

@@ -29,15 +29,13 @@ public class StatsGatherer implements Runnable {
     private void getStats() {
         stats.totalHeap = max(stats.totalHeap, Runtime.getRuntime().totalMemory());
         stats.freeHeap = max(stats.freeHeap, Runtime.getRuntime().freeMemory());
-        stats.usedHeap = max(stats.usedHeap, java.lang.management.ManagementFactory
-            .getMemoryMXBean().getHeapMemoryUsage().getUsed());
+        stats.usedHeap = max(stats.usedHeap,
+                java.lang.management.ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed());
         stats.activeThreads = max(stats.activeThreads, Thread.activeCount() - 1);
         stats.cpuLoad = max(stats.cpuLoad,
-            java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage()
-                /
-                java.lang.management.ManagementFactory.getOperatingSystemMXBean()
-                    .getAvailableProcessors()
-                * 100.0);
+                java.lang.management.ManagementFactory.getOperatingSystemMXBean().getSystemLoadAverage() /
+                        java.lang.management.ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors()
+                        * 100.0);
     }
 
     public void run() {

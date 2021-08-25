@@ -29,8 +29,7 @@ public class RollingFileAppender extends FileAppender {
         new File(fileName + ".5.bak").delete();
 
         for (int i = 5; i > 1; i--) {
-            new File(fileName + "." + (i - 1) + ".bak")
-                .renameTo(new File(fileName + "." + i + ".bak"));
+            new File(fileName + "." + (i - 1) + ".bak").renameTo(new File(fileName + "." + i + ".bak"));
         }
 
         new File(fileName).renameTo(new File(fileName + ".1.bak"));

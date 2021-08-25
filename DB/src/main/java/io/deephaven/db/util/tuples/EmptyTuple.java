@@ -9,8 +9,7 @@ import java.util.function.UnaryOperator;
  * <p>
  * 0-Tuple key class.
  */
-public enum EmptyTuple
-    implements Comparable<EmptyTuple>, Serializable, CanonicalizableTuple<EmptyTuple> {
+public enum EmptyTuple implements Comparable<EmptyTuple>, Serializable, CanonicalizableTuple<EmptyTuple> {
 
     INSTANCE;
 

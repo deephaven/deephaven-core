@@ -14,6 +14,6 @@ public class IntArrayTest {
     @Test
     void rawInRawOut() {
         assertThat(IntArray.ofUnsafe(1, Util.NULL_INT, 3).values()).containsExactly(1,
-            Util.NULL_INT, 3);
+                Util.NULL_INT, 3);
     }
 }

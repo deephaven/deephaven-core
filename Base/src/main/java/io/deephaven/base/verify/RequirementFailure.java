@@ -15,8 +15,8 @@ import java.io.StringWriter;
 public class RequirementFailure extends RuntimeException {
 
     /**
-     * The number of stack frames that should be removed from the stack to find the method whose
-     * requirements did not hold.
+     * The number of stack frames that should be removed from the stack to find the method whose requirements did not
+     * hold.
      */
     private int m_nCallsBelowRequirer;
 
@@ -34,8 +34,8 @@ public class RequirementFailure extends RuntimeException {
 
     // ----------------------------------------------------------------
     /**
-     * Gets the number of stack frames that should be removed from the stack to find the caller
-     * which failed to meet requirements.
+     * Gets the number of stack frames that should be removed from the stack to find the caller which failed to meet
+     * requirements.
      */
     public int getNumCallsBelowRequirer() {
         return m_nCallsBelowRequirer;
@@ -91,8 +91,8 @@ public class RequirementFailure extends RuntimeException {
 
     // ----------------------------------------------------------------
     /**
-     * If this stack frame caused the exception, adjust the culprit to be the caller. Used when a
-     * delegating method can't verify all requirements itself but shouldn't receive the blame.
+     * If this stack frame caused the exception, adjust the culprit to be the caller. Used when a delegating method
+     * can't verify all requirements itself but shouldn't receive the blame.
      */
     public RequirementFailure adjustForDelegatingMethod() {
         if (isThisStackFrameCulprit(1)) {
@@ -103,8 +103,8 @@ public class RequirementFailure extends RuntimeException {
 
     // ----------------------------------------------------------------
     /**
-     * If this stack frame caused the exception, adjust the culprit to be the caller. Used when a
-     * delegating method can't verify all requirements itself but shouldn't receive the blame.
+     * If this stack frame caused the exception, adjust the culprit to be the caller. Used when a delegating method
+     * can't verify all requirements itself but shouldn't receive the blame.
      */
     public RequirementFailure adjustForDelegatingMethodAndSyntheticAccessor() {
         if (isThisStackFrameCulprit(0)) {
@@ -120,7 +120,6 @@ public class RequirementFailure extends RuntimeException {
     public boolean isThisStackFrameCulprit(int nFramesBelowTargetFrame) {
         StackTraceElement[] stackTrace = new Throwable().getStackTrace();
         StackTraceElement[] failureStackTrace = getStackTrace();
-        return failureStackTrace.length - m_nCallsBelowRequirer == stackTrace.length
-            - nFramesBelowTargetFrame;
+        return failureStackTrace.length - m_nCallsBelowRequirer == stackTrace.length - nFramesBelowTargetFrame;
     }
 }

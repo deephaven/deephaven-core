@@ -22,7 +22,7 @@ public class ShiftedRangeReader {
         while (startIter.hasNext()) {
             long startPosition = startIter.nextLong();
             ranges[ranges.length] = new ShiftedRange(new Range(startPosition, endIter.nextLong()),
-                postShiftStartIter.nextLong() - startPosition);
+                    postShiftStartIter.nextLong() - startPosition);
         }
 
         return ranges;

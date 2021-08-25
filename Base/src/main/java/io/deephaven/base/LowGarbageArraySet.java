@@ -13,13 +13,12 @@ import java.util.Set;
 
 // --------------------------------------------------------------------
 /**
- * A very simple {@link Set} for small sets (uses linear time algorithms) that creates no garbage
- * (except when expanding). This set only has one {@link Iterator}, which is reused. This set is not
- * thread safe.
+ * A very simple {@link Set} for small sets (uses linear time algorithms) that creates no garbage (except when
+ * expanding). This set only has one {@link Iterator}, which is reused. This set is not thread safe.
  * <P>
- * Note: This class extends {@link HashSet} rather than {@link Set} (or {@link AbstractSet}) only
- * because one of the fields where we want to use it ({@link sun.nio.ch.SelectorImpl#keys}) is
- * (improperly) declared as a HashSet rather than a Set.
+ * Note: This class extends {@link HashSet} rather than {@link Set} (or {@link AbstractSet}) only because one of the
+ * fields where we want to use it ({@link sun.nio.ch.SelectorImpl#keys}) is (improperly) declared as a HashSet rather
+ * than a Set.
  */
 public class LowGarbageArraySet<T> extends HashSet<T> {
 
@@ -67,8 +66,7 @@ public class LowGarbageArraySet<T> extends HashSet<T> {
     @Override
     public boolean contains(Object o) {
         for (int nIndex = 0; nIndex < m_nElements; nIndex++) {
-            if ((null == o && null == m_elements[nIndex])
-                || (null != o && o.equals(m_elements[nIndex]))) {
+            if ((null == o && null == m_elements[nIndex]) || (null != o && o.equals(m_elements[nIndex]))) {
                 return true;
             }
         }
@@ -79,8 +77,7 @@ public class LowGarbageArraySet<T> extends HashSet<T> {
     @Override
     public boolean add(T t) {
         for (int nIndex = 0; nIndex < m_nElements; nIndex++) {
-            if ((null == t && null == m_elements[nIndex])
-                || (null != t && t.equals(m_elements[nIndex]))) {
+            if ((null == t && null == m_elements[nIndex]) || (null != t && t.equals(m_elements[nIndex]))) {
                 return false;
             }
         }
@@ -98,8 +95,7 @@ public class LowGarbageArraySet<T> extends HashSet<T> {
     @Override
     public boolean remove(Object o) {
         for (int nIndex = 0; nIndex < m_nElements; nIndex++) {
-            if ((null == o && null == m_elements[nIndex])
-                || (null != o && o.equals(m_elements[nIndex]))) {
+            if ((null == o && null == m_elements[nIndex]) || (null != o && o.equals(m_elements[nIndex]))) {
                 m_elements[nIndex] = m_elements[--m_nElements];
                 m_elements[m_nElements] = null;
                 return true;

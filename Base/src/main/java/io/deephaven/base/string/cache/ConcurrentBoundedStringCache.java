@@ -12,14 +12,13 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Random;
 
 /**
- * This cache follows the same design as ConcurrentUnboundedStringCache, but uses a KeyedObjectCache
- * (bounded, concurrent-get, "pseudo-random pseudo-LRU" replacement) for its internal storage.
+ * This cache follows the same design as ConcurrentUnboundedStringCache, but uses a KeyedObjectCache (bounded,
+ * concurrent-get, "pseudo-random pseudo-LRU" replacement) for its internal storage.
  *
- * This implementation is thread-safe, and lock-free except for the insertion of new cached Strings
- * on a cache miss.
+ * This implementation is thread-safe, and lock-free except for the insertion of new cached Strings on a cache miss.
  */
 public class ConcurrentBoundedStringCache<STRING_LIKE_TYPE extends CharSequence>
-    implements StringCache<STRING_LIKE_TYPE> {
+        implements StringCache<STRING_LIKE_TYPE> {
 
     /**
      * Adapter to make and compare cache members.
@@ -36,11 +35,10 @@ public class ConcurrentBoundedStringCache<STRING_LIKE_TYPE extends CharSequence>
      * @param capacity Minimum capacity of the storage backing this cache.
      * @param collisionFactor Number of possible storage slots a given element might be stored in.
      */
-    public ConcurrentBoundedStringCache(final StringCacheTypeAdapter<STRING_LIKE_TYPE> typeAdapter,
-        final int capacity, final int collisionFactor) {
+    public ConcurrentBoundedStringCache(final StringCacheTypeAdapter<STRING_LIKE_TYPE> typeAdapter, final int capacity,
+            final int collisionFactor) {
         this.typeAdapter = Require.neqNull(typeAdapter, "typeAdapter");
-        cache =
-            new KeyedObjectCache<>(capacity, collisionFactor, new KeyImpl(), null, new Random());
+        cache = new KeyedObjectCache<>(capacity, collisionFactor, new KeyImpl(), null, new Random());
     }
 
     @Override
@@ -64,16 +62,14 @@ public class ConcurrentBoundedStringCache<STRING_LIKE_TYPE extends CharSequence>
     @NotNull
     public final STRING_LIKE_TYPE getCachedString(@NotNull final StringCompatible protoString) {
         final STRING_LIKE_TYPE existingValue = cache.get(protoString);
-        return existingValue != null ? existingValue
-            : cache.putIfAbsent(typeAdapter.create(protoString));
+        return existingValue != null ? existingValue : cache.putIfAbsent(typeAdapter.create(protoString));
     }
 
     @Override
     @NotNull
     public final STRING_LIKE_TYPE getCachedString(@NotNull final String string) {
         final STRING_LIKE_TYPE existingValue = cache.get(string);
-        return existingValue != null ? existingValue
-            : cache.putIfAbsent(typeAdapter.create(string));
+        return existingValue != null ? existingValue : cache.putIfAbsent(typeAdapter.create(string));
     }
 
     // -----------------------------------------------------------------------------------------------------------------

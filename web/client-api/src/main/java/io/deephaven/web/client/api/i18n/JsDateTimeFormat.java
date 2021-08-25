@@ -15,11 +15,11 @@ import javax.annotation.Nonnull;
 import java.util.*;
 
 /**
- * Largely an exported wrapper for the GWT DateFormat, but also includes support for formatting
- * nanoseconds as an additional 6 decimal places after the rest of the number.
+ * Largely an exported wrapper for the GWT DateFormat, but also includes support for formatting nanoseconds as an
+ * additional 6 decimal places after the rest of the number.
  *
- * Other concerns that this handles includes accepting a js Date and ignoring the lack of nanos,
- * accepting a js Number and assuming it to be a lossy nano value, and parsing into a js Date.
+ * Other concerns that this handles includes accepting a js Date and ignoring the lack of nanos, accepting a js Number
+ * and assuming it to be a lossy nano value, and parsing into a js Date.
  */
 @JsType(namespace = "dh.i18n", name = "DateTimeFormat")
 public class JsDateTimeFormat {
@@ -88,8 +88,7 @@ public class JsDateTimeFormat {
             int subsecondOffset = pattern.indexOf('S');
             this.wrappedStart = DateTimeFormat.getFormat(pattern.substring(0, subsecondOffset));
             if (subsecondOffset + count < pattern.length()) {
-                this.wrappedEnd =
-                    DateTimeFormat.getFormat(pattern.substring(subsecondOffset + count));
+                this.wrappedEnd = DateTimeFormat.getFormat(pattern.substring(subsecondOffset + count));
             } else {
                 this.wrappedEnd = null;
             }
@@ -111,8 +110,8 @@ public class JsDateTimeFormat {
     // synthesize a gwt TimeZone with the correct offset data to get nice output in some tz
     // other than the browser's current or UTC+/-OFFSET
     public String format(Object date, @JsOptional JsTimeZone timeZone) {
-        long nanos = longFromDate(date).orElseThrow(
-            () -> new IllegalStateException("Can't format non-number, non-date value " + date));
+        long nanos = longFromDate(date)
+                .orElseThrow(() -> new IllegalStateException("Can't format non-number, non-date value " + date));
         return formatAsLongNanos(nanos, timeZone);
     }
 
@@ -138,7 +137,7 @@ public class JsDateTimeFormat {
             // positives (less than a three hour window).
             if (Math.abs(jsNumber) < Math.pow(2, 43)) {
                 JsLog.warn(
-                    "Number passed as date looks suspiciously small, as though it might be millis since Jan 1, 1970, but will be interpreted as if it were nanoseconds since that date.");
+                        "Number passed as date looks suspiciously small, as though it might be millis since Jan 1, 1970, but will be interpreted as if it were nanoseconds since that date.");
             }
             return OptionalLong.of((long) jsNumber);
         } else {
@@ -180,7 +179,7 @@ public class JsDateTimeFormat {
         Date curDate = new Date();
         @SuppressWarnings("deprecation")
         Date date = new Date(curDate.getYear(), curDate.getMonth(),
-            curDate.getDate());
+                curDate.getDate());
 
         // pass the date to each formatter and let it parse its own part of the string
         int endOfStart = wrappedStart.parse(text, 0, date);
@@ -226,15 +225,14 @@ public class JsDateTimeFormat {
     }
 
     @JsIgnore
-    public long parseWithTimezoneAsLong(String dateTimeString,
-        com.google.gwt.i18n.client.TimeZone timeZone, boolean needsAdjustment) {
+    public long parseWithTimezoneAsLong(String dateTimeString, com.google.gwt.i18n.client.TimeZone timeZone,
+            boolean needsAdjustment) {
         final long nanos = parse(dateTimeString, null).getWrapped();
         final int remainder = (int) (nanos % JsDateTimeFormat.NANOS_PER_MILLI);
         long millis = nanos / JsDateTimeFormat.NANOS_PER_MILLI;
 
         final Date date = new Date(millis);
-        final int diff =
-            (date.getTimezoneOffset() - timeZone.getStandardOffset()) * NUM_MILLISECONDS_IN_MINUTE;
+        final int diff = (date.getTimezoneOffset() - timeZone.getStandardOffset()) * NUM_MILLISECONDS_IN_MINUTE;
         // Adjust time for timezone offset difference
         millis -= diff;
 
@@ -261,14 +259,12 @@ public class JsDateTimeFormat {
             final int transitionMinutes = transitionPoint * 60;
 
             // This is the Spring DST transition Check
-            if (timeInMinutes > transitionMinutes
-                && timeInMinutes < transitionMinutes + adjustment) {
+            if (timeInMinutes > transitionMinutes && timeInMinutes < transitionMinutes + adjustment) {
                 // The format call is expensive, so we check the transition plus adjustment first
                 final String formatAfterAdjustment =
-                    format(LongWrapper.of(millis * NANOS_PER_MILLI), new JsTimeZone(timeZone));
+                        format(LongWrapper.of(millis * NANOS_PER_MILLI), new JsTimeZone(timeZone));
                 if (!formatAfterAdjustment.equals(dateTimeString)) {
-                    throw new IllegalArgumentException(
-                        dateTimeString + " occurs during a DST transition" +
+                    throw new IllegalArgumentException(dateTimeString + " occurs during a DST transition" +
                             " timeInMinutes = " + timeInMinutes +
                             " transitionMinutes = " + transitionMinutes +
                             " adjustment = " + adjustment);
@@ -277,15 +273,12 @@ public class JsDateTimeFormat {
             if (index < transitionPoints.length - 1) {
                 final int nextTransitionMinutes = transitionPoints[index + 1] * 60;
                 final int nextAdjustment = adjustments[index + 1];
-                if (timeInMinutes > nextTransitionMinutes
-                    && timeInMinutes < nextTransitionMinutes + nextAdjustment) {
-                    // The format call is expensive, so we check the transition plus adjustment
-                    // first
+                if (timeInMinutes > nextTransitionMinutes && timeInMinutes < nextTransitionMinutes + nextAdjustment) {
+                    // The format call is expensive, so we check the transition plus adjustment first
                     final String formatAfterAdjustment =
-                        format(LongWrapper.of(millis * NANOS_PER_MILLI), new JsTimeZone(timeZone));
+                            format(LongWrapper.of(millis * NANOS_PER_MILLI), new JsTimeZone(timeZone));
                     if (!formatAfterAdjustment.equals(dateTimeString)) {
-                        throw new IllegalArgumentException(
-                            dateTimeString + " occurs during a DST transition" +
+                        throw new IllegalArgumentException(dateTimeString + " occurs during a DST transition" +
                                 " timeInMinutes = " + timeInMinutes +
                                 " nextTransitionMinutes = " + nextTransitionMinutes +
                                 " nextAdjustment = " + nextAdjustment);
@@ -296,10 +289,8 @@ public class JsDateTimeFormat {
             // This is the Fall DST transition check
             if (adjustment == 0 && index > 0) {
                 final int prevAdjustment = adjustments[index - 1];
-                if (timeInMinutes > transitionMinutes
-                    && timeInMinutes < transitionMinutes + prevAdjustment) {
-                    throw new IllegalArgumentException(
-                        dateTimeString + " occurs during a DST transition" +
+                if (timeInMinutes > transitionMinutes && timeInMinutes < transitionMinutes + prevAdjustment) {
+                    throw new IllegalArgumentException(dateTimeString + " occurs during a DST transition" +
                             " timeInMinutes = " + timeInMinutes +
                             " transitionMinutes = " + transitionMinutes +
                             " prevAdjustment = " + prevAdjustment);
@@ -309,10 +300,8 @@ public class JsDateTimeFormat {
                 final int nextAdjustment = adjustments[index + 1];
                 if (nextAdjustment == 0) {
                     final int nextTransitionMinutes = transitionPoints[index + 1] * 60;
-                    if (timeInMinutes < nextTransitionMinutes
-                        && timeInMinutes > nextTransitionMinutes - adjustment) {
-                        throw new IllegalArgumentException(
-                            dateTimeString + " occurs during a DST transition" +
+                    if (timeInMinutes < nextTransitionMinutes && timeInMinutes > nextTransitionMinutes - adjustment) {
+                        throw new IllegalArgumentException(dateTimeString + " occurs during a DST transition" +
                                 " timeInMinutes = " + timeInMinutes +
                                 " nextTransitionMinutes = " + nextTransitionMinutes +
                                 " adjustment = " + adjustment);
@@ -335,10 +324,10 @@ public class JsDateTimeFormat {
     @Override
     public String toString() {
         return "DateTimeFormat { " +
-            "pattern='" + pattern + '\'' +
-            ", wrappedStart=" + wrappedStart +
-            ", wrappedEnd=" + wrappedEnd +
-            ", nanoCount=" + nanoCount +
-            " }";
+                "pattern='" + pattern + '\'' +
+                ", wrappedStart=" + wrappedStart +
+                ", wrappedEnd=" + wrappedEnd +
+                ", nanoCount=" + nanoCount +
+                " }";
     }
 }

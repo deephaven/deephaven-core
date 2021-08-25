@@ -14,6 +14,6 @@ public class LongArrayTest {
     @Test
     void rawInRawOut() {
         assertThat(LongArray.ofUnsafe(1L, Util.NULL_LONG, 3L).values()).containsExactly(1L,
-            Util.NULL_LONG, 3L);
+                Util.NULL_LONG, 3L);
     }
 }

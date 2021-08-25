@@ -21,8 +21,7 @@ public class SimulationClock implements Clock {
     private final DBDateTime endTime;
     private final long stepNanos;
 
-    private final LiveTable refreshTask = this::advance; // Save this in a reference so we can
-                                                         // deregister it.
+    private final LiveTable refreshTask = this::advance; // Save this in a reference so we can deregister it.
 
     private enum State {
         NOT_STARTED, STARTED, DONE
@@ -37,32 +36,29 @@ public class SimulationClock implements Clock {
      * Create a simulation clock for the specified time range and step.
      * 
      * @param startTime The initial time that will be returned by this clock, before it is started
-     * @param endTime The final time that will be returned by this clock, when the simulation has
-     *        completed
+     * @param endTime The final time that will be returned by this clock, when the simulation has completed
      * @param stepSize The time to "elapse" in each refresh loop
      */
     public SimulationClock(@NotNull final String startTime,
-        @NotNull final String endTime,
-        @NotNull final String stepSize) {
+            @NotNull final String endTime,
+            @NotNull final String stepSize) {
         this(DBTimeUtils.convertDateTime(startTime), DBTimeUtils.convertDateTime(endTime),
-            DBTimeUtils.convertTime(stepSize));
+                DBTimeUtils.convertTime(stepSize));
     }
 
     /**
      * Create a simulation clock for the specified time range and step.
      *
      * @param startTime The initial time that will be returned by this clock, before it is started
-     * @param endTime The final time that will be returned by this clock, when the simulation has
-     *        completed
+     * @param endTime The final time that will be returned by this clock, when the simulation has completed
      * @param stepNanos The number of nanoseconds to "elapse" in each refresh loop
      */
     public SimulationClock(@NotNull final DBDateTime startTime,
-        @NotNull final DBDateTime endTime,
-        final long stepNanos) {
+            @NotNull final DBDateTime endTime,
+            final long stepNanos) {
         Require.neqNull(startTime, "startTime");
         this.endTime = Require.neqNull(endTime, "endTime");
-        Require.requirement(DBTimeUtils.isBefore(startTime, endTime),
-            "DBTimeUtils.isBefore(startTime, endTime)");
+        Require.requirement(DBTimeUtils.isBefore(startTime, endTime), "DBTimeUtils.isBefore(startTime, endTime)");
         this.stepNanos = Require.gtZero(stepNanos, "stepNanos");
         now = startTime;
     }
@@ -106,7 +102,7 @@ public class SimulationClock implements Clock {
         Assert.eq(state.get(), "state.get()", State.STARTED);
         if (now.getNanos() == endTime.getNanos()) {
             Assert.assertion(state.compareAndSet(State.STARTED, State.DONE),
-                "state.compareAndSet(State.STARTED, State.DONE)");
+                    "state.compareAndSet(State.STARTED, State.DONE)");
             LiveTableMonitor.DEFAULT.removeTable(refreshTask);
             LiveTableMonitor.DEFAULT.requestSignal(ltmCondition);
             return; // This return is not strictly necessary, but it seems clearer this way.

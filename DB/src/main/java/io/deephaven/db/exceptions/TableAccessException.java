@@ -6,8 +6,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * An {@link UncheckedPermissionException} derivative which indicates a table may not be accessed
- * for one reason or another.
+ * An {@link UncheckedPermissionException} derivative which indicates a table may not be accessed for one reason or
+ * another.
  */
 public class TableAccessException extends UncheckedPermissionException {
     public TableAccessException(String reason) {
@@ -15,17 +15,17 @@ public class TableAccessException extends UncheckedPermissionException {
     }
 
     public TableAccessException(@Nullable String namespace, @NotNull String tableName,
-        @NotNull AuthContext authContext) {
+            @NotNull AuthContext authContext) {
         this(namespace, tableName, authContext, "");
     }
 
-    public TableAccessException(@Nullable String namespace, @NotNull String tableName,
-        @NotNull AuthContext authContext, @Nullable String reason) {
+    public TableAccessException(@Nullable String namespace, @NotNull String tableName, @NotNull AuthContext authContext,
+            @Nullable String reason) {
         super(makeDescription(namespace, tableName, authContext, reason));
     }
 
     private static String makeDescription(@Nullable String namespace, @NotNull String tableName,
-        @NotNull AuthContext authContext, @Nullable String reason) {
+            @NotNull AuthContext authContext, @Nullable String reason) {
         final StringBuilder sb = new StringBuilder();
 
         sb.append(authContext.getLogRepresentation()).append(" may not access: ");

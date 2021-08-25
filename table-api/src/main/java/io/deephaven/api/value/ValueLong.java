@@ -26,7 +26,7 @@ abstract class ValueLong extends ValueBase {
     final void checkNotDeephavenNull() {
         if (value() == Long.MIN_VALUE) {
             throw new IllegalArgumentException(
-                "Can't represent Long.MIN_VALUE, is Deephaven null representation");
+                    "Can't represent Long.MIN_VALUE, is Deephaven null representation");
         }
     }
 }

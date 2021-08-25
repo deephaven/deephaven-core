@@ -35,7 +35,7 @@ public class NameValidator {
 
         private String getErrorMessage(String name, String type) {
             return message.replace("<name>", name == null ? "null" : name).replaceAll("<type>",
-                type);
+                    type);
         }
 
         private boolean isValid() {
@@ -46,9 +46,9 @@ public class NameValidator {
     // table names should not start with numbers. Partition names should be able to
     // TODO(deephaven-core#822): Allow more table names
     private final static Pattern TABLE_NAME_PATTERN =
-        Pattern.compile("([a-zA-Z_$])[a-zA-Z0-9_$[-][+]@]*");
+            Pattern.compile("([a-zA-Z_$])[a-zA-Z0-9_$[-][+]@]*");
     private final static Pattern PARTITION_NAME_PATTERN =
-        Pattern.compile("([a-zA-Z0-9$])[a-zA-Z0-9_$[-][+]@\\.]*");
+            Pattern.compile("([a-zA-Z0-9$])[a-zA-Z0-9_$[-][+]@\\.]*");
 
     public enum Type {
         // @formatter:off
@@ -70,7 +70,7 @@ public class NameValidator {
         }
 
         Type(boolean checkReservedVariableNames, boolean checkValidJavaWord, String type,
-            Pattern pattern) {
+                Pattern pattern) {
             this.checkReservedVariableNames = checkReservedVariableNames;
             this.checkValidJavaWord = checkValidJavaWord;
             this.type = type;
@@ -79,7 +79,7 @@ public class NameValidator {
 
         private String validate(String name) {
             ValidationCode code =
-                getCode(name, pattern, checkReservedVariableNames, checkValidJavaWord);
+                    getCode(name, pattern, checkReservedVariableNames, checkValidJavaWord);
             if (!code.isValid()) {
                 throw new InvalidNameException(code.getErrorMessage(name, type));
             }
@@ -89,8 +89,8 @@ public class NameValidator {
     }
 
     private static final Set<String> DB_RESERVED_VARIABLE_NAMES =
-        Stream.of("in", "not", "i", "ii", "k").collect(
-            Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
+            Stream.of("in", "not", "i", "ii", "k").collect(
+                    Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
 
     public static String validateTableName(String name) {
         return Type.TABLE.validate(name);
@@ -113,7 +113,7 @@ public class NameValidator {
     }
 
     private static ValidationCode getCode(String name, Pattern pattern,
-        boolean checkReservedVariableNames, boolean checkValidJavaWord) {
+            boolean checkReservedVariableNames, boolean checkValidJavaWord) {
         if (name == null || name.isEmpty()) {
             return ValidationCode.NULL_NAME;
         }
@@ -182,27 +182,25 @@ public class NameValidator {
      * Attempts to return a legal name based on the passed in {@code name}.
      *
      * <p>
-     * Illegal characters are simply removed. Custom replacement is possible through
-     * {@code customReplace}
+     * Illegal characters are simply removed. Custom replacement is possible through {@code customReplace}
      *
      * <p>
-     * To avoid duplicated names, anything in the set {@code takenNames} will not be returned. These
-     * duplicates are resolved by adding sequential digits at the end of the variable name.
+     * To avoid duplicated names, anything in the set {@code takenNames} will not be returned. These duplicates are
+     * resolved by adding sequential digits at the end of the variable name.
      *
      * <p>
-     * Column names A variable's name can be any legal identifier - an unlimited-length sequence of
-     * Unicode letters and digits, beginning with a letter, the dollar sign "$", or the underscore
-     * character "_". Subsequent characters may be letters, digits, dollar signs, or underscore
-     * characters.
+     * Column names A variable's name can be any legal identifier - an unlimited-length sequence of Unicode letters and
+     * digits, beginning with a letter, the dollar sign "$", or the underscore character "_". Subsequent characters may
+     * be letters, digits, dollar signs, or underscore characters.
      *
      * @param name, customReplace, takenNames can not be null
      * @return
      */
     public static String legalizeColumnName(String name, Function<String, String> customReplace,
-        Set<String> takenNames) {
+            Set<String> takenNames) {
         return legalizeName(name, customReplace, takenNames, "Can not legalize column name " + name,
-            COLUMN_PREFIX, STERILE_COLUMN_AND_QUERY_REGEX, true, true,
-            NameValidator::validateColumnName);
+                COLUMN_PREFIX, STERILE_COLUMN_AND_QUERY_REGEX, true, true,
+                NameValidator::validateColumnName);
     }
 
     public static String[] legalizeColumnNames(String[] names) {
@@ -210,7 +208,7 @@ public class NameValidator {
     }
 
     public static String[] legalizeColumnNames(String[] names,
-        Function<String, String> customReplace) {
+            Function<String, String> customReplace) {
         return legalizeColumnNames(names, customReplace, false);
     }
 
@@ -219,9 +217,9 @@ public class NameValidator {
     }
 
     public static String[] legalizeColumnNames(String[] names,
-        Function<String, String> customReplace, boolean resolveConflicts) {
+            Function<String, String> customReplace, boolean resolveConflicts) {
         return legalizeNames(names, customReplace, resolveConflicts,
-            NameValidator::legalizeColumnName);
+                NameValidator::legalizeColumnName);
     }
 
     public static String legalizeQueryParameterName(String name) {
@@ -229,7 +227,7 @@ public class NameValidator {
     }
 
     public static String legalizeQueryParameterName(String name,
-        Function<String, String> replaceCustom) {
+            Function<String, String> replaceCustom) {
         return legalizeQueryParameterName(name, replaceCustom, Collections.emptySet());
     }
 
@@ -241,12 +239,11 @@ public class NameValidator {
      * Attempts to return a legal name based on the passed in {@code name}.
      *
      * <p>
-     * Illegal characters are simply removed. Custom replacement is possible through
-     * {@code customReplace}
+     * Illegal characters are simply removed. Custom replacement is possible through {@code customReplace}
      *
      * <p>
-     * To avoid duplicated names, anything in the set {@code takenNames} will not be returned. These
-     * duplicates are resolved by adding sequential digits at the end of the variable name.
+     * To avoid duplicated names, anything in the set {@code takenNames} will not be returned. These duplicates are
+     * resolved by adding sequential digits at the end of the variable name.
      *
      * <p>
      * Query parameters follow the same rules as column names
@@ -255,10 +252,10 @@ public class NameValidator {
      * @return
      */
     public static String legalizeQueryParameterName(String name,
-        Function<String, String> customReplace, Set<String> takenNames) {
+            Function<String, String> customReplace, Set<String> takenNames) {
         return legalizeName(name, customReplace, takenNames, "Can not legalize table name " + name,
-            QUERY_PREFIX, STERILE_COLUMN_AND_QUERY_REGEX, true, true,
-            NameValidator::validateQueryParameterName);
+                QUERY_PREFIX, STERILE_COLUMN_AND_QUERY_REGEX, true, true,
+                NameValidator::validateQueryParameterName);
     }
 
     public static String[] legalizeQueryParameterNames(String[] names) {
@@ -266,7 +263,7 @@ public class NameValidator {
     }
 
     public static String[] legalizeQueryParameterNames(String[] names,
-        Function<String, String> customReplace) {
+            Function<String, String> customReplace) {
         return legalizeQueryParameterNames(names, customReplace, false);
     }
 
@@ -275,9 +272,9 @@ public class NameValidator {
     }
 
     public static String[] legalizeQueryParameterNames(String[] names,
-        Function<String, String> customReplace, boolean resolveConflicts) {
+            Function<String, String> customReplace, boolean resolveConflicts) {
         return legalizeNames(names, customReplace, resolveConflicts,
-            NameValidator::legalizeQueryParameterName);
+                NameValidator::legalizeQueryParameterName);
     }
 
     public static String legalizeTableName(String name) {
@@ -296,12 +293,11 @@ public class NameValidator {
      * Attempts to return a legal name based on the passed in {@code name}.
      *
      * <p>
-     * Illegal characters are simply removed. Custom replacement is possible through
-     * {@code customReplace}
+     * Illegal characters are simply removed. Custom replacement is possible through {@code customReplace}
      *
      * <p>
-     * To avoid duplicated names, anything in the set {@code takenNames} will not be returned. These
-     * duplicates are resolved by adding sequential digits at the end of the variable name.
+     * To avoid duplicated names, anything in the set {@code takenNames} will not be returned. These duplicates are
+     * resolved by adding sequential digits at the end of the variable name.
      *
      * <p>
      * Table Names- check the regex {@code TABLE_NAME_PATTERN}
@@ -310,10 +306,10 @@ public class NameValidator {
      * @return
      */
     public static String legalizeTableName(String name, Function<String, String> customReplace,
-        Set<String> takenNames) {
+            Set<String> takenNames) {
         return legalizeName(name, customReplace, takenNames, "Can not legalize table name " + name,
-            TABLE_PREFIX, STERILE_TABLE_AND_NAMESPACE_REGEX, false, true,
-            NameValidator::validateTableName);
+                TABLE_PREFIX, STERILE_TABLE_AND_NAMESPACE_REGEX, false, true,
+                NameValidator::validateTableName);
     }
 
     public static boolean isLegalTableName(String name) {
@@ -338,9 +334,9 @@ public class NameValidator {
      * 
      */
     public static boolean isLegalTableName(String name, Function<String, String> customReplace,
-        Set<String> takenNames) {
+            Set<String> takenNames) {
         return isLegal(name, customReplace, takenNames, STERILE_TABLE_AND_NAMESPACE_REGEX, false,
-            true, NameValidator::validateTableName);
+                true, NameValidator::validateTableName);
     }
 
     public static String[] legalizeTableNames(String[] names) {
@@ -348,7 +344,7 @@ public class NameValidator {
     }
 
     public static String[] legalizeTableNames(String[] names,
-        Function<String, String> customReplace) {
+            Function<String, String> customReplace) {
         return legalizeTableNames(names, customReplace, false);
     }
 
@@ -357,9 +353,9 @@ public class NameValidator {
     }
 
     public static String[] legalizeTableNames(String[] names,
-        Function<String, String> customReplace, boolean resolveConflicts) {
+            Function<String, String> customReplace, boolean resolveConflicts) {
         return legalizeNames(names, customReplace, resolveConflicts,
-            NameValidator::legalizeTableName);
+                NameValidator::legalizeTableName);
     }
 
     public static String legalizeNamespaceName(String name) {
@@ -371,7 +367,7 @@ public class NameValidator {
     }
 
     public static String legalizeNamespaceName(String name,
-        Function<String, String> replaceCustom) {
+            Function<String, String> replaceCustom) {
         return legalizeNamespaceName(name, replaceCustom, Collections.emptySet());
     }
 
@@ -379,12 +375,11 @@ public class NameValidator {
      * Attempts to return a legal name based on the passed in {@code name}.
      *
      * <p>
-     * Illegal characters are simply removed. Custom replacement is possible through
-     * {@code customReplace}
+     * Illegal characters are simply removed. Custom replacement is possible through {@code customReplace}
      *
      * <p>
-     * To avoid duplicated names, anything in the set {@code takenNames} will not be returned. These
-     * duplicates are resolved by adding sequential digits at the end of the variable name.
+     * To avoid duplicated names, anything in the set {@code takenNames} will not be returned. These duplicates are
+     * resolved by adding sequential digits at the end of the variable name.
      *
      * <p>
      * Namespace Names- check the regex {@code TABLE_NAME_PATTERN}
@@ -393,10 +388,10 @@ public class NameValidator {
      * @return
      */
     public static String legalizeNamespaceName(String name, Function<String, String> customReplace,
-        Set<String> takenNames) {
+            Set<String> takenNames) {
         return legalizeName(name, customReplace, takenNames,
-            "Can not legalize namespace name " + name, null, STERILE_TABLE_AND_NAMESPACE_REGEX,
-            false, false, NameValidator::validateNamespaceName);
+                "Can not legalize namespace name " + name, null, STERILE_TABLE_AND_NAMESPACE_REGEX,
+                false, false, NameValidator::validateNamespaceName);
     }
 
     /**
@@ -408,9 +403,9 @@ public class NameValidator {
      * @return whether the name is valid for a new namespace
      */
     public static boolean isLegalNamespaceName(String name, Function<String, String> customReplace,
-        Set<String> takenNames) {
+            Set<String> takenNames) {
         return isLegal(name, customReplace, takenNames, STERILE_TABLE_AND_NAMESPACE_REGEX, false,
-            false, NameValidator::validateNamespaceName);
+                false, NameValidator::validateNamespaceName);
     }
 
     public static boolean isLegalNamespaceName(String name) {
@@ -422,7 +417,7 @@ public class NameValidator {
     }
 
     public static boolean isLegalNamespaceName(String name,
-        Function<String, String> replaceCustom) {
+            Function<String, String> replaceCustom) {
         return isLegalNamespaceName(name, replaceCustom, Collections.emptySet());
     }
 
@@ -431,7 +426,7 @@ public class NameValidator {
     }
 
     public static String[] legalizeNamespaceNames(String[] names,
-        Function<String, String> customReplace) {
+            Function<String, String> customReplace) {
         return legalizeNamespaceNames(names, customReplace, false);
     }
 
@@ -440,14 +435,14 @@ public class NameValidator {
     }
 
     public static String[] legalizeNamespaceNames(String[] names,
-        Function<String, String> customReplace, boolean resolveConflicts) {
+            Function<String, String> customReplace, boolean resolveConflicts) {
         return legalizeNames(names, customReplace, resolveConflicts,
-            NameValidator::legalizeNamespaceName);
+                NameValidator::legalizeNamespaceName);
     }
 
     private static String legalizeName(String name, Function<String, String> customReplace,
-        Set<String> takenNames, String error, String prefix, String regex, boolean checkReserved,
-        boolean checkFirstIsNumber, Consumer<String> validation) {
+            Set<String> takenNames, String error, String prefix, String regex, boolean checkReserved,
+            boolean checkFirstIsNumber, Consumer<String> validation) {
         // if null, throw an exception
         if (name == null) {
             throw new LegalizeNameException("Can not legalize a null name");
@@ -491,8 +486,8 @@ public class NameValidator {
     }
 
     private static boolean isLegal(String name, Function<String, String> customReplace,
-        Set<String> takenNames, String regex, boolean checkReserved, boolean checkFirstIsNumber,
-        Consumer<String> validation) {
+            Set<String> takenNames, String regex, boolean checkReserved, boolean checkFirstIsNumber,
+            Consumer<String> validation) {
         // if null, throw an exception
         if (name == null || name.isEmpty()) {
             return false;
@@ -534,12 +529,12 @@ public class NameValidator {
 
     private static boolean isReserved(String replacedName) {
         return DB_RESERVED_VARIABLE_NAMES.contains(replacedName)
-            || SourceVersion.isKeyword(replacedName);
+                || SourceVersion.isKeyword(replacedName);
     }
 
     private static String[] legalizeNames(final String[] names,
-        final Function<String, String> customReplace, final boolean resolveConflicts,
-        final Legalizer legalizer) {
+            final Function<String, String> customReplace, final boolean resolveConflicts,
+            final Legalizer legalizer) {
         // if null, throw an exception
         if (names == null) {
             throw new LegalizeNameException("Can not legalize a null name array");
@@ -550,7 +545,7 @@ public class NameValidator {
         Set<String> result = new LinkedHashSet<>();
         for (String name : names) {
             name = legalizer.apply(name, customReplace,
-                resolveConflicts ? result : Collections.emptySet());
+                    resolveConflicts ? result : Collections.emptySet());
             if (!resolveConflicts && result.contains(name)) {
                 throw new LegalizeNameException("Duplicate names during legalization: " + name);
             }

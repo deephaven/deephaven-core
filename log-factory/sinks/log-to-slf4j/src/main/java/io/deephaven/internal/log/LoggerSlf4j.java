@@ -21,12 +21,12 @@ import org.slf4j.event.Level;
 public final class LoggerSlf4j implements Logger {
 
     private static final Pool<ByteBuffer> buffers =
-        new ThreadSafeLenientFixedSizePool<>(2048, new Function.Nullary<ByteBuffer>() {
-            @Override
-            public ByteBuffer call() {
-                return ByteBuffer.allocate(512);
-            }
-        }, null);
+            new ThreadSafeLenientFixedSizePool<>(2048, new Function.Nullary<ByteBuffer>() {
+                @Override
+                public ByteBuffer call() {
+                    return ByteBuffer.allocate(512);
+                }
+            }, null);
 
     private static final LogBufferPool logBufferPool = new LogBufferPool() {
         @Override
@@ -82,7 +82,7 @@ public final class LoggerSlf4j implements Logger {
         }
 
         public Entry start(LogSink sink, org.slf4j.Logger log, LogLevel level, long currentTime,
-            Throwable t) {
+                Throwable t) {
             super.start(sink, level, currentTime, t);
             this.log = log;
             this.level = getLevelSlf4j(level);
@@ -103,12 +103,12 @@ public final class LoggerSlf4j implements Logger {
 
     /** Static pool shared among all loggers */
     private static final Pool<Entry> entries =
-        new ThreadSafeLenientFixedSizePool<>(1024, new Function.Nullary<Entry>() {
-            @Override
-            public Entry call() {
-                return new Entry(logBufferPool);
-            }
-        }, null);
+            new ThreadSafeLenientFixedSizePool<>(1024, new Function.Nullary<Entry>() {
+                @Override
+                public Entry call() {
+                    return new Entry(logBufferPool);
+                }
+            }, null);
 
     /** Specialized sink for DH loggers */
     private enum Sink implements LogSink<Entry> {
@@ -198,7 +198,7 @@ public final class LoggerSlf4j implements Logger {
         @Override
         public void addInterceptor(Interceptor<Entry> entryInterceptor) {
             interceptors = ArrayUtil.pushArray(entryInterceptor, interceptors,
-                ClassUtil.generify(Interceptor.class));
+                    ClassUtil.generify(Interceptor.class));
         }
     }
 
@@ -221,13 +221,13 @@ public final class LoggerSlf4j implements Logger {
     @Override
     public LogEntry getEntry(LogLevel level) {
         return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000)
-            : LogEntry.NULL;
+                : LogEntry.NULL;
     }
 
     @Override
     public LogEntry getEntry(LogLevel level, Throwable t) {
         return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000, t)
-            : LogEntry.NULL;
+                : LogEntry.NULL;
     }
 
     @Override

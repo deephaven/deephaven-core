@@ -37,8 +37,7 @@ public class JsSeries {
 
         for (int i = 0; i < series.getDataSourcesList().length; i++) {
             SourceDescriptor dataSource = series.getDataSourcesList().getAt(i);
-            sources[sources.length] =
-                new SeriesDataSource(axes.get(dataSource.getAxisId()), dataSource);
+            sources[sources.length] = new SeriesDataSource(axes.get(dataSource.getAxisId()), dataSource);
 
             // set up oneclick if needed, make sure series make sense
             if (oneClick == null) {
@@ -55,9 +54,9 @@ public class JsSeries {
     }
 
     /**
-     * Post-construct initialization, once we have tables loaded, allowing js to get the type of the
-     * data that it will be consuming. This is safe to do post-construction, since we don't actually
-     * return the JsFigure etc until tables are loaded.
+     * Post-construct initialization, once we have tables loaded, allowing js to get the type of the data that it will
+     * be consuming. This is safe to do post-construction, since we don't actually return the JsFigure etc until tables
+     * are loaded.
      */
     @JsIgnore
     public void initSources(Map<Integer, JsTable> tables, Map<Integer, TableMap> tableMaps) {
@@ -68,8 +67,7 @@ public class JsSeries {
     }
 
     /**
-     * JS doesn't support method overloads, so we just ignore this one and mark the arg as optional
-     * in the JS version.
+     * JS doesn't support method overloads, so we just ignore this one and mark the arg as optional in the JS version.
      */
     @JsIgnore
     public void subscribe() {
@@ -77,8 +75,7 @@ public class JsSeries {
     }
 
     public void subscribe(@JsOptional DownsampleOptions forceDisableDownsample) {
-        this.downsample =
-            forceDisableDownsample == null ? DownsampleOptions.DEFAULT : forceDisableDownsample;
+        this.downsample = forceDisableDownsample == null ? DownsampleOptions.DEFAULT : forceDisableDownsample;
         subscribed = true;
         jsFigure.enqueueSubscriptionCheck();
     }

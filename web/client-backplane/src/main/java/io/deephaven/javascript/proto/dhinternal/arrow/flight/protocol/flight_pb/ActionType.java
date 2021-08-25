@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.Flight_pb.ActionType",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.Flight_pb.ActionType",
+        namespace = JsPackage.GLOBAL)
 public class ActionType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -60,7 +60,7 @@ public class ActionType {
     public static native void serializeBinaryToWriter(ActionType message, Object writer);
 
     public static native ActionType.ToObjectReturnType toObject(
-        boolean includeInstance, ActionType msg);
+            boolean includeInstance, ActionType msg);
 
     public native String getDescription();
 

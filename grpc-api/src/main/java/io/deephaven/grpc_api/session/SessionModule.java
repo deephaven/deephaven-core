@@ -15,7 +15,7 @@ public interface SessionModule {
     @Binds
     @IntoSet
     ServerInterceptor bindSessionServiceInterceptor(
-        SessionServiceGrpcImpl.AuthServerInterceptor sessionServiceInterceptor);
+            SessionServiceGrpcImpl.AuthServerInterceptor sessionServiceInterceptor);
 
     @Binds
     @IntoSet

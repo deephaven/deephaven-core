@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse",
+        namespace = JsPackage.GLOBAL)
 public class ExportedTableCreationResponse {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface GetSchemaHeaderUnionType {
@@ -75,7 +75,7 @@ public class ExportedTableCreationResponse {
         public interface GetSchemaHeaderUnionType {
             @JsOverlay
             static ExportedTableCreationResponse.ToObjectReturnType.GetSchemaHeaderUnionType of(
-                Object o) {
+                    Object o) {
                 return Js.cast(o);
             }
 
@@ -108,7 +108,7 @@ public class ExportedTableCreationResponse {
                 public interface GetTicketUnionType {
                     @JsOverlay
                     static ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType.TicketFieldType.GetTicketUnionType of(
-                        Object o) {
+                            Object o) {
                         return Js.cast(o);
                     }
 
@@ -143,20 +143,20 @@ public class ExportedTableCreationResponse {
 
                 @JsProperty
                 void setTicket(
-                    ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType.TicketFieldType.GetTicketUnionType ticket);
+                        ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType.TicketFieldType.GetTicketUnionType ticket);
 
                 @JsOverlay
                 default void setTicket(String ticket) {
                     setTicket(
-                        Js.<ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                            ticket));
+                            Js.<ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                    ticket));
                 }
 
                 @JsOverlay
                 default void setTicket(Uint8Array ticket) {
                     setTicket(
-                        Js.<ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                            ticket));
+                            Js.<ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                    ticket));
                 }
             }
 
@@ -176,7 +176,7 @@ public class ExportedTableCreationResponse {
 
             @JsProperty
             void setTicket(
-                ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType.TicketFieldType ticket);
+                    ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType.TicketFieldType ticket);
         }
 
         @JsOverlay
@@ -209,25 +209,24 @@ public class ExportedTableCreationResponse {
         void setIsStatic(boolean isStatic);
 
         @JsProperty
-        void setResultId(
-            ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType resultId);
+        void setResultId(ExportedTableCreationResponse.ToObjectReturnType.ResultIdFieldType resultId);
 
         @JsProperty
         void setSchemaHeader(
-            ExportedTableCreationResponse.ToObjectReturnType.GetSchemaHeaderUnionType schemaHeader);
+                ExportedTableCreationResponse.ToObjectReturnType.GetSchemaHeaderUnionType schemaHeader);
 
         @JsOverlay
         default void setSchemaHeader(String schemaHeader) {
             setSchemaHeader(
-                Js.<ExportedTableCreationResponse.ToObjectReturnType.GetSchemaHeaderUnionType>uncheckedCast(
-                    schemaHeader));
+                    Js.<ExportedTableCreationResponse.ToObjectReturnType.GetSchemaHeaderUnionType>uncheckedCast(
+                            schemaHeader));
         }
 
         @JsOverlay
         default void setSchemaHeader(Uint8Array schemaHeader) {
             setSchemaHeader(
-                Js.<ExportedTableCreationResponse.ToObjectReturnType.GetSchemaHeaderUnionType>uncheckedCast(
-                    schemaHeader));
+                    Js.<ExportedTableCreationResponse.ToObjectReturnType.GetSchemaHeaderUnionType>uncheckedCast(
+                            schemaHeader));
         }
 
         @JsProperty
@@ -243,7 +242,7 @@ public class ExportedTableCreationResponse {
         public interface GetSchemaHeaderUnionType {
             @JsOverlay
             static ExportedTableCreationResponse.ToObjectReturnType0.GetSchemaHeaderUnionType of(
-                Object o) {
+                    Object o) {
                 return Js.cast(o);
             }
 
@@ -276,7 +275,7 @@ public class ExportedTableCreationResponse {
                 public interface GetTicketUnionType {
                     @JsOverlay
                     static ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType.TicketFieldType.GetTicketUnionType of(
-                        Object o) {
+                            Object o) {
                         return Js.cast(o);
                     }
 
@@ -311,20 +310,20 @@ public class ExportedTableCreationResponse {
 
                 @JsProperty
                 void setTicket(
-                    ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType.TicketFieldType.GetTicketUnionType ticket);
+                        ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType.TicketFieldType.GetTicketUnionType ticket);
 
                 @JsOverlay
                 default void setTicket(String ticket) {
                     setTicket(
-                        Js.<ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                            ticket));
+                            Js.<ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                    ticket));
                 }
 
                 @JsOverlay
                 default void setTicket(Uint8Array ticket) {
                     setTicket(
-                        Js.<ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                            ticket));
+                            Js.<ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                    ticket));
                 }
             }
 
@@ -344,7 +343,7 @@ public class ExportedTableCreationResponse {
 
             @JsProperty
             void setTicket(
-                ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType.TicketFieldType ticket);
+                    ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType.TicketFieldType ticket);
         }
 
         @JsOverlay
@@ -377,25 +376,24 @@ public class ExportedTableCreationResponse {
         void setIsStatic(boolean isStatic);
 
         @JsProperty
-        void setResultId(
-            ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType resultId);
+        void setResultId(ExportedTableCreationResponse.ToObjectReturnType0.ResultIdFieldType resultId);
 
         @JsProperty
         void setSchemaHeader(
-            ExportedTableCreationResponse.ToObjectReturnType0.GetSchemaHeaderUnionType schemaHeader);
+                ExportedTableCreationResponse.ToObjectReturnType0.GetSchemaHeaderUnionType schemaHeader);
 
         @JsOverlay
         default void setSchemaHeader(String schemaHeader) {
             setSchemaHeader(
-                Js.<ExportedTableCreationResponse.ToObjectReturnType0.GetSchemaHeaderUnionType>uncheckedCast(
-                    schemaHeader));
+                    Js.<ExportedTableCreationResponse.ToObjectReturnType0.GetSchemaHeaderUnionType>uncheckedCast(
+                            schemaHeader));
         }
 
         @JsOverlay
         default void setSchemaHeader(Uint8Array schemaHeader) {
             setSchemaHeader(
-                Js.<ExportedTableCreationResponse.ToObjectReturnType0.GetSchemaHeaderUnionType>uncheckedCast(
-                    schemaHeader));
+                    Js.<ExportedTableCreationResponse.ToObjectReturnType0.GetSchemaHeaderUnionType>uncheckedCast(
+                            schemaHeader));
         }
 
         @JsProperty
@@ -408,13 +406,13 @@ public class ExportedTableCreationResponse {
     public static native ExportedTableCreationResponse deserializeBinary(Uint8Array bytes);
 
     public static native ExportedTableCreationResponse deserializeBinaryFromReader(
-        ExportedTableCreationResponse message, Object reader);
+            ExportedTableCreationResponse message, Object reader);
 
     public static native void serializeBinaryToWriter(
-        ExportedTableCreationResponse message, Object writer);
+            ExportedTableCreationResponse message, Object writer);
 
     public static native ExportedTableCreationResponse.ToObjectReturnType toObject(
-        boolean includeInstance, ExportedTableCreationResponse msg);
+            boolean includeInstance, ExportedTableCreationResponse msg);
 
     public native void clearResultId();
 
@@ -447,18 +445,18 @@ public class ExportedTableCreationResponse {
     public native void setResultId(TableReference value);
 
     public native void setSchemaHeader(
-        ExportedTableCreationResponse.SetSchemaHeaderValueUnionType value);
+            ExportedTableCreationResponse.SetSchemaHeaderValueUnionType value);
 
     @JsOverlay
     public final void setSchemaHeader(String value) {
         setSchemaHeader(
-            Js.<ExportedTableCreationResponse.SetSchemaHeaderValueUnionType>uncheckedCast(value));
+                Js.<ExportedTableCreationResponse.SetSchemaHeaderValueUnionType>uncheckedCast(value));
     }
 
     @JsOverlay
     public final void setSchemaHeader(Uint8Array value) {
         setSchemaHeader(
-            Js.<ExportedTableCreationResponse.SetSchemaHeaderValueUnionType>uncheckedCast(value));
+                Js.<ExportedTableCreationResponse.SetSchemaHeaderValueUnionType>uncheckedCast(value));
     }
 
     public native void setSize(String value);
@@ -467,6 +465,5 @@ public class ExportedTableCreationResponse {
 
     public native ExportedTableCreationResponse.ToObjectReturnType0 toObject();
 
-    public native ExportedTableCreationResponse.ToObjectReturnType0 toObject(
-        boolean includeInstance);
+    public native ExportedTableCreationResponse.ToObjectReturnType0 toObject(boolean includeInstance);
 }

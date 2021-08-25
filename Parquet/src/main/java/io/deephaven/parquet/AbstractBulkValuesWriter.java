@@ -7,23 +7,19 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.nio.IntBuffer;
 
-public abstract class AbstractBulkValuesWriter<T, L> extends ValuesWriter
-    implements BulkWriter<T, L> {
+public abstract class AbstractBulkValuesWriter<T, L> extends ValuesWriter implements BulkWriter<T, L> {
 
     @Override
-    public int writeBulkVector(T bulkValues, IntBuffer repeatCount,
-        RunLengthBitPackingHybridEncoder rlEncoder,
-        RunLengthBitPackingHybridEncoder dlEncoder, int nonNullValueCount, L nullValue)
-        throws IOException {
-        IntBuffer nullsOffsets =
-            writeBulkFilterNulls(bulkValues, nullValue, nonNullValueCount).nullOffsets;
+    public int writeBulkVector(T bulkValues, IntBuffer repeatCount, RunLengthBitPackingHybridEncoder rlEncoder,
+            RunLengthBitPackingHybridEncoder dlEncoder, int nonNullValueCount, L nullValue) throws IOException {
+        IntBuffer nullsOffsets = writeBulkFilterNulls(bulkValues, nullValue, nonNullValueCount).nullOffsets;
         return applyDlAndRl(repeatCount, rlEncoder, dlEncoder, nullsOffsets);
     }
 
     @NotNull
     int applyDlAndRl(IntBuffer repeatCount, RunLengthBitPackingHybridEncoder rlEncoder,
-        RunLengthBitPackingHybridEncoder dlEncoder,
-        IntBuffer nullsOffsets) throws IOException {
+            RunLengthBitPackingHybridEncoder dlEncoder,
+            IntBuffer nullsOffsets) throws IOException {
         int valueCount = 0;
         int leafCount = 0;
 
@@ -40,8 +36,7 @@ public abstract class AbstractBulkValuesWriter<T, L> extends ValuesWriter
                     dlEncoder.writeInt(1);
                 } else {
                     if (leafCount == nextNullOffset) {
-                        nextNullOffset =
-                            nullsOffsets.hasRemaining() ? nullsOffsets.get() : Integer.MAX_VALUE;
+                        nextNullOffset = nullsOffsets.hasRemaining() ? nullsOffsets.get() : Integer.MAX_VALUE;
                         dlEncoder.writeInt(2);
                     } else {
                         dlEncoder.writeInt(3);
@@ -52,8 +47,7 @@ public abstract class AbstractBulkValuesWriter<T, L> extends ValuesWriter
                 rlEncoder.writeInt(0);
                 for (short i = 1; i < length; i++) {
                     if (leafCount++ == nextNullOffset) {
-                        nextNullOffset =
-                            nullsOffsets.hasRemaining() ? nullsOffsets.get() : Integer.MAX_VALUE;
+                        nextNullOffset = nullsOffsets.hasRemaining() ? nullsOffsets.get() : Integer.MAX_VALUE;
                         dlEncoder.writeInt(2);
                     } else {
                         dlEncoder.writeInt(3);

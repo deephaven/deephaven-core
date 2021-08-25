@@ -32,7 +32,6 @@ class StdStateWithNan extends StdState {
 
     @Override
     public String toString() {
-        return "Std{" + "sum=" + sum + ", sum2=" + sum2 + ", nan=" + nanCount + ", nonNull="
-            + nonNullCount + '}';
+        return "Std{" + "sum=" + sum + ", sum2=" + sum2 + ", nan=" + nanCount + ", nonNull=" + nonNullCount + '}';
     }
 }

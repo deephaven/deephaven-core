@@ -15,8 +15,7 @@ public class OperationException extends UncheckedDeephavenException {
         super(cause);
     }
 
-    public OperationException(String message, Throwable cause, boolean enableSuppression,
-        boolean writableStackTrace) {
+    public OperationException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 

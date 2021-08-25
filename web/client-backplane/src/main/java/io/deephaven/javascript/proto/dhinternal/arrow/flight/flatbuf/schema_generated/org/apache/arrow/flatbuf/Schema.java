@@ -10,9 +10,9 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Schema",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Schema",
+        namespace = JsPackage.GLOBAL)
 public class Schema {
     public static native void addCustomMetadata(Builder builder, double customMetadataOffset);
 
@@ -44,11 +44,11 @@ public class Schema {
     }
 
     public static native double createSchema(
-        Builder builder,
-        int endianness,
-        double fieldsOffset,
-        double customMetadataOffset,
-        double featuresOffset);
+            Builder builder,
+            int endianness,
+            double fieldsOffset,
+            double customMetadataOffset,
+            double featuresOffset);
 
     public static native double endSchema(Builder builder);
 

@@ -91,11 +91,10 @@ public class TestScatterPlotMatrix extends BaseArrayTestCase {
             i++;
         }
         t = TableTools.newTable(columns).updateView("Cat = i == 0 ? `A` : `B`");
-        SelectableDataSetOneClick oneClick = new SelectableDataSetOneClick(
-            t.byExternal(columnNames), t.getDefinition(), new String[] {"Cat"});
+        SelectableDataSetOneClick oneClick =
+                new SelectableDataSetOneClick(t.byExternal(columnNames), t.getDefinition(), new String[] {"Cat"});
         final ScatterPlotMatrix matrix = ScatterPlotMatrix.scatterPlotMatrix(oneClick, columnNames);
-        final XYDataSeriesInternal series =
-            (XYDataSeriesInternal) matrix.getFigure().chart(0).axes(0).series(0);
+        final XYDataSeriesInternal series = (XYDataSeriesInternal) matrix.getFigure().chart(0).axes(0).series(0);
         for (int j = 0; j < series.size(); j++) {
             assertEquals(Double.NaN, series.getX(i));
             assertEquals(Double.NaN, series.getY(i));
@@ -198,9 +197,7 @@ public class TestScatterPlotMatrix extends BaseArrayTestCase {
         testPointSize(new double[] {pointSizesLong[0], pointSizesLong[1]}, matrix);
 
         matrix = matrix.pointSize(pointSizesNumber);
-        testPointSize(
-            new double[] {pointSizesNumber[0].doubleValue(), pointSizesNumber[1].doubleValue()},
-            matrix);
+        testPointSize(new double[] {pointSizesNumber[0].doubleValue(), pointSizesNumber[1].doubleValue()}, matrix);
 
 
 
@@ -212,10 +209,8 @@ public class TestScatterPlotMatrix extends BaseArrayTestCase {
     }
 
     private void testPointSize(final double[] size, final ScatterPlotMatrix matrix) {
-        final XYDataSeriesInternal series1 =
-            (XYDataSeriesInternal) matrix.getFigure().chart(0).axes(0).series(0);
-        final XYDataSeriesInternal series2 =
-            (XYDataSeriesInternal) matrix.getFigure().chart(1).axes(0).series(0);
+        final XYDataSeriesInternal series1 = (XYDataSeriesInternal) matrix.getFigure().chart(0).axes(0).series(0);
+        final XYDataSeriesInternal series2 = (XYDataSeriesInternal) matrix.getFigure().chart(1).axes(0).series(0);
         final XYDataSeriesInternal[] seriesArray = new XYDataSeriesInternal[] {series1, series2};
 
         for (int i = 0; i < size.length; i++) {
@@ -227,10 +222,8 @@ public class TestScatterPlotMatrix extends BaseArrayTestCase {
     }
 
     private void testPointSize(final ScatterPlotMatrix matrix) {
-        final XYDataSeriesInternal series1 =
-            (XYDataSeriesInternal) matrix.getFigure().chart(0).axes(0).series(0);
-        final XYDataSeriesInternal series2 =
-            (XYDataSeriesInternal) matrix.getFigure().chart(1).axes(0).series(0);
+        final XYDataSeriesInternal series1 = (XYDataSeriesInternal) matrix.getFigure().chart(0).axes(0).series(0);
+        final XYDataSeriesInternal series2 = (XYDataSeriesInternal) matrix.getFigure().chart(1).axes(0).series(0);
 
         for (int j = 0; j < series1.size(); j++) {
             assertNull(series1.getPointSize(j));
@@ -241,8 +234,7 @@ public class TestScatterPlotMatrix extends BaseArrayTestCase {
     }
 
     private void testScatterPlotMatrix(ScatterPlotMatrix matrix) {
-        XYDataSeriesInternal series =
-            (XYDataSeriesInternal) matrix.getFigure().chart(0).axes(0).series(0);
+        XYDataSeriesInternal series = (XYDataSeriesInternal) matrix.getFigure().chart(0).axes(0).series(0);
         for (int i = 0; i < length; i++) {
             assertEquals(0.0, series.getX(i));
             assertEquals(0.0, series.getY(i));

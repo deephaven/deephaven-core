@@ -5,8 +5,7 @@ import io.deephaven.util.FunctionalInterfaces;
 
 public class TestUtil {
     public static <ExceptionType extends Exception> void assertThrows(
-        final Class<ExceptionType> type,
-        final FunctionalInterfaces.ThrowingRunnable<ExceptionType> runner) {
+            final Class<ExceptionType> type, final FunctionalInterfaces.ThrowingRunnable<ExceptionType> runner) {
         boolean threwExpectedException = false;
         try {
             runner.run();

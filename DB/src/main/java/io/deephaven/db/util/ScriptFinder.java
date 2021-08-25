@@ -69,20 +69,18 @@ class ScriptFinder {
         } else {
             final Optional<File> fileOptional = fileOrStream.getFile();
             Assert.assertion(fileOptional.isPresent(), "fileOptional.isPresent()");
-            // noinspection ConstantConditions,OptionalGetWithoutIsPresent -- if we don't have a
-            // stream we must have a file
+            // noinspection ConstantConditions,OptionalGetWithoutIsPresent -- if we don't have a stream we must have a
+            // file
             return new FileInputStream(fileOptional.get());
         }
     }
 
-    private FileOrStream findScriptEx(final String script, final String dbScriptPath)
-        throws IOException {
+    private FileOrStream findScriptEx(final String script, final String dbScriptPath) throws IOException {
         /*
-         * NB: This code is overdue for some cleanup. In practice, there are two modes: (1) local -
-         * a user runs a local groovy session from IntelliJ or otherwise, and needs to find scripts
-         * under their devroot. (2) deployed - a groovy session is created from deployed code, in
-         * which case scripts are only found via the classpath. I had hopes for being able to do
-         * everything via the classpath, but that doesn't allow for runtime changes without
+         * NB: This code is overdue for some cleanup. In practice, there are two modes: (1) local - a user runs a local
+         * groovy session from IntelliJ or otherwise, and needs to find scripts under their devroot. (2) deployed - a
+         * groovy session is created from deployed code, in which case scripts are only found via the classpath. I had
+         * hopes for being able to do everything via the classpath, but that doesn't allow for runtime changes without
          * additional work.
          */
         final String[] paths = (dbScriptPath == null ? defaultScriptPath : dbScriptPath).split(";");
@@ -102,7 +100,7 @@ class ScriptFinder {
             return new FileOrStream(result);
         }
         throw new IOException("Can not find script: script=" + script
-            + ", dbScriptPath=" + (Arrays.toString(paths))
-            + ", classpath=" + System.getProperty("java.class.path"));
+                + ", dbScriptPath=" + (Arrays.toString(paths))
+                + ", classpath=" + System.getProperty("java.class.path"));
     }
 }

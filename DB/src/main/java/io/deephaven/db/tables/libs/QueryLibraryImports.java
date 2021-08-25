@@ -10,12 +10,9 @@ public interface QueryLibraryImports {
     }
 
     static QueryLibraryImports copyFrom(QueryLibraryImports other) {
-        final Set<Package> packages =
-            Collections.unmodifiableSet(new LinkedHashSet<>(other.packages()));
-        final Set<Class<?>> classes =
-            Collections.unmodifiableSet(new LinkedHashSet<>(other.classes()));
-        final Set<Class<?>> statics =
-            Collections.unmodifiableSet(new LinkedHashSet<>(other.statics()));
+        final Set<Package> packages = Collections.unmodifiableSet(new LinkedHashSet<>(other.packages()));
+        final Set<Class<?>> classes = Collections.unmodifiableSet(new LinkedHashSet<>(other.classes()));
+        final Set<Class<?>> statics = Collections.unmodifiableSet(new LinkedHashSet<>(other.statics()));
         return new QueryLibraryImportsImpl(packages, classes, statics);
     }
 

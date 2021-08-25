@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.TimeTableRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.TimeTableRequest",
+        namespace = JsPackage.GLOBAL)
 public class TimeTableRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -22,7 +22,7 @@ public class TimeTableRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static TimeTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -57,20 +57,20 @@ public class TimeTableRequest {
 
             @JsProperty
             void setTicket(
-                TimeTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    TimeTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<TimeTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<TimeTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<TimeTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<TimeTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -106,7 +106,7 @@ public class TimeTableRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static TimeTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -141,20 +141,20 @@ public class TimeTableRequest {
 
             @JsProperty
             void setTicket(
-                TimeTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    TimeTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<TimeTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<TimeTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<TimeTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<TimeTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -185,12 +185,12 @@ public class TimeTableRequest {
     public static native TimeTableRequest deserializeBinary(Uint8Array bytes);
 
     public static native TimeTableRequest deserializeBinaryFromReader(
-        TimeTableRequest message, Object reader);
+            TimeTableRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(TimeTableRequest message, Object writer);
 
     public static native TimeTableRequest.ToObjectReturnType toObject(
-        boolean includeInstance, TimeTableRequest msg);
+            boolean includeInstance, TimeTableRequest msg);
 
     public native void clearResultId();
 

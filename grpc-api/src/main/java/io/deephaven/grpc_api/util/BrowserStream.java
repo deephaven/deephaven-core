@@ -63,11 +63,9 @@ public class BrowserStream<T extends BrowserStream.MessageBase> implements Close
     /** most recent queued msg for when mode is Mode.MOST_RECENT */
     private T queuedMessage;
 
-    public BrowserStream(final Mode mode, final SessionState session,
-        final Marshaller<T> marshaller) {
+    public BrowserStream(final Mode mode, final SessionState session, final Marshaller<T> marshaller) {
         this.mode = mode;
-        this.logIdentity =
-            "BrowserStream(" + Integer.toHexString(System.identityHashCode(this)) + "): ";
+        this.logIdentity = "BrowserStream(" + Integer.toHexString(System.identityHashCode(this)) + "): ";
         this.session = session;
         this.marshaller = marshaller;
 
@@ -77,16 +75,14 @@ public class BrowserStream<T extends BrowserStream.MessageBase> implements Close
     public void onMessageReceived(T message) {
         synchronized (this) {
             if (halfClosedSeq != -1 && message.sequence > halfClosedSeq) {
-                throw GrpcUtil.statusRuntimeException(Code.ABORTED,
-                    "Sequence sent after half close: closed seq=" + halfClosedSeq + " recv seq="
-                        + message.sequence);
+                throw GrpcUtil.statusRuntimeException(Code.ABORTED, "Sequence sent after half close: closed seq="
+                        + halfClosedSeq + " recv seq=" + message.sequence);
             }
 
             if (message.isHalfClosed) {
                 if (halfClosedSeq != -1) {
                     throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        "Already half closed: closed seq=" + halfClosedSeq + " recv seq="
-                            + message.sequence);
+                            "Already half closed: closed seq=" + halfClosedSeq + " recv seq=" + message.sequence);
                 }
                 halfClosedSeq = message.sequence;
             }
@@ -94,43 +90,39 @@ public class BrowserStream<T extends BrowserStream.MessageBase> implements Close
             if (mode == Mode.IN_ORDER) {
                 if (message.sequence < nextSeq) {
                     throw GrpcUtil.statusRuntimeException(Code.OUT_OF_RANGE,
-                        "Duplicate sequence sent: next seq=" + nextSeq + " recv seq="
-                            + message.sequence);
+                            "Duplicate sequence sent: next seq=" + nextSeq + " recv seq=" + message.sequence);
                 }
                 boolean queueMsg = false;
                 if (processingMessage) {
                     queueMsg = true;
                     log.debug().append(logIdentity).append("queueing; next seq=").append(nextSeq)
-                        .append(" recv seq=").append(message.sequence).endl();
+                            .append(" recv seq=").append(message.sequence).endl();
                 } else if (message.sequence != nextSeq) {
                     queueMsg = true;
                     log.debug().append(logIdentity).append("queueing; waiting seq=").append(nextSeq)
-                        .append(" recv seq=").append(message.sequence).endl();
+                            .append(" recv seq=").append(message.sequence).endl();
                 }
                 if (queueMsg) {
                     if (pendingSeq == null) {
-                        pendingSeq = new RAPriQueue<>(1, MessageInfoQueueAdapter.getInstance(),
-                            MessageBase.class);
+                        pendingSeq = new RAPriQueue<>(1, MessageInfoQueueAdapter.getInstance(), MessageBase.class);
                     }
                     pendingSeq.enter(message);
                     return;
                 }
             } else { // Mode.MOST_RECENT
                 if (message.sequence < nextSeq
-                    || (message.sequence == nextSeq && processingMessage) // checks for duplicate
-                    || (queuedMessage != null && message.sequence < queuedMessage.sequence)) {
+                        || (message.sequence == nextSeq && processingMessage) // checks for duplicate
+                        || (queuedMessage != null && message.sequence < queuedMessage.sequence)) {
                     // this message is too old
                     log.debug().append(logIdentity).append("dropping; next seq=").append(nextSeq)
-                        .append(" queued seq=")
-                        .append(queuedMessage != null ? queuedMessage.sequence : -1)
-                        .append(" recv seq=").append(message.sequence).endl();
+                            .append(" queued seq=").append(queuedMessage != null ? queuedMessage.sequence : -1)
+                            .append(" recv seq=").append(message.sequence).endl();
                     return;
                 }
                 // is most recent msg seen
                 if (processingMessage) {
-                    log.debug().append(logIdentity).append("queueing; processing seq=")
-                        .append(nextSeq)
-                        .append(" recv seq=").append(message.sequence).endl();
+                    log.debug().append(logIdentity).append("queueing; processing seq=").append(nextSeq)
+                            .append(" recv seq=").append(message.sequence).endl();
                     queuedMessage = message;
                     return;
                 }
@@ -170,8 +162,7 @@ public class BrowserStream<T extends BrowserStream.MessageBase> implements Close
                     queuedMessage = null;
                 }
 
-                log.debug().append(logIdentity).append("processing queued seq=")
-                    .append(message.sequence).endl();
+                log.debug().append(logIdentity).append("processing queued seq=").append(message.sequence).endl();
                 nextSeq = message.sequence + 1;
             }
         } while (true);
@@ -180,8 +171,7 @@ public class BrowserStream<T extends BrowserStream.MessageBase> implements Close
 
     public void onError(final RuntimeException e) {
         if (session.removeOnCloseCallback(this) != null) {
-            log.error().append(logIdentity)
-                .append("closing browser stream on unexpected exception: ").append(e).endl();
+            log.error().append(logIdentity).append("closing browser stream on unexpected exception: ").append(e).endl();
             this.marshaller.onError(e);
         }
     }

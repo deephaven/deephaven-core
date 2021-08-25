@@ -9,8 +9,8 @@ import io.deephaven.util.annotations.ScriptApi;
  * A simple listener that prints out each update received from a table.
  *
  * <p>
- * This can be used to debug the performance of a query by attaching to various tables in an effort
- * to understand the update pattern. Optionally, you can also print out the head of the table.
+ * This can be used to debug the performance of a query by attaching to various tables in an effort to understand the
+ * update pattern. Optionally, you can also print out the head of the table.
  * </p>
  *
  * <p>
@@ -18,8 +18,7 @@ import io.deephaven.util.annotations.ScriptApi;
  * </p>
  *
  * <p>
- * After you are finished, call the {@link #stop()} method to remove this listener from the source
- * table.
+ * After you are finished, call the {@link #stop()} method to remove this listener from the source table.
  * </p>
  */
 @ScriptApi
@@ -57,10 +56,9 @@ public class PrintListener extends InstrumentedShiftAwareListener {
 
     @Override
     public void onUpdate(final Update upstream) {
-        System.out.println("Update: " + description + ": " + table.size() + "\nAdded rows: "
-            + upstream.added.size() + ", Removed rows: " + upstream.removed.size()
-            + ", Modified Rows: " + upstream.modified.size() + ", Shifted Rows: "
-            + upstream.shifted.getEffectiveSize() + "\nUpdate:" + upstream);
+        System.out.println("Update: " + description + ": " + table.size() + "\nAdded rows: " + upstream.added.size()
+                + ", Removed rows: " + upstream.removed.size() + ", Modified Rows: " + upstream.modified.size()
+                + ", Shifted Rows: " + upstream.shifted.getEffectiveSize() + "\nUpdate:" + upstream);
         if (rowCount > 0) {
             TableTools.showWithIndex(table, rowCount);
         }
@@ -68,7 +66,7 @@ public class PrintListener extends InstrumentedShiftAwareListener {
 
     @Override
     public void onFailureInternal(Throwable originalException,
-        io.deephaven.db.v2.utils.UpdatePerformanceTracker.Entry sourceEntry) {
+            io.deephaven.db.v2.utils.UpdatePerformanceTracker.Entry sourceEntry) {
         System.out.println("Error for: " + description);
         originalException.printStackTrace();
     }

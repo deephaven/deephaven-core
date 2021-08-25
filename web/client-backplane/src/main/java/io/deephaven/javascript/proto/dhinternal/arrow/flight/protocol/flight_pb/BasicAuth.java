@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.Flight_pb.BasicAuth",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.Flight_pb.BasicAuth",
+        namespace = JsPackage.GLOBAL)
 public class BasicAuth {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -60,7 +60,7 @@ public class BasicAuth {
     public static native void serializeBinaryToWriter(BasicAuth message, Object writer);
 
     public static native BasicAuth.ToObjectReturnType toObject(
-        boolean includeInstance, BasicAuth msg);
+            boolean includeInstance, BasicAuth msg);
 
     public native String getPassword();
 

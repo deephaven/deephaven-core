@@ -153,7 +153,7 @@ public enum DBTimeZone {
     private static DBTimeZone lookupByOffset(DateTimeZone dateTimeZone) {
         for (DBTimeZone zone : values()) {
             if (zone.getTimeZone().getOffset(System.currentTimeMillis()) == dateTimeZone
-                .getOffset(System.currentTimeMillis())) {
+                    .getOffset(System.currentTimeMillis())) {
                 return zone;
             }
         }
@@ -161,9 +161,8 @@ public enum DBTimeZone {
     }
 
     /**
-     * This method returns the same contents as {@link DBTimeZone#values()}, but ordered by
-     * geographic location / UTC offset. If two elements exist within the same timezone, they are
-     * second-order-sorted by name
+     * This method returns the same contents as {@link DBTimeZone#values()}, but ordered by geographic location / UTC
+     * offset. If two elements exist within the same timezone, they are second-order-sorted by name
      *
      * @return An array of DBTimeZones ordered by UTC-offset
      */

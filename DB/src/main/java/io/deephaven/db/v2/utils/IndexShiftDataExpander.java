@@ -16,8 +16,8 @@ import java.io.ObjectOutputStream;
 import java.util.function.BiConsumer;
 
 /**
- * Expands {@link ShiftAwareListener#onUpdate(ShiftAwareListener.Update)}'s Update into a backward
- * compatible ARM (added, removed, modified) by expanding keyspace shifts.
+ * Expands {@link ShiftAwareListener#onUpdate(ShiftAwareListener.Update)}'s Update into a backward compatible ARM
+ * (added, removed, modified) by expanding keyspace shifts.
  *
  * Using this is almost always less efficient than using the Update directly.
  */
@@ -46,18 +46,13 @@ public class IndexShiftDataExpander implements SafeCloseable {
                 this.update.removed = prevIndex.minus(sourceIndex);
             }
 
-            // Conceptually we can group modifies into two: a) modifies that were not part of any
-            // shift, and b) modifies
-            // that are now at a shift destination. Group A is in upstream's modified set already.
-            // Group B indices
-            // either existed last cycle or it did not. If it existed last cycle, then it should
-            // remain in the modified set.
-            // If it did not exist last cycle then it is accounted for in `this.update.added`. The
-            // is one more group of
-            // modified rows. These are rows that existed in both previous and current indexes but
-            // were shifted.
-            // Thus we need to add mods for shifted rows and remove any rows that are added (by old
-            // definition).
+            // Conceptually we can group modifies into two: a) modifies that were not part of any shift, and b) modifies
+            // that are now at a shift destination. Group A is in upstream's modified set already. Group B indices
+            // either existed last cycle or it did not. If it existed last cycle, then it should remain in the modified
+            // set.
+            // If it did not exist last cycle then it is accounted for in `this.update.added`. The is one more group of
+            // modified rows. These are rows that existed in both previous and current indexes but were shifted.
+            // Thus we need to add mods for shifted rows and remove any rows that are added (by old definition).
             this.update.modified = update.modified.clone();
 
             // Expand shift destinations to paint rows that might need to be considered modified.
@@ -74,14 +69,13 @@ public class IndexShiftDataExpander implements SafeCloseable {
 
             // consider all rows that are in a shift region as modified (if they still exist)
             try (final Index addedByShift = addedByShiftB.getIndex();
-                final Index rmByShift = removedByShiftB.getIndex()) {
+                    final Index rmByShift = removedByShiftB.getIndex()) {
                 addedByShift.insert(rmByShift);
                 addedByShift.retain(sourceIndex);
                 this.update.modified.insert(addedByShift);
             }
 
-            // remove all rows we define as added (i.e. modified rows that were actually shifted
-            // into a new index)
+            // remove all rows we define as added (i.e. modified rows that were actually shifted into a new index)
             try (final Index absoluteModified = update.removed.intersect(update.added)) {
                 this.update.modified.insert(absoluteModified);
             }
@@ -128,10 +122,9 @@ public class IndexShiftDataExpander implements SafeCloseable {
     /**
      * Immutable, re-usable {@link IndexShiftDataExpander} for an empty set of changes.
      */
-    public static IndexShiftDataExpander EMPTY =
-        new IndexShiftDataExpander(new ShiftAwareListener.Update(
-            Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex(),
-            Index.FACTORY.getEmptyIndex(), IndexShiftData.EMPTY,
+    public static IndexShiftDataExpander EMPTY = new IndexShiftDataExpander(new ShiftAwareListener.Update(
+            Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex(),
+            IndexShiftData.EMPTY,
             ModifiedColumnSet.ALL), Index.FACTORY.getEmptyIndex());
 
     /**
@@ -153,32 +146,28 @@ public class IndexShiftDataExpander implements SafeCloseable {
         final boolean currentMissingModifications = !update.modified.subsetOf(sourceIndex);
 
         if (!previousContainsAdds && !previousMissingRemovals && !previousMissingModifications &&
-            !currentMissingAdds && !currentContainsRemovals && !currentMissingModifications) {
+                !currentMissingAdds && !currentContainsRemovals && !currentMissingModifications) {
             return;
         }
 
-        // Excuse the sloppiness in Index closing after this point, we're planning to crash the
-        // process anyway...
+        // Excuse the sloppiness in Index closing after this point, we're planning to crash the process anyway...
 
         String serializedIndices = null;
         if (BaseTable.PRINT_SERIALIZED_UPDATE_OVERLAPS) {
-            // The indices are really rather complicated, if we fail this check let's generate a
-            // serialized representation
-            // of them that can later be loaded into a debugger. If this fails, we'll ignore it and
-            // continue with our
+            // The indices are really rather complicated, if we fail this check let's generate a serialized
+            // representation
+            // of them that can later be loaded into a debugger. If this fails, we'll ignore it and continue with our
             // regularly scheduled exception.
             try {
                 final StringBuilder outputBuffer = new StringBuilder();
                 final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-                final ObjectOutputStream objectOutputStream =
-                    new ObjectOutputStream(byteArrayOutputStream);
+                final ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
 
                 final BiConsumer<String, Object> append = (name, obj) -> {
                     try {
                         objectOutputStream.writeObject(obj);
                         outputBuffer.append(name);
-                        outputBuffer
-                            .append(Base64.byteArrayToBase64(byteArrayOutputStream.toByteArray()));
+                        outputBuffer.append(Base64.byteArrayToBase64(byteArrayOutputStream.toByteArray()));
                         byteArrayOutputStream.reset();
                         objectOutputStream.reset();
                     } catch (final Exception ignored) {
@@ -196,8 +185,7 @@ public class IndexShiftDataExpander implements SafeCloseable {
             }
         }
 
-        // If we're still here, we know that things are off the rails, and we want to fire the
-        // assertion
+        // If we're still here, we know that things are off the rails, and we want to fire the assertion
         final Index addedIntersectPrevious = update.added.intersect(sourceIndex.getPrevIndex());
         final Index removalsMinusPrevious = update.removed.minus(sourceIndex.getPrevIndex());
         final Index modifiedMinusPrevious = update.modified.minus(sourceIndex.getPrevIndex());
@@ -205,41 +193,31 @@ public class IndexShiftDataExpander implements SafeCloseable {
         final Index removedIntersectCurrent = update.removed.intersect(sourceIndex);
         final Index modifiedMinusCurrent = update.modified.minus(sourceIndex);
 
-        // Everything is messed up for this table, print out the indices in an easy to understand
-        // way
-        final String indexUpdateErrorMessage = new LogOutputStringImpl()
-            .append("Index update error detected: ")
-            .append(LogOutput::nl).append("\t          previousIndex=")
-            .append(sourceIndex.getPrevIndex())
-            .append(LogOutput::nl).append("\t           currentIndex=").append(sourceIndex)
-            .append(LogOutput::nl).append("\t         updateToExpand=").append(update)
-            .append(LogOutput::nl).append("\t                  added=").append(update.added)
-            .append(LogOutput::nl).append("\t                removed=").append(update.removed)
-            .append(LogOutput::nl).append("\t               modified=").append(update.modified)
-            .append(LogOutput::nl).append("\t         shifted.size()=")
-            .append(update.shifted.size())
-            .append(LogOutput::nl).append("\t addedIntersectPrevious=")
-            .append(addedIntersectPrevious)
-            .append(LogOutput::nl).append("\t  removalsMinusPrevious=")
-            .append(removalsMinusPrevious)
-            .append(LogOutput::nl).append("\t  modifiedMinusPrevious=")
-            .append(modifiedMinusPrevious)
-            .append(LogOutput::nl).append("\t      addedMinusCurrent=").append(addedMinusCurrent)
-            .append(LogOutput::nl).append("\tremovedIntersectCurrent=")
-            .append(removedIntersectCurrent)
-            .append(LogOutput::nl).append("\t   modifiedMinusCurrent=").append(modifiedMinusCurrent)
-            .toString();
+        // Everything is messed up for this table, print out the indices in an easy to understand way
+        final String indexUpdateErrorMessage = new LogOutputStringImpl().append("Index update error detected: ")
+                .append(LogOutput::nl).append("\t          previousIndex=").append(sourceIndex.getPrevIndex())
+                .append(LogOutput::nl).append("\t           currentIndex=").append(sourceIndex)
+                .append(LogOutput::nl).append("\t         updateToExpand=").append(update)
+                .append(LogOutput::nl).append("\t                  added=").append(update.added)
+                .append(LogOutput::nl).append("\t                removed=").append(update.removed)
+                .append(LogOutput::nl).append("\t               modified=").append(update.modified)
+                .append(LogOutput::nl).append("\t         shifted.size()=").append(update.shifted.size())
+                .append(LogOutput::nl).append("\t addedIntersectPrevious=").append(addedIntersectPrevious)
+                .append(LogOutput::nl).append("\t  removalsMinusPrevious=").append(removalsMinusPrevious)
+                .append(LogOutput::nl).append("\t  modifiedMinusPrevious=").append(modifiedMinusPrevious)
+                .append(LogOutput::nl).append("\t      addedMinusCurrent=").append(addedMinusCurrent)
+                .append(LogOutput::nl).append("\tremovedIntersectCurrent=").append(removedIntersectCurrent)
+                .append(LogOutput::nl).append("\t   modifiedMinusCurrent=").append(modifiedMinusCurrent).toString();
 
         final Logger log = ProcessEnvironment.getDefaultLog();
         log.error().append(indexUpdateErrorMessage).endl();
 
         if (serializedIndices != null) {
-            log.error().append("Index update error detected: serialized data=")
-                .append(serializedIndices).endl();
+            log.error().append("Index update error detected: serialized data=").append(serializedIndices).endl();
         }
 
         Assert.assertion(false, "!(previousContainsAdds || previousMissingRemovals || " +
-            "previousMissingModifications || currentMissingAdds || currentContainsRemovals || " +
-            "currentMissingModifications)", indexUpdateErrorMessage);
+                "previousMissingModifications || currentMissingAdds || currentContainsRemovals || " +
+                "currentMissingModifications)", indexUpdateErrorMessage);
     }
 }

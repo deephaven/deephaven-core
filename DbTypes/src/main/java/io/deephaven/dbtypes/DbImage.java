@@ -19,31 +19,28 @@ public interface DbImage extends DbFile {
         DEFAULT(java.awt.Image.SCALE_DEFAULT),
 
         /**
-         * Image-scaling algorithm that gives higher priority to scaling speed than smoothness of
-         * the scaled image.
+         * Image-scaling algorithm that gives higher priority to scaling speed than smoothness of the scaled image.
          */
         FAST(java.awt.Image.SCALE_FAST),
 
         /**
-         * Image-scaling algorithm that gives higher priority to image smoothness than scaling
-         * speed.
+         * Image-scaling algorithm that gives higher priority to image smoothness than scaling speed.
          */
         SMOOTH(java.awt.Image.SCALE_SMOOTH),
 
         /**
-         * Image scaling algorithm embodied in the <code>ReplicateScaleFilter</code> class. The
-         * <code>Image</code> object is free to substitute a different filter that performs the same
-         * algorithm yet integrates more efficiently into the imaging infrastructure supplied by the
-         * toolkit.
+         * Image scaling algorithm embodied in the <code>ReplicateScaleFilter</code> class. The <code>Image</code>
+         * object is free to substitute a different filter that performs the same algorithm yet integrates more
+         * efficiently into the imaging infrastructure supplied by the toolkit.
          *
          * @see java.awt.image.ReplicateScaleFilter
          */
         REPLICATE(java.awt.Image.SCALE_REPLICATE),
 
         /**
-         * Area Averaging image scaling algorithm. The image object is free to substitute a
-         * different filter that performs the same algorithm yet integrates more efficiently into
-         * the image infrastructure supplied by the toolkit.
+         * Area Averaging image scaling algorithm. The image object is free to substitute a different filter that
+         * performs the same algorithm yet integrates more efficiently into the image infrastructure supplied by the
+         * toolkit.
          *
          * @see java.awt.image.AreaAveragingScaleFilter
          */
@@ -103,8 +100,7 @@ public interface DbImage extends DbFile {
     Color getColor(final int x, final int y);
 
     /**
-     * Gets the red component in the range 0-255 in the default sRGB space for the pixel located at
-     * (x,y).
+     * Gets the red component in the range 0-255 in the default sRGB space for the pixel located at (x,y).
      *
      * @param x x-location in pixels.
      * @param y y-location in pixels.
@@ -113,8 +109,7 @@ public interface DbImage extends DbFile {
     int getRed(final int x, final int y);
 
     /**
-     * Gets the green component in the range 0-255 in the default sRGB space for the pixel located
-     * at (x,y).
+     * Gets the green component in the range 0-255 in the default sRGB space for the pixel located at (x,y).
      *
      * @param x x-location in pixels.
      * @param y y-location in pixels.
@@ -123,8 +118,7 @@ public interface DbImage extends DbFile {
     int getGreen(final int x, final int y);
 
     /**
-     * Gets the blue component in the range 0-255 in the default sRGB space for the pixel located at
-     * (x,y).
+     * Gets the blue component in the range 0-255 in the default sRGB space for the pixel located at (x,y).
      *
      * @param x x-location in pixels.
      * @param y y-location in pixels.
@@ -133,8 +127,7 @@ public interface DbImage extends DbFile {
     int getBlue(final int x, final int y);
 
     /**
-     * Gets the gray-scale value in the range 0-255 in the default sRGB space for the pixel located
-     * at (x,y).
+     * Gets the gray-scale value in the range 0-255 in the default sRGB space for the pixel located at (x,y).
      *
      * @param x x-location in pixels.
      * @param y y-location in pixels.
@@ -178,8 +171,7 @@ public interface DbImage extends DbFile {
      *
      * @param width new image width in pixels.
      * @param height new image height in pixels.
-     * @param algo algorithm used to rescale the image. <code>null</code> causes the default to be
-     *        usedl.
+     * @param algo algorithm used to rescale the image. <code>null</code> causes the default to be usedl.
      * @return resized image.
      */
     DbImage resize(final int width, final int height, final ImageScalingAlgorithm algo);

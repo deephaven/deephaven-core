@@ -4,8 +4,8 @@ import com.google.gwt.junit.client.GWTTestCase;
 import io.deephaven.web.client.api.LongWrapper;
 
 /**
- * Since the JsNumberFormat test class is so thin, this mostly serves to confirm that a few
- * behaviors are the same in the JS client as they are in the swing console.
+ * Since the JsNumberFormat test class is so thin, this mostly serves to confirm that a few behaviors are the same in
+ * the JS client as they are in the swing console.
  */
 public class JsNumberFormatTestGwt extends GWTTestCase {
 
@@ -53,23 +53,15 @@ public class JsNumberFormatTestGwt extends GWTTestCase {
         assertEquals("-1", format.format(LongWrapper.of(-1)));
         assertEquals("1", format.format(LongWrapper.of(1)));
 
-        assertEquals("9,999,000,000,000,000",
-            format.format(LongWrapper.of(9_999_000_000_000_000L)));
-        assertEquals("9,999,000,000,000,001",
-            format.format(LongWrapper.of(9_999_000_000_000_001L)));
-        assertEquals("9,999,000,000,000,002",
-            format.format(LongWrapper.of(9_999_000_000_000_002L)));
-        assertEquals("9,999,000,000,000,003",
-            format.format(LongWrapper.of(9_999_000_000_000_003L)));
+        assertEquals("9,999,000,000,000,000", format.format(LongWrapper.of(9_999_000_000_000_000L)));
+        assertEquals("9,999,000,000,000,001", format.format(LongWrapper.of(9_999_000_000_000_001L)));
+        assertEquals("9,999,000,000,000,002", format.format(LongWrapper.of(9_999_000_000_000_002L)));
+        assertEquals("9,999,000,000,000,003", format.format(LongWrapper.of(9_999_000_000_000_003L)));
 
-        assertEquals("-9,999,000,000,000,000",
-            format.format(LongWrapper.of(-9_999_000_000_000_000L)));
-        assertEquals("-9,999,000,000,000,001",
-            format.format(LongWrapper.of(-9_999_000_000_000_001L)));
-        assertEquals("-9,999,000,000,000,002",
-            format.format(LongWrapper.of(-9_999_000_000_000_002L)));
-        assertEquals("-9,999,000,000,000,003",
-            format.format(LongWrapper.of(-9_999_000_000_000_003L)));
+        assertEquals("-9,999,000,000,000,000", format.format(LongWrapper.of(-9_999_000_000_000_000L)));
+        assertEquals("-9,999,000,000,000,001", format.format(LongWrapper.of(-9_999_000_000_000_001L)));
+        assertEquals("-9,999,000,000,000,002", format.format(LongWrapper.of(-9_999_000_000_000_002L)));
+        assertEquals("-9,999,000,000,000,003", format.format(LongWrapper.of(-9_999_000_000_000_003L)));
     }
 
 

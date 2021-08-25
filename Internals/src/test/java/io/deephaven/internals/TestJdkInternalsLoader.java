@@ -12,8 +12,7 @@ public class TestJdkInternalsLoader extends TestCase {
 
     @Test
     public void testMaxDirectMemory() {
-        long maxDirectMemory =
-            JdkInternalsLoader.getInstance().getDirectMemoryStats().maxDirectMemory();
+        long maxDirectMemory = JdkInternalsLoader.getInstance().getDirectMemoryStats().maxDirectMemory();
         System.out.println(maxDirectMemory);
     }
 }

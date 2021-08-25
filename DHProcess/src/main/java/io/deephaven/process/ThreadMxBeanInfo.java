@@ -9,22 +9,20 @@ import org.immutables.value.Value;
 @ProcessStyle
 public abstract class ThreadMxBeanInfo implements PropertySet {
 
-    private static final String CURRENT_THREAD_CPU_TIME_SUPPORTED =
-        "current-thread-cpu-time-supported";
+    private static final String CURRENT_THREAD_CPU_TIME_SUPPORTED = "current-thread-cpu-time-supported";
     private static final String OBJECT_MONITOR_USAGE_SUPPORTED = "object-monitor-usage-supported";
     private static final String SYNCHRONIZER_USAGE_SUPPORTED = "synchronizer-usage-supported";
-    private static final String THREAD_CONTENTION_MONITORING_SUPPORTED =
-        "thread-contention-monitoring-supported";
+    private static final String THREAD_CONTENTION_MONITORING_SUPPORTED = "thread-contention-monitoring-supported";
     private static final String THREAD_CPU_TIME_SUPPORTED = "thread-cpu-time-supported";
 
     public static ThreadMxBeanInfo of(ThreadMXBean bean) {
         return ImmutableThreadMxBeanInfo.builder()
-            .isCurrentThreadCpuTimeSupported(bean.isCurrentThreadCpuTimeSupported())
-            .isObjectMonitorUsageSupported(bean.isObjectMonitorUsageSupported())
-            .isSynchronizerUsageSupported(bean.isSynchronizerUsageSupported())
-            .isThreadContentionMonitoringSupported(bean.isThreadContentionMonitoringSupported())
-            .isThreadCpuTimeSupported(bean.isThreadCpuTimeSupported())
-            .build();
+                .isCurrentThreadCpuTimeSupported(bean.isCurrentThreadCpuTimeSupported())
+                .isObjectMonitorUsageSupported(bean.isObjectMonitorUsageSupported())
+                .isSynchronizerUsageSupported(bean.isSynchronizerUsageSupported())
+                .isThreadContentionMonitoringSupported(bean.isThreadContentionMonitoringSupported())
+                .isThreadCpuTimeSupported(bean.isThreadCpuTimeSupported())
+                .build();
     }
 
     @Value.Parameter
@@ -47,8 +45,7 @@ public abstract class ThreadMxBeanInfo implements PropertySet {
         visitor.visit(CURRENT_THREAD_CPU_TIME_SUPPORTED, isCurrentThreadCpuTimeSupported());
         visitor.visit(OBJECT_MONITOR_USAGE_SUPPORTED, isObjectMonitorUsageSupported());
         visitor.visit(SYNCHRONIZER_USAGE_SUPPORTED, isSynchronizerUsageSupported());
-        visitor.visit(THREAD_CONTENTION_MONITORING_SUPPORTED,
-            isThreadContentionMonitoringSupported());
+        visitor.visit(THREAD_CONTENTION_MONITORING_SUPPORTED, isThreadContentionMonitoringSupported());
         visitor.visit(THREAD_CPU_TIME_SUPPORTED, isThreadCpuTimeSupported());
     }
 }

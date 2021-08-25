@@ -18,9 +18,8 @@ import java.util.TimeZone;
 
 // --------------------------------------------------------------------
 /**
- * Wraps a {@link DateFormat} to provide a minimal level of thread safety that DateFormat is lacking
- * (namely, preventing simultaneous calls to {@link #format} from separate threads from interfering
- * with each other).
+ * Wraps a {@link DateFormat} to provide a minimal level of thread safety that DateFormat is lacking (namely, preventing
+ * simultaneous calls to {@link #format} from separate threads from interfering with each other).
  */
 public class ThreadSafeDateFormat extends DateFormat {
     private final DateFormat m_dateFormat;

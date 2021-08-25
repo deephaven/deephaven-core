@@ -5,8 +5,8 @@ import java.io.PrintWriter;
 import java.util.List;
 
 /**
- * An exception to use when a series of operations must all be executed, but may all throw
- * exceptions themselves. This allows for retention of all exception data.
+ * An exception to use when a series of operations must all be executed, but may all throw exceptions themselves. This
+ * allows for retention of all exception data.
  */
 public class MultiException extends Exception {
 
@@ -25,8 +25,7 @@ public class MultiException extends Exception {
     }
 
     /**
-     * If there is a single exception, return that exception; otherwise wrap the causes into a
-     * MultiException.
+     * If there is a single exception, return that exception; otherwise wrap the causes into a MultiException.
      *
      * @param description the description for the MultiException
      * @param causes the array of causes
@@ -40,8 +39,7 @@ public class MultiException extends Exception {
     }
 
     /**
-     * If there is a single exception, return that exception; otherwise wrap the causes into a
-     * MultiException.
+     * If there is a single exception, return that exception; otherwise wrap the causes into a MultiException.
      *
      * @param description the description for the MultiException
      * @param causes the list of causes
@@ -55,8 +53,7 @@ public class MultiException extends Exception {
     }
 
     /**
-     * If there is a single exception, return that exception; otherwise wrap the causes into a
-     * MultiException.
+     * If there is a single exception, return that exception; otherwise wrap the causes into a MultiException.
      *
      * @param description the description for the MultiException
      * @param causes the array of causes

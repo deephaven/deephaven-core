@@ -27,26 +27,24 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
      * <p>
      * The next destination slot that we expect to be used.
      * <p>
-     * Any destination less than this one can safely be ignored while processing adds since the
-     * first row can never change once a destination has been created given that we ignore removes.
+     * Any destination less than this one can safely be ignored while processing adds since the first row can never
+     * change once a destination has been created given that we ignore removes.
      */
     private long nextDestination;
 
     /**
      * <p>
-     * The first destination that we used on the current step (if we used any). At the very
-     * beginning of a step, this is equivalent to {@link #nextDestination} and also the result
-     * table's size.
+     * The first destination that we used on the current step (if we used any). At the very beginning of a step, this is
+     * equivalent to {@link #nextDestination} and also the result table's size.
      * <p>
-     * We use this as an offset shift for {@code redirections}, so that {@code redirections} only
-     * needs to hold first source keys for newly-added destinations, rather than the entire space.
+     * We use this as an offset shift for {@code redirections}, so that {@code redirections} only needs to hold first
+     * source keys for newly-added destinations, rather than the entire space.
      * <p>
      * At the end of a step, this is updated to prepare for the next step.
      */
     private long firstDestinationThisStep;
 
-    StreamFirstChunkedOperator(@NotNull final MatchPair[] resultPairs,
-        @NotNull final Table streamTable) {
+    StreamFirstChunkedOperator(@NotNull final MatchPair[] resultPairs, @NotNull final Table streamTable) {
         super(resultPairs, streamTable);
     }
 
@@ -57,8 +55,7 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
 
     @Override
     public final void startTrackingPrevValues() {
-        // We never change the value at any key in outputColumns since there are no removes;
-        // consequently there's no
+        // We never change the value at any key in outputColumns since there are no removes; consequently there's no
         // need to enable previous value tracking.
     }
 
@@ -69,12 +66,12 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
 
     @Override
     public void addChunk(final BucketedContext context, // Unused
-        final Chunk<? extends Values> values, // Unused
-        @NotNull final LongChunk<? extends KeyIndices> inputIndices,
-        @NotNull final IntChunk<KeyIndices> destinations,
-        @NotNull final IntChunk<ChunkPositions> startPositions,
-        final IntChunk<ChunkLengths> length, // Unused
-        @NotNull final WritableBooleanChunk<Values> stateModified) {
+            final Chunk<? extends Values> values, // Unused
+            @NotNull final LongChunk<? extends KeyIndices> inputIndices,
+            @NotNull final IntChunk<KeyIndices> destinations,
+            @NotNull final IntChunk<ChunkPositions> startPositions,
+            final IntChunk<ChunkLengths> length, // Unused
+            @NotNull final WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
@@ -86,10 +83,10 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
 
     @Override
     public boolean addChunk(final SingletonContext context, // Unused
-        final int chunkSize,
-        final Chunk<? extends Values> values, // Unused
-        @NotNull final LongChunk<? extends KeyIndices> inputIndices,
-        final long destination) {
+            final int chunkSize,
+            final Chunk<? extends Values> values, // Unused
+            @NotNull final LongChunk<? extends KeyIndices> inputIndices,
+            final long destination) {
         if (chunkSize == 0) {
             return false;
         }
@@ -98,8 +95,8 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
 
     @Override
     public boolean addIndex(final SingletonContext context,
-        @NotNull final Index index,
-        final long destination) {
+            @NotNull final Index index,
+            final long destination) {
         if (index.isEmpty()) {
             return false;
         }
@@ -116,7 +113,7 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
         } else {
             // noinspection ThrowableNotThrown
             Assert.statementNeverExecuted(
-                "Destination " + destination + " greater than next destination " + nextDestination);
+                    "Destination " + destination + " greater than next destination " + nextDestination);
         }
         return true;
     }
@@ -131,25 +128,24 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
 
     @Override
     public void propagateUpdates(@NotNull final ShiftAwareListener.Update downstream,
-        @NotNull final ReadOnlyIndex newDestinations) {
-        // NB: We cannot assert no modifies; other operators in the same aggregation might modify
-        // columns not in our
+            @NotNull final ReadOnlyIndex newDestinations) {
+        // NB: We cannot assert no modifies; other operators in the same aggregation might modify columns not in our
         // result set.
         Assert.assertion(downstream.removed.empty() && downstream.shifted.empty(),
-            "downstream.removed.empty() && downstream.shifted.empty()");
+                "downstream.removed.empty() && downstream.shifted.empty()");
         copyStreamToResult(downstream.added);
         redirections = null;
         if (downstream.added.nonempty()) {
-            Assert.eq(downstream.added.lastKey() + 1, "downstream.added.lastKey() + 1",
-                nextDestination, "nextDestination");
+            Assert.eq(downstream.added.lastKey() + 1, "downstream.added.lastKey() + 1", nextDestination,
+                    "nextDestination");
             firstDestinationThisStep = nextDestination;
         }
     }
 
     /**
      * <p>
-     * For each destination slot, map to the (first) source index key and copy source values to
-     * destination slots for all result columns.
+     * For each destination slot, map to the (first) source index key and copy source values to destination slots for
+     * all result columns.
      *
      * <p>
      * This implementation proceeds chunk-wise in the following manner:
@@ -163,21 +159,18 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
      */
     private void copyStreamToResult(@NotNull final OrderedKeys destinations) {
         try (final SafeCloseableList toClose = new SafeCloseableList()) {
-            final OrderedKeys.Iterator destinationsIterator =
-                toClose.add(destinations.getOrderedKeysIterator());
-            final ShiftedOrderedKeys shiftedSliceDestinations =
-                toClose.add(new ShiftedOrderedKeys());
+            final OrderedKeys.Iterator destinationsIterator = toClose.add(destinations.getOrderedKeysIterator());
+            final ShiftedOrderedKeys shiftedSliceDestinations = toClose.add(new ShiftedOrderedKeys());
             final ChunkSource.GetContext redirectionsContext =
-                toClose.add(redirections.makeGetContext(COPY_CHUNK_SIZE));
+                    toClose.add(redirections.makeGetContext(COPY_CHUNK_SIZE));
             final SharedContext inputSharedContext = toClose.add(SharedContext.makeSharedContext());
             final ChunkSource.GetContext[] inputContexts =
-                toClose.addArray(new ChunkSource.GetContext[numResultColumns]);
+                    toClose.addArray(new ChunkSource.GetContext[numResultColumns]);
             final WritableChunkSink.FillFromContext[] outputContexts =
-                toClose.addArray(new WritableChunkSink.FillFromContext[numResultColumns]);
+                    toClose.addArray(new WritableChunkSink.FillFromContext[numResultColumns]);
 
             for (int ci = 0; ci < numResultColumns; ++ci) {
-                inputContexts[ci] =
-                    inputColumns[ci].makeGetContext(COPY_CHUNK_SIZE, inputSharedContext);
+                inputContexts[ci] = inputColumns[ci].makeGetContext(COPY_CHUNK_SIZE, inputSharedContext);
                 final WritableSource<?> outputColumn = outputColumns[ci];
                 outputContexts[ci] = outputColumn.makeFillFromContext(COPY_CHUNK_SIZE);
                 outputColumn.ensureCapacity(destinations.lastKey() + 1, false);
@@ -185,20 +178,16 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
 
             while (destinationsIterator.hasMore()) {
                 final OrderedKeys sliceDestinations =
-                    destinationsIterator.getNextOrderedKeysWithLength(COPY_CHUNK_SIZE);
+                        destinationsIterator.getNextOrderedKeysWithLength(COPY_CHUNK_SIZE);
                 shiftedSliceDestinations.reset(sliceDestinations, -firstDestinationThisStep);
-                final LongChunk<OrderedKeyIndices> sourceIndices = Chunk
-                    .<Values, OrderedKeyIndices>downcast(
-                        redirections.getChunk(redirectionsContext, shiftedSliceDestinations))
-                    .asLongChunk();
+                final LongChunk<OrderedKeyIndices> sourceIndices = Chunk.<Values, OrderedKeyIndices>downcast(
+                        redirections.getChunk(redirectionsContext, shiftedSliceDestinations)).asLongChunk();
 
-                try (final OrderedKeys sliceSources =
-                    OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(sourceIndices)) {
+                try (final OrderedKeys sliceSources = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(sourceIndices)) {
                     for (int ci = 0; ci < numResultColumns; ++ci) {
                         final Chunk<? extends Values> inputChunk =
-                            inputColumns[ci].getChunk(inputContexts[ci], sliceSources);
-                        outputColumns[ci].fillFromChunk(outputContexts[ci], inputChunk,
-                            sliceDestinations);
+                                inputColumns[ci].getChunk(inputContexts[ci], sliceSources);
+                        outputColumns[ci].fillFromChunk(outputContexts[ci], inputChunk, sliceDestinations);
                     }
                     inputSharedContext.reset();
                 }

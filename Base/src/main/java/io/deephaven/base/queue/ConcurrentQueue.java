@@ -11,20 +11,17 @@ package io.deephaven.base.queue;
  */
 public interface ConcurrentQueue<T> {
     /**
-     * Returns false when the queue is full This method should never block (but it may spin for a
-     * finite amount of time)
+     * Returns false when the queue is full This method should never block (but it may spin for a finite amount of time)
      */
     boolean enqueue(T new_value);
 
     /**
-     * Spins forever until the item can be enqueued. Calls yield() after the number of specified
-     * spins.
+     * Spins forever until the item can be enqueued. Calls yield() after the number of specified spins.
      */
     boolean enqueue(T new_value, long spins_between_yields);
 
     /**
-     * Returns null when the queue is empty This method should never block (but it may spin for a
-     * finite amount of time)
+     * Returns null when the queue is empty This method should never block (but it may spin for a finite amount of time)
      */
     T dequeue();
 

@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.SortTableRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.SortTableRequest",
+        namespace = JsPackage.GLOBAL)
 public class SortTableRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -23,7 +23,7 @@ public class SortTableRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static SortTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -58,20 +58,20 @@ public class SortTableRequest {
 
             @JsProperty
             void setTicket(
-                SortTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    SortTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<SortTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<SortTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<SortTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<SortTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -139,15 +139,13 @@ public class SortTableRequest {
         void setResultId(SortTableRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
         @JsProperty
-        void setSortsList(
-            JsArray<SortTableRequest.ToObjectReturnType.SortsListFieldType> sortsList);
+        void setSortsList(JsArray<SortTableRequest.ToObjectReturnType.SortsListFieldType> sortsList);
 
         @JsOverlay
-        default void setSortsList(
-            SortTableRequest.ToObjectReturnType.SortsListFieldType[] sortsList) {
+        default void setSortsList(SortTableRequest.ToObjectReturnType.SortsListFieldType[] sortsList) {
             setSortsList(
-                Js.<JsArray<SortTableRequest.ToObjectReturnType.SortsListFieldType>>uncheckedCast(
-                    sortsList));
+                    Js.<JsArray<SortTableRequest.ToObjectReturnType.SortsListFieldType>>uncheckedCast(
+                            sortsList));
         }
 
         @JsProperty
@@ -162,7 +160,7 @@ public class SortTableRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static SortTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -197,20 +195,20 @@ public class SortTableRequest {
 
             @JsProperty
             void setTicket(
-                SortTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    SortTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<SortTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<SortTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<SortTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<SortTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -278,15 +276,13 @@ public class SortTableRequest {
         void setResultId(SortTableRequest.ToObjectReturnType0.ResultIdFieldType resultId);
 
         @JsProperty
-        void setSortsList(
-            JsArray<SortTableRequest.ToObjectReturnType0.SortsListFieldType> sortsList);
+        void setSortsList(JsArray<SortTableRequest.ToObjectReturnType0.SortsListFieldType> sortsList);
 
         @JsOverlay
-        default void setSortsList(
-            SortTableRequest.ToObjectReturnType0.SortsListFieldType[] sortsList) {
+        default void setSortsList(SortTableRequest.ToObjectReturnType0.SortsListFieldType[] sortsList) {
             setSortsList(
-                Js.<JsArray<SortTableRequest.ToObjectReturnType0.SortsListFieldType>>uncheckedCast(
-                    sortsList));
+                    Js.<JsArray<SortTableRequest.ToObjectReturnType0.SortsListFieldType>>uncheckedCast(
+                            sortsList));
         }
 
         @JsProperty
@@ -296,12 +292,12 @@ public class SortTableRequest {
     public static native SortTableRequest deserializeBinary(Uint8Array bytes);
 
     public static native SortTableRequest deserializeBinaryFromReader(
-        SortTableRequest message, Object reader);
+            SortTableRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(SortTableRequest message, Object writer);
 
     public static native SortTableRequest.ToObjectReturnType toObject(
-        boolean includeInstance, SortTableRequest msg);
+            boolean includeInstance, SortTableRequest msg);
 
     public native SortDescriptor addSorts();
 

@@ -44,11 +44,9 @@ public class TableBuilder {
     }
 
     /**
-     * Adds a row to the table. Items will be inserted into the row the order they are put into this
-     * method
+     * Adds a row to the table. Items will be inserted into the row the order they are put into this method
      * 
-     * @param items The items that will appear in the row. Must be the same amount of items as
-     *        columns
+     * @param items The items that will appear in the row. Must be the same amount of items as columns
      */
     public void addRow(Object... items) {
         checkRow(items);
@@ -64,15 +62,14 @@ public class TableBuilder {
         List<Class> colTypes = def.getColumnTypes();
         if (items.length != colTypes.size()) {
             throw new IllegalArgumentException(
-                "Incorrect column count: expected " + colTypes.size() + " got " + items.length);
+                    "Incorrect column count: expected " + colTypes.size() + " got " + items.length);
         }
 
         for (int i = 0; i < colTypes.size(); i++) {
             // noinspection unchecked
             if (items[i] != null && !TypeUtils.getUnboxedTypeIfBoxed(colTypes.get(i))
-                .isAssignableFrom(TypeUtils.getUnboxedTypeIfBoxed(items[i].getClass()))) {
-                throw new IllegalArgumentException(
-                    "Incorrect type for column " + def.getColumnNames().get(i)
+                    .isAssignableFrom(TypeUtils.getUnboxedTypeIfBoxed(items[i].getClass()))) {
+                throw new IllegalArgumentException("Incorrect type for column " + def.getColumnNames().get(i)
                         + ": expected " + colTypes.get(i).getName()
                         + " got " + items[i].getClass().getName());
             }
@@ -89,8 +86,8 @@ public class TableBuilder {
         Map<String, ArrayBackedColumnSource<Object>> map = new LinkedHashMap<>();
         for (ColumnDefinition<?> columnDefinition : def.getColumns()) {
             // noinspection unchecked
-            map.put(columnDefinition.getName(), ArrayBackedColumnSource
-                .getMemoryColumnSource(rows.size(), columnDefinition.getDataType()));
+            map.put(columnDefinition.getName(),
+                    ArrayBackedColumnSource.getMemoryColumnSource(rows.size(), columnDefinition.getDataType()));
         }
 
         // Re-write column oriented

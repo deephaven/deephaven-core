@@ -8,9 +8,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.MatchTypeMap",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.MatchTypeMap",
+        namespace = JsPackage.GLOBAL)
 public interface MatchTypeMap {
     @JsOverlay
     static MatchTypeMap create() {

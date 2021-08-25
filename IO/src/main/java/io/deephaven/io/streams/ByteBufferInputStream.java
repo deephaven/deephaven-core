@@ -16,11 +16,11 @@ import io.deephaven.base.string.cache.StringCache;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * This is an InputStream implementation which reads from a java.nio.ByteBuffer. If a read operation
- * crosses the end of the buffer, the BufferUnderflowException is converted to an EOFException.
+ * This is an InputStream implementation which reads from a java.nio.ByteBuffer. If a read operation crosses the end of
+ * the buffer, the BufferUnderflowException is converted to an EOFException.
  *
- * The stream contains no state other than that in in the buffer itself, so the buffer can be
- * exchanged at will with the setBuffer() method.
+ * The stream contains no state other than that in in the buffer itself, so the buffer can be exchanged at will with the
+ * setBuffer() method.
  */
 public class ByteBufferInputStream extends java.io.InputStream implements DataInput {
 
@@ -30,9 +30,9 @@ public class ByteBufferInputStream extends java.io.InputStream implements DataIn
     private char[] utfChars;
 
     /**
-     * The DataOutput interface always writes bytes in big-endian order, while ByteBuffer allows the
-     * order to be big- or little-endian. Set this flag true to assume that the buffer is
-     * bid-endian, or false to check the buffer's order at each write.
+     * The DataOutput interface always writes bytes in big-endian order, while ByteBuffer allows the order to be big- or
+     * little-endian. Set this flag true to assume that the buffer is bid-endian, or false to check the buffer's order
+     * at each write.
      */
     // protected static final boolean ASSUME_BIG_ENDIAN = true;
 
@@ -331,8 +331,7 @@ public class ByteBufferInputStream extends java.io.InputStream implements DataIn
                 final int b2 = buf.get();
                 final int b3 = buf.get();
                 if ((b2 & 0xc0) != 0x80 || (b3 & 0xc0) != 0x80) {
-                    throw new UTFDataFormatException(
-                        "malformed second byte " + b2 + " or third byte " + b3);
+                    throw new UTFDataFormatException("malformed second byte " + b2 + " or third byte " + b3);
                 }
                 chars[length++] = (char) (((b1 & 0x0F) << 12) | ((b2 & 0x3F) << 6) | (b3 & 0x3F));
                 total -= 3;
@@ -345,7 +344,7 @@ public class ByteBufferInputStream extends java.io.InputStream implements DataIn
     }
 
     public String readUTF(@NotNull final CharSequenceAdapterBuilder output,
-        @NotNull final StringCache<String> cache) throws IOException {
+            @NotNull final StringCache<String> cache) throws IOException {
         readUTF(output);
         return cache.getCachedString(output);
     }
@@ -371,8 +370,7 @@ public class ByteBufferInputStream extends java.io.InputStream implements DataIn
                 final int b2 = buf.get();
                 final int b3 = buf.get();
                 if ((b2 & 0xc0) != 0x80 || (b3 & 0xc0) != 0x80) {
-                    throw new UTFDataFormatException(
-                        "malformed second byte " + b2 + " or third byte " + b3);
+                    throw new UTFDataFormatException("malformed second byte " + b2 + " or third byte " + b3);
                 }
                 output.append((char) (((b1 & 0x0F) << 12) | ((b2 & 0x3F) << 6) | (b3 & 0x3F)));
                 total -= 3;

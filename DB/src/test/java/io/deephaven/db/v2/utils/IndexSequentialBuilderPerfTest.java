@@ -42,8 +42,7 @@ public class IndexSequentialBuilderPerfTest {
         return bh;
     }
 
-    private static long runAndGetSamples(final int runs, final PerfStats stats,
-        final LongSupplier runner) {
+    private static long runAndGetSamples(final int runs, final PerfStats stats, final LongSupplier runner) {
         long trick = 0; // to prevent the optimizer from eliminating unused steps.
         final PerfMeasure pm = new PerfMeasure(false);
         for (int i = 0; i < runs; ++i) {
@@ -79,8 +78,7 @@ public class IndexSequentialBuilderPerfTest {
         for (PerfTest t : ts) {
             clear();
             for (int r = 0; r < runs.length; ++r) {
-                final String tname =
-                    t.name + " " + ((r == 0) ? "warmup" : "full") + " size=" + sizeFormat(sz);
+                final String tname = t.name + " " + ((r == 0) ? "warmup" : "full") + " size=" + sizeFormat(sz);
                 final long ts0 = System.nanoTime();
                 System.out.println("Running " + tname + " ...");
                 final int count = runs[r];
@@ -90,8 +88,8 @@ public class IndexSequentialBuilderPerfTest {
                 }
                 final long res = runAndGetSamples(count, stats, t.runner);
                 final long ts1 = System.nanoTime();
-                System.out.println(tname + " ran in " + secondsFormat((ts1 - ts0) / s2ns)
-                    + ", optimizer trick result = " + res);
+                System.out.println(
+                        tname + " ran in " + secondsFormat((ts1 - ts0) / s2ns) + ", optimizer trick result = " + res);
                 if (stats != null) {
                     stats.compute();
                     final double factor = 1 / s2ns;

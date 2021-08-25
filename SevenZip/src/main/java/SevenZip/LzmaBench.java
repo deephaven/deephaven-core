@@ -22,7 +22,7 @@ public class LzmaBench {
 
         public int GetRnd() {
             return ((A1 = 36969 * (A1 & 0xffff) + (A1 >>> 16)) << 16) ^
-                ((A2 = 18000 * (A2 & 0xffff) + (A2 >>> 16)));
+                    ((A2 = 18000 * (A2 & 0xffff) + (A2 >>> 16)));
         }
     };
 
@@ -239,12 +239,12 @@ public class LzmaBench {
     }
 
     static long GetTotalRating(
-        int dictionarySize,
-        long elapsedTimeEn, long sizeEn,
-        long elapsedTimeDe,
-        long inSizeDe, long outSizeDe) {
+            int dictionarySize,
+            long elapsedTimeEn, long sizeEn,
+            long elapsedTimeDe,
+            long inSizeDe, long outSizeDe) {
         return (GetCompressRating(dictionarySize, elapsedTimeEn, sizeEn) +
-            GetDecompressRating(elapsedTimeDe, inSizeDe, outSizeDe)) / 2;
+                GetDecompressRating(elapsedTimeDe, inSizeDe, outSizeDe)) / 2;
     }
 
     static void PrintValue(long v) {
@@ -261,10 +261,10 @@ public class LzmaBench {
     }
 
     static void PrintResults(
-        int dictionarySize,
-        long elapsedTime,
-        long size,
-        boolean decompressMode, long secondSize) {
+            int dictionarySize,
+            long elapsedTime,
+            long size,
+            boolean decompressMode, long secondSize) {
         long speed = MyMultDiv64(size, elapsedTime);
         PrintValue(speed / 1024);
         System.out.print(" KB/s  ");
@@ -366,7 +366,7 @@ public class LzmaBench {
         PrintResults(dictionarySize, totalEncodeTime, totalBenchSize, false, 0);
         System.out.print("     ");
         PrintResults(dictionarySize, totalDecodeTime,
-            kBufferSize * (long) numIterations, true, totalCompressedSize);
+                kBufferSize * (long) numIterations, true, totalCompressedSize);
         System.out.println("    Average");
         return 0;
     }

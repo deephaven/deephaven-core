@@ -5,8 +5,7 @@ import io.deephaven.benchmarking.BenchmarkTable;
 
 import java.util.*;
 
-public class PersistentBenchmarkTableBuilder
-    extends AbstractBenchmarkTableBuilder<PersistentBenchmarkTableBuilder> {
+public class PersistentBenchmarkTableBuilder extends AbstractBenchmarkTableBuilder<PersistentBenchmarkTableBuilder> {
 
     private final LinkedHashSet<String> groupingColumns = new LinkedHashSet<>();
     private String partitioningFormula;
@@ -50,13 +49,12 @@ public class PersistentBenchmarkTableBuilder
         columns.keySet().forEach(missingGroupingColumns::remove);
 
         if (!missingGroupingColumns.isEmpty()) {
-            throw new IllegalStateException(
-                "Grouping requested on the following nonexistant columns "
+            throw new IllegalStateException("Grouping requested on the following nonexistant columns "
                     + StringUtils.joinStrings(missingGroupingColumns, ", "));
         }
 
-        // TODO (deephaven/deephaven-core/issues/147): Replace this with a Parquet-backed table, or
-        // delete this entirely and use in-memory always
+        // TODO (deephaven/deephaven-core/issues/147): Replace this with a Parquet-backed table, or delete this entirely
+        // and use in-memory always
         return new InMemoryBenchmarkTable(name, size, rngSeed, getColumnGenerators());
     }
 }

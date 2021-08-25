@@ -22,8 +22,7 @@ public class TestDBDateTimeFormatter extends BaseArrayTestCase {
         final boolean hasTime = true;
         final int subsecondDigits = 9;
         final boolean hasTZ = true;
-        DBDateTimeFormatter dtf =
-            new DBDateTimeFormatter(isISO, hasDate, hasTime, subsecondDigits, hasTZ);
+        DBDateTimeFormatter dtf = new DBDateTimeFormatter(isISO, hasDate, hasTime, subsecondDigits, hasTZ);
 
         assertEquals("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS %t", dtf.getPattern());
         assertEquals("2015-06-13T14:12:11.123456789 MN", dtf.format(t, DBTimeZone.TZ_MN));
@@ -35,8 +34,7 @@ public class TestDBDateTimeFormatter extends BaseArrayTestCase {
         final boolean hasTime = true;
         final int subsecondDigits = 9;
         final boolean hasTZ = true;
-        DBDateTimeFormatter dtf =
-            new DBDateTimeFormatter(isISO, hasDate, hasTime, subsecondDigits, hasTZ);
+        DBDateTimeFormatter dtf = new DBDateTimeFormatter(isISO, hasDate, hasTime, subsecondDigits, hasTZ);
 
         assertEquals("yyyy-MM-dd HH:mm:ss.SSSSSSSSS %t", dtf.getPattern());
         assertEquals("2015-06-13 14:12:11.123456789 MN", dtf.format(t, DBTimeZone.TZ_MN));
@@ -48,8 +46,7 @@ public class TestDBDateTimeFormatter extends BaseArrayTestCase {
         final boolean hasTime = true;
         final int subsecondDigits = 9;
         final boolean hasTZ = true;
-        DBDateTimeFormatter dtf =
-            new DBDateTimeFormatter(isISO, hasDate, hasTime, subsecondDigits, hasTZ);
+        DBDateTimeFormatter dtf = new DBDateTimeFormatter(isISO, hasDate, hasTime, subsecondDigits, hasTZ);
 
         assertEquals("HH:mm:ss.SSSSSSSSS %t", dtf.getPattern());
         assertEquals("14:12:11.123456789 MN", dtf.format(t, DBTimeZone.TZ_MN));
@@ -61,8 +58,7 @@ public class TestDBDateTimeFormatter extends BaseArrayTestCase {
         final boolean hasTime = false;
         final int subsecondDigits = 9;
         final boolean hasTZ = true;
-        DBDateTimeFormatter dtf =
-            new DBDateTimeFormatter(isISO, hasDate, hasTime, subsecondDigits, hasTZ);
+        DBDateTimeFormatter dtf = new DBDateTimeFormatter(isISO, hasDate, hasTime, subsecondDigits, hasTZ);
 
         assertEquals("yyyy-MM-dd %t", dtf.getPattern());
         assertEquals("2015-06-13 MN", dtf.format(t, DBTimeZone.TZ_MN));
@@ -74,8 +70,7 @@ public class TestDBDateTimeFormatter extends BaseArrayTestCase {
         final boolean hasTime = true;
         final int subsecondDigits = 4;
         final boolean hasTZ = true;
-        DBDateTimeFormatter dtf =
-            new DBDateTimeFormatter(isISO, hasDate, hasTime, subsecondDigits, hasTZ);
+        DBDateTimeFormatter dtf = new DBDateTimeFormatter(isISO, hasDate, hasTime, subsecondDigits, hasTZ);
 
         assertEquals("yyyy-MM-dd'T'HH:mm:ss.SSSS %t", dtf.getPattern());
         assertEquals("2015-06-13T14:12:11.1234 MN", dtf.format(t, DBTimeZone.TZ_MN));
@@ -87,8 +82,7 @@ public class TestDBDateTimeFormatter extends BaseArrayTestCase {
         final boolean hasTime = true;
         final int subsecondDigits = 2;
         final boolean hasTZ = true;
-        DBDateTimeFormatter dtf =
-            new DBDateTimeFormatter(isISO, hasDate, hasTime, subsecondDigits, hasTZ);
+        DBDateTimeFormatter dtf = new DBDateTimeFormatter(isISO, hasDate, hasTime, subsecondDigits, hasTZ);
 
         assertEquals("yyyy-MM-dd'T'HH:mm:ss.SS %t", dtf.getPattern());
         assertEquals("2015-06-13T14:12:11.12 MN", dtf.format(t, DBTimeZone.TZ_MN));
@@ -100,8 +94,7 @@ public class TestDBDateTimeFormatter extends BaseArrayTestCase {
         final boolean hasTime = true;
         final int subsecondDigits = 9;
         final boolean hasTZ = false;
-        DBDateTimeFormatter dtf =
-            new DBDateTimeFormatter(isISO, hasDate, hasTime, subsecondDigits, hasTZ);
+        DBDateTimeFormatter dtf = new DBDateTimeFormatter(isISO, hasDate, hasTime, subsecondDigits, hasTZ);
 
         assertEquals("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS", dtf.getPattern());
         assertEquals("2015-06-13T14:12:11.123456789", dtf.format(t, DBTimeZone.TZ_MN));

@@ -6,8 +6,8 @@ import static io.deephaven.db.tables.utils.DBTimeUtils.nanosToTime;
 import static io.deephaven.util.type.TypeUtils.box;
 
 /**
- * Defaulted interfaces for various mutable {@link ColumnSource} types, in order to avoid having
- * defaults at higher levels in the class hierarchy.
+ * Defaulted interfaces for various mutable {@link ColumnSource} types, in order to avoid having defaults at higher
+ * levels in the class hierarchy.
  */
 public final class MutableColumnSourceGetDefaults {
 
@@ -15,7 +15,7 @@ public final class MutableColumnSourceGetDefaults {
      * Default interface for mutable Object {@link ColumnSource} implementations.
      */
     public interface ForObject<DATA_TYPE>
-        extends ColumnSourceGetDefaults.ForObject<DATA_TYPE>, MutableColumnSource<DATA_TYPE> {
+            extends ColumnSourceGetDefaults.ForObject<DATA_TYPE>, MutableColumnSource<DATA_TYPE> {
 
         @Override
         default Boolean getPrevBoolean(final long index) {
@@ -61,8 +61,7 @@ public final class MutableColumnSourceGetDefaults {
     /**
      * Default interface for mutable Boolean {@link ColumnSource} implementations.
      */
-    public interface ForBoolean
-        extends ColumnSourceGetDefaults.ForBoolean, MutableColumnSource<Boolean> {
+    public interface ForBoolean extends ColumnSourceGetDefaults.ForBoolean, MutableColumnSource<Boolean> {
 
         @Override
         default Boolean getPrevBoolean(final long index) {
@@ -154,8 +153,7 @@ public final class MutableColumnSourceGetDefaults {
     /**
      * Default interface for mutable char {@link ColumnSource} implementations.
      */
-    public interface ForChar
-        extends ColumnSourceGetDefaults.ForChar, MutableColumnSource<Character> {
+    public interface ForChar extends ColumnSourceGetDefaults.ForChar, MutableColumnSource<Character> {
 
         @Override
         default Character getPrev(final long index) {
@@ -201,8 +199,7 @@ public final class MutableColumnSourceGetDefaults {
     /**
      * Default interface for mutable double {@link ColumnSource} implementations.
      */
-    public interface ForDouble
-        extends ColumnSourceGetDefaults.ForDouble, MutableColumnSource<Double> {
+    public interface ForDouble extends ColumnSourceGetDefaults.ForDouble, MutableColumnSource<Double> {
 
         @Override
         default Double getPrev(final long index) {
@@ -341,7 +338,7 @@ public final class MutableColumnSourceGetDefaults {
      * Default interface for mutable long-backed {@link ColumnSource} implementations.
      */
     public interface LongBacked<DATA_TYPE>
-        extends ColumnSourceGetDefaults.LongBacked<DATA_TYPE>, MutableColumnSource<DATA_TYPE> {
+            extends ColumnSourceGetDefaults.LongBacked<DATA_TYPE>, MutableColumnSource<DATA_TYPE> {
 
         default Boolean getPrevBoolean(final long index) {
             throw new UnsupportedOperationException();
@@ -392,8 +389,7 @@ public final class MutableColumnSourceGetDefaults {
     /**
      * Default interface for mutable {@link DBDateTime} {@link ColumnSource} implementations.
      */
-    public interface ForLongAsDateTime
-        extends ColumnSourceGetDefaults.ForLongAsDateTime, LongBacked<DBDateTime> {
+    public interface ForLongAsDateTime extends ColumnSourceGetDefaults.ForLongAsDateTime, LongBacked<DBDateTime> {
 
         @Override
         default DBDateTime getPrev(final long index) {

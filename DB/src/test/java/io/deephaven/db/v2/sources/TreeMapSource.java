@@ -56,8 +56,7 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
             lastAdditionTime = currentStep;
         }
         if (index.size() != vs.length) {
-            throw new IllegalArgumentException(
-                "Index=" + index + ", data(" + vs.length + ")=" + Arrays.toString(vs));
+            throw new IllegalArgumentException("Index=" + index + ", data(" + vs.length + ")=" + Arrays.toString(vs));
         }
 
         index.forAllLongs(new LongConsumer() {
@@ -94,20 +93,16 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
         // Note: moving to the right, we need to start with rightmost data first.
         final long dir = shiftDelta > 0 ? -1 : 1;
         final long len = endKeyInclusive - startKeyInclusive + 1;
-        for (long offset = dir < 0 ? len - 1 : 0; dir < 0 ? offset >= 0 : offset < len; offset +=
-            dir) {
-            data.put(startKeyInclusive + offset + shiftDelta,
-                data.remove(startKeyInclusive + offset));
+        for (long offset = dir < 0 ? len - 1 : 0; dir < 0 ? offset >= 0 : offset < len; offset += dir) {
+            data.put(startKeyInclusive + offset + shiftDelta, data.remove(startKeyInclusive + offset));
         }
     }
 
     @Override
     public synchronized T get(long index) {
         // If a test asks for a non-existent positive index something is wrong.
-        // We have to accept negative values, because e.g. a join may find no matching right key, in
-        // which case it
-        // has an empty redirection index entry that just gets passed through to the inner column
-        // source as -1.
+        // We have to accept negative values, because e.g. a join may find no matching right key, in which case it
+        // has an empty redirection index entry that just gets passed through to the inner column source as -1.
         if (index >= 0 && !data.containsKey(index))
             throw new IllegalStateException("Asking for a non-existent key: " + index);
         return data.get(index);

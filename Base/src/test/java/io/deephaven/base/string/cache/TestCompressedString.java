@@ -72,20 +72,17 @@ public class TestCompressedString extends TestCase {
         assertEquals(cs.hashCode(), "dancing".hashCode());
         assertTrue(Arrays.equals(cs.getData(), "dancing".getBytes()));
 
-        assertTrue(CharSequenceUtils
-            .contentEquals(cs = cs("dancing with the stars!".getBytes(), 17, 5), "stars"));
+        assertTrue(CharSequenceUtils.contentEquals(cs = cs("dancing with the stars!".getBytes(), 17, 5), "stars"));
         assertEquals(cs.toString(), "stars");
         assertEquals(cs.hashCode(), "stars".hashCode());
         assertTrue(Arrays.equals(cs.getData(), "stars".getBytes()));
 
-        assertTrue(
-            CharSequenceUtils.contentEquals(cs = cs(ByteBuffer.wrap("happy".getBytes())), "happy"));
+        assertTrue(CharSequenceUtils.contentEquals(cs = cs(ByteBuffer.wrap("happy".getBytes())), "happy"));
         assertEquals(cs.toString(), "happy");
         assertEquals(cs.hashCode(), "happy".hashCode());
         assertTrue(Arrays.equals(cs.getData(), "happy".getBytes()));
 
-        assertTrue(CharSequenceUtils
-            .contentEquals(cs = cs(ByteBuffer.wrap("hedgehog!".getBytes()), 5, 3), "hog"));
+        assertTrue(CharSequenceUtils.contentEquals(cs = cs(ByteBuffer.wrap("hedgehog!".getBytes()), 5, 3), "hog"));
         assertEquals(cs.toString(), "hog");
         assertEquals(cs.hashCode(), "hog".hashCode());
         assertTrue(Arrays.equals(cs.getData(), "hog".getBytes()));

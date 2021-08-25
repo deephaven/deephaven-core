@@ -155,11 +155,10 @@ public class TestConvert extends TestCase {
         dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 
         long[] testCases = {
-                0L, 1L, 10L, 100L, 1000L, 10000L, 100000L, 1000000L, 10000000L, 100000000L,
-                1000000000L, 10000000000L, 100000000000L, 1000000000000L, 10000000000000L,
-                100000000000000L, 253402300799999L,
-                -1L, -10L, -100L, -1000L, -10000L, -100000L, -1000000L, -10000000L, -100000000L,
-                -1000000000L, -10000000000L, -100000000000L, -1000000000000L, -10000000000000L,
+                0L, 1L, 10L, 100L, 1000L, 10000L, 100000L, 1000000L, 10000000L, 100000000L, 1000000000L, 10000000000L,
+                100000000000L, 1000000000000L, 10000000000000L, 100000000000000L, 253402300799999L,
+                -1L, -10L, -100L, -1000L, -10000L, -100000L, -1000000L, -10000000L, -100000000L, -1000000000L,
+                -10000000000L, -100000000000L, -1000000000000L, -10000000000000L,
         };
         for (long testCase : testCases) {
             checkAppendIso8601Millis(testCase, dateFormat.format(testCase));
@@ -172,17 +171,14 @@ public class TestConvert extends TestCase {
         checkAppendIso8601Millis(253402300799999L, "9999-12-31T23:59:59.999");
         checkAppendIso8601Millis(253402300800000L, "9999-99-99T99:99:99.999");
 
-        checkAppendIso8601Millis(dateFormat.parse("2004-02-20T11:12:13.014").getTime(),
-            "2004-02-20T11:12:13.014");
-        checkAppendIso8601Millis(dateFormat.parse("2000-02-20T11:12:13.014").getTime(),
-            "2000-02-20T11:12:13.014");
-        checkAppendIso8601Millis(dateFormat.parse("1900-02-20T11:12:13.014").getTime(),
-            "1900-02-20T11:12:13.014");
+        checkAppendIso8601Millis(dateFormat.parse("2004-02-20T11:12:13.014").getTime(), "2004-02-20T11:12:13.014");
+        checkAppendIso8601Millis(dateFormat.parse("2000-02-20T11:12:13.014").getTime(), "2000-02-20T11:12:13.014");
+        checkAppendIso8601Millis(dateFormat.parse("1900-02-20T11:12:13.014").getTime(), "1900-02-20T11:12:13.014");
 
         {
             ByteBuffer byteBuffer = ByteBuffer.allocate(100);
-            assertSame(byteBuffer, Convert.appendISO8601Millis(0,
-                new byte[] {'_', 's', 'u', 'f', 'f', 'i', 'x'}, byteBuffer));
+            assertSame(byteBuffer,
+                    Convert.appendISO8601Millis(0, new byte[] {'_', 's', 'u', 'f', 'f', 'i', 'x'}, byteBuffer));
             assertBufferEqual(byteBuffer, 0, "1970-01-01T00:00:00.000_suffix");
         }
     }
@@ -241,16 +237,16 @@ public class TestConvert extends TestCase {
         checkAppendIso8601Micros(253402300800000000L, "9999-99-99T99:99:99.999999");
 
         checkAppendIso8601Micros(dateFormat.parse("2004-02-20T11:12:13.014").getTime() * 1000,
-            "2004-02-20T11:12:13.014000");
+                "2004-02-20T11:12:13.014000");
         checkAppendIso8601Micros(dateFormat.parse("2000-02-20T11:12:13.014").getTime() * 1000,
-            "2000-02-20T11:12:13.014000");
+                "2000-02-20T11:12:13.014000");
         checkAppendIso8601Micros(dateFormat.parse("1900-02-20T11:12:13.014").getTime() * 1000,
-            "1900-02-20T11:12:13.014000");
+                "1900-02-20T11:12:13.014000");
 
         {
             ByteBuffer byteBuffer = ByteBuffer.allocate(100);
-            assertSame(byteBuffer, Convert.appendISO8601Micros(0,
-                new byte[] {'_', 's', 'u', 'f', 'f', 'i', 'x'}, byteBuffer));
+            assertSame(byteBuffer,
+                    Convert.appendISO8601Micros(0, new byte[] {'_', 's', 'u', 'f', 'f', 'i', 'x'}, byteBuffer));
             assertBufferEqual(byteBuffer, 0, "1970-01-01T00:00:00.000000_suffix");
         }
     }

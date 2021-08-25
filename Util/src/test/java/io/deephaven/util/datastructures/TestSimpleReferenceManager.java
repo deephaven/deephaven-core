@@ -46,9 +46,8 @@ public class TestSimpleReferenceManager {
     @SuppressWarnings({"NumberEquality", "PointlessArithmeticExpression"})
     private void doTest(final boolean concurrent) {
         final SimpleReferenceManager<MutableInt, SimpleReference<MutableInt>> SUT =
-            new SimpleReferenceManager<>((final MutableInt item) -> ((IntRef) item), concurrent);
-        final IntRef[] items =
-            IntStream.range(0, 1000).mapToObj(IntRef::new).toArray(IntRef[]::new);
+                new SimpleReferenceManager<>((final MutableInt item) -> ((IntRef) item), concurrent);
+        final IntRef[] items = IntStream.range(0, 1000).mapToObj(IntRef::new).toArray(IntRef[]::new);
 
         Arrays.stream(items, 0, 500).forEach(SUT::add);
 
@@ -56,26 +55,22 @@ public class TestSimpleReferenceManager {
         testSumExpectations(SUT, expectedSum);
 
         Arrays.stream(items, 0, 500).forEach((final IntRef item) -> TestCase.assertSame(item,
-            SUT.getFirstItem((final MutableInt other) -> item == other)));
+                SUT.getFirstItem((final MutableInt other) -> item == other)));
         Arrays.stream(items, 0, 500).forEach((final IntRef item) -> TestCase.assertSame(item,
-            SUT.getFirstReference((final MutableInt other) -> item == other)));
+                SUT.getFirstReference((final MutableInt other) -> item == other)));
 
         items[200].clear();
         expectedSum -= 200;
-        TestCase.assertSame(items[199],
-            SUT.getFirstItem((final MutableInt other) -> items[199] == other));
+        TestCase.assertSame(items[199], SUT.getFirstItem((final MutableInt other) -> items[199] == other));
         TestCase.assertNull(SUT.getFirstItem((final MutableInt other) -> items[200] == other));
-        TestCase.assertSame(items[201],
-            SUT.getFirstItem((final MutableInt other) -> items[201] == other));
+        TestCase.assertSame(items[201], SUT.getFirstItem((final MutableInt other) -> items[201] == other));
         testSumExpectations(SUT, expectedSum);
 
         items[300].clear();
         expectedSum -= 300;
-        TestCase.assertSame(items[299],
-            SUT.getFirstReference((final MutableInt other) -> items[299] == other));
+        TestCase.assertSame(items[299], SUT.getFirstReference((final MutableInt other) -> items[299] == other));
         TestCase.assertNull(SUT.getFirstReference((final MutableInt other) -> items[300] == other));
-        TestCase.assertSame(items[301],
-            SUT.getFirstReference((final MutableInt other) -> items[301] == other));
+        TestCase.assertSame(items[301], SUT.getFirstReference((final MutableInt other) -> items[301] == other));
         testSumExpectations(SUT, expectedSum);
 
         items[400].clear();
@@ -97,9 +92,8 @@ public class TestSimpleReferenceManager {
         testSumExpectations(SUT, expectedSum);
     }
 
-    private void testSumExpectations(
-        @NotNull final SimpleReferenceManager<MutableInt, SimpleReference<MutableInt>> SUT,
-        final int expectedSum) {
+    private void testSumExpectations(@NotNull final SimpleReferenceManager<MutableInt, SimpleReference<MutableInt>> SUT,
+            final int expectedSum) {
         final MutableInt sum = new MutableInt();
         SUT.forEach((final SimpleReference<MutableInt> ref, final MutableInt item) -> {
             TestCase.assertSame(ref, item);

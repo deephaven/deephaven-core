@@ -16,8 +16,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Utilities for downsampling non-ticking time series data within a query. The input table must be
- * sorted by the {@link DBDateTime} column to be used for binning rows.
+ * Utilities for downsampling non-ticking time series data within a query. The input table must be sorted by the
+ * {@link DBDateTime} column to be used for binning rows.
  * <p>
  * </p>
  * <p>
@@ -45,12 +45,11 @@ public class DownsampledWhereFilter extends SelectFilterImpl {
     }
 
     /**
-     * Creates a {@link DownsampledWhereFilter} which can be used in a .where clause to downsample
-     * time series rows.
+     * Creates a {@link DownsampledWhereFilter} which can be used in a .where clause to downsample time series rows.
      * 
      * @param column {@link DBDateTime} column to use for filtering.
-     * @param binSize Size in nanoseconds for the time bins. Constants like
-     *        {@link DBTimeUtils#MINUTE} are typically used.
+     * @param binSize Size in nanoseconds for the time bins. Constants like {@link DBTimeUtils#MINUTE} are typically
+     *        used.
      * @param order {@link SampleOrder} to set desired behavior.
      */
     public DownsampledWhereFilter(String column, long binSize, SampleOrder order) {
@@ -60,12 +59,11 @@ public class DownsampledWhereFilter extends SelectFilterImpl {
     }
 
     /**
-     * Creates a {@link DownsampledWhereFilter} which can be used in a .where clause to downsample
-     * time series rows.
+     * Creates a {@link DownsampledWhereFilter} which can be used in a .where clause to downsample time series rows.
      * 
      * @param column {@link DBDateTime} column to use for filtering.
-     * @param binSize Size in nanoseconds for the time bins. Constants like
-     *        {@link DBTimeUtils#MINUTE} are typically used.
+     * @param binSize Size in nanoseconds for the time bins. Constants like {@link DBTimeUtils#MINUTE} are typically
+     *        used.
      */
     public DownsampledWhereFilter(String column, long binSize) {
         this.column = column;
@@ -89,8 +87,7 @@ public class DownsampledWhereFilter extends SelectFilterImpl {
     @Override
     public Index filter(Index selection, Index fullSet, Table table, boolean usePrev) {
         if (DynamicNode.isDynamicAndIsRefreshing(table)) {
-            throw new UnsupportedOperationException(
-                "Can not do a DownsampledWhereFilter on a refreshing table!");
+            throw new UnsupportedOperationException("Can not do a DownsampledWhereFilter on a refreshing table!");
         }
 
         // NB: because our source is not refreshing, we don't care about the previous values
@@ -112,8 +109,7 @@ public class DownsampledWhereFilter extends SelectFilterImpl {
             hasNext = it.hasNext();
 
             DBDateTime timestamp = timestampColumn.get(next);
-            DBDateTime bin =
-                (order == SampleOrder.UPPERLAST) ? DBTimeUtils.upperBin(timestamp, binSize)
+            DBDateTime bin = (order == SampleOrder.UPPERLAST) ? DBTimeUtils.upperBin(timestamp, binSize)
                     : DBTimeUtils.lowerBin(timestamp, binSize);
             if (!hasNext) {
                 if (order == SampleOrder.UPPERLAST) {

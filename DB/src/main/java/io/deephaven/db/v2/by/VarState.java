@@ -55,9 +55,9 @@ class VarState implements PreviousStateProvider<VarState> {
     @Override
     public String toString() {
         return "Var{" +
-            "sum=" + sum +
-            ", sum2=" + sum2 +
-            ", nonNull=" + nonNullCount +
-            '}';
+                "sum=" + sum +
+                ", sum2=" + sum2 +
+                ", nonNull=" + nonNullCount +
+                '}';
     }
 }

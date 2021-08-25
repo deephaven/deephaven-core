@@ -5,10 +5,10 @@ import io.deephaven.lang.generated.Node;
 /**
  * Represents the state of a "currently being parsed node".
  *
- * For now, we're going to use this to have our own hierarchy of ast nodes outside of the generated
- * jjt state machine, and in the future, the hope is that this will also allow us to perform
- * resumable / incremental document parsing, by simply invalidating any changed ParseState, and then
- * restarting the parser in the correct state, over the changed set of text.
+ * For now, we're going to use this to have our own hierarchy of ast nodes outside of the generated jjt state machine,
+ * and in the future, the hope is that this will also allow us to perform resumable / incremental document parsing, by
+ * simply invalidating any changed ParseState, and then restarting the parser in the correct state, over the changed set
+ * of text.
  *
  */
 public class ParseState {

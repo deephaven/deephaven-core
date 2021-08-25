@@ -17,8 +17,7 @@ public interface WritableChunk<ATTR extends Any> extends Chunk<ATTR>, PoolableCh
     WritableChunk<ATTR> slice(int offset, int capacity);
 
     /**
-     * Fill a sub-range of this writable chunk with the appropriate Deephaven null value for the
-     * type.
+     * Fill a sub-range of this writable chunk with the appropriate Deephaven null value for the type.
      *
      * @param offset Starting offset
      * @param size Number of values to fill
@@ -45,25 +44,24 @@ public interface WritableChunk<ATTR extends Any> extends Chunk<ATTR>, PoolableCh
 
     /**
      * <p>
-     * Fill a sub-range of this writable chunk with values from a {@link Buffer}. This is an
-     * optional method, as some chunk types do not have a corresponding buffer type.
+     * Fill a sub-range of this writable chunk with values from a {@link Buffer}. This is an optional method, as some
+     * chunk types do not have a corresponding buffer type.
      *
      * <p>
-     * Implementations are free to copy data as efficiently as they may, and will use absolute
-     * rather than positional access where possible. To facilitate this pattern, {@code srcOffset}
-     * is an absolute offset from position 0, rather than a relative offset from
-     * {@code srcBuffer.position()}.
+     * Implementations are free to copy data as efficiently as they may, and will use absolute rather than positional
+     * access where possible. To facilitate this pattern, {@code srcOffset} is an absolute offset from position 0,
+     * rather than a relative offset from {@code srcBuffer.position()}.
      *
      * <p>
      * <It is required that {@code srcBuffer.limit()} is at least {@code srcOffset + length}.
      *
      * <p>
-     * {@code srcBuffer}'s position may be modified, but will always be restored to its initial
-     * value upon successful return.
+     * {@code srcBuffer}'s position may be modified, but will always be restored to its initial value upon successful
+     * return.
      *
      * @param srcBuffer The source buffer, which will be cast to the appropriate type for this chunk
-     * @param srcOffset The offset into {@code srcBuffer} (from position 0, <em>not</em>
-     *        {@code srcBuffer.position()}) to start copying from
+     * @param srcOffset The offset into {@code srcBuffer} (from position 0, <em>not</em> {@code srcBuffer.position()})
+     *        to start copying from
      * @param destOffset The offset into this chunk to start copying to
      * @param length The number of elements to copy
      */
@@ -76,9 +74,8 @@ public interface WritableChunk<ATTR extends Any> extends Chunk<ATTR>, PoolableCh
     }
 
     /**
-     * DO NOT CALL THIS INTERNAL METHOD. If you want to set a size, call
-     * {@link WritableChunk#setSize}. That method is the only legal caller of this method in the
-     * entire system.
+     * DO NOT CALL THIS INTERNAL METHOD. If you want to set a size, call {@link WritableChunk#setSize}. That method is
+     * the only legal caller of this method in the entire system.
      */
     void internalSetSize(int newSize, long password);
 
@@ -87,8 +84,8 @@ public interface WritableChunk<ATTR extends Any> extends Chunk<ATTR>, PoolableCh
     }
 
     /**
-     * DO NOT CALL THIS INTERNAL METHOD. Call {@link WritableChunk#capacity()} That method is the
-     * only legal caller of this method in the entire system.
+     * DO NOT CALL THIS INTERNAL METHOD. Call {@link WritableChunk#capacity()} That method is the only legal caller of
+     * this method in the entire system.
      */
     int internalCapacity(long password);
 
@@ -152,15 +149,14 @@ public interface WritableChunk<ATTR extends Any> extends Chunk<ATTR>, PoolableCh
     /**
      * Upcast the attribute.
      *
-     * When you know the data you will receive in this chunk from another source is a more specific
-     * suptype than the source provides, you can upcast the attribute with this helper method (such
-     * as reading KeyIndices from a ColumnSource which thinks they are just Values.)
+     * When you know the data you will receive in this chunk from another source is a more specific suptype than the
+     * source provides, you can upcast the attribute with this helper method (such as reading KeyIndices from a
+     * ColumnSource which thinks they are just Values.)
      *
-     * @apiNote Downcast should not be necessary on WritableChunks, as a WritableChunk filling
-     *          method should accept an lower bound wildcard.
+     * @apiNote Downcast should not be necessary on WritableChunks, as a WritableChunk filling method should accept an
+     *          lower bound wildcard.
      */
-    static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableChunk<ATTR> upcast(
-        WritableChunk<ATTR_DERIV> self) {
+    static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableChunk<ATTR> upcast(WritableChunk<ATTR_DERIV> self) {
         // noinspection unchecked
         return (WritableChunk<ATTR>) self;
     }

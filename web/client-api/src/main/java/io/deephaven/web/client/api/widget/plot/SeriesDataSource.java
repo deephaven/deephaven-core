@@ -19,8 +19,8 @@ public class SeriesDataSource {
 
     public void initColumnType(Map<Integer, JsTable> tables) {
         if (sourceDescriptor.getTableId() != -1) {
-            columnType = tables.get(sourceDescriptor.getTableId())
-                .findColumn(sourceDescriptor.getColumnName()).getType();
+            columnType =
+                    tables.get(sourceDescriptor.getTableId()).findColumn(sourceDescriptor.getColumnName()).getType();
         } else if (sourceDescriptor.getTableMapId() != -1) {
             columnType = sourceDescriptor.getColumnType();
         } else {

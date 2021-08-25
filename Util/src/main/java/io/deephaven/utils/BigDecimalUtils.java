@@ -34,16 +34,15 @@ public class BigDecimalUtils {
         }
 
         final double intermediateInitial = Math.sqrt(x.doubleValue());
-        final double initial = Double.isFinite(intermediateInitial) ? intermediateInitial
-            : Math.sqrt(Double.MAX_VALUE);
+        final double initial = Double.isFinite(intermediateInitial) ? intermediateInitial : Math.sqrt(Double.MAX_VALUE);
 
         final BigDecimal epsilon = new BigDecimal(BigInteger.ONE, scale);
 
         BigDecimal x0 = BigDecimal.valueOf(initial);
 
         while (true) {
-            final BigDecimal x1 = x0.add(x.divide(x0, scale, BigDecimal.ROUND_HALF_UP)).divide(TWO,
-                scale, BigDecimal.ROUND_HALF_UP);
+            final BigDecimal x1 =
+                    x0.add(x.divide(x0, scale, BigDecimal.ROUND_HALF_UP)).divide(TWO, scale, BigDecimal.ROUND_HALF_UP);
 
             final BigDecimal difference = x1.subtract(x0).abs();
             x0 = x1;

@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.Flight_pb.Criteria",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.Flight_pb.Criteria",
+        namespace = JsPackage.GLOBAL)
 public class Criteria {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface GetExpressionUnionType {
@@ -113,13 +113,13 @@ public class Criteria {
         @JsOverlay
         default void setExpression(String expression) {
             setExpression(
-                Js.<Criteria.ToObjectReturnType.GetExpressionUnionType>uncheckedCast(expression));
+                    Js.<Criteria.ToObjectReturnType.GetExpressionUnionType>uncheckedCast(expression));
         }
 
         @JsOverlay
         default void setExpression(Uint8Array expression) {
             setExpression(
-                Js.<Criteria.ToObjectReturnType.GetExpressionUnionType>uncheckedCast(expression));
+                    Js.<Criteria.ToObjectReturnType.GetExpressionUnionType>uncheckedCast(expression));
         }
     }
 
@@ -167,13 +167,13 @@ public class Criteria {
         @JsOverlay
         default void setExpression(String expression) {
             setExpression(
-                Js.<Criteria.ToObjectReturnType0.GetExpressionUnionType>uncheckedCast(expression));
+                    Js.<Criteria.ToObjectReturnType0.GetExpressionUnionType>uncheckedCast(expression));
         }
 
         @JsOverlay
         default void setExpression(Uint8Array expression) {
             setExpression(
-                Js.<Criteria.ToObjectReturnType0.GetExpressionUnionType>uncheckedCast(expression));
+                    Js.<Criteria.ToObjectReturnType0.GetExpressionUnionType>uncheckedCast(expression));
         }
     }
 
@@ -183,8 +183,7 @@ public class Criteria {
 
     public static native void serializeBinaryToWriter(Criteria message, Object writer);
 
-    public static native Criteria.ToObjectReturnType toObject(boolean includeInstance,
-        Criteria msg);
+    public static native Criteria.ToObjectReturnType toObject(boolean includeInstance, Criteria msg);
 
     public native Criteria.GetExpressionUnionType getExpression();
 

@@ -12,7 +12,7 @@ public class VarStateFactory extends IterativeOperatorStateFactory {
 
     @Override
     public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name,
-        boolean exposeInternalColumns) {
+            boolean exposeInternalColumns) {
         return getVarChunked(type, false, name, exposeInternalColumns);
     }
 

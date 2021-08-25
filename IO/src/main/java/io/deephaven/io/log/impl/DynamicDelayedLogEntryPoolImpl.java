@@ -10,18 +10,16 @@ import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.LogEntryPool;
 import io.deephaven.io.logger.LoggerTimeSource;
 
-public class DynamicDelayedLogEntryPoolImpl extends ThreadSafeLenientFixedSizePool<LogEntry>
-    implements LogEntryPool {
+public class DynamicDelayedLogEntryPoolImpl extends ThreadSafeLenientFixedSizePool<LogEntry> implements LogEntryPool {
     private final LoggerTimeSource timeSource;
 
-    public DynamicDelayedLogEntryPoolImpl(String name, int entryCount,
-        final LoggerTimeSource timeSource) {
+    public DynamicDelayedLogEntryPoolImpl(String name, int entryCount, final LoggerTimeSource timeSource) {
         super(name, entryCount,
-            new Function.Nullary<LogEntry>() {
-                public LogEntry call() {
-                    return new DelayedLogEntryImpl(timeSource);
-                }
-            }, null);
+                new Function.Nullary<LogEntry>() {
+                    public LogEntry call() {
+                        return new DelayedLogEntryImpl(timeSource);
+                    }
+                }, null);
         this.timeSource = timeSource;
     }
 

@@ -26,10 +26,10 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         final Random random = new Random(0);
         final TstUtils.ColumnInfo columnInfo[];
         final QueryTable queryTable = getTable(size, random,
-            columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
-                new TstUtils.SetGenerator<>("a", "b", "c", "d"),
-                new TstUtils.IntGenerator(10, 100, 0.1),
-                new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
+                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
+                        new TstUtils.SetGenerator<>("a", "b", "c", "d"),
+                        new TstUtils.IntGenerator(10, 100, 0.1),
+                        new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
         if (printTableUpdates) {
             showWithIndex(queryTable);
         }
@@ -52,7 +52,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
                     }
                 },
                 new TableComparator(queryTable.updateView("i2=intCol*2").flatten(),
-                    queryTable.flatten().updateView("i2=intCol*2")),
+                        queryTable.flatten().updateView("i2=intCol*2")),
         };
         for (int i = 0; i < 100; i++) {
             simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
@@ -80,8 +80,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         data[7] = 101;
         data[8] = 102;
         data[9] = 104;
-        final QueryTable queryTable =
-            TstUtils.testRefreshingTable(i(data), longCol("intCol", data));
+        final QueryTable queryTable = TstUtils.testRefreshingTable(i(data), longCol("intCol", data));
 
         final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
 
@@ -102,11 +101,9 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         for (int ii = 0; ii < data.length; ++ii) {
             data[ii] = ii * 10;
         }
-        final QueryTable queryTable =
-            TstUtils.testRefreshingTable(indexByRange(0, 9), c("intCol", data));
+        final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9), c("intCol", data));
 
-        final TestHelper helper =
-            new TestHelper<>(queryTable.flatten(), SimpleShiftAwareListener::new);
+        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleShiftAwareListener::new);
 
         helper.modAndValidate(() -> {
             addToTable(queryTable, i(0), c("intCol", 1));
@@ -121,8 +118,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         for (int ii = 0; ii < data.length; ++ii) {
             data[ii] = ii * 10;
         }
-        final QueryTable queryTable =
-            TstUtils.testRefreshingTable(indexByRange(0, 9), c("intCol", data));
+        final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9), c("intCol", data));
 
         final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
 
@@ -139,11 +135,9 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         for (int ii = 0; ii < data.length; ++ii) {
             data[ii] = ii * 10;
         }
-        final QueryTable queryTable =
-            TstUtils.testRefreshingTable(indexByRange(0, 9), c("intCol", data));
+        final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9), c("intCol", data));
 
-        final TestHelper helper =
-            new TestHelper<>(queryTable.flatten(), SimpleShiftAwareListener::new);
+        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleShiftAwareListener::new);
 
         helper.modAndValidate(() -> {
             addToTable(queryTable, i(8), c("intCol", 1));
@@ -159,8 +153,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         for (int ii = 0; ii < data.length; ++ii) {
             data[ii] = ii * 10;
         }
-        final QueryTable queryTable =
-            TstUtils.testRefreshingTable(indexByRange(0, 9), c("intCol", data));
+        final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9), c("intCol", data));
 
         final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
 
@@ -184,11 +177,9 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         data[7] = 101;
         data[8] = 102;
         data[9] = 104;
-        final QueryTable queryTable =
-            TstUtils.testRefreshingTable(i(data), longCol("intCol", data));
+        final QueryTable queryTable = TstUtils.testRefreshingTable(i(data), longCol("intCol", data));
 
-        final TestHelper helper =
-            new TestHelper<>(queryTable.flatten(), SimpleShiftAwareListener::new);
+        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleShiftAwareListener::new);
 
         helper.modAndValidate(() -> {
             addToTable(queryTable, i(70, 71, 78, 81), longCol("intCol", 70, 71, 78, 81));
@@ -200,10 +191,9 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
     @Test
     public void testFlattenModifications() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6),
-            c("intCol", 10, 20, 40, 60));
+                c("intCol", 10, 20, 40, 60));
 
-        final TestHelper helper =
-            new TestHelper<>(queryTable.flatten(), SimpleShiftAwareListener::new);
+        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleShiftAwareListener::new);
 
         helper.modAndValidate(() -> {
             addToTable(queryTable, i(3), c("intCol", 30));
@@ -241,36 +231,33 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
             } else if (listener instanceof ShiftAwareListener) {
                 this.sourceTable.listenForUpdates((ShiftAwareListener) listener);
             } else {
-                throw new IllegalArgumentException(
-                    "Listener type unsupported: " + listener.getClass().getName());
+                throw new IllegalArgumentException("Listener type unsupported: " + listener.getClass().getName());
             }
 
             validator = TableUpdateValidator.make(this.sourceTable);
             final QueryTable validatorTable = validator.getResultTable();
             final ShiftAwareListener validatorTableListener =
-                new InstrumentedShiftAwareListenerAdapter(validatorTable, false) {
-                    @Override
-                    public void onUpdate(Update upstream) {}
+                    new InstrumentedShiftAwareListenerAdapter(validatorTable, false) {
+                        @Override
+                        public void onUpdate(Update upstream) {}
 
-                    @Override
-                    public void onFailureInternal(Throwable originalException,
-                        UpdatePerformanceTracker.Entry sourceEntry) {
-                        TestCase.fail(originalException.getMessage());
-                    }
-                };
+                        @Override
+                        public void onFailureInternal(Throwable originalException,
+                                UpdatePerformanceTracker.Entry sourceEntry) {
+                            TestCase.fail(originalException.getMessage());
+                        }
+                    };
             validatorTable.listenForUpdates(validatorTableListener);
 
             showWithIndex(sourceTable);
         }
 
-        void modAndValidate(final Runnable modTable, final Index added, final Index removed,
-            final Index modified) {
+        void modAndValidate(final Runnable modTable, final Index added, final Index removed, final Index modified) {
             modAndValidate(modTable, added, removed, modified, IndexShiftData.EMPTY);
         }
 
-        void modAndValidate(final Runnable modTable, final Index added, final Index removed,
-            final Index modified,
-            final IndexShiftData shifted) {
+        void modAndValidate(final Runnable modTable, final Index added, final Index removed, final Index modified,
+                final IndexShiftData shifted) {
             ++updateCount;
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(modTable::run);
@@ -280,8 +267,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
                 Assert.assertEquals(0, shifted.size());
                 validate((SimpleListener) listener, updateCount, added, removed, modified);
             } else if (listener instanceof SimpleShiftAwareListener) {
-                validate((SimpleShiftAwareListener) listener, updateCount, added, removed, modified,
-                    shifted);
+                validate((SimpleShiftAwareListener) listener, updateCount, added, removed, modified, shifted);
             }
         }
     }
@@ -292,8 +278,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
 
     private static IndexShiftData shiftDataByValues(long... values) {
         if (values.length % 3 != 0) {
-            throw new IllegalArgumentException(
-                "shift data is defined by triplets {start, end, shift}");
+            throw new IllegalArgumentException("shift data is defined by triplets {start, end, shift}");
         }
         IndexShiftData.Builder builder = new IndexShiftData.Builder();
         for (int idx = 0; idx < values.length; idx += 3) {
@@ -303,16 +288,15 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
     }
 
     private static void validate(final SimpleListener listener, final long count, final Index added,
-        final Index removed, final Index modified) {
+            final Index removed, final Index modified) {
         Assert.assertEquals("simpleListener.getCount()", count, listener.getCount());
         Assert.assertEquals("simpleListener.added", added, listener.added);
         Assert.assertEquals("simpleListener.removed", removed, listener.removed);
         Assert.assertEquals("simpleListener.modified", modified, listener.modified);
     }
 
-    private static void validate(final SimpleShiftAwareListener listener, final long count,
-        final Index added,
-        final Index removed, final Index modified, final IndexShiftData shifted) {
+    private static void validate(final SimpleShiftAwareListener listener, final long count, final Index added,
+            final Index removed, final Index modified, final IndexShiftData shifted) {
         Assert.assertEquals("simpleListener.getCount()", count, listener.getCount());
         Assert.assertEquals("simpleListener.added", added, listener.update.added);
         Assert.assertEquals("simpleListener.removed", removed, listener.update.removed);
@@ -344,8 +328,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
     }
 
     public void testFlattenFollowedBySumBy() {
-        // TODO: Write a test that just makes a RedirectedColumnSource with a wrapper, and
-        // fill/query it.
+        // TODO: Write a test that just makes a RedirectedColumnSource with a wrapper, and fill/query it.
         final QueryTable upstream = TstUtils.testRefreshingTable(ir(0, 100_000));
         final Table input = upstream.updateView("A=ii", "B=ii % 1000", "C=ii % 2 == 0");
         final Table odds = input.where("!C");

@@ -66,12 +66,12 @@ public class SimpleDeephavenClient {
         // Assign properties that need to be set to even turn on
         System.setProperty("Configuration.rootFile", "grpc-api.prop");
         System.setProperty("io.deephaven.configuration.PropertyInputStreamLoader.override",
-            "io.deephaven.configuration.PropertyInputStreamLoaderTraditional");
+                "io.deephaven.configuration.PropertyInputStreamLoaderTraditional");
 
         final String target = args.length == 0 ? "localhost:8080" : args[0];
         final ManagedChannel channel = ManagedChannelBuilder.forTarget(target)
-            .usePlaintext()
-            .build();
+                .usePlaintext()
+                .build();
 
         final Scheduler scheduler = DeephavenApiServerModule.provideScheduler(2);
         final SimpleDeephavenClient client = new SimpleDeephavenClient(scheduler, channel);
@@ -106,11 +106,11 @@ public class SimpleDeephavenClient {
 
         // no payload in this simple server auth
         sessionService.newSession(HandshakeRequest.newBuilder().setAuthProtocol(1).build(),
-            new ResponseBuilder<HandshakeResponse>()
-                .onError(this::onError)
-                .onComplete(this::runScript)
-                .onNext(this::onNewHandshakeResponse)
-                .build());
+                new ResponseBuilder<HandshakeResponse>()
+                        .onError(this::onError)
+                        .onComplete(this::runScript)
+                        .onNext(this::onNewHandshakeResponse)
+                        .build());
     }
 
     private void stop() {
@@ -137,74 +137,67 @@ public class SimpleDeephavenClient {
         log.info().append("Script Running: ").endl();
 
         sessionService.exportNotifications(ExportNotificationRequest.getDefaultInstance(),
-            new ResponseBuilder<ExportNotification>()
-                .onNext(m -> onExportNotificationMessage("global: ", m))
-                .onError((err) -> log.error().append("export notification listener error: ")
-                    .append(err).endl())
-                .onComplete(
-                    () -> log.info().append("export notification listener completed").endl())
-                .build());
+                new ResponseBuilder<ExportNotification>()
+                        .onNext(m -> onExportNotificationMessage("global: ", m))
+                        .onError((err) -> log.error().append("export notification listener error: ").append(err).endl())
+                        .onComplete(() -> log.info().append("export notification listener completed").endl())
+                        .build());
 
         tableService.exportedTableUpdates(ExportedTableUpdatesRequest.getDefaultInstance(),
-            new ResponseBuilder<ExportedTableUpdateMessage>()
-                .onNext(this::onTableUpdate)
-                .onError(
-                    (err) -> log.error().append("table update listener error: ").append(err).endl())
-                .onComplete(() -> log.info().append("table update listener completed").endl())
-                .build());
+                new ResponseBuilder<ExportedTableUpdateMessage>()
+                        .onNext(this::onTableUpdate)
+                        .onError((err) -> log.error().append("table update listener error: ").append(err).endl())
+                        .onComplete(() -> log.info().append("table update listener completed").endl())
+                        .build());
 
         tableService.batch(BatchTableRequest.newBuilder()
-            .addOps(BatchTableRequest.Operation.newBuilder()
-                .setTimeTable(TimeTableRequest.newBuilder()
-                    .setPeriodNanos(1_000_000_000)))
-            .addOps(BatchTableRequest.Operation.newBuilder()
-                .setTimeTable(TimeTableRequest.newBuilder()
-                    .setPeriodNanos(12_000_000)))
-            .addOps(BatchTableRequest.Operation.newBuilder()
-                .setUpdate(SelectOrUpdateRequest.newBuilder()
-                    .addColumnSpecs("I = i")
-                    .addColumnSpecs("II = ii")
-                    .addColumnSpecs("S = `` + i")
-                    .setResultId(exportTable)
-                    .setSourceId(TableReference.newBuilder().setBatchOffset(1).build())
-                    .build()))
-            .build(),
-            new ResponseBuilder<ExportedTableCreationResponse>()
-                .onError(this::onError)
-                .onNext(this::onExportedTableCreationResponse)
-                .onComplete(() -> log.info().append("Batch Complete"))
-                .build());
+                .addOps(BatchTableRequest.Operation.newBuilder().setTimeTable(TimeTableRequest.newBuilder()
+                        .setPeriodNanos(1_000_000_000)))
+                .addOps(BatchTableRequest.Operation.newBuilder().setTimeTable(TimeTableRequest.newBuilder()
+                        .setPeriodNanos(12_000_000)))
+                .addOps(BatchTableRequest.Operation.newBuilder().setUpdate(SelectOrUpdateRequest.newBuilder()
+                        .addColumnSpecs("I = i")
+                        .addColumnSpecs("II = ii")
+                        .addColumnSpecs("S = `` + i")
+                        .setResultId(exportTable)
+                        .setSourceId(TableReference.newBuilder().setBatchOffset(1).build())
+                        .build()))
+                .build(),
+                new ResponseBuilder<ExportedTableCreationResponse>()
+                        .onError(this::onError)
+                        .onNext(this::onExportedTableCreationResponse)
+                        .onComplete(() -> log.info().append("Batch Complete"))
+                        .build());
 
         flightService.getSchema(
-            ExportTicketHelper.ticketToDescriptor(exportTable),
-            new ResponseBuilder<Flight.SchemaResult>()
-                .onError(this::onError)
-                .onNext(this::onSchemaResult)
-                .build());
+                ExportTicketHelper.ticketToDescriptor(exportTable),
+                new ResponseBuilder<Flight.SchemaResult>()
+                        .onError(this::onError)
+                        .onNext(this::onSchemaResult)
+                        .build());
 
         final StreamObserver<Flight.FlightData> putObserver =
-            flightService.doPut(new ResponseBuilder<Flight.PutResult>()
-                .onError(this::onError)
-                .onComplete(() -> log.info().append("Flight PUT Complete").endl())
-                .build());
+                flightService.doPut(new ResponseBuilder<Flight.PutResult>()
+                        .onError(this::onError)
+                        .onComplete(() -> log.info().append("Flight PUT Complete").endl())
+                        .build());
         flightService.doGet(Flight.Ticket.newBuilder().setTicket(exportTable.getTicket()).build(),
-            new ResponseBuilder<Flight.FlightData>()
-                .onError(this::onError)
-                .onNext(data -> {
-                    log.info().append("DoGet Recv Payload").endl();
-                    putObserver.onNext(data);
-                })
-                .onComplete(putObserver::onCompleted)
-                .build());
+                new ResponseBuilder<Flight.FlightData>()
+                        .onError(this::onError)
+                        .onNext(data -> {
+                            log.info().append("DoGet Recv Payload").endl();
+                            putObserver.onNext(data);
+                        })
+                        .onComplete(putObserver::onCompleted)
+                        .build());
     }
 
     private void onSchemaResult(final Flight.SchemaResult schemaResult) {
-        final Schema schema =
-            Schema.getRootAsSchema(schemaResult.getSchema().asReadOnlyByteBuffer());
+        final Schema schema = Schema.getRootAsSchema(schemaResult.getSchema().asReadOnlyByteBuffer());
         final TableDefinition definition = BarrageSchemaUtil.schemaToTableDefinition(schema);
 
-        // Note: until subscriptions move to flatbuffer, we cannot distinguish between the
-        // all-inclusive non-existing-bitset and an empty bitset.
+        // Note: until subscriptions move to flatbuffer, we cannot distinguish between the all-inclusive
+        // non-existing-bitset and an empty bitset.
         final BitSet columns = new BitSet();
         columns.set(0, definition.getColumns().length);
 
@@ -212,7 +205,7 @@ public class SimpleDeephavenClient {
         final InstrumentedShiftAwareListener listener = new InstrumentedShiftAwareListener("test") {
             @Override
             protected void onFailureInternal(final Throwable originalException,
-                final UpdatePerformanceTracker.Entry sourceEntry) {
+                    final UpdatePerformanceTracker.Entry sourceEntry) {
                 SimpleDeephavenClient.this.onError(originalException);
             }
 
@@ -224,29 +217,27 @@ public class SimpleDeephavenClient {
         resultTable.listenForUpdates(listener);
 
         resultSub = new BarrageClientSubscription(
-            ExportTicketHelper.toReadableString(exportTable),
-            serverChannel, BarrageClientSubscription.makeRequest(null, columns),
-            new BarrageStreamReader(), resultTable);
+                ExportTicketHelper.toReadableString(exportTable),
+                serverChannel, BarrageClientSubscription.makeRequest(null, columns),
+                new BarrageStreamReader(), resultTable);
     }
 
     private void onScriptComplete() {
         sessionService.closeSession(HandshakeRequest.newBuilder()
-            .setAuthProtocol(0)
-            .setPayload(ByteString.copyFromUtf8(session.toString())).build(),
-            new ResponseBuilder<ReleaseResponse>()
-                .onNext(
-                    r -> log.info().append("release session response ").append(r.toString()).endl())
-                .onError(e -> stop())
-                .onComplete(this::stop)
-                .build());
+                .setAuthProtocol(0)
+                .setPayload(ByteString.copyFromUtf8(session.toString())).build(),
+                new ResponseBuilder<ReleaseResponse>()
+                        .onNext(r -> log.info().append("release session response ").append(r.toString()).endl())
+                        .onError(e -> stop())
+                        .onComplete(this::stop)
+                        .build());
     }
 
     private void onExportedTableCreationResponse(final ExportedTableCreationResponse result) {
         final LogEntry entry = log.info().append("Received ExportedTableCreationResponse for {");
 
         if (result.getResultId().hasTicket()) {
-            entry.append("exportId: ")
-                .append(ExportTicketHelper.ticketToExportId(result.getResultId().getTicket()));
+            entry.append("exportId: ").append(ExportTicketHelper.ticketToExportId(result.getResultId().getTicket()));
         } else {
             entry.append("batchOffset: ").append(result.getResultId().getBatchOffset());
         }
@@ -276,10 +267,8 @@ public class SimpleDeephavenClient {
         entry.append("}").endl();
     }
 
-    private void onExportNotificationMessage(final String prefix,
-        final ExportNotification notification) {
-        final LogEntry entry =
-            log.info().append(prefix).append("Received ExportNotification: {id: ")
+    private void onExportNotificationMessage(final String prefix, final ExportNotification notification) {
+        final LogEntry entry = log.info().append(prefix).append("Received ExportNotification: {id: ")
                 .append(ExportTicketHelper.ticketToExportId(notification.getTicket()))
                 .append(", state: ").append(notification.getExportState().toString());
 
@@ -296,8 +285,8 @@ public class SimpleDeephavenClient {
         log.info().append("Received ExportedTableUpdatedMessage:").endl();
 
         final LogEntry entry = log.info().append("\tid=")
-            .append(ExportTicketHelper.ticketToExportId(msg.getExportId()))
-            .append(" size=").append(msg.getSize());
+                .append(ExportTicketHelper.ticketToExportId(msg.getExportId()))
+                .append(" size=").append(msg.getSize());
 
         if (!msg.getUpdateFailureMessage().isEmpty()) {
             entry.append(" error='").append(msg.getUpdateFailureMessage()).append("'");
@@ -314,25 +303,25 @@ public class SimpleDeephavenClient {
         }
         session = UUID.fromString(result.getSessionToken().toStringUtf8());
         log.info().append("Session Details: {header: '")
-            .append(this.sessionHeader).append("', token: '")
-            .append(this.session.toString()).append("}").endl();
+                .append(this.sessionHeader).append("', token: '")
+                .append(this.session.toString()).append("}").endl();
 
         // Guess a good time to do the next refresh.
         final long refreshDelayMs = Math.min(
-            scheduler.currentTime().getMillis() + result.getTokenExpirationDelayMillis() / 3,
-            result.getTokenDeadlineTimeMillis() - result.getTokenExpirationDelayMillis() / 10);
+                scheduler.currentTime().getMillis() + result.getTokenExpirationDelayMillis() / 3,
+                result.getTokenDeadlineTimeMillis() - result.getTokenExpirationDelayMillis() / 10);
 
         scheduler.runAtTime(DBTimeUtils.millisToTime(refreshDelayMs), this::refreshToken);
     }
 
     private void refreshToken() {
         sessionService.refreshSessionToken(HandshakeRequest.newBuilder()
-            .setAuthProtocol(0)
-            .setPayload(ByteString.copyFromUtf8(session.toString())).build(),
-            new ResponseBuilder<HandshakeResponse>()
-                .onError(this::onError)
-                .onNext(this::onNewHandshakeResponse)
-                .build());
+                .setAuthProtocol(0)
+                .setPayload(ByteString.copyFromUtf8(session.toString())).build(),
+                new ResponseBuilder<HandshakeResponse>()
+                        .onError(this::onError)
+                        .onNext(this::onNewHandshakeResponse)
+                        .build());
     }
 
     private void onError(final Throwable t) {
@@ -400,10 +389,10 @@ public class SimpleDeephavenClient {
     private class AuthInterceptor implements ClientInterceptor {
         @Override
         public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
-            final MethodDescriptor<ReqT, RespT> methodDescriptor, final CallOptions callOptions,
-            final Channel channel) {
+                final MethodDescriptor<ReqT, RespT> methodDescriptor, final CallOptions callOptions,
+                final Channel channel) {
             return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(
-                channel.newCall(methodDescriptor, callOptions)) {
+                    channel.newCall(methodDescriptor, callOptions)) {
                 @Override
                 public void start(final Listener<RespT> responseListener, final Metadata headers) {
                     final UUID currSession = session;

@@ -15,8 +15,7 @@ public class DbArrayDirect<T> implements DbArray<T> {
 
     public DbArrayDirect(T... data) {
         this.data = data;
-        componentType =
-            (Class<T>) (data == null ? Object.class : data.getClass().getComponentType());
+        componentType = (Class<T>) (data == null ? Object.class : data.getClass().getComponentType());
     }
 
     @Override

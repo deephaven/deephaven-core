@@ -26,10 +26,9 @@ public class ThreadSafeFixedSizePool<T> implements Pool<T> {
 
     public static Factory FACTORY = new Factory() {
         @Override
-        public <T> Pool<T> create(int nSize, Function.Nullary<T> itemFactory,
-            Procedure.Unary<T> clearingProcedure) {
+        public <T> Pool<T> create(int nSize, Function.Nullary<T> itemFactory, Procedure.Unary<T> clearingProcedure) {
             return new ThreadSafeFixedSizePool<T>(Require.geq(nSize, "nSize", MIN_SIZE, "MIN_SIZE"),
-                Require.neqNull(itemFactory, "itemFactory"), clearingProcedure);
+                    Require.neqNull(itemFactory, "itemFactory"), clearingProcedure);
         }
     };
 
@@ -42,21 +41,20 @@ public class ThreadSafeFixedSizePool<T> implements Pool<T> {
     private final String logPfx;
     private final Logger log;
 
-    public ThreadSafeFixedSizePool(int size, Function.Nullary<T> factory,
-        Procedure.Unary<T> clearingProcedure, @Nullable Logger log, @Nullable String logPfx) {
+    public ThreadSafeFixedSizePool(int size, Function.Nullary<T> factory, Procedure.Unary<T> clearingProcedure,
+            @Nullable Logger log, @Nullable String logPfx) {
         this(size, Require.neqNull(factory, "factory"), clearingProcedure, log, logPfx, false);
     }
 
-    protected ThreadSafeFixedSizePool(int size, Procedure.Unary<T> clearingProcedure, Logger log,
-        String logPfx) {
+    protected ThreadSafeFixedSizePool(int size, Procedure.Unary<T> clearingProcedure, Logger log, String logPfx) {
         this(size, null, clearingProcedure, log, logPfx, false);
     }
 
     private ThreadSafeFixedSizePool(int size, @Nullable Function.Nullary<T> factory,
-        Procedure.Unary<T> clearingProcedure, Logger log, String logPfx, boolean dummy) {
+            Procedure.Unary<T> clearingProcedure, Logger log, String logPfx, boolean dummy) {
         Require.geq(size, "size", MIN_SIZE, "MIN_SIZE");
         Require.requirement((log == null) == (logPfx == null),
-            "log and logPfx must either both be null, or both non-null");
+                "log and logPfx must either both be null, or both non-null");
         this.clearingProcedure = clearingProcedure;
         this.log = log;
         this.logPfx = logPfx;
@@ -73,8 +71,7 @@ public class ThreadSafeFixedSizePool<T> implements Pool<T> {
         }
     }
 
-    public ThreadSafeFixedSizePool(int size, Function.Nullary<T> factory,
-        Procedure.Unary<T> clearingProcedure) {
+    public ThreadSafeFixedSizePool(int size, Function.Nullary<T> factory, Procedure.Unary<T> clearingProcedure) {
         this(size, factory, clearingProcedure, null, null);
     }
 
@@ -102,8 +99,7 @@ public class ThreadSafeFixedSizePool<T> implements Pool<T> {
                         if (now > nextGiveLog) {
                             nextGiveLog = (now + 100000) - (now % 100000);
                             long dt = (now - t0);
-                            log.warn(logPfx + ": give() can't enqueue returned item, yield count = "
-                                + yields);
+                            log.warn(logPfx + ": give() can't enqueue returned item, yield count = " + yields);
                         }
                     }
                     Thread.yield();
@@ -116,8 +112,8 @@ public class ThreadSafeFixedSizePool<T> implements Pool<T> {
                 if (now > nextGiveLog) {
                     nextGiveLog = (now + 100000) - (now % 100000);
                     long dt = (now - t0);
-                    log.warn(logPfx + ": give() took " + dt + " micros, with " + yields
-                        + " yields and " + spins + " additional spins");
+                    log.warn(logPfx + ": give() took " + dt + " micros, with " + yields + " yields and " + spins
+                            + " additional spins");
                 }
             }
         }
@@ -143,7 +139,7 @@ public class ThreadSafeFixedSizePool<T> implements Pool<T> {
                             nextTakeLog = (now + 100000) - (now % 100000);
                             long dt = (now - t0);
                             log.warn(logPfx + ": take() can't dequeue from pool, waiting for " + dt
-                                + " micros, yield count = " + yields);
+                                    + " micros, yield count = " + yields);
                         }
                     }
                     Thread.yield();
@@ -157,8 +153,8 @@ public class ThreadSafeFixedSizePool<T> implements Pool<T> {
                 if (now > nextTakeLog) {
                     nextTakeLog = (now + 100000) - (now % 100000);
                     long dt = (now - t0);
-                    log.warn(logPfx + ": take() took " + dt + " micros, with " + yields
-                        + " yields and " + spins + " additional spins");
+                    log.warn(logPfx + ": take() took " + dt + " micros, with " + yields + " yields and " + spins
+                            + " additional spins");
                 }
             }
         }

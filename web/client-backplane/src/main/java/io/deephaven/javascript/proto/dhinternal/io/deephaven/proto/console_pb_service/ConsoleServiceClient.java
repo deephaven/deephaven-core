@@ -37,9 +37,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient",
+        namespace = JsPackage.GLOBAL)
 public class ConsoleServiceClient {
     @JsFunction
     public interface BindTableToVariableCallbackFn {
@@ -70,8 +70,8 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.BindTableToVariableCallbackFn.P0Type p0,
-            BindTableToVariableResponse p1);
+                ConsoleServiceClient.BindTableToVariableCallbackFn.P0Type p0,
+                BindTableToVariableResponse p1);
     }
 
     @JsFunction
@@ -103,8 +103,8 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.BindTableToVariableMetadata_or_callbackFn.P0Type p0,
-            BindTableToVariableResponse p1);
+                ConsoleServiceClient.BindTableToVariableMetadata_or_callbackFn.P0Type p0,
+                BindTableToVariableResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -163,8 +163,7 @@ public class ConsoleServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(ConsoleServiceClient.CancelCommandCallbackFn.P0Type p0,
-            CancelCommandResponse p1);
+        void onInvoke(ConsoleServiceClient.CancelCommandCallbackFn.P0Type p0, CancelCommandResponse p1);
     }
 
     @JsFunction
@@ -196,8 +195,8 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.CancelCommandMetadata_or_callbackFn.P0Type p0,
-            CancelCommandResponse p1);
+                ConsoleServiceClient.CancelCommandMetadata_or_callbackFn.P0Type p0,
+                CancelCommandResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -257,7 +256,7 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.ChangeDocumentCallbackFn.P0Type p0, ChangeDocumentResponse p1);
+                ConsoleServiceClient.ChangeDocumentCallbackFn.P0Type p0, ChangeDocumentResponse p1);
     }
 
     @JsFunction
@@ -289,8 +288,8 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.ChangeDocumentMetadata_or_callbackFn.P0Type p0,
-            ChangeDocumentResponse p1);
+                ConsoleServiceClient.ChangeDocumentMetadata_or_callbackFn.P0Type p0,
+                ChangeDocumentResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -349,8 +348,7 @@ public class ConsoleServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(ConsoleServiceClient.CloseDocumentCallbackFn.P0Type p0,
-            CloseDocumentResponse p1);
+        void onInvoke(ConsoleServiceClient.CloseDocumentCallbackFn.P0Type p0, CloseDocumentResponse p1);
     }
 
     @JsFunction
@@ -382,8 +380,8 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.CloseDocumentMetadata_or_callbackFn.P0Type p0,
-            CloseDocumentResponse p1);
+                ConsoleServiceClient.CloseDocumentMetadata_or_callbackFn.P0Type p0,
+                CloseDocumentResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -443,7 +441,7 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.ExecuteCommandCallbackFn.P0Type p0, ExecuteCommandResponse p1);
+                ConsoleServiceClient.ExecuteCommandCallbackFn.P0Type p0, ExecuteCommandResponse p1);
     }
 
     @JsFunction
@@ -475,8 +473,8 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.ExecuteCommandMetadata_or_callbackFn.P0Type p0,
-            ExecuteCommandResponse p1);
+                ConsoleServiceClient.ExecuteCommandMetadata_or_callbackFn.P0Type p0,
+                ExecuteCommandResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -567,8 +565,7 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.FetchFigureMetadata_or_callbackFn.P0Type p0,
-            FetchFigureResponse p1);
+                ConsoleServiceClient.FetchFigureMetadata_or_callbackFn.P0Type p0, FetchFigureResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -628,8 +625,8 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.FetchPandasTableCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                ConsoleServiceClient.FetchPandasTableCallbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -661,8 +658,8 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.FetchPandasTableMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                ConsoleServiceClient.FetchPandasTableMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -722,7 +719,7 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.FetchTableCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
+                ConsoleServiceClient.FetchTableCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -753,8 +750,7 @@ public class ConsoleServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(ConsoleServiceClient.FetchTableMapCallbackFn.P0Type p0,
-            FetchTableMapResponse p1);
+        void onInvoke(ConsoleServiceClient.FetchTableMapCallbackFn.P0Type p0, FetchTableMapResponse p1);
     }
 
     @JsFunction
@@ -786,8 +782,8 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.FetchTableMapMetadata_or_callbackFn.P0Type p0,
-            FetchTableMapResponse p1);
+                ConsoleServiceClient.FetchTableMapMetadata_or_callbackFn.P0Type p0,
+                FetchTableMapResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -847,8 +843,8 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.FetchTableMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                ConsoleServiceClient.FetchTableMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -908,8 +904,7 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.GetCompletionItemsCallbackFn.P0Type p0,
-            GetCompletionItemsResponse p1);
+                ConsoleServiceClient.GetCompletionItemsCallbackFn.P0Type p0, GetCompletionItemsResponse p1);
     }
 
     @JsFunction
@@ -941,8 +936,8 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.GetCompletionItemsMetadata_or_callbackFn.P0Type p0,
-            GetCompletionItemsResponse p1);
+                ConsoleServiceClient.GetCompletionItemsMetadata_or_callbackFn.P0Type p0,
+                GetCompletionItemsResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1002,7 +997,7 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.GetConsoleTypesCallbackFn.P0Type p0, GetConsoleTypesResponse p1);
+                ConsoleServiceClient.GetConsoleTypesCallbackFn.P0Type p0, GetConsoleTypesResponse p1);
     }
 
     @JsFunction
@@ -1034,8 +1029,8 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackFn.P0Type p0,
-            GetConsoleTypesResponse p1);
+                ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackFn.P0Type p0,
+                GetConsoleTypesResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1094,8 +1089,7 @@ public class ConsoleServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(ConsoleServiceClient.OpenDocumentCallbackFn.P0Type p0,
-            OpenDocumentResponse p1);
+        void onInvoke(ConsoleServiceClient.OpenDocumentCallbackFn.P0Type p0, OpenDocumentResponse p1);
     }
 
     @JsFunction
@@ -1127,8 +1121,7 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.OpenDocumentMetadata_or_callbackFn.P0Type p0,
-            OpenDocumentResponse p1);
+                ConsoleServiceClient.OpenDocumentMetadata_or_callbackFn.P0Type p0, OpenDocumentResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1187,8 +1180,7 @@ public class ConsoleServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(ConsoleServiceClient.StartConsoleCallbackFn.P0Type p0,
-            StartConsoleResponse p1);
+        void onInvoke(ConsoleServiceClient.StartConsoleCallbackFn.P0Type p0, StartConsoleResponse p1);
     }
 
     @JsFunction
@@ -1220,8 +1212,7 @@ public class ConsoleServiceClient {
         }
 
         void onInvoke(
-            ConsoleServiceClient.StartConsoleMetadata_or_callbackFn.P0Type p0,
-            StartConsoleResponse p1);
+                ConsoleServiceClient.StartConsoleMetadata_or_callbackFn.P0Type p0, StartConsoleResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1260,683 +1251,683 @@ public class ConsoleServiceClient {
 
     @JsOverlay
     public final UnaryResponse bindTableToVariable(
-        BindTableToVariableRequest requestMessage,
-        ConsoleServiceClient.BindTableToVariableMetadata_or_callbackFn metadata_or_callback,
-        ConsoleServiceClient.BindTableToVariableCallbackFn callback) {
+            BindTableToVariableRequest requestMessage,
+            ConsoleServiceClient.BindTableToVariableMetadata_or_callbackFn metadata_or_callback,
+            ConsoleServiceClient.BindTableToVariableCallbackFn callback) {
         return bindTableToVariable(
-            requestMessage,
-            Js.<ConsoleServiceClient.BindTableToVariableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.BindTableToVariableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse bindTableToVariable(
-        BindTableToVariableRequest requestMessage,
-        ConsoleServiceClient.BindTableToVariableMetadata_or_callbackFn metadata_or_callback) {
+            BindTableToVariableRequest requestMessage,
+            ConsoleServiceClient.BindTableToVariableMetadata_or_callbackFn metadata_or_callback) {
         return bindTableToVariable(
-            requestMessage,
-            Js.<ConsoleServiceClient.BindTableToVariableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.BindTableToVariableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse bindTableToVariable(
-        BindTableToVariableRequest requestMessage,
-        ConsoleServiceClient.BindTableToVariableMetadata_or_callbackUnionType metadata_or_callback,
-        ConsoleServiceClient.BindTableToVariableCallbackFn callback);
+            BindTableToVariableRequest requestMessage,
+            ConsoleServiceClient.BindTableToVariableMetadata_or_callbackUnionType metadata_or_callback,
+            ConsoleServiceClient.BindTableToVariableCallbackFn callback);
 
     public native UnaryResponse bindTableToVariable(
-        BindTableToVariableRequest requestMessage,
-        ConsoleServiceClient.BindTableToVariableMetadata_or_callbackUnionType metadata_or_callback);
+            BindTableToVariableRequest requestMessage,
+            ConsoleServiceClient.BindTableToVariableMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse bindTableToVariable(
-        BindTableToVariableRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        ConsoleServiceClient.BindTableToVariableCallbackFn callback) {
+            BindTableToVariableRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            ConsoleServiceClient.BindTableToVariableCallbackFn callback) {
         return bindTableToVariable(
-            requestMessage,
-            Js.<ConsoleServiceClient.BindTableToVariableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.BindTableToVariableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse bindTableToVariable(
-        BindTableToVariableRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            BindTableToVariableRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return bindTableToVariable(
-            requestMessage,
-            Js.<ConsoleServiceClient.BindTableToVariableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.BindTableToVariableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse cancelCommand(
-        CancelCommandRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        ConsoleServiceClient.CancelCommandCallbackFn callback) {
+            CancelCommandRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            ConsoleServiceClient.CancelCommandCallbackFn callback) {
         return cancelCommand(
-            requestMessage,
-            Js.<ConsoleServiceClient.CancelCommandMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.CancelCommandMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse cancelCommand(
-        CancelCommandRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            CancelCommandRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return cancelCommand(
-            requestMessage,
-            Js.<ConsoleServiceClient.CancelCommandMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.CancelCommandMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse cancelCommand(
-        CancelCommandRequest requestMessage,
-        ConsoleServiceClient.CancelCommandMetadata_or_callbackFn metadata_or_callback,
-        ConsoleServiceClient.CancelCommandCallbackFn callback) {
+            CancelCommandRequest requestMessage,
+            ConsoleServiceClient.CancelCommandMetadata_or_callbackFn metadata_or_callback,
+            ConsoleServiceClient.CancelCommandCallbackFn callback) {
         return cancelCommand(
-            requestMessage,
-            Js.<ConsoleServiceClient.CancelCommandMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.CancelCommandMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse cancelCommand(
-        CancelCommandRequest requestMessage,
-        ConsoleServiceClient.CancelCommandMetadata_or_callbackFn metadata_or_callback) {
+            CancelCommandRequest requestMessage,
+            ConsoleServiceClient.CancelCommandMetadata_or_callbackFn metadata_or_callback) {
         return cancelCommand(
-            requestMessage,
-            Js.<ConsoleServiceClient.CancelCommandMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.CancelCommandMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse cancelCommand(
-        CancelCommandRequest requestMessage,
-        ConsoleServiceClient.CancelCommandMetadata_or_callbackUnionType metadata_or_callback,
-        ConsoleServiceClient.CancelCommandCallbackFn callback);
+            CancelCommandRequest requestMessage,
+            ConsoleServiceClient.CancelCommandMetadata_or_callbackUnionType metadata_or_callback,
+            ConsoleServiceClient.CancelCommandCallbackFn callback);
 
     public native UnaryResponse cancelCommand(
-        CancelCommandRequest requestMessage,
-        ConsoleServiceClient.CancelCommandMetadata_or_callbackUnionType metadata_or_callback);
+            CancelCommandRequest requestMessage,
+            ConsoleServiceClient.CancelCommandMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse changeDocument(
-        ChangeDocumentRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        ConsoleServiceClient.ChangeDocumentCallbackFn callback) {
+            ChangeDocumentRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            ConsoleServiceClient.ChangeDocumentCallbackFn callback) {
         return changeDocument(
-            requestMessage,
-            Js.<ConsoleServiceClient.ChangeDocumentMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.ChangeDocumentMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse changeDocument(
-        ChangeDocumentRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            ChangeDocumentRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return changeDocument(
-            requestMessage,
-            Js.<ConsoleServiceClient.ChangeDocumentMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.ChangeDocumentMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse changeDocument(
-        ChangeDocumentRequest requestMessage,
-        ConsoleServiceClient.ChangeDocumentMetadata_or_callbackFn metadata_or_callback,
-        ConsoleServiceClient.ChangeDocumentCallbackFn callback) {
+            ChangeDocumentRequest requestMessage,
+            ConsoleServiceClient.ChangeDocumentMetadata_or_callbackFn metadata_or_callback,
+            ConsoleServiceClient.ChangeDocumentCallbackFn callback) {
         return changeDocument(
-            requestMessage,
-            Js.<ConsoleServiceClient.ChangeDocumentMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.ChangeDocumentMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse changeDocument(
-        ChangeDocumentRequest requestMessage,
-        ConsoleServiceClient.ChangeDocumentMetadata_or_callbackFn metadata_or_callback) {
+            ChangeDocumentRequest requestMessage,
+            ConsoleServiceClient.ChangeDocumentMetadata_or_callbackFn metadata_or_callback) {
         return changeDocument(
-            requestMessage,
-            Js.<ConsoleServiceClient.ChangeDocumentMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.ChangeDocumentMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse changeDocument(
-        ChangeDocumentRequest requestMessage,
-        ConsoleServiceClient.ChangeDocumentMetadata_or_callbackUnionType metadata_or_callback,
-        ConsoleServiceClient.ChangeDocumentCallbackFn callback);
+            ChangeDocumentRequest requestMessage,
+            ConsoleServiceClient.ChangeDocumentMetadata_or_callbackUnionType metadata_or_callback,
+            ConsoleServiceClient.ChangeDocumentCallbackFn callback);
 
     public native UnaryResponse changeDocument(
-        ChangeDocumentRequest requestMessage,
-        ConsoleServiceClient.ChangeDocumentMetadata_or_callbackUnionType metadata_or_callback);
+            ChangeDocumentRequest requestMessage,
+            ConsoleServiceClient.ChangeDocumentMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse closeDocument(
-        CloseDocumentRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        ConsoleServiceClient.CloseDocumentCallbackFn callback) {
+            CloseDocumentRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            ConsoleServiceClient.CloseDocumentCallbackFn callback) {
         return closeDocument(
-            requestMessage,
-            Js.<ConsoleServiceClient.CloseDocumentMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.CloseDocumentMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse closeDocument(
-        CloseDocumentRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            CloseDocumentRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return closeDocument(
-            requestMessage,
-            Js.<ConsoleServiceClient.CloseDocumentMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.CloseDocumentMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse closeDocument(
-        CloseDocumentRequest requestMessage,
-        ConsoleServiceClient.CloseDocumentMetadata_or_callbackFn metadata_or_callback,
-        ConsoleServiceClient.CloseDocumentCallbackFn callback) {
+            CloseDocumentRequest requestMessage,
+            ConsoleServiceClient.CloseDocumentMetadata_or_callbackFn metadata_or_callback,
+            ConsoleServiceClient.CloseDocumentCallbackFn callback) {
         return closeDocument(
-            requestMessage,
-            Js.<ConsoleServiceClient.CloseDocumentMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.CloseDocumentMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse closeDocument(
-        CloseDocumentRequest requestMessage,
-        ConsoleServiceClient.CloseDocumentMetadata_or_callbackFn metadata_or_callback) {
+            CloseDocumentRequest requestMessage,
+            ConsoleServiceClient.CloseDocumentMetadata_or_callbackFn metadata_or_callback) {
         return closeDocument(
-            requestMessage,
-            Js.<ConsoleServiceClient.CloseDocumentMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.CloseDocumentMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse closeDocument(
-        CloseDocumentRequest requestMessage,
-        ConsoleServiceClient.CloseDocumentMetadata_or_callbackUnionType metadata_or_callback,
-        ConsoleServiceClient.CloseDocumentCallbackFn callback);
+            CloseDocumentRequest requestMessage,
+            ConsoleServiceClient.CloseDocumentMetadata_or_callbackUnionType metadata_or_callback,
+            ConsoleServiceClient.CloseDocumentCallbackFn callback);
 
     public native UnaryResponse closeDocument(
-        CloseDocumentRequest requestMessage,
-        ConsoleServiceClient.CloseDocumentMetadata_or_callbackUnionType metadata_or_callback);
+            CloseDocumentRequest requestMessage,
+            ConsoleServiceClient.CloseDocumentMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse executeCommand(
-        ExecuteCommandRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        ConsoleServiceClient.ExecuteCommandCallbackFn callback) {
+            ExecuteCommandRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            ConsoleServiceClient.ExecuteCommandCallbackFn callback) {
         return executeCommand(
-            requestMessage,
-            Js.<ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse executeCommand(
-        ExecuteCommandRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            ExecuteCommandRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return executeCommand(
-            requestMessage,
-            Js.<ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse executeCommand(
-        ExecuteCommandRequest requestMessage,
-        ConsoleServiceClient.ExecuteCommandMetadata_or_callbackFn metadata_or_callback,
-        ConsoleServiceClient.ExecuteCommandCallbackFn callback) {
+            ExecuteCommandRequest requestMessage,
+            ConsoleServiceClient.ExecuteCommandMetadata_or_callbackFn metadata_or_callback,
+            ConsoleServiceClient.ExecuteCommandCallbackFn callback) {
         return executeCommand(
-            requestMessage,
-            Js.<ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse executeCommand(
-        ExecuteCommandRequest requestMessage,
-        ConsoleServiceClient.ExecuteCommandMetadata_or_callbackFn metadata_or_callback) {
+            ExecuteCommandRequest requestMessage,
+            ConsoleServiceClient.ExecuteCommandMetadata_or_callbackFn metadata_or_callback) {
         return executeCommand(
-            requestMessage,
-            Js.<ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse executeCommand(
-        ExecuteCommandRequest requestMessage,
-        ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType metadata_or_callback,
-        ConsoleServiceClient.ExecuteCommandCallbackFn callback);
+            ExecuteCommandRequest requestMessage,
+            ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType metadata_or_callback,
+            ConsoleServiceClient.ExecuteCommandCallbackFn callback);
 
     public native UnaryResponse executeCommand(
-        ExecuteCommandRequest requestMessage,
-        ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType metadata_or_callback);
+            ExecuteCommandRequest requestMessage,
+            ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse fetchFigure(
-        FetchFigureRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        ConsoleServiceClient.FetchFigureCallbackFn callback) {
+            FetchFigureRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            ConsoleServiceClient.FetchFigureCallbackFn callback) {
         return fetchFigure(
-            requestMessage,
-            Js.<ConsoleServiceClient.FetchFigureMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchFigureMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse fetchFigure(
-        FetchFigureRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            FetchFigureRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return fetchFigure(
-            requestMessage,
-            Js.<ConsoleServiceClient.FetchFigureMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchFigureMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse fetchFigure(
-        FetchFigureRequest requestMessage,
-        ConsoleServiceClient.FetchFigureMetadata_or_callbackFn metadata_or_callback,
-        ConsoleServiceClient.FetchFigureCallbackFn callback) {
+            FetchFigureRequest requestMessage,
+            ConsoleServiceClient.FetchFigureMetadata_or_callbackFn metadata_or_callback,
+            ConsoleServiceClient.FetchFigureCallbackFn callback) {
         return fetchFigure(
-            requestMessage,
-            Js.<ConsoleServiceClient.FetchFigureMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchFigureMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse fetchFigure(
-        FetchFigureRequest requestMessage,
-        ConsoleServiceClient.FetchFigureMetadata_or_callbackFn metadata_or_callback) {
+            FetchFigureRequest requestMessage,
+            ConsoleServiceClient.FetchFigureMetadata_or_callbackFn metadata_or_callback) {
         return fetchFigure(
-            requestMessage,
-            Js.<ConsoleServiceClient.FetchFigureMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchFigureMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse fetchFigure(
-        FetchFigureRequest requestMessage,
-        ConsoleServiceClient.FetchFigureMetadata_or_callbackUnionType metadata_or_callback,
-        ConsoleServiceClient.FetchFigureCallbackFn callback);
+            FetchFigureRequest requestMessage,
+            ConsoleServiceClient.FetchFigureMetadata_or_callbackUnionType metadata_or_callback,
+            ConsoleServiceClient.FetchFigureCallbackFn callback);
 
     public native UnaryResponse fetchFigure(
-        FetchFigureRequest requestMessage,
-        ConsoleServiceClient.FetchFigureMetadata_or_callbackUnionType metadata_or_callback);
+            FetchFigureRequest requestMessage,
+            ConsoleServiceClient.FetchFigureMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse fetchPandasTable(
-        FetchPandasTableRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        ConsoleServiceClient.FetchPandasTableCallbackFn callback) {
+            FetchPandasTableRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            ConsoleServiceClient.FetchPandasTableCallbackFn callback) {
         return fetchPandasTable(
-            requestMessage,
-            Js.<ConsoleServiceClient.FetchPandasTableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchPandasTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse fetchPandasTable(
-        FetchPandasTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            FetchPandasTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return fetchPandasTable(
-            requestMessage,
-            Js.<ConsoleServiceClient.FetchPandasTableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchPandasTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse fetchPandasTable(
-        FetchPandasTableRequest requestMessage,
-        ConsoleServiceClient.FetchPandasTableMetadata_or_callbackFn metadata_or_callback,
-        ConsoleServiceClient.FetchPandasTableCallbackFn callback) {
+            FetchPandasTableRequest requestMessage,
+            ConsoleServiceClient.FetchPandasTableMetadata_or_callbackFn metadata_or_callback,
+            ConsoleServiceClient.FetchPandasTableCallbackFn callback) {
         return fetchPandasTable(
-            requestMessage,
-            Js.<ConsoleServiceClient.FetchPandasTableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchPandasTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse fetchPandasTable(
-        FetchPandasTableRequest requestMessage,
-        ConsoleServiceClient.FetchPandasTableMetadata_or_callbackFn metadata_or_callback) {
+            FetchPandasTableRequest requestMessage,
+            ConsoleServiceClient.FetchPandasTableMetadata_or_callbackFn metadata_or_callback) {
         return fetchPandasTable(
-            requestMessage,
-            Js.<ConsoleServiceClient.FetchPandasTableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchPandasTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse fetchPandasTable(
-        FetchPandasTableRequest requestMessage,
-        ConsoleServiceClient.FetchPandasTableMetadata_or_callbackUnionType metadata_or_callback,
-        ConsoleServiceClient.FetchPandasTableCallbackFn callback);
+            FetchPandasTableRequest requestMessage,
+            ConsoleServiceClient.FetchPandasTableMetadata_or_callbackUnionType metadata_or_callback,
+            ConsoleServiceClient.FetchPandasTableCallbackFn callback);
 
     public native UnaryResponse fetchPandasTable(
-        FetchPandasTableRequest requestMessage,
-        ConsoleServiceClient.FetchPandasTableMetadata_or_callbackUnionType metadata_or_callback);
+            FetchPandasTableRequest requestMessage,
+            ConsoleServiceClient.FetchPandasTableMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse fetchTable(
-        FetchTableRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        ConsoleServiceClient.FetchTableCallbackFn callback) {
+            FetchTableRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            ConsoleServiceClient.FetchTableCallbackFn callback) {
         return fetchTable(
-            requestMessage,
-            Js.<ConsoleServiceClient.FetchTableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse fetchTable(
-        FetchTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            FetchTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return fetchTable(
-            requestMessage,
-            Js.<ConsoleServiceClient.FetchTableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse fetchTable(
-        FetchTableRequest requestMessage,
-        ConsoleServiceClient.FetchTableMetadata_or_callbackFn metadata_or_callback,
-        ConsoleServiceClient.FetchTableCallbackFn callback) {
+            FetchTableRequest requestMessage,
+            ConsoleServiceClient.FetchTableMetadata_or_callbackFn metadata_or_callback,
+            ConsoleServiceClient.FetchTableCallbackFn callback) {
         return fetchTable(
-            requestMessage,
-            Js.<ConsoleServiceClient.FetchTableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse fetchTable(
-        FetchTableRequest requestMessage,
-        ConsoleServiceClient.FetchTableMetadata_or_callbackFn metadata_or_callback) {
+            FetchTableRequest requestMessage,
+            ConsoleServiceClient.FetchTableMetadata_or_callbackFn metadata_or_callback) {
         return fetchTable(
-            requestMessage,
-            Js.<ConsoleServiceClient.FetchTableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse fetchTable(
-        FetchTableRequest requestMessage,
-        ConsoleServiceClient.FetchTableMetadata_or_callbackUnionType metadata_or_callback,
-        ConsoleServiceClient.FetchTableCallbackFn callback);
+            FetchTableRequest requestMessage,
+            ConsoleServiceClient.FetchTableMetadata_or_callbackUnionType metadata_or_callback,
+            ConsoleServiceClient.FetchTableCallbackFn callback);
 
     public native UnaryResponse fetchTable(
-        FetchTableRequest requestMessage,
-        ConsoleServiceClient.FetchTableMetadata_or_callbackUnionType metadata_or_callback);
+            FetchTableRequest requestMessage,
+            ConsoleServiceClient.FetchTableMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse fetchTableMap(
-        FetchTableMapRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        ConsoleServiceClient.FetchTableMapCallbackFn callback) {
+            FetchTableMapRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            ConsoleServiceClient.FetchTableMapCallbackFn callback) {
         return fetchTableMap(
-            requestMessage,
-            Js.<ConsoleServiceClient.FetchTableMapMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchTableMapMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse fetchTableMap(
-        FetchTableMapRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            FetchTableMapRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return fetchTableMap(
-            requestMessage,
-            Js.<ConsoleServiceClient.FetchTableMapMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchTableMapMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse fetchTableMap(
-        FetchTableMapRequest requestMessage,
-        ConsoleServiceClient.FetchTableMapMetadata_or_callbackFn metadata_or_callback,
-        ConsoleServiceClient.FetchTableMapCallbackFn callback) {
+            FetchTableMapRequest requestMessage,
+            ConsoleServiceClient.FetchTableMapMetadata_or_callbackFn metadata_or_callback,
+            ConsoleServiceClient.FetchTableMapCallbackFn callback) {
         return fetchTableMap(
-            requestMessage,
-            Js.<ConsoleServiceClient.FetchTableMapMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchTableMapMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse fetchTableMap(
-        FetchTableMapRequest requestMessage,
-        ConsoleServiceClient.FetchTableMapMetadata_or_callbackFn metadata_or_callback) {
+            FetchTableMapRequest requestMessage,
+            ConsoleServiceClient.FetchTableMapMetadata_or_callbackFn metadata_or_callback) {
         return fetchTableMap(
-            requestMessage,
-            Js.<ConsoleServiceClient.FetchTableMapMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.FetchTableMapMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse fetchTableMap(
-        FetchTableMapRequest requestMessage,
-        ConsoleServiceClient.FetchTableMapMetadata_or_callbackUnionType metadata_or_callback,
-        ConsoleServiceClient.FetchTableMapCallbackFn callback);
+            FetchTableMapRequest requestMessage,
+            ConsoleServiceClient.FetchTableMapMetadata_or_callbackUnionType metadata_or_callback,
+            ConsoleServiceClient.FetchTableMapCallbackFn callback);
 
     public native UnaryResponse fetchTableMap(
-        FetchTableMapRequest requestMessage,
-        ConsoleServiceClient.FetchTableMapMetadata_or_callbackUnionType metadata_or_callback);
+            FetchTableMapRequest requestMessage,
+            ConsoleServiceClient.FetchTableMapMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse getCompletionItems(
-        GetCompletionItemsRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        ConsoleServiceClient.GetCompletionItemsCallbackFn callback) {
+            GetCompletionItemsRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            ConsoleServiceClient.GetCompletionItemsCallbackFn callback) {
         return getCompletionItems(
-            requestMessage,
-            Js.<ConsoleServiceClient.GetCompletionItemsMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.GetCompletionItemsMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse getCompletionItems(
-        GetCompletionItemsRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            GetCompletionItemsRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return getCompletionItems(
-            requestMessage,
-            Js.<ConsoleServiceClient.GetCompletionItemsMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.GetCompletionItemsMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse getCompletionItems(
-        GetCompletionItemsRequest requestMessage,
-        ConsoleServiceClient.GetCompletionItemsMetadata_or_callbackFn metadata_or_callback,
-        ConsoleServiceClient.GetCompletionItemsCallbackFn callback) {
+            GetCompletionItemsRequest requestMessage,
+            ConsoleServiceClient.GetCompletionItemsMetadata_or_callbackFn metadata_or_callback,
+            ConsoleServiceClient.GetCompletionItemsCallbackFn callback) {
         return getCompletionItems(
-            requestMessage,
-            Js.<ConsoleServiceClient.GetCompletionItemsMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.GetCompletionItemsMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse getCompletionItems(
-        GetCompletionItemsRequest requestMessage,
-        ConsoleServiceClient.GetCompletionItemsMetadata_or_callbackFn metadata_or_callback) {
+            GetCompletionItemsRequest requestMessage,
+            ConsoleServiceClient.GetCompletionItemsMetadata_or_callbackFn metadata_or_callback) {
         return getCompletionItems(
-            requestMessage,
-            Js.<ConsoleServiceClient.GetCompletionItemsMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.GetCompletionItemsMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse getCompletionItems(
-        GetCompletionItemsRequest requestMessage,
-        ConsoleServiceClient.GetCompletionItemsMetadata_or_callbackUnionType metadata_or_callback,
-        ConsoleServiceClient.GetCompletionItemsCallbackFn callback);
+            GetCompletionItemsRequest requestMessage,
+            ConsoleServiceClient.GetCompletionItemsMetadata_or_callbackUnionType metadata_or_callback,
+            ConsoleServiceClient.GetCompletionItemsCallbackFn callback);
 
     public native UnaryResponse getCompletionItems(
-        GetCompletionItemsRequest requestMessage,
-        ConsoleServiceClient.GetCompletionItemsMetadata_or_callbackUnionType metadata_or_callback);
+            GetCompletionItemsRequest requestMessage,
+            ConsoleServiceClient.GetCompletionItemsMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse getConsoleTypes(
-        GetConsoleTypesRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        ConsoleServiceClient.GetConsoleTypesCallbackFn callback) {
+            GetConsoleTypesRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            ConsoleServiceClient.GetConsoleTypesCallbackFn callback) {
         return getConsoleTypes(
-            requestMessage,
-            Js.<ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse getConsoleTypes(
-        GetConsoleTypesRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            GetConsoleTypesRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return getConsoleTypes(
-            requestMessage,
-            Js.<ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse getConsoleTypes(
-        GetConsoleTypesRequest requestMessage,
-        ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackFn metadata_or_callback,
-        ConsoleServiceClient.GetConsoleTypesCallbackFn callback) {
+            GetConsoleTypesRequest requestMessage,
+            ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackFn metadata_or_callback,
+            ConsoleServiceClient.GetConsoleTypesCallbackFn callback) {
         return getConsoleTypes(
-            requestMessage,
-            Js.<ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse getConsoleTypes(
-        GetConsoleTypesRequest requestMessage,
-        ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackFn metadata_or_callback) {
+            GetConsoleTypesRequest requestMessage,
+            ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackFn metadata_or_callback) {
         return getConsoleTypes(
-            requestMessage,
-            Js.<ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse getConsoleTypes(
-        GetConsoleTypesRequest requestMessage,
-        ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackUnionType metadata_or_callback,
-        ConsoleServiceClient.GetConsoleTypesCallbackFn callback);
+            GetConsoleTypesRequest requestMessage,
+            ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackUnionType metadata_or_callback,
+            ConsoleServiceClient.GetConsoleTypesCallbackFn callback);
 
     public native UnaryResponse getConsoleTypes(
-        GetConsoleTypesRequest requestMessage,
-        ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackUnionType metadata_or_callback);
+            GetConsoleTypesRequest requestMessage,
+            ConsoleServiceClient.GetConsoleTypesMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse openDocument(
-        OpenDocumentRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        ConsoleServiceClient.OpenDocumentCallbackFn callback) {
+            OpenDocumentRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            ConsoleServiceClient.OpenDocumentCallbackFn callback) {
         return openDocument(
-            requestMessage,
-            Js.<ConsoleServiceClient.OpenDocumentMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.OpenDocumentMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse openDocument(
-        OpenDocumentRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            OpenDocumentRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return openDocument(
-            requestMessage,
-            Js.<ConsoleServiceClient.OpenDocumentMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.OpenDocumentMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse openDocument(
-        OpenDocumentRequest requestMessage,
-        ConsoleServiceClient.OpenDocumentMetadata_or_callbackFn metadata_or_callback,
-        ConsoleServiceClient.OpenDocumentCallbackFn callback) {
+            OpenDocumentRequest requestMessage,
+            ConsoleServiceClient.OpenDocumentMetadata_or_callbackFn metadata_or_callback,
+            ConsoleServiceClient.OpenDocumentCallbackFn callback) {
         return openDocument(
-            requestMessage,
-            Js.<ConsoleServiceClient.OpenDocumentMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.OpenDocumentMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse openDocument(
-        OpenDocumentRequest requestMessage,
-        ConsoleServiceClient.OpenDocumentMetadata_or_callbackFn metadata_or_callback) {
+            OpenDocumentRequest requestMessage,
+            ConsoleServiceClient.OpenDocumentMetadata_or_callbackFn metadata_or_callback) {
         return openDocument(
-            requestMessage,
-            Js.<ConsoleServiceClient.OpenDocumentMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.OpenDocumentMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse openDocument(
-        OpenDocumentRequest requestMessage,
-        ConsoleServiceClient.OpenDocumentMetadata_or_callbackUnionType metadata_or_callback,
-        ConsoleServiceClient.OpenDocumentCallbackFn callback);
+            OpenDocumentRequest requestMessage,
+            ConsoleServiceClient.OpenDocumentMetadata_or_callbackUnionType metadata_or_callback,
+            ConsoleServiceClient.OpenDocumentCallbackFn callback);
 
     public native UnaryResponse openDocument(
-        OpenDocumentRequest requestMessage,
-        ConsoleServiceClient.OpenDocumentMetadata_or_callbackUnionType metadata_or_callback);
+            OpenDocumentRequest requestMessage,
+            ConsoleServiceClient.OpenDocumentMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse startConsole(
-        StartConsoleRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        ConsoleServiceClient.StartConsoleCallbackFn callback) {
+            StartConsoleRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            ConsoleServiceClient.StartConsoleCallbackFn callback) {
         return startConsole(
-            requestMessage,
-            Js.<ConsoleServiceClient.StartConsoleMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.StartConsoleMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse startConsole(
-        StartConsoleRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            StartConsoleRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return startConsole(
-            requestMessage,
-            Js.<ConsoleServiceClient.StartConsoleMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.StartConsoleMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse startConsole(
-        StartConsoleRequest requestMessage,
-        ConsoleServiceClient.StartConsoleMetadata_or_callbackFn metadata_or_callback,
-        ConsoleServiceClient.StartConsoleCallbackFn callback) {
+            StartConsoleRequest requestMessage,
+            ConsoleServiceClient.StartConsoleMetadata_or_callbackFn metadata_or_callback,
+            ConsoleServiceClient.StartConsoleCallbackFn callback) {
         return startConsole(
-            requestMessage,
-            Js.<ConsoleServiceClient.StartConsoleMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<ConsoleServiceClient.StartConsoleMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse startConsole(
-        StartConsoleRequest requestMessage,
-        ConsoleServiceClient.StartConsoleMetadata_or_callbackFn metadata_or_callback) {
+            StartConsoleRequest requestMessage,
+            ConsoleServiceClient.StartConsoleMetadata_or_callbackFn metadata_or_callback) {
         return startConsole(
-            requestMessage,
-            Js.<ConsoleServiceClient.StartConsoleMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<ConsoleServiceClient.StartConsoleMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse startConsole(
-        StartConsoleRequest requestMessage,
-        ConsoleServiceClient.StartConsoleMetadata_or_callbackUnionType metadata_or_callback,
-        ConsoleServiceClient.StartConsoleCallbackFn callback);
+            StartConsoleRequest requestMessage,
+            ConsoleServiceClient.StartConsoleMetadata_or_callbackUnionType metadata_or_callback,
+            ConsoleServiceClient.StartConsoleCallbackFn callback);
 
     public native UnaryResponse startConsole(
-        StartConsoleRequest requestMessage,
-        ConsoleServiceClient.StartConsoleMetadata_or_callbackUnionType metadata_or_callback);
+            StartConsoleRequest requestMessage,
+            ConsoleServiceClient.StartConsoleMetadata_or_callbackUnionType metadata_or_callback);
 
     public native ResponseStream<LogSubscriptionData> subscribeToLogs(
-        LogSubscriptionRequest requestMessage, BrowserHeaders metadata);
+            LogSubscriptionRequest requestMessage, BrowserHeaders metadata);
 
     public native ResponseStream<LogSubscriptionData> subscribeToLogs(
-        LogSubscriptionRequest requestMessage);
+            LogSubscriptionRequest requestMessage);
 }

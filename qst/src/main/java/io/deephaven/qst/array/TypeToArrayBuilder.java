@@ -22,7 +22,7 @@ class TypeToArrayBuilder implements Type.Visitor, PrimitiveType.Visitor {
     }
 
     static <T> ArrayBuilder<T, ? extends PrimitiveArray<T>, ?> of(PrimitiveType<T> type,
-        int initialCapacity) {
+            int initialCapacity) {
         TypeToArrayBuilder visitor = new TypeToArrayBuilder(initialCapacity);
         type.walk((PrimitiveType.Visitor) visitor);
         // noinspection unchecked

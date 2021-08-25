@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.BindTableToVariableRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.BindTableToVariableRequest",
+        namespace = JsPackage.GLOBAL)
 public class BindTableToVariableRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -22,7 +22,7 @@ public class BindTableToVariableRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static BindTableToVariableRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -57,20 +57,20 @@ public class BindTableToVariableRequest {
 
             @JsProperty
             void setTicket(
-                BindTableToVariableRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    BindTableToVariableRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<BindTableToVariableRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<BindTableToVariableRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<BindTableToVariableRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<BindTableToVariableRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -89,8 +89,7 @@ public class BindTableToVariableRequest {
         String getVariableName();
 
         @JsProperty
-        void setConsoleId(
-            BindTableToVariableRequest.ToObjectReturnType.ConsoleIdFieldType consoleId);
+        void setConsoleId(BindTableToVariableRequest.ToObjectReturnType.ConsoleIdFieldType consoleId);
 
         @JsProperty
         void setTableId(Object tableId);
@@ -107,7 +106,7 @@ public class BindTableToVariableRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static BindTableToVariableRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -142,20 +141,20 @@ public class BindTableToVariableRequest {
 
             @JsProperty
             void setTicket(
-                BindTableToVariableRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    BindTableToVariableRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<BindTableToVariableRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<BindTableToVariableRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<BindTableToVariableRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<BindTableToVariableRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -174,8 +173,7 @@ public class BindTableToVariableRequest {
         String getVariableName();
 
         @JsProperty
-        void setConsoleId(
-            BindTableToVariableRequest.ToObjectReturnType0.ConsoleIdFieldType consoleId);
+        void setConsoleId(BindTableToVariableRequest.ToObjectReturnType0.ConsoleIdFieldType consoleId);
 
         @JsProperty
         void setTableId(Object tableId);
@@ -187,13 +185,13 @@ public class BindTableToVariableRequest {
     public static native BindTableToVariableRequest deserializeBinary(Uint8Array bytes);
 
     public static native BindTableToVariableRequest deserializeBinaryFromReader(
-        BindTableToVariableRequest message, Object reader);
+            BindTableToVariableRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(
-        BindTableToVariableRequest message, Object writer);
+            BindTableToVariableRequest message, Object writer);
 
     public static native BindTableToVariableRequest.ToObjectReturnType toObject(
-        boolean includeInstance, BindTableToVariableRequest msg);
+            boolean includeInstance, BindTableToVariableRequest msg);
 
     public native void clearConsoleId();
 

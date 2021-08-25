@@ -43,14 +43,11 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
 
     @Override
     public long put(long key, long index) {
-        Require.requirement(key <= Integer.MAX_VALUE && key >= 0,
-            "key <= Integer.MAX_VALUE && key >= 0", key, "key");
+        Require.requirement(key <= Integer.MAX_VALUE && key >= 0, "key <= Integer.MAX_VALUE && key >= 0", key, "key");
         if (key >= redirections.length) {
-            final long[] newRedirections =
-                new long[Math.max((int) key + 100, redirections.length * 2)];
+            final long[] newRedirections = new long[Math.max((int) key + 100, redirections.length * 2)];
             System.arraycopy(redirections, 0, newRedirections, 0, redirections.length);
-            Arrays.fill(newRedirections, redirections.length, newRedirections.length,
-                Index.NULL_KEY);
+            Arrays.fill(newRedirections, redirections.length, newRedirections.length, Index.NULL_KEY);
             redirections = newRedirections;
         }
         final long previous = redirections[(int) key];
@@ -83,9 +80,9 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
 
     @Override
     public void fillChunk(
-        @NotNull final FillContext fillContext,
-        @NotNull final WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
-        @NotNull final OrderedKeys keysToMap) {
+            @NotNull final FillContext fillContext,
+            @NotNull final WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
+            @NotNull final OrderedKeys keysToMap) {
         mappedKeysOut.setSize(0);
         keysToMap.forAllLongRanges((final long start, final long end) -> {
             for (long v = start; v <= end; ++v) {
@@ -109,9 +106,9 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
 
     @Override
     public void fillPrevChunk(
-        @NotNull final FillContext fillContext,
-        @NotNull final WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
-        @NotNull final OrderedKeys keysToMap) {
+            @NotNull final FillContext fillContext,
+            @NotNull final WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
+            @NotNull final OrderedKeys keysToMap) {
         if (checkpoint == null) {
             fillChunk(fillContext, mappedKeysOut, keysToMap);
             return;
@@ -144,10 +141,9 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
 
     public synchronized void startTrackingPrevValues() {
         Assert.eqNull(updateCommitter, "updateCommitter");
-        checkpoint = new TLongLongHashMap(Math.min(size, 1024 * 1024), 0.75f, UPDATES_KEY_NOT_FOUND,
-            UPDATES_KEY_NOT_FOUND);
-        updateCommitter =
-            new UpdateCommitter<>(this, ContiguousRedirectionIndexImpl::commitUpdates);
+        checkpoint =
+                new TLongLongHashMap(Math.min(size, 1024 * 1024), 0.75f, UPDATES_KEY_NOT_FOUND, UPDATES_KEY_NOT_FOUND);
+        updateCommitter = new UpdateCommitter<>(this, ContiguousRedirectionIndexImpl::commitUpdates);
     }
 
     private synchronized void commitUpdates() {

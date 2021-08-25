@@ -10,8 +10,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class SortedFirstOrLastByFactoryImpl extends IterativeIndexStateFactory
-    implements Serializable {
+public class SortedFirstOrLastByFactoryImpl extends IterativeIndexStateFactory implements Serializable {
 
     final private String[] sortColumnNames;
     final private boolean minimum;
@@ -20,8 +19,8 @@ public class SortedFirstOrLastByFactoryImpl extends IterativeIndexStateFactory
         this(minimum, false, false, 0, sortColumnNames);
     }
 
-    SortedFirstOrLastByFactoryImpl(boolean minimum, boolean firstRollup, boolean secondRollup,
-        int rollupIdentifier, String... sortColumnNames) {
+    SortedFirstOrLastByFactoryImpl(boolean minimum, boolean firstRollup, boolean secondRollup, int rollupIdentifier,
+            String... sortColumnNames) {
         super(firstRollup, secondRollup, rollupIdentifier);
         Require.gtZero(sortColumnNames.length, "sortColumnNames.length");
         this.sortColumnNames = sortColumnNames;
@@ -49,7 +48,7 @@ public class SortedFirstOrLastByFactoryImpl extends IterativeIndexStateFactory
                 return false;
             final MemoKey memoKey = (MemoKey) o;
             return minimum == memoKey.minimum &&
-                Arrays.equals(sortColumnNames, memoKey.sortColumnNames);
+                    Arrays.equals(sortColumnNames, memoKey.sortColumnNames);
         }
 
         @Override

@@ -44,9 +44,8 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
     /**
      * Returns an Index with the positions of <i>keys</i> in this Index.
      *
-     * This can be thought of as an iterative find() over the values in keys, but <b>all</b> keys
-     * <b>must</b> exist within this index, because an Index result can not represent negative
-     * values.
+     * This can be thought of as an iterative find() over the values in keys, but <b>all</b> keys <b>must</b> exist
+     * within this index, because an Index result can not represent negative values.
      *
      * @param keys the keys to find positions for
      * @return a new Index containing the positions of the keys in this index
@@ -54,12 +53,10 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
     Index invert(ReadOnlyIndex keys);
 
     /**
-     * Returns the positions of <i>keys</i> in the current set as an Index, stopping at
-     * maximumPosition.
+     * Returns the positions of <i>keys</i> in the current set as an Index, stopping at maximumPosition.
      *
-     * This can be thought of as an iterative find() over the values in keys, but <b>all</b> keys
-     * <b>must</b> exist within this index, because an Index result can not represent negative
-     * values.
+     * This can be thought of as an iterative find() over the values in keys, but <b>all</b> keys <b>must</b> exist
+     * within this index, because an Index result can not represent negative values.
      *
      * @param keys the keys to find positions for
      * @param maximumPosition the largest position for which we will find a key
@@ -68,9 +65,8 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
     Index invert(ReadOnlyIndex keys, long maximumPosition);
 
     /**
-     * For the given keys Index, under the assertion that none of them are present in the current
-     * index, return the tentative insertion points in the current index with the count for each of
-     * them
+     * For the given keys Index, under the assertion that none of them are present in the current index, return the
+     * tentative insertion points in the current index with the count for each of them
      *
      * @param keys the keys to identify insertion locations
      * @return two TLongArrayLists; [0] contains the positions, [1] contains the counts.
@@ -107,8 +103,8 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
     boolean subsetOf(@NotNull ReadOnlyIndex other);
 
     /**
-     * Returns a new index representing the keys of the current set not present inside indexToRemove
-     * This operation is equivalent to set difference. This index is not modified.
+     * Returns a new index representing the keys of the current set not present inside indexToRemove This operation is
+     * equivalent to set difference. This index is not modified.
      */
     Index minus(ReadOnlyIndex indexToRemove);
 
@@ -132,9 +128,8 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
     /**
      * Return a grouping that contains keys that match the values in keySet.
      *
-     * @param keys a set of values that keyColumns should match. For a single keyColumns, the values
-     *        within the set are the values that we would like to find. For multiple keyColumns, the
-     *        values are SmartKeys.
+     * @param keys a set of values that keyColumns should match. For a single keyColumns, the values within the set are
+     *        the values that we would like to find. For multiple keyColumns, the values are SmartKeys.
      * @param tupleSource the tuple factory for the keyColumns
      * @return an Map from keys to Indices, for each of the keys in keySet and this Index.
      */
@@ -143,9 +138,8 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
     /**
      * Return a subIndex that contains indices that match the values in keySet.
      *
-     * @param keySet a set of values that keyColumns should match. For a single keyColumns, the
-     *        values within the set are the values that we would like to find. For multiple
-     *        keyColumns, the values are SmartKeys.
+     * @param keySet a set of values that keyColumns should match. For a single keyColumns, the values within the set
+     *        are the values that we would like to find. For multiple keyColumns, the values are SmartKeys.
      * @param tupleSource the tuple factory for the keyColumn
      * @return an Index containing only keys that match keySet.
      */
@@ -160,21 +154,19 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
 
         /**
          * <p>
-         * Advance the current iterator position until {@code currentRangeStart()} and
-         * {@code currentRangeEnd()} are both greater than or equal to ‘v’. This may or may not move
-         * the iterator to the next range: if ‘v’ is inside the current range (but to the right of
-         * {@code currentRangeStart()}, this will simply advance {@code currentRangeStart()}.
-         * Returns true if the operation was successful. Otherwise, returns false. In this case the
-         * iteration is over and the iterator is exhausted (calls to {@code hasNext()} will return
-         * false, any other operation is undefined).
+         * Advance the current iterator position until {@code currentRangeStart()} and {@code currentRangeEnd()} are
+         * both greater than or equal to ‘v’. This may or may not move the iterator to the next range: if ‘v’ is inside
+         * the current range (but to the right of {@code currentRangeStart()}, this will simply advance
+         * {@code currentRangeStart()}. Returns true if the operation was successful. Otherwise, returns false. In this
+         * case the iteration is over and the iterator is exhausted (calls to {@code hasNext()} will return false, any
+         * other operation is undefined).
          * </p>
          *
          * <p>
-         * Although calls to {@code advance()} may be interleaved with calls to
-         * {@code hasNext()}/{@code next()} if necessary, this is not the common case, as they are
-         * separate protocols having little to do with each other. In particular, when iterating
-         * with {@code advance()}, you do not use next() to bring the next range into view, even at
-         * the start of the iteration. Many common usages only involve calls to advance().
+         * Although calls to {@code advance()} may be interleaved with calls to {@code hasNext()}/{@code next()} if
+         * necessary, this is not the common case, as they are separate protocols having little to do with each other.
+         * In particular, when iterating with {@code advance()}, you do not use next() to bring the next range into
+         * view, even at the start of the iteration. Many common usages only involve calls to advance().
          * </p>
          *
          * <p>
@@ -205,11 +197,10 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
         boolean advance(long v);
 
         /**
-         * Given an iterator state with a current range of [start, end], and a value v such that
-         * start <= v <= end, postpone(v) makes the iterator current range [v, end]. This call is
-         * useful to code that may need to process parts of ranges from different call sites from
-         * the site iterator. The results of this call are undefined if the value provided is not
-         * contained in the current range.
+         * Given an iterator state with a current range of [start, end], and a value v such that start <= v <= end,
+         * postpone(v) makes the iterator current range [v, end]. This call is useful to code that may need to process
+         * parts of ranges from different call sites from the site iterator. The results of this call are undefined if
+         * the value provided is not contained in the current range.
          *
          * @param v A value contained in the current iterator range
          *
@@ -268,10 +259,9 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
 
     interface Iterator extends PrimitiveIterator.OfLong, SafeCloseable {
         /**
-         * Starting from the current next iterator position, provide each value to the consumer,
-         * until either the iterator is exhausted or a call to lc.accept returns false; ie, if the
-         * consumer returns false for a value, stops after that value (does not provide any values
-         * after that).
+         * Starting from the current next iterator position, provide each value to the consumer, until either the
+         * iterator is exhausted or a call to lc.accept returns false; ie, if the consumer returns false for a value,
+         * stops after that value (does not provide any values after that).
          *
          * @param lc the consumer.
          * @return false if the consumer ever returned false, true otherwise.
@@ -291,13 +281,12 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
     }
 
     /**
-     * Provide each value contained in this index, in increased sorted order to the consumer. If the
-     * consumer returns false for a key, stops after that key (does not provide any keys after that
-     * key).
+     * Provide each value contained in this index, in increased sorted order to the consumer. If the consumer returns
+     * false for a key, stops after that key (does not provide any keys after that key).
      *
      * @param lc the consumer.
-     * @return false if the consumer returned false at some point, true if the consumer always
-     *         returned true and all values in the index were consumed.
+     * @return false if the consumer returned false at some point, true if the consumer always returned true and all
+     *         values in the index were consumed.
      */
     boolean forEachLong(LongAbortableConsumer lc);
 
@@ -334,20 +323,17 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
 
         /**
          * <p>
-         * Advance the current iterator position until {@code currentValue()} is greater than or
-         * equal to ‘v’. The operation is a no-op (and returns true) if currentValue() is already >=
-         * 'v'. Returns true if the operation was successful. Otherwise, returns false. In this case
-         * the iteration is over and the iterator is exhausted; calls to {@code hasNext()} will
-         * return false, any other operation is undefined.
+         * Advance the current iterator position until {@code currentValue()} is greater than or equal to ‘v’. The
+         * operation is a no-op (and returns true) if currentValue() is already >= 'v'. Returns true if the operation
+         * was successful. Otherwise, returns false. In this case the iteration is over and the iterator is exhausted;
+         * calls to {@code hasNext()} will return false, any other operation is undefined.
          * </p>
          *
          * <p>
-         * Although calls to {@code advance()} may be interleaved with calls to
-         * {@code hasNext()}/{@code next()} if necessary, this is not the common case, as they are
-         * separate protocols having little to do with each other. In particular, when iterating
-         * with {@code advance()}, you do not use next() to bring the value you advanced to into
-         * view, even at the start of the iteration. Many common usages only involve calls to
-         * advance().
+         * Although calls to {@code advance()} may be interleaved with calls to {@code hasNext()}/{@code next()} if
+         * necessary, this is not the common case, as they are separate protocols having little to do with each other.
+         * In particular, when iterating with {@code advance()}, you do not use next() to bring the value you advanced
+         * to into view, even at the start of the iteration. Many common usages only involve calls to advance().
          * </p>
          * 
          * @param v a value to search forward from the current iterator position
@@ -358,30 +344,27 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
 
         /**
          * <p>
-         * Advance the current iterator (start) position while the current value maintains
-         * comp.compareTargetTo(v, dir) > 0. If next to the last such value there is a value for
-         * which comp.compareTargetTo(v, dir) < 0, or no further values exist, then that last value
-         * satisfying comp,.compareTargetTo(v, dir) > 0 is left as the current position and
-         * returned. If there are any elements for which comp.compareTargetTo(v, dir) == 0, one of
-         * such elements, no guarantee which one, is left as the current position and returned. If
-         * at call entry the iterator was exhausted, -1 is returned. If at call entry the iterator
-         * was just constructed and had never been advanced, it is moved to the first element (which
-         * becomes the current value). If the current value v is such that comp.compareTargetTo(v,
-         * dir) < 0, -1 is returned and the current position is not moved.
+         * Advance the current iterator (start) position while the current value maintains comp.compareTargetTo(v, dir)
+         * > 0. If next to the last such value there is a value for which comp.compareTargetTo(v, dir) < 0, or no
+         * further values exist, then that last value satisfying comp,.compareTargetTo(v, dir) > 0 is left as the
+         * current position and returned. If there are any elements for which comp.compareTargetTo(v, dir) == 0, one of
+         * such elements, no guarantee which one, is left as the current position and returned. If at call entry the
+         * iterator was exhausted, -1 is returned. If at call entry the iterator was just constructed and had never been
+         * advanced, it is moved to the first element (which becomes the current value). If the current value v is such
+         * that comp.compareTargetTo(v, dir) < 0, -1 is returned and the current position is not moved.
          * </p>
          *
          * <p>
-         * Part of the contract of this method is that comp.compareTargetTo will only be called with
-         * values that are in the underlying container.
+         * Part of the contract of this method is that comp.compareTargetTo will only be called with values that are in
+         * the underlying container.
          * </p>
          *
          * @param comp a comparator used to search forward from the current iterator position
          * @param dir a direction to search for comp, either +1 for forward or -1 for backward.
-         * @return -1 if the iterator was exhausted at entry or the target was to the left of the
-         *         initial position at the time of the call, in which case the iterator is not
-         *         changed; the resulting current position otherwise. In this later case the current
-         *         position is guaranteed to satisfy comp.compareTargetTo(v, dir) >= 0 and if also
-         *         comp.compareTargetTo(v, dir) > 0, then v is the biggest such value for which
+         * @return -1 if the iterator was exhausted at entry or the target was to the left of the initial position at
+         *         the time of the call, in which case the iterator is not changed; the resulting current position
+         *         otherwise. In this later case the current position is guaranteed to satisfy comp.compareTargetTo(v,
+         *         dir) >= 0 and if also comp.compareTargetTo(v, dir) > 0, then v is the biggest such value for which
          *         comp.compareTargetTo(v, dir) > 0.
          */
         long binarySearchValue(TargetComparator comp, int dir);
@@ -457,7 +440,7 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
             }
 
             iter.getNextOrderedKeysWithLength(end + 1 - currentOffset.longValue())
-                .forAllLongRanges(builder::appendRange);
+                    .forAllLongRanges(builder::appendRange);
             currentOffset.setValue(end + 1);
             return iter.hasMore();
         });
@@ -491,22 +474,22 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
     long lastKeyPrev();
 
     /**
-     * Returns the position in [0..(size-1)] where the key is found. If not found, then return
-     * (-(position it would be) - 1), a la Array.binarySearch.
+     * Returns the position in [0..(size-1)] where the key is found. If not found, then return (-(position it would be)
+     * - 1), a la Array.binarySearch.
      *
      * @param key the key to search for
-     * @return a position from [0..(size-1)] if the key was found. If the key was not found, then
-     *         (-position - 1) as in Array.binarySearch.
+     * @return a position from [0..(size-1)] if the key was found. If the key was not found, then (-position - 1) as in
+     *         Array.binarySearch.
      */
     long find(long key);
 
     /**
-     * Returns the position in [0..(size-1)] where the key is found in the previous index. If not
-     * found, then return (-(position it would be) - 1), as in Array.binarySearch.
+     * Returns the position in [0..(size-1)] where the key is found in the previous index. If not found, then return
+     * (-(position it would be) - 1), as in Array.binarySearch.
      *
      * @param key the key to search for
-     * @return a position from [0..(size-1)] if the key was found. If the key was not found, then
-     *         (-position - 1) as in Array.binarySearch.
+     * @return a position from [0..(size-1)] if the key was found. If the key was not found, then (-position - 1) as in
+     *         Array.binarySearch.
      */
     long findPrev(long key);
 
@@ -530,8 +513,8 @@ public interface ReadOnlyIndex extends OrderedKeys, SafeCloseable {
     long size();
 
     /**
-     * Returns whether or not this index is flat. Unlike a table, this is a mutable property; which
-     * may change from step to step.
+     * Returns whether or not this index is flat. Unlike a table, this is a mutable property; which may change from step
+     * to step.
      * 
      * @return true if the index keys are continguous and start at zero.
      */

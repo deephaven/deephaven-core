@@ -26,8 +26,7 @@ class WeightedAverageOperator {
 
     @SuppressWarnings("unchecked")
     static <C, W> Operator getOperator(ColumnSource<C> components, ColumnSource<W> weights) {
-        Class<C> componentType =
-            io.deephaven.util.type.TypeUtils.getBoxedType(components.getType());
+        Class<C> componentType = io.deephaven.util.type.TypeUtils.getBoxedType(components.getType());
         Class<W> weightType = TypeUtils.getBoxedType(weights.getType());
 
         if (componentType == Double.class)
@@ -46,12 +45,11 @@ class WeightedAverageOperator {
             return getLongOperator(weightType, (ColumnSource<Long>) components, weights);
 
         throw new UnsupportedOperationException(
-            "Can not perform a weighted average with component type: " + componentType);
+                "Can not perform a weighted average with component type: " + componentType);
     }
 
     @SuppressWarnings("unchecked")
-    private static Operator getDoubleOperator(Class weightType, ColumnSource<Double> components,
-        ColumnSource weights) {
+    private static Operator getDoubleOperator(Class weightType, ColumnSource<Double> components, ColumnSource weights) {
         if (weightType == Double.class)
             return new OperatorImpl(new DoubleGetter(components), new DoubleGetter(weights));
         if (weightType == Float.class)
@@ -67,13 +65,11 @@ class WeightedAverageOperator {
         if (weightType == Long.class)
             return new OperatorImpl(new DoubleGetter(components), new LongGetter(weights));
 
-        throw new UnsupportedOperationException(
-            "Can not perform a weighted average with weight type: " + weightType);
+        throw new UnsupportedOperationException("Can not perform a weighted average with weight type: " + weightType);
     }
 
     @SuppressWarnings("unchecked")
-    private static Operator getFloatOperator(Class weightType, ColumnSource<Float> components,
-        ColumnSource weights) {
+    private static Operator getFloatOperator(Class weightType, ColumnSource<Float> components, ColumnSource weights) {
         if (weightType == Double.class)
             return new OperatorImpl(new FloatGetter(components), new DoubleGetter(weights));
         if (weightType == Float.class)
@@ -89,13 +85,12 @@ class WeightedAverageOperator {
         if (weightType == Long.class)
             return new OperatorImpl(new FloatGetter(components), new LongGetter(weights));
 
-        throw new UnsupportedOperationException(
-            "Can not perform a weighted average with weight type: " + weightType);
+        throw new UnsupportedOperationException("Can not perform a weighted average with weight type: " + weightType);
     }
 
     @SuppressWarnings("unchecked")
     private static Operator getCharOperator(Class weightType, ColumnSource<Character> components,
-        ColumnSource weights) {
+            ColumnSource weights) {
         if (weightType == Double.class)
             return new OperatorImpl(new CharGetter(components), new DoubleGetter(weights));
         if (weightType == Float.class)
@@ -111,13 +106,11 @@ class WeightedAverageOperator {
         if (weightType == Long.class)
             return new OperatorImpl(new CharGetter(components), new LongGetter(weights));
 
-        throw new UnsupportedOperationException(
-            "Can not perform a weighted average with weight type: " + weightType);
+        throw new UnsupportedOperationException("Can not perform a weighted average with weight type: " + weightType);
     }
 
     @SuppressWarnings("unchecked")
-    private static Operator getByteOperator(Class weightType, ColumnSource<Byte> components,
-        ColumnSource weights) {
+    private static Operator getByteOperator(Class weightType, ColumnSource<Byte> components, ColumnSource weights) {
         if (weightType == Double.class)
             return new OperatorImpl(new ByteGetter(components), new DoubleGetter(weights));
         if (weightType == Float.class)
@@ -133,13 +126,11 @@ class WeightedAverageOperator {
         if (weightType == Long.class)
             return new OperatorImpl(new ByteGetter(components), new LongGetter(weights));
 
-        throw new UnsupportedOperationException(
-            "Can not perform a weighted average with weight type: " + weightType);
+        throw new UnsupportedOperationException("Can not perform a weighted average with weight type: " + weightType);
     }
 
     @SuppressWarnings("unchecked")
-    private static Operator getShortOperator(Class weightType, ColumnSource<Short> components,
-        ColumnSource weights) {
+    private static Operator getShortOperator(Class weightType, ColumnSource<Short> components, ColumnSource weights) {
         if (weightType == Double.class)
             return new OperatorImpl(new ShortGetter(components), new DoubleGetter(weights));
         if (weightType == Float.class)
@@ -155,13 +146,12 @@ class WeightedAverageOperator {
         if (weightType == Long.class)
             return new OperatorImpl(new ShortGetter(components), new LongGetter(weights));
 
-        throw new UnsupportedOperationException(
-            "Can not perform a weighted average with weight type: " + weightType);
+        throw new UnsupportedOperationException("Can not perform a weighted average with weight type: " + weightType);
     }
 
     @SuppressWarnings("unchecked")
     private static Operator getIntegerOperator(Class weightType, ColumnSource<Integer> components,
-        ColumnSource weights) {
+            ColumnSource weights) {
         if (weightType == Double.class)
             return new OperatorImpl(new IntegerGetter(components), new DoubleGetter(weights));
         if (weightType == Float.class)
@@ -177,13 +167,11 @@ class WeightedAverageOperator {
         if (weightType == Long.class)
             return new OperatorImpl(new IntegerGetter(components), new LongGetter(weights));
 
-        throw new UnsupportedOperationException(
-            "Can not perform a weighted average with weight type: " + weightType);
+        throw new UnsupportedOperationException("Can not perform a weighted average with weight type: " + weightType);
     }
 
     @SuppressWarnings("unchecked")
-    private static Operator getLongOperator(Class weightType, ColumnSource<Long> components,
-        ColumnSource weights) {
+    private static Operator getLongOperator(Class weightType, ColumnSource<Long> components, ColumnSource weights) {
         if (weightType == Double.class)
             return new OperatorImpl(new LongGetter(components), new DoubleGetter(weights));
         if (weightType == Float.class)
@@ -199,8 +187,7 @@ class WeightedAverageOperator {
         if (weightType == Long.class)
             return new OperatorImpl(new LongGetter(components), new LongGetter(weights));
 
-        throw new UnsupportedOperationException(
-            "Can not perform a weighted average with weight type: " + weightType);
+        throw new UnsupportedOperationException("Can not perform a weighted average with weight type: " + weightType);
     }
 
     private interface ValueGetter {
@@ -261,8 +248,7 @@ class WeightedAverageOperator {
                     nanCount++;
                     return;
                 }
-                if (component == QueryConstants.NULL_DOUBLE
-                    || weight == QueryConstants.NULL_DOUBLE) {
+                if (component == QueryConstants.NULL_DOUBLE || weight == QueryConstants.NULL_DOUBLE) {
                     return;
                 }
                 weightedSum += (component * weight);
@@ -279,8 +265,7 @@ class WeightedAverageOperator {
                     nanCount--;
                     return;
                 }
-                if (component == QueryConstants.NULL_DOUBLE
-                    || weight == QueryConstants.NULL_DOUBLE) {
+                if (component == QueryConstants.NULL_DOUBLE || weight == QueryConstants.NULL_DOUBLE) {
                     return;
                 }
                 weightedSum -= (component * weight);

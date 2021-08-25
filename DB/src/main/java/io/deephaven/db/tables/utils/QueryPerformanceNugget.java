@@ -14,15 +14,14 @@ import static io.deephaven.db.tables.lang.DBLanguageFunctionUtil.minus;
 import static io.deephaven.util.QueryConstants.*;
 
 /**
- * Per-operation instrumentation node for hierarchical performance recording. Note that this class
- * has an unusually intimate relationship with another class, {@link QueryPerformanceRecorder}.
- * Changes to either should take this lack of encapsulation into account.
+ * Per-operation instrumentation node for hierarchical performance recording. Note that this class has an unusually
+ * intimate relationship with another class, {@link QueryPerformanceRecorder}. Changes to either should take this lack
+ * of encapsulation into account.
  */
 public class QueryPerformanceNugget implements Serializable, AutoCloseable {
-    private static final QueryPerformanceLogThreshold LOG_THRESHOLD =
-        new QueryPerformanceLogThreshold("", 1_000_000);
+    private static final QueryPerformanceLogThreshold LOG_THRESHOLD = new QueryPerformanceLogThreshold("", 1_000_000);
     private static final QueryPerformanceLogThreshold UNINSTRUMENTED_LOG_THRESHOLD =
-        new QueryPerformanceLogThreshold("Uninstrumented", 1_000_000_000);
+            new QueryPerformanceLogThreshold("Uninstrumented", 1_000_000_000);
     private static final int MAX_DESCRIPTION_LENGTH = 16 << 10;
 
     private static final long serialVersionUID = 2L;
@@ -65,8 +64,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     /**
      * Constructor for query-level nuggets.
      *
-     * @param evaluationNumber A unique identifier for the query evaluation that triggered this
-     *        nugget creation
+     * @param evaluationNumber A unique identifier for the query evaluation that triggered this nugget creation
      * @param description The operation description
      */
     QueryPerformanceNugget(final int evaluationNumber, final String description) {
@@ -76,20 +74,19 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     /**
      * Full constructor for nuggets.
      *
-     * @param evaluationNumber A unique identifier for the query evaluation that triggered this
-     *        nugget creation
+     * @param evaluationNumber A unique identifier for the query evaluation that triggered this nugget creation
      * @param depth Depth in the evaluation chain for the respective operation
      * @param description The operation description
      * @param isUser Whether this is a "user" nugget or one created by the system
      * @param inputSize The size of the input data
      */
     QueryPerformanceNugget(final int evaluationNumber, final int depth,
-        final String description, final boolean isUser, final long inputSize) {
+            final String description, final boolean isUser, final long inputSize) {
         this.evaluationNumber = evaluationNumber;
         this.depth = depth;
         if (description.length() > MAX_DESCRIPTION_LENGTH) {
             this.description = description.substring(0, MAX_DESCRIPTION_LENGTH) + " ... [truncated "
-                + (description.length() - MAX_DESCRIPTION_LENGTH) + " bytes]";
+                    + (description.length() - MAX_DESCRIPTION_LENGTH) + " bytes]";
         } else {
             this.description = description;
         }
@@ -158,9 +155,9 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     }
 
     /**
-     * AutoCloseable implementation - wraps the no-argument version of done() used by query code
-     * outside of the QueryPerformance(Recorder/Nugget), reporting successful completion to the
-     * thread-local QueryPerformanceRecorder instance.
+     * AutoCloseable implementation - wraps the no-argument version of done() used by query code outside of the
+     * QueryPerformance(Recorder/Nugget), reporting successful completion to the thread-local QueryPerformanceRecorder
+     * instance.
      */
     @Override
     public void close() {
@@ -175,11 +172,10 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     /**
      * Finish the nugget and record the current state of the world.
      *
-     * @param closingState The current query state. If it is anything other than
-     *        {@link QueryState#RUNNING} nothing will happen and it will return false;
+     * @param closingState The current query state. If it is anything other than {@link QueryState#RUNNING} nothing will
+     *        happen and it will return false;
      *
-     * @param recorderToNotify The {@link QueryPerformanceRecorder} to notify this nugget is
-     *        closing.
+     * @param recorderToNotify The {@link QueryPerformanceRecorder} to notify this nugget is closing.
      * @return If the nugget passes criteria for logging.
      */
     private boolean close(QueryState closingState, QueryPerformanceRecorder recorderToNotify) {
@@ -206,10 +202,8 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
             diffTotalMemory = totalUsedMemory - startTotalMemory;
 
             diffPoolAllocatedBytes =
-                minus(QueryPerformanceRecorder.getPoolAllocatedBytesForCurrentThread(),
-                    startPoolAllocatedBytes);
-            diffAllocatedBytes =
-                minus(ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes(), startAllocatedBytes);
+                    minus(QueryPerformanceRecorder.getPoolAllocatedBytesForCurrentThread(), startPoolAllocatedBytes);
+            diffAllocatedBytes = minus(ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes(), startAllocatedBytes);
 
             state = closingState;
             return recorderToNotify.releaseNugget(this);
@@ -219,8 +213,8 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     @Override
     public String toString() {
         return Integer.toString(evaluationNumber)
-            + ":" + description
-            + ":" + callerLine;
+                + ":" + description
+                + ":" + callerLine;
     }
 
     public int getEvaluationNumber() {
@@ -268,8 +262,8 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     /**
      * Get nanoseconds of CPU time attributed to the instrumented operation.
      *
-     * @return The nanoseconds of CPU time attributed to the instrumented operation, or
-     *         {@link QueryConstants#NULL_LONG} if not enabled/supported.
+     * @return The nanoseconds of CPU time attributed to the instrumented operation, or {@link QueryConstants#NULL_LONG}
+     *         if not enabled/supported.
      */
     public long getCpuNanos() {
         return diffCpuNanos;
@@ -307,8 +301,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     }
 
     /**
-     * @return total (allocated high water mark) memory difference between time of completion and
-     *         creation
+     * @return total (allocated high water mark) memory difference between time of completion and creation
      */
     public long getDiffTotalMemory() {
         return diffTotalMemory;
@@ -327,8 +320,8 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     /**
      * Get bytes of allocated pooled/reusable memory attributed to the instrumented operation.
      *
-     * @return The bytes of allocated pooled/reusable memory attributed to the instrumented
-     *         operation, or {@link QueryConstants#NULL_LONG} if not enabled/supported.
+     * @return The bytes of allocated pooled/reusable memory attributed to the instrumented operation, or
+     *         {@link QueryConstants#NULL_LONG} if not enabled/supported.
      */
     public long getPoolAllocatedBytes() {
         return diffPoolAllocatedBytes;
@@ -349,8 +342,8 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     }
 
     /**
-     * @return true if this nugget triggers the logging of itself and every other nugget in its
-     *         stack of nesting operations.
+     * @return true if this nugget triggers the logging of itself and every other nugget in its stack of nesting
+     *         operations.
      */
     public boolean shouldLogMenAndStackParents() {
         return shouldLogMeAndStackParents;
@@ -359,8 +352,8 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     /**
      * Suppress de minimus performance nuggets using the properties defined above.
      *
-     * @param isUninstrumented this nugget for uninstrumented code? If so the thresholds for
-     *        inclusion in the logs are configured distinctly.
+     * @param isUninstrumented this nugget for uninstrumented code? If so the thresholds for inclusion in the logs are
+     *        configured distinctly.
      *
      * @return if this nugget is significant enough to be logged.
      */
@@ -368,8 +361,8 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
         if (shouldLogMeAndStackParents) {
             return true;
         }
-        // Nuggets will have a null value for total time if they weren't closed for a RUNNING query;
-        // this is an abnormal condition and the nugget should be logged
+        // Nuggets will have a null value for total time if they weren't closed for a RUNNING query; this is an abnormal
+        // condition and the nugget should be logged
         if (getTotalTimeNanos() == null) {
             return true;
         }

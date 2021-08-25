@@ -8,8 +8,8 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
 public interface Releasable {
 
     /**
-     * Release any resources held for caching purposes. Implementations need not guarantee that they
-     * are safe for normal use concurrently with invocations of this method.
+     * Release any resources held for caching purposes. Implementations need not guarantee that they are safe for normal
+     * use concurrently with invocations of this method.
      */
     @OverridingMethodsMustInvokeSuper
     default void releaseCachedResources() {}

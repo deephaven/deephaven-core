@@ -15,13 +15,13 @@ public class ByEmaSimple extends ByEma {
     private final AbstractMa.Mode mode;
     private final double timescaleNanos;
 
-    public ByEmaSimple(ByEma.BadDataBehavior nullBehavior, ByEma.BadDataBehavior nanBehavior,
-        AbstractMa.Mode mode, double timescale, TimeUnit timeUnit) {
+    public ByEmaSimple(ByEma.BadDataBehavior nullBehavior, ByEma.BadDataBehavior nanBehavior, AbstractMa.Mode mode,
+            double timescale, TimeUnit timeUnit) {
         this(nullBehavior, nanBehavior, AbstractMa.Type.LEVEL, mode, timescale, timeUnit);
     }
 
-    public ByEmaSimple(ByEma.BadDataBehavior nullBehavior, ByEma.BadDataBehavior nanBehavior,
-        AbstractMa.Type type, AbstractMa.Mode mode, double timescale, TimeUnit timeUnit) {
+    public ByEmaSimple(ByEma.BadDataBehavior nullBehavior, ByEma.BadDataBehavior nanBehavior, AbstractMa.Type type,
+            AbstractMa.Mode mode, double timescale, TimeUnit timeUnit) {
         super(nullBehavior, nanBehavior);
         this.type = type;
         this.mode = mode;

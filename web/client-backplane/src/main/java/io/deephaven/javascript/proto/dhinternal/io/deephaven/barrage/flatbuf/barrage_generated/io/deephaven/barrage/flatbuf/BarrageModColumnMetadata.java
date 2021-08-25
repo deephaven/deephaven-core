@@ -11,9 +11,9 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.barrage.flatbuf.Barrage_generated.io.deephaven.barrage.flatbuf.BarrageModColumnMetadata",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.barrage.flatbuf.Barrage_generated.io.deephaven.barrage.flatbuf.BarrageModColumnMetadata",
+        namespace = JsPackage.GLOBAL)
 public class BarrageModColumnMetadata {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface CreateModifiedRowsVectorDataUnionType {
@@ -56,34 +56,34 @@ public class BarrageModColumnMetadata {
     public static native void addModifiedRows(Builder builder, double modifiedRowsOffset);
 
     public static native double createBarrageModColumnMetadata(
-        Builder builder, double modifiedRowsOffset);
+            Builder builder, double modifiedRowsOffset);
 
     @Deprecated
     public static native double createModifiedRowsVector(
-        Builder builder, BarrageModColumnMetadata.CreateModifiedRowsVectorDataUnionType data);
+            Builder builder, BarrageModColumnMetadata.CreateModifiedRowsVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createModifiedRowsVector(Builder builder, Int8Array data) {
         return createModifiedRowsVector(
-            builder,
-            Js.<BarrageModColumnMetadata.CreateModifiedRowsVectorDataUnionType>uncheckedCast(data));
+                builder,
+                Js.<BarrageModColumnMetadata.CreateModifiedRowsVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createModifiedRowsVector(Builder builder, JsArray<Double> data) {
         return createModifiedRowsVector(
-            builder,
-            Js.<BarrageModColumnMetadata.CreateModifiedRowsVectorDataUnionType>uncheckedCast(data));
+                builder,
+                Js.<BarrageModColumnMetadata.CreateModifiedRowsVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createModifiedRowsVector(Builder builder, Uint8Array data) {
         return createModifiedRowsVector(
-            builder,
-            Js.<BarrageModColumnMetadata.CreateModifiedRowsVectorDataUnionType>uncheckedCast(data));
+                builder,
+                Js.<BarrageModColumnMetadata.CreateModifiedRowsVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
@@ -95,15 +95,15 @@ public class BarrageModColumnMetadata {
     public static native double endBarrageModColumnMetadata(Builder builder);
 
     public static native BarrageModColumnMetadata getRootAsBarrageModColumnMetadata(
-        ByteBuffer bb, BarrageModColumnMetadata obj);
+            ByteBuffer bb, BarrageModColumnMetadata obj);
 
     public static native BarrageModColumnMetadata getRootAsBarrageModColumnMetadata(ByteBuffer bb);
 
     public static native BarrageModColumnMetadata getSizePrefixedRootAsBarrageModColumnMetadata(
-        ByteBuffer bb, BarrageModColumnMetadata obj);
+            ByteBuffer bb, BarrageModColumnMetadata obj);
 
     public static native BarrageModColumnMetadata getSizePrefixedRootAsBarrageModColumnMetadata(
-        ByteBuffer bb);
+            ByteBuffer bb);
 
     public static native void startBarrageModColumnMetadata(Builder builder);
 

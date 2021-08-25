@@ -8,9 +8,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.ComboAggregateRequest.AggTypeMap",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.ComboAggregateRequest.AggTypeMap",
+        namespace = JsPackage.GLOBAL)
 public interface AggTypeMap {
     @JsOverlay
     static AggTypeMap create() {

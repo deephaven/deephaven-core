@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.MultiSeriesSourceDescriptor",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.MultiSeriesSourceDescriptor",
+        namespace = JsPackage.GLOBAL)
 public class MultiSeriesSourceDescriptor {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -80,13 +80,13 @@ public class MultiSeriesSourceDescriptor {
     public static native MultiSeriesSourceDescriptor deserializeBinary(Uint8Array bytes);
 
     public static native MultiSeriesSourceDescriptor deserializeBinaryFromReader(
-        MultiSeriesSourceDescriptor message, Object reader);
+            MultiSeriesSourceDescriptor message, Object reader);
 
     public static native void serializeBinaryToWriter(
-        MultiSeriesSourceDescriptor message, Object writer);
+            MultiSeriesSourceDescriptor message, Object writer);
 
     public static native MultiSeriesSourceDescriptor.ToObjectReturnType toObject(
-        boolean includeInstance, MultiSeriesSourceDescriptor msg);
+            boolean includeInstance, MultiSeriesSourceDescriptor msg);
 
     public native String getAxisId();
 

@@ -1,9 +1,8 @@
 package io.deephaven.db.v2.sources;
 
 /**
- * Sub-interface of {@link ColumnSource} for implementations that always use return {@code true}
- * from {@link #isImmutable()} and delegate all {@code getPrev*} methods to their current
- * (non-previous) equivalents.
+ * Sub-interface of {@link ColumnSource} for implementations that always use return {@code true} from
+ * {@link #isImmutable()} and delegate all {@code getPrev*} methods to their current (non-previous) equivalents.
  */
 public interface ImmutableColumnSource<DATA_TYPE> extends ColumnSource<DATA_TYPE> {
 

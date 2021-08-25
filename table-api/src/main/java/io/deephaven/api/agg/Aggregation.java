@@ -107,12 +107,12 @@ public interface Aggregation extends Serializable {
 
     static SortedFirst AggSortedFirst(String sortedColumn, String pair) {
         return AggregationFinisher.sortedFirst(SortColumn.asc(ColumnName.of(sortedColumn)))
-            .of(pair);
+                .of(pair);
     }
 
     static Multi<SortedFirst> AggSortedFirst(String sortedColumn, String... pairs) {
         return AggregationFinisher.sortedFirst(SortColumn.asc(ColumnName.of(sortedColumn)))
-            .of(pairs);
+                .of(pairs);
     }
 
     static SortedLast AggSortedLast(String sortedColumn, String pair) {
@@ -121,7 +121,7 @@ public interface Aggregation extends Serializable {
 
     static Multi<SortedLast> AggSortedLast(String sortedColumn, String... pairs) {
         return AggregationFinisher.sortedLast(SortColumn.asc(ColumnName.of(sortedColumn)))
-            .of(pairs);
+                .of(pairs);
     }
 
     static Std AggStd(String pair) {

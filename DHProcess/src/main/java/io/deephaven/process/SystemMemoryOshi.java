@@ -22,8 +22,8 @@ public abstract class SystemMemoryOshi implements PropertySet {
     public abstract long getPhysicalTotal();
 
     /**
-     * The current size of the paging/swap file(s), in bytes. If the paging/swap file can be
-     * extended, this is a soft limit.
+     * The current size of the paging/swap file(s), in bytes. If the paging/swap file can be extended, this is a soft
+     * limit.
      *
      * @return Total swap in bytes.
      */
@@ -47,9 +47,9 @@ public abstract class SystemMemoryOshi implements PropertySet {
 
     public static SystemMemoryOshi from(GlobalMemory memory) {
         return ImmutableSystemMemoryOshi.builder()
-            .physicalTotal(memory.getTotal())
-            .swapTotal(memory.getVirtualMemory().getSwapTotal())
-            .pageSize(memory.getPageSize())
-            .build();
+                .physicalTotal(memory.getTotal())
+                .swapTotal(memory.getVirtualMemory().getSwapTotal())
+                .pageSize(memory.getPageSize())
+                .build();
     }
 }

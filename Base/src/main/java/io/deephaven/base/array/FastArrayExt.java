@@ -16,10 +16,10 @@ import java.io.ObjectOutput;
  *
  */
 public final class FastArrayExt<T extends Externalizable & Copyable<T>> extends FastArray<T>
-    implements Externalizable, Copyable<FastArrayExt<T>> {
+        implements Externalizable, Copyable<FastArrayExt<T>> {
 
     public static <T extends Externalizable & Copyable<T>> Function.Nullary<FastArrayExt<T>> createFactory(
-        final Class<T> clazz, final Function.Nullary<T> itemFactory) {
+            final Class<T> clazz, final Function.Nullary<T> itemFactory) {
         return new Function.Nullary<FastArrayExt<T>>() {
             @Override
             public FastArrayExt<T> call() {
@@ -29,8 +29,8 @@ public final class FastArrayExt<T extends Externalizable & Copyable<T>> extends 
     }
 
     /**
-     * No empty args constructor. We should never be reading this directly off the wire, always goes
-     * through another readExternalizable
+     * No empty args constructor. We should never be reading this directly off the wire, always goes through another
+     * readExternalizable
      */
 
     public FastArrayExt(final Class<? extends T> clazz) {
@@ -41,14 +41,12 @@ public final class FastArrayExt<T extends Externalizable & Copyable<T>> extends 
         super(clazz, initialSize);
     }
 
-    public FastArrayExt(final Class<? extends T> clazz,
-        final Function.Nullary<? extends T> newInstance) {
+    public FastArrayExt(final Class<? extends T> clazz, final Function.Nullary<? extends T> newInstance) {
         super(clazz, newInstance);
     }
 
-    public FastArrayExt(final Class<? extends T> clazz,
-        final Function.Nullary<? extends T> newInstance, final int initialSize,
-        final boolean preallocate) {
+    public FastArrayExt(final Class<? extends T> clazz, final Function.Nullary<? extends T> newInstance,
+            final int initialSize, final boolean preallocate) {
         super(clazz, newInstance, initialSize, preallocate);
     }
 

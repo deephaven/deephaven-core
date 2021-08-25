@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.HeadOrTailRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.HeadOrTailRequest",
+        namespace = JsPackage.GLOBAL)
 public class HeadOrTailRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -22,7 +22,7 @@ public class HeadOrTailRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static HeadOrTailRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -57,20 +57,20 @@ public class HeadOrTailRequest {
 
             @JsProperty
             void setTicket(
-                HeadOrTailRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    HeadOrTailRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<HeadOrTailRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<HeadOrTailRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<HeadOrTailRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<HeadOrTailRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -126,7 +126,7 @@ public class HeadOrTailRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static HeadOrTailRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -161,20 +161,20 @@ public class HeadOrTailRequest {
 
             @JsProperty
             void setTicket(
-                HeadOrTailRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    HeadOrTailRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<HeadOrTailRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<HeadOrTailRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<HeadOrTailRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<HeadOrTailRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -225,12 +225,12 @@ public class HeadOrTailRequest {
     public static native HeadOrTailRequest deserializeBinary(Uint8Array bytes);
 
     public static native HeadOrTailRequest deserializeBinaryFromReader(
-        HeadOrTailRequest message, Object reader);
+            HeadOrTailRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(HeadOrTailRequest message, Object writer);
 
     public static native HeadOrTailRequest.ToObjectReturnType toObject(
-        boolean includeInstance, HeadOrTailRequest msg);
+            boolean includeInstance, HeadOrTailRequest msg);
 
     public native void clearResultId();
 

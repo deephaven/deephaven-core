@@ -13,18 +13,18 @@ public class PlotReflectionPlaypen {
         final Method[] methods = Figure.class.getMethods();
         System.out.println(methods.length);
 
-        final List<Method> plotMethods = Arrays.stream(methods)
-            .filter(m -> m.getName().equals("plot")).collect(Collectors.toList());
+        final List<Method> plotMethods =
+                Arrays.stream(methods).filter(m -> m.getName().equals("plot")).collect(Collectors.toList());
         System.out.println(plotMethods.size());
 
-        final List<Method> fourArg = plotMethods.stream().filter(m -> m.getParameterCount() == 4)
-            .collect(Collectors.toList());
+        final List<Method> fourArg =
+                plotMethods.stream().filter(m -> m.getParameterCount() == 4).collect(Collectors.toList());
         System.out.println(fourArg.size());
 
         // fourArg.forEach(System.out::println);
 
-        final List<Method> table2nd = fourArg.stream()
-            .filter(m -> m.getParameterTypes()[1] == Table.class).collect(Collectors.toList());
+        final List<Method> table2nd =
+                fourArg.stream().filter(m -> m.getParameterTypes()[1] == Table.class).collect(Collectors.toList());
         System.out.println(table2nd.size());
 
         for (Method method : table2nd) {

@@ -11,8 +11,8 @@ import io.grpc.protobuf.StatusProto;
 
 public class Exceptions {
     public static StatusRuntimeException statusRuntimeException(final Code statusCode,
-        final String details) {
+            final String details) {
         return StatusProto.toStatusRuntimeException(
-            Status.newBuilder().setCode(statusCode.getNumber()).setMessage(details).build());
+                Status.newBuilder().setCode(statusCode.getNumber()).setMessage(details).build());
     }
 }

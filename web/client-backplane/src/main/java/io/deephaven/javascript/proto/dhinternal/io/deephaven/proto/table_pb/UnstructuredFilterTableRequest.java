@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.UnstructuredFilterTableRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.UnstructuredFilterTableRequest",
+        namespace = JsPackage.GLOBAL)
 public class UnstructuredFilterTableRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -23,7 +23,7 @@ public class UnstructuredFilterTableRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static UnstructuredFilterTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -58,20 +58,20 @@ public class UnstructuredFilterTableRequest {
 
             @JsProperty
             void setTicket(
-                UnstructuredFilterTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    UnstructuredFilterTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<UnstructuredFilterTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<UnstructuredFilterTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<UnstructuredFilterTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<UnstructuredFilterTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -118,12 +118,10 @@ public class UnstructuredFilterTableRequest {
         }
 
         @JsProperty
-        void setResultId(
-            UnstructuredFilterTableRequest.ToObjectReturnType.ResultIdFieldType resultId);
+        void setResultId(UnstructuredFilterTableRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
         @JsProperty
-        void setSourceId(
-            UnstructuredFilterTableRequest.ToObjectReturnType.SourceIdFieldType sourceId);
+        void setSourceId(UnstructuredFilterTableRequest.ToObjectReturnType.SourceIdFieldType sourceId);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -134,7 +132,7 @@ public class UnstructuredFilterTableRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static UnstructuredFilterTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -169,20 +167,20 @@ public class UnstructuredFilterTableRequest {
 
             @JsProperty
             void setTicket(
-                UnstructuredFilterTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    UnstructuredFilterTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<UnstructuredFilterTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<UnstructuredFilterTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<UnstructuredFilterTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<UnstructuredFilterTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -229,24 +227,22 @@ public class UnstructuredFilterTableRequest {
         }
 
         @JsProperty
-        void setResultId(
-            UnstructuredFilterTableRequest.ToObjectReturnType0.ResultIdFieldType resultId);
+        void setResultId(UnstructuredFilterTableRequest.ToObjectReturnType0.ResultIdFieldType resultId);
 
         @JsProperty
-        void setSourceId(
-            UnstructuredFilterTableRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
+        void setSourceId(UnstructuredFilterTableRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
     }
 
     public static native UnstructuredFilterTableRequest deserializeBinary(Uint8Array bytes);
 
     public static native UnstructuredFilterTableRequest deserializeBinaryFromReader(
-        UnstructuredFilterTableRequest message, Object reader);
+            UnstructuredFilterTableRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(
-        UnstructuredFilterTableRequest message, Object writer);
+            UnstructuredFilterTableRequest message, Object writer);
 
     public static native UnstructuredFilterTableRequest.ToObjectReturnType toObject(
-        boolean includeInstance, UnstructuredFilterTableRequest msg);
+            boolean includeInstance, UnstructuredFilterTableRequest msg);
 
     public native String addFilters(String value, double index);
 
@@ -288,5 +284,5 @@ public class UnstructuredFilterTableRequest {
     public native UnstructuredFilterTableRequest.ToObjectReturnType0 toObject();
 
     public native UnstructuredFilterTableRequest.ToObjectReturnType0 toObject(
-        boolean includeInstance);
+            boolean includeInstance);
 }

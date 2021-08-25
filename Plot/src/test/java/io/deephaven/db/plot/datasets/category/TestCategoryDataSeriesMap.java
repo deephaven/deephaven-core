@@ -35,8 +35,7 @@ public class TestCategoryDataSeriesMap extends BaseArrayTestCase {
 
     private static final IndexableDataDouble dx = new IndexableDataDouble(dataX, false, null);
     private static final IndexableData<String> dyInvalid = new IndexableDataArray<>(invalidY, null);
-    private static final IndexableDataDouble dxMismatched =
-        new IndexableDataDouble(dataXMisMatched, false, null);
+    private static final IndexableDataDouble dxMismatched = new IndexableDataDouble(dataXMisMatched, false, null);
     private static final IndexableNumericData dy = new IndexableNumericDataArrayDouble(dataY, null);
 
     public void testCategoryDataSeriesMap() {
@@ -95,8 +94,8 @@ public class TestCategoryDataSeriesMap extends BaseArrayTestCase {
         map2.gradientVisible(true);
         map2.lineColor("green");
         map2.pointColor("red");
-        map2.pointSize(TableTools.newTable(TableTools.intCol("Values", dataX),
-            TableTools.intCol("Sizes", dataX)), "Values", "Sizes");
+        map2.pointSize(TableTools.newTable(TableTools.intCol("Values", dataX), TableTools.intCol("Sizes", dataX)),
+                "Values", "Sizes");
         map2.pointLabelFormat("{1}");
         map2.toolTipPattern("0.00E0");
         map2.seriesColor(2);
@@ -109,8 +108,7 @@ public class TestCategoryDataSeriesMap extends BaseArrayTestCase {
 
     }
 
-    static void testCopy(final CategoryDataSeriesInternal original,
-        final CategoryDataSeriesInternal copy) {
+    static void testCopy(final CategoryDataSeriesInternal original, final CategoryDataSeriesInternal copy) {
         assertEquals(original.name(), copy.name());
         assertEquals(original.size(), copy.size());
         for (int aDataX : dataX) {

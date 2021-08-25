@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.Flight_pb.Result",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.Flight_pb.Result",
+        namespace = JsPackage.GLOBAL)
 public class Result {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface GetBodyUnionType {

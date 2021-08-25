@@ -62,8 +62,7 @@ public class LogEntryImpl extends LogOutputCsvImpl implements LogEntry {
     }
 
     @Override
-    public LogEntry start(final LogSink sink, final LogLevel level, final long currentTimeMicros,
-        final Throwable t) {
+    public LogEntry start(final LogSink sink, final LogLevel level, final long currentTimeMicros, final Throwable t) {
         super.start();
         starts.getAndIncrement();
         this.timestamp = currentTimeMicros;

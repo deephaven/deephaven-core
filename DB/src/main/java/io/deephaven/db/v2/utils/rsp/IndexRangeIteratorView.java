@@ -18,8 +18,7 @@ public class IndexRangeIteratorView implements SearchRangeIterator {
     private boolean noMore;
     private boolean itFinished;
 
-    public IndexRangeIteratorView(final Index.RangeIterator it, final long offset,
-        final long rangesEnd) {
+    public IndexRangeIteratorView(final Index.RangeIterator it, final long offset, final long rangesEnd) {
         this.it = it;
         this.offset = offset;
         this.rangesEnd = rangesEnd;

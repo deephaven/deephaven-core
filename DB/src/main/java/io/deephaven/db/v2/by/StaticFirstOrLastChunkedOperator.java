@@ -15,15 +15,15 @@ import io.deephaven.db.v2.utils.Index;
 
 public class StaticFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChunkedOperator {
     StaticFirstOrLastChunkedOperator(boolean isFirst, MatchPair[] resultPairs, Table originalTable,
-        String exposeRedirectionAs) {
+            String exposeRedirectionAs) {
         super(isFirst, resultPairs, originalTable, exposeRedirectionAs);
     }
 
     @Override
     public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-        LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
-        IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-        WritableBooleanChunk<Values> stateModified) {
+            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
@@ -34,14 +34,12 @@ public class StaticFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChun
     }
 
     @Override
-    public boolean addChunk(SingletonContext singletonContext, int chunkSize,
-        Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices,
-        long destination) {
+    public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends KeyIndices> inputIndices, long destination) {
         return addChunk(inputIndices, 0, inputIndices.size(), destination);
     }
 
-    private boolean addChunk(LongChunk<? extends KeyIndices> indices, int start, int length,
-        long destination) {
+    private boolean addChunk(LongChunk<? extends KeyIndices> indices, int start, int length, long destination) {
         if (length == 0) {
             return false;
         }

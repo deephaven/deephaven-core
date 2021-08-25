@@ -8,8 +8,8 @@ import java.util.function.Supplier;
 
 public class FunctionConsistencyMonitor {
     /**
-     * If a user function returns null, we store this value; which enables us to return null for
-     * real and distinguish from a null because the function has not been called yet.
+     * If a user function returns null, we store this value; which enables us to return null for real and distinguish
+     * from a null because the function has not been called yet.
      */
     private static final Object NULL_SENTINEL_OBJECT = new Object();
 
@@ -19,8 +19,7 @@ public class FunctionConsistencyMonitor {
     private final AtomicInteger functionCount = new AtomicInteger(0);
 
     /**
-     * The currentValues, initialized by the {@link #startConsistentBlock()} when performing a
-     * series of computations.
+     * The currentValues, initialized by the {@link #startConsistentBlock()} when performing a series of computations.
      */
     private final ThreadLocal<Object[]> currentValues = new ThreadLocal<>();
 
@@ -41,9 +40,8 @@ public class FunctionConsistencyMonitor {
     /**
      * Called before a user initiates a series of consistent functions.
      *
-     * The primary use case is the CompositeTableDataService needs to determine which location
-     * providers are responsive. Each provider must have a consistent value for formulas, such as
-     * the currentDate.
+     * The primary use case is the CompositeTableDataService needs to determine which location providers are responsive.
+     * Each provider must have a consistent value for formulas, such as the currentDate.
      *
      * @return true if a consistent block was started (and thus must be closed); false otherwise
      */
@@ -80,11 +78,10 @@ public class FunctionConsistencyMonitor {
     }
 
     /**
-     * Compute the value for the function at location. If are outside a consistent block, just
-     * return the function.
+     * Compute the value for the function at location. If are outside a consistent block, just return the function.
      *
-     * The first time we compute a function within a consistent block, call function; otherwise
-     * return the previously computed value.
+     * The first time we compute a function within a consistent block, call function; otherwise return the previously
+     * computed value.
      *
      * @param location the location returned from {@link #registerFunction()}
      * @param function the function to compute
@@ -102,11 +99,10 @@ public class FunctionConsistencyMonitor {
         if (values.length <= location) {
             final int currentCount = functionCount.get();
             if (location >= currentCount) {
-                throw new IllegalStateException(
-                    "Location was not registered with this monitor " + location);
+                throw new IllegalStateException("Location was not registered with this monitor " + location);
             }
-            // we registered the function after creating the array for consistent invocation, update
-            // the size of our slots array
+            // we registered the function after creating the array for consistent invocation, update the size of our
+            // slots array
             values = Arrays.copyOf(values, currentCount);
             currentValues.set(values);
         }
@@ -148,9 +144,8 @@ public class FunctionConsistencyMonitor {
     }
 
     /**
-     * A supplier that uses a FunctionConsistencyMonitor to ensure that multiple invocations to the
-     * same function always return the same value, even if underlying conditions (like the date)
-     * change.
+     * A supplier that uses a FunctionConsistencyMonitor to ensure that multiple invocations to the same function always
+     * return the same value, even if underlying conditions (like the date) change.
      *
      * @param <T> the return type of this supplier
      */
@@ -159,8 +154,7 @@ public class FunctionConsistencyMonitor {
         private final Supplier<T> underlyingSupplier;
         private final int id;
 
-        public ConsistentSupplier(FunctionConsistencyMonitor monitor,
-            Supplier<T> underlyingSupplier) {
+        public ConsistentSupplier(FunctionConsistencyMonitor monitor, Supplier<T> underlyingSupplier) {
             this.monitor = monitor;
             this.underlyingSupplier = underlyingSupplier;
             this.id = monitor.registerFunction();

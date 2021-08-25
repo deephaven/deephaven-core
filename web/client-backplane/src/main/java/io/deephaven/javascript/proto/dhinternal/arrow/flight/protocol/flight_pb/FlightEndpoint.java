@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.Flight_pb.FlightEndpoint",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.Flight_pb.FlightEndpoint",
+        namespace = JsPackage.GLOBAL)
 public class FlightEndpoint {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -35,8 +35,7 @@ public class FlightEndpoint {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface GetTicketUnionType {
                 @JsOverlay
-                static FlightEndpoint.ToObjectReturnType.TicketFieldType.GetTicketUnionType of(
-                    Object o) {
+                static FlightEndpoint.ToObjectReturnType.TicketFieldType.GetTicketUnionType of(Object o) {
                     return Js.cast(o);
                 }
 
@@ -70,21 +69,20 @@ public class FlightEndpoint {
             FlightEndpoint.ToObjectReturnType.TicketFieldType.GetTicketUnionType getTicket();
 
             @JsProperty
-            void setTicket(
-                FlightEndpoint.ToObjectReturnType.TicketFieldType.GetTicketUnionType ticket);
+            void setTicket(FlightEndpoint.ToObjectReturnType.TicketFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<FlightEndpoint.ToObjectReturnType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FlightEndpoint.ToObjectReturnType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<FlightEndpoint.ToObjectReturnType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FlightEndpoint.ToObjectReturnType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -101,14 +99,14 @@ public class FlightEndpoint {
 
         @JsProperty
         void setLocationList(
-            JsArray<FlightEndpoint.ToObjectReturnType.LocationListFieldType> locationList);
+                JsArray<FlightEndpoint.ToObjectReturnType.LocationListFieldType> locationList);
 
         @JsOverlay
         default void setLocationList(
-            FlightEndpoint.ToObjectReturnType.LocationListFieldType[] locationList) {
+                FlightEndpoint.ToObjectReturnType.LocationListFieldType[] locationList) {
             setLocationList(
-                Js.<JsArray<FlightEndpoint.ToObjectReturnType.LocationListFieldType>>uncheckedCast(
-                    locationList));
+                    Js.<JsArray<FlightEndpoint.ToObjectReturnType.LocationListFieldType>>uncheckedCast(
+                            locationList));
         }
 
         @JsProperty
@@ -136,8 +134,7 @@ public class FlightEndpoint {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface GetTicketUnionType {
                 @JsOverlay
-                static FlightEndpoint.ToObjectReturnType0.TicketFieldType.GetTicketUnionType of(
-                    Object o) {
+                static FlightEndpoint.ToObjectReturnType0.TicketFieldType.GetTicketUnionType of(Object o) {
                     return Js.cast(o);
                 }
 
@@ -171,21 +168,20 @@ public class FlightEndpoint {
             FlightEndpoint.ToObjectReturnType0.TicketFieldType.GetTicketUnionType getTicket();
 
             @JsProperty
-            void setTicket(
-                FlightEndpoint.ToObjectReturnType0.TicketFieldType.GetTicketUnionType ticket);
+            void setTicket(FlightEndpoint.ToObjectReturnType0.TicketFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<FlightEndpoint.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FlightEndpoint.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<FlightEndpoint.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FlightEndpoint.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -202,14 +198,14 @@ public class FlightEndpoint {
 
         @JsProperty
         void setLocationList(
-            JsArray<FlightEndpoint.ToObjectReturnType0.LocationListFieldType> locationList);
+                JsArray<FlightEndpoint.ToObjectReturnType0.LocationListFieldType> locationList);
 
         @JsOverlay
         default void setLocationList(
-            FlightEndpoint.ToObjectReturnType0.LocationListFieldType[] locationList) {
+                FlightEndpoint.ToObjectReturnType0.LocationListFieldType[] locationList) {
             setLocationList(
-                Js.<JsArray<FlightEndpoint.ToObjectReturnType0.LocationListFieldType>>uncheckedCast(
-                    locationList));
+                    Js.<JsArray<FlightEndpoint.ToObjectReturnType0.LocationListFieldType>>uncheckedCast(
+                            locationList));
         }
 
         @JsProperty
@@ -219,12 +215,12 @@ public class FlightEndpoint {
     public static native FlightEndpoint deserializeBinary(Uint8Array bytes);
 
     public static native FlightEndpoint deserializeBinaryFromReader(
-        FlightEndpoint message, Object reader);
+            FlightEndpoint message, Object reader);
 
     public static native void serializeBinaryToWriter(FlightEndpoint message, Object writer);
 
     public static native FlightEndpoint.ToObjectReturnType toObject(
-        boolean includeInstance, FlightEndpoint msg);
+            boolean includeInstance, FlightEndpoint msg);
 
     public native Location addLocation();
 

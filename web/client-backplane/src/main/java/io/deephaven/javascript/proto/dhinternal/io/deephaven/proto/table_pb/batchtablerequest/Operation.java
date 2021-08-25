@@ -31,9 +31,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.BatchTableRequest.Operation",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.BatchTableRequest.Operation",
+        namespace = JsPackage.GLOBAL)
 public class Operation {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -158,15 +158,15 @@ public class Operation {
 
             @JsOverlay
             default void setAggregatesList(
-                Operation.ToObjectReturnType.ComboAggregateFieldType.AggregatesListFieldType[] aggregatesList) {
+                    Operation.ToObjectReturnType.ComboAggregateFieldType.AggregatesListFieldType[] aggregatesList) {
                 setAggregatesList(
-                    Js.<JsArray<Operation.ToObjectReturnType.ComboAggregateFieldType.AggregatesListFieldType>>uncheckedCast(
-                        aggregatesList));
+                        Js.<JsArray<Operation.ToObjectReturnType.ComboAggregateFieldType.AggregatesListFieldType>>uncheckedCast(
+                                aggregatesList));
             }
 
             @JsProperty
             void setAggregatesList(
-                JsArray<Operation.ToObjectReturnType.ComboAggregateFieldType.AggregatesListFieldType> aggregatesList);
+                    JsArray<Operation.ToObjectReturnType.ComboAggregateFieldType.AggregatesListFieldType> aggregatesList);
 
             @JsProperty
             void setForceCombo(boolean forceCombo);
@@ -289,7 +289,7 @@ public class Operation {
 
             @JsProperty
             void setSourceId(
-                Operation.ToObjectReturnType.DropColumnsFieldType.SourceIdFieldType sourceId);
+                    Operation.ToObjectReturnType.DropColumnsFieldType.SourceIdFieldType sourceId);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -300,7 +300,7 @@ public class Operation {
                 public interface GetTicketUnionType {
                     @JsOverlay
                     static Operation.ToObjectReturnType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType of(
-                        Object o) {
+                            Object o) {
                         return Js.cast(o);
                     }
 
@@ -335,20 +335,20 @@ public class Operation {
 
                 @JsProperty
                 void setTicket(
-                    Operation.ToObjectReturnType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType ticket);
+                        Operation.ToObjectReturnType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType ticket);
 
                 @JsOverlay
                 default void setTicket(String ticket) {
                     setTicket(
-                        Js.<Operation.ToObjectReturnType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                            ticket));
+                            Js.<Operation.ToObjectReturnType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                    ticket));
                 }
 
                 @JsOverlay
                 default void setTicket(Uint8Array ticket) {
                     setTicket(
-                        Js.<Operation.ToObjectReturnType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                            ticket));
+                            Js.<Operation.ToObjectReturnType.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                    ticket));
                 }
             }
 
@@ -364,8 +364,7 @@ public class Operation {
             String getSize();
 
             @JsProperty
-            void setResultId(
-                Operation.ToObjectReturnType.EmptyTableFieldType.ResultIdFieldType resultId);
+            void setResultId(Operation.ToObjectReturnType.EmptyTableFieldType.ResultIdFieldType resultId);
 
             @JsProperty
             void setSize(String size);
@@ -511,11 +510,11 @@ public class Operation {
 
                         @JsProperty
                         void setLiteral(
-                            Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
+                                Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
 
                         @JsProperty
                         void setReference(
-                            Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
+                                Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
                     }
 
                     @JsOverlay
@@ -540,7 +539,7 @@ public class Operation {
 
                     @JsProperty
                     void setLhs(
-                        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType lhs);
+                            Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType lhs);
 
                     @JsProperty
                     void setOperation(double operation);
@@ -746,8 +745,7 @@ public class Operation {
 
                     @JsOverlay
                     default void setOptionalReferencesList(Object[] optionalReferencesList) {
-                        setOptionalReferencesList(
-                            Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
+                        setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
                     }
 
                     @JsProperty
@@ -791,43 +789,43 @@ public class Operation {
 
                 @JsProperty
                 void setAnd(
-                    Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.AndFieldType and);
+                        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.AndFieldType and);
 
                 @JsProperty
                 void setCompare(
-                    Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.CompareFieldType compare);
+                        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.CompareFieldType compare);
 
                 @JsProperty
                 void setContains(
-                    Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.ContainsFieldType contains);
+                        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.ContainsFieldType contains);
 
                 @JsProperty
                 void setInvoke(
-                    Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.InvokeFieldType invoke);
+                        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.InvokeFieldType invoke);
 
                 @JsProperty
                 void setIsNull(
-                    Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.IsNullFieldType isNull);
+                        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.IsNullFieldType isNull);
 
                 @JsProperty
                 void setMatches(
-                    Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.MatchesFieldType matches);
+                        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.MatchesFieldType matches);
 
                 @JsProperty
                 void setNot(
-                    Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.NotFieldType not);
+                        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.NotFieldType not);
 
                 @JsProperty
                 void setOr(
-                    Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.OrFieldType or);
+                        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.OrFieldType or);
 
                 @JsProperty
                 void setPb_in(
-                    Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.Pb_inFieldType pb_in);
+                        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.Pb_inFieldType pb_in);
 
                 @JsProperty
                 void setSearch(
-                    Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.SearchFieldType search);
+                        Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType.SearchFieldType search);
             }
 
             @JsOverlay
@@ -846,15 +844,15 @@ public class Operation {
 
             @JsOverlay
             default void setFiltersList(
-                Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType[] filtersList) {
+                    Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType[] filtersList) {
                 setFiltersList(
-                    Js.<JsArray<Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType>>uncheckedCast(
-                        filtersList));
+                        Js.<JsArray<Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType>>uncheckedCast(
+                                filtersList));
             }
 
             @JsProperty
             void setFiltersList(
-                JsArray<Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType> filtersList);
+                    JsArray<Operation.ToObjectReturnType.FilterFieldType.FiltersListFieldType> filtersList);
 
             @JsProperty
             void setResultId(Object resultId);
@@ -907,8 +905,7 @@ public class Operation {
 
             @JsOverlay
             default void setGroupByColumnSpecsList(String[] groupByColumnSpecsList) {
-                setGroupByColumnSpecsList(
-                    Js.<JsArray<String>>uncheckedCast(groupByColumnSpecsList));
+                setGroupByColumnSpecsList(Js.<JsArray<String>>uncheckedCast(groupByColumnSpecsList));
             }
 
             @JsProperty
@@ -1141,7 +1138,7 @@ public class Operation {
 
             @JsProperty
             void setZoomRange(
-                Operation.ToObjectReturnType.RunChartDownsampleFieldType.ZoomRangeFieldType zoomRange);
+                    Operation.ToObjectReturnType.RunChartDownsampleFieldType.ZoomRangeFieldType zoomRange);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1265,14 +1262,14 @@ public class Operation {
 
             @JsProperty
             void setSortsList(
-                JsArray<Operation.ToObjectReturnType.SortFieldType.SortsListFieldType> sortsList);
+                    JsArray<Operation.ToObjectReturnType.SortFieldType.SortsListFieldType> sortsList);
 
             @JsOverlay
             default void setSortsList(
-                Operation.ToObjectReturnType.SortFieldType.SortsListFieldType[] sortsList) {
+                    Operation.ToObjectReturnType.SortFieldType.SortsListFieldType[] sortsList) {
                 setSortsList(
-                    Js.<JsArray<Operation.ToObjectReturnType.SortFieldType.SortsListFieldType>>uncheckedCast(
-                        sortsList));
+                        Js.<JsArray<Operation.ToObjectReturnType.SortFieldType.SortsListFieldType>>uncheckedCast(
+                                sortsList));
             }
 
             @JsProperty
@@ -1534,7 +1531,7 @@ public class Operation {
 
         @JsProperty
         void setRunChartDownsample(
-            Operation.ToObjectReturnType.RunChartDownsampleFieldType runChartDownsample);
+                Operation.ToObjectReturnType.RunChartDownsampleFieldType runChartDownsample);
 
         @JsProperty
         void setSelect(Object select);
@@ -1562,7 +1559,7 @@ public class Operation {
 
         @JsProperty
         void setUnstructuredFilter(
-            Operation.ToObjectReturnType.UnstructuredFilterFieldType unstructuredFilter);
+                Operation.ToObjectReturnType.UnstructuredFilterFieldType unstructuredFilter);
 
         @JsProperty
         void setUpdate(Operation.ToObjectReturnType.UpdateFieldType update);
@@ -1697,15 +1694,15 @@ public class Operation {
 
             @JsOverlay
             default void setAggregatesList(
-                Operation.ToObjectReturnType0.ComboAggregateFieldType.AggregatesListFieldType[] aggregatesList) {
+                    Operation.ToObjectReturnType0.ComboAggregateFieldType.AggregatesListFieldType[] aggregatesList) {
                 setAggregatesList(
-                    Js.<JsArray<Operation.ToObjectReturnType0.ComboAggregateFieldType.AggregatesListFieldType>>uncheckedCast(
-                        aggregatesList));
+                        Js.<JsArray<Operation.ToObjectReturnType0.ComboAggregateFieldType.AggregatesListFieldType>>uncheckedCast(
+                                aggregatesList));
             }
 
             @JsProperty
             void setAggregatesList(
-                JsArray<Operation.ToObjectReturnType0.ComboAggregateFieldType.AggregatesListFieldType> aggregatesList);
+                    JsArray<Operation.ToObjectReturnType0.ComboAggregateFieldType.AggregatesListFieldType> aggregatesList);
 
             @JsProperty
             void setForceCombo(boolean forceCombo);
@@ -1828,7 +1825,7 @@ public class Operation {
 
             @JsProperty
             void setSourceId(
-                Operation.ToObjectReturnType0.DropColumnsFieldType.SourceIdFieldType sourceId);
+                    Operation.ToObjectReturnType0.DropColumnsFieldType.SourceIdFieldType sourceId);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1839,7 +1836,7 @@ public class Operation {
                 public interface GetTicketUnionType {
                     @JsOverlay
                     static Operation.ToObjectReturnType0.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType of(
-                        Object o) {
+                            Object o) {
                         return Js.cast(o);
                     }
 
@@ -1874,20 +1871,20 @@ public class Operation {
 
                 @JsProperty
                 void setTicket(
-                    Operation.ToObjectReturnType0.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType ticket);
+                        Operation.ToObjectReturnType0.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType ticket);
 
                 @JsOverlay
                 default void setTicket(String ticket) {
                     setTicket(
-                        Js.<Operation.ToObjectReturnType0.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                            ticket));
+                            Js.<Operation.ToObjectReturnType0.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                    ticket));
                 }
 
                 @JsOverlay
                 default void setTicket(Uint8Array ticket) {
                     setTicket(
-                        Js.<Operation.ToObjectReturnType0.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                            ticket));
+                            Js.<Operation.ToObjectReturnType0.EmptyTableFieldType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                    ticket));
                 }
             }
 
@@ -1904,7 +1901,7 @@ public class Operation {
 
             @JsProperty
             void setResultId(
-                Operation.ToObjectReturnType0.EmptyTableFieldType.ResultIdFieldType resultId);
+                    Operation.ToObjectReturnType0.EmptyTableFieldType.ResultIdFieldType resultId);
 
             @JsProperty
             void setSize(String size);
@@ -2050,11 +2047,11 @@ public class Operation {
 
                         @JsProperty
                         void setLiteral(
-                            Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
+                                Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
 
                         @JsProperty
                         void setReference(
-                            Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
+                                Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
                     }
 
                     @JsOverlay
@@ -2079,7 +2076,7 @@ public class Operation {
 
                     @JsProperty
                     void setLhs(
-                        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType lhs);
+                            Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.CompareFieldType.LhsFieldType lhs);
 
                     @JsProperty
                     void setOperation(double operation);
@@ -2285,8 +2282,7 @@ public class Operation {
 
                     @JsOverlay
                     default void setOptionalReferencesList(Object[] optionalReferencesList) {
-                        setOptionalReferencesList(
-                            Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
+                        setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
                     }
 
                     @JsProperty
@@ -2330,43 +2326,43 @@ public class Operation {
 
                 @JsProperty
                 void setAnd(
-                    Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.AndFieldType and);
+                        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.AndFieldType and);
 
                 @JsProperty
                 void setCompare(
-                    Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.CompareFieldType compare);
+                        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.CompareFieldType compare);
 
                 @JsProperty
                 void setContains(
-                    Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.ContainsFieldType contains);
+                        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.ContainsFieldType contains);
 
                 @JsProperty
                 void setInvoke(
-                    Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.InvokeFieldType invoke);
+                        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.InvokeFieldType invoke);
 
                 @JsProperty
                 void setIsNull(
-                    Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.IsNullFieldType isNull);
+                        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.IsNullFieldType isNull);
 
                 @JsProperty
                 void setMatches(
-                    Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.MatchesFieldType matches);
+                        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.MatchesFieldType matches);
 
                 @JsProperty
                 void setNot(
-                    Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.NotFieldType not);
+                        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.NotFieldType not);
 
                 @JsProperty
                 void setOr(
-                    Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.OrFieldType or);
+                        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.OrFieldType or);
 
                 @JsProperty
                 void setPb_in(
-                    Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.Pb_inFieldType pb_in);
+                        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.Pb_inFieldType pb_in);
 
                 @JsProperty
                 void setSearch(
-                    Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.SearchFieldType search);
+                        Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType.SearchFieldType search);
             }
 
             @JsOverlay
@@ -2385,15 +2381,15 @@ public class Operation {
 
             @JsOverlay
             default void setFiltersList(
-                Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType[] filtersList) {
+                    Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType[] filtersList) {
                 setFiltersList(
-                    Js.<JsArray<Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType>>uncheckedCast(
-                        filtersList));
+                        Js.<JsArray<Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType>>uncheckedCast(
+                                filtersList));
             }
 
             @JsProperty
             void setFiltersList(
-                JsArray<Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType> filtersList);
+                    JsArray<Operation.ToObjectReturnType0.FilterFieldType.FiltersListFieldType> filtersList);
 
             @JsProperty
             void setResultId(Object resultId);
@@ -2446,8 +2442,7 @@ public class Operation {
 
             @JsOverlay
             default void setGroupByColumnSpecsList(String[] groupByColumnSpecsList) {
-                setGroupByColumnSpecsList(
-                    Js.<JsArray<String>>uncheckedCast(groupByColumnSpecsList));
+                setGroupByColumnSpecsList(Js.<JsArray<String>>uncheckedCast(groupByColumnSpecsList));
             }
 
             @JsProperty
@@ -2680,7 +2675,7 @@ public class Operation {
 
             @JsProperty
             void setZoomRange(
-                Operation.ToObjectReturnType0.RunChartDownsampleFieldType.ZoomRangeFieldType zoomRange);
+                    Operation.ToObjectReturnType0.RunChartDownsampleFieldType.ZoomRangeFieldType zoomRange);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2804,14 +2799,14 @@ public class Operation {
 
             @JsProperty
             void setSortsList(
-                JsArray<Operation.ToObjectReturnType0.SortFieldType.SortsListFieldType> sortsList);
+                    JsArray<Operation.ToObjectReturnType0.SortFieldType.SortsListFieldType> sortsList);
 
             @JsOverlay
             default void setSortsList(
-                Operation.ToObjectReturnType0.SortFieldType.SortsListFieldType[] sortsList) {
+                    Operation.ToObjectReturnType0.SortFieldType.SortsListFieldType[] sortsList) {
                 setSortsList(
-                    Js.<JsArray<Operation.ToObjectReturnType0.SortFieldType.SortsListFieldType>>uncheckedCast(
-                        sortsList));
+                        Js.<JsArray<Operation.ToObjectReturnType0.SortFieldType.SortsListFieldType>>uncheckedCast(
+                                sortsList));
             }
 
             @JsProperty
@@ -3033,8 +3028,7 @@ public class Operation {
         void setAsOfJoin(Operation.ToObjectReturnType0.AsOfJoinFieldType asOfJoin);
 
         @JsProperty
-        void setComboAggregate(
-            Operation.ToObjectReturnType0.ComboAggregateFieldType comboAggregate);
+        void setComboAggregate(Operation.ToObjectReturnType0.ComboAggregateFieldType comboAggregate);
 
         @JsProperty
         void setCrossJoin(Operation.ToObjectReturnType0.CrossJoinFieldType crossJoin);
@@ -3074,14 +3068,13 @@ public class Operation {
 
         @JsProperty
         void setRunChartDownsample(
-            Operation.ToObjectReturnType0.RunChartDownsampleFieldType runChartDownsample);
+                Operation.ToObjectReturnType0.RunChartDownsampleFieldType runChartDownsample);
 
         @JsProperty
         void setSelect(Object select);
 
         @JsProperty
-        void setSelectDistinct(
-            Operation.ToObjectReturnType0.SelectDistinctFieldType selectDistinct);
+        void setSelectDistinct(Operation.ToObjectReturnType0.SelectDistinctFieldType selectDistinct);
 
         @JsProperty
         void setSnapshot(Operation.ToObjectReturnType0.SnapshotFieldType snapshot);
@@ -3103,7 +3096,7 @@ public class Operation {
 
         @JsProperty
         void setUnstructuredFilter(
-            Operation.ToObjectReturnType0.UnstructuredFilterFieldType unstructuredFilter);
+                Operation.ToObjectReturnType0.UnstructuredFilterFieldType unstructuredFilter);
 
         @JsProperty
         void setUpdate(Operation.ToObjectReturnType0.UpdateFieldType update);
@@ -3122,7 +3115,7 @@ public class Operation {
     public static native void serializeBinaryToWriter(Operation message, Object writer);
 
     public static native Operation.ToObjectReturnType toObject(
-        boolean includeInstance, Operation msg);
+            boolean includeInstance, Operation msg);
 
     public native void clearAsOfJoin();
 

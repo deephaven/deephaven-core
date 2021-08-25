@@ -10,8 +10,7 @@ abstract public class BaseArrayTestCase extends BaseCachedJMockTestCase {
         assertEquals(name, a, b, 1e-10);
     }
 
-    public static void assertEquals(String name, final double[][] a, final double[][] b,
-        final double tolerance) {
+    public static void assertEquals(String name, final double[][] a, final double[][] b, final double tolerance) {
         if (a == null || b == null) {
             assertTrue(a == b);
         } else {
@@ -27,8 +26,7 @@ abstract public class BaseArrayTestCase extends BaseCachedJMockTestCase {
         assertEquals("array", a, b);
     }
 
-    public static void assertEquals(final double[][] a, final double[][] b,
-        final double tolerance) {
+    public static void assertEquals(final double[][] a, final double[][] b, final double tolerance) {
         assertEquals("array", a, b, tolerance);
     }
 
@@ -312,8 +310,7 @@ abstract public class BaseArrayTestCase extends BaseCachedJMockTestCase {
 
     // Array comparison functions
 
-    public static String compareArray(final String name, final float[] a, final float[] b,
-        float tolerance) {
+    public static String compareArray(final String name, final float[] a, final float[] b, float tolerance) {
         if (a == null) {
             if (b == null) {
                 return null;
@@ -336,8 +333,7 @@ abstract public class BaseArrayTestCase extends BaseCachedJMockTestCase {
         return err;
     }
 
-    public static String checkMagnitudeArray(final String name, final float[] a, final float[] b,
-        float percentage) {
+    public static String checkMagnitudeArray(final String name, final float[] a, final float[] b, float percentage) {
         if (a == null) {
             if (b == null) {
                 return null;
@@ -363,8 +359,7 @@ abstract public class BaseArrayTestCase extends BaseCachedJMockTestCase {
     }
 
 
-    public static String compareArray(final String name, final double[] a, final double[] b,
-        double tolerance) {
+    public static String compareArray(final String name, final double[] a, final double[] b, double tolerance) {
         if (a == null) {
             if (b == null) {
                 return null;
@@ -387,8 +382,7 @@ abstract public class BaseArrayTestCase extends BaseCachedJMockTestCase {
         return err;
     }
 
-    public static String checkMagnitudeArray(final String name, final double[] a, final double[] b,
-        double percentage) {
+    public static String checkMagnitudeArray(final String name, final double[] a, final double[] b, double percentage) {
         if (a == null) {
             if (b == null) {
                 return null;
@@ -473,8 +467,7 @@ abstract public class BaseArrayTestCase extends BaseCachedJMockTestCase {
     }
 
 
-    private static String compare(final String name, final double a, final double b,
-        double tolerance) {
+    private static String compare(final String name, final double a, final double b, double tolerance) {
         if (Math.abs(a - b) > tolerance || (Double.isNaN(a) ^ Double.isNaN(b))) {
             return name + " expected: <" + a + "> but was: <" + b + ">";
         } else {

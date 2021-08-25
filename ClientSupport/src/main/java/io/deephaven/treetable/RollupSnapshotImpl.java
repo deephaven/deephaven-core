@@ -21,20 +21,18 @@ import java.util.stream.Collectors;
 import static io.deephaven.treetable.TreeTableConstants.RE_TREE_KEY;
 
 class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<CLIENT_TYPE>>
-    extends AbstractTreeSnapshotImpl<RollupInfo, CLIENT_TYPE> {
+        extends AbstractTreeSnapshotImpl<RollupInfo, CLIENT_TYPE> {
     private boolean rootTableChanged = false;
     private Table sourceTable;
     private final PreparedSort constituentSort;
 
     /**
-     * Construct a new query that will create a flat snapshot of the tree table using a flat
-     * viewport beginning at the specified rows and columns, applying the specified sorts and
-     * filters if required to fetch tables
+     * Construct a new query that will create a flat snapshot of the tree table using a flat viewport beginning at the
+     * specified rows and columns, applying the specified sorts and filters if required to fetch tables
      *
      * @param baseTableId The Id of the base table. Used to maintain client state.
      * @param baseTable The base table to use if sorts/filters must be applied.
-     * @param tablesByKey The tables within the tree for which viewports are being tracked,
-     *        separated by table key.
+     * @param tablesByKey The tables within the tree for which viewports are being tracked, separated by table key.
      * @param firstRow The first row of the flat viewport.
      * @param lastRow The last row of the flat viewport.
      * @param columns The columns to include in the viewport
@@ -44,17 +42,16 @@ class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<
      * @param includedOps The set of operations performed by the client since the last TSQ.
      */
     RollupSnapshotImpl(int baseTableId,
-        HierarchicalTable baseTable,
-        Map<Object, TableDetails> tablesByKey,
-        long firstRow,
-        long lastRow,
-        BitSet columns,
-        @NotNull SelectFilter[] filters,
-        @NotNull List<SortDirective> sorts,
-        CLIENT_TYPE client,
-        Set<TreeSnapshotQuery.Operation> includedOps) {
-        super(baseTableId, baseTable, tablesByKey, firstRow, lastRow, columns, filters, sorts,
-            client, includedOps);
+            HierarchicalTable baseTable,
+            Map<Object, TableDetails> tablesByKey,
+            long firstRow,
+            long lastRow,
+            BitSet columns,
+            @NotNull SelectFilter[] filters,
+            @NotNull List<SortDirective> sorts,
+            CLIENT_TYPE client,
+            Set<TreeSnapshotQuery.Operation> includedOps) {
+        super(baseTableId, baseTable, tablesByKey, firstRow, lastRow, columns, filters, sorts, client, includedOps);
 
         if (getInfo().includesConstituents()) {
             final List<SortDirective> updated = maybeComputeConstituentSorts(sorts);
@@ -116,10 +113,9 @@ class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<
     }
 
     /**
-     * For Rollups, if constituents are included, it's possible for the column type to be different
-     * at the leaf level. This will cause a host of potential problems for formatting, so we will
-     * eliminate format columns for any column that either can't be found in the leaf table, or has
-     * a different column type than the root.
+     * For Rollups, if constituents are included, it's possible for the column type to be different at the leaf level.
+     * This will cause a host of potential problems for formatting, so we will eliminate format columns for any column
+     * that either can't be found in the leaf table, or has a different column type than the root.
      *
      * @param t the table to update the columns for
      * @param initial the initial set of filter columns
@@ -131,22 +127,22 @@ class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<
             final Map<String, ? extends ColumnSource> currentColumns = t.getColumnSourceMap();
             final HierarchicalTable baseTable = getBaseTable();
             return Arrays.stream(initial)
-                .filter(col -> {
-                    col.initDef(t.getDefinition().getColumnNameMap());
-                    final List<String> requiredColumns = col.getColumns();
-                    for (final String colName : requiredColumns) {
-                        final ColumnSource currentColumn = currentColumns.get(colName);
-                        if (currentColumn == null) {
-                            return false;
+                    .filter(col -> {
+                        col.initDef(t.getDefinition().getColumnNameMap());
+                        final List<String> requiredColumns = col.getColumns();
+                        for (final String colName : requiredColumns) {
+                            final ColumnSource currentColumn = currentColumns.get(colName);
+                            if (currentColumn == null) {
+                                return false;
+                            }
+
+                            if (currentColumn.getType() != baseTable.getColumn(colName).getType()) {
+                                return false;
+                            }
                         }
 
-                        if (currentColumn.getType() != baseTable.getColumn(colName).getType()) {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                }).toArray(SelectColumn[]::new);
+                        return true;
+                    }).toArray(SelectColumn[]::new);
         }
 
         return initial;
@@ -166,7 +162,7 @@ class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<
         final Table source = Require.neqNull(table.getSourceTable(), "Hierarchical source table");
         final RollupInfo info = getInfo();
         return (HierarchicalTable) source.where(filters).rollup(info.factory,
-            info.getLeafType() == RollupInfo.LeafType.Constituent, info.getSelectColumns());
+                info.getLeafType() == RollupInfo.LeafType.Constituent, info.getSelectColumns());
     }
 
     @Override
@@ -190,9 +186,8 @@ class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<
 
     @Override
     TableMap getTableMap(Table t) {
-        return Require.neqNull(
-            (TableMap) t.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE),
-            "Child Table Map");
+        return Require.neqNull((TableMap) t.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE),
+                "Child Table Map");
     }
 
     private List<SortDirective> maybeComputeConstituentSorts(List<SortDirective> sorts) {
@@ -201,10 +196,9 @@ class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<
         }
 
         final Map<String, String> nameMap = getInfo().getMatchPairs().stream()
-            .collect(Collectors.toMap(MatchPair::left, MatchPair::right));
+                .collect(Collectors.toMap(MatchPair::left, MatchPair::right));
 
-        // Note that we can't use getSourceTable() here because it won't have been initialized until
-        // after
+        // Note that we can't use getSourceTable() here because it won't have been initialized until after
         // getSnapshot() is invoked.
         final Table sourceTable = getBaseTable().getSourceTable();
         final List<SortDirective> updated = new ArrayList<>();
@@ -217,10 +211,8 @@ class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<
             // Try mapping the column back to an original.
             // In most cases this will succeed -- a notable exception will be Count
             final String maybeSourceColumn = nameMap.get(dir.getColumnName());
-            if (!StringUtils.isNullOrEmpty(maybeSourceColumn)
-                && sourceTable.hasColumns(maybeSourceColumn)) {
-                updated.add(
-                    new SortDirective(maybeSourceColumn, dir.getDirection(), dir.isAbsolute()));
+            if (!StringUtils.isNullOrEmpty(maybeSourceColumn) && sourceTable.hasColumns(maybeSourceColumn)) {
+                updated.add(new SortDirective(maybeSourceColumn, dir.getDirection(), dir.isAbsolute()));
             }
         }
 

@@ -22,9 +22,8 @@ public class MTTestSupport {
                 if (now - start >= 1000) {
                     start = now;
                     System.out.printf(
-                        "assertBecomesEquals(%d millis, %s expected, %s actual) still waiting after %d millis%n",
-                        timeout, expectedVal.toString(), testVal.toString(),
-                        now - (deadline - timeout));
+                            "assertBecomesEquals(%d millis, %s expected, %s actual) still waiting after %d millis%n",
+                            timeout, expectedVal.toString(), testVal.toString(), now - (deadline - timeout));
                 }
                 Thread.yield();
                 continue;
@@ -32,7 +31,7 @@ public class MTTestSupport {
             break;
         }
         Assert.fail("value did not become equal to " + expectedVal + " within " + timeout
-            + " millis, most recent value was " + testVal);
+                + " millis, most recent value was " + testVal);
     }
 
     public static <T> void assertRemainsEquals(int timeout, T val, Function.Nullary<T> f) {
@@ -41,7 +40,7 @@ public class MTTestSupport {
             T sample = f.call();
             if (!val.equals(sample)) {
                 Assert.fail("value did not remain equal to " + val + " for " + timeout
-                    + " millis, most recent value was " + sample);
+                        + " millis, most recent value was " + sample);
             }
             Thread.yield();
         } while (System.currentTimeMillis() < deadline);
@@ -68,8 +67,7 @@ public class MTTestSupport {
         } while (System.currentTimeMillis() < deadline);
     }
 
-    public static void assertBecomesStable(int initialTimeout, int stableTimeout,
-        Predicate.Nullary pred) {
+    public static void assertBecomesStable(int initialTimeout, int stableTimeout, Predicate.Nullary pred) {
         assertBecomesTrue(initialTimeout, pred);
         assertRemainsTrue(stableTimeout, pred);
     }

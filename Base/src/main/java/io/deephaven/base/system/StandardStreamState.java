@@ -22,23 +22,22 @@ public class StandardStreamState {
 
     public void setupRedirection() throws UnsupportedEncodingException {
         if (!initialized.compareAndSet(false, true)) {
-            throw new IllegalStateException(
-                "May only call StandardStreamState#setupRedirection once");
+            throw new IllegalStateException("May only call StandardStreamState#setupRedirection once");
         }
 
         // get all of the out sinks
         List<OutputStream> outReceivers = receivers.stream()
-            .map(StandardStreamReceiver::receiveOut)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .collect(Collectors.toList());
+                .map(StandardStreamReceiver::receiveOut)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
 
         // get all of the err sinks
         List<OutputStream> errReceivers = receivers.stream()
-            .map(StandardStreamReceiver::receiveErr)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .collect(Collectors.toList());
+                .map(StandardStreamReceiver::receiveErr)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
 
         if (!outReceivers.isEmpty()) {
             PrintStream out = adapt(outReceivers);
@@ -57,8 +56,7 @@ public class StandardStreamState {
         }
     }
 
-    private static PrintStream adapt(List<OutputStream> outputStreams)
-        throws UnsupportedEncodingException {
+    private static PrintStream adapt(List<OutputStream> outputStreams) throws UnsupportedEncodingException {
         // TODO (core#88): Figure out appropriate stdout / LogBuffer encoding
         if (outputStreams.size() == 1) {
             OutputStream out = outputStreams.get(0);

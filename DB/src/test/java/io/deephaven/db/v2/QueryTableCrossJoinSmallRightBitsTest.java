@@ -53,8 +53,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
                     // we can fit if we use min right bits
                     left.join(right, 1);
                 } else {
-                    left.join(right); // static - static should be OK because it always uses min
-                                      // right bits
+                    left.join(right); // static - static should be OK because it always uses min right bits
                 }
             }
         }
@@ -82,8 +81,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
                     // we can fit if we use min right bits
                     left.join(right, "A=B", 1);
                 } else {
-                    left.join(right, "A=B"); // static - static should be OK because it always uses
-                                             // min right bits
+                    left.join(right, "A=B"); // static - static should be OK because it always uses min right bits
                 }
             }
         }
@@ -104,9 +102,8 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         for (int grp = 0; grp < sizes.length; ++grp) {
             int[] data = new int[sizes[grp]];
             Arrays.fill(data, grp);
-            TstUtils.addToTable(rTable,
-                Index.FACTORY.getIndexByRange(grp * 10, grp * 10 + data.length - 1),
-                intCol("A", data));
+            TstUtils.addToTable(rTable, Index.FACTORY.getIndexByRange(grp * 10, grp * 10 + data.length - 1),
+                    intCol("A", data));
         }
 
         final EvalNugget[] en = new EvalNugget[] {
@@ -143,8 +140,8 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
     }
 
     public void testLeftGroupChangesOnRightShiftWithAllInnerShifts() {
-        // This test is similar to the above, but has at least one inner shift on every group (which
-        // hits different logic).
+        // This test is similar to the above, but has at least one inner shift on every group (which hits different
+        // logic).
 
         // On the step with the shift:
         // - one row to not change groups, but group gets smaller (grp 0)
@@ -160,9 +157,8 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         for (int grp = 0; grp < sizes.length; ++grp) {
             int[] data = new int[sizes[grp]];
             Arrays.fill(data, grp);
-            TstUtils.addToTable(rTable,
-                Index.FACTORY.getIndexByRange(grp * 10, grp * 10 + data.length - 1),
-                intCol("A", data));
+            TstUtils.addToTable(rTable, Index.FACTORY.getIndexByRange(grp * 10, grp * 10 + data.length - 1),
+                    intCol("A", data));
         }
 
         final EvalNugget[] en = new EvalNugget[] {
@@ -213,9 +209,8 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         for (int grp = 0; grp < sizes.length; ++grp) {
             int[] data = new int[sizes[grp]];
             Arrays.fill(data, grp);
-            TstUtils.addToTable(rTable,
-                Index.FACTORY.getIndexByRange(grp * 10, grp * 10 + data.length - 1),
-                intCol("A", data));
+            TstUtils.addToTable(rTable, Index.FACTORY.getIndexByRange(grp * 10, grp * 10 + data.length - 1),
+                    intCol("A", data));
         }
 
         final EvalNugget[] en = new EvalNugget[] {
@@ -255,8 +250,8 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
     }
 
     public void testLeftGroupChangesOnBothShiftWithInnerShifts() {
-        // This test is similar to the above, but has at least one inner shift on every group (which
-        // hits different logic).
+        // This test is similar to the above, but has at least one inner shift on every group (which hits different
+        // logic).
 
         // On the step with the shift:
         // - one row to not change groups, but group gets smaller (grp 0)
@@ -272,9 +267,8 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         for (int grp = 0; grp < sizes.length; ++grp) {
             int[] data = new int[sizes[grp]];
             Arrays.fill(data, grp);
-            TstUtils.addToTable(rTable,
-                Index.FACTORY.getIndexByRange(grp * 10, grp * 10 + data.length - 1),
-                intCol("A", data));
+            TstUtils.addToTable(rTable, Index.FACTORY.getIndexByRange(grp * 10, grp * 10 + data.length - 1),
+                    intCol("A", data));
         }
 
         final EvalNugget[] en = new EvalNugget[] {

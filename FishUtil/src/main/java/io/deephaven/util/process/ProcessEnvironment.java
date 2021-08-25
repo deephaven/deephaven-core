@@ -13,8 +13,8 @@ import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Interface for installation-specific environment. Processes that use instances of this interface
- * are responsible for determining when to call the various methods.
+ * Interface for installation-specific environment. Processes that use instances of this interface are responsible for
+ * determining when to call the various methods.
  *
  * All implementations must setup a ShutdownManager and an implementation of FatalErrorReporter.
  */
@@ -55,10 +55,9 @@ public interface ProcessEnvironment {
     void onStartup();
 
     /**
-     * Hook for shutting down an installation-specific environment for a given process. This is
-     * intended for controlled invocation, rather than as part of a shutdown hook -
-     * {@code onStartup()} should setup any mandatory shutdown hooks, and code in said shutdown
-     * hooks should be idempotent w.r.t. onShutdown().
+     * Hook for shutting down an installation-specific environment for a given process. This is intended for controlled
+     * invocation, rather than as part of a shutdown hook - {@code onStartup()} should setup any mandatory shutdown
+     * hooks, and code in said shutdown hooks should be idempotent w.r.t. onShutdown().
      */
     void onShutdown();
 
@@ -76,7 +75,7 @@ public interface ProcessEnvironment {
          * @return A new instance of the appropriate ProcessEnvironment implementation
          */
         ProcessEnvironment make(@NotNull Configuration configuration, @NotNull String mainClassName,
-            @NotNull Logger log);
+                @NotNull Logger log);
     }
 
     /**
@@ -89,8 +88,8 @@ public interface ProcessEnvironment {
          */
         private static volatile ProcessEnvironment instance;
 
-        private static void reportInstantiationError(@NotNull final String message,
-            @NotNull final Exception exception, final int exitStatus) {
+        private static void reportInstantiationError(@NotNull final String message, @NotNull final Exception exception,
+                final int exitStatus) {
             System.err.println(message + ": " + exception);
             exception.printStackTrace(System.err);
             System.exit(exitStatus);
@@ -98,8 +97,7 @@ public interface ProcessEnvironment {
     }
 
     /**
-     * Accessor the for the global instance. Fails if the instance is null, in order to make
-     * programming errors clear.
+     * Accessor the for the global instance. Fails if the instance is null, in order to make programming errors clear.
      *
      * @return The global instance
      */
@@ -133,8 +131,8 @@ public interface ProcessEnvironment {
     }
 
     /**
-     * Get the global log if a global process environment has been installed, or else a logger that
-     * will output to {@link System#out}.
+     * Get the global log if a global process environment has been installed, or else a logger that will output to
+     * {@link System#out}.
      * 
      * @return A logger that can safely be used by code that doesn't otherwise have access to one
      */
@@ -151,24 +149,21 @@ public interface ProcessEnvironment {
      */
     static Logger getDefaultLog(Class<?> clazz) {
         final ProcessEnvironment processEnvironment = ProcessEnvironment.tryGet();
-        return processEnvironment != null ? processEnvironment.getLog()
-            : LoggerFactory.getLogger(clazz);
+        return processEnvironment != null ? processEnvironment.getLog() : LoggerFactory.getLogger(clazz);
     }
 
     /**
-     * Setter for the global instance. It is an error to invoke this without allowReplace if the
-     * global instance may already have been set.
+     * Setter for the global instance. It is an error to invoke this without allowReplace if the global instance may
+     * already have been set.
      *
      * @param instance The new global instance
      * @param allowReplace Whether to allow replacing an existing global instance
      * @return The global instance
      */
-    static ProcessEnvironment set(@NotNull final ProcessEnvironment instance,
-        final boolean allowReplace) {
+    static ProcessEnvironment set(@NotNull final ProcessEnvironment instance, final boolean allowReplace) {
         synchronized (GlobalHelper.class) {
             if (!allowReplace && GlobalHelper.instance != null) {
-                throw new IllegalStateException(
-                    "Can not replace ProcessEnvironment " + GlobalHelper.instance +
+                throw new IllegalStateException("Can not replace ProcessEnvironment " + GlobalHelper.instance +
                         " with " + instance + " unless allowReplace=true");
             }
             return GlobalHelper.instance = Require.neqNull(instance, "instance");
@@ -176,8 +171,7 @@ public interface ProcessEnvironment {
     }
 
     /**
-     * Set the global instance to null, and reset its shutdown manager. Intended for use in unit
-     * tests, only.
+     * Set the global instance to null, and reset its shutdown manager. Intended for use in unit tests, only.
      */
     static void clear() {
         synchronized (GlobalHelper.class) {
@@ -187,9 +181,9 @@ public interface ProcessEnvironment {
     }
 
     /**
-     * Instantiate (and set as the global instance) a ProcessEnvironment specified according to the
-     * following factory class name properties, in descending order of precedence:
-     * {@code mainClassName}.processEnvironmentFactory default.processEnvironmentFactory
+     * Instantiate (and set as the global instance) a ProcessEnvironment specified according to the following factory
+     * class name properties, in descending order of precedence: {@code mainClassName}.processEnvironmentFactory
+     * default.processEnvironmentFactory
      *
      * Checked exceptions thrown in this process always result in process termination.
      *
@@ -199,76 +193,69 @@ public interface ProcessEnvironment {
      * @return The new ProcessEnvironment
      */
     @SuppressWarnings("ConstantConditions")
-    static @NotNull ProcessEnvironment instantiateFromConfiguration(
-        @NotNull final Configuration configuration,
-        @NotNull final String mainClassName,
-        @NotNull final Logger log) {
+    static @NotNull ProcessEnvironment instantiateFromConfiguration(@NotNull final Configuration configuration,
+            @NotNull final String mainClassName,
+            @NotNull final Logger log) {
         final String factoryPropertyNameSuffix = ".processEnvironmentFactory";
         final String factoryClassName;
         try {
-            factoryClassName =
-                configuration.getStringWithDefault(mainClassName + factoryPropertyNameSuffix,
+            factoryClassName = configuration.getStringWithDefault(mainClassName + factoryPropertyNameSuffix,
                     configuration.getProperty("default" + factoryPropertyNameSuffix));
         } catch (PropertyException e) {
-            GlobalHelper.reportInstantiationError(
-                "Failed to get process environment factory name for " + mainClassName, e, -11);
+            GlobalHelper.reportInstantiationError("Failed to get process environment factory name for " + mainClassName,
+                    e, -11);
             return null;
         }
         final Factory factory;
         try {
             factory = (Factory) Class.forName(factoryClassName).newInstance();
-        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException
-            | ClassCastException e) {
+        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | ClassCastException e) {
             GlobalHelper.reportInstantiationError(
-                "Failed to instantiate process environment factory " + factoryClassName, e, -12);
+                    "Failed to instantiate process environment factory " + factoryClassName, e, -12);
             return null;
         }
         try {
             return factory.make(configuration, mainClassName, log);
         } catch (Exception e) {
-            GlobalHelper.reportInstantiationError(
-                "Unable to instantiate process environment for " + mainClassName, e, -13);
+            GlobalHelper.reportInstantiationError("Unable to instantiate process environment for " + mainClassName, e,
+                    -13);
             return null;
         }
     }
 
     /**
-     * Do the basic installation most interactive (usually client) processes need: (1)
-     * instantiateFromConfiguration (2) set (3) Invoke onStartup()
+     * Do the basic installation most interactive (usually client) processes need: (1) instantiateFromConfiguration (2)
+     * set (3) Invoke onStartup()
      *
      * @param configuration The configuration
      * @param mainClassName The main class name
      * @param log The log
      * @return The ProcessEnvironment
      */
-    static @NotNull ProcessEnvironment basicInteractiveProcessInitialization(
-        @NotNull final Configuration configuration,
-        @NotNull final String mainClassName,
-        @NotNull final Logger log) {
-        final ProcessEnvironment processEnvironment =
-            instantiateFromConfiguration(configuration, mainClassName, log);
+    static @NotNull ProcessEnvironment basicInteractiveProcessInitialization(@NotNull final Configuration configuration,
+            @NotNull final String mainClassName,
+            @NotNull final Logger log) {
+        final ProcessEnvironment processEnvironment = instantiateFromConfiguration(configuration, mainClassName, log);
         set(processEnvironment, false);
         processEnvironment.onStartup();
         return processEnvironment;
     }
 
     /**
-     * Do the basic installation most server processes need: (1)
-     * basicInteractiveProcessInitialization (as a subset of what servers need) (2) Set current
-     * thread name as {@code mainClassName}.main (3) Install the fatal error reporter as default
-     * uncaught exception handler
+     * Do the basic installation most server processes need: (1) basicInteractiveProcessInitialization (as a subset of
+     * what servers need) (2) Set current thread name as {@code mainClassName}.main (3) Install the fatal error reporter
+     * as default uncaught exception handler
      *
      * @param configuration The configuration
      * @param mainClassName The main class name
      * @param log The log
      * @return The ProcessEnvironment
      */
-    static @NotNull ProcessEnvironment basicServerInitialization(
-        @NotNull final Configuration configuration,
-        @NotNull final String mainClassName,
-        @NotNull final Logger log) {
+    static @NotNull ProcessEnvironment basicServerInitialization(@NotNull final Configuration configuration,
+            @NotNull final String mainClassName,
+            @NotNull final Logger log) {
         final ProcessEnvironment processEnvironment =
-            basicInteractiveProcessInitialization(configuration, mainClassName, log);
+                basicInteractiveProcessInitialization(configuration, mainClassName, log);
         Thread.currentThread().setName(mainClassName + ".main");
         Thread.setDefaultUncaughtExceptionHandler(processEnvironment.getFatalErrorReporter());
         return processEnvironment;

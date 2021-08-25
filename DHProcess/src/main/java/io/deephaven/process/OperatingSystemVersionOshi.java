@@ -47,9 +47,9 @@ public abstract class OperatingSystemVersionOshi implements PropertySet {
 
     public static OperatingSystemVersionOshi from(OSVersionInfo info) {
         return ImmutableOperatingSystemVersionOshi.builder()
-            .version(Optional.ofNullable(info.getVersion()))
-            .codeName(Optional.ofNullable(info.getCodeName()))
-            .buildNumber(Optional.ofNullable(info.getBuildNumber()))
-            .build();
+                .version(Optional.ofNullable(info.getVersion()))
+                .codeName(Optional.ofNullable(info.getCodeName()))
+                .buildNumber(Optional.ofNullable(info.getBuildNumber()))
+                .build();
     }
 }

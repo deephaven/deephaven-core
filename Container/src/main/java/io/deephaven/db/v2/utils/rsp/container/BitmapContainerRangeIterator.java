@@ -217,22 +217,20 @@ final class BitmapContainerRangeIterator implements SearchRangeIterator {
             final long mask = maskForAllBitsSetFromOffsetToHigher(moffset);
             long masked = bitmap[m] & mask;
             if (masked == 0) {
-                // We will try towards the higher words first. Don't clobber m as we may realize we
-                // need to go towards
+                // We will try towards the higher words first. Don't clobber m as we may realize we need to go towards
                 // lower words from m instead.
                 int m2 = m;
                 do {
                     ++m2;
-                    // by construction, bitmap[j] != 0 on entry, and m <= j, so this loop will end
-                    // before
+                    // by construction, bitmap[j] != 0 on entry, and m <= j, so this loop will end before
                     // mm > bitmap.length - 1.
                 } while (bitmap[m2] == 0);
-                // since we are moving towards higher words, the lowest bit is the one closer to the
-                // original (m,moffset) target.
+                // since we are moving towards higher words, the lowest bit is the one closer to the original
+                // (m,moffset) target.
                 int m2offset = lowestBit(bitmap[m2]);
                 if (m2 == j && m2offset == joffset) {
-                    // Going towards higher words we ended up in the same place we started, and
-                    // there are no more lower bits.
+                    // Going towards higher words we ended up in the same place we started, and there are no more lower
+                    // bits.
                     // Try indexes from m towards the lower words instead.
                     tryLowerBits = true;
                 } else {
@@ -253,19 +251,16 @@ final class BitmapContainerRangeIterator implements SearchRangeIterator {
                 if (masked != 0) {
                     moffset = highestBit(masked);
                     mv = 64 * m + moffset;
-                    // We already found (j,joffset) to the highest words. If this happens to be
-                    // (i,ioffset)
+                    // We already found (j,joffset) to the highest words. If this happens to be (i,ioffset)
                     // we are done. That check will happen a bit later.
                 } else {
                     do {
                         --m;
-                        // by construction, bitmap[i] != 0 on entry, and i <= m, so this loop will
-                        // end before m < 0.
+                        // by construction, bitmap[i] != 0 on entry, and i <= m, so this loop will end before m < 0.
                     } while (bitmap[m] == 0);
                     moffset = highestBit(bitmap[m]);
                     mv = 64 * m + moffset;
-                    // We already found (j,joffset) to the highest words. If this happens to be
-                    // (i,ioffset)
+                    // We already found (j,joffset) to the highest words. If this happens to be (i,ioffset)
                     // we are done. That check will happen a bit later.
                 }
             }

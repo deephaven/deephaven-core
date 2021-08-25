@@ -5,9 +5,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.Flight_pb.Empty",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.Flight_pb.Empty",
+        namespace = JsPackage.GLOBAL)
 public class Empty {
     public static native Empty deserializeBinary(Uint8Array bytes);
 

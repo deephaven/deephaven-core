@@ -8,8 +8,8 @@ import io.deephaven.db.plot.errors.PlotInfo;
 import io.deephaven.db.plot.util.ArgumentValidations;
 
 /**
- * {@link IndexableNumericData} dataset backed by an array of {@link Number}s. When accessed, data
- * values are converted to doubles before being returned.
+ * {@link IndexableNumericData} dataset backed by an array of {@link Number}s. When accessed, data values are converted
+ * to doubles before being returned.
  */
 public class IndexableNumericDataArrayNumber<T extends Number> extends IndexableNumericData {
     private static final long serialVersionUID = -4587124538812025714L;

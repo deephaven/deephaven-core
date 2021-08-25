@@ -7,13 +7,12 @@ import java.util.Objects;
 import java.util.Properties;
 
 /**
- * A property set represents a set of property keys and values. The key is a String type, and the
- * value can be of type int, long, boolean, or String. (Note: we may use a stronger type in the
- * future for a key, and may expand the types that a value can be.)
+ * A property set represents a set of property keys and values. The key is a String type, and the value can be of type
+ * int, long, boolean, or String. (Note: we may use a stronger type in the future for a key, and may expand the types
+ * that a value can be.)
  *
  * <p>
- * A property set interface present read-only access to the keys and values via
- * {@link #traverse(PropertyVisitor)}.
+ * A property set interface present read-only access to the keys and values via {@link #traverse(PropertyVisitor)}.
  *
  * @see PropertyVisitor
  */
@@ -33,9 +32,9 @@ public interface PropertySet {
     /**
      * Traverse this property set and output the property key/values to the given visitor.
      * <p>
-     * Callers should typically prefer to call {@link PropertyVisitor#visitProperties(PropertySet)},
-     * as the inversion of logic allows the visitor (the more stateful object) to potentially
-     * perform initialization logic and traverse more efficiently.
+     * Callers should typically prefer to call {@link PropertyVisitor#visitProperties(PropertySet)}, as the inversion of
+     * logic allows the visitor (the more stateful object) to potentially perform initialization logic and traverse more
+     * efficiently.
      *
      * @param visitor the visitor
      * @see PropertyVisitor#visitProperties(PropertySet)

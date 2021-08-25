@@ -13,8 +13,8 @@ import java.util.Calendar;
 // --------------------------------------------------------------------
 /**
  * A customized {@link org.apache.log4j.PatternLayout} that uses a customized
- * {@link org.apache.log4j.helpers.PatternParser} that creates a customized {@link PatternConverter}
- * that is very efficient for dates in our preferred format.
+ * {@link org.apache.log4j.helpers.PatternParser} that creates a customized {@link PatternConverter} that is very
+ * efficient for dates in our preferred format.
  */
 public class PatternLayout extends org.apache.log4j.PatternLayout {
 

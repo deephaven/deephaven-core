@@ -32,8 +32,7 @@ public class DynamicSeriesNamer implements Serializable {
         final boolean inSet = names.add(nameString);
         if (!inSet) {
             throw new PlotUnsupportedOperationException(
-                "Series with the same name already exists in the collection.  name=" + nameString,
-                plotInfo);
+                    "Series with the same name already exists in the collection.  name=" + nameString, plotInfo);
         } else {
             namesList.add(nameString);
         }
@@ -53,8 +52,8 @@ public class DynamicSeriesNamer implements Serializable {
     }
 
     /**
-     * Takes a potential series name and creates a unique name from it. If the series would be new,
-     * the original series name is returned.
+     * Takes a potential series name and creates a unique name from it. If the series would be new, the original series
+     * name is returned.
      *
      * @param potentialName potential series name
      * @return uniquified series name

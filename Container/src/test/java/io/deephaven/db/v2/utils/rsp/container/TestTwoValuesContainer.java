@@ -214,9 +214,9 @@ public class TestTwoValuesContainer {
             }
         };
         assertFalse(tv.findRanges(
-            consumer,
-            tv.getShortRangeIterator(0),
-            2));
+                consumer,
+                tv.getShortRangeIterator(0),
+                2));
         assertEquals(0, ranges[0]);
         assertEquals(2, ranges[1]);
     }
@@ -319,8 +319,7 @@ public class TestTwoValuesContainer {
         final TwoValuesContainer tv1 = new TwoValuesContainer((short) v2, (short) v3);
         final Container c = tv0.or(tv1);
         assertEquals(4, c.getCardinality());
-        final Container expected =
-            new ArrayContainer(new short[] {(short) v0, (short) v2, (short) v3, (short) v1});
+        final Container expected = new ArrayContainer(new short[] {(short) v0, (short) v2, (short) v3, (short) v1});
         assertTrue(expected.sameContents(c));
     }
 

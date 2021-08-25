@@ -17,16 +17,15 @@ public class DbPrimitiveArrayTest {
 
     @Test
     public void types()
-        throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException,
-        IllegalAccessException {
+            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         assertThat(DbPrimitiveArrayType.types()).containsExactlyInAnyOrder(
-            DbBooleanArray.type(),
-            DbByteArray.type(),
-            DbCharArray.type(),
-            DbShortArray.type(),
-            DbIntArray.type(),
-            DbLongArray.type(),
-            DbFloatArray.type(),
-            DbDoubleArray.type());
+                DbBooleanArray.type(),
+                DbByteArray.type(),
+                DbCharArray.type(),
+                DbShortArray.type(),
+                DbIntArray.type(),
+                DbLongArray.type(),
+                DbFloatArray.type(),
+                DbDoubleArray.type());
     }
 }

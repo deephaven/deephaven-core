@@ -16,8 +16,7 @@ public class TimestampBuffer {
     private final ZoneRules zoneRules;
 
     private class ThreadLocalState {
-        private long currentTimeMillis = Long.MIN_VALUE; // Ensure we enter the calculation logic
-                                                         // the first time through
+        private long currentTimeMillis = Long.MIN_VALUE; // Ensure we enter the calculation logic the first time through
         // Magic values for the previous/next transition times:
         // MAX_VALUE/MIN_VALUE mean they haven't been initialized
         // MIN_VALUE/MAX_VALUE mean they don't have previous/next transitions (e.g. GMT)
@@ -28,12 +27,12 @@ public class TimestampBuffer {
         private final ByteBuffer buffer = ByteBuffer.allocate(Convert.MAX_ISO8601_BYTES);
 
         public void update(long nowMillis) {
-            // See if the change is more than the seconds/millis component - if so then we should
-            // check for DST transition and
+            // See if the change is more than the seconds/millis component - if so then we should check for DST
+            // transition and
             // regenerate the whole buffer
             if (nowMillis / 60_000 != currentTimeMillis / 60_000) {
                 if ((nowMillis < previousDSTTransitionMillis) ||
-                    (nowMillis >= nextDSTTransitionMillis)) {
+                        (nowMillis >= nextDSTTransitionMillis)) {
                     calculateDSTTransitions(nowMillis);
                 }
 
@@ -56,18 +55,14 @@ public class TimestampBuffer {
 
         private void calculateDSTTransitions(final long nowMillis) {
             final Instant nowInstant = Instant.ofEpochMilli(nowMillis);
-            final ZoneOffsetTransition previousTransitionOffset =
-                zoneRules.previousTransition(nowInstant);
+            final ZoneOffsetTransition previousTransitionOffset = zoneRules.previousTransition(nowInstant);
             final ZoneOffsetTransition nextTransitionOffset = zoneRules.nextTransition(nowInstant);
 
-            // It's possible there's no previous or next transition, in that case set the value so
-            // we'll never cross it
+            // It's possible there's no previous or next transition, in that case set the value so we'll never cross it
             previousDSTTransitionMillis =
-                previousTransitionOffset != null ? previousTransitionOffset.toEpochSecond() * 1000
-                    : Long.MIN_VALUE;
+                    previousTransitionOffset != null ? previousTransitionOffset.toEpochSecond() * 1000 : Long.MIN_VALUE;
             nextDSTTransitionMillis =
-                nextTransitionOffset != null ? nextTransitionOffset.toEpochSecond() * 1000
-                    : Long.MAX_VALUE;
+                    nextTransitionOffset != null ? nextTransitionOffset.toEpochSecond() * 1000 : Long.MAX_VALUE;
 
             gmtOffsetMillis = zoneRules.getOffset(nowInstant).getTotalSeconds() * 1000L;
 
@@ -87,7 +82,7 @@ public class TimestampBuffer {
     }
 
     private ThreadLocal<TimestampBuffer.ThreadLocalState> threadLocals =
-        ThreadLocal.withInitial(TimestampBuffer.ThreadLocalState::new);
+            ThreadLocal.withInitial(TimestampBuffer.ThreadLocalState::new);
 
     public TimestampBuffer(TimeZone tz) {
         zoneRules = tz.toZoneId().getRules();
@@ -99,10 +94,9 @@ public class TimestampBuffer {
     }
 
     /**
-     * Return a thread-local byte buffer containing the give time, formatted in ISO 8601. The
-     * buffer's position is set to zero in preparation for writing its contents to another buffer or
-     * a channel. Since the buffer is thread-local, the caller can safely assume that it won't
-     * change until the same thread accesses this TimestampBuffer again.
+     * Return a thread-local byte buffer containing the give time, formatted in ISO 8601. The buffer's position is set
+     * to zero in preparation for writing its contents to another buffer or a channel. Since the buffer is thread-local,
+     * the caller can safely assume that it won't change until the same thread accesses this TimestampBuffer again.
      */
     public ByteBuffer getTimestamp(long nowMillis) {
         ThreadLocalState state = threadLocals.get();

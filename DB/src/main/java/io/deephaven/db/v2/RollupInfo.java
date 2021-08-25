@@ -26,19 +26,18 @@ public class RollupInfo extends AbstractHierarchicalTableInfo {
         Normal,
 
         /**
-         * The leaf tables are from the original table (they show constituent rows) and may have
-         * different column names and types
+         * The leaf tables are from the original table (they show constituent rows) and may have different column names
+         * and types
          */
         Constituent
     }
 
-    public RollupInfo(ComboAggregateFactory factory, SelectColumn[] selectColumns,
-        LeafType leafType) {
+    public RollupInfo(ComboAggregateFactory factory, SelectColumn[] selectColumns, LeafType leafType) {
         this(factory, selectColumns, leafType, null);
     }
 
-    public RollupInfo(ComboAggregateFactory factory, SelectColumn[] selectColumns,
-        LeafType leafType, String[] columnFormats) {
+    public RollupInfo(ComboAggregateFactory factory, SelectColumn[] selectColumns, LeafType leafType,
+            String[] columnFormats) {
         super(columnFormats);
         this.factory = factory;
         this.selectColumns = selectColumns;
@@ -46,7 +45,7 @@ public class RollupInfo extends AbstractHierarchicalTableInfo {
         this.leafType = leafType;
 
         final Set<String> tempSet = Arrays.stream(selectColumns).map(SelectColumn::getName)
-            .collect(Collectors.toCollection(LinkedHashSet::new));
+                .collect(Collectors.toCollection(LinkedHashSet::new));
         this.byColumnNames = Collections.unmodifiableSet(tempSet);
     }
 

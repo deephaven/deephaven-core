@@ -84,8 +84,7 @@ public class TestFpTimsortComparisons {
         TestCase.assertFalse(DoubleLongTimsortDescendingKernel.geq(Double.NaN, 0.0));
         TestCase.assertTrue(DoubleLongTimsortDescendingKernel.geq(Double.NaN, Double.NaN));
         TestCase.assertFalse(DoubleLongTimsortDescendingKernel.geq(0.0, -1.0));
-        TestCase
-            .assertFalse(DoubleLongTimsortDescendingKernel.geq(0.0, QueryConstants.NULL_DOUBLE));
+        TestCase.assertFalse(DoubleLongTimsortDescendingKernel.geq(0.0, QueryConstants.NULL_DOUBLE));
         TestCase.assertTrue(DoubleLongTimsortDescendingKernel.geq(0.0, Double.NaN));
         TestCase.assertTrue(DoubleLongTimsortDescendingKernel.geq(-1.0, 0.0));
         TestCase.assertTrue(DoubleLongTimsortDescendingKernel.geq(QueryConstants.NULL_DOUBLE, 0.0));
@@ -99,8 +98,7 @@ public class TestFpTimsortComparisons {
         TestCase.assertTrue(DoubleLongTimsortDescendingKernel.leq(0.0, QueryConstants.NULL_DOUBLE));
         TestCase.assertFalse(DoubleLongTimsortDescendingKernel.leq(0.0, Double.NaN));
         TestCase.assertFalse(DoubleLongTimsortDescendingKernel.leq(-1.0, 0.0));
-        TestCase
-            .assertFalse(DoubleLongTimsortDescendingKernel.leq(QueryConstants.NULL_DOUBLE, 0.0));
+        TestCase.assertFalse(DoubleLongTimsortDescendingKernel.leq(QueryConstants.NULL_DOUBLE, 0.0));
     }
 
     @Test

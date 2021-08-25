@@ -13,8 +13,7 @@ public class TestOpenAddressedCanonicalizationCache extends TestCase {
 
     @Test
     public void testDefaultAdapter() {
-        final OpenAddressedCanonicalizationCache SUT =
-            new OpenAddressedCanonicalizationCache(1, 0.9f);
+        final OpenAddressedCanonicalizationCache SUT = new OpenAddressedCanonicalizationCache(1, 0.9f);
 
         final Integer[] cachedIntegers = new Integer[SUT.getOccupancyThreshold() * 100];
         final Double[] cachedDoubles = new Double[cachedIntegers.length];
@@ -123,31 +122,30 @@ public class TestOpenAddressedCanonicalizationCache extends TestCase {
      * This is a really crappy example... but it's fine for a unit test.
      */
     private static OpenAddressedCanonicalizationCache.Adapter<Object, String> OSA =
-        new OpenAddressedCanonicalizationCache.Adapter<Object, String>() {
+            new OpenAddressedCanonicalizationCache.Adapter<Object, String>() {
 
-            @Override
-            public boolean equals(@NotNull Object inputItem, @NotNull Object cachedItem) {
-                if (cachedItem instanceof String) {
-                    return inputItem.toString().equals(cachedItem);
+                @Override
+                public boolean equals(@NotNull Object inputItem, @NotNull Object cachedItem) {
+                    if (cachedItem instanceof String) {
+                        return inputItem.toString().equals(cachedItem);
+                    }
+                    return false;
                 }
-                return false;
-            }
 
-            @Override
-            public int hashCode(@NotNull Object inputItem) {
-                return inputItem.toString().hashCode();
-            }
+                @Override
+                public int hashCode(@NotNull Object inputItem) {
+                    return inputItem.toString().hashCode();
+                }
 
-            @Override
-            public String makeCacheableItem(@NotNull Object inputItem) {
-                return inputItem.toString();
-            }
-        };
+                @Override
+                public String makeCacheableItem(@NotNull Object inputItem) {
+                    return inputItem.toString();
+                }
+            };
 
     @Test
     public void testSpecialAdapters() {
-        final OpenAddressedCanonicalizationCache SUT =
-            new OpenAddressedCanonicalizationCache(1, 0.9f);
+        final OpenAddressedCanonicalizationCache SUT = new OpenAddressedCanonicalizationCache(1, 0.9f);
 
         final String[] cachedStrings = new String[SUT.getOccupancyThreshold() * 100 * 2];
 

@@ -5,17 +5,17 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdatesRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdatesRequest",
+        namespace = JsPackage.GLOBAL)
 public class ExportedTableUpdatesRequest {
     public static native ExportedTableUpdatesRequest deserializeBinary(Uint8Array bytes);
 
     public static native ExportedTableUpdatesRequest deserializeBinaryFromReader(
-        ExportedTableUpdatesRequest message, Object reader);
+            ExportedTableUpdatesRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(
-        ExportedTableUpdatesRequest message, Object writer);
+            ExportedTableUpdatesRequest message, Object writer);
 
     public static native Object toObject(boolean includeInstance, ExportedTableUpdatesRequest msg);
 

@@ -12,9 +12,9 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.barrage.flatbuf.Barrage_generated.io.deephaven.barrage.flatbuf.SessionInfoResponse",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.barrage.flatbuf.Barrage_generated.io.deephaven.barrage.flatbuf.SessionInfoResponse",
+        namespace = JsPackage.GLOBAL)
 public class SessionInfoResponse {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface CreateMetadataHeaderVectorDataUnionType {
@@ -96,35 +96,34 @@ public class SessionInfoResponse {
 
     public static native void addSessionToken(Builder builder, double sessionTokenOffset);
 
-    public static native void addTokenRefreshDeadlineMs(Builder builder,
-        Long tokenRefreshDeadlineMs);
+    public static native void addTokenRefreshDeadlineMs(Builder builder, Long tokenRefreshDeadlineMs);
 
     @Deprecated
     public static native double createMetadataHeaderVector(
-        Builder builder, SessionInfoResponse.CreateMetadataHeaderVectorDataUnionType data);
+            Builder builder, SessionInfoResponse.CreateMetadataHeaderVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createMetadataHeaderVector(Builder builder, Int8Array data) {
         return createMetadataHeaderVector(
-            builder,
-            Js.<SessionInfoResponse.CreateMetadataHeaderVectorDataUnionType>uncheckedCast(data));
+                builder,
+                Js.<SessionInfoResponse.CreateMetadataHeaderVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createMetadataHeaderVector(Builder builder, JsArray<Double> data) {
         return createMetadataHeaderVector(
-            builder,
-            Js.<SessionInfoResponse.CreateMetadataHeaderVectorDataUnionType>uncheckedCast(data));
+                builder,
+                Js.<SessionInfoResponse.CreateMetadataHeaderVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createMetadataHeaderVector(Builder builder, Uint8Array data) {
         return createMetadataHeaderVector(
-            builder,
-            Js.<SessionInfoResponse.CreateMetadataHeaderVectorDataUnionType>uncheckedCast(data));
+                builder,
+                Js.<SessionInfoResponse.CreateMetadataHeaderVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
@@ -134,37 +133,34 @@ public class SessionInfoResponse {
     }
 
     public static native double createSessionInfoResponse(
-        Builder builder,
-        double metadataHeaderOffset,
-        double sessionTokenOffset,
-        Long tokenRefreshDeadlineMs);
+            Builder builder,
+            double metadataHeaderOffset,
+            double sessionTokenOffset,
+            Long tokenRefreshDeadlineMs);
 
     @Deprecated
     public static native double createSessionTokenVector(
-        Builder builder, SessionInfoResponse.CreateSessionTokenVectorDataUnionType data);
+            Builder builder, SessionInfoResponse.CreateSessionTokenVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createSessionTokenVector(Builder builder, Int8Array data) {
         return createSessionTokenVector(
-            builder,
-            Js.<SessionInfoResponse.CreateSessionTokenVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<SessionInfoResponse.CreateSessionTokenVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createSessionTokenVector(Builder builder, JsArray<Double> data) {
         return createSessionTokenVector(
-            builder,
-            Js.<SessionInfoResponse.CreateSessionTokenVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<SessionInfoResponse.CreateSessionTokenVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createSessionTokenVector(Builder builder, Uint8Array data) {
         return createSessionTokenVector(
-            builder,
-            Js.<SessionInfoResponse.CreateSessionTokenVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<SessionInfoResponse.CreateSessionTokenVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
@@ -176,15 +172,14 @@ public class SessionInfoResponse {
     public static native double endSessionInfoResponse(Builder builder);
 
     public static native SessionInfoResponse getRootAsSessionInfoResponse(
-        ByteBuffer bb, SessionInfoResponse obj);
+            ByteBuffer bb, SessionInfoResponse obj);
 
     public static native SessionInfoResponse getRootAsSessionInfoResponse(ByteBuffer bb);
 
     public static native SessionInfoResponse getSizePrefixedRootAsSessionInfoResponse(
-        ByteBuffer bb, SessionInfoResponse obj);
+            ByteBuffer bb, SessionInfoResponse obj);
 
-    public static native SessionInfoResponse getSizePrefixedRootAsSessionInfoResponse(
-        ByteBuffer bb);
+    public static native SessionInfoResponse getSizePrefixedRootAsSessionInfoResponse(ByteBuffer bb);
 
     public static native void startMetadataHeaderVector(Builder builder, double numElems);
 

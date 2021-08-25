@@ -15,10 +15,8 @@ import java.util.Random;
 public class FastArrayMapLongToObjectTest extends TestCase {
 
     private FastArrayMapLongToObject<TrialClassA> constructTestMap() {
-        Function.Nullary<KeyValuePairLongToObject<TrialClassA>> factoryLongToObject =
-            new FactoryLongToObject();
-        FastArrayMapLongToObject<TrialClassA> map =
-            new FastArrayMapLongToObject<TrialClassA>(factoryLongToObject);
+        Function.Nullary<KeyValuePairLongToObject<TrialClassA>> factoryLongToObject = new FactoryLongToObject();
+        FastArrayMapLongToObject<TrialClassA> map = new FastArrayMapLongToObject<TrialClassA>(factoryLongToObject);
         return map;
     }
 
@@ -399,12 +397,11 @@ public class FastArrayMapLongToObjectTest extends TestCase {
     }
 
     public void checkExternalization(FastArrayMapLongToObject<TrialClassA> mapInput,
-        FastArrayMapLongToObject<TrialClassA> mapReceiver) throws Exception {
+            FastArrayMapLongToObject<TrialClassA> mapReceiver) throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(bos);
         try {
-            FastArrayMapLongToObject.writeExternal(mapInput, oos,
-                KeyValuePairLongToObjectTest.writer);
+            FastArrayMapLongToObject.writeExternal(mapInput, oos, KeyValuePairLongToObjectTest.writer);
         } catch (IllegalArgumentException e) {
             if (mapInput == null) {
                 // this is an expected failure
@@ -418,8 +415,7 @@ public class FastArrayMapLongToObjectTest extends TestCase {
         ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
         ObjectInputStream ois = new ObjectInputStream(bis);
         try {
-            FastArrayMapLongToObject.readExternal(mapReceiver, ois,
-                KeyValuePairLongToObjectTest.reader);
+            FastArrayMapLongToObject.readExternal(mapReceiver, ois, KeyValuePairLongToObjectTest.reader);
         } catch (IllegalArgumentException e) {
             if (mapReceiver == null) {
                 // this is an expected failure
@@ -523,8 +519,7 @@ public class FastArrayMapLongToObjectTest extends TestCase {
         for (int i = 0; i < nItems; i++) {
             long key = myRandom.nextLong();
             TrialClassA val = FastArrayTest.makeRandomTestObject(myRandom);
-            arrayReceiver.getArray().getUnsafeArray()[i] =
-                new KeyValuePairLongToObject<TrialClassA>(key, val);
+            arrayReceiver.getArray().getUnsafeArray()[i] = new KeyValuePairLongToObject<TrialClassA>(key, val);
         }
 
         // verify they are not equal
@@ -539,8 +534,7 @@ public class FastArrayMapLongToObjectTest extends TestCase {
             assertFalse(itemReceive.equals(itemInput));
         }
 
-        // copy the value from the input back into the receive array (now that we already have
-        // values in there
+        // copy the value from the input back into the receive array (now that we already have values in there
         arrayReceiver = arrayInput.cloneDeep();
 
         // check the receive array against the input array
@@ -620,15 +614,13 @@ public class FastArrayMapLongToObjectTest extends TestCase {
     }
 
     public void testCompareToBaseFastArrayMap() {
-        Function.Nullary<KeyValuePairLongToObject<TrialClassA>> factoryLongToObject =
-            new FactoryLongToObject();
+        Function.Nullary<KeyValuePairLongToObject<TrialClassA>> factoryLongToObject = new FactoryLongToObject();
         FastArrayMapLongToObject<TrialClassA> mapLongToObject =
-            new FastArrayMapLongToObject<TrialClassA>(factoryLongToObject);
+                new FastArrayMapLongToObject<TrialClassA>(factoryLongToObject);
 
-        Function.Nullary<KeyValuePair<LongWrapper, TrialClassA>> factoryObjectToObject =
-            new FactoryObjectToObject();
+        Function.Nullary<KeyValuePair<LongWrapper, TrialClassA>> factoryObjectToObject = new FactoryObjectToObject();
         FastArrayMap<LongWrapper, TrialClassA> mapObjectToObject =
-            new FastArrayMap<LongWrapper, TrialClassA>(factoryObjectToObject);
+                new FastArrayMap<LongWrapper, TrialClassA>(factoryObjectToObject);
 
         Random myRandom = new Random(98723498L);
         double clearFraction = 0.03;
@@ -642,8 +634,7 @@ public class FastArrayMapLongToObjectTest extends TestCase {
             if (myRandom.nextFloat() < addFraction) {
                 // System.out.println(i+" ADD");
                 long key = myRandom.nextInt(maxKey); // get a key between 0 and maxKey
-                TrialClassA value =
-                    new TrialClassA(myRandom.nextDouble(), myRandom.nextInt(), myRandom.nextLong());
+                TrialClassA value = new TrialClassA(myRandom.nextDouble(), myRandom.nextInt(), myRandom.nextLong());
                 mapObjectToObject.put(new LongWrapper(key), value);
                 mapLongToObject.put(key, value);
             }
@@ -679,10 +670,8 @@ public class FastArrayMapLongToObjectTest extends TestCase {
             assertEquals(mapObjectToObject.size(), mapLongToObject.size());
             assertEquals(mapObjectToObject.isEmpty(), mapLongToObject.isEmpty());
             for (int j = 0; j < mapObjectToObject.size(); j++) {
-                KeyValuePair<LongWrapper, TrialClassA> refPair =
-                    mapObjectToObject.getArray().getUnsafeArray()[j];
-                KeyValuePairLongToObject<TrialClassA> trialPair =
-                    mapLongToObject.getArray().getUnsafeArray()[j];
+                KeyValuePair<LongWrapper, TrialClassA> refPair = mapObjectToObject.getArray().getUnsafeArray()[j];
+                KeyValuePairLongToObject<TrialClassA> trialPair = mapLongToObject.getArray().getUnsafeArray()[j];
                 assertEquals(refPair.getKey().getVal(), trialPair.getKey());
                 assertTrue(refPair.getValue().equals(trialPair.getValue()));
             }
@@ -699,8 +688,7 @@ class FactoryLongToObject implements Function.Nullary<KeyValuePairLongToObject<T
     public KeyValuePairLongToObject<TrialClassA> call() {
         long key = Long.MIN_VALUE;
         TrialClassA value = TrialClassA.makeNull();
-        KeyValuePairLongToObject<TrialClassA> result =
-            new KeyValuePairLongToObject<TrialClassA>(key, value);
+        KeyValuePairLongToObject<TrialClassA> result = new KeyValuePairLongToObject<TrialClassA>(key, value);
         return result;
     }
 }

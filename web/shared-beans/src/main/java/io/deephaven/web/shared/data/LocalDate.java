@@ -3,9 +3,8 @@ package io.deephaven.web.shared.data;
 import java.io.Serializable;
 
 /**
- * A simple container for serializing LocalDate values. This should be better for serialization than
- * java.time.LocalDate since we use bytes for month and day, and is compatible with GWT (java.time
- * is not available in GWT).
+ * A simple container for serializing LocalDate values. This should be better for serialization than java.time.LocalDate
+ * since we use bytes for month and day, and is compatible with GWT (java.time is not available in GWT).
  */
 public class LocalDate implements Serializable {
     private int year;

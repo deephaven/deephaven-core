@@ -33,9 +33,9 @@ class AvgStateWithNan extends AvgState {
     @Override
     public String toString() {
         return "Avg{" +
-            "sum=" + runningSum +
-            ", nonNull=" + nonNullCount +
-            ", nan=" + nanCount +
-            '}';
+                "sum=" + runningSum +
+                ", nonNull=" + nonNullCount +
+                ", nan=" + nanCount +
+                '}';
     }
 }

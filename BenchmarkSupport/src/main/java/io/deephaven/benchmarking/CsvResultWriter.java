@@ -15,14 +15,13 @@ import java.util.stream.Collectors;
 
 public class CsvResultWriter {
     public static final String TEST_OUTPUT_DIR_PATH =
-        System.getProperty("test.output.dir", "tmp" + File.separator + "logs");
+            System.getProperty("test.output.dir", "tmp" + File.separator + "logs");
 
     public static void recordResults(final Collection<RunResult> results, final Class c) {
         final String className = c.getSimpleName();
         final String timeString =
-            new SimpleDateFormat("yyyy-MM-dd-HHmmss").format(new Date(System.currentTimeMillis()));
-        recordResults(results, new File(
-            TEST_OUTPUT_DIR_PATH + File.separator + className + "-" + timeString + ".csv"));
+                new SimpleDateFormat("yyyy-MM-dd-HHmmss").format(new Date(System.currentTimeMillis()));
+        recordResults(results, new File(TEST_OUTPUT_DIR_PATH + File.separator + className + "-" + timeString + ".csv"));
     }
 
     public static void recordResults(final Collection<RunResult> results, final File file) {
@@ -62,8 +61,7 @@ public class CsvResultWriter {
                     for (String key : runParams.getParamsKeys()) {
                         values.put(key, runParams.getParam(key));
                     }
-                    values.put("Score",
-                        decimalFormat.format(itResult.getPrimaryResult().getScore()));
+                    values.put("Score", decimalFormat.format(itResult.getPrimaryResult().getScore()));
                     values.put("Run", Integer.toString(runNo));
                     values.put("Iteration", Integer.toString(itNo));
 

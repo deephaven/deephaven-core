@@ -15,8 +15,8 @@ public class StreamToLogBuffer implements StandardStreamReceiver {
     private final int initialBufferSize;
     private final int maxBufferSize;
 
-    public StreamToLogBuffer(LogBuffer logBuffer, boolean receiveOut, boolean receiveErr,
-        int initialBufferSize, int maxBufferSize) {
+    public StreamToLogBuffer(LogBuffer logBuffer, boolean receiveOut, boolean receiveErr, int initialBufferSize,
+            int maxBufferSize) {
         this.logBuffer = Objects.requireNonNull(logBuffer);
         this.receiveOut = receiveOut;
         this.receiveErr = receiveErr;
@@ -29,8 +29,7 @@ public class StreamToLogBuffer implements StandardStreamReceiver {
         if (!receiveOut) {
             return Optional.empty();
         }
-        return Optional.of(new LogBufferOutputStream(logBuffer, LogLevel.STDOUT, initialBufferSize,
-            maxBufferSize));
+        return Optional.of(new LogBufferOutputStream(logBuffer, LogLevel.STDOUT, initialBufferSize, maxBufferSize));
     }
 
     @Override
@@ -38,7 +37,6 @@ public class StreamToLogBuffer implements StandardStreamReceiver {
         if (!receiveErr) {
             return Optional.empty();
         }
-        return Optional.of(new LogBufferOutputStream(logBuffer, LogLevel.STDERR, initialBufferSize,
-            maxBufferSize));
+        return Optional.of(new LogBufferOutputStream(logBuffer, LogLevel.STDERR, initialBufferSize, maxBufferSize));
     }
 }

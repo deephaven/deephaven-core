@@ -59,8 +59,8 @@ public class MatchFilterBenchmark {
         switch (tableType) {
             case "Historical":
                 builder = BenchmarkTools.persistentTableBuilder("Carlos", actualSize)
-                    .setPartitioningFormula("${autobalance_single}")
-                    .setPartitionCount(10);
+                        .setPartitioningFormula("${autobalance_single}")
+                        .setPartitionCount(10);
                 break;
             case "Intraday":
                 builder = BenchmarkTools.persistentTableBuilder("Carlos", actualSize);
@@ -71,7 +71,7 @@ public class MatchFilterBenchmark {
         }
 
         builder.setSeed(0xDEADBEEF)
-            .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF));
+                .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF));
 
         final DBDateTime startTime = DBTimeUtils.convertDateTime("2019-01-01T12:00:00 NY");
         final DBDateTime endTime = DBTimeUtils.convertDateTime("2019-01-01T12:00:00.000001 NY");
@@ -92,8 +92,7 @@ public class MatchFilterBenchmark {
         }
 
         final BenchmarkTable bmTable = builder.build();
-        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()),
-            params.getWarmup().getCount());
+        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
         inputTable = applySparsity(bmTable.getTable(), tableSize, sparsity, 0).coalesce();
 
 
@@ -104,7 +103,7 @@ public class MatchFilterBenchmark {
             }
         } else if (filterCol.equals("Symbol")) {
             inputTable.selectDistinct("Symbol").head(matchValues).columnIterator("Symbol")
-                .forEachRemaining(values::add);
+                    .forEachRemaining(values::add);
         } else {
             for (int ii = 0; ii < matchValues; ++ii) {
                 values.add(ii);
@@ -136,7 +135,7 @@ public class MatchFilterBenchmark {
     private <R> R incrementalBenchmark(Function<Table, R> function) {
         final long sizePerStep = Math.max(inputTable.size() / 10, 1);
         final IncrementalReleaseFilter incrementalReleaseFilter =
-            new IncrementalReleaseFilter(sizePerStep, sizePerStep);
+                new IncrementalReleaseFilter(sizePerStep, sizePerStep);
         final Table filtered = inputTable.where(incrementalReleaseFilter);
 
         final R result = function.apply(filtered);

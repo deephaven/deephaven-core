@@ -25,7 +25,7 @@ abstract class JoinMatchImpl implements JoinMatch {
             // To make sure that JoinMatch#equals() works as we would expect, we should always use
             // canonical ColumnName when applicable.
             throw new IllegalArgumentException(
-                "Should not construct JoinMatchImpl with left() equal to right(), use the ColumnName directly");
+                    "Should not construct JoinMatchImpl with left() equal to right(), use the ColumnName directly");
         }
     }
 }

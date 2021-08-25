@@ -18,11 +18,11 @@ public class TestModelFarmUtils extends BaseArrayTestCase {
         final Table t = TableTools.emptyTable(5).updateView("A=(int)i", "B=(long)i", "C=(double)i");
 
         ModelFarmUtils.requireTable("TABLENAME", t, new String[] {"A", "C", "B"},
-            new Class[] {int.class, double.class, long.class});
+                new Class[] {int.class, double.class, long.class});
 
         try {
             ModelFarmUtils.requireTable("TABLENAME", t, new String[] {"A", "X", "B"},
-                new Class[] {int.class, double.class, long.class});
+                    new Class[] {int.class, double.class, long.class});
             fail();
         } catch (RequirementFailure e) {
             // pass
@@ -30,7 +30,7 @@ public class TestModelFarmUtils extends BaseArrayTestCase {
 
         try {
             ModelFarmUtils.requireTable("TABLENAME", t, new String[] {"A", "C", "B"},
-                new Class[] {int.class, double.class, double.class});
+                    new Class[] {int.class, double.class, double.class});
             fail();
         } catch (RequirementFailure e) {
             // pass
@@ -84,8 +84,8 @@ public class TestModelFarmUtils extends BaseArrayTestCase {
     public void testArray2Double() {
         final double[][] target = {{1.1, 2.2, 3.3}, {5, 6}};
         final DbArray dba = new DbArrayDirect(
-            new DbDoubleArrayDirect(target[0]),
-            new DbDoubleArrayDirect(target[1]));
+                new DbDoubleArrayDirect(target[0]),
+                new DbDoubleArrayDirect(target[1]));
         final double[][] result = ModelFarmUtils.array2Double(dba);
         assertEquals(target, result);
         assertNull(ModelFarmUtils.array2Double(null));

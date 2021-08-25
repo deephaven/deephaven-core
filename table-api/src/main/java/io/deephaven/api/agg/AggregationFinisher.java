@@ -10,11 +10,10 @@ import java.util.Collections;
 import java.util.function.Function;
 
 /**
- * The aggregation finisher is a helper to aid in building aggregations whose construction can be
- * finished by a {@link Pair}. A vararg overload is provided to build a {@link Multi},
- * {@link #of(Pair...)}, which can be useful to reduce the syntax required to build multiple
- * aggregations of the same basic type. Helpers are provided that translate the string-equivalents
- * via {@link Pair#parse(String)}.
+ * The aggregation finisher is a helper to aid in building aggregations whose construction can be finished by a
+ * {@link Pair}. A vararg overload is provided to build a {@link Multi}, {@link #of(Pair...)}, which can be useful to
+ * reduce the syntax required to build multiple aggregations of the same basic type. Helpers are provided that translate
+ * the string-equivalents via {@link Pair#parse(String)}.
  *
  * <p>
  * Not all aggregations may be suitable for construction in this style.
@@ -75,7 +74,7 @@ public abstract class AggregationFinisher<AGG extends Aggregation> {
 
     static AggregationFinisher<SortedFirst> sortedFirst(Iterable<SortColumn> sortColumns) {
         return ImmutableAggregationFinisher
-            .of(pair -> SortedFirst.builder().addAllColumns(sortColumns).pair(pair).build());
+                .of(pair -> SortedFirst.builder().addAllColumns(sortColumns).pair(pair).build());
     }
 
     static AggregationFinisher<SortedLast> sortedLast(SortColumn sortColumn) {
@@ -84,7 +83,7 @@ public abstract class AggregationFinisher<AGG extends Aggregation> {
 
     static AggregationFinisher<SortedLast> sortedLast(Iterable<SortColumn> sortColumns) {
         return ImmutableAggregationFinisher
-            .of(pair -> SortedLast.builder().addAllColumns(sortColumns).pair(pair).build());
+                .of(pair -> SortedLast.builder().addAllColumns(sortColumns).pair(pair).build());
     }
 
     public static AggregationFinisher<Std> std() {

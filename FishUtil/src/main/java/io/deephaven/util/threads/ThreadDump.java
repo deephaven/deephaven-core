@@ -13,9 +13,8 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 
 /**
- * A simple method for generating a Thread dump for this JVM; it doesn't do all the stuff that the
- * kill -3 does; but you can easily run it from inside the JVM without having to send yourself a
- * signal.
+ * A simple method for generating a Thread dump for this JVM; it doesn't do all the stuff that the kill -3 does; but you
+ * can easily run it from inside the JVM without having to send yourself a signal.
  */
 public class ThreadDump {
     @SuppressWarnings("WeakerAccess")

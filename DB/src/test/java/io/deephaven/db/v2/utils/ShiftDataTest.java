@@ -109,15 +109,13 @@ public class ShiftDataTest extends TestCase {
         index = getSortedIndex(1, 2, 3, 4, 5, 6, 7, 8);
         added = getSortedIndex(1, 3, 5, 7);
         removed = getSortedIndex();
-        checkExpectations(index, removed, added,
-            new long[][] {{3, 3, 4}, {2, 2, 3}, {1, 1, 2}, {0, 0, 1}});
+        checkExpectations(index, removed, added, new long[][] {{3, 3, 4}, {2, 2, 3}, {1, 1, 2}, {0, 0, 1}});
 
         // was 2,4,6,8,10,12,16
         index = getSortedIndex(1, 2, 3, 4, 8, 16);
         added = getSortedIndex(1, 3);
         removed = getSortedIndex(6, 10, 12);
-        checkExpectations(index, removed, added,
-            new long[][] {{3, 3, 1}, {1, 1, 2}, {0, 0, 1}, {6, 6, -1}});
+        checkExpectations(index, removed, added, new long[][] {{3, 3, 1}, {1, 1, 2}, {0, 0, 1}, {6, 6, -1}});
 
         // was 100,200,300,400,500,600,700
         index = getSortedIndex(100, 200, 230, 240, 250, 260, 270, 500, 550, 700);
@@ -174,8 +172,7 @@ public class ShiftDataTest extends TestCase {
             Index added = getRandomIndex(20, 1, 10);
             Index removed = getRandomRemoves(initialIndex, 2);
             Index finalIndex = getFinalIndex(initialIndex, added, removed);
-            final long resultKeys[] =
-                new long[(int) Math.max(initialIndex.size(), finalIndex.size())];
+            final long resultKeys[] = new long[(int) Math.max(initialIndex.size(), finalIndex.size())];
             int pos = 0;
             for (Index.Iterator it = initialIndex.iterator(); it.hasNext();) {
                 resultKeys[pos++] = it.nextLong();
@@ -197,8 +194,7 @@ public class ShiftDataTest extends TestCase {
             });
             Index addedPos = shiftData.getAddedPos();
 
-            for (Index.Iterator iterator = addedPos.iterator(), valueIt = added.iterator(); iterator
-                .hasNext();) {
+            for (Index.Iterator iterator = addedPos.iterator(), valueIt = added.iterator(); iterator.hasNext();) {
                 resultKeys[((int) iterator.nextLong())] = valueIt.nextLong();
             }
 
