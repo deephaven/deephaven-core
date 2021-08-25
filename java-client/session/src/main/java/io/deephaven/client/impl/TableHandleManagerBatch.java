@@ -53,7 +53,7 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
     public TableHandle executeLogic(TableCreationLogic logic)
         throws TableHandleException, InterruptedException {
         if (mixinStacktraces) {
-            return new Mixin1(logic).run();
+            return new MixinBasic(logic).run();
         }
         return execute(TableSpec.of(logic));
     }
@@ -62,7 +62,7 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
     public List<TableHandle> executeLogic(Iterable<TableCreationLogic> logics)
         throws TableHandleException, InterruptedException {
         if (mixinStacktraces) {
-            return new Mixin3(logics).run();
+            return new MixinIterable(logics).run();
         }
         return execute(
             () -> StreamSupport.stream(logics.spliterator(), false).map(TableSpec::of).iterator());
@@ -72,7 +72,7 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
     public LabeledValues<TableHandle> executeLogic(TableCreationLabeledLogic logic)
         throws TableHandleException, InterruptedException {
         if (mixinStacktraces) {
-            return new Mixin2(logic).run();
+            return new MixinLabeled(logic).run();
         }
         return execute(LabeledTables.of(logic));
     }
@@ -81,7 +81,7 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
     public TableHandle executeInputs(TableCreationLogic1Input logic, TableHandle t1)
         throws TableHandleException, InterruptedException {
         if (mixinStacktraces) {
-            return new Mixin4(logic, t1).run();
+            return new Mixin1Handle(logic, t1).run();
         }
         final TableSpec table1 = t1.table();
         final TableSpec tableOut = logic.create(table1);
@@ -92,7 +92,7 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
     public TableHandle executeInputs(TableCreationLogic2Inputs logic, TableHandle t1,
         TableHandle t2) throws TableHandleException, InterruptedException {
         if (mixinStacktraces) {
-            return new Mixin5(logic, t1, t2).run();
+            return new Mixin2Handles(logic, t1, t2).run();
         }
         final TableSpec table1 = t1.table();
         final TableSpec table2 = t2.table();
@@ -120,10 +120,10 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
         }
     }
 
-    private class Mixin1 extends MixinBase<TableHandle> {
+    private class MixinBasic extends MixinBase<TableHandle> {
         private final TableCreationLogic logic;
 
-        public Mixin1(TableCreationLogic logic) {
+        public MixinBasic(TableCreationLogic logic) {
             this.logic = Objects.requireNonNull(logic);
         }
 
@@ -135,10 +135,10 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
         }
     }
 
-    private class Mixin2 extends MixinBase<LabeledValues<TableHandle>> {
+    private class MixinLabeled extends MixinBase<LabeledValues<TableHandle>> {
         private final TableCreationLabeledLogic logic;
 
-        public Mixin2(TableCreationLabeledLogic logic) {
+        public MixinLabeled(TableCreationLabeledLogic logic) {
             this.logic = Objects.requireNonNull(logic);
         }
 
@@ -153,10 +153,10 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
         }
     }
 
-    private class Mixin3 extends MixinBase<List<TableHandle>> {
+    private class MixinIterable extends MixinBase<List<TableHandle>> {
         private final Iterable<TableCreationLogic> logics;
 
-        public Mixin3(Iterable<TableCreationLogic> logics) {
+        public MixinIterable(Iterable<TableCreationLogic> logics) {
             this.logics = Objects.requireNonNull(logics);
         }
 
@@ -173,11 +173,11 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
         }
     }
 
-    private class Mixin4 extends MixinBase<TableHandle> {
+    private class Mixin1Handle extends MixinBase<TableHandle> {
         private final TableCreationLogic1Input logic;
         private final TableHandle t1;
 
-        public Mixin4(TableCreationLogic1Input logic, TableHandle t1) {
+        public Mixin1Handle(TableCreationLogic1Input logic, TableHandle t1) {
             this.logic = Objects.requireNonNull(logic);
             this.t1 = Objects.requireNonNull(t1);
         }
@@ -190,12 +190,12 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
         }
     }
 
-    private class Mixin5 extends MixinBase<TableHandle> {
+    private class Mixin2Handles extends MixinBase<TableHandle> {
         private final TableCreationLogic2Inputs logic;
         private final TableHandle t1;
         private final TableHandle t2;
 
-        public Mixin5(TableCreationLogic2Inputs logic, TableHandle t1, TableHandle t2) {
+        public Mixin2Handles(TableCreationLogic2Inputs logic, TableHandle t1, TableHandle t2) {
             this.logic = Objects.requireNonNull(logic);
             this.t1 = Objects.requireNonNull(t1);
             this.t2 = Objects.requireNonNull(t2);
