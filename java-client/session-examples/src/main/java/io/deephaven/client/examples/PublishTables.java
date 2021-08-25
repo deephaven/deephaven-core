@@ -32,7 +32,7 @@ class PublishTables extends SessionExampleBase {
     protected void execute(SessionFactory factory) throws Exception {
         LabeledTables labeledTables = LabeledTables.of(tables);
 
-        final Session session = factory.session();
+        final Session session = factory.newSession();
         try {
             // note: if we export the same table multiple times, that's OK - we just get an increase
             // ref count

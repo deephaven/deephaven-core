@@ -34,7 +34,7 @@ public class HammerSessions extends SessionExampleBase {
                 System.out.printf("Started %d, outstanding %d%n", i, semaphore.availablePermits());
             }
             semaphore.acquire();
-            factory.sessionFuture()
+            factory.newSessionFuture()
                 .whenComplete((BiConsumer<Session, Throwable>) (session, throwable) -> {
                     if (throwable != null) {
                         throwable.printStackTrace();

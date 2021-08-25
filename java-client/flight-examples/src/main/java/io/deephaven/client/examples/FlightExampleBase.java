@@ -1,10 +1,8 @@
 package io.deephaven.client.examples;
 
-import io.deephaven.client.DaggerSessionImplComponent;
-import io.deephaven.client.impl.DaggerFlightComponent;
-import io.deephaven.client.impl.FlightClientModule;
-import io.deephaven.client.impl.FlightComponent;
+import io.deephaven.client.impl.DaggerDeephavenFlightRoot;
 import io.deephaven.client.impl.FlightSession;
+import io.deephaven.client.impl.FlightSessionFactory;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.arrow.memory.BufferAllocator;
@@ -34,12 +32,14 @@ abstract class FlightExampleBase implements Callable<Void> {
         Runtime.getRuntime()
             .addShutdownHook(new Thread(() -> onShutdown(scheduler, managedChannel)));
 
-        // todo: fix dual-graph Dagger
-        FlightComponent factory = DaggerFlightComponent.factory().create(
-            new FlightClientModule(
-                DaggerSessionImplComponent.factory().create(managedChannel, scheduler).session()),
-            managedChannel, scheduler, bufferAllocator);
-        FlightSession flightSession = factory.flightSession();
+        FlightSessionFactory flightSessionFactory =
+            DaggerDeephavenFlightRoot.create().factoryBuilder()
+                .managedChannel(managedChannel)
+                .scheduler(scheduler)
+                .allocator(bufferAllocator)
+                .build();
+
+        FlightSession flightSession = flightSessionFactory.newFlightSession();
 
         try {
             try {

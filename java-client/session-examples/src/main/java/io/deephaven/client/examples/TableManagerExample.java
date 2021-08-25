@@ -145,7 +145,7 @@ class TableManagerExample extends SessionExampleBase {
     @Override
     protected void execute(SessionFactory factory) throws Exception {
         showExpectations();
-        final Session session = factory.session();
+        final Session session = factory.newSession();
         try {
             final TableHandleManager manager = manager(session);
             if (oneStage) {

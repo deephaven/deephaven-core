@@ -4,7 +4,7 @@ import java.util.concurrent.CompletableFuture;
 
 public interface SessionFactory {
 
-    Session session();
+    Session newSession();
 
-    CompletableFuture<? extends Session> sessionFuture();
+    CompletableFuture<? extends Session> newSessionFuture();
 }

@@ -1,7 +1,6 @@
 package io.deephaven.client.examples;
 
-import io.deephaven.client.DaggerSessionImplComponent;
-import io.deephaven.client.SessionImplComponent;
+import io.deephaven.client.DaggerDeephavenSessionRoot;
 import io.deephaven.client.impl.SessionFactory;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -43,9 +42,8 @@ abstract class SessionExampleBase implements Callable<Void> {
         Runtime.getRuntime()
             .addShutdownHook(new Thread(() -> onShutdown(scheduler, managedChannel)));
 
-        SessionImplComponent factory =
-            DaggerSessionImplComponent.factory().create(managedChannel, scheduler);
-
+        SessionFactory factory = DaggerDeephavenSessionRoot.create().factoryBuilder()
+            .managedChannel(managedChannel).scheduler(scheduler).build();
         execute(factory);
 
         scheduler.shutdownNow();

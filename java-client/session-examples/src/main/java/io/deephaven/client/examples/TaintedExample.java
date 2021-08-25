@@ -36,7 +36,7 @@ class TaintedExample extends SessionExampleBase {
         final TableSpec t2 = t1.view("I=i").tail(5);
         final TableSpec t3 = t1.view("J=i").tail(3);
 
-        final Session session = factory.session();
+        final Session session = factory.newSession();
         try {
             final TableHandleManager manager =
                 mode == null ? session : mode.batch ? session.batch() : session.serial();

@@ -1,23 +1,33 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.grpc_api.util.ExportTicketHelper;
+import io.grpc.ManagedChannel;
 import org.apache.arrow.flight.Criteria;
 import org.apache.arrow.flight.FlightClient;
 import org.apache.arrow.flight.FlightDescriptor;
+import org.apache.arrow.flight.FlightGrpcUtilsExtension;
 import org.apache.arrow.flight.FlightInfo;
 import org.apache.arrow.flight.FlightStream;
 import org.apache.arrow.flight.Ticket;
+import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.types.pojo.Schema;
 
-import javax.inject.Inject;
+import java.util.Collections;
 import java.util.Objects;
 
 public final class FlightSession implements AutoCloseable {
-    private final Session session;
+
+    public static FlightSession of(SessionImpl session, BufferAllocator incomingAllocator,
+        ManagedChannel channel) {
+        final FlightClient client = FlightGrpcUtilsExtension.createFlightClientWithSharedChannel(
+            incomingAllocator, channel, Collections.singletonList(new SessionMiddleware(session)));
+        return new FlightSession(session, client);
+    }
+
+    private final SessionImpl session;
     private final FlightClient client;
 
-    @Inject
-    public FlightSession(Session session, FlightClient client) {
+    private FlightSession(SessionImpl session, FlightClient client) {
         this.session = Objects.requireNonNull(session);
         this.client = Objects.requireNonNull(client);
     }
