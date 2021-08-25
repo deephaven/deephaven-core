@@ -157,13 +157,13 @@ final class ExportStates {
     }
 
     private void ensureNoUnreferencableTables(ExportsRequest requests) {
-        Optional<TableSpec> tainted = searchUnreferencableTable(requests);
-        if (tainted.isPresent()) {
+        final Optional<TableSpec> unreferencable = searchUnreferencableTable(requests);
+        if (unreferencable.isPresent()) {
             // todo: potentially extend engine Table api and Ticket resolver to be able to take an
-            // existing export and a list of parent indices to revive a "tainted" table?
+            // existing export and a list of parent indices to rehydrate an "unreferencable" table?
             // Alternatively, our impl could export everything.
             throw new IllegalArgumentException(String.format(
-                "Unable to complete request, contains an unreferencable table: %s", tainted.get()));
+                "Unable to complete request, contains an unreferencable table: %s", unreferencable.get()));
         }
     }
 
