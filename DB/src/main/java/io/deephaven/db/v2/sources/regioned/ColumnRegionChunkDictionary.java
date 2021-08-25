@@ -14,37 +14,37 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * {@link ColumnRegionObject} implementation for regions that support fetching symbols from a
- * dictionary represented as an {@link ObjectChunk}.
+ * {@link ColumnRegionObject} implementation for regions that support fetching symbols from a dictionary represented as
+ * an {@link ObjectChunk}.
  */
 public class ColumnRegionChunkDictionary<DICT_TYPE, DATA_TYPE, ATTR extends Any>
-    extends GenericColumnRegionBase<ATTR>
-    implements ColumnRegionObject<DATA_TYPE, ATTR>, Page.WithDefaults<ATTR>,
-    DefaultChunkSource.SupportsContiguousGet<ATTR> {
+        extends GenericColumnRegionBase<ATTR>
+        implements ColumnRegionObject<DATA_TYPE, ATTR>, Page.WithDefaults<ATTR>,
+        DefaultChunkSource.SupportsContiguousGet<ATTR> {
 
     private final Supplier<Chunk<ATTR>> dictionaryChunkSupplier;
     private final Function<DICT_TYPE, DATA_TYPE> conversion;
 
     public static <DATA_TYPE, ATTR extends Any> ColumnRegionObject<DATA_TYPE, ATTR> create(
-        final long pageMask,
-        @NotNull final Class<DATA_TYPE> dataType,
-        @NotNull final Supplier<Chunk<ATTR>> dictionaryChunkSupplier) {
+            final long pageMask,
+            @NotNull final Class<DATA_TYPE> dataType,
+            @NotNull final Supplier<Chunk<ATTR>> dictionaryChunkSupplier) {
         if (CharSequence.class.isAssignableFrom(dataType)) {
             // noinspection unchecked
             final StringCache<?> stringCache =
-                StringUtils.getStringCache((Class<? extends CharSequence>) dataType);
+                    StringUtils.getStringCache((Class<? extends CharSequence>) dataType);
             // noinspection unchecked
             final Function<String, DATA_TYPE> conversion =
-                (final String dictValue) -> (DATA_TYPE) stringCache.getCachedString(dictValue);
+                    (final String dictValue) -> (DATA_TYPE) stringCache.getCachedString(dictValue);
             return new ColumnRegionChunkDictionary<>(pageMask, dictionaryChunkSupplier, conversion);
         }
         return new ColumnRegionChunkDictionary<>(pageMask, dictionaryChunkSupplier,
-            Function.identity());
+                Function.identity());
     }
 
     private ColumnRegionChunkDictionary(final long pageMask,
-        @NotNull final Supplier<Chunk<ATTR>> dictionaryChunkSupplier,
-        @NotNull final Function<DICT_TYPE, DATA_TYPE> conversion) {
+            @NotNull final Supplier<Chunk<ATTR>> dictionaryChunkSupplier,
+            @NotNull final Function<DICT_TYPE, DATA_TYPE> conversion) {
         super(pageMask);
         this.dictionaryChunkSupplier = dictionaryChunkSupplier;
         this.conversion = conversion;
@@ -61,25 +61,25 @@ public class ColumnRegionChunkDictionary<DICT_TYPE, DATA_TYPE, ATTR extends Any>
 
     @Override
     public Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, final long firstKey,
-        final long lastKey) {
+            final long lastKey) {
         return getDictionaryChunk().slice(Math.toIntExact(getRowOffset(firstKey)),
-            Math.toIntExact(lastKey - firstKey + 1));
+                Math.toIntExact(lastKey - firstKey + 1));
     }
 
     @Override
     public void fillChunkAppend(@NotNull final FillContext context,
-        @NotNull final WritableChunk<? super ATTR> destination,
-        @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final WritableChunk<? super ATTR> destination,
+            @NotNull final OrderedKeys orderedKeys) {
         final WritableObjectChunk<DATA_TYPE, ? super ATTR> objectDestination =
-            destination.asWritableObjectChunk();
+                destination.asWritableObjectChunk();
         orderedKeys.forAllLongs((final long key) -> objectDestination.add(getObject(key)));
     }
 
     @Override
     public boolean gatherDictionaryValuesIndex(
-        @NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
-        @NotNull final OrderedKeys.Iterator knownKeys,
-        @NotNull final Index.SequentialBuilder sequentialBuilder) {
+            @NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
+            @NotNull final OrderedKeys.Iterator knownKeys,
+            @NotNull final Index.SequentialBuilder sequentialBuilder) {
         final long dictSize = getDictionaryChunk().size();
 
         final long pageFirstKey = firstRow(keysToVisit.currentValue());

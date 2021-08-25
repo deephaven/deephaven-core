@@ -19,16 +19,16 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
-    implements ToPage<ATTR, DATA_TYPE[]> {
+        implements ToPage<ATTR, DATA_TYPE[]> {
 
     private final Class<DATA_TYPE> nativeType;
     private final ChunkDictionary<DATA_TYPE, ATTR> chunkDictionary;
     private final Function<Object, DATA_TYPE[]> convertResultFallbackFun;
 
     ToPageWithDictionary(
-        @NotNull final Class<DATA_TYPE> nativeType,
-        @NotNull final ChunkDictionary<DATA_TYPE, ATTR> chunkDictionary,
-        @NotNull final Function<Object, DATA_TYPE[]> convertResultFallbackFun) {
+            @NotNull final Class<DATA_TYPE> nativeType,
+            @NotNull final ChunkDictionary<DATA_TYPE, ATTR> chunkDictionary,
+            @NotNull final Function<Object, DATA_TYPE[]> convertResultFallbackFun) {
         this.nativeType = nativeType;
         this.chunkDictionary = chunkDictionary;
         this.convertResultFallbackFun = convertResultFallbackFun;
@@ -49,7 +49,7 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
     @Override
     @NotNull
     public final Object getResult(@NotNull final ColumnPageReader columnPageReader)
-        throws IOException {
+            throws IOException {
         if (columnPageReader.getDictionary() == ColumnChunkReader.NULL_DICTIONARY) {
             return ToPage.super.getResult(columnPageReader);
         }
@@ -113,7 +113,7 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
 
             @Override
             public Object getResult(@NotNull final ColumnPageReader columnPageReader)
-                throws IOException {
+                    throws IOException {
                 return ToPageWithDictionary.this.getResult(columnPageReader);
             }
 

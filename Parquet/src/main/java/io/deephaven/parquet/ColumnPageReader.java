@@ -45,8 +45,7 @@ public interface ColumnPageReader extends AutoCloseable {
 
     /**
      * @return Parquet dictionary for this column chunk
-     * @apiNote The result will never be {@code null}. It will instead be
-     *          {@link ColumnChunkReader#NULL_DICTIONARY}.
+     * @apiNote The result will never be {@code null}. It will instead be {@link ColumnChunkReader#NULL_DICTIONARY}.
      */
     @NotNull
     Dictionary getDictionary();

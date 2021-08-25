@@ -34,14 +34,14 @@ public class ParquetFileReader {
     private final MessageType type;
 
     public ParquetFileReader(String filePath, SeekableChannelsProvider channelsProvider,
-        int pageSizeHint) throws IOException {
+            int pageSizeHint) throws IOException {
         this.channelsProvider = channelsProvider;
         this.codecFactory =
-            ThreadLocal.withInitial(() -> new CodecFactory(new Configuration(), pageSizeHint));
+                ThreadLocal.withInitial(() -> new CodecFactory(new Configuration(), pageSizeHint));
         // Root path should be this file if a single file, else the parent directory for a metadata
         // file
         rootPath =
-            filePath.endsWith(".parquet") ? Paths.get(filePath) : Paths.get(filePath).getParent();
+                filePath.endsWith(".parquet") ? Paths.get(filePath) : Paths.get(filePath).getParent();
 
         final byte[] footer;
         try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
@@ -80,8 +80,7 @@ public class ParquetFileReader {
     }
 
     /**
-     * @return The {@link SeekableChannelsProvider} used for this reader, appropriate to use for
-     *         related file acccess
+     * @return The {@link SeekableChannelsProvider} used for this reader, appropriate to use for related file acccess
      */
     public SeekableChannelsProvider getChannelsProvider() {
         return channelsProvider;
@@ -90,8 +89,8 @@ public class ParquetFileReader {
     private Set<String> columnsWithDictionaryUsedOnEveryDataPage = null;
 
     /**
-     * Get the name of all columns that we can know for certain (a) have a dictionary, and (b) use
-     * the dictionary on all data pages.
+     * Get the name of all columns that we can know for certain (a) have a dictionary, and (b) use the dictionary on all
+     * data pages.
      *
      * @return A set of parquet column names that satisfies the required condition.
      */
@@ -99,14 +98,14 @@ public class ParquetFileReader {
     public Set<String> getColumnsWithDictionaryUsedOnEveryDataPage() {
         if (columnsWithDictionaryUsedOnEveryDataPage == null) {
             columnsWithDictionaryUsedOnEveryDataPage =
-                calculateColumnsWithDictionaryUsedOnEveryDataPage();
+                    calculateColumnsWithDictionaryUsedOnEveryDataPage();
         }
         return columnsWithDictionaryUsedOnEveryDataPage;
     }
 
     /**
-     * True only if we are certain every data page in this column chunk uses dictionary encoding;
-     * note false also covers the "we can't tell" case.
+     * True only if we are certain every data page in this column chunk uses dictionary encoding; note false also covers
+     * the "we can't tell" case.
      */
     private boolean columnChunkUsesDictionaryOnEveryPage(final ColumnChunk columnChunk) {
         final ColumnMetaData columnMeta = columnChunk.getMeta_data();
@@ -115,13 +114,13 @@ public class ParquetFileReader {
         }
         for (PageEncodingStats encodingStat : columnMeta.encoding_stats) {
             if (encodingStat.page_type != PageType.DATA_PAGE
-                && encodingStat.page_type != PageType.DATA_PAGE_V2) {
+                    && encodingStat.page_type != PageType.DATA_PAGE_V2) {
                 // skip non-data pages.
                 continue;
             }
             // this is a data page.
             if (encodingStat.encoding != Encoding.PLAIN_DICTIONARY
-                && encodingStat.encoding != Encoding.RLE_DICTIONARY) {
+                    && encodingStat.encoding != Encoding.RLE_DICTIONARY) {
                 return false;
             }
         }
@@ -181,16 +180,16 @@ public class ParquetFileReader {
 
     public RowGroupReader getRowGroup(int groupNumber) {
         return new RowGroupReaderImpl(
-            fileMetaData.getRow_groups().get(groupNumber),
-            channelsProvider,
-            rootPath,
-            codecFactory,
-            type,
-            getSchema());
+                fileMetaData.getRow_groups().get(groupNumber),
+                channelsProvider,
+                rootPath,
+                codecFactory,
+                type,
+                getSchema());
     }
 
     private static MessageType fromParquetSchema(List<SchemaElement> schema,
-        List<ColumnOrder> columnOrders) {
+            List<ColumnOrder> columnOrders) {
         Iterator<SchemaElement> iterator = schema.iterator();
         SchemaElement root = iterator.next();
         Types.MessageTypeBuilder builder = Types.buildMessage();
@@ -202,14 +201,14 @@ public class ParquetFileReader {
     }
 
     private static void buildChildren(Types.GroupBuilder builder, Iterator<SchemaElement> schema,
-        int childrenCount, List<ColumnOrder> columnOrders, int columnCount) {
+            int childrenCount, List<ColumnOrder> columnOrders, int columnCount) {
         for (int i = 0; i < childrenCount; ++i) {
             SchemaElement schemaElement = schema.next();
             Object childBuilder;
             if (schemaElement.type != null) {
                 Types.PrimitiveBuilder primitiveBuilder =
-                    builder.primitive(getPrimitive(schemaElement.type),
-                        fromParquetRepetition(schemaElement.repetition_type));
+                        builder.primitive(getPrimitive(schemaElement.type),
+                                fromParquetRepetition(schemaElement.repetition_type));
                 if (schemaElement.isSetType_length()) {
                     primitiveBuilder.length(schemaElement.type_length);
                 }
@@ -224,11 +223,11 @@ public class ParquetFileReader {
 
                 if (columnOrders != null) {
                     org.apache.parquet.schema.ColumnOrder columnOrder =
-                        fromParquetColumnOrder((ColumnOrder) columnOrders.get(columnCount));
+                            fromParquetColumnOrder((ColumnOrder) columnOrders.get(columnCount));
                     if (columnOrder
-                        .getColumnOrderName() == org.apache.parquet.schema.ColumnOrder.ColumnOrderName.TYPE_DEFINED_ORDER
-                        && (schemaElement.type == org.apache.parquet.format.Type.INT96
-                            || schemaElement.converted_type == ConvertedType.INTERVAL)) {
+                            .getColumnOrderName() == org.apache.parquet.schema.ColumnOrder.ColumnOrderName.TYPE_DEFINED_ORDER
+                            && (schemaElement.type == org.apache.parquet.format.Type.INT96
+                                    || schemaElement.converted_type == ConvertedType.INTERVAL)) {
                         columnOrder = org.apache.parquet.schema.ColumnOrder.undefined();
                     }
 
@@ -239,21 +238,21 @@ public class ParquetFileReader {
             } else {
                 childBuilder = builder.group(fromParquetRepetition(schemaElement.repetition_type));
                 buildChildren((Types.GroupBuilder) childBuilder, schema, schemaElement.num_children,
-                    columnOrders, columnCount);
+                        columnOrders, columnCount);
             }
 
             if (schemaElement.isSetLogicalType()) {
                 ((org.apache.parquet.schema.Types.Builder) childBuilder)
-                    .as(getLogicalTypeAnnotation(schemaElement.logicalType));
+                        .as(getLogicalTypeAnnotation(schemaElement.logicalType));
             }
 
             if (schemaElement.isSetConverted_type()) {
                 LogicalTypeAnnotation originalType =
-                    getLogicalTypeAnnotation(schemaElement.converted_type, schemaElement);
+                        getLogicalTypeAnnotation(schemaElement.converted_type, schemaElement);
                 LogicalTypeAnnotation newOriginalType = schemaElement.isSetLogicalType()
-                    && getLogicalTypeAnnotation(schemaElement.logicalType) != null
-                        ? getLogicalTypeAnnotation(schemaElement.logicalType)
-                        : null;
+                        && getLogicalTypeAnnotation(schemaElement.logicalType) != null
+                                ? getLogicalTypeAnnotation(schemaElement.logicalType)
+                                : null;
                 if (!originalType.equals(newOriginalType)) {
                     ((org.apache.parquet.schema.Types.Builder) childBuilder).as(originalType);
                 }
@@ -270,7 +269,7 @@ public class ParquetFileReader {
     }
 
     private static org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit convertTimeUnit(
-        TimeUnit unit) {
+            TimeUnit unit) {
         switch (unit.getSetField()) {
             case MICROS:
                 return org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit.MICROS;
@@ -302,7 +301,7 @@ public class ParquetFileReader {
             case TIME:
                 TimeType time = type.getTIME();
                 return LogicalTypeAnnotation.timeType(time.isAdjustedToUTC,
-                    convertTimeUnit(time.unit));
+                        convertTimeUnit(time.unit));
             case STRING:
                 return LogicalTypeAnnotation.stringType();
             case DECIMAL:
@@ -316,7 +315,7 @@ public class ParquetFileReader {
             case TIMESTAMP:
                 TimestampType timestamp = type.getTIMESTAMP();
                 return LogicalTypeAnnotation.timestampType(timestamp.isAdjustedToUTC,
-                    convertTimeUnit(timestamp.unit));
+                        convertTimeUnit(timestamp.unit));
             default:
                 throw new RuntimeException("Unknown logical type " + type);
         }
@@ -324,7 +323,7 @@ public class ParquetFileReader {
 
 
     private static org.apache.parquet.schema.Type.Repetition fromParquetRepetition(
-        FieldRepetitionType repetition) {
+            FieldRepetitionType repetition) {
         return org.apache.parquet.schema.Type.Repetition.valueOf(repetition.name());
     }
 
@@ -352,7 +351,7 @@ public class ParquetFileReader {
     }
 
     private static org.apache.parquet.schema.ColumnOrder fromParquetColumnOrder(
-        ColumnOrder columnOrder) {
+            ColumnOrder columnOrder) {
         if (columnOrder.isSetTYPE_ORDER()) {
             return org.apache.parquet.schema.ColumnOrder.typeDefined();
         }
@@ -361,7 +360,7 @@ public class ParquetFileReader {
     }
 
     private static LogicalTypeAnnotation getLogicalTypeAnnotation(ConvertedType type,
-        SchemaElement schemaElement) {
+            SchemaElement schemaElement) {
         switch (type) {
             case UTF8:
                 return LogicalTypeAnnotation.stringType();
@@ -381,16 +380,16 @@ public class ParquetFileReader {
                 return LogicalTypeAnnotation.dateType();
             case TIME_MILLIS:
                 return LogicalTypeAnnotation.timeType(true,
-                    org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit.MILLIS);
+                        org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit.MILLIS);
             case TIME_MICROS:
                 return LogicalTypeAnnotation.timeType(true,
-                    org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit.MICROS);
+                        org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit.MICROS);
             case TIMESTAMP_MILLIS:
                 return LogicalTypeAnnotation.timestampType(true,
-                    org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit.MILLIS);
+                        org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit.MILLIS);
             case TIMESTAMP_MICROS:
                 return LogicalTypeAnnotation.timestampType(true,
-                    org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit.MICROS);
+                        org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit.MICROS);
             case INTERVAL:
                 return LogicalTypeAnnotation.IntervalLogicalTypeAnnotation.getInstance();
             case INT_8:
@@ -415,7 +414,7 @@ public class ParquetFileReader {
                 return LogicalTypeAnnotation.bsonType();
             default:
                 throw new RuntimeException(
-                    "Can't convert converted type to logical type, unknown converted type " + type);
+                        "Can't convert converted type to logical type, unknown converted type " + type);
         }
     }
 

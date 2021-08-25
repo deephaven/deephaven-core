@@ -29,9 +29,9 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
     private volatile WeakReference<PageCache.IntrusivePage<ATTR>>[] pages;
 
     VariablePageSizeColumnChunkPageStore(@NotNull final PageCache<ATTR> pageCache,
-                                         @NotNull final ColumnChunkReader columnChunkReader,
-                                         final long mask,
-                                         @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
+            @NotNull final ColumnChunkReader columnChunkReader,
+            final long mask,
+            @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
         super(pageCache, columnChunkReader, mask, toPage);
 
         final int INIT_ARRAY_SIZE = 15;
@@ -52,8 +52,8 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
             // Make sure that no one has has already extended to this page yet.
             if (localNumPages == prevNumPages) {
                 Assert.assertion(columnPageReaderIterator.hasNext(),
-                    "columnPageReaderIterator.hasNext()",
-                    "Parquet num rows and page iterator don't match, not enough pages.");
+                        "columnPageReaderIterator.hasNext()",
+                        "Parquet num rows and page iterator don't match, not enough pages.");
 
                 if (columnPageReaders.length == localNumPages) {
                     int newSize = 2 * localNumPages;
@@ -116,7 +116,7 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
                 if (page == null) {
                     try {
                         page = new PageCache.IntrusivePage<>(
-                            toPage(pageRowOffsets[pageNum], columnPageReaders[pageNum]));
+                                toPage(pageRowOffsets[pageNum], columnPageReaders[pageNum]));
                     } catch (IOException except) {
                         throw new UncheckedIOException(except);
                     }

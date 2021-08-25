@@ -13,21 +13,21 @@ public class ToStringPage<ATTR extends Any> implements ToPage<ATTR, String[]> {
     static final ToStringPage<? extends Any> INSTANCE = new ToStringPage<>();
 
     public static <ATTR extends Any> ToPage<ATTR, String[]> create(
-        final Class<?> nativeType,
-        final Supplier<Dictionary> dictionarySupplier) {
+            final Class<?> nativeType,
+            final Supplier<Dictionary> dictionarySupplier) {
         if (nativeType == null || String.class.equals(nativeType)) {
             // noinspection unchecked
             return dictionarySupplier == null ? (ToPage<ATTR, String[]>) INSTANCE
-                : new ToPageWithDictionary<>(
-                    String.class,
-                    new ChunkDictionary<>(
-                        (dictionary, key) -> dictionary.decodeToBinary(key).toStringUsingUTF8(),
-                        dictionarySupplier),
-                    INSTANCE::convertResult);
+                    : new ToPageWithDictionary<>(
+                            String.class,
+                            new ChunkDictionary<>(
+                                    (dictionary, key) -> dictionary.decodeToBinary(key).toStringUsingUTF8(),
+                                    dictionarySupplier),
+                            INSTANCE::convertResult);
         }
 
         throw new IllegalArgumentException(
-            "The native type for a String column is " + nativeType.getCanonicalName());
+                "The native type for a String column is " + nativeType.getCanonicalName());
     }
 
     private ToStringPage() {}

@@ -41,7 +41,7 @@ public class PageCache<ATTR extends Any> extends IntrusiveSoftLRU<PageCache.Intr
     }
 
     public <ATTR2 extends Any> PageCache<ATTR2> castAttr() {
-        //noinspection unchecked
+        // noinspection unchecked
         return (PageCache<ATTR2>) this;
     }
 

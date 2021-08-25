@@ -20,7 +20,7 @@ import java.io.UncheckedIOException;
 import java.util.function.Supplier;
 
 public abstract class ColumnChunkPageStore<ATTR extends Any>
-    implements PageStore<ATTR, ATTR, ChunkPage<ATTR>>, Page<ATTR>, SafeCloseable, Releasable {
+        implements PageStore<ATTR, ATTR, ChunkPage<ATTR>>, Page<ATTR>, SafeCloseable, Releasable {
 
     protected final PageCache<ATTR> pageCache;
     private final ColumnChunkReader columnChunkReader;
@@ -37,8 +37,8 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         public final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore;
 
         private CreatorResult(@NotNull final ColumnChunkPageStore<ATTR> pageStore,
-            final Supplier<Chunk<ATTR>> dictionaryChunkSupplier,
-            final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore) {
+                final Supplier<Chunk<ATTR>> dictionaryChunkSupplier,
+                final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore) {
             this.pageStore = pageStore;
             this.dictionaryChunkSupplier = dictionaryChunkSupplier;
             this.dictionaryKeysPageStore = dictionaryKeysPageStore;
@@ -55,22 +55,23 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
                 ? new FixedPageSizeColumnChunkPageStore<>(pageCache, columnChunkReader, mask, toPage)
                 : new VariablePageSizeColumnChunkPageStore<>(pageCache, columnChunkReader, mask, toPage);
         final ToPage<DictionaryKeys, long[]> dictionaryKeysToPage =
-            toPage.getDictionaryKeysToPage();
+                toPage.getDictionaryKeysToPage();
         final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysColumnChunkPageStore =
                 dictionaryKeysToPage == null ? null
-                : fixedSizePages
-                    ? new FixedPageSizeColumnChunkPageStore<>(pageCache.castAttr(), columnChunkReader, mask,
-                        dictionaryKeysToPage)
-                    : new VariablePageSizeColumnChunkPageStore<>(pageCache.castAttr(), columnChunkReader, mask,
-                        dictionaryKeysToPage);
+                        : fixedSizePages
+                                ? new FixedPageSizeColumnChunkPageStore<>(pageCache.castAttr(), columnChunkReader, mask,
+                                        dictionaryKeysToPage)
+                                : new VariablePageSizeColumnChunkPageStore<>(pageCache.castAttr(), columnChunkReader,
+                                        mask,
+                                        dictionaryKeysToPage);
         return new CreatorResult<>(columnChunkPageStore, toPage::getDictionaryChunk,
-            dictionaryKeysColumnChunkPageStore);
+                dictionaryKeysColumnChunkPageStore);
     }
 
     ColumnChunkPageStore(@NotNull final PageCache<ATTR> pageCache,
-                         @NotNull final ColumnChunkReader columnChunkReader,
-                         final long mask,
-                         final ToPage<ATTR, ?> toPage) throws IOException {
+            @NotNull final ColumnChunkReader columnChunkReader,
+            final long mask,
+            final ToPage<ATTR, ?> toPage) throws IOException {
         Require.requirement(((mask + 1) & mask) == 0, "mask is one less than a power of two");
 
         this.pageCache = pageCache;
@@ -83,7 +84,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     }
 
     ChunkPage<ATTR> toPage(final long offset, @NotNull final ColumnPageReader columnPageReader)
-        throws IOException {
+            throws IOException {
         return toPage.toPage(offset, columnPageReader, mask);
     }
 
@@ -108,8 +109,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     }
 
     /**
-     * These implementations don't use the FillContext parameter, so we're create a helper method to
-     * ignore it.
+     * These implementations don't use the FillContext parameter, so we're create a helper method to ignore it.
      */
     @NotNull
     public ChunkPage<ATTR> getPageContaining(final long row) {

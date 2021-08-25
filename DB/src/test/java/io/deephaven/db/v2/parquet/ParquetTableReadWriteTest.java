@@ -87,7 +87,7 @@ public class ParquetTableReadWriteTest {
         result = result.select(result.getDefinition().getColumnNames().stream()
                 .map(name -> name.equals("groupKey") ? name
                         : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subArray(0,0):" + name
-                        + ")"))
+                                + ")"))
                 .toArray(String[]::new));
         return result;
     }
@@ -109,7 +109,7 @@ public class ParquetTableReadWriteTest {
         result = result.select(result.getDefinition().getColumnNames().stream()
                 .map(name -> name.equals("groupKey") ? name
                         : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subArray(0,0):" + name
-                        + ")"))
+                                + ")"))
                 .toArray(String[]::new));
         result = result.update(
                 "someStringSet = (StringSet)new StringSetArrayWrapper( ((Object)nonNullString) == null?new String[0]:(String[])nonNullString.toArray())");
@@ -208,7 +208,7 @@ public class ParquetTableReadWriteTest {
         final Table testTable =
                 ((QueryTable) TableTools.emptyTable(10).select("someInt = i", "someString  = `foo`")
                         .where("i % 2 == 0").by("someString").ungroup("someInt"))
-                        .withDefinitionUnsafe(definition);
+                                .withDefinitionUnsafe(definition);
         final File dest = new File(rootFile, "ParquetTest_groupByString_test.parquet");
         ParquetTools.writeTable(testTable, dest);
         final Table fromDisk = ParquetTools.readTable(dest);

@@ -15,14 +15,14 @@ import java.util.function.Supplier;
  * Chunk-backed dictionary for use by {@link ToPage} implementations.
  */
 public class ChunkDictionary<T, ATTR extends Attributes.Any>
-    implements StringSetImpl.ReversibleLookup<T> {
+        implements StringSetImpl.ReversibleLookup<T> {
 
     @FunctionalInterface
     public interface Lookup<T> {
 
         /**
-         * Apply whatever lookup logic needs to be applied to a "raw" {@link Dictionary} in order to
-         * get a value for the supplied {@code key}.
+         * Apply whatever lookup logic needs to be applied to a "raw" {@link Dictionary} in order to get a value for the
+         * supplied {@code key}.
          *
          * @param dictionary The {@link Dictionary}
          * @param key The key
@@ -38,15 +38,14 @@ public class ChunkDictionary<T, ATTR extends Attributes.Any>
     private final Supplier<TObjectIntMap<T>> reverseMapSupplier;
 
     /**
-     * Construct a ChunkDictionary with the supplied {@link Lookup} function and {@link Dictionary}
-     * supplier
+     * Construct a ChunkDictionary with the supplied {@link Lookup} function and {@link Dictionary} supplier
      *
      * @param lookup Value {@link Lookup} function
      * @param dictionarySupplier {@link Dictionary} supplier
      */
     ChunkDictionary(
-        @NotNull final Lookup<T> lookup,
-        @NotNull final Supplier<Dictionary> dictionarySupplier) {
+            @NotNull final Lookup<T> lookup,
+            @NotNull final Supplier<Dictionary> dictionarySupplier) {
         this.lookup = lookup;
         this.dictionarySupplier = dictionarySupplier;
         this.valuesSupplier = new LazyCachingSupplier<>(() -> {
