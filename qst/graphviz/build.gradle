@@ -1,6 +1,5 @@
 plugins {
     id 'java'
-    id 'com.diffplug.spotless'
     id 'application'
 }
 
@@ -22,12 +21,6 @@ dependencies {
 
 test {
     useJUnitPlatform()
-}
-
-spotless {
-    java {
-        eclipse().configFile("${rootDir}/style/eclipse-java-google-style.xml")
-    }
 }
 
 application {
