@@ -168,7 +168,7 @@ public abstract class BiDiStream<Req, Resp> {
                 });
                 pending.length = 0;
             } else {
-                //TODO handle failure of this call
+                //TODO #730 handle failure of this call
                 nextWrapper.nextStreamMessage(payload, makeHeaders(), (failure, success) -> {});
             }
         }
@@ -196,7 +196,7 @@ public abstract class BiDiStream<Req, Resp> {
 
             BrowserHeaders nextHeaders = makeHeaders();
             nextHeaders.set("x-deephaven-stream-halfclose", "1");
-            //TODO handle failure of this call
+            //TODO #730 handle failure of this call
             nextWrapper.nextStreamMessage(Js.uncheckedCast(new Ticket()), nextHeaders, (failure, success) -> {});
         }
 

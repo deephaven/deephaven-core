@@ -258,7 +258,10 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     private CompletionParser ensureParserForSession(SessionState session) {
         return parsers.computeIfAbsent(session, s -> {
             CompletionParser parser = new CompletionParser();
-            s.addOnCloseCallback(parser);
+            s.addOnCloseCallback(() -> {
+                parsers.remove(s);
+                parser.close();
+            });
             return parser;
         });
     }

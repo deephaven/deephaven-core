@@ -458,7 +458,7 @@ public class WorkerConnection {
         onOpen.clear();
     }
 
-    //TODO fold this into the auth reconnect and "my stream puked" check"
+    //TODO #730 fold this into the auth reconnect and "my stream puked" check"
 //    @Override
 //    public void ping(final String lastKnownSessionToken) {
 //        // note that lastKnownSessionToken may be null when client manually tries to ping
@@ -1077,7 +1077,6 @@ public class WorkerConnection {
                 subscriptionReq.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(subscriptionReq));
 
                 FlightData request = new FlightData();
-                //TODO make sure we can set true on halfClose before commit
                 request.setAppMetadata(BarrageUtils.barrageMessage(subscriptionReq, BarrageMessageType.BarrageSubscriptionRequest, new Uint8Array(0), 0, false));
 
                 BiDiStream<FlightData, FlightData> stream = this.<FlightData, FlightData>streamFactory().create(
