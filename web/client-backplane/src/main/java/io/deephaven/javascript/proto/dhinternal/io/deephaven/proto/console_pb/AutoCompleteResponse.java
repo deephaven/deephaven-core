@@ -211,6 +211,12 @@ public class AutoCompleteResponse {
       JsArray<AutoCompleteResponse.ToObjectReturnType.CompletionItemsFieldType.ItemsListFieldType>
           getItemsList();
 
+      @JsProperty
+      double getRequestId();
+
+      @JsProperty
+      boolean isSuccess();
+
       @JsOverlay
       default void setItemsList(
           AutoCompleteResponse.ToObjectReturnType.CompletionItemsFieldType.ItemsListFieldType[]
@@ -229,6 +235,12 @@ public class AutoCompleteResponse {
                   AutoCompleteResponse.ToObjectReturnType.CompletionItemsFieldType
                       .ItemsListFieldType>
               itemsList);
+
+      @JsProperty
+      void setRequestId(double requestId);
+
+      @JsProperty
+      void setSuccess(boolean success);
     }
 
     @JsOverlay
@@ -441,6 +453,12 @@ public class AutoCompleteResponse {
       JsArray<AutoCompleteResponse.ToObjectReturnType0.CompletionItemsFieldType.ItemsListFieldType>
           getItemsList();
 
+      @JsProperty
+      double getRequestId();
+
+      @JsProperty
+      boolean isSuccess();
+
       @JsOverlay
       default void setItemsList(
           AutoCompleteResponse.ToObjectReturnType0.CompletionItemsFieldType.ItemsListFieldType[]
@@ -459,6 +477,12 @@ public class AutoCompleteResponse {
                   AutoCompleteResponse.ToObjectReturnType0.CompletionItemsFieldType
                       .ItemsListFieldType>
               itemsList);
+
+      @JsProperty
+      void setRequestId(double requestId);
+
+      @JsProperty
+      void setSuccess(boolean success);
     }
 
     @JsOverlay

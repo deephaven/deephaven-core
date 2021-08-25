@@ -227,6 +227,9 @@ public class AutoCompleteRequest {
       Object getPosition();
 
       @JsProperty
+      double getRequestId();
+
+      @JsProperty
       Object getTextDocument();
 
       @JsProperty
@@ -239,6 +242,9 @@ public class AutoCompleteRequest {
 
       @JsProperty
       void setPosition(Object position);
+
+      @JsProperty
+      void setRequestId(double requestId);
 
       @JsProperty
       void setTextDocument(Object textDocument);
@@ -618,6 +624,9 @@ public class AutoCompleteRequest {
       Object getPosition();
 
       @JsProperty
+      double getRequestId();
+
+      @JsProperty
       Object getTextDocument();
 
       @JsProperty
@@ -630,6 +639,9 @@ public class AutoCompleteRequest {
 
       @JsProperty
       void setPosition(Object position);
+
+      @JsProperty
+      void setRequestId(double requestId);
 
       @JsProperty
       void setTextDocument(Object textDocument);
@@ -822,7 +834,7 @@ public class AutoCompleteRequest {
 
   public native OpenDocumentRequest getOpenDocument();
 
-  public native void getRequestCase();
+  public native int getRequestCase();
 
   public native boolean hasChangeDocument();
 

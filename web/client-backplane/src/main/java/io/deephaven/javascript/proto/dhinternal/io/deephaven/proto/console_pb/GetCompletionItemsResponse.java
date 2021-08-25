@@ -204,6 +204,12 @@ public class GetCompletionItemsResponse {
     @JsProperty
     JsArray<GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType> getItemsList();
 
+    @JsProperty
+    double getRequestId();
+
+    @JsProperty
+    boolean isSuccess();
+
     @JsOverlay
     default void setItemsList(
         GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType[] itemsList) {
@@ -216,6 +222,12 @@ public class GetCompletionItemsResponse {
     @JsProperty
     void setItemsList(
         JsArray<GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType> itemsList);
+
+    @JsProperty
+    void setRequestId(double requestId);
+
+    @JsProperty
+    void setSuccess(boolean success);
   }
 
   @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -408,6 +420,12 @@ public class GetCompletionItemsResponse {
     @JsProperty
     JsArray<GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType> getItemsList();
 
+    @JsProperty
+    double getRequestId();
+
+    @JsProperty
+    boolean isSuccess();
+
     @JsOverlay
     default void setItemsList(
         GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType[] itemsList) {
@@ -420,6 +438,12 @@ public class GetCompletionItemsResponse {
     @JsProperty
     void setItemsList(
         JsArray<GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType> itemsList);
+
+    @JsProperty
+    void setRequestId(double requestId);
+
+    @JsProperty
+    void setSuccess(boolean success);
   }
 
   public static native GetCompletionItemsResponse deserializeBinary(Uint8Array bytes);
@@ -443,6 +467,10 @@ public class GetCompletionItemsResponse {
 
   public native JsArray<CompletionItem> getItemsList();
 
+  public native int getRequestId();
+
+  public native boolean getSuccess();
+
   public native Uint8Array serializeBinary();
 
   @JsOverlay
@@ -451,6 +479,10 @@ public class GetCompletionItemsResponse {
   }
 
   public native void setItemsList(JsArray<CompletionItem> value);
+
+  public native void setRequestId(int value);
+
+  public native void setSuccess(boolean value);
 
   public native GetCompletionItemsResponse.ToObjectReturnType0 toObject();
 
