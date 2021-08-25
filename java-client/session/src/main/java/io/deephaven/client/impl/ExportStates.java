@@ -1,5 +1,6 @@
 package io.deephaven.client.impl;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.deephaven.client.impl.ExportRequest.Listener;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
@@ -40,6 +41,15 @@ final class ExportStates {
 
     ExportStates(SessionImpl session, SessionServiceStub sessionStub, TableServiceStub tableStub) {
         this.session = Objects.requireNonNull(session);
+        this.sessionStub = Objects.requireNonNull(sessionStub);
+        this.tableStub = Objects.requireNonNull(tableStub);
+        this.exports = new HashMap<>();
+        this.nextTicket = 1;
+    }
+
+    @VisibleForTesting
+    ExportStates(SessionServiceStub sessionStub, TableServiceStub tableStub) {
+        this.session = null;
         this.sessionStub = Objects.requireNonNull(sessionStub);
         this.tableStub = Objects.requireNonNull(tableStub);
         this.exports = new HashMap<>();
