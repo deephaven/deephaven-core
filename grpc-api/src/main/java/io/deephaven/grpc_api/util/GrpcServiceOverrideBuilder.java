@@ -252,12 +252,11 @@ public class GrpcServiceOverrideBuilder {
 
         public void invokeNext(ReqT request, StreamObserver<NextRespT> responseObserver) {
             StreamData streamData = StreamData.STREAM_DATA_KEY.get();
+            if (streamData == null || streamData.getRpcTicket() == null) {
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "no x-deephaven-stream headers, cannot handle next request");
+            }
             GrpcUtil.rpcWrapper(log, responseObserver, () -> {
                 final SessionState session = sessionService.getCurrentSession();
-
-                if (streamData == null) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "no x-deephaven-stream headers, cannot handle open request");
-                }
 
                 final SessionState.ExportObject<BrowserStream<ReqT>> browserStream =
                         session.getExport(streamData.getRpcTicket());

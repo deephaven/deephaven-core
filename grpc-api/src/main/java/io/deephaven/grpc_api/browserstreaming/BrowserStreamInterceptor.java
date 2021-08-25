@@ -16,11 +16,13 @@ import javax.inject.Singleton;
  */
 @Singleton
 public class BrowserStreamInterceptor implements ServerInterceptor {
-    // Browsers evidently cannot interact with binary h2 headers, so all of these are ascii
+    private static final String TICKET_HEADER_NAME = "x-deephaven-stream-ticket";
+    private static final String SEQUENCE_HEADER_NAME = "x-deephaven-stream-sequence";
+
     /** Export ticket int value. */
-    private static final Metadata.Key<String> RPC_TICKET = Metadata.Key.of("x-deephaven-stream-ticket", Metadata.ASCII_STRING_MARSHALLER);
+    private static final Metadata.Key<String> RPC_TICKET = Metadata.Key.of(TICKET_HEADER_NAME, Metadata.ASCII_STRING_MARSHALLER);
     /** Payload sequence in the stream, starting with zero. */
-    private static final Metadata.Key<String> SEQ_HEADER = Metadata.Key.of("x-deephaven-stream-sequence", Metadata.ASCII_STRING_MARSHALLER);
+    private static final Metadata.Key<String> SEQ_HEADER = Metadata.Key.of(SEQUENCE_HEADER_NAME, Metadata.ASCII_STRING_MARSHALLER);
     /**
      * Present to indicate that this is a half-close operation. If this is the first payload,
      * ticket and sequence are not required, and the payload will be considered. Otherwise,
@@ -37,14 +39,17 @@ public class BrowserStreamInterceptor implements ServerInterceptor {
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
 
         String ticketInt = headers.get(RPC_TICKET);
+        String sequenceString = headers.get(SEQ_HEADER);
+        boolean hasTicket = ticketInt != null;
+        boolean hasSeqString = sequenceString != null;
+        if (hasTicket != hasSeqString) {
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Either both " + TICKET_HEADER_NAME + " and " + SEQUENCE_HEADER_NAME + " must be provided, or neither");
+        }
+
         boolean hasHalfClose = headers.containsKey(HALF_CLOSE_HEADER);
         if (ticketInt != null) {
             // ticket was provided, sequence is assumed to be provided as well, otherwise that is an error
             final Ticket rpcTicket = ExportTicketHelper.exportIdToTicket(Integer.parseInt(ticketInt));
-            String sequenceString = headers.get(SEQ_HEADER);
-            if (sequenceString == null) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Cannot set x-deephaven-stream-ticket without also setting x-deephaven-stream-sequence");
-            }
             StreamData data = new StreamData(rpcTicket, Integer.parseInt(sequenceString), hasHalfClose);
             Context ctx = Context.current().withValue(StreamData.STREAM_DATA_KEY, data);
             return Contexts.interceptCall(ctx, call, headers, next);
