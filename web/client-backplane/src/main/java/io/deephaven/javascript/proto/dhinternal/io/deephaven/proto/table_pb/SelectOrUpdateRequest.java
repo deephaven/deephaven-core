@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.SelectOrUpdateRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.SelectOrUpdateRequest",
+        namespace = JsPackage.GLOBAL)
 public class SelectOrUpdateRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -23,7 +23,7 @@ public class SelectOrUpdateRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static SelectOrUpdateRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -58,20 +58,20 @@ public class SelectOrUpdateRequest {
 
             @JsProperty
             void setTicket(
-                SelectOrUpdateRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    SelectOrUpdateRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<SelectOrUpdateRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<SelectOrUpdateRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<SelectOrUpdateRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<SelectOrUpdateRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -132,7 +132,7 @@ public class SelectOrUpdateRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static SelectOrUpdateRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -167,20 +167,20 @@ public class SelectOrUpdateRequest {
 
             @JsProperty
             void setTicket(
-                SelectOrUpdateRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    SelectOrUpdateRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<SelectOrUpdateRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<SelectOrUpdateRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<SelectOrUpdateRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<SelectOrUpdateRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -236,12 +236,12 @@ public class SelectOrUpdateRequest {
     public static native SelectOrUpdateRequest deserializeBinary(Uint8Array bytes);
 
     public static native SelectOrUpdateRequest deserializeBinaryFromReader(
-        SelectOrUpdateRequest message, Object reader);
+            SelectOrUpdateRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(SelectOrUpdateRequest message, Object writer);
 
     public static native SelectOrUpdateRequest.ToObjectReturnType toObject(
-        boolean includeInstance, SelectOrUpdateRequest msg);
+            boolean includeInstance, SelectOrUpdateRequest msg);
 
     public native String addColumnSpecs(String value, double index);
 

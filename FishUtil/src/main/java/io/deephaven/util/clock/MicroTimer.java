@@ -9,8 +9,7 @@ import io.deephaven.io.logger.LoggerTimeSource;
 
 public class MicroTimer {
 
-    private static final boolean isNative =
-        Configuration.getInstance().getBoolean("NIO.wireLagClock.native");
+    private static final boolean isNative = Configuration.getInstance().getBoolean("NIO.wireLagClock.native");
 
     private static long nanoTimeOffset = System.currentTimeMillis() * 1000000 - System.nanoTime();
 
@@ -66,10 +65,8 @@ public class MicroTimer {
             rdtscNative();
         }
 
-        System.out
-            .println("-----------------------------------------------------------------------");
-        System.out
-            .println("rdtscNative: " + (System.nanoTime() - startNanos) / COUNT + " nanos per");
+        System.out.println("-----------------------------------------------------------------------");
+        System.out.println("rdtscNative: " + (System.nanoTime() - startNanos) / COUNT + " nanos per");
         System.out.println("rdtscNative: " + (rdtscNative() - cycles) / COUNT + " cycles per");
 
         startNanos = System.nanoTime();
@@ -79,12 +76,9 @@ public class MicroTimer {
             currentTimeMicrosNative();
         }
 
-        System.out
-            .println("-----------------------------------------------------------------------");
-        System.out.println(
-            "currentTimeMicrosNative: " + (System.nanoTime() - startNanos) / COUNT + " nanos per");
-        System.out.println(
-            "currentTimeMicrosNative: " + (rdtscNative() - cycles) / COUNT + " cycles per");
+        System.out.println("-----------------------------------------------------------------------");
+        System.out.println("currentTimeMicrosNative: " + (System.nanoTime() - startNanos) / COUNT + " nanos per");
+        System.out.println("currentTimeMicrosNative: " + (rdtscNative() - cycles) / COUNT + " cycles per");
 
         startNanos = System.nanoTime();
         cycles = rdtscNative();
@@ -93,10 +87,8 @@ public class MicroTimer {
             System.nanoTime();
         }
 
-        System.out
-            .println("-----------------------------------------------------------------------");
-        System.out
-            .println("System.nanoTime: " + (System.nanoTime() - startNanos) / COUNT + " nanos per");
+        System.out.println("-----------------------------------------------------------------------");
+        System.out.println("System.nanoTime: " + (System.nanoTime() - startNanos) / COUNT + " nanos per");
         System.out.println("System.nanoTime: " + (rdtscNative() - cycles) / COUNT + " cycles per");
 
         startNanos = System.nanoTime();
@@ -106,11 +98,8 @@ public class MicroTimer {
             System.currentTimeMillis();
         }
 
-        System.out
-            .println("-----------------------------------------------------------------------");
-        System.out.println(
-            "System.currentTimeMillis: " + (System.nanoTime() - startNanos) / COUNT + " nanos per");
-        System.out.println(
-            "System.currentTimeMillis: " + (rdtscNative() - cycles) / COUNT + " cycles per");
+        System.out.println("-----------------------------------------------------------------------");
+        System.out.println("System.currentTimeMillis: " + (System.nanoTime() - startNanos) / COUNT + " nanos per");
+        System.out.println("System.currentTimeMillis: " + (rdtscNative() - cycles) / COUNT + " cycles per");
     }
 }

@@ -8,9 +8,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.session_pb_service.SessionService",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.session_pb_service.SessionService",
+        namespace = JsPackage.GLOBAL)
 public class SessionService {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface CloseSessionType {

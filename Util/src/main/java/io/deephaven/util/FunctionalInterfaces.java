@@ -14,8 +14,7 @@ public class FunctionalInterfaces {
     }
 
     /**
-     * Represents an operation that accepts a single input argument and returns no result, throwing
-     * an exception.
+     * Represents an operation that accepts a single input argument and returns no result, throwing an exception.
      *
      * @param <T> the type of the input to the operation
      * @param <ExceptionType> the type of the exception that can be thrown
@@ -37,8 +36,7 @@ public class FunctionalInterfaces {
     }
 
     /**
-     * Represents an operation that accepts no input and returns a boolean result, throwing an
-     * exception.
+     * Represents an operation that accepts no input and returns a boolean result, throwing an exception.
      *
      * @param <ExceptionType> the type of the exception that can be thrown
      */

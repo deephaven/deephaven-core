@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.grpcWeb.client.RpcOptions",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.grpcWeb.client.RpcOptions",
+        namespace = JsPackage.GLOBAL)
 public interface RpcOptions {
     @JsOverlay
     static RpcOptions create() {

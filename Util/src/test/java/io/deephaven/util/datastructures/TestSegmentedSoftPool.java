@@ -33,10 +33,10 @@ public class TestSegmentedSoftPool {
 
         IntStream.range(0, 100).boxed().forEach(pool::give);
         IntStream.range(0, 100).boxed().sorted(Comparator.reverseOrder())
-            .forEach(II -> TestCase.assertEquals(II, pool.take()));
+                .forEach(II -> TestCase.assertEquals(II, pool.take()));
         IntStream.range(100, 400).boxed().forEach(pool::give);
         IntStream.range(100, 400).boxed().sorted(Comparator.reverseOrder())
-            .forEach(II -> TestCase.assertEquals(II, pool.take()));
+                .forEach(II -> TestCase.assertEquals(II, pool.take()));
     }
 
     @Test
@@ -46,18 +46,18 @@ public class TestSegmentedSoftPool {
         final MutableInt sumCleared = new MutableInt(0);
 
         final SegmentedSoftPool<Integer> pool = new SegmentedSoftPool<>(10,
-            () -> {
-                counter.increment();
-                sumAllocated.add(counter);
-                return counter.toInteger();
-            },
-            sumCleared::add);
+                () -> {
+                    counter.increment();
+                    sumAllocated.add(counter);
+                    return counter.toInteger();
+                },
+                sumCleared::add);
 
         IntStream.range(0, 10).boxed().forEach(
-            II -> {
-                TestCase.assertEquals((Integer) 0, pool.take());
-                pool.give(0);
-            });
+                II -> {
+                    TestCase.assertEquals((Integer) 0, pool.take());
+                    pool.give(0);
+                });
 
         IntStream.range(0, 1000).boxed().forEach(II -> TestCase.assertEquals(II, pool.take()));
         IntStream.range(0, 1000).boxed().forEach(pool::give);
@@ -108,11 +108,11 @@ public class TestSegmentedSoftPool {
     public void testForGC() {
         // noinspection ConstantConditions
         Assume.assumeTrue(
-            "Skipping testForGC, as it is very long under most conditions, requires specific JVM parameters, and isn't really a unit test",
-            false);
+                "Skipping testForGC, as it is very long under most conditions, requires specific JVM parameters, and isn't really a unit test",
+                false);
 
-        // With the following settings, cleanup should begin in 30 seconds and converge on 72 items
-        // remaining: -Xmx4g -XX:SoftRefLRUPolicyMSPerMB=10
+        // With the following settings, cleanup should begin in 30 seconds and converge on 72 items remaining: -Xmx4g
+        // -XX:SoftRefLRUPolicyMSPerMB=10
 
         final long nanosStart = System.nanoTime();
         final SegmentedSoftPool<TestObject> pool = new SegmentedSoftPool<>(8, null, null);
@@ -127,10 +127,9 @@ public class TestSegmentedSoftPool {
 
         final TestObject[] inUse = new TestObject[65];
         long nanosLastCleanup = 0;
-        while (OUTSTANDING_INSTANCES.cardinality() != 72
-            || System.nanoTime() - nanosLastCleanup < 10_000_000_000L) {
-            // Try to simulate some usage of the pool - we want soft refs that have been followed
-            // more recently than others.
+        while (OUTSTANDING_INSTANCES.cardinality() != 72 || System.nanoTime() - nanosLastCleanup < 10_000_000_000L) {
+            // Try to simulate some usage of the pool - we want soft refs that have been followed more recently than
+            // others.
             int lengthTaken = 0;
             for (; lengthTaken < inUse.length; ++lengthTaken) {
                 try {
@@ -141,8 +140,8 @@ public class TestSegmentedSoftPool {
             }
             // Pause here to verify pool structure with items taken
             if (lengthTaken != inUse.length) {
-                throw new IllegalStateException("Pool has been cleaned up more than expected, took "
-                    + lengthTaken + " out of " + inUse.length);
+                throw new IllegalStateException(
+                        "Pool has been cleaned up more than expected, took " + lengthTaken + " out of " + inUse.length);
             }
             for (int oi = 0; oi < lengthTaken; ++oi) {
                 pool.give(inUse[oi]);
@@ -161,9 +160,8 @@ public class TestSegmentedSoftPool {
                 synchronized (OUTSTANDING_INSTANCES) {
                     final long elapsedSeconds = (nanosLastCleanup - nanosStart) / 1_000_000_000L;
                     System.err.println("elapsedSeconds=" + elapsedSeconds + ", firstRemaining="
-                        + OUTSTANDING_INSTANCES.nextSetBit(0) + ", remaining="
-                        + OUTSTANDING_INSTANCES.cardinality() + ", allocated="
-                        + OUTSTANDING_INSTANCES.length());
+                            + OUTSTANDING_INSTANCES.nextSetBit(0) + ", remaining=" + OUTSTANDING_INSTANCES.cardinality()
+                            + ", allocated=" + OUTSTANDING_INSTANCES.length());
                 }
             }
         }

@@ -12,9 +12,9 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.barrage.flatbuf.Barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.barrage.flatbuf.Barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper",
+        namespace = JsPackage.GLOBAL)
 public class BarrageMessageWrapper {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface CreateMsgPayloadVectorDataUnionType {
@@ -93,7 +93,7 @@ public class BarrageMessageWrapper {
     }
 
     public static native void addHalfCloseAfterMessage(
-        Builder builder, boolean halfCloseAfterMessage);
+            Builder builder, boolean halfCloseAfterMessage);
 
     public static native void addMagic(Builder builder, double magic);
 
@@ -106,40 +106,37 @@ public class BarrageMessageWrapper {
     public static native void addSequence(Builder builder, Long sequence);
 
     public static native double createBarrageMessageWrapper(
-        Builder builder,
-        double magic,
-        int msgType,
-        double msgPayloadOffset,
-        double rpcTicketOffset,
-        Long sequence,
-        boolean halfCloseAfterMessage);
+            Builder builder,
+            double magic,
+            int msgType,
+            double msgPayloadOffset,
+            double rpcTicketOffset,
+            Long sequence,
+            boolean halfCloseAfterMessage);
 
     @Deprecated
     public static native double createMsgPayloadVector(
-        Builder builder, BarrageMessageWrapper.CreateMsgPayloadVectorDataUnionType data);
+            Builder builder, BarrageMessageWrapper.CreateMsgPayloadVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createMsgPayloadVector(Builder builder, Int8Array data) {
         return createMsgPayloadVector(
-            builder,
-            Js.<BarrageMessageWrapper.CreateMsgPayloadVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<BarrageMessageWrapper.CreateMsgPayloadVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createMsgPayloadVector(Builder builder, JsArray<Double> data) {
         return createMsgPayloadVector(
-            builder,
-            Js.<BarrageMessageWrapper.CreateMsgPayloadVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<BarrageMessageWrapper.CreateMsgPayloadVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createMsgPayloadVector(Builder builder, Uint8Array data) {
         return createMsgPayloadVector(
-            builder,
-            Js.<BarrageMessageWrapper.CreateMsgPayloadVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<BarrageMessageWrapper.CreateMsgPayloadVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
@@ -150,30 +147,27 @@ public class BarrageMessageWrapper {
 
     @Deprecated
     public static native double createRpcTicketVector(
-        Builder builder, BarrageMessageWrapper.CreateRpcTicketVectorDataUnionType data);
+            Builder builder, BarrageMessageWrapper.CreateRpcTicketVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createRpcTicketVector(Builder builder, Int8Array data) {
         return createRpcTicketVector(
-            builder,
-            Js.<BarrageMessageWrapper.CreateRpcTicketVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<BarrageMessageWrapper.CreateRpcTicketVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createRpcTicketVector(Builder builder, JsArray<Double> data) {
         return createRpcTicketVector(
-            builder,
-            Js.<BarrageMessageWrapper.CreateRpcTicketVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<BarrageMessageWrapper.CreateRpcTicketVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createRpcTicketVector(Builder builder, Uint8Array data) {
         return createRpcTicketVector(
-            builder,
-            Js.<BarrageMessageWrapper.CreateRpcTicketVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<BarrageMessageWrapper.CreateRpcTicketVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
@@ -185,15 +179,15 @@ public class BarrageMessageWrapper {
     public static native double endBarrageMessageWrapper(Builder builder);
 
     public static native BarrageMessageWrapper getRootAsBarrageMessageWrapper(
-        ByteBuffer bb, BarrageMessageWrapper obj);
+            ByteBuffer bb, BarrageMessageWrapper obj);
 
     public static native BarrageMessageWrapper getRootAsBarrageMessageWrapper(ByteBuffer bb);
 
     public static native BarrageMessageWrapper getSizePrefixedRootAsBarrageMessageWrapper(
-        ByteBuffer bb, BarrageMessageWrapper obj);
+            ByteBuffer bb, BarrageMessageWrapper obj);
 
     public static native BarrageMessageWrapper getSizePrefixedRootAsBarrageMessageWrapper(
-        ByteBuffer bb);
+            ByteBuffer bb);
 
     public static native void startBarrageMessageWrapper(Builder builder);
 

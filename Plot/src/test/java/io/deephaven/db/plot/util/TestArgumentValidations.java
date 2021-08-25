@@ -29,15 +29,14 @@ public class TestArgumentValidations extends BaseArrayTestCase {
         final String INVALID = "INVALID";
         final int[] ints = {1};
         final IndexableNumericData intData = new IndexableNumericDataArrayInt(ints, null);
-        final IndexableNumericData intData2 =
-            new IndexableNumericDataArrayInt(new int[] {2, 3}, null);
+        final IndexableNumericData intData2 = new IndexableNumericDataArrayInt(new int[] {2, 3}, null);
         final DBDateTime[] dates = {new DBDateTime(1)};
         final Color[] colors = {new Color(1)};
         final Table table = TableTools.newTable(
-            TableTools.col(stringColumn, NON_NULL),
-            TableTools.col(dateColumn, dates),
-            TableTools.col(colorColumn, colors),
-            TableTools.intCol(intColumn, ints)).ungroup();
+                TableTools.col(stringColumn, NON_NULL),
+                TableTools.col(dateColumn, dates),
+                TableTools.col(colorColumn, colors),
+                TableTools.intCol(intColumn, ints)).ungroup();
 
         ArgumentValidations.assertInstance(String.class, String.class, message, null);
         try {
@@ -61,39 +60,32 @@ public class TestArgumentValidations extends BaseArrayTestCase {
             assertTrue(e.getMessage().contains(message));
         }
 
-        ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, intColumn,
-            message, null);
-        ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, dateColumn,
-            message, null);
-        ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, stringColumn,
-            message, null);
+        ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, intColumn, message, null);
+        ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, dateColumn, message, null);
+        ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, stringColumn, message, null);
         try {
-            ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, INVALID,
-                message, null);
+            ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, INVALID, message, null);
             TestCase.fail("Expected an exception");
         } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(INVALID));
         }
         try {
-            ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, INVALID,
-                message, null);
+            ArgumentValidations.assertIsNumericOrTimeOrCharOrComparableInstance(table, INVALID, message, null);
             TestCase.fail("Expected an exception");
         } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(INVALID));
         }
 
-        ArgumentValidations.assertSameSize(new IndexableNumericData[] {intData},
-            new String[] {"TEST"}, null);
+        ArgumentValidations.assertSameSize(new IndexableNumericData[] {intData}, new String[] {"TEST"}, null);
         try {
-            ArgumentValidations.assertSameSize(new IndexableNumericData[] {null},
-                new String[] {message}, null);
+            ArgumentValidations.assertSameSize(new IndexableNumericData[] {null}, new String[] {message}, null);
             TestCase.fail("Expected an exception");
         } catch (RuntimeException e) {
             assertTrue(e.getMessage().contains(message));
         }
         try {
-            ArgumentValidations.assertSameSize(new IndexableNumericData[] {intData, intData2},
-                new String[] {"A", "B"}, null);
+            ArgumentValidations.assertSameSize(new IndexableNumericData[] {intData, intData2}, new String[] {"A", "B"},
+                    null);
             TestCase.fail("Expected an exception");
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Input data"));
@@ -246,7 +238,7 @@ public class TestArgumentValidations extends BaseArrayTestCase {
         }
 
         final TableHandle handle =
-            new TableHandle(table, intColumn, stringColumn, dateColumn);
+                new TableHandle(table, intColumn, stringColumn, dateColumn);
         ArgumentValidations.assertColumnsInTable(handle, null, dateColumn, intColumn, stringColumn);
         try {
             ArgumentValidations.assertColumnsInTable(handle, null, stringColumn, INVALID);

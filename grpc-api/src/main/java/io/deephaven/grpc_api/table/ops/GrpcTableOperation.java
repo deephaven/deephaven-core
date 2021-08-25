@@ -26,13 +26,12 @@ public abstract class GrpcTableOperation<T> {
      * 
      * @param getRequest a functor to extract the request from a BatchTableRequest.Operation
      * @param getTicket a function to extract the result ticket from the request
-     * @param getDependencies a function to extract the table-reference dependencies from the
-     *        request
+     * @param getDependencies a function to extract the table-reference dependencies from the request
      */
     protected GrpcTableOperation(
-        final Function<BatchTableRequest.Operation, T> getRequest,
-        final Function<T, Ticket> getTicket,
-        final MultiDependencyFunction<T> getDependencies) {
+            final Function<BatchTableRequest.Operation, T> getRequest,
+            final Function<T, Ticket> getTicket,
+            final MultiDependencyFunction<T> getDependencies) {
         this.getRequest = getRequest;
         this.getTicket = getTicket;
         this.getDependencies = getDependencies;
@@ -46,9 +45,9 @@ public abstract class GrpcTableOperation<T> {
      * @param getDependency a function to extract the table-reference dependency from the request
      */
     protected GrpcTableOperation(
-        final Function<BatchTableRequest.Operation, T> getRequest,
-        final Function<T, Ticket> getTicket,
-        final Function<T, TableReference> getDependency) {
+            final Function<BatchTableRequest.Operation, T> getRequest,
+            final Function<T, Ticket> getTicket,
+            final Function<T, TableReference> getDependency) {
         this.getRequest = getRequest;
         this.getTicket = getTicket;
         this.getDependencies = (request) -> Collections.singletonList(getDependency.apply(request));
@@ -61,8 +60,8 @@ public abstract class GrpcTableOperation<T> {
      * @param getTicket a function to extract the result ticket from the request
      */
     protected GrpcTableOperation(
-        final Function<BatchTableRequest.Operation, T> getRequest,
-        final Function<T, Ticket> getTicket) {
+            final Function<BatchTableRequest.Operation, T> getRequest,
+            final Function<T, Ticket> getTicket) {
         this.getRequest = getRequest;
         this.getTicket = getTicket;
         this.getDependencies = (request) -> Collections.emptyList();

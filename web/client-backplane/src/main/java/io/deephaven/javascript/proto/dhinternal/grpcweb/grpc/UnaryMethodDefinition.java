@@ -4,9 +4,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.grpcWeb.grpc.UnaryMethodDefinition",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.grpcWeb.grpc.UnaryMethodDefinition",
+        namespace = JsPackage.GLOBAL)
 public interface UnaryMethodDefinition<TRequest, TResponse>
-    extends io.deephaven.javascript.proto.dhinternal.grpcweb.service.UnaryMethodDefinition {
+        extends io.deephaven.javascript.proto.dhinternal.grpcweb.service.UnaryMethodDefinition {
 }

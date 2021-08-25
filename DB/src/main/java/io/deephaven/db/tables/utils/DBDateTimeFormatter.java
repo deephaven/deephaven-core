@@ -26,15 +26,15 @@ public class DBDateTimeFormatter {
     }
 
     public DBDateTimeFormatter(final boolean isISO, final boolean hasDate, final boolean hasTime,
-        final int subsecondDigits, final boolean hasTZ) {
+            final int subsecondDigits, final boolean hasTZ) {
         this((hasDate ? "yyyy-MM-dd" : "") + (!hasDate || !hasTime ? "" : isISO ? "'T'" : " ") +
-            (hasTime ? "HH:mm:ss" : "") + (hasTime && subsecondDigits > 0 ? "." : "") +
-            (hasTime ? StringUtils.repeat("S", subsecondDigits) : "") + (hasTZ ? " %t" : ""));
+                (hasTime ? "HH:mm:ss" : "") + (hasTime && subsecondDigits > 0 ? "." : "") +
+                (hasTime ? StringUtils.repeat("S", subsecondDigits) : "") + (hasTZ ? " %t" : ""));
     }
 
     private DateTimeFormatter getFormatter(DBTimeZone tz) {
         return formatCache.computeIfAbsent(tz, newTz -> DateTimeFormatter
-            .ofPattern(pattern.replaceAll("%t", '\'' + tz.toString().substring(3) + '\'')));
+                .ofPattern(pattern.replaceAll("%t", '\'' + tz.toString().substring(3) + '\'')));
     }
 
     public String format(DBDateTime dateTime, DBTimeZone tz) {

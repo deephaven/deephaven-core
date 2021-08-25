@@ -25,7 +25,7 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
 
     @SuppressWarnings("unused") // called from python
     public static FormulaColumnPython create(String columnName,
-        io.deephaven.db.v2.select.python.DeephavenCompatibleFunction dcf) {
+            io.deephaven.db.v2.select.python.DeephavenCompatibleFunction dcf) {
         return new FormulaColumnPython(columnName, dcf);
     }
 
@@ -33,8 +33,7 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
 
     private boolean initialized;
 
-    private FormulaColumnPython(String columnName,
-        io.deephaven.db.v2.select.python.DeephavenCompatibleFunction dcf) {
+    private FormulaColumnPython(String columnName, io.deephaven.db.v2.select.python.DeephavenCompatibleFunction dcf) {
         super(columnName, "<python-formula>", true);
         this.dcf = Objects.requireNonNull(dcf);
     }
@@ -67,10 +66,10 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
             throw new IllegalStateException("Must be initialized first");
         }
         return new FormulaSourceDescriptor(
-            returnedType,
-            dcf.getColumnNames().toArray(new String[0]),
-            ZERO_LENGTH_STRING_ARRAY,
-            ZERO_LENGTH_STRING_ARRAY);
+                returnedType,
+                dcf.getColumnNames().toArray(new String[0]),
+                ZERO_LENGTH_STRING_ARRAY,
+                ZERO_LENGTH_STRING_ARRAY);
     }
 
     @Override

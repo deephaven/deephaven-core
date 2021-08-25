@@ -25,9 +25,9 @@ public class CompleteVarName extends CompletionBuilder {
     }
 
     public void doCompletion(
-        Collection<CompletionItem.Builder> results,
-        CompletionRequest request,
-        String varName) {
+            Collection<CompletionItem.Builder> results,
+            CompletionRequest request,
+            String varName) {
         final CompletionOptions opts = new CompletionOptions();
         final Token before = replacing.prev();
         // if the user put a space before a =, make sure we add one after, if it is missing

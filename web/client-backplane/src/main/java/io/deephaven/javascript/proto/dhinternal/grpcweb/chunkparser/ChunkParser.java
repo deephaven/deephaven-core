@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.grpcWeb.ChunkParser.ChunkParser",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.grpcWeb.ChunkParser.ChunkParser",
+        namespace = JsPackage.GLOBAL)
 public class ChunkParser {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ParseReturnType {

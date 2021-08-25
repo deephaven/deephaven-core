@@ -3,8 +3,7 @@ package io.deephaven.db.v2.sources.chunk;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
-public class ContextWithChunk<ATTR extends Attributes.Any, CONTEXT extends Context>
-    implements Context {
+public class ContextWithChunk<ATTR extends Attributes.Any, CONTEXT extends Context> implements Context {
 
     private final CONTEXT context;
     private WritableChunk<ATTR> writableChunk;
@@ -27,9 +26,8 @@ public class ContextWithChunk<ATTR extends Attributes.Any, CONTEXT extends Conte
     /**
      * @return a {@link WritableChunk} which you can use for results
      *
-     * @apiNote the chunk is valid until the next call to this function,
-     *          {@link #getResettableChunk()}, {@link #getWritableChunk(Context)},
-     *          {@link #getResettableChunk(Context)}, or
+     * @apiNote the chunk is valid until the next call to this function, {@link #getResettableChunk()},
+     *          {@link #getWritableChunk(Context)}, {@link #getResettableChunk(Context)}, or
      *          {@link #resetChunkFromArray(Context, Object, int, int)} for this context.
      */
     public WritableChunk<ATTR> getWritableChunk() {
@@ -37,12 +35,11 @@ public class ContextWithChunk<ATTR extends Attributes.Any, CONTEXT extends Conte
     }
 
     /**
-     * @return a {@link ResettableChunk} chunk which you can use for results by calling one of its
-     *         various reset methods.
+     * @return a {@link ResettableChunk} chunk which you can use for results by calling one of its various reset
+     *         methods.
      *
-     * @apiNote the chunk is valid until the next call to this function,
-     *          {@link #getWritableChunk()}, {@link #getWritableChunk(Context)},
-     *          {@link #getResettableChunk(Context)}, or
+     * @apiNote the chunk is valid until the next call to this function, {@link #getWritableChunk()},
+     *          {@link #getWritableChunk(Context)}, {@link #getResettableChunk(Context)}, or
      *          {@link #resetChunkFromArray(Context, Object, int, int)} for this context.
      */
     public ResettableChunk<ATTR> getResettableChunk() {
@@ -83,16 +80,14 @@ public class ContextWithChunk<ATTR extends Attributes.Any, CONTEXT extends Conte
      *
      * @return a {@link WritableChunk} which you can use for results. The size will be set to 0.
      *
-     * @apiNote the chunk is valid until the next call to this function,
-     *          {@link #getWritableChunk()}, {@link #getResettableChunk()},
-     *          {@link #getResettableChunk(Context)}, or
+     * @apiNote the chunk is valid until the next call to this function, {@link #getWritableChunk()},
+     *          {@link #getResettableChunk()}, {@link #getResettableChunk(Context)}, or
      *          {@link #resetChunkFromArray(Context, Object, int, int)} for this context.
      */
     public static <ATTR extends Attributes.Any, WRITABLE_CHUNK extends WritableChunk<ATTR>> WRITABLE_CHUNK getWritableChunk(
-        @NotNull Context context) {
+            @NotNull Context context) {
         // noinspection unchecked
-        WRITABLE_CHUNK writableChunk =
-            (WRITABLE_CHUNK) ((ContextWithChunk<ATTR, ?>) context).getWritableChunk();
+        WRITABLE_CHUNK writableChunk = (WRITABLE_CHUNK) ((ContextWithChunk<ATTR, ?>) context).getWritableChunk();
         writableChunk.setSize(0);
         return writableChunk;
     }
@@ -100,20 +95,18 @@ public class ContextWithChunk<ATTR extends Attributes.Any, CONTEXT extends Conte
     /**
      * @param context The context that owns the reusable chunk
      *
-     * @return a {@link ResettableWritableChunk}, which you can use for results by using one of its
-     *         various reset methods.
+     * @return a {@link ResettableWritableChunk}, which you can use for results by using one of its various reset
+     *         methods.
      *
-     * @apiNote the chunk is valid until the next call to this function,
-     *          {@link #getWritableChunk()}, {@link #getResettableChunk()},
-     *          {@link #getWritableChunk(Context)},
+     * @apiNote the chunk is valid until the next call to this function, {@link #getWritableChunk()},
+     *          {@link #getResettableChunk()}, {@link #getWritableChunk(Context)},
      *          {@link #resetChunkFromArray(Context, Object, int, int)} for this context.
      */
     @SuppressWarnings({"WeakerAccess", "unused"})
     public static <ATTR extends Attributes.Any, RESETTABLE_WRITABLE_CHUNK extends ResettableWritableChunk<ATTR>> RESETTABLE_WRITABLE_CHUNK getResettableChunk(
-        @NotNull Context context) {
+            @NotNull Context context) {
         // noinspection unchecked
-        return (RESETTABLE_WRITABLE_CHUNK) ((ContextWithChunk<ATTR, ?>) context)
-            .getResettableChunk();
+        return (RESETTABLE_WRITABLE_CHUNK) ((ContextWithChunk<ATTR, ?>) context).getResettableChunk();
     }
 
     /**
@@ -124,13 +117,12 @@ public class ContextWithChunk<ATTR extends Attributes.Any, CONTEXT extends Conte
      *
      * @return A chunk which aliases the region of the array which can be used for results.
      *
-     * @apiNote the chunk is valid until the next call to this function,
-     *          {@link #getWritableChunk()}, {@link #getResettableChunk()},
-     *          {@link #getWritableChunk(Context)}, or {@link #getResettableChunk(Context)} for this
-     *          context.
+     * @apiNote the chunk is valid until the next call to this function, {@link #getWritableChunk()},
+     *          {@link #getResettableChunk()}, {@link #getWritableChunk(Context)}, or
+     *          {@link #getResettableChunk(Context)} for this context.
      */
     public static <ATTR extends Attributes.Any, CHUNK extends Chunk<ATTR>> CHUNK resetChunkFromArray(
-        @NotNull Context context, Object array, int offset, int length) {
+            @NotNull Context context, Object array, int offset, int length) {
         // noinspection unchecked
         ContextWithChunk<ATTR, ?> getContext = (ContextWithChunk<ATTR, ?>) context;
 
@@ -149,27 +141,24 @@ public class ContextWithChunk<ATTR extends Attributes.Any, CONTEXT extends Conte
 
 
     /**
-     * Checks if this chunk is the result of a call to {@link #getWritableChunk()} or
-     * {@link #getWritableChunk(Context)} with this context. This is primarily intended for testing
-     * and verification code.
+     * Checks if this chunk is the result of a call to {@link #getWritableChunk()} or {@link #getWritableChunk(Context)}
+     * with this context. This is primarily intended for testing and verification code.
      */
-    public static <ATTR extends Attributes.Any> boolean isMyWritableChunk(@NotNull Context context,
-        Chunk<ATTR> chunk) {
+    public static <ATTR extends Attributes.Any> boolean isMyWritableChunk(@NotNull Context context, Chunk<ATTR> chunk) {
         // noinspection unchecked
         return chunk.isAlias(((ContextWithChunk<ATTR, ?>) context).writableChunk);
     }
 
     /**
      * Checks if this chunk is the result of a call to {@link #getResettableChunk()} or
-     * {@link #getResettableChunk(Context)} with this context, followed by a some reset call,
-     * including the result of a call to {@link #resetChunkFromArray(Context, Object, int, int)}.
-     * This is primarily intended for testing and verification code.
+     * {@link #getResettableChunk(Context)} with this context, followed by a some reset call, including the result of a
+     * call to {@link #resetChunkFromArray(Context, Object, int, int)}. This is primarily intended for testing and
+     * verification code.
      */
-    public static <ATTR extends Attributes.Any> boolean isMyResettableChunk(
-        @NotNull Context context, Chunk<ATTR> chunk) {
+    public static <ATTR extends Attributes.Any> boolean isMyResettableChunk(@NotNull Context context,
+            Chunk<ATTR> chunk) {
         // noinspection unchecked
         ContextWithChunk<ATTR, ?> getContext = (ContextWithChunk<ATTR, ?>) context;
-        return !chunk.isAlias(getContext.writableChunk)
-            && chunk.isAlias(getContext.resettableWritableChunk);
+        return !chunk.isAlias(getContext.writableChunk) && chunk.isAlias(getContext.resettableWritableChunk);
     }
 }

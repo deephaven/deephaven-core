@@ -6,18 +6,18 @@ import org.jetbrains.annotations.Nullable;
 import java.time.LocalTime;
 
 /**
- * LocalTime codec, with support for nanosecond, millisecond, or second precision. This codec always
- * uses a fixed-width encoding, the size of which depends on the desired precision.
+ * LocalTime codec, with support for nanosecond, millisecond, or second precision. This codec always uses a fixed-width
+ * encoding, the size of which depends on the desired precision.
  *
- * The Nanos (default) encoding is a 6-byte packed-integer format that can represent the full range
- * of times that a LocalTime can represent.
+ * The Nanos (default) encoding is a 6-byte packed-integer format that can represent the full range of times that a
+ * LocalTime can represent.
  *
  * The Millis encoding is a 4-byte packed-integer format. Sub-millisecond values are truncated.
  *
  * The Seconds encoding is a 3-byte packed-integer format. Sub-second values are truncated.
  *
- * All encodings are "nullable". Since every encoding leaves room for at least one "extra" bit, the
- * leading bit always indicates null - non-null values will always contain zero for the 1st bit.
+ * All encodings are "nullable". Since every encoding leaves room for at least one "extra" bit, the leading bit always
+ * indicates null - non-null values will always contain zero for the 1st bit.
  */
 public class LocalTimeCodec implements ObjectCodec<LocalTime> {
     // decimal precision of fractional second
@@ -51,17 +51,15 @@ public class LocalTimeCodec implements ObjectCodec<LocalTime> {
                             break;
                         default:
                             throw new IllegalArgumentException(
-                                "Unexpected value for nullability (legal values are \"nullable\" or \"notNull\"): "
-                                    + nullability);
+                                    "Unexpected value for nullability (legal values are \"nullable\" or \"notNull\"): "
+                                            + nullability);
                     }
                 }
             } catch (NumberFormatException ex) {
-                throw new IllegalArgumentException(
-                    "Error fractional second precision: " + ex.getMessage(), ex);
+                throw new IllegalArgumentException("Error fractional second precision: " + ex.getMessage(), ex);
             }
             if (precision < 0 || precision > 9) {
-                throw new IllegalArgumentException(
-                    "Invalid fractional second precision: " + precision);
+                throw new IllegalArgumentException("Invalid fractional second precision: " + precision);
             }
         } else {
             precision = 9;
@@ -69,8 +67,7 @@ public class LocalTimeCodec implements ObjectCodec<LocalTime> {
 
         // the # of bits we need to store the specified number of digits of decimal precision
         fractionalBits = (int) Math.ceil(Math.log(10) / Math.log(2) * precision);
-        // 5 bits for hour, 6 bits for minute, 6 bits for second plus whatever we need for
-        // fractional seconds
+        // 5 bits for hour, 6 bits for minute, 6 bits for second plus whatever we need for fractional seconds
         int encodedBits = 17 + fractionalBits;
         // add a bit for null indicator if needed
         if (nullable) {
@@ -118,9 +115,9 @@ public class LocalTimeCodec implements ObjectCodec<LocalTime> {
         // 5 bits for hour, 6 bits for minute, 6 bits for second, 0-30 bits for fractional second
         // so we never need more than 47 bits (48 with null indicator)
         long packedValue = ((long) input.getHour() << 12 + fractionalBits)
-            | ((long) input.getMinute() << 6 + fractionalBits)
-            | ((long) input.getSecond() << fractionalBits)
-            | fractionalSecond;
+                | ((long) input.getMinute() << 6 + fractionalBits)
+                | ((long) input.getSecond() << fractionalBits)
+                | fractionalSecond;
         for (int i = encodedSize - 1; i >= 0; i--) {
             encodedValue[i] = (byte) (packedValue & 0xFF);
             packedValue >>= 8;

@@ -17,12 +17,10 @@ import java.util.List;
 import java.util.function.Predicate;
 
 /**
- * AxisTransform into business time. Useful for plotting time series data with large gaps in
- * non-business hours.
+ * AxisTransform into business time. Useful for plotting time series data with large gaps in non-business hours.
  *
- * The forward transform takes a data value from standard epoch time and translates it into the
- * cumulative business time for the dataset. The inverse transform takes it back to standard epoch
- * time.
+ * The forward transform takes a data value from standard epoch time and translates it into the cumulative business time
+ * for the dataset. The inverse transform takes it back to standard epoch time.
  *
  * Data values outside of business hours are not visible.
  */
@@ -44,8 +42,7 @@ public class AxisTransformBusinessCalendar implements AxisTransform, Serializabl
     private final List<Nugget> nuggets = new ArrayList<>();
 
     /**
-     * Creates an AxisTransformBusinessCalendar instance with the specified
-     * {@link BusinessCalendar}.
+     * Creates an AxisTransformBusinessCalendar instance with the specified {@link BusinessCalendar}.
      *
      * @throws io.deephaven.base.verify.RequirementFailure {@code busCal} can not be null
      * @param busCal business calendar
@@ -76,21 +73,17 @@ public class AxisTransformBusinessCalendar implements AxisTransform, Serializabl
 
         while (timeNanos < nMin.businessDay.getSOBD().getNanos()) {
             final BusinessSchedule d =
-                busCal.getBusinessSchedule(busCal.previousBusinessDay(nMin.businessDay.getSOBD()));
-            final Nugget n =
-                new Nugget(d, nMin.cumulativeBusinessTimeNanosAtStartOfDay - d.getLOBD());
+                    busCal.getBusinessSchedule(busCal.previousBusinessDay(nMin.businessDay.getSOBD()));
+            final Nugget n = new Nugget(d, nMin.cumulativeBusinessTimeNanosAtStartOfDay - d.getLOBD());
             nuggets.add(0, n);
 
             nMin = n;
         }
 
-        // noinspection ConstantConditions nMax can't cause NPE (for now! Don't add nulls to
-        // nuggets!)
+        // noinspection ConstantConditions nMax can't cause NPE (for now! Don't add nulls to nuggets!)
         while (timeNanos > nMax.businessDay.getEOBD().getNanos()) {
-            final BusinessSchedule d =
-                busCal.getBusinessSchedule(busCal.nextBusinessDay(nMax.businessDay.getEOBD()));
-            final Nugget n = new Nugget(d,
-                nMax.cumulativeBusinessTimeNanosAtStartOfDay + nMax.businessDay.getLOBD());
+            final BusinessSchedule d = busCal.getBusinessSchedule(busCal.nextBusinessDay(nMax.businessDay.getEOBD()));
+            final Nugget n = new Nugget(d, nMax.cumulativeBusinessTimeNanosAtStartOfDay + nMax.businessDay.getLOBD());
             nuggets.add(n);
 
             nMax = n;
@@ -113,9 +106,8 @@ public class AxisTransformBusinessCalendar implements AxisTransform, Serializabl
 
         while (value < nMin.cumulativeBusinessTimeNanosAtStartOfDay) {
             final BusinessSchedule d =
-                busCal.getBusinessSchedule(busCal.previousBusinessDay(nMin.businessDay.getSOBD()));
-            final Nugget n =
-                new Nugget(d, nMin.cumulativeBusinessTimeNanosAtStartOfDay - d.getLOBD());
+                    busCal.getBusinessSchedule(busCal.previousBusinessDay(nMin.businessDay.getSOBD()));
+            final Nugget n = new Nugget(d, nMin.cumulativeBusinessTimeNanosAtStartOfDay - d.getLOBD());
             nuggets.add(0, n);
 
             nMin = n;
@@ -126,21 +118,17 @@ public class AxisTransformBusinessCalendar implements AxisTransform, Serializabl
         }
 
         while (value > nMax.cumulativeBusinessTimeNanosAtStartOfDay + nMax.businessDay.getLOBD()) {
-            final BusinessSchedule d =
-                busCal.getBusinessSchedule(busCal.nextBusinessDay(nMax.businessDay.getEOBD()));
-            final Nugget n = new Nugget(d,
-                nMax.cumulativeBusinessTimeNanosAtStartOfDay + nMax.businessDay.getLOBD());
+            final BusinessSchedule d = busCal.getBusinessSchedule(busCal.nextBusinessDay(nMax.businessDay.getEOBD()));
+            final Nugget n = new Nugget(d, nMax.cumulativeBusinessTimeNanosAtStartOfDay + nMax.businessDay.getLOBD());
             nuggets.add(n);
 
             nMax = n;
         }
 
-        return findNugget(
-            n -> value < n.cumulativeBusinessTimeNanosAtStartOfDay + n.businessDay.getLOBD());
+        return findNugget(n -> value < n.cumulativeBusinessTimeNanosAtStartOfDay + n.businessDay.getLOBD());
     }
 
-    // only getNuggetByTime or getNuggetByValue should call this to ensure that the desired value is
-    // in range
+    // only getNuggetByTime or getNuggetByValue should call this to ensure that the desired value is in range
     private Nugget findNugget(final Predicate<Nugget> lessThanEqual) {
         int iMin = 0, iMax = nuggets.size() - 1;
 
@@ -168,7 +156,7 @@ public class AxisTransformBusinessCalendar implements AxisTransform, Serializabl
     @Override
     public boolean isVisible(final double timeNanos) {
         return !(Double.isInfinite(timeNanos) || Double.isNaN(timeNanos))
-            && busCal.isBusinessTime(DBTimeUtils.nanosToTime((long) timeNanos));
+                && busCal.isBusinessTime(DBTimeUtils.nanosToTime((long) timeNanos));
 
     }
 

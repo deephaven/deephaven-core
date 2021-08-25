@@ -30,8 +30,7 @@ public class SequentialNumColumnGenerator<T extends Number> extends AbstractNumC
         this(type, name, start, step, 0, Mode.NoLimit);
     }
 
-    public SequentialNumColumnGenerator(Class<T> type, String name, double start, double step,
-        double max, Mode mode) {
+    public SequentialNumColumnGenerator(Class<T> type, String name, double start, double step, double max, Mode mode) {
         super(type, name);
         this.start = start;
         this.current = start;

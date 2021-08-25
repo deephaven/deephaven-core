@@ -19,10 +19,9 @@ public interface ContainerShortBatchIterator {
     boolean hasNext();
 
     /**
-     * Starting from the next iterator position (if any), feed values to the consumer until it
-     * returns false. After each value is consumed, the current iterator position is moving forward;
-     * eg, a call to forEach that consumes 4 elements effectively works as if next was called 4
-     * times.
+     * Starting from the next iterator position (if any), feed values to the consumer until it returns false. After each
+     * value is consumed, the current iterator position is moving forward; eg, a call to forEach that consumes 4
+     * elements effectively works as if next was called 4 times.
      *
      * @param sc a ShortConsumer to feed values to.
      * @return false if the processing was stopped by the consumer returning false, true otherwise.

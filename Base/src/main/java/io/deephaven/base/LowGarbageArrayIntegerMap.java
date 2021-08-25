@@ -16,13 +16,12 @@ import java.util.Set;
 
 // --------------------------------------------------------------------
 /**
- * A very simple {@link Map} for small maps with Integer keys (uses direct array access) that
- * creates no garbage (except when expanding). This set only has one {@link Iterator}, which is
- * reused. This set is not thread safe.
+ * A very simple {@link Map} for small maps with Integer keys (uses direct array access) that creates no garbage (except
+ * when expanding). This set only has one {@link Iterator}, which is reused. This set is not thread safe.
  * <P>
- * Note: This class extends {@link HashMap} rather than {@link Map} (or {@link AbstractMap}) only
- * because one of the fields where we want to use it ({@link sun.nio.ch.EPollSelectorImpl#fdToKey})
- * is (improperly) declared as a HashMap rather than a Map.
+ * Note: This class extends {@link HashMap} rather than {@link Map} (or {@link AbstractMap}) only because one of the
+ * fields where we want to use it ({@link sun.nio.ch.EPollSelectorImpl#fdToKey}) is (improperly) declared as a HashMap
+ * rather than a Map.
  */
 public class LowGarbageArrayIntegerMap<T> extends HashMap<Integer, T> {
 

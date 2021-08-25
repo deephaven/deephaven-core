@@ -6,16 +6,14 @@ import io.deephaven.db.v2.sources.WritableSource;
 public interface FormulaColumn extends SelectColumn {
 
     static FormulaColumn createFormulaColumn(String columnName, String formulaString,
-        FormulaParserConfiguration parser) {
+            FormulaParserConfiguration parser) {
         switch (parser) {
             case Deephaven:
                 return new DhFormulaColumn(columnName, formulaString);
             case Numba:
-                throw new UnsupportedOperationException(
-                    "Python formula columns must be created from python");
+                throw new UnsupportedOperationException("Python formula columns must be created from python");
             default:
-                throw new UnsupportedOperationException(
-                    "Parser support not implemented for " + parser);
+                throw new UnsupportedOperationException("Parser support not implemented for " + parser);
         }
     }
 

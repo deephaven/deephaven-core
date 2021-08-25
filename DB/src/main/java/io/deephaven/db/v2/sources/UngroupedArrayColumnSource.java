@@ -5,7 +5,7 @@
 package io.deephaven.db.v2.sources;
 
 public class UngroupedArrayColumnSource<T> extends UngroupedColumnSource<T>
-    implements MutableColumnSourceGetDefaults.ForObject<T> {
+        implements MutableColumnSourceGetDefaults.ForObject<T> {
     private ColumnSource innerSource;
 
     @Override

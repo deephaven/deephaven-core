@@ -38,15 +38,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * A {@link ScriptPathLoader} that loads scripts from a git repository.
  * </p>
  * <p>
- * If this class is created with updateEnabled = false it loads scripts as if no git repository was
- * present.
+ * If this class is created with updateEnabled = false it loads scripts as if no git repository was present.
  * </p>
  */
 public class ScriptRepository implements ScriptPathLoader {
-    private static final int gitHashDisplayLength = Configuration.getInstance()
-        .getIntegerWithDefault("ScriptRepository.githashdisplaylenth", 8);
-    private static final String[] scriptExtensions = ScriptExtensionsMap.getInstance().values()
-        .stream().flatMap(List::stream).map(x -> "." + x.toLowerCase()).toArray(String[]::new);
+    private static final int gitHashDisplayLength =
+            Configuration.getInstance().getIntegerWithDefault("ScriptRepository.githashdisplaylenth", 8);
+    private static final String[] scriptExtensions = ScriptExtensionsMap.getInstance().values().stream()
+            .flatMap(List::stream).map(x -> "." + x.toLowerCase()).toArray(String[]::new);
 
     private final Logger log;
     private final String name;
@@ -104,32 +103,31 @@ public class ScriptRepository implements ScriptPathLoader {
      * Constructs the script repository instance.
      * <p>
      *
-     * Note that in the case of the Controller, a misconfiguration of a script repository (which
-     * will result in an exception to be thrown) will cause the Controller to fail to start. This is
-     * intentional: the Controller configuration is an all-or-nothing thing, and attempts to limp
-     * along could cause a misconfigured Controller to stay unnoticed for weeks, and would take days
-     * to correct.
+     * Note that in the case of the Controller, a misconfiguration of a script repository (which will result in an
+     * exception to be thrown) will cause the Controller to fail to start. This is intentional: the Controller
+     * configuration is an all-or-nothing thing, and attempts to limp along could cause a misconfigured Controller to
+     * stay unnoticed for weeks, and would take days to correct.
      *
      * @throws RuntimeException if the repository configuration is incorrect.
      */
-    // TODO: Move most/all of the repo configuration into the ACL MySQL DB, or add runtime
-    // re-configuration some other way.
+    // TODO: Move most/all of the repo configuration into the ACL MySQL DB, or add runtime re-configuration some other
+    // way.
     ScriptRepository(@NotNull final Logger log,
-        @NotNull final String name,
-        @NotNull final Set<String> groupNames,
-        @NotNull final String gitURI,
-        final boolean updateEnabled,
-        final boolean gcEnabled,
-        @NotNull final String remoteOrigin,
-        @Nullable final String branch,
-        final boolean prefixDisplayPathsWithRepoName,
-        @NotNull final Path rootPath,
-        final boolean resetGitLockFiles,
-        @NotNull final Path... searchPaths) {
+            @NotNull final String name,
+            @NotNull final Set<String> groupNames,
+            @NotNull final String gitURI,
+            final boolean updateEnabled,
+            final boolean gcEnabled,
+            @NotNull final String remoteOrigin,
+            @Nullable final String branch,
+            final boolean prefixDisplayPathsWithRepoName,
+            @NotNull final Path rootPath,
+            final boolean resetGitLockFiles,
+            @NotNull final Path... searchPaths) {
         this.log = log;
         this.name = name;
-        this.groupNames = groupNames == CollectionUtil.UNIVERSAL_SET ? groupNames
-            : Collections.unmodifiableSet(groupNames);
+        this.groupNames =
+                groupNames == CollectionUtil.UNIVERSAL_SET ? groupNames : Collections.unmodifiableSet(groupNames);
         this.prefixDisplayPathsWithRepoName = prefixDisplayPathsWithRepoName;
         this.gcEnabled = gcEnabled;
         this.rootPath = rootPath;
@@ -147,8 +145,7 @@ public class ScriptRepository implements ScriptPathLoader {
 
                 @Override
                 public boolean include(TreeWalk walker) {
-                    return walker.isSubtree()
-                        || walker.getNameString().toLowerCase().endsWith(suffix);
+                    return walker.isSubtree() || walker.getNameString().toLowerCase().endsWith(suffix);
                 }
 
                 @Override
@@ -192,9 +189,9 @@ public class ScriptRepository implements ScriptPathLoader {
      * @throws RuntimeException if the setup failed.
      */
     private @Nullable Git setUpGitRepository(final boolean updateEnabled,
-        final String gitURI,
-        final String branch,
-        final boolean resetGitLockFiles) {
+            final String gitURI,
+            final String branch,
+            final boolean resetGitLockFiles) {
         if (!updateEnabled) {
             return null;
         }
@@ -210,8 +207,7 @@ public class ScriptRepository implements ScriptPathLoader {
                         try {
                             Files.delete(lockFile);
                         } catch (IOException e) {
-                            throw new IOException("Unable to delete git lock file " + lockFileName,
-                                e);
+                            throw new IOException("Unable to delete git lock file " + lockFileName, e);
                         }
                     }
                 }
@@ -220,9 +216,8 @@ public class ScriptRepository implements ScriptPathLoader {
                 final Repository gitRepo = tempGit.getRepository();
                 final RepositoryState gitRepoState = gitRepo.getRepositoryState();
                 if (gitRepoState != RepositoryState.SAFE) {
-                    throw new IllegalStateException(
-                        logPrefix + "repository is not in expected state (SAFE), instead state is: "
-                            + gitRepoState);
+                    throw new IllegalStateException(logPrefix
+                            + "repository is not in expected state (SAFE), instead state is: " + gitRepoState);
                 }
 
                 try {
@@ -230,8 +225,8 @@ public class ScriptRepository implements ScriptPathLoader {
                     lastGitRefresh = System.currentTimeMillis();
                 } catch (final Exception ex) {
                     log.warn().append(logPrefix)
-                        .append("Initial git fetch failed, but repository was cloned, continuing. ")
-                        .append(ex).endl();
+                            .append("Initial git fetch failed, but repository was cloned, continuing. ").append(ex)
+                            .endl();
                 }
 
                 final List<Ref> localBranches = tempGit.branchList().call();
@@ -244,15 +239,14 @@ public class ScriptRepository implements ScriptPathLoader {
                     }
                 }
 
-                final CheckoutCommand checkoutCommand =
-                    tempGit.checkout().setName(branch).setCreateBranch(needCreate).setForce(true)
-                        .setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.SET_UPSTREAM)
+                final CheckoutCommand checkoutCommand = tempGit.checkout().setName(branch).setCreateBranch(needCreate)
+                        .setForce(true).setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.SET_UPSTREAM)
                         .setStartPoint(upstreamBranch);
                 checkoutCommand.call();
                 final CheckoutResult checkoutResult = checkoutCommand.getResult();
                 if (checkoutResult.getStatus() != CheckoutResult.Status.OK) {
                     throw new IllegalStateException(
-                        logPrefix + "checkout of branch " + branch + " failed: " + checkoutResult);
+                            logPrefix + "checkout of branch " + branch + " failed: " + checkoutResult);
                 }
 
                 tempGit.reset().setMode(ResetCommand.ResetType.HARD).setRef(upstreamBranch).call();
@@ -267,8 +261,8 @@ public class ScriptRepository implements ScriptPathLoader {
                     uriToClone = gitURI;
                 }
 
-                return Git.cloneRepository().setBranch(branch).setURI(uriToClone)
-                    .setDirectory(rootPath.toFile()).call();
+                return Git.cloneRepository().setBranch(branch).setURI(uriToClone).setDirectory(rootPath.toFile())
+                        .call();
             }
         } catch (Exception e) {
             throw new RuntimeException(logPrefix + "error setting up git repository", e);
@@ -285,8 +279,7 @@ public class ScriptRepository implements ScriptPathLoader {
     }
 
     /**
-     * Get the users allowed to access this repo, defined by the
-     * <b>[prefix].scripts.repo.[name].users</b> property.
+     * Get the users allowed to access this repo, defined by the <b>[prefix].scripts.repo.[name].users</b> property.
      *
      * @return The names of all users allowed to access the repo.
      */
@@ -296,8 +289,7 @@ public class ScriptRepository implements ScriptPathLoader {
     }
 
     /**
-     * Get a {@link ScriptPathLoaderState state} object that represents the current branch HEAD
-     * commit.
+     * Get a {@link ScriptPathLoaderState state} object that represents the current branch HEAD commit.
      *
      * @return The current branch HEAD or null if updates were disabled.
      */
@@ -310,8 +302,7 @@ public class ScriptRepository implements ScriptPathLoader {
         try {
             return new GitState(name, upstreamBranch, getCurrentRevision());
         } catch (IOException e) {
-            throw new UncheckedIOException(
-                "Unable to get ref Id for " + name + ": " + upstreamBranch, e);
+            throw new UncheckedIOException("Unable to get ref Id for " + name + ": " + upstreamBranch, e);
         }
     }
 
@@ -347,16 +338,15 @@ public class ScriptRepository implements ScriptPathLoader {
 
         for (final ScriptFileVisitor searchPathVisitor : searchPathVisitors) {
             if (log.isDebugEnabled()) {
-                log.debug().append(logPrefix).append("searching ")
-                    .append(searchPathVisitor.searchPath.toString()).endl();
+                log.debug().append(logPrefix).append("searching ").append(searchPathVisitor.searchPath.toString())
+                        .endl();
             }
 
             try {
                 Files.walkFileTree(searchPathVisitor.searchPath, searchPathVisitor);
             } catch (IOException e) {
-                throw new IOException(
-                    logPrefix + "Error while searching " + searchPathVisitor.searchPath.toString(),
-                    e);
+                throw new IOException(logPrefix + "Error while searching " + searchPathVisitor.searchPath.toString(),
+                        e);
             }
         }
 
@@ -373,23 +363,20 @@ public class ScriptRepository implements ScriptPathLoader {
 
         @Override
         public FileVisitResult visitFile(final Path file,
-            final BasicFileAttributes attrs) throws IOException {
+                final BasicFileAttributes attrs) throws IOException {
             final FileVisitResult result = super.visitFile(file, attrs);
-            if (result == FileVisitResult.CONTINUE && Arrays.stream(scriptExtensions).anyMatch(
-                extension -> file.getFileName().toString().toLowerCase().endsWith(extension))) {
-                final String displayPathString =
-                    ((prefixDisplayPathsWithRepoName ? name + File.separator : "")
+            if (result == FileVisitResult.CONTINUE && Arrays.stream(scriptExtensions)
+                    .anyMatch(extension -> file.getFileName().toString().toLowerCase().endsWith(extension))) {
+                final String displayPathString = ((prefixDisplayPathsWithRepoName ? name + File.separator : "")
                         + rootPath.relativize(file).toString()).replace('\\', '/');
 
                 if (log.isDebugEnabled()) {
-                    log.debug().append(logPrefix).append("adding script path: display=")
-                        .append(displayPathString).append(", absolute=").append(file.toString())
-                        .endl();
+                    log.debug().append(logPrefix).append("adding script path: display=").append(displayPathString)
+                            .append(", absolute=").append(file.toString()).endl();
                 }
 
                 displayPathStringToScript.put(displayPathString, file);
-                final String relativePathString =
-                    searchPath.relativize(file).toString().replace('\\', '/');
+                final String relativePathString = searchPath.relativize(file).toString().replace('\\', '/');
                 relativePathStringToScript.putIfAbsent(relativePathString, file);
             }
             return result;
@@ -442,8 +429,7 @@ public class ScriptRepository implements ScriptPathLoader {
      * @throws IOException If the file is not accessible
      */
     @Override
-    public String getScriptBodyByRelativePath(@NotNull final String relativePath)
-        throws IOException {
+    public String getScriptBodyByRelativePath(@NotNull final String relativePath) throws IOException {
         lock();
         try {
             return getScriptBody(relativePathStringToScript.get(relativePath));
@@ -472,36 +458,34 @@ public class ScriptRepository implements ScriptPathLoader {
     }
 
     @Override
-    public Set<String> getAvailableScriptDisplayPaths(final ScriptPathLoaderState state)
-        throws IOException {
+    public Set<String> getAvailableScriptDisplayPaths(final ScriptPathLoaderState state) throws IOException {
         final Set<String> items = new HashSet<>();
 
         this.doTreeWalk(() -> items.addAll(getAvailableScriptDisplayPaths()),
-            (repository, objectId, treeWalk) -> items
-                .add((prefixDisplayPathsWithRepoName ? name + File.separator : "")
-                    + treeWalk.getPathString()),
-            scriptTreeFilter, state);
+                (repository, objectId, treeWalk) -> items
+                        .add((prefixDisplayPathsWithRepoName ? name + File.separator : "") + treeWalk.getPathString()),
+                scriptTreeFilter, state);
 
         return items;
     }
 
     @Override
-    public String getScriptBodyByRelativePath(final String relativePath,
-        final ScriptPathLoaderState state) throws IOException {
+    public String getScriptBodyByRelativePath(final String relativePath, final ScriptPathLoaderState state)
+            throws IOException {
         return getScriptBodyByCommit(relativePathStringToScript.get(relativePath), state);
     }
 
     @Override
-    public String getScriptBodyByDisplayPath(final String displayPath,
-        final ScriptPathLoaderState state) throws IOException {
+    public String getScriptBodyByDisplayPath(final String displayPath, final ScriptPathLoaderState state)
+            throws IOException {
         return getScriptBodyByCommit(displayPathStringToScript.get(displayPath), state);
     }
 
     /**
      * Use get the script body for a specific commit using a git {@link TreeWalk}.
      *
-     * @implNote If the specified commit is the same as the current HEAD, this will go to the
-     *           filesystem instead of performing the tree walk.
+     * @implNote If the specified commit is the same as the current HEAD, this will go to the filesystem instead of
+     *           performing the tree walk.
      *
      * @param path The absolute path to the file.
      * @param state The state containing the commit details.
@@ -510,8 +494,7 @@ public class ScriptRepository implements ScriptPathLoader {
      *
      * @throws IOException If there was a problem reading the file.
      */
-    private String getScriptBodyByCommit(final Path path, final ScriptPathLoaderState state)
-        throws IOException {
+    private String getScriptBodyByCommit(final Path path, final ScriptPathLoaderState state) throws IOException {
         if (path == null) {
             return null;
         }
@@ -523,13 +506,13 @@ public class ScriptRepository implements ScriptPathLoader {
         lock();
         try {
             this.doTreeWalk(() -> resultHolder.setValue(getScriptBody(path)),
-                (repository, objectId, treeWalk) -> {
-                    final ObjectLoader loader = repository.open(objectId);
+                    (repository, objectId, treeWalk) -> {
+                        final ObjectLoader loader = repository.open(objectId);
 
-                    // Then grab the contents of the object found
-                    final byte[] contents = loader.getBytes();
-                    resultHolder.setValue(new String(contents, 0, contents.length));
-                }, PathFilter.create(repoPath.toString()), state);
+                        // Then grab the contents of the object found
+                        final byte[] contents = loader.getBytes();
+                        resultHolder.setValue(new String(contents, 0, contents.length));
+                    }, PathFilter.create(repoPath.toString()), state);
 
             return resultHolder.getValue();
         } finally {
@@ -540,8 +523,7 @@ public class ScriptRepository implements ScriptPathLoader {
     /**
      * Perform a tree walk of the specified commit, using a {@link TreeFilter filter}.
      *
-     * @param fallback The method to call if There is no state, or the requested commit is the same
-     *        as HEAD.
+     * @param fallback The method to call if There is no state, or the requested commit is the same as HEAD.
      * @param objectConsumer A consumer to handle the individual matches of the walk.
      * @param filter The filter to use to match items during the walk.
      * @param state The state object containing the commit information.
@@ -550,14 +532,13 @@ public class ScriptRepository implements ScriptPathLoader {
      * @throws E If one of the input methods throws E.
      * @throws IOException If there was a problem during the tree walk.
      */
-    private <E extends Exception> void doTreeWalk(
-        final FunctionalInterfaces.ThrowingRunnable<IOException> fallback,
-        final FunctionalInterfaces.ThrowingTriConsumer<Repository, ObjectId, TreeWalk, E> objectConsumer,
-        final TreeFilter filter,
-        final ScriptPathLoaderState state) throws E, IOException {
+    private <E extends Exception> void doTreeWalk(final FunctionalInterfaces.ThrowingRunnable<IOException> fallback,
+            final FunctionalInterfaces.ThrowingTriConsumer<Repository, ObjectId, TreeWalk, E> objectConsumer,
+            final TreeFilter filter,
+            final ScriptPathLoaderState state) throws E, IOException {
 
-        // If we are not actually using git, the requested commit is blank, or the default state, go
-        // ahead and invoke the fallback method
+        // If we are not actually using git, the requested commit is blank, or the default state, go ahead and invoke
+        // the fallback method
         if ((git == null) || (state == null)) {
             fallback.run();
             return;
@@ -565,8 +546,8 @@ public class ScriptRepository implements ScriptPathLoader {
 
         // If the state object isn't a GitState then something bad(tm) happened
         if (!(state instanceof GitState)) {
-            throw new IllegalArgumentException("Repo state (" + state.getClass().getName()
-                + ") is incorrect for ScriptRepository");
+            throw new IllegalArgumentException(
+                    "Repo state (" + state.getClass().getName() + ") is incorrect for ScriptRepository");
         }
 
         final GitState gs = (GitState) state;
@@ -606,8 +587,7 @@ public class ScriptRepository implements ScriptPathLoader {
 
         try {
             if (gcEnabled && ((lastGitGc + TimeConstants.DAY) < System.currentTimeMillis())) {
-                log.info().append(logPrefix).append("git gc took place more than 24 hours ago")
-                    .endl();
+                log.info().append(logPrefix).append("git gc took place more than 24 hours ago").endl();
                 try {
                     git.gc().call();
                     lastGitGc = System.currentTimeMillis();
@@ -631,23 +611,20 @@ public class ScriptRepository implements ScriptPathLoader {
                 git.reset().setMode(ResetCommand.ResetType.HARD).setRef(upstreamBranch).call();
                 scanFileTree();
             } catch (GitAPIException e) {
-                log.warn().append(logPrefix).append("error resetting git repository: ").append(e)
-                    .endl();
+                log.warn().append(logPrefix).append("error resetting git repository: ").append(e).endl();
                 return;
             } catch (IOException e) {
-                log.warn().append(logPrefix).append("error refreshing script paths: ").append(e)
-                    .endl();
+                log.warn().append(logPrefix).append("error refreshing script paths: ").append(e).endl();
                 return;
             } finally {
                 consistencyLock.writeLock().unlock();
             }
 
             log.info().append(logPrefix).append("Successful git refresh after ")
-                .append(System.currentTimeMillis() - lastGitRefresh).append("ms").endl();
+                    .append(System.currentTimeMillis() - lastGitRefresh).append("ms").endl();
             lastGitRefresh = System.currentTimeMillis();
         } catch (Exception e) {
-            // We are overly cautious here, to make sure that a failure to refresh the repository
-            // doesn't crash
+            // We are overly cautious here, to make sure that a failure to refresh the repository doesn't crash
             // the running process (in particular if it's the Controller).
             log.error().append(logPrefix).append("error refreshing repository: ").append(e).endl();
         }
@@ -667,85 +644,82 @@ public class ScriptRepository implements ScriptPathLoader {
     private static Path normalizeRootPath(final Configuration config, final String rootPathString) {
         final Path propertyRootPath = Paths.get(rootPathString);
         return propertyRootPath.isAbsolute() ? propertyRootPath
-            : Paths.get(config.getWorkspacePath(), rootPathString).toAbsolutePath();
+                : Paths.get(config.getWorkspacePath(), rootPathString).toAbsolutePath();
     }
 
     private static ScriptRepository readRepoConfig(@NotNull final Configuration config,
-        @NotNull final String propertyPrefix,
-        @NotNull final Logger log,
-        final boolean globalUpdateEnabled,
-        final boolean globalGcEnabled,
-        @Nullable final String defaultBranch,
-        final boolean resetGitLockFiles,
-        @NotNull final String repoName) {
+            @NotNull final String propertyPrefix,
+            @NotNull final Logger log,
+            final boolean globalUpdateEnabled,
+            final boolean globalGcEnabled,
+            @Nullable final String defaultBranch,
+            final boolean resetGitLockFiles,
+            @NotNull final String repoName) {
         final Set<String> userNames =
-            config.getNameStringSetFromProperty(propertyPrefix + "repo." + repoName + ".groups");
-        final boolean updateEnabled = globalUpdateEnabled
-            && config.getBoolean(propertyPrefix + "repo." + repoName + ".updateEnabled");
-        final boolean gcEnabled = globalGcEnabled && config
-            .getBooleanWithDefault(propertyPrefix + "repo." + repoName + ".gcEnabled", true);
+                config.getNameStringSetFromProperty(propertyPrefix + "repo." + repoName + ".groups");
+        final boolean updateEnabled =
+                globalUpdateEnabled && config.getBoolean(propertyPrefix + "repo." + repoName + ".updateEnabled");
+        final boolean gcEnabled = globalGcEnabled
+                && config.getBooleanWithDefault(propertyPrefix + "repo." + repoName + ".gcEnabled", true);
         final String remoteOrigin =
-            config.getStringWithDefault(propertyPrefix + "repo." + repoName + ".remote", "origin");
-        final String branch = config
-            .getStringWithDefault(propertyPrefix + "repo." + repoName + ".branch", defaultBranch);
-        Require.requirement(!(updateEnabled && branch == null),
-            "!(updateEnabled && branch == null)");
-        final boolean prefixDisplayPathsWithRepoName = config
-            .getBoolean(propertyPrefix + "repo." + repoName + ".prefixDisplayPathsWithRepoName");
-        final Path rootPath = normalizeRootPath(config,
-            config.getProperty(propertyPrefix + "repo." + repoName + ".root"));
+                config.getStringWithDefault(propertyPrefix + "repo." + repoName + ".remote", "origin");
+        final String branch =
+                config.getStringWithDefault(propertyPrefix + "repo." + repoName + ".branch", defaultBranch);
+        Require.requirement(!(updateEnabled && branch == null), "!(updateEnabled && branch == null)");
+        final boolean prefixDisplayPathsWithRepoName =
+                config.getBoolean(propertyPrefix + "repo." + repoName + ".prefixDisplayPathsWithRepoName");
+        final Path rootPath =
+                normalizeRootPath(config, config.getProperty(propertyPrefix + "repo." + repoName + ".root"));
         final String gitURI = config.getProperty(propertyPrefix + "repo." + repoName + ".uri");
-        final String[] searchPathSuffixes = config
-            .getProperty(propertyPrefix + "repo." + repoName + ".paths").trim().split("[, ]+");
+        final String[] searchPathSuffixes =
+                config.getProperty(propertyPrefix + "repo." + repoName + ".paths").trim().split("[, ]+");
         final Path[] searchPaths = new Path[searchPathSuffixes.length];
         for (int spi = 0; spi < searchPathSuffixes.length; ++spi) {
             searchPaths[spi] = rootPath.resolve(searchPathSuffixes[spi]);
         }
         log.info().append("Loading Git Repo: ").append(repoName)
-            .append(". Branch: ").append(branch != null ? branch : "<none>")
-            .append(". Root Path: ").append(rootPath.toString())
-            .append(globalUpdateEnabled ? ". Repository updates enabled"
-                : ". Repository updates disabled")
-            .append(globalGcEnabled ? ". Git GC enabled." : ". Git GC disabled.").endl();
+                .append(". Branch: ").append(branch != null ? branch : "<none>")
+                .append(". Root Path: ").append(rootPath.toString())
+                .append(globalUpdateEnabled ? ". Repository updates enabled" : ". Repository updates disabled")
+                .append(globalGcEnabled ? ". Git GC enabled." : ". Git GC disabled.").endl();
 
-        return new ScriptRepository(log, repoName, userNames, gitURI, updateEnabled, gcEnabled,
-            remoteOrigin, branch, prefixDisplayPathsWithRepoName, rootPath, resetGitLockFiles,
-            searchPaths);
+        return new ScriptRepository(log, repoName, userNames, gitURI, updateEnabled, gcEnabled, remoteOrigin, branch,
+                prefixDisplayPathsWithRepoName, rootPath, resetGitLockFiles, searchPaths);
     }
 
     private static List<ScriptRepository> readRepoConfigs(@NotNull final Configuration config,
-        @NotNull final String propertyPrefix,
-        @NotNull final Logger log,
-        final boolean globalUpdateEnabled,
-        final boolean globalGcEnabled,
-        @Nullable final String defaultBranch,
-        final boolean resetGitLockFiles,
-        @NotNull final String... repoNames) {
+            @NotNull final String propertyPrefix,
+            @NotNull final Logger log,
+            final boolean globalUpdateEnabled,
+            final boolean globalGcEnabled,
+            @Nullable final String defaultBranch,
+            final boolean resetGitLockFiles,
+            @NotNull final String... repoNames) {
         final List<ScriptRepository> scriptRepositories = new ArrayList<>(repoNames.length);
         for (final String repoName : repoNames) {
             if (repoName.isEmpty()) {
                 continue;
             }
-            scriptRepositories.add(readRepoConfig(config, propertyPrefix, log, globalUpdateEnabled,
-                globalGcEnabled, defaultBranch, resetGitLockFiles, repoName));
+            scriptRepositories.add(readRepoConfig(config, propertyPrefix, log, globalUpdateEnabled, globalGcEnabled,
+                    defaultBranch, resetGitLockFiles, repoName));
         }
         return scriptRepositories;
     }
 
     public static List<ScriptRepository> readRepoConfigs(@NotNull final Configuration config,
-        @SuppressWarnings("SameParameterValue") @NotNull final String propertyPrefix,
-        @NotNull final Logger log,
-        final boolean globalUpdateEnabled,
-        final boolean globalGcEnabled,
-        @Nullable final String defaultBranch,
-        final boolean resetGitLockFiles) {
+            @SuppressWarnings("SameParameterValue") @NotNull final String propertyPrefix,
+            @NotNull final Logger log,
+            final boolean globalUpdateEnabled,
+            final boolean globalGcEnabled,
+            @Nullable final String defaultBranch,
+            final boolean resetGitLockFiles) {
         return readRepoConfigs(config,
-            propertyPrefix,
-            log,
-            globalUpdateEnabled,
-            globalGcEnabled,
-            defaultBranch,
-            resetGitLockFiles,
-            config.getProperty(propertyPrefix + "repos").trim().split("[, ]+"));
+                propertyPrefix,
+                log,
+                globalUpdateEnabled,
+                globalGcEnabled,
+                defaultBranch,
+                resetGitLockFiles,
+                config.getProperty(propertyPrefix + "repos").trim().split("[, ]+"));
     }
 }

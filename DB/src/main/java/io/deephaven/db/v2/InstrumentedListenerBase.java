@@ -30,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 
 public abstract class InstrumentedListenerBase extends LivenessArtifact
-    implements ListenerBase, NotificationQueue.Dependency {
+        implements ListenerBase, NotificationQueue.Dependency {
 
     private static final Logger log = LoggerFactory.getLogger(InstrumentedListener.class);
 
@@ -39,8 +39,8 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
 
     private boolean failed = false;
     private static volatile boolean verboseLogging = Configuration
-        .getInstance()
-        .getBooleanWithDefault("InstrumentedListener.verboseLogging", false);
+            .getInstance()
+            .getBooleanWithDefault("InstrumentedListener.verboseLogging", false);
 
     private volatile long lastCompletedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
     private volatile long lastEnqueuedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
@@ -67,14 +67,14 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
 
     @Override
     public NotificationQueue.Notification getErrorNotification(Throwable originalException,
-        UpdatePerformanceTracker.Entry sourceEntry) {
+            UpdatePerformanceTracker.Entry sourceEntry) {
         return new ErrorNotification(originalException, sourceEntry == null ? entry : sourceEntry);
     }
 
     @Override
     public LogOutput append(@NotNull final LogOutput logOutput) {
-        return logOutput.append("InstrumentedListener:(identity=")
-            .append(System.identityHashCode(this)).append(", ").append(entry).append(")");
+        return logOutput.append("InstrumentedListener:(identity=").append(System.identityHashCode(this)).append(", ")
+                .append(entry).append(")");
     }
 
     public boolean canExecute(final long step) {
@@ -84,26 +84,23 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
     @Override
     public boolean satisfied(final long step) {
         if (lastCompletedStep == step) {
-            LiveTableMonitor.DEFAULT.logDependencies().append("Already completed notification for ")
-                .append(this).endl();
+            LiveTableMonitor.DEFAULT.logDependencies().append("Already completed notification for ").append(this)
+                    .endl();
             return true;
         }
 
         if (lastEnqueuedStep == step) {
-            LiveTableMonitor.DEFAULT.logDependencies().append("Enqueued notification for ")
-                .append(this).endl();
+            LiveTableMonitor.DEFAULT.logDependencies().append("Enqueued notification for ").append(this).endl();
             return false;
         }
 
         if (canExecute(step)) {
-            LiveTableMonitor.DEFAULT.logDependencies().append("Dependencies satisfied for ")
-                .append(this).endl();
+            LiveTableMonitor.DEFAULT.logDependencies().append("Dependencies satisfied for ").append(this).endl();
             lastCompletedStep = step;
             return true;
         }
 
-        LiveTableMonitor.DEFAULT.logDependencies().append("Dependencies not yet satisfied for ")
-            .append(this).endl();
+        LiveTableMonitor.DEFAULT.logDependencies().append("Dependencies not yet satisfied for ").append(this).endl();
         return false;
     }
 
@@ -112,20 +109,15 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
         onFailureInternal(originalException, sourceEntry == null ? entry : sourceEntry);
     }
 
-    protected abstract void onFailureInternal(Throwable originalException,
-        UpdatePerformanceTracker.Entry sourceEntry);
+    protected abstract void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry);
 
-    protected final void onFailureInternalWithDependent(final DynamicTable dependent,
-        final Throwable originalException,
-        final UpdatePerformanceTracker.Entry sourceEntry) {
+    protected final void onFailureInternalWithDependent(final DynamicTable dependent, final Throwable originalException,
+            final UpdatePerformanceTracker.Entry sourceEntry) {
         dependent.notifyListenersOnError(originalException, sourceEntry);
 
-        // although we have notified the dependent tables, we should notify the client side as well.
-        // In pretty
-        // much every case we would expect this notification to happen anyway, but in the case of a
-        // GuiTableMap
-        // from byExternal, the tables will have a hard reference, but would not actually have made
-        // it all the way
+        // although we have notified the dependent tables, we should notify the client side as well. In pretty
+        // much every case we would expect this notification to happen anyway, but in the case of a GuiTableMap
+        // from byExternal, the tables will have a hard reference, but would not actually have made it all the way
         // back to the client. Thus, the need for this additional reporting.
         try {
             if (SystemicObjectTracker.isSystemic(dependent)) {
@@ -154,17 +146,14 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
             }
             failed = true;
             try {
-                AsyncErrorLogger.log(DBTimeUtils.currentTime(), entry, sourceEntry,
-                    originalException);
+                AsyncErrorLogger.log(DBTimeUtils.currentTime(), entry, sourceEntry, originalException);
             } catch (IOException e) {
-                log.error().append("Error logging failure from ").append(entry).append(": ")
-                    .append(e).endl();
+                log.error().append("Error logging failure from ").append(entry).append(": ").append(e).endl();
             }
             try {
                 onFailureInternal(originalException, sourceEntry);
             } catch (Exception e) {
-                log.error().append("Error propagating failure from ").append(sourceEntry)
-                    .append(": ").append(e).endl();
+                log.error().append("Error propagating failure from ").append(sourceEntry).append(": ").append(e).endl();
             }
         }
 
@@ -176,13 +165,11 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
         @Override
         public LogOutput append(LogOutput output) {
             return output.append("ErrorNotification{").append("originalException=")
-                .append(originalException.getMessage()).append(", sourceEntry=").append(sourceEntry)
-                .append("}");
+                    .append(originalException.getMessage()).append(", sourceEntry=").append(sourceEntry).append("}");
         }
     }
 
-    protected abstract class NotificationBase extends AbstractIndexUpdateNotification
-        implements LogOutputAppendable {
+    protected abstract class NotificationBase extends AbstractIndexUpdateNotification implements LogOutputAppendable {
 
         final ShiftAwareListener.Update update;
 
@@ -191,7 +178,7 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
             this.update = update.acquire();
             if (lastCompletedStep == LogicalClock.DEFAULT.currentStep()) {
                 throw Assert.statementNeverExecuted(
-                    "Enqueued after lastCompletedStep already set to current step: " + toString());
+                        "Enqueued after lastCompletedStep already set to current step: " + toString());
             }
             lastEnqueuedStep = LogicalClock.DEFAULT.currentStep();
         }
@@ -207,11 +194,11 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
         @Override
         public final LogOutput append(LogOutput logOutput) {
             return logOutput.append("Notification:(step=")
-                .append(LogicalClock.DEFAULT.currentStep())
-                .append(", listener=")
-                .append(System.identityHashCode(InstrumentedListenerBase.this))
-                .append(")")
-                .append(entry);
+                    .append(LogicalClock.DEFAULT.currentStep())
+                    .append(", listener=")
+                    .append(System.identityHashCode(InstrumentedListenerBase.this))
+                    .append(")")
+                    .append(entry);
         }
 
         @Override
@@ -237,8 +224,7 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
             try {
                 if (lastCompletedStep == LogicalClock.DEFAULT.currentStep()) {
                     throw new IllegalStateException(
-                        "Executed after lastCompletedStep already set to current step: "
-                            + toString());
+                            "Executed after lastCompletedStep already set to current step: " + toString());
                 }
 
                 invokeOnUpdate.run();
@@ -253,17 +239,15 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
                 }
 
                 en.append(", added.size()=").append(update.added.size())
-                    .append(", modified.size()=").append(update.modified.size())
-                    .append(", removed.size()=").append(update.removed.size())
-                    .append(", shifted.size()=").append(update.shifted.size())
-                    .append(", modifiedColumnSet=").append(update.modifiedColumnSet.toString())
-                    .append(":\n").append(e).endl();
+                        .append(", modified.size()=").append(update.modified.size())
+                        .append(", removed.size()=").append(update.removed.size())
+                        .append(", shifted.size()=").append(update.shifted.size())
+                        .append(", modifiedColumnSet=").append(update.modifiedColumnSet.toString())
+                        .append(":\n").append(e).endl();
 
                 if (useVerboseLogging) {
-                    // This is a failure and shouldn't happen, so it is OK to be verbose here.
-                    // Particularly as it is not
-                    // clear what is actually going on in some cases of assertion failure related to
-                    // the indices.
+                    // This is a failure and shouldn't happen, so it is OK to be verbose here. Particularly as it is not
+                    // clear what is actually going on in some cases of assertion failure related to the indices.
                     log.error().append("Listener is: ").append(this.toString()).endl();
                     log.error().append("Added: ").append(update.added.toString()).endl();
                     log.error().append("Modified: ").append(update.modified.toString()).endl();

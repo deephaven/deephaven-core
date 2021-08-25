@@ -25,7 +25,7 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     public SwitchColumnSource(@NotNull final ColumnSource<T> currentSource,
-        @Nullable final Consumer<ColumnSource<T>> onPreviousCommitted) {
+            @Nullable final Consumer<ColumnSource<T>> onPreviousCommitted) {
         super(currentSource.getType(), currentSource.getComponentType());
         this.updateCommitter = new UpdateCommitter<>(this, SwitchColumnSource::clearPrevious);
         this.onPreviousCommitted = onPreviousCommitted;
@@ -43,8 +43,8 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
 
     public void setNewCurrent(ColumnSource<T> newCurrent) {
         Assert.eq(newCurrent.getType(), "newCurrent.getType()", getType(), "getType()");
-        Assert.eq(newCurrent.getComponentType(), "newCurrent.getComponentType()",
-            getComponentType(), "getComponentType()");
+        Assert.eq(newCurrent.getComponentType(), "newCurrent.getComponentType()", getComponentType(),
+                "getComponentType()");
         prevSource = currentSource;
         prevValidityStep = LogicalClock.DEFAULT.currentStep();
         currentSource = newCurrent;
@@ -73,23 +73,23 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
 
         public CT getCurrentContext() {
             return currentContext == null
-                ? currentContext = makeContext(currentSource)
-                : currentContext;
+                    ? currentContext = makeContext(currentSource)
+                    : currentContext;
         }
 
         public CT getPrevContext() {
             return prevInvalid()
-                ? getCurrentContext()
-                : prevContext == null
-                    ? prevContext = makeContext(prevSource)
-                    : prevContext;
+                    ? getCurrentContext()
+                    : prevContext == null
+                            ? prevContext = makeContext(prevSource)
+                            : prevContext;
         }
 
         @Override
         public void close() {
             // noinspection EmptyTryBlock
             try (final SafeCloseable ignored1 = currentContext;
-                final SafeCloseable ignored2 = prevContext) {
+                    final SafeCloseable ignored2 = prevContext) {
             }
         }
     }
@@ -113,26 +113,23 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public void fillChunk(@NotNull final FillContext context,
-        @NotNull final WritableChunk<? super Attributes.Values> destination,
-        @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final WritableChunk<? super Attributes.Values> destination,
+            @NotNull final OrderedKeys orderedKeys) {
         // noinspection unchecked
-        currentSource.fillChunk(((SwitchFillContext) context).getCurrentContext(), destination,
-            orderedKeys);
+        currentSource.fillChunk(((SwitchFillContext) context).getCurrentContext(), destination, orderedKeys);
     }
 
     @Override
     public void fillPrevChunk(@NotNull final FillContext context,
-        @NotNull final WritableChunk<? super Attributes.Values> destination,
-        @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final WritableChunk<? super Attributes.Values> destination,
+            @NotNull final OrderedKeys orderedKeys) {
         if (prevInvalid()) {
             // noinspection unchecked
-            currentSource.fillPrevChunk(((SwitchFillContext) context).getCurrentContext(),
-                destination, orderedKeys);
+            currentSource.fillPrevChunk(((SwitchFillContext) context).getCurrentContext(), destination, orderedKeys);
             return;
         }
         // noinspection unchecked
-        prevSource.fillPrevChunk(((SwitchFillContext) context).getPrevContext(), destination,
-            orderedKeys);
+        prevSource.fillPrevChunk(((SwitchFillContext) context).getPrevContext(), destination, orderedKeys);
     }
 
     private class SwitchGetContext extends SwitchContext<GetContext> implements GetContext {
@@ -154,19 +151,17 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public Chunk<? extends Attributes.Values> getChunk(@NotNull final GetContext context,
-        @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final OrderedKeys orderedKeys) {
         // noinspection unchecked
-        return currentSource.getChunk(((SwitchGetContext) context).getCurrentContext(),
-            orderedKeys);
+        return currentSource.getChunk(((SwitchGetContext) context).getCurrentContext(), orderedKeys);
     }
 
     @Override
     public Chunk<? extends Attributes.Values> getPrevChunk(@NotNull final GetContext context,
-        @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final OrderedKeys orderedKeys) {
         if (prevInvalid()) {
             // noinspection unchecked
-            return currentSource.getPrevChunk(((SwitchGetContext) context).getCurrentContext(),
-                orderedKeys);
+            return currentSource.getPrevChunk(((SwitchGetContext) context).getCurrentContext(), orderedKeys);
         }
         // noinspection unchecked
         return prevSource.getPrevChunk(((SwitchGetContext) context).getPrevContext(), orderedKeys);

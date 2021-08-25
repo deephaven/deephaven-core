@@ -10,8 +10,7 @@ import io.deephaven.io.log.LogBufferPool;
 
 import java.nio.ByteBuffer;
 
-public class DynamicLogBufferPoolImpl extends ThreadSafeLenientFixedSizePool<ByteBuffer>
-    implements LogBufferPool {
+public class DynamicLogBufferPoolImpl extends ThreadSafeLenientFixedSizePool<ByteBuffer> implements LogBufferPool {
 
     // public DynamicLogBufferPoolImpl(final int poolSize, final int byteBufferCapacity) {
     // super(poolSize,
@@ -22,11 +21,11 @@ public class DynamicLogBufferPoolImpl extends ThreadSafeLenientFixedSizePool<Byt
 
     public DynamicLogBufferPoolImpl(String name, final int poolSize, final int byteBufferCapacity) {
         super(name, poolSize,
-            new Function.Nullary<ByteBuffer>() {
-                public ByteBuffer call() {
-                    return ByteBuffer.allocate(byteBufferCapacity);
-                }
-            }, null);
+                new Function.Nullary<ByteBuffer>() {
+                    public ByteBuffer call() {
+                        return ByteBuffer.allocate(byteBufferCapacity);
+                    }
+                }, null);
     }
 
     @Override

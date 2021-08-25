@@ -238,27 +238,27 @@ public class Message {
     }
 
     public static native void addToRepeatedField(
-        Message msg, double fieldNumber, Object value, double index);
+            Message msg, double fieldNumber, Object value, double index);
 
     public static native void addToRepeatedField(Message msg, double fieldNumber, Object value);
 
     @JsOverlay
     public static final <T> T addToRepeatedWrapperField(
-        Message msg, double fieldNumber, T value, Class<? extends T> ctor, double index) {
+            Message msg, double fieldNumber, T value, Class<? extends T> ctor, double index) {
         return addToRepeatedWrapperField(msg, fieldNumber, value, Js.asConstructorFn(ctor), index);
     }
 
     @JsOverlay
     public static final <T> T addToRepeatedWrapperField(
-        Message msg, double fieldNumber, T value, Class<? extends T> ctor) {
+            Message msg, double fieldNumber, T value, Class<? extends T> ctor) {
         return addToRepeatedWrapperField(msg, fieldNumber, value, Js.asConstructorFn(ctor));
     }
 
     public static native <T> T addToRepeatedWrapperField(
-        Message msg, double fieldNumber, T value, JsConstructorFn<? extends T> ctor, double index);
+            Message msg, double fieldNumber, T value, JsConstructorFn<? extends T> ctor, double index);
 
     public static native <T> T addToRepeatedWrapperField(
-        Message msg, double fieldNumber, T value, JsConstructorFn<? extends T> ctor);
+            Message msg, double fieldNumber, T value, JsConstructorFn<? extends T> ctor);
 
     public static native String bytesAsB64(Uint8Array bytes);
 
@@ -308,259 +308,259 @@ public class Message {
     public static native <T> T getFieldWithDefault(Message msg, double fieldNumber, T defaultValue);
 
     public static native Map<Object, Object> getMapField(
-        Message msg, double fieldNumber, boolean noLazyCreate, Object valueCtor);
+            Message msg, double fieldNumber, boolean noLazyCreate, Object valueCtor);
 
     public static native double getOptionalFloatingPointField(Message msg, double fieldNumber);
 
     public static native JsArray<Double> getRepeatedFloatingPointField(
-        Message msg, double fieldNumber);
+            Message msg, double fieldNumber);
 
     @JsOverlay
     public static final <T> JsArray<T> getRepeatedWrapperField(
-        Message msg, Class<? extends T> ctor, double fieldNumber) {
+            Message msg, Class<? extends T> ctor, double fieldNumber) {
         return getRepeatedWrapperField(msg, Js.asConstructorFn(ctor), fieldNumber);
     }
 
     public static native <T> JsArray<T> getRepeatedWrapperField(
-        Message msg, JsConstructorFn<? extends T> ctor, double fieldNumber);
+            Message msg, JsConstructorFn<? extends T> ctor, double fieldNumber);
 
     @JsOverlay
     public static final <T> T getWrapperField(
-        Message msg, Class<? extends T> ctor, double fieldNumber, double required) {
+            Message msg, Class<? extends T> ctor, double fieldNumber, double required) {
         return getWrapperField(msg, Js.asConstructorFn(ctor), fieldNumber, required);
     }
 
     @JsOverlay
     public static final <T> T getWrapperField(
-        Message msg, Class<? extends T> ctor, double fieldNumber) {
+            Message msg, Class<? extends T> ctor, double fieldNumber) {
         return getWrapperField(msg, Js.asConstructorFn(ctor), fieldNumber);
     }
 
     public static native <T> T getWrapperField(
-        Message msg, JsConstructorFn<? extends T> ctor, double fieldNumber, double required);
+            Message msg, JsConstructorFn<? extends T> ctor, double fieldNumber, double required);
 
     public static native <T> T getWrapperField(
-        Message msg, JsConstructorFn<? extends T> ctor, double fieldNumber);
+            Message msg, JsConstructorFn<? extends T> ctor, double fieldNumber);
 
     public static native void initialize(
-        Message msg,
-        JsArray<Object> data,
-        Message.InitializeMessageIdUnionType messageId,
-        double suggestedPivot,
-        JsArray<Double> repeatedFields,
-        JsArray<JsArray<Double>> oneofFields);
+            Message msg,
+            JsArray<Object> data,
+            Message.InitializeMessageIdUnionType messageId,
+            double suggestedPivot,
+            JsArray<Double> repeatedFields,
+            JsArray<JsArray<Double>> oneofFields);
 
     public static native void initialize(
-        Message msg,
-        JsArray<Object> data,
-        Message.InitializeMessageIdUnionType messageId,
-        double suggestedPivot,
-        JsArray<Double> repeatedFields);
+            Message msg,
+            JsArray<Object> data,
+            Message.InitializeMessageIdUnionType messageId,
+            double suggestedPivot,
+            JsArray<Double> repeatedFields);
 
     public static native void initialize(
-        Message msg,
-        JsArray<Object> data,
-        Message.InitializeMessageIdUnionType messageId,
-        double suggestedPivot);
+            Message msg,
+            JsArray<Object> data,
+            Message.InitializeMessageIdUnionType messageId,
+            double suggestedPivot);
 
     @JsOverlay
     public static final void initialize(
-        Message msg,
-        JsArray<Object> data,
-        String messageId,
-        double suggestedPivot,
-        JsArray<Double> repeatedFields,
-        JsArray<JsArray<Double>> oneofFields) {
+            Message msg,
+            JsArray<Object> data,
+            String messageId,
+            double suggestedPivot,
+            JsArray<Double> repeatedFields,
+            JsArray<JsArray<Double>> oneofFields) {
         initialize(
-            msg,
-            data,
-            Js.<Message.InitializeMessageIdUnionType>uncheckedCast(messageId),
-            suggestedPivot,
-            repeatedFields,
-            oneofFields);
+                msg,
+                data,
+                Js.<Message.InitializeMessageIdUnionType>uncheckedCast(messageId),
+                suggestedPivot,
+                repeatedFields,
+                oneofFields);
     }
 
     @JsOverlay
     public static final void initialize(
-        Message msg,
-        JsArray<Object> data,
-        String messageId,
-        double suggestedPivot,
-        JsArray<Double> repeatedFields) {
+            Message msg,
+            JsArray<Object> data,
+            String messageId,
+            double suggestedPivot,
+            JsArray<Double> repeatedFields) {
         initialize(
-            msg,
-            data,
-            Js.<Message.InitializeMessageIdUnionType>uncheckedCast(messageId),
-            suggestedPivot,
-            repeatedFields);
+                msg,
+                data,
+                Js.<Message.InitializeMessageIdUnionType>uncheckedCast(messageId),
+                suggestedPivot,
+                repeatedFields);
     }
 
     @JsOverlay
     public static final void initialize(
-        Message msg, JsArray<Object> data, String messageId, double suggestedPivot) {
+            Message msg, JsArray<Object> data, String messageId, double suggestedPivot) {
         initialize(
-            msg,
-            data,
-            Js.<Message.InitializeMessageIdUnionType>uncheckedCast(messageId),
-            suggestedPivot);
+                msg,
+                data,
+                Js.<Message.InitializeMessageIdUnionType>uncheckedCast(messageId),
+                suggestedPivot);
     }
 
     @JsOverlay
     public static final void initialize(
-        Message msg,
-        JsArray<Object> data,
-        double messageId,
-        double suggestedPivot,
-        JsArray<Double> repeatedFields,
-        JsArray<JsArray<Double>> oneofFields) {
+            Message msg,
+            JsArray<Object> data,
+            double messageId,
+            double suggestedPivot,
+            JsArray<Double> repeatedFields,
+            JsArray<JsArray<Double>> oneofFields) {
         initialize(
-            msg,
-            data,
-            Js.<Message.InitializeMessageIdUnionType>uncheckedCast(messageId),
-            suggestedPivot,
-            repeatedFields,
-            oneofFields);
+                msg,
+                data,
+                Js.<Message.InitializeMessageIdUnionType>uncheckedCast(messageId),
+                suggestedPivot,
+                repeatedFields,
+                oneofFields);
     }
 
     @JsOverlay
     public static final void initialize(
-        Message msg,
-        JsArray<Object> data,
-        double messageId,
-        double suggestedPivot,
-        JsArray<Double> repeatedFields) {
+            Message msg,
+            JsArray<Object> data,
+            double messageId,
+            double suggestedPivot,
+            JsArray<Double> repeatedFields) {
         initialize(
-            msg,
-            data,
-            Js.<Message.InitializeMessageIdUnionType>uncheckedCast(messageId),
-            suggestedPivot,
-            repeatedFields);
+                msg,
+                data,
+                Js.<Message.InitializeMessageIdUnionType>uncheckedCast(messageId),
+                suggestedPivot,
+                repeatedFields);
     }
 
     @JsOverlay
     public static final void initialize(
-        Message msg, JsArray<Object> data, double messageId, double suggestedPivot) {
+            Message msg, JsArray<Object> data, double messageId, double suggestedPivot) {
         initialize(
-            msg,
-            data,
-            Js.<Message.InitializeMessageIdUnionType>uncheckedCast(messageId),
-            suggestedPivot);
+                msg,
+                data,
+                Js.<Message.InitializeMessageIdUnionType>uncheckedCast(messageId),
+                suggestedPivot);
     }
 
     @JsOverlay
     public static final void initialize(
-        Message msg,
-        Object[] data,
-        Message.InitializeMessageIdUnionType messageId,
-        double suggestedPivot,
-        double[] repeatedFields,
-        double[][] oneofFields) {
+            Message msg,
+            Object[] data,
+            Message.InitializeMessageIdUnionType messageId,
+            double suggestedPivot,
+            double[] repeatedFields,
+            double[][] oneofFields) {
         initialize(
-            msg,
-            Js.<JsArray<Object>>uncheckedCast(data),
-            messageId,
-            suggestedPivot,
-            Js.<JsArray<Double>>uncheckedCast(repeatedFields),
-            Js.<JsArray<JsArray<Double>>>uncheckedCast(oneofFields));
+                msg,
+                Js.<JsArray<Object>>uncheckedCast(data),
+                messageId,
+                suggestedPivot,
+                Js.<JsArray<Double>>uncheckedCast(repeatedFields),
+                Js.<JsArray<JsArray<Double>>>uncheckedCast(oneofFields));
     }
 
     @JsOverlay
     public static final void initialize(
-        Message msg,
-        Object[] data,
-        Message.InitializeMessageIdUnionType messageId,
-        double suggestedPivot,
-        double[] repeatedFields) {
+            Message msg,
+            Object[] data,
+            Message.InitializeMessageIdUnionType messageId,
+            double suggestedPivot,
+            double[] repeatedFields) {
         initialize(
-            msg,
-            Js.<JsArray<Object>>uncheckedCast(data),
-            messageId,
-            suggestedPivot,
-            Js.<JsArray<Double>>uncheckedCast(repeatedFields));
+                msg,
+                Js.<JsArray<Object>>uncheckedCast(data),
+                messageId,
+                suggestedPivot,
+                Js.<JsArray<Double>>uncheckedCast(repeatedFields));
     }
 
     @JsOverlay
     public static final void initialize(
-        Message msg,
-        Object[] data,
-        Message.InitializeMessageIdUnionType messageId,
-        double suggestedPivot) {
+            Message msg,
+            Object[] data,
+            Message.InitializeMessageIdUnionType messageId,
+            double suggestedPivot) {
         initialize(msg, Js.<JsArray<Object>>uncheckedCast(data), messageId, suggestedPivot);
     }
 
     @JsOverlay
     public static final void initialize(
-        Message msg,
-        Object[] data,
-        String messageId,
-        double suggestedPivot,
-        double[] repeatedFields,
-        double[][] oneofFields) {
+            Message msg,
+            Object[] data,
+            String messageId,
+            double suggestedPivot,
+            double[] repeatedFields,
+            double[][] oneofFields) {
         initialize(
-            msg,
-            Js.<JsArray<Object>>uncheckedCast(data),
-            messageId,
-            suggestedPivot,
-            Js.<JsArray<Double>>uncheckedCast(repeatedFields),
-            Js.<JsArray<JsArray<Double>>>uncheckedCast(oneofFields));
+                msg,
+                Js.<JsArray<Object>>uncheckedCast(data),
+                messageId,
+                suggestedPivot,
+                Js.<JsArray<Double>>uncheckedCast(repeatedFields),
+                Js.<JsArray<JsArray<Double>>>uncheckedCast(oneofFields));
     }
 
     @JsOverlay
     public static final void initialize(
-        Message msg,
-        Object[] data,
-        String messageId,
-        double suggestedPivot,
-        double[] repeatedFields) {
+            Message msg,
+            Object[] data,
+            String messageId,
+            double suggestedPivot,
+            double[] repeatedFields) {
         initialize(
-            msg,
-            Js.<JsArray<Object>>uncheckedCast(data),
-            messageId,
-            suggestedPivot,
-            Js.<JsArray<Double>>uncheckedCast(repeatedFields));
+                msg,
+                Js.<JsArray<Object>>uncheckedCast(data),
+                messageId,
+                suggestedPivot,
+                Js.<JsArray<Double>>uncheckedCast(repeatedFields));
     }
 
     @JsOverlay
     public static final void initialize(
-        Message msg, Object[] data, String messageId, double suggestedPivot) {
+            Message msg, Object[] data, String messageId, double suggestedPivot) {
         initialize(msg, Js.<JsArray<Object>>uncheckedCast(data), messageId, suggestedPivot);
     }
 
     @JsOverlay
     public static final void initialize(
-        Message msg,
-        Object[] data,
-        double messageId,
-        double suggestedPivot,
-        double[] repeatedFields,
-        double[][] oneofFields) {
+            Message msg,
+            Object[] data,
+            double messageId,
+            double suggestedPivot,
+            double[] repeatedFields,
+            double[][] oneofFields) {
         initialize(
-            msg,
-            Js.<JsArray<Object>>uncheckedCast(data),
-            messageId,
-            suggestedPivot,
-            Js.<JsArray<Double>>uncheckedCast(repeatedFields),
-            Js.<JsArray<JsArray<Double>>>uncheckedCast(oneofFields));
+                msg,
+                Js.<JsArray<Object>>uncheckedCast(data),
+                messageId,
+                suggestedPivot,
+                Js.<JsArray<Double>>uncheckedCast(repeatedFields),
+                Js.<JsArray<JsArray<Double>>>uncheckedCast(oneofFields));
     }
 
     @JsOverlay
     public static final void initialize(
-        Message msg,
-        Object[] data,
-        double messageId,
-        double suggestedPivot,
-        double[] repeatedFields) {
+            Message msg,
+            Object[] data,
+            double messageId,
+            double suggestedPivot,
+            double[] repeatedFields) {
         initialize(
-            msg,
-            Js.<JsArray<Object>>uncheckedCast(data),
-            messageId,
-            suggestedPivot,
-            Js.<JsArray<Double>>uncheckedCast(repeatedFields));
+                msg,
+                Js.<JsArray<Object>>uncheckedCast(data),
+                messageId,
+                suggestedPivot,
+                Js.<JsArray<Double>>uncheckedCast(repeatedFields));
     }
 
     @JsOverlay
     public static final void initialize(
-        Message msg, Object[] data, double messageId, double suggestedPivot) {
+            Message msg, Object[] data, double messageId, double suggestedPivot) {
         initialize(msg, Js.<JsArray<Object>>uncheckedCast(data), messageId, suggestedPivot);
     }
 
@@ -574,7 +574,7 @@ public class Message {
     }
 
     public static native void setField(
-        Message msg, double fieldNumber, Message.SetFieldValueUnionType value);
+            Message msg, double fieldNumber, Message.SetFieldValueUnionType value);
 
     @JsOverlay
     public static final void setField(Message msg, double fieldNumber, String value) {
@@ -598,97 +598,95 @@ public class Message {
 
     @JsOverlay
     public static final void setOneofField(
-        Message msg, double fieldNumber, JsArray<Double> oneof, FieldValueArray value) {
+            Message msg, double fieldNumber, JsArray<Double> oneof, FieldValueArray value) {
         setOneofField(
-            msg, fieldNumber, oneof, Js.<Message.SetOneofFieldValueUnionType>uncheckedCast(value));
+                msg, fieldNumber, oneof, Js.<Message.SetOneofFieldValueUnionType>uncheckedCast(value));
     }
 
     public static native void setOneofField(
-        Message msg,
-        double fieldNumber,
-        JsArray<Double> oneof,
-        Message.SetOneofFieldValueUnionType value);
+            Message msg,
+            double fieldNumber,
+            JsArray<Double> oneof,
+            Message.SetOneofFieldValueUnionType value);
 
     @JsOverlay
     public static final void setOneofField(
-        Message msg, double fieldNumber, JsArray<Double> oneof, String value) {
+            Message msg, double fieldNumber, JsArray<Double> oneof, String value) {
         setOneofField(
-            msg, fieldNumber, oneof, Js.<Message.SetOneofFieldValueUnionType>uncheckedCast(value));
+                msg, fieldNumber, oneof, Js.<Message.SetOneofFieldValueUnionType>uncheckedCast(value));
     }
 
     @JsOverlay
     public static final void setOneofField(
-        Message msg, double fieldNumber, JsArray<Double> oneof, Uint8Array value) {
+            Message msg, double fieldNumber, JsArray<Double> oneof, Uint8Array value) {
         setOneofField(
-            msg, fieldNumber, oneof, Js.<Message.SetOneofFieldValueUnionType>uncheckedCast(value));
+                msg, fieldNumber, oneof, Js.<Message.SetOneofFieldValueUnionType>uncheckedCast(value));
     }
 
     @JsOverlay
     public static final void setOneofField(
-        Message msg, double fieldNumber, JsArray<Double> oneof, boolean value) {
+            Message msg, double fieldNumber, JsArray<Double> oneof, boolean value) {
         setOneofField(
-            msg, fieldNumber, oneof, Js.<Message.SetOneofFieldValueUnionType>uncheckedCast(value));
+                msg, fieldNumber, oneof, Js.<Message.SetOneofFieldValueUnionType>uncheckedCast(value));
     }
 
     @JsOverlay
     public static final void setOneofField(
-        Message msg, double fieldNumber, JsArray<Double> oneof, double value) {
+            Message msg, double fieldNumber, JsArray<Double> oneof, double value) {
         setOneofField(
-            msg, fieldNumber, oneof, Js.<Message.SetOneofFieldValueUnionType>uncheckedCast(value));
+                msg, fieldNumber, oneof, Js.<Message.SetOneofFieldValueUnionType>uncheckedCast(value));
     }
 
     @JsOverlay
     public static final void setOneofField(
-        Message msg, double fieldNumber, double[] oneof, FieldValueArray value) {
+            Message msg, double fieldNumber, double[] oneof, FieldValueArray value) {
         setOneofField(msg, fieldNumber, Js.<JsArray<Double>>uncheckedCast(oneof), value);
     }
 
     @JsOverlay
     public static final void setOneofField(
-        Message msg, double fieldNumber, double[] oneof,
-        Message.SetOneofFieldValueUnionType value) {
+            Message msg, double fieldNumber, double[] oneof, Message.SetOneofFieldValueUnionType value) {
         setOneofField(msg, fieldNumber, Js.<JsArray<Double>>uncheckedCast(oneof), value);
     }
 
     @JsOverlay
     public static final void setOneofField(
-        Message msg, double fieldNumber, double[] oneof, String value) {
+            Message msg, double fieldNumber, double[] oneof, String value) {
         setOneofField(msg, fieldNumber, Js.<JsArray<Double>>uncheckedCast(oneof), value);
     }
 
     @JsOverlay
     public static final void setOneofField(
-        Message msg, double fieldNumber, double[] oneof, Uint8Array value) {
+            Message msg, double fieldNumber, double[] oneof, Uint8Array value) {
         setOneofField(msg, fieldNumber, Js.<JsArray<Double>>uncheckedCast(oneof), value);
     }
 
     @JsOverlay
     public static final void setOneofField(
-        Message msg, double fieldNumber, double[] oneof, boolean value) {
+            Message msg, double fieldNumber, double[] oneof, boolean value) {
         setOneofField(msg, fieldNumber, Js.<JsArray<Double>>uncheckedCast(oneof), value);
     }
 
     @JsOverlay
     public static final void setOneofField(
-        Message msg, double fieldNumber, double[] oneof, double value) {
+            Message msg, double fieldNumber, double[] oneof, double value) {
         setOneofField(msg, fieldNumber, Js.<JsArray<Double>>uncheckedCast(oneof), value);
     }
 
     public static native void setOneofWrapperField(
-        Message msg, double fieldNumber, JsArray<Double> oneof, Object value);
+            Message msg, double fieldNumber, JsArray<Double> oneof, Object value);
 
     @JsOverlay
     public static final void setOneofWrapperField(
-        Message msg, double fieldNumber, double[] oneof, Object value) {
+            Message msg, double fieldNumber, double[] oneof, Object value) {
         setOneofWrapperField(msg, fieldNumber, Js.<JsArray<Double>>uncheckedCast(oneof), value);
     }
 
     public static native <T> void setRepeatedWrapperField(
-        Message msg, double fieldNumber, JsArray<T> value);
+            Message msg, double fieldNumber, JsArray<T> value);
 
     @JsOverlay
-    public static final <T> void setRepeatedWrapperField(Message msg, double fieldNumber,
-        T[] value) {
+    public static final <T> void setRepeatedWrapperField(Message msg, double fieldNumber, T[] value) {
         setRepeatedWrapperField(msg, fieldNumber, Js.<JsArray<T>>uncheckedCast(value));
     }
 
@@ -696,51 +694,50 @@ public class Message {
 
     @JsOverlay
     public static final <T> void setWrapperField(
-        Message msg, double fieldNumber, Map<Object, Object> value) {
+            Message msg, double fieldNumber, Map<Object, Object> value) {
         setWrapperField(
-            msg, fieldNumber, Js.<Message.SetWrapperFieldValueUnionType<T>>uncheckedCast(value));
+                msg, fieldNumber, Js.<Message.SetWrapperFieldValueUnionType<T>>uncheckedCast(value));
     }
 
     public static native <T> void setWrapperField(
-        Message msg, double fieldNumber, Message.SetWrapperFieldValueUnionType<T> value);
+            Message msg, double fieldNumber, Message.SetWrapperFieldValueUnionType<T> value);
 
     @JsOverlay
     public static final <T> void setWrapperField(Message msg, double fieldNumber, T value) {
         setWrapperField(
-            msg, fieldNumber, Js.<Message.SetWrapperFieldValueUnionType<T>>uncheckedCast(value));
+                msg, fieldNumber, Js.<Message.SetWrapperFieldValueUnionType<T>>uncheckedCast(value));
     }
 
     public static native void setWrapperField(Message msg, double fieldNumber);
 
     public static native void toMap(
-        JsArray<Object> field,
-        Message.ToMapMapKeyGetterFn mapKeyGetterFn,
-        Message.ToMapToObjectFn toObjectFn,
-        boolean includeInstance);
+            JsArray<Object> field,
+            Message.ToMapMapKeyGetterFn mapKeyGetterFn,
+            Message.ToMapToObjectFn toObjectFn,
+            boolean includeInstance);
 
     public static native void toMap(
-        JsArray<Object> field,
-        Message.ToMapMapKeyGetterFn mapKeyGetterFn,
-        Message.ToMapToObjectFn toObjectFn);
+            JsArray<Object> field,
+            Message.ToMapMapKeyGetterFn mapKeyGetterFn,
+            Message.ToMapToObjectFn toObjectFn);
 
     public static native void toMap(
-        JsArray<Object> field, Message.ToMapMapKeyGetterFn mapKeyGetterFn);
+            JsArray<Object> field, Message.ToMapMapKeyGetterFn mapKeyGetterFn);
 
     @JsOverlay
     public static final void toMap(
-        Object[] field,
-        Message.ToMapMapKeyGetterFn mapKeyGetterFn,
-        Message.ToMapToObjectFn toObjectFn,
-        boolean includeInstance) {
-        toMap(Js.<JsArray<Object>>uncheckedCast(field), mapKeyGetterFn, toObjectFn,
-            includeInstance);
+            Object[] field,
+            Message.ToMapMapKeyGetterFn mapKeyGetterFn,
+            Message.ToMapToObjectFn toObjectFn,
+            boolean includeInstance) {
+        toMap(Js.<JsArray<Object>>uncheckedCast(field), mapKeyGetterFn, toObjectFn, includeInstance);
     }
 
     @JsOverlay
     public static final void toMap(
-        Object[] field,
-        Message.ToMapMapKeyGetterFn mapKeyGetterFn,
-        Message.ToMapToObjectFn toObjectFn) {
+            Object[] field,
+            Message.ToMapMapKeyGetterFn mapKeyGetterFn,
+            Message.ToMapToObjectFn toObjectFn) {
         toMap(Js.<JsArray<Object>>uncheckedCast(field), mapKeyGetterFn, toObjectFn);
     }
 
@@ -752,28 +749,28 @@ public class Message {
     public static native Object toObject(boolean includeInstance, Message msg);
 
     public static native void toObjectExtension(
-        Message msg, Object obj, Object extensions, Object getExtensionFn, boolean includeInstance);
+            Message msg, Object obj, Object extensions, Object getExtensionFn, boolean includeInstance);
 
     public static native void toObjectExtension(
-        Message msg, Object obj, Object extensions, Object getExtensionFn);
+            Message msg, Object obj, Object extensions, Object getExtensionFn);
 
     public static native <T> JsArray<Object> toObjectList(
-        JsArray<T> field,
-        Message.ToObjectListToObjectFn<? super T> toObjectFn,
-        boolean includeInstance);
+            JsArray<T> field,
+            Message.ToObjectListToObjectFn<? super T> toObjectFn,
+            boolean includeInstance);
 
     public static native <T> JsArray<Object> toObjectList(
-        JsArray<T> field, Message.ToObjectListToObjectFn<? super T> toObjectFn);
+            JsArray<T> field, Message.ToObjectListToObjectFn<? super T> toObjectFn);
 
     @JsOverlay
     public static final <T> JsArray<Object> toObjectList(
-        T[] field, Message.ToObjectListToObjectFn<? super T> toObjectFn, boolean includeInstance) {
+            T[] field, Message.ToObjectListToObjectFn<? super T> toObjectFn, boolean includeInstance) {
         return toObjectList(Js.<JsArray<T>>uncheckedCast(field), toObjectFn, includeInstance);
     }
 
     @JsOverlay
     public static final <T> JsArray<Object> toObjectList(
-        T[] field, Message.ToObjectListToObjectFn<? super T> toObjectFn) {
+            T[] field, Message.ToObjectListToObjectFn<? super T> toObjectFn) {
         return toObjectList(Js.<JsArray<T>>uncheckedCast(field), toObjectFn);
     }
 
@@ -787,12 +784,12 @@ public class Message {
     public native String getJsPbMessageId();
 
     public native void readBinaryExtension(
-        Message proto, BinaryReader reader, Object extensions, Object setExtensionFn);
+            Message proto, BinaryReader reader, Object extensions, Object setExtensionFn);
 
     public native Uint8Array serializeBinary();
 
     public native void serializeBinaryExtensions(
-        Message proto, BinaryWriter writer, Object extensions, Object getExtensionFn);
+            Message proto, BinaryWriter writer, Object extensions, Object getExtensionFn);
 
     public native <T> void setExtension(ExtensionFieldInfo<T> fieldInfo, T value);
 

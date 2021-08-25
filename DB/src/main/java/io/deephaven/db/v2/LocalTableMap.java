@@ -43,8 +43,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * A TableMap implementation backed by a Map.
  */
-public class LocalTableMap extends TableMapImpl
-    implements NotificationQueue.Dependency, SystemicObject {
+public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dependency, SystemicObject {
 
     /** map to use for our backing store */
     private final Map<Object, Table> internalMap;
@@ -75,8 +74,7 @@ public class LocalTableMap extends TableMapImpl
     transient boolean useGlobalTransformationThreadPool = true;
 
     /**
-     * If useGlobalTransformationThreadPool is false, how many threads should we use for our
-     * executorService?
+     * If useGlobalTransformationThreadPool is false, how many threads should we use for our executorService?
      */
     transient int transformationThreads = 1;
 
@@ -86,9 +84,9 @@ public class LocalTableMap extends TableMapImpl
     private transient ExecutorService executorService = null;
 
     /**
-     * The TableMaps don't know how to create empty tables for themselves, if the TableMap needs to
-     * be pre-populated, it must pass this callback into the constructor. When the populateKeys call
-     * on the TableMap is invoked, the populate function is called for each of the new keys.
+     * The TableMaps don't know how to create empty tables for themselves, if the TableMap needs to be pre-populated, it
+     * must pass this callback into the constructor. When the populateKeys call on the TableMap is invoked, the populate
+     * function is called for each of the new keys.
      */
     @FunctionalInterface
     public interface PopulateCallback {
@@ -103,8 +101,8 @@ public class LocalTableMap extends TableMapImpl
     private NotificationQueue.Dependency dependency;
 
     /**
-     * Cache the last satisfied step, so that we do not need to query all our dependencies if we
-     * have already been satisfied on a given cycle.
+     * Cache the last satisfied step, so that we do not need to query all our dependencies if we have already been
+     * satisfied on a given cycle.
      */
     private long lastSatisfiedStep = -1;
 
@@ -112,13 +110,12 @@ public class LocalTableMap extends TableMapImpl
      * Constructor to create an instance with a specific map, which may not be populated.
      *
      * @param internalMap the map to use for our backing store
-     * @param populateCallback the callback that is invoked when {@link #populateKeys(Object...)} is
-     *        called
-     * @param constituentDefinition the definition of the constituent tables (optional, but by
-     *        providing it, a TableMap with no constituents can be merged)
+     * @param populateCallback the callback that is invoked when {@link #populateKeys(Object...)} is called
+     * @param constituentDefinition the definition of the constituent tables (optional, but by providing it, a TableMap
+     *        with no constituents can be merged)
      */
     LocalTableMap(Map<Object, Table> internalMap, PopulateCallback populateCallback,
-        TableDefinition constituentDefinition) {
+            TableDefinition constituentDefinition) {
         this.populateCallback = populateCallback;
         this.internalMap = internalMap;
         this.constituentDefinition = constituentDefinition;
@@ -128,8 +125,7 @@ public class LocalTableMap extends TableMapImpl
     /**
      * Constructor to create an instance with an empty default map.
      *
-     * @param populateCallback the callback that is invoked when {@link #populateKeys(Object...)} is
-     *        called
+     * @param populateCallback the callback that is invoked when {@link #populateKeys(Object...)} is called
      */
     public LocalTableMap(PopulateCallback populateCallback) {
         this(new LinkedHashMap<>(), populateCallback, null);
@@ -138,10 +134,9 @@ public class LocalTableMap extends TableMapImpl
     /**
      * Constructor to create an instance with an empty default map.
      *
-     * @param populateCallback the callback that is invoked when {@link #populateKeys(Object...)} is
-     *        called
-     * @param constituentDefinition the definition of the constituent tables (optional, but by
-     *        providing it, a TableMap with no constituents can be merged)
+     * @param populateCallback the callback that is invoked when {@link #populateKeys(Object...)} is called
+     * @param constituentDefinition the definition of the constituent tables (optional, but by providing it, a TableMap
+     *        with no constituents can be merged)
      */
     public LocalTableMap(PopulateCallback populateCallback, TableDefinition constituentDefinition) {
         this(new LinkedHashMap<>(), populateCallback, constituentDefinition);
@@ -184,10 +179,9 @@ public class LocalTableMap extends TableMapImpl
         if (constituentDefinition != null) {
             if (!constituentDefinition.equalsIgnoreOrder(table.getDefinition())) {
                 throw new IllegalStateException(
-                    "Put table does not match expected constituent definition: "
-                        + constituentDefinition
-                            .getDifferenceDescription(table.getDefinition(), "existing", "new",
-                                "\n    "));
+                        "Put table does not match expected constituent definition: "
+                                + constituentDefinition
+                                        .getDifferenceDescription(table.getDefinition(), "existing", "new", "\n    "));
             }
         }
 
@@ -207,8 +201,7 @@ public class LocalTableMap extends TableMapImpl
         return result;
     }
 
-    public Table computeIfAbsent(Object key,
-        java.util.function.Function<Object, Table> tableFactory) {
+    public Table computeIfAbsent(Object key, java.util.function.Function<Object, Table> tableFactory) {
         final Table result;
         synchronized (this) {
             final Table existing = get(key);
@@ -284,8 +277,7 @@ public class LocalTableMap extends TableMapImpl
     }
 
     public synchronized Collection<Map.Entry<Object, Table>> entrySet() {
-        // TODO: Should we manage all entry values with current liveness scope? Do so on
-        // Map.Entry.getValue()?
+        // TODO: Should we manage all entry values with current liveness scope? Do so on Map.Entry.getValue()?
         return internalMap.entrySet();
     }
 
@@ -317,8 +309,7 @@ public class LocalTableMap extends TableMapImpl
     public TableMap transformTablesWithKey(BiFunction<Object, Table, Table> function) {
         final TableDefinition returnDefinition;
         if (constituentDefinition != null) {
-            final Table emptyTable =
-                new QueryTable(constituentDefinition, Index.FACTORY.getEmptyIndex(),
+            final Table emptyTable = new QueryTable(constituentDefinition, Index.FACTORY.getEmptyIndex(),
                     NullValueColumnSource.createColumnSourceMap(constituentDefinition));
             returnDefinition = function.apply(SENTINEL_KEY, emptyTable).getDefinition();
         } else {
@@ -329,7 +320,7 @@ public class LocalTableMap extends TableMapImpl
 
     @Override
     public TableMap transformTablesWithKey(TableDefinition returnDefinition,
-        BiFunction<Object, Table, Table> function) {
+            BiFunction<Object, Table, Table> function) {
         final boolean shouldClear = QueryPerformanceRecorder.setCallsite();
         try {
             final ComputedTableMap result = new ComputedTableMap(this, returnDefinition);
@@ -338,13 +329,12 @@ public class LocalTableMap extends TableMapImpl
             if (executorService != null) {
                 final boolean doCheck = LiveTableMonitor.DEFAULT.getCheckTableOperations();
                 final boolean hasLtm = LiveTableMonitor.DEFAULT.sharedLock().isHeldByCurrentThread()
-                    || LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
+                        || LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
                 final Map<Object, Future<Table>> futures = new LinkedHashMap<>();
                 for (final Map.Entry<Object, Table> entry : entrySet()) {
                     futures.put(entry.getKey(), executorService.submit(() -> {
                         if (hasLtm || !doCheck) {
-                            final boolean oldCheck =
-                                LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
+                            final boolean oldCheck = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
                             try {
                                 return function.apply(entry.getKey(), entry.getValue());
                             } finally {
@@ -360,8 +350,7 @@ public class LocalTableMap extends TableMapImpl
                     try {
                         table = entry.getValue().get();
                     } catch (InterruptedException | ExecutionException e) {
-                        throw new UncheckedTableException(
-                            "Failed to transform table for " + entry.getKey(), e);
+                        throw new UncheckedTableException("Failed to transform table for " + entry.getKey(), e);
                     }
                     result.insertWithApply(entry.getKey(), table, (k, t) -> t);
                 }
@@ -380,12 +369,12 @@ public class LocalTableMap extends TableMapImpl
             addListener(listener);
 
             if (isRefreshing()) {
-                // if we are refreshing, we want to add a parent reference, which turns the result
-                // refreshing; and ensures reachability
+                // if we are refreshing, we want to add a parent reference, which turns the result refreshing; and
+                // ensures reachability
                 result.addParentReference(listener);
             } else {
-                // if we are static, we only want to ensure reachability, but not turn the result
-                // refreshing; the listener will fire for
+                // if we are static, we only want to ensure reachability, but not turn the result refreshing; the
+                // listener will fire for
                 // populate calls, so the child map gets a value filled in properly
                 result.setListenerReference(listener);
             }
@@ -415,7 +404,7 @@ public class LocalTableMap extends TableMapImpl
 
         final ThreadGroup threadGroup = new ThreadGroup("LocalTableMapTransform");
         final NamingThreadFactory threadFactory =
-            new NamingThreadFactory(threadGroup, LocalTableMap.class, "transformExecutor", true);
+                new NamingThreadFactory(threadGroup, LocalTableMap.class, "transformExecutor", true);
         executorService = Executors.newFixedThreadPool(transformationThreads, threadFactory);
 
         return executorService;
@@ -423,13 +412,12 @@ public class LocalTableMap extends TableMapImpl
 
     @Override
     public TableMap transformTablesWithMap(TableMap other,
-        java.util.function.BiFunction<Table, Table, Table> function) {
+            java.util.function.BiFunction<Table, Table, Table> function) {
         final boolean shouldClear = QueryPerformanceRecorder.setCallsite();
 
         try {
             final NotificationQueue.Dependency otherDependency =
-                other instanceof NotificationQueue.Dependency ? (NotificationQueue.Dependency) other
-                    : null;
+                    other instanceof NotificationQueue.Dependency ? (NotificationQueue.Dependency) other : null;
             final ComputedTableMap result = new ComputedTableMap(this, null);
 
             final ExecutorService executorService = getTransformationExecutorService();
@@ -438,7 +426,7 @@ public class LocalTableMap extends TableMapImpl
                 final boolean doCheck = LiveTableMonitor.DEFAULT.setCheckTableOperations(true);
                 LiveTableMonitor.DEFAULT.setCheckTableOperations(doCheck);
                 final boolean hasLtm = LiveTableMonitor.DEFAULT.sharedLock().isHeldByCurrentThread()
-                    || LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
+                        || LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
                 final Map<Object, Future<Table>> futures = new LinkedHashMap<>();
 
 
@@ -447,8 +435,7 @@ public class LocalTableMap extends TableMapImpl
                     if (otherTable != null) {
                         futures.put(entry.getKey(), executorService.submit(() -> {
                             if (hasLtm || !doCheck) {
-                                final boolean oldCheck =
-                                    LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
+                                final boolean oldCheck = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
                                 try {
                                     return function.apply(entry.getValue(), otherTable);
                                 } finally {
@@ -465,8 +452,7 @@ public class LocalTableMap extends TableMapImpl
                     try {
                         table = entry.getValue().get();
                     } catch (InterruptedException | ExecutionException e) {
-                        throw new RuntimeException(
-                            "Failed to transform table for " + entry.getKey(), e);
+                        throw new RuntimeException("Failed to transform table for " + entry.getKey(), e);
                     }
                     result.insertWithApply(entry.getKey(), table, (k, t) -> t);
                 }
@@ -474,8 +460,7 @@ public class LocalTableMap extends TableMapImpl
                 for (final Map.Entry<Object, Table> entry : entrySet()) {
                     final Table otherTable = other.get(entry.getKey());
                     if (otherTable != null) {
-                        result.insertWithApply(entry.getKey(), entry.getValue(), otherTable,
-                            function::apply);
+                        result.insertWithApply(entry.getKey(), entry.getValue(), otherTable, function::apply);
                     }
                 }
             }
@@ -492,8 +477,7 @@ public class LocalTableMap extends TableMapImpl
                                     if (result.containsKey(key)) {
                                         return;
                                     }
-                                    result.insertWithApply(key, ourTable, otherTable,
-                                        function::apply);
+                                    result.insertWithApply(key, ourTable, otherTable, function::apply);
                                 }
                             }
                         }, otherDependency);
@@ -504,9 +488,8 @@ public class LocalTableMap extends TableMapImpl
             }
 
             if (otherRefreshing) {
-                result.addParentReference(other); // Sets result refreshing if necessary, adds a
-                                                  // hard ref from result to other, and liveness
-                                                  // reference from result to other
+                result.addParentReference(other); // Sets result refreshing if necessary, adds a hard ref from result to
+                                                  // other, and liveness reference from result to other
 
                 final Listener otherListener = new LivenessListener() {
                     @Override
@@ -518,8 +501,7 @@ public class LocalTableMap extends TableMapImpl
                                     if (result.containsKey(key)) {
                                         return;
                                     }
-                                    result.insertWithApply(key, ourTable, otherTable,
-                                        function::apply);
+                                    result.insertWithApply(key, ourTable, otherTable, function::apply);
                                 }
                             }
                         }, otherDependency);
@@ -567,7 +549,7 @@ public class LocalTableMap extends TableMapImpl
             }
         }
         throw new UnsupportedOperationException(
-            "Can not convert TableMap with no constituents, or constituent definition, into a Table.");
+                "Can not convert TableMap with no constituents, or constituent definition, into a Table.");
     }
 
     @Override
@@ -585,9 +567,9 @@ public class LocalTableMap extends TableMapImpl
         }
 
         final UnionSourceManager unionSourceManager =
-            ((UnionColumnSource) (maybeUnionColumnSource)).getUnionSourceManager();
-        unionSourceManager.setDisallowReinterpret(); // TODO: Skip this call if we can determine
-                                                     // that our entry set is static.
+                ((UnionColumnSource) (maybeUnionColumnSource)).getUnionSourceManager();
+        unionSourceManager.setDisallowReinterpret(); // TODO: Skip this call if we can determine that our entry set is
+                                                     // static.
         if (isRefreshing()) {
             unionSourceManager.noteUsingComponentsIsUnsafe();
             unionSourceManager.setRefreshing();
@@ -650,8 +632,8 @@ public class LocalTableMap extends TableMapImpl
             this.parent = parent;
             if (parent.isRefreshing()) {
                 setRefreshing(true);
-                // NB: No need to addParentReference - we hold a strong reference to our parent
-                // already for populateKeys.
+                // NB: No need to addParentReference - we hold a strong reference to our parent already for
+                // populateKeys.
                 manage(parent);
             }
             this.useGlobalTransformationThreadPool = parent.useGlobalTransformationThreadPool;
@@ -669,16 +651,14 @@ public class LocalTableMap extends TableMapImpl
             throw new UnsupportedOperationException();
         }
 
-        private void insertWithApply(Object key, Table input,
-            BiFunction<Object, Table, Table> operator) {
-            super.put(key, SystemicObjectTracker.executeSystemically(isSystemicObject(),
-                () -> operator.apply(key, input)));
+        private void insertWithApply(Object key, Table input, BiFunction<Object, Table, Table> operator) {
+            super.put(key,
+                    SystemicObjectTracker.executeSystemically(isSystemicObject(), () -> operator.apply(key, input)));
         }
 
-        private void insertWithApply(Object key, Table ourInput, Table otherInput,
-            BinaryOperator<Table> operator) {
+        private void insertWithApply(Object key, Table ourInput, Table otherInput, BinaryOperator<Table> operator) {
             super.put(key, SystemicObjectTracker.executeSystemically(isSystemicObject(),
-                () -> operator.apply(ourInput, otherInput)));
+                    () -> operator.apply(ourInput, otherInput)));
         }
 
         private void setFlat() {
@@ -691,8 +671,7 @@ public class LocalTableMap extends TableMapImpl
 
         @Override
         public boolean satisfied(final long step) {
-            // if we have any pending insertions or our parent is not yet satisfied, then we are not
-            // satisfied
+            // if we have any pending insertions or our parent is not yet satisfied, then we are not satisfied
             if (outstandingNotifications.get() > 0) {
                 return false;
             }
@@ -723,8 +702,7 @@ public class LocalTableMap extends TableMapImpl
                                 AsyncClientErrorNotifier.reportError(originalException);
                             }
                         } catch (IOException e) {
-                            throw new RuntimeException("Exception in ComputedTableMap",
-                                originalException);
+                            throw new RuntimeException("Exception in ComputedTableMap", originalException);
                         }
                     } finally {
                         outstandingNotifications.decrementAndGet();
@@ -738,8 +716,8 @@ public class LocalTableMap extends TableMapImpl
 
                 @Override
                 public LogOutput append(LogOutput output) {
-                    return output.append("ComputedTableMap Notification{")
-                        .append(System.identityHashCode(this)).append("}");
+                    return output.append("ComputedTableMap Notification{").append(System.identityHashCode(this))
+                            .append("}");
                 }
             });
         }
@@ -770,13 +748,12 @@ public class LocalTableMap extends TableMapImpl
     }
 
     /**
-     * Returns whether this LocalTableMap is configured to use the global transformation thread
-     * pool.
+     * Returns whether this LocalTableMap is configured to use the global transformation thread pool.
      *
      * Derived TableMaps will inherit this setting (but use their own thread pool).
      *
-     * @return true if transformTables and transformTablesWithMap will use the global thread pool;
-     *         false if they will use a private thread pool
+     * @return true if transformTables and transformTablesWithMap will use the global thread pool; false if they will
+     *         use a private thread pool
      */
     public boolean useGlobalTransformationThreadPool() {
         return useGlobalTransformationThreadPool;
@@ -785,14 +762,12 @@ public class LocalTableMap extends TableMapImpl
     /**
      * Sets whether this LocalTableMap is configured to use the global transformation thread pool.
      *
-     * When set to true, the global thread pool configured in {@link TableMapTransformThreadPool} is
-     * used.
+     * When set to true, the global thread pool configured in {@link TableMapTransformThreadPool} is used.
      *
-     * When set to false, a thread pool for this particular TableMap is used (or no thread pool if
-     * transformation threads is set to 1).
+     * When set to false, a thread pool for this particular TableMap is used (or no thread pool if transformation
+     * threads is set to 1).
      */
-    public synchronized void setUseGlobalTransformationThreadPool(
-        boolean useGlobalTransformationThreadPool) {
+    public synchronized void setUseGlobalTransformationThreadPool(boolean useGlobalTransformationThreadPool) {
         this.useGlobalTransformationThreadPool = useGlobalTransformationThreadPool;
         if (useGlobalTransformationThreadPool && executorService != null) {
             executorService.shutdown();
@@ -801,9 +776,8 @@ public class LocalTableMap extends TableMapImpl
     }
 
     /**
-     * Returns the number of transformation threads that will be used (if this TableMap is not
-     * configured to use the global thread pool). If this TableMap is configured to use the global
-     * thread pool, then this value is ignored.
+     * Returns the number of transformation threads that will be used (if this TableMap is not configured to use the
+     * global thread pool). If this TableMap is configured to use the global thread pool, then this value is ignored.
      *
      * @return the number of threads that will be used for transformations
      */
@@ -812,8 +786,8 @@ public class LocalTableMap extends TableMapImpl
     }
 
     /**
-     * Set the number of transformation threads that should be used. Additionally, the global
-     * transformation thread pool is disabled for this TableMap.
+     * Set the number of transformation threads that should be used. Additionally, the global transformation thread pool
+     * is disabled for this TableMap.
      *
      * Derived TableMaps will inherit this setting (but use their own thread pool).
      *

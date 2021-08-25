@@ -13,8 +13,7 @@ import io.deephaven.base.log.LogOutputAppendable;
 import java.nio.ByteBuffer;
 
 /**
- * A LogOutput implementation, designed solely as an adapter for LogOutputAppendable's to produce
- * Strings.
+ * A LogOutput implementation, designed solely as an adapter for LogOutputAppendable's to produce Strings.
  */
 public class LogOutputStringImpl implements LogOutput, CharSequence {
 
@@ -200,9 +199,8 @@ public class LogOutputStringImpl implements LogOutput, CharSequence {
             append(t.getClass().getName()).append(": ").append(t.getMessage());
             for (StackTraceElement e : t.getStackTrace()) {
                 append(delim)
-                    .append(e.getClassName()).append(".").append(e.getMethodName())
-                    .append("(").append(e.getFileName()).append(":").append(e.getLineNumber())
-                    .append(")");
+                        .append(e.getClassName()).append(".").append(e.getMethodName())
+                        .append("(").append(e.getFileName()).append(":").append(e.getLineNumber()).append(")");
                 delim = ";";
             }
         } while ((t = t.getCause()) != null);

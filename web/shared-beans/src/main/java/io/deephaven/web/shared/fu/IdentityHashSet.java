@@ -8,11 +8,10 @@ import java.util.Iterator;
 /**
  * A set that internally wraps an IdentityHashMap.
  *
- * Should be very fast for pooled objects, and completely wrong for different instances of Object
- * which .equal() each other.
+ * Should be very fast for pooled objects, and completely wrong for different instances of Object which .equal() each
+ * other.
  *
- * Use only if you can guarantee type parameter T is a pooled object (TableHandle, JsTable,
- * ClientTableState, etc.)
+ * Use only if you can guarantee type parameter T is a pooled object (TableHandle, JsTable, ClientTableState, etc.)
  */
 public class IdentityHashSet<T> extends AbstractSet<T> {
 

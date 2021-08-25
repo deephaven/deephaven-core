@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.grpcWeb.service.MethodDefinition",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.grpcWeb.service.MethodDefinition",
+        namespace = JsPackage.GLOBAL)
 public interface MethodDefinition<TRequest, TResponse> {
     @JsOverlay
     static MethodDefinition create() {

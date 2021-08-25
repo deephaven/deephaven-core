@@ -70,22 +70,18 @@ public class RangeSet implements Serializable {
             return;
         }
 
-        // if more than one other entry, binarySearch to find before and after entry, and test both
-        // for overlapping
+        // if more than one other entry, binarySearch to find before and after entry, and test both for overlapping
         int index = Arrays.binarySearch(sortedRanges, range);
         if (index >= 0) {
 
-            // starting with that item, check to see if each following item is part of the existing
-            // range
-            // we know that no range before it will need to be considered, since the set should
-            // previously
+            // starting with that item, check to see if each following item is part of the existing range
+            // we know that no range before it will need to be considered, since the set should previously
             // have been broken into non-contiguous ranges
             Range merged = range;
             int end = sortedRanges.length - 1;
             for (int i = index; i < sortedRanges.length; i++) {
                 Range existing = sortedRanges[i];
-                // there is an item with the same start, either new item falls within it, or should
-                // replace it
+                // there is an item with the same start, either new item falls within it, or should replace it
                 Range overlap = existing.overlap(merged);
 
                 if (overlap == null) {
@@ -96,8 +92,7 @@ public class RangeSet implements Serializable {
                 // grow the region used for replacing
                 merged = overlap;
             }
-            // splice out [index, end] items, replacing with the newly grown overlap object (may be
-            // the same
+            // splice out [index, end] items, replacing with the newly grown overlap object (may be the same
             // size, and only replacing one item)
             int newLength = sortedRanges.length - (end - index);
             Range[] newArray = new Range[newLength];
@@ -120,17 +115,14 @@ public class RangeSet implements Serializable {
                     // replace the range that we are merging, and start the slice here instead
                     merged = overlap;
                     proposedIndex--;
-                    // TODO this will make the loop start here, considering this item twice. not
-                    // ideal, but not a big deal either
+                    // TODO this will make the loop start here, considering this item twice. not ideal, but not a big
+                    // deal either
                 }
             }
-            // "end" represents the last item that needs to be merged in to the newly added item. if
-            // no items are to be
-            // merged in, then end will be proposedIndex-1, meaning nothing gets merged in, and the
-            // array will grow
+            // "end" represents the last item that needs to be merged in to the newly added item. if no items are to be
+            // merged in, then end will be proposedIndex-1, meaning nothing gets merged in, and the array will grow
             // instead of shrinking.
-            // if we never find an item we cannot merge with, the end of the replaced range is the
-            // last item of the old
+            // if we never find an item we cannot merge with, the end of the replaced range is the last item of the old
             // array, which could result in the new array having as little as only 1 item
             int end = sortedRanges.length - 1;
             // until we quit finding matches, test subsequent items
@@ -152,8 +144,7 @@ public class RangeSet implements Serializable {
             }
             newArray[proposedIndex] = merged;
             if (end < sortedRanges.length - 1) {
-                System.arraycopy(sortedRanges, end + 1, newArray, proposedIndex + 1,
-                    sortedRanges.length - (end + 1));
+                System.arraycopy(sortedRanges, end + 1, newArray, proposedIndex + 1, sortedRanges.length - (end + 1));
             }
             sortedRanges = newArray;
         }
@@ -165,21 +156,15 @@ public class RangeSet implements Serializable {
             return;
         }
 
-        // search the sorted list of ranges and find where the current range starts. two case here
-        // when using
-        // binarySearch, either the removed range starts in the same place as an existing range
-        // starts, or
+        // search the sorted list of ranges and find where the current range starts. two case here when using
+        // binarySearch, either the removed range starts in the same place as an existing range starts, or
         // it starts before an item (and so we check the item before and the item after)
         int index = Arrays.binarySearch(sortedRanges, range);
         if (index < 0) {
-            // adjusted index notes where the item would be if it were added, minus _one more_ to
-            // see if
-            // it overlaps the item before it. To compute "the position where the new item belongs",
-            // we
-            // would do (-index - 1), so to examine one item prior to that we'll subtract one more.
-            // Then,
-            // to confirm that we are inserting in a valid position, take the max of that value and
-            // zero.
+            // adjusted index notes where the item would be if it were added, minus _one more_ to see if
+            // it overlaps the item before it. To compute "the position where the new item belongs", we
+            // would do (-index - 1), so to examine one item prior to that we'll subtract one more. Then,
+            // to confirm that we are inserting in a valid position, take the max of that value and zero.
             index = Math.max(0, -index - 2);
         }
 
@@ -201,13 +186,11 @@ public class RangeSet implements Serializable {
                 // Splice in the one extra item and we're done - this entry
                 // both started before and ended after the removed section,
                 // so we don't even "break", we just return
-                assert toCheck.getFirst() < range.getFirst()
-                    : "Expected " + range + " to start after " + toCheck;
-                assert toCheck.getLast() > range.getLast()
-                    : "Expected " + range + " to end after " + toCheck;
+                assert toCheck.getFirst() < range.getFirst() : "Expected " + range + " to start after " + toCheck;
+                assert toCheck.getLast() > range.getLast() : "Expected " + range + " to end after " + toCheck;
                 assert toRemove == 0 && beforeCount == -1
-                    : "Expected that no previous items in the RangeSet had been removed toRemove="
-                        + toRemove + ", beforeCount=" + beforeCount;
+                        : "Expected that no previous items in the RangeSet had been removed toRemove=" + toRemove
+                                + ", beforeCount=" + beforeCount;
 
                 Range[] replacement = new Range[sortedRanges.length + 1];
                 if (index > 0) {
@@ -215,8 +198,7 @@ public class RangeSet implements Serializable {
                 }
                 replacement[index] = remaining[0];
                 replacement[index + 1] = remaining[1];
-                System.arraycopy(sortedRanges, index + 1, replacement, index + 2,
-                    sortedRanges.length - (index + 1));
+                System.arraycopy(sortedRanges, index + 1, replacement, index + 2, sortedRanges.length - (index + 1));
 
                 sortedRanges = replacement;
 
@@ -226,8 +208,7 @@ public class RangeSet implements Serializable {
                 // swap shortened item and move on
                 sortedRanges[index] = remaining[0];
             } else {
-                assert remaining.length == 0
-                    : "Array contains a surprising number of items: " + remaining.length;
+                assert remaining.length == 0 : "Array contains a surprising number of items: " + remaining.length;
 
                 // splice out this item as nothing exists here any more and move on
                 if (toRemove == 0) {
@@ -241,7 +222,7 @@ public class RangeSet implements Serializable {
             Range[] replacement = new Range[sortedRanges.length - toRemove];
             System.arraycopy(sortedRanges, 0, replacement, 0, beforeCount);
             System.arraycopy(sortedRanges, beforeCount + toRemove, replacement, beforeCount,
-                sortedRanges.length - beforeCount - toRemove);
+                    sortedRanges.length - beforeCount - toRemove);
 
             sortedRanges = replacement;
         } else {
@@ -255,8 +236,8 @@ public class RangeSet implements Serializable {
 
     public PrimitiveIterator.OfLong indexIterator() {
         return Arrays.stream(sortedRanges)
-            .flatMapToLong(range -> LongStream.rangeClosed(range.getFirst(), range.getLast()))
-            .iterator();
+                .flatMapToLong(range -> LongStream.rangeClosed(range.getFirst(), range.getLast()))
+                .iterator();
     }
 
     public int rangeCount() {
@@ -302,8 +283,8 @@ public class RangeSet implements Serializable {
                     continue;
                 }
                 if (match.getLast() > current.getLast()) {
-                    // since the match starts within current, if it ends afterward, we know at least
-                    // one item is missing: current.getLast() + 1
+                    // since the match starts within current, if it ends afterward, we know at least one item is
+                    // missing: current.getLast() + 1
                     return false;
                 }
                 // else, the match is fully contained in current, so move on to the next item
@@ -316,8 +297,8 @@ public class RangeSet implements Serializable {
     @Override
     public String toString() {
         return "RangeSet{" +
-            "sortedRanges=" + Arrays.toString(sortedRanges) +
-            '}';
+                "sortedRanges=" + Arrays.toString(sortedRanges) +
+                '}';
     }
 
     public long getFirstRow() {

@@ -4,8 +4,8 @@ import java.io.PrintStream;
 import java.util.Objects;
 
 /**
- * Captures {@link System#out} and {@link System#err}. It is primarily useful for logging
- * infrastructure where the output streams may have been redirected.
+ * Captures {@link System#out} and {@link System#err}. It is primarily useful for logging infrastructure where the
+ * output streams may have been redirected.
  */
 public class PrintStreamGlobals {
 
@@ -18,10 +18,10 @@ public class PrintStreamGlobals {
     }
 
     /**
-     * Use this method to force this class and its statics to be initialized. Should be used before
-     * an application is re-directing stdout / stderr if it wants to have global access to the
-     * original streams. While the other methods in this class could be used for initialization,
-     * this method provides the appropriate context, and should be used instead.
+     * Use this method to force this class and its statics to be initialized. Should be used before an application is
+     * re-directing stdout / stderr if it wants to have global access to the original streams. While the other methods
+     * in this class could be used for initialization, this method provides the appropriate context, and should be used
+     * instead.
      */
     public static void init() {
         // empty on purpose

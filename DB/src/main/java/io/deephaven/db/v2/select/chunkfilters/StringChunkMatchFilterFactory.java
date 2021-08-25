@@ -30,8 +30,7 @@ class StringChunkMatchFilterFactory {
 
     private StringChunkMatchFilterFactory() {} // static use only
 
-    static ChunkFilter.ObjectChunkFilter makeCaseInsensitiveFilter(boolean invert,
-        Object... values) {
+    static ChunkFilter.ObjectChunkFilter makeCaseInsensitiveFilter(boolean invert, Object... values) {
         if (invert) {
             if (values.length == 1) {
                 return new InverseSingleValueStringChunkFilter((String) values[0]);
@@ -40,8 +39,8 @@ class StringChunkMatchFilterFactory {
                 return new InverseTwoValueStringChunkFilter((String) values[0], (String) values[1]);
             }
             if (values.length == 3) {
-                return new InverseThreeValueStringChunkFilter((String) values[0],
-                    (String) values[1], (String) values[2]);
+                return new InverseThreeValueStringChunkFilter((String) values[0], (String) values[1],
+                        (String) values[2]);
             }
             return new InverseMultiValueStringChunkFilter(values);
         } else {
@@ -52,15 +51,13 @@ class StringChunkMatchFilterFactory {
                 return new TwoValueStringChunkFilter((String) values[0], (String) values[1]);
             }
             if (values.length == 3) {
-                return new ThreeValueStringChunkFilter((String) values[0], (String) values[1],
-                    (String) values[2]);
+                return new ThreeValueStringChunkFilter((String) values[0], (String) values[1], (String) values[2]);
             }
             return new MultiValueStringChunkFilter(values);
         }
     }
 
-    private static class SingleValueStringChunkFilter
-        implements ChunkFilter.ObjectChunkFilter<String> {
+    private static class SingleValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
         private final String value;
 
         private SingleValueStringChunkFilter(String value) {
@@ -68,8 +65,8 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<String, ? extends Values> values,
-            LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(ObjectChunk<String, ? extends Values> values, LongChunk<OrderedKeyIndices> keys,
+                WritableLongChunk<OrderedKeyIndices> results) {
             final ObjectChunk<String, ? extends Values> stringChunk = values.asTypedObjectChunk();
             results.setSize(0);
             for (int ii = 0; ii < stringChunk.size(); ++ii) {
@@ -81,8 +78,7 @@ class StringChunkMatchFilterFactory {
         }
     }
 
-    private static class InverseSingleValueStringChunkFilter
-        implements ChunkFilter.ObjectChunkFilter<String> {
+    private static class InverseSingleValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
         private final String value;
 
         private InverseSingleValueStringChunkFilter(String value) {
@@ -90,8 +86,8 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<String, ? extends Values> values,
-            LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(ObjectChunk<String, ? extends Values> values, LongChunk<OrderedKeyIndices> keys,
+                WritableLongChunk<OrderedKeyIndices> results) {
             final ObjectChunk<String, ? extends Values> stringChunk = values.asTypedObjectChunk();
             results.setSize(0);
             for (int ii = 0; ii < stringChunk.size(); ++ii) {
@@ -103,8 +99,7 @@ class StringChunkMatchFilterFactory {
         }
     }
 
-    private static class TwoValueStringChunkFilter
-        implements ChunkFilter.ObjectChunkFilter<String> {
+    private static class TwoValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
         private final String value1;
         private final String value2;
 
@@ -114,8 +109,8 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<String, ? extends Values> values,
-            LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(ObjectChunk<String, ? extends Values> values, LongChunk<OrderedKeyIndices> keys,
+                WritableLongChunk<OrderedKeyIndices> results) {
             final ObjectChunk<String, ? extends Values> stringChunk = values.asTypedObjectChunk();
             results.setSize(0);
             for (int ii = 0; ii < stringChunk.size(); ++ii) {
@@ -127,8 +122,7 @@ class StringChunkMatchFilterFactory {
         }
     }
 
-    private static class InverseTwoValueStringChunkFilter
-        implements ChunkFilter.ObjectChunkFilter<String> {
+    private static class InverseTwoValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
         private final String value1;
         private final String value2;
 
@@ -138,22 +132,20 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<String, ? extends Values> values,
-            LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(ObjectChunk<String, ? extends Values> values, LongChunk<OrderedKeyIndices> keys,
+                WritableLongChunk<OrderedKeyIndices> results) {
             final ObjectChunk<String, ? extends Values> stringChunk = values.asTypedObjectChunk();
             results.setSize(0);
             for (int ii = 0; ii < stringChunk.size(); ++ii) {
                 final String checkString = stringChunk.get(ii);
-                if (!(value1.equalsIgnoreCase(checkString)
-                    || value2.equalsIgnoreCase(checkString))) {
+                if (!(value1.equalsIgnoreCase(checkString) || value2.equalsIgnoreCase(checkString))) {
                     results.add(keys.get(ii));
                 }
             }
         }
     }
 
-    private static class ThreeValueStringChunkFilter
-        implements ChunkFilter.ObjectChunkFilter<String> {
+    private static class ThreeValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
         private final String value1;
         private final String value2;
         private final String value3;
@@ -165,22 +157,21 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<String, ? extends Values> values,
-            LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(ObjectChunk<String, ? extends Values> values, LongChunk<OrderedKeyIndices> keys,
+                WritableLongChunk<OrderedKeyIndices> results) {
             final ObjectChunk<String, ? extends Values> stringChunk = values.asTypedObjectChunk();
             results.setSize(0);
             for (int ii = 0; ii < stringChunk.size(); ++ii) {
                 final String checkString = stringChunk.get(ii);
                 if (value1.equalsIgnoreCase(checkString) || value2.equalsIgnoreCase(checkString)
-                    || value3.equalsIgnoreCase(checkString)) {
+                        || value3.equalsIgnoreCase(checkString)) {
                     results.add(keys.get(ii));
                 }
             }
         }
     }
 
-    private static class InverseThreeValueStringChunkFilter
-        implements ChunkFilter.ObjectChunkFilter<String> {
+    private static class InverseThreeValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
         private final String value1;
         private final String value2;
         private final String value3;
@@ -192,22 +183,21 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<String, ? extends Values> values,
-            LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(ObjectChunk<String, ? extends Values> values, LongChunk<OrderedKeyIndices> keys,
+                WritableLongChunk<OrderedKeyIndices> results) {
             final ObjectChunk<String, ? extends Values> stringChunk = values.asTypedObjectChunk();
             results.setSize(0);
             for (int ii = 0; ii < stringChunk.size(); ++ii) {
                 final String checkString = stringChunk.get(ii);
                 if (!(value1.equalsIgnoreCase(checkString) || value2.equalsIgnoreCase(checkString)
-                    || value3.equalsIgnoreCase(checkString))) {
+                        || value3.equalsIgnoreCase(checkString))) {
                     results.add(keys.get(ii));
                 }
             }
         }
     }
 
-    private static class MultiValueStringChunkFilter
-        implements ChunkFilter.ObjectChunkFilter<String> {
+    private static class MultiValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
         private final KeyedObjectHashSet<String, String> values;
 
         private MultiValueStringChunkFilter(Object... values) {
@@ -218,8 +208,8 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<String, ? extends Values> values,
-            LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(ObjectChunk<String, ? extends Values> values, LongChunk<OrderedKeyIndices> keys,
+                WritableLongChunk<OrderedKeyIndices> results) {
             final ObjectChunk<String, ? extends Values> stringChunk = values.asTypedObjectChunk();
             results.setSize(0);
             for (int ii = 0; ii < stringChunk.size(); ++ii) {
@@ -231,8 +221,7 @@ class StringChunkMatchFilterFactory {
         }
     }
 
-    private static class InverseMultiValueStringChunkFilter
-        implements ChunkFilter.ObjectChunkFilter<String> {
+    private static class InverseMultiValueStringChunkFilter implements ChunkFilter.ObjectChunkFilter<String> {
         private final KeyedObjectHashSet<String, String> values;
 
         private InverseMultiValueStringChunkFilter(Object... values) {
@@ -243,8 +232,8 @@ class StringChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<String, ? extends Values> values,
-            LongChunk<OrderedKeyIndices> keys, WritableLongChunk<OrderedKeyIndices> results) {
+        public void filter(ObjectChunk<String, ? extends Values> values, LongChunk<OrderedKeyIndices> keys,
+                WritableLongChunk<OrderedKeyIndices> results) {
             final ObjectChunk<String, ? extends Values> stringChunk = values.asTypedObjectChunk();
             results.setSize(0);
             for (int ii = 0; ii < stringChunk.size(); ++ii) {

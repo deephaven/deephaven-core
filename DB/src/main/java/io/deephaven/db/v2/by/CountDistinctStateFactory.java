@@ -44,7 +44,7 @@ public class CountDistinctStateFactory extends IterativeOperatorStateFactory {
 
     @Override
     public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name,
-        boolean exposeInternalColumns) {
+            boolean exposeInternalColumns) {
         return getCountDistinctChunked(type, name, countNulls, exposeInternalColumns, secondRollup);
     }
 

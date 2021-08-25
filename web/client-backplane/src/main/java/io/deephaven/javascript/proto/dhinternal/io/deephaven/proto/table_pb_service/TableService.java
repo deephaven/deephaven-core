@@ -8,9 +8,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb_service.TableService",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb_service.TableService",
+        namespace = JsPackage.GLOBAL)
 public class TableService {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface AsOfJoinTablesType {

@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.StartConsoleRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.StartConsoleRequest",
+        namespace = JsPackage.GLOBAL)
 public class StartConsoleRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -22,7 +22,7 @@ public class StartConsoleRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static StartConsoleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -57,20 +57,20 @@ public class StartConsoleRequest {
 
             @JsProperty
             void setTicket(
-                StartConsoleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    StartConsoleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<StartConsoleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<StartConsoleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<StartConsoleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<StartConsoleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -100,7 +100,7 @@ public class StartConsoleRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -135,20 +135,20 @@ public class StartConsoleRequest {
 
             @JsProperty
             void setTicket(
-                StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<StartConsoleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -173,12 +173,12 @@ public class StartConsoleRequest {
     public static native StartConsoleRequest deserializeBinary(Uint8Array bytes);
 
     public static native StartConsoleRequest deserializeBinaryFromReader(
-        StartConsoleRequest message, Object reader);
+            StartConsoleRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(StartConsoleRequest message, Object writer);
 
     public static native StartConsoleRequest.ToObjectReturnType toObject(
-        boolean includeInstance, StartConsoleRequest msg);
+            boolean includeInstance, StartConsoleRequest msg);
 
     public native void clearResultId();
 

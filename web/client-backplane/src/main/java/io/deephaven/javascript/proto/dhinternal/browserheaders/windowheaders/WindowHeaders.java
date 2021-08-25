@@ -6,9 +6,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.browserHeaders.WindowHeaders.WindowHeaders",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.browserHeaders.WindowHeaders.WindowHeaders",
+        namespace = JsPackage.GLOBAL)
 public interface WindowHeaders {
     @JsFunction
     public interface ForEachCallbackFn {

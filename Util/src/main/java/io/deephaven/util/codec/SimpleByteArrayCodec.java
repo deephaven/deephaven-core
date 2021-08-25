@@ -9,8 +9,7 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Codec for non-nullable byte arrays that does a no-op encode/decode.
  * <p>
- * One particular instance where this is useful is reading parquet 1.0 data encoded as binary as
- * "raw".
+ * One particular instance where this is useful is reading parquet 1.0 data encoded as binary as "raw".
  *
  */
 public class SimpleByteArrayCodec implements ObjectCodec<byte[]> {
@@ -30,8 +29,7 @@ public class SimpleByteArrayCodec implements ObjectCodec<byte[]> {
         try {
             size = Integer.parseInt(tokens[0].trim());
             if (tokens.length > 1) {
-                throw new IllegalArgumentException(
-                    "Unexpected additional arguments after first: " + arguments);
+                throw new IllegalArgumentException("Unexpected additional arguments after first: " + arguments);
             }
         } catch (NumberFormatException ex) {
             throw new IllegalArgumentException("Error parsing column size: " + ex.getMessage(), ex);
@@ -46,8 +44,7 @@ public class SimpleByteArrayCodec implements ObjectCodec<byte[]> {
     @Override
     public byte[] encode(@Nullable final byte[] input) {
         if (input == null) {
-            throw new IllegalArgumentException(
-                SimpleByteArrayCodec.class.getSimpleName() + " cannot encode nulls");
+            throw new IllegalArgumentException(SimpleByteArrayCodec.class.getSimpleName() + " cannot encode nulls");
         }
         return input;
     }

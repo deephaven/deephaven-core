@@ -16,8 +16,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * A new table is a list of {@link Column columns} of equal size. Each column will have a distinct
- * name.
+ * A new table is a list of {@link Column columns} of equal size. Each column will have a distinct name.
  */
 @Immutable
 @LeafStyle
@@ -56,7 +55,7 @@ public abstract class NewTable extends TableBase implements Iterable<Column<?>> 
             Iterator<Column<?>> it = iterator();
             if (!it.hasNext()) {
                 throw new IllegalArgumentException(
-                    String.format("Unable to use %s without any columns", Buildable.class));
+                        String.format("Unable to use %s without any columns", Buildable.class));
             }
             Column<?> first = it.next();
             Builder builder = builder().size(first.size()).addColumns(first);
@@ -147,7 +146,7 @@ public abstract class NewTable extends TableBase implements Iterable<Column<?>> 
     @Override
     public final Spliterator<Column<?>> spliterator() {
         return columns().entrySet().stream()
-            .map((Function<Entry<String, Array<?>>, Column<?>>) NewTable::adapt).spliterator();
+                .map((Function<Entry<String, Array<?>>, Column<?>>) NewTable::adapt).spliterator();
     }
 
     private static Column<?> adapt(Entry<String, Array<?>> e) {

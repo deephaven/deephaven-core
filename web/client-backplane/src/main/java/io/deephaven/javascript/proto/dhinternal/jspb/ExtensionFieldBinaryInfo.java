@@ -5,9 +5,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.jspb.ExtensionFieldBinaryInfo",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.jspb.ExtensionFieldBinaryInfo",
+        namespace = JsPackage.GLOBAL)
 public class ExtensionFieldBinaryInfo<T> {
     @JsFunction
     public interface BinaryReaderFn {
@@ -47,7 +47,7 @@ public class ExtensionFieldBinaryInfo<T> {
         }
 
         void onInvoke(
-            Object p0, ExtensionFieldBinaryInfo.ExtensionFieldBinaryInfoBinaryReaderFn.P1Fn p1);
+                Object p0, ExtensionFieldBinaryInfo.ExtensionFieldBinaryInfoBinaryReaderFn.P1Fn p1);
     }
 
     @JsFunction
@@ -58,9 +58,9 @@ public class ExtensionFieldBinaryInfo<T> {
         }
 
         void onInvoke(
-            double p0,
-            Object p1,
-            ExtensionFieldBinaryInfo.ExtensionFieldBinaryInfoBinaryWriterFn.P2Fn p2);
+                double p0,
+                Object p1,
+                ExtensionFieldBinaryInfo.ExtensionFieldBinaryInfoBinaryWriterFn.P2Fn p2);
     }
 
     @JsFunction
@@ -81,10 +81,10 @@ public class ExtensionFieldBinaryInfo<T> {
     public boolean opt_isPacked;
 
     public ExtensionFieldBinaryInfo(
-        ExtensionFieldInfo<T> fieldInfo,
-        ExtensionFieldBinaryInfo.ExtensionFieldBinaryInfoBinaryReaderFn binaryReaderFn,
-        ExtensionFieldBinaryInfo.ExtensionFieldBinaryInfoBinaryWriterFn binaryWriterFn,
-        ExtensionFieldBinaryInfo.ExtensionFieldBinaryInfoBinaryMessageSerializeFn binaryMessageSerializeFn,
-        ExtensionFieldBinaryInfo.ExtensionFieldBinaryInfoBinaryMessageDeserializeFn binaryMessageDeserializeFn,
-        boolean isPacked) {}
+            ExtensionFieldInfo<T> fieldInfo,
+            ExtensionFieldBinaryInfo.ExtensionFieldBinaryInfoBinaryReaderFn binaryReaderFn,
+            ExtensionFieldBinaryInfo.ExtensionFieldBinaryInfoBinaryWriterFn binaryWriterFn,
+            ExtensionFieldBinaryInfo.ExtensionFieldBinaryInfoBinaryMessageSerializeFn binaryMessageSerializeFn,
+            ExtensionFieldBinaryInfo.ExtensionFieldBinaryInfoBinaryMessageDeserializeFn binaryMessageDeserializeFn,
+            boolean isPacked) {}
 }

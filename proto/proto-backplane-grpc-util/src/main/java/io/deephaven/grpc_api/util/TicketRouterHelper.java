@@ -17,7 +17,7 @@ public class TicketRouterHelper {
     public static String getLogNameFor(final Flight.FlightDescriptor descriptor) {
         if (descriptor.getType() != Flight.FlightDescriptor.DescriptorType.PATH) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                "Flight descriptor is not a path");
+                    "Flight descriptor is not a path");
         }
 
         final StringBuilder sb = new StringBuilder();

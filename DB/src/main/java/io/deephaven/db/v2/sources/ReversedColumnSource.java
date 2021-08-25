@@ -13,9 +13,9 @@ import io.deephaven.db.v2.utils.reverse.ReverseKernel;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * This column source wraps another column source, and returns the values in the opposite order. It
- * must be paired with a ReverseOperation (that can be shared among reversed column sources) that
- * implements the index transformations for this source.
+ * This column source wraps another column source, and returns the values in the opposite order. It must be paired with
+ * a ReverseOperation (that can be shared among reversed column sources) that implements the index transformations for
+ * this source.
  */
 public class ReversedColumnSource<T> extends AbstractColumnSource<T> {
     private final ColumnSource<T> innerSource;
@@ -27,8 +27,7 @@ public class ReversedColumnSource<T> extends AbstractColumnSource<T> {
         return innerSource.getComponentType();
     }
 
-    public ReversedColumnSource(@NotNull ColumnSource<T> innerSource,
-        @NotNull ReverseOperation indexReverser) {
+    public ReversedColumnSource(@NotNull ColumnSource<T> innerSource, @NotNull ReverseOperation indexReverser) {
         super(innerSource.getType());
         this.innerSource = innerSource;
         this.indexReverser = indexReverser;
@@ -155,8 +154,8 @@ public class ReversedColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public void fillChunk(@NotNull ColumnSource.FillContext _context,
-        @NotNull WritableChunk<? super Attributes.Values> destination,
-        @NotNull OrderedKeys orderedKeys) {
+            @NotNull WritableChunk<? super Attributes.Values> destination,
+            @NotNull OrderedKeys orderedKeys) {
         // noinspection unchecked
         final FillContext context = (FillContext) _context;
         final OrderedKeys reversedIndex = indexReverser.transform(orderedKeys.asIndex());
@@ -166,8 +165,8 @@ public class ReversedColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public void fillPrevChunk(@NotNull ColumnSource.FillContext _context,
-        @NotNull WritableChunk<? super Attributes.Values> destination,
-        @NotNull OrderedKeys orderedKeys) {
+            @NotNull WritableChunk<? super Attributes.Values> destination,
+            @NotNull OrderedKeys orderedKeys) {
         // noinspection unchecked
         final FillContext context = (FillContext) _context;
         final OrderedKeys reversedIndex = indexReverser.transformPrev(orderedKeys.asIndex());

@@ -17,8 +17,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Representation class for per-table information stored in key-value metadata for Deephaven-written
- * Parquet files.
+ * Representation class for per-table information stored in key-value metadata for Deephaven-written Parquet files.
  */
 @Value.Immutable
 @BuildableStyle
@@ -39,24 +38,21 @@ public abstract class TableInfo {
         return OBJECT_MAPPER.writeValueAsString(this);
     }
 
-    public static TableInfo deserializeFromJSON(@NotNull final String tableInfoRaw)
-        throws JsonProcessingException {
+    public static TableInfo deserializeFromJSON(@NotNull final String tableInfoRaw) throws JsonProcessingException {
         return OBJECT_MAPPER.readValue(tableInfoRaw, ImmutableTableInfo.class);
     }
 
     public final Set<String> groupingColumnNames() {
-        return groupingColumns().stream().map(GroupingColumnInfo::columnName)
-            .collect(Collectors.toSet());
+        return groupingColumns().stream().map(GroupingColumnInfo::columnName).collect(Collectors.toSet());
     }
 
     public final Map<String, GroupingColumnInfo> groupingColumnMap() {
         return groupingColumns().stream()
-            .collect(Collectors.toMap(GroupingColumnInfo::columnName, Function.identity()));
+                .collect(Collectors.toMap(GroupingColumnInfo::columnName, Function.identity()));
     }
 
     public final Map<String, ColumnTypeInfo> columnTypeMap() {
-        return columnTypes().stream()
-            .collect(Collectors.toMap(ColumnTypeInfo::columnName, Function.identity()));
+        return columnTypes().stream().collect(Collectors.toMap(ColumnTypeInfo::columnName, Function.identity()));
     }
 
     /**
@@ -73,8 +69,8 @@ public abstract class TableInfo {
     public abstract List<GroupingColumnInfo> groupingColumns();
 
     /**
-     * @return List of {@link ColumnTypeInfo column types} for columns requiring non-default
-     *         deserialization or type selection
+     * @return List of {@link ColumnTypeInfo column types} for columns requiring non-default deserialization or type
+     *         selection
      */
     public abstract List<ColumnTypeInfo> columnTypes();
 

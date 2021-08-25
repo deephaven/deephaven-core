@@ -52,13 +52,12 @@ import java.util.Objects;
 /**
  * Column definition for all Deephaven columns.
  */
-public class ColumnDefinition<TYPE>
-    implements Externalizable, LogOutputAppendable, Copyable<ColumnDefinition<TYPE>> {
+public class ColumnDefinition<TYPE> implements Externalizable, LogOutputAppendable, Copyable<ColumnDefinition<TYPE>> {
 
     private static final long serialVersionUID = 3656456077670712362L;
 
     public static final EnumFormatter COLUMN_TYPE_FORMATTER =
-        new EnumFormatter(new String[] {"Normal", "Grouping", "Partitioning", "Virtual"});
+            new EnumFormatter(new String[] {"Normal", "Grouping", "Partitioning", "Virtual"});
 
     public static final int COLUMNTYPE_NORMAL = 1;
     public static final int COLUMNTYPE_GROUPING = 2;
@@ -122,19 +121,19 @@ public class ColumnDefinition<TYPE>
     }
 
     public static <T extends DbArrayBase> ColumnDefinition<T> ofDbArray(@NotNull final String name,
-        @NotNull final Class<T> dbArrayType) {
+            @NotNull final Class<T> dbArrayType) {
         ColumnDefinition<T> columnDefinition = new ColumnDefinition<>(name, dbArrayType);
         columnDefinition.setComponentType(baseComponentTypeForDbArray(dbArrayType));
         return columnDefinition;
     }
 
     public static <T> ColumnDefinition<T> fromGenericType(@NotNull final String name,
-        @NotNull final Class<T> dataType) {
+            @NotNull final Class<T> dataType) {
         return fromGenericType(name, dataType, null);
     }
 
-    public static <T> ColumnDefinition<T> fromGenericType(@NotNull final String name,
-        @NotNull final Class<T> dataType, @Nullable final Class<?> componentType) {
+    public static <T> ColumnDefinition<T> fromGenericType(@NotNull final String name, @NotNull final Class<T> dataType,
+            @Nullable final Class<?> componentType) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(dataType);
         final ColumnDefinition<T> cd = new ColumnDefinition<>(name, dataType);
@@ -143,11 +142,10 @@ public class ColumnDefinition<TYPE>
     }
 
     /**
-     * Base component type class for each {@link DbArrayBase} type. Note that {@link DbBooleanArray}
-     * is deprecated, superseded by {@link DbArray}.
+     * Base component type class for each {@link DbArrayBase} type. Note that {@link DbBooleanArray} is deprecated,
+     * superseded by {@link DbArray}.
      */
-    private static Class<?> baseComponentTypeForDbArray(
-        @NotNull final Class<? extends DbArrayBase> dbArrayType) {
+    private static Class<?> baseComponentTypeForDbArray(@NotNull final Class<? extends DbArrayBase> dbArrayType) {
         if (DbBooleanArray.class.isAssignableFrom(dbArrayType)) {
             return Boolean.class;
         }
@@ -179,79 +177,72 @@ public class ColumnDefinition<TYPE>
     }
 
     private static void assertComponentTypeValid(@NotNull final Class<?> dataType,
-        @Nullable final Class<?> componentType) {
+            @Nullable final Class<?> componentType) {
         if (!DbArrayBase.class.isAssignableFrom(dataType) && !dataType.isArray()) {
             return;
         }
         if (componentType == null) {
-            throw new IllegalArgumentException(
-                "Required component type not specified for data type " + dataType);
+            throw new IllegalArgumentException("Required component type not specified for data type " + dataType);
         }
         if (dataType.isArray()) {
             final Class<?> arrayComponentType = dataType.getComponentType();
             if (!arrayComponentType.isAssignableFrom(componentType)) {
                 throw new IllegalArgumentException(
-                    "Invalid component type " + componentType + " for array data type " + dataType);
+                        "Invalid component type " + componentType + " for array data type " + dataType);
             }
             return;
         }
         // noinspection unchecked
-        final Class<?> baseComponentType =
-            baseComponentTypeForDbArray((Class<? extends DbArrayBase>) dataType);
+        final Class<?> baseComponentType = baseComponentTypeForDbArray((Class<? extends DbArrayBase>) dataType);
         if (!baseComponentType.isAssignableFrom(componentType)) {
             throw new IllegalArgumentException(
-                "Invalid component type " + componentType + " for DbArray data type " + dataType);
+                    "Invalid component type " + componentType + " for DbArray data type " + dataType);
         }
     }
 
     private static Class<?> checkAndMaybeInferComponentType(@NotNull final Class<?> dataType,
-        @Nullable final Class<?> inputComponentType) {
+            @Nullable final Class<?> inputComponentType) {
         if (dataType.isArray()) {
             final Class<?> arrayComponentType = dataType.getComponentType();
             if (inputComponentType == null) {
                 return arrayComponentType;
             }
             if (!arrayComponentType.isAssignableFrom(inputComponentType)) {
-                throw new IllegalArgumentException("Invalid component type " + inputComponentType
-                    + " for array data type " + dataType);
+                throw new IllegalArgumentException(
+                        "Invalid component type " + inputComponentType + " for array data type " + dataType);
             }
             return inputComponentType;
         }
         if (DbArrayBase.class.isAssignableFrom(dataType)) {
             // noinspection unchecked
-            final Class<?> dbArrayComponentType =
-                baseComponentTypeForDbArray((Class<? extends DbArrayBase>) dataType);
+            final Class<?> dbArrayComponentType = baseComponentTypeForDbArray((Class<? extends DbArrayBase>) dataType);
             if (inputComponentType == null) {
                 /*
-                 * TODO (https://github.com/deephaven/deephaven-core/issues/817): Allow formula
-                 * results returning DbArray to know component type if
-                 * (DbArray.class.isAssignableFrom(dataType)) { throw new
-                 * IllegalArgumentException("Missing required component type for DbArray data type "
-                 * + dataType); }
+                 * TODO (https://github.com/deephaven/deephaven-core/issues/817): Allow formula results returning
+                 * DbArray to know component type if (DbArray.class.isAssignableFrom(dataType)) { throw new
+                 * IllegalArgumentException("Missing required component type for DbArray data type " + dataType); }
                  */
                 return dbArrayComponentType;
             }
             if (!dbArrayComponentType.isAssignableFrom(inputComponentType)) {
-                throw new IllegalArgumentException("Invalid component type " + inputComponentType
-                    + " for DbArray data type " + dataType);
+                throw new IllegalArgumentException(
+                        "Invalid component type " + inputComponentType + " for DbArray data type " + dataType);
             }
             return inputComponentType;
         }
         return inputComponentType;
     }
 
-    private static <T> void maybeSetComponentType(
-        @NotNull final ColumnDefinition<T> columnDefinition, @NotNull final Class<T> dataType,
-        @Nullable Class<?> inputComponentType) {
-        final Class<?> updatedComponentType =
-            checkAndMaybeInferComponentType(dataType, inputComponentType);
+    private static <T> void maybeSetComponentType(@NotNull final ColumnDefinition<T> columnDefinition,
+            @NotNull final Class<T> dataType, @Nullable Class<?> inputComponentType) {
+        final Class<?> updatedComponentType = checkAndMaybeInferComponentType(dataType, inputComponentType);
         if (updatedComponentType != null) {
             columnDefinition.setComponentType(updatedComponentType);
         }
     }
 
-    public static <T> ColumnDefinition<T> fromGenericType(String name, Class<T> dataType,
-        int columnType, Class<?> componentType) {
+    public static <T> ColumnDefinition<T> fromGenericType(String name, Class<T> dataType, int columnType,
+            Class<?> componentType) {
         Objects.requireNonNull(dataType);
         ColumnDefinition<T> cd = new ColumnDefinition<>(name, dataType, columnType);
         if (componentType == null) {
@@ -265,8 +256,7 @@ public class ColumnDefinition<TYPE>
         return header.componentType().walk(new Adapter(header.name())).out();
     }
 
-    private static class Adapter
-        implements Type.Visitor, PrimitiveType.Visitor, GenericType.Visitor {
+    private static class Adapter implements Type.Visitor, PrimitiveType.Visitor, GenericType.Visitor {
 
         private final String name;
 
@@ -432,19 +422,17 @@ public class ColumnDefinition<TYPE>
     }
 
     /**
-     * Compares two ColumnDefinitions somewhat more permissively than equals, disregarding matters
-     * of storage and derivation. Checks for equality of {@code name}, {@code dataType}, and
-     * {@code componentType}. As such, this method has an equivalence relation, ie
-     * {@code A.isCompatible(B) == B.isCompatible(A)}.
+     * Compares two ColumnDefinitions somewhat more permissively than equals, disregarding matters of storage and
+     * derivation. Checks for equality of {@code name}, {@code dataType}, and {@code componentType}. As such, this
+     * method has an equivalence relation, ie {@code A.isCompatible(B) == B.isCompatible(A)}.
      *
      * @param other - The ColumnDefinition to compare to.
-     * @return True if the ColumnDefinition defines a column whose data is compatible with this
-     *         ColumnDefinition.
+     * @return True if the ColumnDefinition defines a column whose data is compatible with this ColumnDefinition.
      */
     public boolean isCompatible(ColumnDefinition other) {
         return this.name.equals(other.name)
-            && this.dataType.equals(other.dataType)
-            && this.componentType == other.componentType;
+                && this.dataType.equals(other.dataType)
+                && this.componentType == other.componentType;
     }
 
     /**
@@ -461,8 +449,8 @@ public class ColumnDefinition<TYPE>
     }
 
     /**
-     * Enumerate the differences between this ColumnDefinition, and another one. Lines will be of
-     * the form "lhs attribute 'value' does not match rhs attribute 'value'.
+     * Enumerate the differences between this ColumnDefinition, and another one. Lines will be of the form "lhs
+     * attribute 'value' does not match rhs attribute 'value'.
      *
      * @param differences an array to which differences can be added
      * @param other the ColumnDefinition under comparison
@@ -470,24 +458,22 @@ public class ColumnDefinition<TYPE>
      * @param rhs what to call the other definition
      * @param prefix begin each difference with this string
      */
-    public void describeDifferences(@NotNull List<String> differences,
-        @NotNull final ColumnDefinition other,
-        @NotNull final String lhs, @NotNull final String rhs, @NotNull final String prefix) {
+    public void describeDifferences(@NotNull List<String> differences, @NotNull final ColumnDefinition other,
+            @NotNull final String lhs, @NotNull final String rhs, @NotNull final String prefix) {
         if (!name.equals(other.name)) {
-            differences.add(prefix + lhs + " name '" + name + "' does not match " + rhs + " name '"
-                + other.name + "'");
+            differences.add(prefix + lhs + " name '" + name + "' does not match " + rhs + " name '" + other.name + "'");
         }
         if (!dataType.equals(other.dataType)) {
-            differences.add(prefix + lhs + " dataType '" + dataType + "' does not match " + rhs
-                + " dataType '" + other.dataType + "'");
+            differences.add(prefix + lhs + " dataType '" + dataType + "' does not match " + rhs + " dataType '"
+                    + other.dataType + "'");
         } else {
             if (!Objects.equals(componentType, other.componentType)) {
-                differences.add(prefix + lhs + " componentType '" + componentType
-                    + "' does not match " + rhs + " componentType '" + other.componentType + "'");
+                differences.add(prefix + lhs + " componentType '" + componentType + "' does not match " + rhs
+                        + " componentType '" + other.componentType + "'");
             }
             if (columnType != other.columnType) {
-                differences.add(prefix + lhs + " columnType " + columnType + " does not match "
-                    + rhs + " columnType " + other.columnType);
+                differences.add(prefix + lhs + " columnType " + columnType + " does not match " + rhs + " columnType "
+                        + other.columnType);
             }
         }
     }
@@ -498,9 +484,9 @@ public class ColumnDefinition<TYPE>
         }
         final ColumnDefinition otherCD = (ColumnDefinition) other;
         return name.equals(otherCD.name)
-            && dataType.equals(otherCD.dataType)
-            && Objects.equals(componentType, otherCD.componentType)
-            && columnType == otherCD.columnType;
+                && dataType.equals(otherCD.dataType)
+                && Objects.equals(componentType, otherCD.componentType)
+                && columnType == otherCD.columnType;
     }
 
     public ColumnDefinition rename(String newName) {

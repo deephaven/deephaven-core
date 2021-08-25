@@ -7,8 +7,7 @@ import org.jetbrains.annotations.NotNull;
  * <p>
  * A {@link LivenessManager} implementation that will never release its referents.
  * <p>
- * Instances expect to be used on exactly one thread, and hence do not take any measures to ensure
- * thread safety.
+ * Instances expect to be used on exactly one thread, and hence do not take any measures to ensure thread safety.
  */
 public final class PermanentLivenessManager implements LivenessManager {
 
@@ -24,8 +23,8 @@ public final class PermanentLivenessManager implements LivenessManager {
         }
         if (Liveness.DEBUG_MODE_ENABLED) {
             Liveness.log.info().append("LivenessDebug: PermanentLivenessManager managing ")
-                .append(Utils.REFERENT_FORMATTER, referent).append(" for ")
-                .append(new LivenessDebugException()).endl();
+                    .append(Utils.REFERENT_FORMATTER, referent).append(" for ").append(new LivenessDebugException())
+                    .endl();
         }
         return true;
     }

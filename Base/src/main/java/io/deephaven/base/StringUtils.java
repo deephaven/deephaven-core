@@ -75,8 +75,7 @@ public class StringUtils {
             if (i <= max) {
                 int j = i + 1;
                 int end = j + target.length() - 1;
-                for (int k = 1; j < end
-                    && toUpperCase(source.charAt(j)) == toUpperCase(target.charAt(k)); j++, k++);
+                for (int k = 1; j < end && toUpperCase(source.charAt(j)) == toUpperCase(target.charAt(k)); j++, k++);
 
                 if (j == end) {
                     /* Found whole string. */

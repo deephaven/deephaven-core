@@ -42,7 +42,6 @@ public class TestRangeCardinality {
         for (int e : elements) {
             bc.iset((short) e);
         }
-        Assert.assertEquals(expected,
-            ContainerUtil.cardinalityInBitmapRange(bc.bitmap, begin, end));
+        Assert.assertEquals(expected, ContainerUtil.cardinalityInBitmapRange(bc.bitmap, begin, end));
     }
 }

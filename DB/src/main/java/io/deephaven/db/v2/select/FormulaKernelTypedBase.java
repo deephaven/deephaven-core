@@ -27,63 +27,62 @@ import io.deephaven.db.v2.sources.chunk.WritableObjectChunk;
 import io.deephaven.db.v2.sources.chunk.WritableShortChunk;
 
 /**
- * Extends {@link FormulaKernel} for specifically typed destination {@link WritableChunk
- * WritableChunks}.
+ * Extends {@link FormulaKernel} for specifically typed destination {@link WritableChunk WritableChunks}.
  */
 public abstract class FormulaKernelTypedBase implements FormulaKernel {
 
     @Override
     public final void applyFormulaChunk(
-        FillContext __context,
-        WritableChunk<? super Values> __destination,
-        Chunk<? extends Values>[] __sources) {
+            FillContext __context,
+            WritableChunk<? super Values> __destination,
+            Chunk<? extends Values>[] __sources) {
         __destination.walk(new ToTypedMethod<>(__context, __sources));
     }
 
     public abstract void applyFormulaChunk(
-        Formula.FillContext __context,
-        WritableByteChunk<? super Values> __destination,
-        Chunk<? extends Values>[] __sources);
+            Formula.FillContext __context,
+            WritableByteChunk<? super Values> __destination,
+            Chunk<? extends Values>[] __sources);
 
     public abstract void applyFormulaChunk(
-        Formula.FillContext __context,
-        WritableBooleanChunk<? super Values> __destination,
-        Chunk<? extends Values>[] __sources);
+            Formula.FillContext __context,
+            WritableBooleanChunk<? super Values> __destination,
+            Chunk<? extends Values>[] __sources);
 
     public abstract void applyFormulaChunk(
-        Formula.FillContext __context,
-        WritableCharChunk<? super Values> __destination,
-        Chunk<? extends Values>[] __sources);
+            Formula.FillContext __context,
+            WritableCharChunk<? super Values> __destination,
+            Chunk<? extends Values>[] __sources);
 
     public abstract void applyFormulaChunk(
-        Formula.FillContext __context,
-        WritableShortChunk<? super Values> __destination,
-        Chunk<? extends Values>[] __sources);
+            Formula.FillContext __context,
+            WritableShortChunk<? super Values> __destination,
+            Chunk<? extends Values>[] __sources);
 
     public abstract void applyFormulaChunk(
-        Formula.FillContext __context,
-        WritableIntChunk<? super Values> __destination,
-        Chunk<? extends Values>[] __sources);
+            Formula.FillContext __context,
+            WritableIntChunk<? super Values> __destination,
+            Chunk<? extends Values>[] __sources);
 
     public abstract void applyFormulaChunk(
-        Formula.FillContext __context,
-        WritableLongChunk<? super Values> __destination,
-        Chunk<? extends Values>[] __sources);
+            Formula.FillContext __context,
+            WritableLongChunk<? super Values> __destination,
+            Chunk<? extends Values>[] __sources);
 
     public abstract void applyFormulaChunk(
-        Formula.FillContext __context,
-        WritableFloatChunk<? super Values> __destination,
-        Chunk<? extends Values>[] __sources);
+            Formula.FillContext __context,
+            WritableFloatChunk<? super Values> __destination,
+            Chunk<? extends Values>[] __sources);
 
     public abstract void applyFormulaChunk(
-        Formula.FillContext __context,
-        WritableDoubleChunk<? super Values> __destination,
-        Chunk<? extends Values>[] __sources);
+            Formula.FillContext __context,
+            WritableDoubleChunk<? super Values> __destination,
+            Chunk<? extends Values>[] __sources);
 
     public abstract <T> void applyFormulaChunk(
-        Formula.FillContext __context,
-        WritableObjectChunk<T, ? super Values> __destination,
-        Chunk<? extends Values>[] __sources);
+            Formula.FillContext __context,
+            WritableObjectChunk<T, ? super Values> __destination,
+            Chunk<? extends Values>[] __sources);
 
     private class ToTypedMethod<ATTR extends Any> implements Visitor<ATTR> {
         private final FillContext __context;
@@ -98,81 +97,81 @@ public abstract class FormulaKernelTypedBase implements FormulaKernel {
         public void visit(ByteChunk<ATTR> chunk) {
             // noinspection unchecked,rawtypes
             applyFormulaChunk(
-                __context,
-                ((WritableChunk) chunk).asWritableByteChunk(),
-                __sources);
+                    __context,
+                    ((WritableChunk) chunk).asWritableByteChunk(),
+                    __sources);
         }
 
         @Override
         public void visit(BooleanChunk<ATTR> chunk) {
             // noinspection unchecked,rawtypes
             applyFormulaChunk(
-                __context,
-                ((WritableChunk) chunk).asWritableBooleanChunk(),
-                __sources);
+                    __context,
+                    ((WritableChunk) chunk).asWritableBooleanChunk(),
+                    __sources);
         }
 
         @Override
         public void visit(CharChunk<ATTR> chunk) {
             // noinspection unchecked,rawtypes
             applyFormulaChunk(
-                __context,
-                ((WritableChunk) chunk).asWritableCharChunk(),
-                __sources);
+                    __context,
+                    ((WritableChunk) chunk).asWritableCharChunk(),
+                    __sources);
         }
 
         @Override
         public void visit(ShortChunk<ATTR> chunk) {
             // noinspection unchecked,rawtypes
             applyFormulaChunk(
-                __context,
-                ((WritableChunk) chunk).asWritableShortChunk(),
-                __sources);
+                    __context,
+                    ((WritableChunk) chunk).asWritableShortChunk(),
+                    __sources);
         }
 
         @Override
         public void visit(IntChunk<ATTR> chunk) {
             // noinspection unchecked,rawtypes
             applyFormulaChunk(
-                __context,
-                ((WritableChunk) chunk).asWritableIntChunk(),
-                __sources);
+                    __context,
+                    ((WritableChunk) chunk).asWritableIntChunk(),
+                    __sources);
         }
 
         @Override
         public void visit(LongChunk<ATTR> chunk) {
             // noinspection unchecked,rawtypes
             applyFormulaChunk(
-                __context,
-                ((WritableChunk) chunk).asWritableLongChunk(),
-                __sources);
+                    __context,
+                    ((WritableChunk) chunk).asWritableLongChunk(),
+                    __sources);
         }
 
         @Override
         public void visit(FloatChunk<ATTR> chunk) {
             // noinspection unchecked,rawtypes
             applyFormulaChunk(
-                __context,
-                ((WritableChunk) chunk).asWritableFloatChunk(),
-                __sources);
+                    __context,
+                    ((WritableChunk) chunk).asWritableFloatChunk(),
+                    __sources);
         }
 
         @Override
         public void visit(DoubleChunk<ATTR> chunk) {
             // noinspection unchecked,rawtypes
             applyFormulaChunk(
-                __context,
-                ((WritableChunk) chunk).asWritableDoubleChunk(),
-                __sources);
+                    __context,
+                    ((WritableChunk) chunk).asWritableDoubleChunk(),
+                    __sources);
         }
 
         @Override
         public <T> void visit(ObjectChunk<T, ATTR> chunk) {
             // noinspection unchecked,rawtypes
             applyFormulaChunk(
-                __context,
-                ((WritableChunk) chunk).asWritableObjectChunk(),
-                __sources);
+                    __context,
+                    ((WritableChunk) chunk).asWritableObjectChunk(),
+                    __sources);
         }
     }
 }

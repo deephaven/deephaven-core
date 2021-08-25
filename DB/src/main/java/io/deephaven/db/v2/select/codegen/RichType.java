@@ -39,8 +39,7 @@ public class RichType {
         sb.append(bareType.getCanonicalName());
         if (isGeneric) {
             sb.append('<');
-            sb.append(IterableUtils.makeSeparatedList(Arrays.asList(typeAttributes), ", ",
-                Class::getCanonicalName));
+            sb.append(IterableUtils.makeSeparatedList(Arrays.asList(typeAttributes), ", ", Class::getCanonicalName));
             sb.append('>');
         }
         return sb.toString();

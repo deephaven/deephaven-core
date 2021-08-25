@@ -26,8 +26,7 @@ public class TestJobStateTimeoutQueue extends TestCase {
      * A null Job implementation
      */
     private static class NullJob extends Job {
-        public int invoke(SelectableChannel channel, int readyOps, Procedure.Nullary handoff)
-            throws IOException {
+        public int invoke(SelectableChannel channel, int readyOps, Procedure.Nullary handoff) throws IOException {
             return 0;
         }
 

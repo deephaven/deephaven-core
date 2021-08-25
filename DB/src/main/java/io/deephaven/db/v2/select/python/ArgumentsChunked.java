@@ -113,8 +113,7 @@ class ArgumentsChunked {
 
         @Override
         public <T> void visit(ObjectChunk<T, ATTR> chunk) {
-            // this is LESS THAN IDEAL - it would be much better if ObjectChunk would be able to
-            // return
+            // this is LESS THAN IDEAL - it would be much better if ObjectChunk would be able to return
             // the array type
             arrayType = Object[].class;
             final Object[] out = new Object[chunk.size()];

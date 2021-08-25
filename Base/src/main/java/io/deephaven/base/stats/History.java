@@ -16,8 +16,8 @@ public class History {
     public static final int INTERVAL_15M_INDEX = 4;
     public static final int INTERVAL_TOTAL_INDEX = 5;
 
-    public static final int DEPTH = 2; // min is 2 (current partial interval + last full interval),
-                                       // can be larger to retain more history
+    public static final int DEPTH = 2; // min is 2 (current partial interval + last full interval), can be larger to
+                                       // retain more history
 
     public static int intervalIndex(String s) {
         for (int i = 0; i < INTERVAL_NAMES.length; ++i) {
@@ -57,8 +57,8 @@ public class History {
     }
 
     /**
-     * Update the depth-zero history for all intervals, and begin new intervals for those whose
-     * depth-zero histories are now in the past.
+     * Update the depth-zero history for all intervals, and begin new intervals for those whose depth-zero histories are
+     * now in the past.
      * 
      * @return the highest-numbered interval which has been newly started.
      */
@@ -165,11 +165,10 @@ public class History {
         if (nSamples <= 1) {
             return 0;
         }
-        double var =
-            sum2 / (nSamples - 1) - ave * ave * ((double) nSamples / (double) (nSamples - 1));
+        double var = sum2 / (nSamples - 1) - ave * ave * ((double) nSamples / (double) (nSamples - 1));
         if (var < 0.0) {
-            return -1; // if sum2 goes overflow on us variance could go nuts ... be safe and log a
-                       // junk variance value instead of exploding
+            return -1; // if sum2 goes overflow on us variance could go nuts ... be safe and log a junk variance value
+                       // instead of exploding
         } else {
             return (long) Math.ceil(Math.sqrt(var));
         }

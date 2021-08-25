@@ -90,8 +90,7 @@ public class StaticCalendarMethods {
         return Calendars.calendar().numberOfDays(start, end);
     }
 
-    public static int numberOfDays(final DBDateTime start, final DBDateTime end,
-        final boolean endInclusive) {
+    public static int numberOfDays(final DBDateTime start, final DBDateTime end, final boolean endInclusive) {
         return Calendars.calendar().numberOfDays(start, end, endInclusive);
     }
 
@@ -99,8 +98,7 @@ public class StaticCalendarMethods {
         return Calendars.calendar().numberOfDays(start, end);
     }
 
-    public static int numberOfDays(final String start, final String end,
-        final boolean endInclusive) {
+    public static int numberOfDays(final String start, final String end, final boolean endInclusive) {
         return Calendars.calendar().numberOfDays(start, end, endInclusive);
     }
 
@@ -344,8 +342,7 @@ public class StaticCalendarMethods {
         return Calendars.calendar().numberOfNonBusinessDays(start, end);
     }
 
-    public static int numberOfNonBusinessDays(DBDateTime start, DBDateTime end,
-        boolean endInclusive) {
+    public static int numberOfNonBusinessDays(DBDateTime start, DBDateTime end, boolean endInclusive) {
         return Calendars.calendar().numberOfNonBusinessDays(start, end, endInclusive);
     }
 

@@ -42,28 +42,24 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Tests for {@link PartitionAwareSourceTable}.
  */
-@SuppressWarnings({"AutoBoxing", "JUnit4AnnotatedMethodInJUnit3TestCase",
-        "AnonymousInnerClassMayBeStatic"})
+@SuppressWarnings({"AutoBoxing", "JUnit4AnnotatedMethodInJUnit3TestCase", "AnonymousInnerClassMayBeStatic"})
 public class TestPartitionAwareSourceTable extends LiveTableTestCase {
 
     private static final int NUM_COLUMNS = 5;
     private static final ColumnDefinition<String> PARTITIONING_COLUMN_DEFINITION =
-        ColumnDefinition.ofString("Date").withPartitioning();
-    private static final ColumnDefinition<Boolean> BOOLEAN_COLUMN_DEFINITION =
-        ColumnDefinition.ofBoolean("Active");
+            ColumnDefinition.ofString("Date").withPartitioning();
+    private static final ColumnDefinition<Boolean> BOOLEAN_COLUMN_DEFINITION = ColumnDefinition.ofBoolean("Active");
     private static final ColumnDefinition<Character> CHARACTER_COLUMN_DEFINITION =
-        ColumnDefinition.ofChar("Type").withGrouping();
-    private static final ColumnDefinition<Integer> INTEGER_COLUMN_DEFINITION =
-        ColumnDefinition.ofInt("Size");
-    private static final ColumnDefinition<Double> DOUBLE_COLUMN_DEFINITION =
-        ColumnDefinition.ofDouble("Price");
+            ColumnDefinition.ofChar("Type").withGrouping();
+    private static final ColumnDefinition<Integer> INTEGER_COLUMN_DEFINITION = ColumnDefinition.ofInt("Size");
+    private static final ColumnDefinition<Double> DOUBLE_COLUMN_DEFINITION = ColumnDefinition.ofDouble("Price");
 
     private static final TableDefinition TABLE_DEFINITION = TableDefinition.of(
-        PARTITIONING_COLUMN_DEFINITION,
-        BOOLEAN_COLUMN_DEFINITION,
-        CHARACTER_COLUMN_DEFINITION,
-        INTEGER_COLUMN_DEFINITION,
-        DOUBLE_COLUMN_DEFINITION);
+            PARTITIONING_COLUMN_DEFINITION,
+            BOOLEAN_COLUMN_DEFINITION,
+            CHARACTER_COLUMN_DEFINITION,
+            INTEGER_COLUMN_DEFINITION,
+            DOUBLE_COLUMN_DEFINITION);
 
     private static final String[] INTERNAL_PARTITIONS = {"0", "1", "2", "1", "0", "1"};
     private static final String[] COLUMN_PARTITIONS = {"D0", "D1", "D0", "D3", "D2", "D0"};
@@ -96,8 +92,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         componentFactory = mock(SourceTableComponentFactory.class);
         columnSourceManager = mock(ColumnSourceManager.class);
         columnSources = TABLE_DEFINITION.getColumnStream().map(cd -> {
-            final DeferredGroupingColumnSource<?> mocked =
-                mock(DeferredGroupingColumnSource.class, cd.getName());
+            final DeferredGroupingColumnSource<?> mocked = mock(DeferredGroupingColumnSource.class, cd.getName());
             checking(new Expectations() {
                 {
                     allowing(mocked).getType();
@@ -142,8 +137,8 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
 
         checking(new Expectations() {
             {
-                oneOf(componentFactory).createColumnSourceManager(with(true),
-                    with(ColumnToCodecMappings.EMPTY), with(equal(TABLE_DEFINITION.getColumns())));
+                oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
+                        with(equal(TABLE_DEFINITION.getColumns())));
                 will(returnValue(columnSourceManager));
                 oneOf(columnSourceManager).disableGrouping();
             }
@@ -151,8 +146,8 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
 
         expectedIndex = Index.FACTORY.getEmptyIndex();
 
-        SUT = new PartitionAwareSourceTable(TABLE_DEFINITION, "", componentFactory,
-            locationProvider, LiveTableMonitor.DEFAULT);
+        SUT = new PartitionAwareSourceTable(TABLE_DEFINITION, "", componentFactory, locationProvider,
+                LiveTableMonitor.DEFAULT);
         assertIsSatisfied();
     }
 
@@ -169,13 +164,10 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         }
     }
 
-    private Map<String, ? extends DeferredGroupingColumnSource<?>> getIncludedColumnsMap(
-        final int... indices) {
+    private Map<String, ? extends DeferredGroupingColumnSource<?>> getIncludedColumnsMap(final int... indices) {
         return IntStream.of(indices)
-            .mapToObj(
-                ci -> new Pair<>(TABLE_DEFINITION.getColumns()[ci].getName(), columnSources[ci]))
-            .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond, Assert::neverInvoked,
-                LinkedHashMap::new));
+                .mapToObj(ci -> new Pair<>(TABLE_DEFINITION.getColumns()[ci].getName(), columnSources[ci]))
+                .collect(Collectors.toMap(Pair::getFirst, Pair::getSecond, Assert::neverInvoked, LinkedHashMap::new));
     }
 
     private ImmutableTableLocationKey[] locationKeysSlice(final int... indexes) {
@@ -188,7 +180,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
 
     private Set<TableLocation> makePassingLocations(final int... indexes) {
         return Arrays.stream(indexes).mapToObj(li -> tableLocations[li])
-            .collect(Collectors.toCollection(LinkedHashSet::new));
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     @Test
@@ -227,20 +219,18 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
     }
 
     private void doInitializeCheck(final ImmutableTableLocationKey[] tableLocationKeys,
-        final Set<TableLocation> expectPassFilters, final boolean throwException,
-        final boolean coalesceAndListen) {
+            final Set<TableLocation> expectPassFilters, final boolean throwException, final boolean coalesceAndListen) {
         doInitializeCheck(tableLocationKeys, expectPassFilters, throwException, coalesceAndListen,
-            ConcurrentInstantiationType.Idle);
+                ConcurrentInstantiationType.Idle);
     }
 
     private void doInitializeCheck(final ImmutableTableLocationKey[] tableLocationKeys,
-        final Set<TableLocation> expectPassFilters, final boolean throwException,
-        final boolean coalesceAndListen,
-        @NotNull final ConcurrentInstantiationType ciType) {
+            final Set<TableLocation> expectPassFilters, final boolean throwException, final boolean coalesceAndListen,
+            @NotNull final ConcurrentInstantiationType ciType) {
         Assert.assertion(!(throwException && !coalesceAndListen), "!(throwException && !listen)");
         final TableDataException exception = new TableDataException("test");
-        final Index toAdd = Index.FACTORY.getIndexByRange(expectedIndex.lastKey() + 1,
-            expectedIndex.lastKey() + INDEX_INCREMENT);
+        final Index toAdd =
+                Index.FACTORY.getIndexByRange(expectedIndex.lastKey() + 1, expectedIndex.lastKey() + INDEX_INCREMENT);
 
         checking(new Expectations() {
             {
@@ -248,10 +238,8 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                 will(new CustomAction("Supply locations") {
                     @Override
                     public Object invoke(Invocation invocation) {
-                        subscriptionBuffer =
-                            (TableLocationSubscriptionBuffer) invocation.getParameter(0);
-                        Arrays.stream(tableLocationKeys)
-                            .forEach(subscriptionBuffer::handleTableLocationKey);
+                        subscriptionBuffer = (TableLocationSubscriptionBuffer) invocation.getParameter(0);
+                        Arrays.stream(tableLocationKeys).forEach(subscriptionBuffer::handleTableLocationKey);
                         return null;
                     }
                 });
@@ -274,7 +262,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         expectedIndex.insert(toAdd);
         if (coalesceAndListen) {
             if (ciType == ConcurrentInstantiationType.UpdatingClosed
-                || ciType == ConcurrentInstantiationType.UpdatingOpen) {
+                    || ciType == ConcurrentInstantiationType.UpdatingOpen) {
                 LiveTableMonitor.DEFAULT.startCycleForUnitTests();
             }
             try {
@@ -302,20 +290,20 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
     @Test
     public void testConcurrentInstantiationUpdating() {
         doInitializeCheck(locationKeysSlice(1, 3), makePassingLocations(1, 3), false, true,
-            ConcurrentInstantiationType.UpdatingClosed);
+                ConcurrentInstantiationType.UpdatingClosed);
         doRefreshChangedCheck();
     }
 
     @Test
     public void testConcurrentInstantiationUpdatingWithInitialCycleRefresh() {
         doInitializeCheck(locationKeysSlice(1, 3), makePassingLocations(1, 3), false, true,
-            ConcurrentInstantiationType.UpdatingOpen);
+                ConcurrentInstantiationType.UpdatingOpen);
         doRefreshChangedCheck();
     }
 
     private void doRefreshChangedCheck() {
-        final Index toAdd = Index.FACTORY.getIndexByRange(expectedIndex.lastKey() + 1,
-            expectedIndex.lastKey() + INDEX_INCREMENT);
+        final Index toAdd =
+                Index.FACTORY.getIndexByRange(expectedIndex.lastKey() + 1, expectedIndex.lastKey() + INDEX_INCREMENT);
         checking(new Expectations() {
             {
                 oneOf(columnSourceManager).refresh();
@@ -327,7 +315,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                             @Override
                             public Object invoke(Invocation invocation) {
                                 final ShiftAwareListener.Update update =
-                                    (ShiftAwareListener.Update) invocation.getParameter(0);
+                                        (ShiftAwareListener.Update) invocation.getParameter(0);
                                 assertIndexEquals(toAdd, update.added);
                                 assertIndexEquals(Index.FACTORY.getEmptyIndex(), update.removed);
                                 assertIndexEquals(Index.FACTORY.getEmptyIndex(), update.modified);
@@ -378,12 +366,11 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                 oneOf(columnSourceManager).refresh();
                 will(throwException(exception));
                 oneOf(listener).getErrorNotification(with(any(TableDataException.class)),
-                    with(any(UpdatePerformanceTracker.Entry.class)));
+                        with(any(UpdatePerformanceTracker.Entry.class)));
                 will(new CustomAction("check exception") {
                     @Override
                     public Object invoke(Invocation invocation) {
-                        assertEquals(exception,
-                            ((Exception) invocation.getParameter(0)).getCause());
+                        assertEquals(exception, ((Exception) invocation.getParameter(0)).getCause());
                         return notification;
                     }
                 });
@@ -399,7 +386,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
     }
 
     private void doAddLocationsRefreshCheck(final ImmutableTableLocationKey[] tableLocationKeys,
-        final Set<TableLocation> expectPassFilters) {
+            final Set<TableLocation> expectPassFilters) {
         Arrays.stream(tableLocationKeys).forEach(subscriptionBuffer::handleTableLocationKey);
 
         expectPassFilters.forEach(tl -> checking(new Expectations() {
@@ -417,8 +404,8 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
     }
 
     private void doTestRedefinition() {
-        // Note: We expect redefinition to make a new CSM, but no work until we force a coalesce by
-        // asking for column sources
+        // Note: We expect redefinition to make a new CSM, but no work until we force a coalesce by asking for column
+        // sources
         final ColumnDefinition[] includedColumns1 = new ColumnDefinition[] {
                 PARTITIONING_COLUMN_DEFINITION,
                 CHARACTER_COLUMN_DEFINITION,
@@ -430,7 +417,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         IntStream.range(0, includedColumns1.length).forEach(ci -> {
             final ColumnDefinition columnDefinition = includedColumns1[ci];
             final ColumnSource columnSource =
-                mock(ColumnSource.class, "_CS_" + columnDefinition.getDataType().getSimpleName());
+                    mock(ColumnSource.class, "_CS_" + columnDefinition.getDataType().getSimpleName());
             dataTypeToColumnSource.put(columnDefinition.getDataType(), columnSource);
             checking(new Expectations() {
                 {
@@ -446,8 +433,8 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         // Setup the table
         checking(new Expectations() {
             {
-                oneOf(componentFactory).createColumnSourceManager(with(true),
-                    with(ColumnToCodecMappings.EMPTY), with(equal(includedColumns1)));
+                oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
+                        with(equal(includedColumns1)));
                 will(returnValue(columnSourceManager));
                 oneOf(columnSourceManager).disableGrouping();
             }
@@ -469,10 +456,10 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                 will(returnValue(Index.FACTORY.getEmptyIndex()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(
-                    Arrays.stream(includedColumns1)
-                        .collect(Collectors.toMap(ColumnDefinition::getName,
-                            cd -> dataTypeToColumnSource.get(cd.getDataType()),
-                            Assert::neverInvoked, LinkedHashMap::new))));
+                        Arrays.stream(includedColumns1)
+                                .collect(Collectors.toMap(ColumnDefinition::getName,
+                                        cd -> dataTypeToColumnSource.get(cd.getDataType()), Assert::neverInvoked,
+                                        LinkedHashMap::new))));
             }
         });
         assertEquals(NUM_COLUMNS - 1, dropColumnsResult1.getColumnSources().size());
@@ -490,14 +477,13 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         };
         checking(new Expectations() {
             {
-                oneOf(componentFactory).createColumnSourceManager(with(true),
-                    with(ColumnToCodecMappings.EMPTY), with(equal(includedColumns2)));
+                oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
+                        with(equal(includedColumns2)));
                 will(returnValue(columnSourceManager));
                 oneOf(columnSourceManager).disableGrouping();
             }
         });
-        final Table dropColumnsResult2 =
-            dropColumnsResult1.dropColumns(CHARACTER_COLUMN_DEFINITION.getName());
+        final Table dropColumnsResult2 = dropColumnsResult1.dropColumns(CHARACTER_COLUMN_DEFINITION.getName());
         assertIsSatisfied();
         assertTrue(dropColumnsResult2 instanceof PartitionAwareSourceTable);
         // Force a coalesce and make sure it has the right columns
@@ -514,10 +500,10 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                 will(returnValue(Index.FACTORY.getEmptyIndex()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(
-                    Arrays.stream(includedColumns2)
-                        .collect(Collectors.toMap(ColumnDefinition::getName,
-                            cd -> dataTypeToColumnSource.get(cd.getDataType()),
-                            Assert::neverInvoked, LinkedHashMap::new))));
+                        Arrays.stream(includedColumns2)
+                                .collect(Collectors.toMap(ColumnDefinition::getName,
+                                        cd -> dataTypeToColumnSource.get(cd.getDataType()), Assert::neverInvoked,
+                                        LinkedHashMap::new))));
             }
         });
         assertEquals(NUM_COLUMNS - 2, dropColumnsResult2.getColumnSources().size());
@@ -527,8 +513,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
 
         // Test 3: Rename a column
         // Nothing to setup for the table - the rename is deferred
-        final Table renameColumnsResult1 =
-            dropColumnsResult2.renameColumns("A=" + INTEGER_COLUMN_DEFINITION.getName());
+        final Table renameColumnsResult1 = dropColumnsResult2.renameColumns("A=" + INTEGER_COLUMN_DEFINITION.getName());
         assertIsSatisfied();
         assertTrue(renameColumnsResult1 instanceof DeferredViewTable);
         // This will not force a coalesce, as dropColumnsResult2 is already coalesced.
@@ -545,8 +530,8 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         };
         checking(new Expectations() {
             {
-                oneOf(componentFactory).createColumnSourceManager(with(true),
-                    with(ColumnToCodecMappings.EMPTY), with(equal(includedColumns3)));
+                oneOf(componentFactory).createColumnSourceManager(with(true), with(ColumnToCodecMappings.EMPTY),
+                        with(equal(includedColumns3)));
                 will(returnValue(columnSourceManager));
                 oneOf(columnSourceManager).disableGrouping();
             }
@@ -568,10 +553,10 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                 will(returnValue(Index.FACTORY.getEmptyIndex()));
                 oneOf(columnSourceManager).getColumnSources();
                 will(returnValue(
-                    Arrays.stream(includedColumns3)
-                        .collect(Collectors.toMap(ColumnDefinition::getName,
-                            cd -> dataTypeToColumnSource.get(cd.getDataType()),
-                            Assert::neverInvoked, LinkedHashMap::new))));
+                        Arrays.stream(includedColumns3)
+                                .collect(Collectors.toMap(ColumnDefinition::getName,
+                                        cd -> dataTypeToColumnSource.get(cd.getDataType()), Assert::neverInvoked,
+                                        LinkedHashMap::new))));
             }
         });
         assertEquals(NUM_COLUMNS - 4, viewResult1.getColumnSources().size());
@@ -580,8 +565,8 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
 
         // Test 5: Add a new derived column on
         // Setup the table
-        final Table viewResult2 = viewResult1.updateView("SizeSquared="
-            + INTEGER_COLUMN_DEFINITION.getName() + '*' + INTEGER_COLUMN_DEFINITION.getName());
+        final Table viewResult2 = viewResult1.updateView(
+                "SizeSquared=" + INTEGER_COLUMN_DEFINITION.getName() + '*' + INTEGER_COLUMN_DEFINITION.getName());
         assertTrue(viewResult2 instanceof DeferredViewTable);
         assertEquals(NUM_COLUMNS - 3, viewResult2.getColumnSources().size());
         assertNotNull(viewResult2.getColumnSource(INTEGER_COLUMN_DEFINITION.getName()));
@@ -604,8 +589,8 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
     @Test
     public void testSelectDistinctDate() {
         final Set<TableLocation> passedLocations = makePassingLocations(1, 3, 5);
-        final String[] expectedDistinctDates = IntStream.of(1, 3, 5)
-            .mapToObj(li -> COLUMN_PARTITIONS[li]).distinct().toArray(String[]::new);
+        final String[] expectedDistinctDates =
+                IntStream.of(1, 3, 5).mapToObj(li -> COLUMN_PARTITIONS[li]).distinct().toArray(String[]::new);
         doInitializeCheck(locationKeysSlice(1, 3, 5), passedLocations, false, true);
         passedLocations.forEach(tl -> checking(new Expectations() {
             {
@@ -623,8 +608,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         final Table result = SUT.selectDistinct(PARTITIONING_COLUMN_DEFINITION.getName());
         assertIsSatisfied();
         // noinspection unchecked
-        final DataColumn<String> distinctDateColumn =
-            result.getColumn(PARTITIONING_COLUMN_DEFINITION.getName());
+        final DataColumn<String> distinctDateColumn = result.getColumn(PARTITIONING_COLUMN_DEFINITION.getName());
         assertEquals(expectedDistinctDates.length, distinctDateColumn.size());
         final String[] distinctDates = (String[]) distinctDateColumn.getDirect();
         Arrays.sort(expectedDistinctDates);
@@ -638,13 +622,12 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(true, ColumnToCodecMappings.EMPTY,
-                    TABLE_DEFINITION.getColumns());
+                        TABLE_DEFINITION.getColumns());
                 will(returnValue(columnSourceManager));
                 oneOf(columnSourceManager).disableGrouping();
             }
         });
-        assertIndexEquals(expectedIndex,
-            SUT.where(PARTITIONING_COLUMN_DEFINITION.getName() + "=`D0`").getIndex());
+        assertIndexEquals(expectedIndex, SUT.where(PARTITIONING_COLUMN_DEFINITION.getName() + "=`D0`").getIndex());
         assertIsSatisfied();
     }
 
@@ -671,14 +654,12 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                         return new DummyContext(int.class, (int) invocation.getParameter(0));
                     }
                 });
-                allowing(columnSources[3]).getChunk(with(any(DummyContext.class)),
-                    with(any(OrderedKeys.class)));
+                allowing(columnSources[3]).getChunk(with(any(DummyContext.class)), with(any(OrderedKeys.class)));
                 will(new CustomAction("Fill dummy chunk") {
                     @Override
                     public Object invoke(@NotNull final Invocation invocation) {
                         final WritableIntChunk<Values> destination =
-                            ((DummyContext) invocation.getParameter(0)).sourceChunk
-                                .asWritableIntChunk();
+                                ((DummyContext) invocation.getParameter(0)).sourceChunk.asWritableIntChunk();
                         final int length = ((OrderedKeys) invocation.getParameter(1)).intSize();
                         destination.fillWithValue(0, length, 1);
                         destination.setSize(length);
@@ -688,7 +669,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
             }
         });
         assertIndexEquals(expectedIndex, SUT.where(INTEGER_COLUMN_DEFINITION.getName() + ">0")
-            .where(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getIndex());
+                .where(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getIndex());
         assertIsSatisfied();
     }
 
@@ -698,7 +679,7 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         checking(new Expectations() {
             {
                 oneOf(componentFactory).createColumnSourceManager(true, ColumnToCodecMappings.EMPTY,
-                    TABLE_DEFINITION.getColumns());
+                        TABLE_DEFINITION.getColumns());
                 will(returnValue(columnSourceManager));
                 oneOf(columnSourceManager).disableGrouping();
                 allowing(columnSources[3]).getInt(with(any(long.class)));
@@ -710,14 +691,12 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                         return new DummyContext(int.class, (int) invocation.getParameter(0));
                     }
                 });
-                allowing(columnSources[3]).getChunk(with(any(DummyContext.class)),
-                    with(any(OrderedKeys.class)));
+                allowing(columnSources[3]).getChunk(with(any(DummyContext.class)), with(any(OrderedKeys.class)));
                 will(new CustomAction("Fill dummy chunk") {
                     @Override
                     public Object invoke(@NotNull final Invocation invocation) {
                         final WritableIntChunk<Values> destination =
-                            ((DummyContext) invocation.getParameter(0)).sourceChunk
-                                .asWritableIntChunk();
+                                ((DummyContext) invocation.getParameter(0)).sourceChunk.asWritableIntChunk();
                         final int length = ((OrderedKeys) invocation.getParameter(1)).intSize();
                         destination.fillWithValue(0, length, 1);
                         destination.setSize(length);
@@ -726,9 +705,9 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
                 });
             }
         });
-        assertIndexEquals(expectedIndex,
-            SUT.where(PARTITIONING_COLUMN_DEFINITION.getName() + "=`D0`",
-                INTEGER_COLUMN_DEFINITION.getName() + ">0").getIndex());
+        assertIndexEquals(expectedIndex, SUT
+                .where(PARTITIONING_COLUMN_DEFINITION.getName() + "=`D0`", INTEGER_COLUMN_DEFINITION.getName() + ">0")
+                .getIndex());
         assertIsSatisfied();
     }
 }

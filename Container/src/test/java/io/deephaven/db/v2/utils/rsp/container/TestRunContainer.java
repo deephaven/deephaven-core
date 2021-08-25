@@ -51,7 +51,7 @@ public class TestRunContainer extends TestContainerBase {
     }
 
     private static void getSetOfContainers(ArrayList<Container> set,
-        ArrayList<Container> setb) {
+            ArrayList<Container> setb) {
         Container r1 = new RunContainer();
         r1 = r1.iadd(0, (1 << 16));
         Container b1 = new ArrayContainer();
@@ -764,8 +764,7 @@ public class TestRunContainer extends TestContainerBase {
 
         container.iset((short) 510);
 
-        // second run entirely inside range, third run entirely inside range, 4th run entirely
-        // outside
+        // second run entirely inside range, third run entirely inside range, 4th run entirely outside
         Container result = container.inot(498, 507);
 
         assertEquals(7, result.getCardinality());
@@ -1525,8 +1524,7 @@ public class TestRunContainer extends TestContainerBase {
 
         container.iset((short) 510);
 
-        // second run entirely inside range, third run entirely inside range, 4th run entirely
-        // outside
+        // second run entirely inside range, third run entirely inside range, 4th run entirely outside
         Container result = container.not(498, 507);
 
         assertEquals(7, result.getCardinality());
@@ -1935,12 +1933,9 @@ public class TestRunContainer extends TestContainerBase {
 
     @Test
     public void RunContainerArg_ArrayANDNOT2() {
-        ArrayContainer ac =
-            new ArrayContainer(new short[] {0, 2, 4, 8, 10, 15, 16, 48, 50, 61, 80, -2});
-        RunContainer rc =
-            new RunContainer(new short[] {7, 3, 17, 2, 20, 3, 30, 3, 36, 6, 60, 5, -3, 2}, 7);
-        assertSameContents(new ArrayContainer(new short[] {0, 2, 4, 15, 16, 48, 50, 80}),
-            ac.andNot(rc));
+        ArrayContainer ac = new ArrayContainer(new short[] {0, 2, 4, 8, 10, 15, 16, 48, 50, 61, 80, -2});
+        RunContainer rc = new RunContainer(new short[] {7, 3, 17, 2, 20, 3, 30, 3, 36, 6, 60, 5, -3, 2}, 7);
+        assertSameContents(new ArrayContainer(new short[] {0, 2, 4, 15, 16, 48, 50, 80}), ac.andNot(rc));
     }
 
     @Test
@@ -3060,10 +3055,10 @@ public class TestRunContainer extends TestContainerBase {
     @Test
     public void testContainsRange3() {
         Container rc = new RunContainer().add(1, 100)
-            .add(300, 300)
-            .add(400, 500)
-            .add(502, 600)
-            .add(700, 10000);
+                .add(300, 300)
+                .add(400, 500)
+                .add(502, 600)
+                .add(700, 10000);
         assertFalse(rc.contains(0, 100));
         assertFalse(rc.contains(500, 600));
         assertFalse(rc.contains(501, 600));
@@ -3111,7 +3106,7 @@ public class TestRunContainer extends TestContainerBase {
                 fail("wrong iterator type");
             }
             RunContainerRangeIterator it2 =
-                new RunContainerRangeIterator((RunContainerRangeIterator) it);
+                    new RunContainerRangeIterator((RunContainerRangeIterator) it);
             final int ii = i;
             final ContainerUtil.TargetComparator t = (final int value) -> (ii - value);
             final boolean b = it2.search(t);
@@ -3216,14 +3211,12 @@ public class TestRunContainer extends TestContainerBase {
     public void testSetWithHint() {
         Container c = new RunContainer(10, 15, 20, 25);
         final PositionHint hint = new PositionHint();
-        c = c.iset((short) 8, hint).iset((short) 9, hint).iset((short) 10, hint)
-            .iset((short) 11, hint).iset((short) 12, hint).iset((short) 13, hint)
-            .iset((short) 14, hint).iset((short) 15, hint).iset((short) 16, hint)
-            .iset((short) 17, hint).iset((short) 18, hint).iset((short) 19, hint)
-            .iset((short) 20, hint).iset((short) 21, hint).iset((short) 22, hint)
-            .iset((short) 23, hint).iset((short) 24, hint).iset((short) 25, hint)
-            .iset((short) 26, hint).iset((short) 27, hint).iset((short) 28, hint)
-            .iset((short) 29, hint).iset((short) 30, hint);
+        c = c.iset((short) 8, hint).iset((short) 9, hint).iset((short) 10, hint).iset((short) 11, hint)
+                .iset((short) 12, hint).iset((short) 13, hint).iset((short) 14, hint).iset((short) 15, hint)
+                .iset((short) 16, hint).iset((short) 17, hint).iset((short) 18, hint).iset((short) 19, hint)
+                .iset((short) 20, hint).iset((short) 21, hint).iset((short) 22, hint).iset((short) 23, hint)
+                .iset((short) 24, hint).iset((short) 25, hint).iset((short) 26, hint).iset((short) 27, hint)
+                .iset((short) 28, hint).iset((short) 29, hint).iset((short) 30, hint);
         assertEquals(23, c.getCardinality());
         assertTrue(c.contains(8, 23));
     }
@@ -3233,10 +3226,9 @@ public class TestRunContainer extends TestContainerBase {
         Container c = new RunContainer(10, 15, 20, 25);
         c = c.iadd(30, 35);
         final PositionHint hint = new PositionHint();
-        c = c.iunset((short) 10, hint).iunset((short) 12, hint).iunset((short) 14, hint)
-            .iunset((short) 20, hint).iunset((short) 21, hint).iunset((short) 22, hint)
-            .iunset((short) 23, hint).iunset((short) 24, hint).iunset((short) 34, hint)
-            .iset((short) 35, hint);
+        c = c.iunset((short) 10, hint).iunset((short) 12, hint).iunset((short) 14, hint).iunset((short) 20, hint)
+                .iunset((short) 21, hint).iunset((short) 22, hint).iunset((short) 23, hint).iunset((short) 24, hint)
+                .iunset((short) 34, hint).iset((short) 35, hint);
         assertEquals(7, c.getCardinality());
         assertTrue(c.contains(11, 12));
         assertTrue(c.contains(13, 14));
@@ -3255,8 +3247,7 @@ public class TestRunContainer extends TestContainerBase {
         c = c.iset((short) v2, hint);
         c = c.iset((short) v3, hint);
         assertEquals(4, c.getCardinality());
-        final Container expected =
-            new ArrayContainer(new short[] {(short) v0, (short) v2, (short) v3, (short) v1});
+        final Container expected = new ArrayContainer(new short[] {(short) v0, (short) v2, (short) v3, (short) v1});
         assertTrue(expected.sameContents(c));
     }
 

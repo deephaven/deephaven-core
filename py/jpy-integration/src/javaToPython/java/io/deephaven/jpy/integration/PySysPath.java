@@ -23,13 +23,13 @@ public class PySysPath {
 
     private static List<String> getSysPath() {
         try (
-            final PyModule sys = PyModule.importModule("sys");
-            final PyObject path = sys.getAttribute("path")) {
+                final PyModule sys = PyModule.importModule("sys");
+                final PyObject path = sys.getAttribute("path")) {
             return path
-                .asList()
-                .stream()
-                .map(PyObject::getStringValue)
-                .collect(Collectors.toList());
+                    .asList()
+                    .stream()
+                    .map(PyObject::getStringValue)
+                    .collect(Collectors.toList());
         }
     }
 }

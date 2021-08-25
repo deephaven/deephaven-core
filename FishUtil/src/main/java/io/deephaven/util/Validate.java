@@ -33,8 +33,7 @@ public class Validate {
         return i;
     }
 
-    public static double validatePositiveDouble(String name, String s)
-        throws NumberFormatException {
+    public static double validatePositiveDouble(String name, String s) throws NumberFormatException {
         double d = 0;
 
         try {
@@ -68,8 +67,8 @@ public class Validate {
         }
     }
 
-    public static void validateDouble(String name, double value, double min, double max,
-        boolean inclusiveMin, boolean inclusiveMax) throws Exception {
+    public static void validateDouble(String name, double value, double min, double max, boolean inclusiveMin,
+            boolean inclusiveMax) throws Exception {
         if (Double.isNaN(value)) {
             throw new Exception(name + " may not be NaN");
         }
@@ -91,8 +90,8 @@ public class Validate {
         }
     }
 
-    public static void validateInteger(String name, int value, int min, int max,
-        boolean inclusiveMin, boolean inclusiveMax) throws Exception {
+    public static void validateInteger(String name, int value, int min, int max, boolean inclusiveMin,
+            boolean inclusiveMax) throws Exception {
         if (inclusiveMin && value < min) {
             throw new Exception(name + " must be greater than or equal to " + min);
         }

@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FetchPandasTableRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.FetchPandasTableRequest",
+        namespace = JsPackage.GLOBAL)
 public class FetchPandasTableRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -22,7 +22,7 @@ public class FetchPandasTableRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static FetchPandasTableRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -57,20 +57,20 @@ public class FetchPandasTableRequest {
 
             @JsProperty
             void setTicket(
-                FetchPandasTableRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    FetchPandasTableRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<FetchPandasTableRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FetchPandasTableRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<FetchPandasTableRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FetchPandasTableRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -100,7 +100,7 @@ public class FetchPandasTableRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static FetchPandasTableRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -135,20 +135,20 @@ public class FetchPandasTableRequest {
 
             @JsProperty
             void setTicket(
-                FetchPandasTableRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    FetchPandasTableRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<FetchPandasTableRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FetchPandasTableRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<FetchPandasTableRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FetchPandasTableRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -173,13 +173,12 @@ public class FetchPandasTableRequest {
     public static native FetchPandasTableRequest deserializeBinary(Uint8Array bytes);
 
     public static native FetchPandasTableRequest deserializeBinaryFromReader(
-        FetchPandasTableRequest message, Object reader);
+            FetchPandasTableRequest message, Object reader);
 
-    public static native void serializeBinaryToWriter(FetchPandasTableRequest message,
-        Object writer);
+    public static native void serializeBinaryToWriter(FetchPandasTableRequest message, Object writer);
 
     public static native FetchPandasTableRequest.ToObjectReturnType toObject(
-        boolean includeInstance, FetchPandasTableRequest msg);
+            boolean includeInstance, FetchPandasTableRequest msg);
 
     public native void clearConsoleId();
 

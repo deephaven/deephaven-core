@@ -24,7 +24,7 @@ public class TestSmallContainersRandomOps {
     }
 
     private static Container randomSmallContainer(
-        final Random rand, final boolean asLargeContainer, final int min, final int max) {
+            final Random rand, final boolean asLargeContainer, final int min, final int max) {
         return randomSmallContainer(rand, true, asLargeContainer, min, max);
     }
 
@@ -40,8 +40,7 @@ public class TestSmallContainersRandomOps {
     }
 
     private static Container randomSmallContainer(
-        final Random rand, final boolean allowEmpty, final boolean asLargeContainer, final int min,
-        final int max) {
+            final Random rand, final boolean allowEmpty, final boolean asLargeContainer, final int min, final int max) {
         if (max - min < 2) {
             throw new IllegalArgumentException("min=" + min + ", max=" + max);
         }
@@ -61,7 +60,7 @@ public class TestSmallContainersRandomOps {
         if (x < cummulativeProbSingleton) {
             final int v = min + rand.nextInt(max - min + 1);
             return asLargeContainer ? randomEmptyLargeContainer(rand).iset((short) v)
-                : new SingletonContainer((short) v);
+                    : new SingletonContainer((short) v);
         }
         if (x < cummulativeProbTwoValues) {
             final int d = max - min; // d >= 2.
@@ -69,20 +68,18 @@ public class TestSmallContainersRandomOps {
             final short v1 = (short) iv1;
             final short v2 = (short) randValueInRange(rand, iv1 + 2, max);
             return asLargeContainer ? randomEmptyLargeContainer(rand).iset(v1).iset(v2)
-                : new TwoValuesContainer(v1, v2);
+                    : new TwoValuesContainer(v1, v2);
         }
         final int first = randValueInRange(rand, min, max - 1);
         final int last = randValueInRange(rand, first + 1, max);
         if (asLargeContainer) {
             return randomEmptyLargeContainer(rand).iadd(first, last + 1);
         }
-        return (last == first) ? new SingletonContainer((short) last)
-            : new SingleRangeContainer(first, last + 1);
+        return (last == first) ? new SingletonContainer((short) last) : new SingleRangeContainer(first, last + 1);
     }
 
     private static void testOpLoop(
-        final Random rand, final BiFunction<Container, Container, Container> op,
-        final boolean inPlace) {
+            final Random rand, final BiFunction<Container, Container, Container> op, final boolean inPlace) {
         for (int i = 0; i < numRuns; ++i) {
             testOp(i, rand, op, inPlace);
         }
@@ -91,51 +88,43 @@ public class TestSmallContainersRandomOps {
     private static final int tdelta = 13;
 
     private static void testOp(final int i, final Random rand,
-        final BiFunction<Container, Container, Container> op, final boolean inPlace) {
+            final BiFunction<Container, Container, Container> op, final boolean inPlace) {
         testOp(i, rand, op, inPlace, 0, tdelta);
         testOp(i, rand, op, inPlace, 65535 - tdelta, 65535);
     }
 
     private static void testOp(
-        final int i, final Random rand,
-        final BiFunction<Container, Container, Container> op, final boolean inPlace,
-        final int min, final int max) {
+            final int i, final Random rand,
+            final BiFunction<Container, Container, Container> op, final boolean inPlace,
+            final int min, final int max) {
         final String m = "i==" + i + " && min==" + min + " && max==" + max;
         final Container c1 = randomSmallContainer(rand, false, min, max);
         final boolean asLargeContainer = rand.nextBoolean();
         final Container c2 = randomSmallContainer(rand, asLargeContainer, min, max);
-        final Container largec1 =
-            inPlace ? c1.deepCopy().toLargeContainer() : c1.toLargeContainer();
-        final Container largec2 =
-            inPlace ? c2.deepCopy().toLargeContainer() : c2.toLargeContainer();
+        final Container largec1 = inPlace ? c1.deepCopy().toLargeContainer() : c1.toLargeContainer();
+        final Container largec2 = inPlace ? c2.deepCopy().toLargeContainer() : c2.toLargeContainer();
 
         Container result = (inPlace ? op.apply(c1.deepCopy(), c2) : op.apply(c1, c2)).check();
         assertTrue(m, result != c2 || result.isShared() || result instanceof ImmutableContainer);
         if (!inPlace) {
-            assertTrue(m,
-                result != c1 || result.isShared() || result instanceof ImmutableContainer);
+            assertTrue(m, result != c1 || result.isShared() || result instanceof ImmutableContainer);
         }
-        Container expected =
-            (inPlace ? op.apply(largec1.deepCopy(), largec2) : op.apply(largec1, largec2)).check();
+        Container expected = (inPlace ? op.apply(largec1.deepCopy(), largec2) : op.apply(largec1, largec2)).check();
         assertTrue(m, expected != largec2 || expected.isShared());
         if (!inPlace) {
-            assertTrue(m, expected != largec1 || expected.isShared()); // none of the operations are
-                                                                       // inplace.
+            assertTrue(m, expected != largec1 || expected.isShared()); // none of the operations are inplace.
         }
         assertTrue(m, expected.sameContents(result));
 
         result = (inPlace ? op.apply(c2.deepCopy(), c1) : op.apply(c2, c1)).check();
         assertTrue(m, result != c1 || result.isShared() || result instanceof ImmutableContainer);
         if (!inPlace) {
-            assertTrue(m,
-                result != c2 || result.isShared() || result instanceof ImmutableContainer);
+            assertTrue(m, result != c2 || result.isShared() || result instanceof ImmutableContainer);
         }
-        expected =
-            (inPlace ? op.apply(largec2.deepCopy(), largec1) : op.apply(largec2, largec1)).check();
+        expected = (inPlace ? op.apply(largec2.deepCopy(), largec1) : op.apply(largec2, largec1)).check();
         assertTrue(m, expected != largec1 || expected.isShared());
         if (!inPlace) {
-            assertTrue(m, expected != largec2 || expected.isShared()); // none of the operations are
-                                                                       // inplace.
+            assertTrue(m, expected != largec2 || expected.isShared()); // none of the operations are inplace.
         }
         assertTrue(m, expected.sameContents(result));
     }
@@ -206,7 +195,7 @@ public class TestSmallContainersRandomOps {
     }
 
     private static void testBooleanOp(
-        final int i, final Random rand, final BooleanOps ops, final int min, final int max) {
+            final int i, final Random rand, final BooleanOps ops, final int min, final int max) {
         final String m = "i==" + i + " && min==" + min + " && max==" + max;
         final Container c1 = randomSmallContainer(rand, false, min, max);
         final boolean asLargeContainer = rand.nextBoolean();
@@ -335,8 +324,7 @@ public class TestSmallContainersRandomOps {
 
     private static void testRangeOp(final RangeOps ops) {
         final Random rand = new Random(seed0);
-        final int[][] minmaxes =
-            new int[][] {new int[] {0, tdelta}, new int[] {65535 - tdelta, 65535}};
+        final int[][] minmaxes = new int[][] {new int[] {0, tdelta}, new int[] {65535 - tdelta, 65535}};
         for (int run = 0; run < numRuns; ++run) {
             final String m = "run==" + run;
             for (int[] minmax : minmaxes) {
@@ -374,8 +362,7 @@ public class TestSmallContainersRandomOps {
 
     private static void testRankRangeOp(final RangeOps ops) {
         final Random rand = new Random(seed0);
-        final int[][] minmaxes =
-            new int[][] {new int[] {0, tdelta}, new int[] {65535 - tdelta, 65535}};
+        final int[][] minmaxes = new int[][] {new int[] {0, tdelta}, new int[] {65535 - tdelta, 65535}};
         for (int run = 0; run < numRuns; ++run) {
             final String m = "run==" + run;
             for (int[] minmax : minmaxes) {
@@ -433,8 +420,7 @@ public class TestSmallContainersRandomOps {
 
     private static void testRangeBooleanOp(final RangeBooleanOps ops) {
         final Random rand = new Random(seed0);
-        final int[][] minmaxes =
-            new int[][] {new int[] {0, tdelta}, new int[] {65535 - tdelta, 65535}};
+        final int[][] minmaxes = new int[][] {new int[] {0, tdelta}, new int[] {65535 - tdelta, 65535}};
         for (int run = 0; run < numRuns; ++run) {
             final String m = "run==" + run;
             for (int[] minmax : minmaxes) {
@@ -507,8 +493,7 @@ public class TestSmallContainersRandomOps {
 
     private static void testValueOp(final ValueOps ops) {
         final Random rand = new Random(seed0);
-        final int[][] minmaxes =
-            new int[][] {new int[] {0, tdelta}, new int[] {65535 - tdelta, 65535}};
+        final int[][] minmaxes = new int[][] {new int[] {0, tdelta}, new int[] {65535 - tdelta, 65535}};
         for (int run = 0; run < numRuns; ++run) {
             final String m = "run==" + run;
             for (int[] minmax : minmaxes) {
@@ -551,8 +536,7 @@ public class TestSmallContainersRandomOps {
 
     private static void testValueBooleanOp(final ValueBooleanOps ops) {
         final Random rand = new Random(seed0);
-        final int[][] minmaxes =
-            new int[][] {new int[] {0, tdelta}, new int[] {65535 - tdelta, 65535}};
+        final int[][] minmaxes = new int[][] {new int[] {0, tdelta}, new int[] {65535 - tdelta, 65535}};
         for (int run = 0; run < numRuns; ++run) {
             final String m = "run==" + run;
             for (int[] minmax : minmaxes) {
@@ -574,8 +558,7 @@ public class TestSmallContainersRandomOps {
     @Test
     public void testAppend() {
         final Random rand = new Random(seed0);
-        final int[][] minmaxes =
-            new int[][] {new int[] {0, tdelta}, new int[] {65535 - tdelta, 65534}};
+        final int[][] minmaxes = new int[][] {new int[] {0, tdelta}, new int[] {65535 - tdelta, 65534}};
         for (int run = 0; run < numRuns; ++run) {
             final String m = "run==" + run;
             for (int[] minmax : minmaxes) {
@@ -589,8 +572,7 @@ public class TestSmallContainersRandomOps {
                     final int first = randValueInRange(rand, rmin, rmax);
                     final int last = randValueInRange(rand, first, rmax);
                     final Container result = c.iappend(first, last + 1).check();
-                    final Container expected =
-                        c.toLargeContainer().iappend(first, last + 1).check();
+                    final Container expected = c.toLargeContainer().iappend(first, last + 1).check();
                     assertEquals(m3, expected.getCardinality(), result.getCardinality());
                     assertTrue(m3, expected.subsetOf(result));
                 }
@@ -670,8 +652,7 @@ public class TestSmallContainersRandomOps {
 
     private static void testValueIntOp(final ValueIntOps ops) {
         final Random rand = new Random(seed0);
-        final int[][] minmaxes =
-            new int[][] {new int[] {0, tdelta}, new int[] {65535 - tdelta, 65535}};
+        final int[][] minmaxes = new int[][] {new int[] {0, tdelta}, new int[] {65535 - tdelta, 65535}};
         for (int run = 0; run < numRuns; ++run) {
             final String m = "run==" + run;
             for (int[] minmax : minmaxes) {

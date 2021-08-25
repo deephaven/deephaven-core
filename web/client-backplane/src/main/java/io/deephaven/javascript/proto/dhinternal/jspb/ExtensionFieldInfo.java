@@ -24,11 +24,11 @@ public class ExtensionFieldInfo<T> {
     public ExtensionFieldInfo.ToObjectFn toObjectFn;
 
     public ExtensionFieldInfo(
-        double fieldIndex,
-        JsPropertyMap<Double> fieldName,
-        Object ctor,
-        ExtensionFieldInfo.ExtensionFieldInfoToObjectFn toObjectFn,
-        double isRepeated) {}
+            double fieldIndex,
+            JsPropertyMap<Double> fieldName,
+            Object ctor,
+            ExtensionFieldInfo.ExtensionFieldInfoToObjectFn toObjectFn,
+            double isRepeated) {}
 
     public native boolean isMessageType();
 }

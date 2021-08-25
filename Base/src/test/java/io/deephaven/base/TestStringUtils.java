@@ -29,8 +29,7 @@ public class TestStringUtils extends BaseArrayTestCase {
         objects.add(2);
 
         assertEquals("1\n2\n3\n7", StringUtils.joinStrings(objects, "\n"));
-        assertEquals("1\\3\\7",
-            StringUtils.joinStrings(objects.stream().filter(i -> i % 2 != 0), "\\"));
+        assertEquals("1\\3\\7", StringUtils.joinStrings(objects.stream().filter(i -> i % 2 != 0), "\\"));
         assertEquals("1,2,3,7", StringUtils.joinStrings(objects.iterator(), ","));
 
     }

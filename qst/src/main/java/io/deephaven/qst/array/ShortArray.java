@@ -89,7 +89,7 @@ public final class ShortArray extends PrimitiveArrayBase<Short> {
     }
 
     public static class Builder extends PrimitiveArrayHelper<short[]>
-        implements ArrayBuilder<Short, ShortArray, Builder> {
+            implements ArrayBuilder<Short, ShortArray, Builder> {
         private Builder(int initialCapacity) {
             super(new short[initialCapacity]);
         }

@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.BusinessCalendarDescriptor.LocalDate",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.BusinessCalendarDescriptor.LocalDate",
+        namespace = JsPackage.GLOBAL)
 public class LocalDate {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -72,7 +72,7 @@ public class LocalDate {
     public static native void serializeBinaryToWriter(LocalDate message, Object writer);
 
     public static native LocalDate.ToObjectReturnType toObject(
-        boolean includeInstance, LocalDate msg);
+            boolean includeInstance, LocalDate msg);
 
     public native int getDay();
 

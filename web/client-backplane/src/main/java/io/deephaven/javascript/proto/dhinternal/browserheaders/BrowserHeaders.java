@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.browserHeaders.BrowserHeaders",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.browserHeaders.BrowserHeaders",
+        namespace = JsPackage.GLOBAL)
 public class BrowserHeaders {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface AppendValueUnionType {
@@ -179,24 +179,24 @@ public class BrowserHeaders {
     public BrowserHeaders(BrowserHeaders init) {}
 
     public BrowserHeaders(
-        BrowserHeaders.ConstructorInitUnionType init,
-        BrowserHeaders.BrowserHeadersOptionsType options) {}
+            BrowserHeaders.ConstructorInitUnionType init,
+            BrowserHeaders.BrowserHeadersOptionsType options) {}
 
     public BrowserHeaders(BrowserHeaders.ConstructorInitUnionType init) {}
 
     public BrowserHeaders(
-        JsPropertyMap<BrowserHeaders.ConstructorInitJsPropertyMapTypeParameterUnionType> init,
-        BrowserHeaders.BrowserHeadersOptionsType options) {}
+            JsPropertyMap<BrowserHeaders.ConstructorInitJsPropertyMapTypeParameterUnionType> init,
+            BrowserHeaders.BrowserHeadersOptionsType options) {}
 
     public BrowserHeaders(
-        JsPropertyMap<BrowserHeaders.ConstructorInitJsPropertyMapTypeParameterUnionType> init) {}
+            JsPropertyMap<BrowserHeaders.ConstructorInitJsPropertyMapTypeParameterUnionType> init) {}
 
     public BrowserHeaders(
-        Map<String, BrowserHeaders.ConstructorInitJsPropertyMapTypeParameterUnionType> init,
-        BrowserHeaders.BrowserHeadersOptionsType options) {}
+            Map<String, BrowserHeaders.ConstructorInitJsPropertyMapTypeParameterUnionType> init,
+            BrowserHeaders.BrowserHeadersOptionsType options) {}
 
     public BrowserHeaders(
-        Map<String, BrowserHeaders.ConstructorInitJsPropertyMapTypeParameterUnionType> init) {}
+            Map<String, BrowserHeaders.ConstructorInitJsPropertyMapTypeParameterUnionType> init) {}
 
     public BrowserHeaders(Object init, BrowserHeaders.BrowserHeadersOptionsType options) {}
 

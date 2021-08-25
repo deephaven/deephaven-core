@@ -7,9 +7,8 @@ package io.deephaven.db.v2.sources;
 import io.deephaven.db.v2.utils.Index;
 
 /**
- * A simple extension to the TreeMapSource that will not actually change any map values, and is thus
- * immutable. We need to have an immutable source available for use with the IndexGroupingTest, and
- * this fits the bill.
+ * A simple extension to the TreeMapSource that will not actually change any map values, and is thus immutable. We need
+ * to have an immutable source available for use with the IndexGroupingTest, and this fits the bill.
  */
 public class ImmutableTreeMapSource<T> extends TreeMapSource<T> {
     public ImmutableTreeMapSource(Class<T> type, Index index, T[] data) {

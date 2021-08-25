@@ -8,14 +8,13 @@ import io.deephaven.util.QueryConstants;
  */
 public interface ThreadProfiler {
 
-    boolean CPU_PROFILING_ENABLED = Configuration.getInstance()
-        .getBooleanForClassWithDefault(ThreadProfiler.class, "cpuProfilingEnabled", true);
-    boolean MEMORY_PROFILING_ENABLED = Configuration.getInstance()
-        .getBooleanForClassWithDefault(ThreadProfiler.class, "memoryProfilingEnabled", true);
+    boolean CPU_PROFILING_ENABLED = Configuration.getInstance().getBooleanForClassWithDefault(ThreadProfiler.class,
+            "cpuProfilingEnabled", true);
+    boolean MEMORY_PROFILING_ENABLED = Configuration.getInstance().getBooleanForClassWithDefault(ThreadProfiler.class,
+            "memoryProfilingEnabled", true);
 
     /**
-     * Check if memory profiling (e.g. {@link #getCurrentThreadAllocatedBytes()}) is available
-     * (supported and enabled).
+     * Check if memory profiling (e.g. {@link #getCurrentThreadAllocatedBytes()}) is available (supported and enabled).
      *
      * @return Whether memory profiling is available.
      */
@@ -30,16 +29,16 @@ public interface ThreadProfiler {
     long getCurrentThreadAllocatedBytes();
 
     /**
-     * Check if CPU profiling (e.g. {@link #getCurrentThreadCpuTime()} and
-     * {@link #getCurrentThreadUserTime()}) is available (supported and enabled).
+     * Check if CPU profiling (e.g. {@link #getCurrentThreadCpuTime()} and {@link #getCurrentThreadUserTime()}) is
+     * available (supported and enabled).
      *
      * @return Whether CPU profiling is available.
      */
     boolean cpuProfilingAvailable();
 
     /**
-     * Get the approximate number of total nanoseconds the current thread has executed (in system or
-     * user mode) since CPU time measurement started.
+     * Get the approximate number of total nanoseconds the current thread has executed (in system or user mode) since
+     * CPU time measurement started.
      *
      * @return The approximate number of total nanoseconds the current thread has executed, or
      *         {@link QueryConstants#NULL_LONG} if unavailable.
@@ -47,17 +46,17 @@ public interface ThreadProfiler {
     long getCurrentThreadCpuTime();
 
     /**
-     * Get the approximate number of total nanoseconds the current thread has executed (in user
-     * mode) since CPU time measurement started.
+     * Get the approximate number of total nanoseconds the current thread has executed (in user mode) since CPU time
+     * measurement started.
      *
-     * @return The approximate number of total nanoseconds the current thread has executed in user
-     *         mode, or {@link QueryConstants#NULL_LONG} if unavailable.
+     * @return The approximate number of total nanoseconds the current thread has executed in user mode, or
+     *         {@link QueryConstants#NULL_LONG} if unavailable.
      */
     long getCurrentThreadUserTime();
 
     /**
-     * Make a new ThreadProfiler for this JVM. The result may not support all measurements, if
-     * there's no suitable implementation available.
+     * Make a new ThreadProfiler for this JVM. The result may not support all measurements, if there's no suitable
+     * implementation available.
      *
      * @return A new ThreadProfiler for this JVM.
      */

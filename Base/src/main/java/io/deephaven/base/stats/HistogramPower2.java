@@ -7,10 +7,9 @@ package io.deephaven.base.stats;
 import io.deephaven.base.Function;
 
 /**
- * This class accumulates samples in a 64 bin histogram with the property that for a sample value of
- * n, the bin index will be log2(n)+1 (offset by 1) since there are no unsinged numbers, and placing
- * negative and 0 values in bin 0 preserves order, with maximum appearing in bin index 63 (max pos
- * numbers)
+ * This class accumulates samples in a 64 bin histogram with the property that for a sample value of n, the bin index
+ * will be log2(n)+1 (offset by 1) since there are no unsinged numbers, and placing negative and 0 values in bin 0
+ * preserves order, with maximum appearing in bin index 63 (max pos numbers)
  */
 public class HistogramPower2 extends Value {
 
@@ -34,13 +33,12 @@ public class HistogramPower2 extends Value {
         ++m_samples;
     }
 
-    private final ThreadLocal<StringBuilder> threadLocalStringBuilder =
-        new ThreadLocal<StringBuilder>() {
-            @Override
-            protected StringBuilder initialValue() {
-                return new StringBuilder(100);
-            }
-        };
+    private final ThreadLocal<StringBuilder> threadLocalStringBuilder = new ThreadLocal<StringBuilder>() {
+        @Override
+        protected StringBuilder initialValue() {
+            return new StringBuilder(100);
+        }
+    };
 
     public String getHistogramString() {
         if (m_samples == 0) {
@@ -85,10 +83,9 @@ public class HistogramPower2 extends Value {
         return TYPE_TAG;
     }
 
-    public static final Function.Unary<HistogramPower2, Long> FACTORY =
-        new Function.Unary<HistogramPower2, Long>() {
-            public HistogramPower2 call(Long now) {
-                return new HistogramPower2(now);
-            }
-        };
+    public static final Function.Unary<HistogramPower2, Long> FACTORY = new Function.Unary<HistogramPower2, Long>() {
+        public HistogramPower2 call(Long now) {
+            return new HistogramPower2(now);
+        }
+    };
 }

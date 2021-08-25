@@ -32,14 +32,12 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         this.numRightBitsToReserve = numRightBitsToReserve;
     }
 
-    private TstUtils.ColumnInfo<?, ?>[] getIncrementalColumnInfo(final String prefix,
-        int numGroups) {
+    private TstUtils.ColumnInfo<?, ?>[] getIncrementalColumnInfo(final String prefix, int numGroups) {
         String[] names = new String[] {"Sym", "IntCol"};
 
-        return initColumnInfos(
-            Arrays.stream(names).map(name -> prefix + name).toArray(String[]::new),
-            new TstUtils.IntGenerator(0, numGroups - 1),
-            new TstUtils.IntGenerator(10, 100000));
+        return initColumnInfos(Arrays.stream(names).map(name -> prefix + name).toArray(String[]::new),
+                new TstUtils.IntGenerator(0, numGroups - 1),
+                new TstUtils.IntGenerator(10, 100000));
     }
 
     public void testZeroKeyJoinBitExpansionOnAdd() {
@@ -71,8 +69,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         TstUtils.validate(en);
 
         // One shift: the entire left row's sub-table
-        Assert.eq(listener.update.shifted.size(), "listener.update.shifted.size()", lTable.size(),
-            "lTable.size()");
+        Assert.eq(listener.update.shifted.size(), "listener.update.shifted.size()", lTable.size(), "lTable.size()");
     }
 
     public void testZeroKeyJoinBitExpansionOnBoundaryShift() {
@@ -107,10 +104,10 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         });
         TstUtils.validate(en);
 
-        // Two shifts: before upstream shift, upstream shift (note: post upstream shift not possible
-        // because it exceeds known keyspace range)
-        Assert.eq(listener.update.shifted.size(), "listener.update.shifted.size()",
-            2 * lTable.size(), "2 * lTable.size()");
+        // Two shifts: before upstream shift, upstream shift (note: post upstream shift not possible because it exceeds
+        // known keyspace range)
+        Assert.eq(listener.update.shifted.size(), "listener.update.shifted.size()", 2 * lTable.size(),
+                "2 * lTable.size()");
     }
 
     public void testZeroKeyJoinBitExpansionWithInnerShift() {
@@ -145,8 +142,8 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         TstUtils.validate(en);
 
         // Three shifts: before upstream shift, upstream shift, post upstream shift
-        Assert.eq(listener.update.shifted.size(), "listener.update.shifted.size()",
-            3 * lTable.size(), "3 * lTable.size()");
+        Assert.eq(listener.update.shifted.size(), "listener.update.shifted.size()", 3 * lTable.size(),
+                "3 * lTable.size()");
     }
 
     public void testZeroKeyJoinCompoundShift() {
@@ -198,7 +195,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     }
 
     private void testIncrementalZeroKeyJoin(final String ctxt, final int size, final int seed,
-        final MutableInt numSteps) {
+            final MutableInt numSteps) {
         final int leftSize = (int) Math.ceil(Math.sqrt(size));
 
         final int maxSteps = numSteps.intValue();
@@ -211,10 +208,8 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final TstUtils.ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
         final QueryTable rightTicking = getTable(size, random, rightColumns);
 
-        final QueryTable leftStatic =
-            getTable(false, leftSize, random, getIncrementalColumnInfo("ls", numGroups));
-        final QueryTable rightStatic =
-            getTable(false, size, random, getIncrementalColumnInfo("rs", numGroups));
+        final QueryTable leftStatic = getTable(false, leftSize, random, getIncrementalColumnInfo("ls", numGroups));
+        final QueryTable rightStatic = getTable(false, size, random, getIncrementalColumnInfo("rs", numGroups));
 
         final EvalNugget[] en = new EvalNugget[] {
                 // Zero-Key Joins
@@ -227,16 +222,13 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
                 if (stepInstructions % 4 != 1) {
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(
-                        GenerateTableUpdates.DEFAULT_PROFILE, leftSize, random, leftTicking,
-                        leftColumns);
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, leftSize,
+                            random, leftTicking, leftColumns);
                 }
                 if (stepInstructions % 4 != 0) {
-                    // left size is sqrt right table size; which is a good update size for the right
-                    // table
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(
-                        GenerateTableUpdates.DEFAULT_PROFILE, leftSize, random, rightTicking,
-                        rightColumns);
+                    // left size is sqrt right table size; which is a good update size for the right table
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, leftSize,
+                            random, rightTicking, rightColumns);
                 }
             });
             TstUtils.validate(ctxt + " step == " + numSteps.getValue(), en);
@@ -250,8 +242,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             for (int rt = 0; rt < 2; ++rt) {
                 boolean leftTicking = lt == 1;
                 boolean rightTicking = rt == 1;
-                testStaticJoin(types, cardinality, types.length, types.length, leftTicking,
-                    rightTicking);
+                testStaticJoin(types, cardinality, types.length, types.length, leftTicking, rightTicking);
                 // force left build
                 testStaticJoin(types, cardinality, 1, types.length, leftTicking, rightTicking);
                 // force right build
@@ -271,15 +262,14 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             for (int rt = 0; rt < 2; ++rt) {
                 boolean leftTicking = lt == 1;
                 boolean rightTicking = rt == 1;
-                testStaticJoin(types, cardinality, types.length, types.length, leftTicking,
-                    rightTicking);
+                testStaticJoin(types, cardinality, types.length, types.length, leftTicking, rightTicking);
             }
         }
     }
 
     // generate a table such that all pairs of types exist and are part of the cross-join
-    private void testStaticJoin(final String[] types, final int[] cardinality, int maxLeftType,
-        int maxRightType, boolean leftTicking, boolean rightTicking) {
+    private void testStaticJoin(final String[] types, final int[] cardinality, int maxLeftType, int maxRightType,
+            boolean leftTicking, boolean rightTicking) {
         Assert.eq(types.length, "types.length", cardinality.length, "cardinality.length");
 
         long nextLeftRow = 0;
@@ -313,8 +303,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 }
 
                 expectedSize += leftSize * rightSize;
-                Assert.eqFalse(expectedByKey.containsKey(sharedKey),
-                    "expectedByKey.containsKey(sharedKey)");
+                Assert.eqFalse(expectedByKey.containsKey(sharedKey), "expectedByKey.containsKey(sharedKey)");
                 expectedByKey.put(sharedKey, new MutableLong((long) leftSize * rightSize));
             }
         }
@@ -322,22 +311,22 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final QueryTable left;
         if (leftTicking) {
             left = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(nextLeftRow),
-                c("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
-                c("leftData", leftData.toArray(new Long[] {})));
+                    c("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                    c("leftData", leftData.toArray(new Long[] {})));
         } else {
             left = TstUtils.testTable(Index.FACTORY.getFlatIndex(nextLeftRow),
-                c("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
-                c("leftData", leftData.toArray(new Long[] {})));
+                    c("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                    c("leftData", leftData.toArray(new Long[] {})));
         }
         final QueryTable right;
         if (rightTicking) {
             right = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(nextRightRow),
-                c("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
-                c("rightData", rightData.toArray(new Long[] {})));
+                    c("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                    c("rightData", rightData.toArray(new Long[] {})));
         } else {
             right = TstUtils.testTable(Index.FACTORY.getFlatIndex(nextRightRow),
-                c("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
-                c("rightData", rightData.toArray(new Long[] {})));
+                    c("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                    c("rightData", rightData.toArray(new Long[] {})));
         }
 
         final Table chunkedCrossJoin = left.join(right, "sharedKey", numRightBitsToReserve);
@@ -372,8 +361,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             if (lastSharedKey.getValue() != null && lastSharedKey.getValue().equals(sharedKey)) {
                 Assert.leq(lastLeftId.longValue(), "lastLeftId.longValue()", leftId, "leftId");
                 if (lastLeftId.longValue() == leftId) {
-                    Assert.lt(lastRightId.longValue(), "lastRightId.longValue()", rightId,
-                        "rightId");
+                    Assert.lt(lastRightId.longValue(), "lastRightId.longValue()", rightId, "rightId");
                 }
             } else {
                 lastSharedKey.setValue(sharedKey);
@@ -406,11 +394,9 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     public void testStaticVsNaturalJoin2() {
         final int size = 10000;
 
-        final QueryTable xqt =
-            new QueryTable(Index.FACTORY.getFlatIndex(size), Collections.emptyMap());
+        final QueryTable xqt = new QueryTable(Index.FACTORY.getFlatIndex(size), Collections.emptyMap());
         xqt.setRefreshing(true);
-        final QueryTable yqt =
-            new QueryTable(Index.FACTORY.getFlatIndex(size), Collections.emptyMap());
+        final QueryTable yqt = new QueryTable(Index.FACTORY.getFlatIndex(size), Collections.emptyMap());
         yqt.setRefreshing(true);
 
         final Table x = xqt.update("Col1=i");
@@ -445,19 +431,17 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     }
 
     private void testIncrementalOverflow(final String ctxt, final int numGroups, final int seed,
-        final MutableInt numSteps) {
+            final MutableInt numSteps) {
         final int maxSteps = numSteps.intValue();
         final Random random = new Random(seed);
 
         // Note: make our join helper think this left table might tick
-        final QueryTable leftNotTicking =
-            getTable(1000, random, getIncrementalColumnInfo("lt", numGroups));
+        final QueryTable leftNotTicking = getTable(1000, random, getIncrementalColumnInfo("lt", numGroups));
 
         final TstUtils.ColumnInfo<?, ?>[] leftColumns = getIncrementalColumnInfo("lt", numGroups);
         final QueryTable leftTicking = getTable(0, random, leftColumns);
 
-        final TstUtils.ColumnInfo<?, ?>[] leftShiftingColumns =
-            getIncrementalColumnInfo("lt", numGroups);
+        final TstUtils.ColumnInfo<?, ?>[] leftShiftingColumns = getIncrementalColumnInfo("lt", numGroups);
         final QueryTable leftShifting = getTable(1000, random, leftShiftingColumns);
 
         final TstUtils.ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
@@ -482,14 +466,14 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
         final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> CrossJoinHelper.join(leftNotTicking, rightTicking,
-                    MatchPairFactory.getExpressions("ltSym=rtSym"),
-                    MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, numRightBitsToReserve, control)),
+                        MatchPairFactory.getExpressions("ltSym=rtSym"), MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
+                        numRightBitsToReserve, control)),
                 EvalNugget.from(() -> CrossJoinHelper.join(leftTicking, rightTicking,
-                    MatchPairFactory.getExpressions("ltSym=rtSym"),
-                    MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, numRightBitsToReserve, control)),
+                        MatchPairFactory.getExpressions("ltSym=rtSym"), MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
+                        numRightBitsToReserve, control)),
                 EvalNugget.from(() -> CrossJoinHelper.join(leftShifting, rightTicking,
-                    MatchPairFactory.getExpressions("ltSym=rtSym"),
-                    MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, numRightBitsToReserve, control)),
+                        MatchPairFactory.getExpressions("ltSym=rtSym"), MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
+                        numRightBitsToReserve, control)),
         };
 
         final int updateSize = (int) Math.ceil(Math.sqrt(numGroups));
@@ -501,8 +485,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             TableTools.showWithIndex(rightTicking);
         }
 
-        final GenerateTableUpdates.SimulationProfile shiftingProfile =
-            new GenerateTableUpdates.SimulationProfile();
+        final GenerateTableUpdates.SimulationProfile shiftingProfile = new GenerateTableUpdates.SimulationProfile();
         shiftingProfile.SHIFT_10_PERCENT_POS_SPACE = 5;
         shiftingProfile.SHIFT_10_PERCENT_KEY_SPACE = 5;
         shiftingProfile.SHIFT_AGGRESSIVELY = 85;
@@ -511,16 +494,14 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
                 if (stepInstructions % 4 != 1) {
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(
-                        GenerateTableUpdates.DEFAULT_PROFILE, updateSize, random, leftTicking,
-                        leftColumns);
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(shiftingProfile, updateSize,
-                        random, leftShifting, leftShiftingColumns);
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                            updateSize, random, leftTicking, leftColumns);
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(shiftingProfile, updateSize, random,
+                            leftShifting, leftShiftingColumns);
                 }
                 if (stepInstructions % 4 != 0) {
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(
-                        GenerateTableUpdates.DEFAULT_PROFILE, updateSize, random, rightTicking,
-                        rightColumns);
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                            updateSize, random, rightTicking, rightColumns);
                 }
             });
 
@@ -536,8 +517,8 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
-    protected void testIncrementalWithKeyColumns(final String ctxt, final int initialSize,
-        final int seed, final MutableInt numSteps) {
+    protected void testIncrementalWithKeyColumns(final String ctxt, final int initialSize, final int seed,
+            final MutableInt numSteps) {
         final int maxSteps = numSteps.intValue();
         final Random random = new Random(seed);
 
@@ -548,18 +529,13 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final TstUtils.ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
         final QueryTable rightTicking = getTable(initialSize, random, rightColumns);
 
-        final QueryTable leftStatic =
-            getTable(false, initialSize, random, getIncrementalColumnInfo("ls", numGroups));
-        final QueryTable rightStatic =
-            getTable(false, initialSize, random, getIncrementalColumnInfo("rs", numGroups));
+        final QueryTable leftStatic = getTable(false, initialSize, random, getIncrementalColumnInfo("ls", numGroups));
+        final QueryTable rightStatic = getTable(false, initialSize, random, getIncrementalColumnInfo("rs", numGroups));
 
         final EvalNugget[] en = new EvalNugget[] {
-                EvalNugget.from(
-                    () -> leftTicking.join(rightTicking, "ltSym=rtSym", numRightBitsToReserve)),
-                EvalNugget.from(
-                    () -> leftStatic.join(rightTicking, "lsSym=rtSym", numRightBitsToReserve)),
-                EvalNugget.from(
-                    () -> leftTicking.join(rightStatic, "ltSym=rsSym", numRightBitsToReserve)),
+                EvalNugget.from(() -> leftTicking.join(rightTicking, "ltSym=rtSym", numRightBitsToReserve)),
+                EvalNugget.from(() -> leftStatic.join(rightTicking, "lsSym=rtSym", numRightBitsToReserve)),
+                EvalNugget.from(() -> leftTicking.join(rightStatic, "ltSym=rsSym", numRightBitsToReserve)),
         };
 
         final int updateSize = (int) Math.ceil(Math.sqrt(initialSize));
@@ -579,14 +555,12 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
                 if (stepInstructions % 4 != 1) {
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(
-                        GenerateTableUpdates.DEFAULT_PROFILE, updateSize, random, leftTicking,
-                        leftColumns);
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                            updateSize, random, leftTicking, leftColumns);
                 }
                 if (stepInstructions % 4 != 0) {
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(
-                        GenerateTableUpdates.DEFAULT_PROFILE, updateSize, random, rightTicking,
-                        rightColumns);
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                            updateSize, random, rightTicking, rightColumns);
                 }
             });
 
@@ -603,10 +577,9 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final int CHUNK_SIZE = 4;
         final ColumnSource<Integer> column = jt.getColumnSource("I", int.class);
         try (final ColumnSource.FillContext context = column.makeFillContext(CHUNK_SIZE);
-            final WritableIntChunk<Attributes.Values> dest =
-                WritableIntChunk.makeWritableChunk(CHUNK_SIZE);
-            final ResettableWritableIntChunk<Attributes.Values> rdest =
-                ResettableWritableIntChunk.makeResettableChunk()) {
+                final WritableIntChunk<Attributes.Values> dest = WritableIntChunk.makeWritableChunk(CHUNK_SIZE);
+                final ResettableWritableIntChunk<Attributes.Values> rdest =
+                        ResettableWritableIntChunk.makeResettableChunk()) {
 
             rdest.resetFromChunk(dest, 0, 4);
             column.fillChunk(context, rdest, jt.getIndex().subindexByPos(0, 4));
@@ -640,9 +613,9 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         };
 
         final EvalNugget[] en = new EvalNugget[] {
-                EvalNugget.from(() -> CrossJoinHelper.join(leftTicking, rightTicking,
-                    MatchPairFactory.getExpressions("intCol"),
-                    MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, numRightBitsToReserve, control)),
+                EvalNugget.from(
+                        () -> CrossJoinHelper.join(leftTicking, rightTicking, MatchPairFactory.getExpressions("intCol"),
+                                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY, numRightBitsToReserve, control)),
         };
 
         if (LiveTableTestCase.printTableUpdates) {
@@ -656,8 +629,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             final long rightOffset = numSteps.getValue();
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                addToTable(leftTicking, i(numSteps.getValue()),
-                    longCol("intCol", numSteps.getValue()));
+                addToTable(leftTicking, i(numSteps.getValue()), longCol("intCol", numSteps.getValue()));
                 ShiftAwareListener.Update up = new ShiftAwareListener.Update();
                 up.shifted = IndexShiftData.EMPTY;
                 up.added = i(numSteps.getValue());
@@ -670,9 +642,8 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 for (int i = 0; i <= numSteps.getValue(); ++i) {
                     data[i] = i;
                 }
-                addToTable(rightTicking,
-                    Index.FACTORY.getIndexByRange(rightOffset, rightOffset + numSteps.getValue()),
-                    longCol("intCol", data));
+                addToTable(rightTicking, Index.FACTORY.getIndexByRange(rightOffset, rightOffset + numSteps.getValue()),
+                        longCol("intCol", data));
                 TstUtils.removeRows(rightTicking, i(rightOffset - 1));
 
                 up = new ShiftAwareListener.Update();
@@ -684,8 +655,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 if (numSteps.getValue() == 0) {
                     up.modified = Index.FACTORY.getEmptyIndex();
                 } else {
-                    up.modified = Index.FACTORY.getIndexByRange(rightOffset,
-                        rightOffset + numSteps.getValue() - 1);
+                    up.modified = Index.FACTORY.getIndexByRange(rightOffset, rightOffset + numSteps.getValue() - 1);
                 }
                 up.modifiedColumnSet = ModifiedColumnSet.ALL;
                 rightTicking.notifyListeners(up);

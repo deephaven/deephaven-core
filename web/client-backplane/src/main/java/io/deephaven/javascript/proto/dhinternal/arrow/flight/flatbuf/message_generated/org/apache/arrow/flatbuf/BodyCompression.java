@@ -6,26 +6,25 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Message_generated.org.apache.arrow.flatbuf.BodyCompression",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Message_generated.org.apache.arrow.flatbuf.BodyCompression",
+        namespace = JsPackage.GLOBAL)
 public class BodyCompression {
     public static native void addCodec(Builder builder, int codec);
 
     public static native void addMethod(Builder builder, int method);
 
     public static native double createBodyCompression(
-        Builder builder, int codec, int method);
+            Builder builder, int codec, int method);
 
     public static native double endBodyCompression(Builder builder);
 
-    public static native BodyCompression getRootAsBodyCompression(ByteBuffer bb,
-        BodyCompression obj);
+    public static native BodyCompression getRootAsBodyCompression(ByteBuffer bb, BodyCompression obj);
 
     public static native BodyCompression getRootAsBodyCompression(ByteBuffer bb);
 
     public static native BodyCompression getSizePrefixedRootAsBodyCompression(
-        ByteBuffer bb, BodyCompression obj);
+            ByteBuffer bb, BodyCompression obj);
 
     public static native BodyCompression getSizePrefixedRootAsBodyCompression(ByteBuffer bb);
 

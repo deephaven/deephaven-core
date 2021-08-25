@@ -13,8 +13,7 @@ import java.io.Serializable;
 
 @AbstractColumnSource.IsSerializable(value = true)
 public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
-    implements WritableSource<T>, WritableChunkSink<Attributes.Values>, ShiftData.ShiftCallback,
-    Serializable {
+        implements WritableSource<T>, WritableChunkSink<Attributes.Values>, ShiftData.ShiftCallback, Serializable {
 
     protected transient long changeTime;
     protected boolean isTrackingPrevValues;

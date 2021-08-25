@@ -53,74 +53,74 @@ public final class IndexCounts {
 
     public IndexCounts(final String prefix) {
         emptyCount =
-            new IntCounterMetric(prefix + "EmptyCount");
+                new IntCounterMetric(prefix + "EmptyCount");
 
         shortShortSingleRangeCount =
-            new IntCounterMetric(prefix + "ShortShortSingleRangeCount");
+                new IntCounterMetric(prefix + "ShortShortSingleRangeCount");
         longLongSingleRangeCount =
-            new IntCounterMetric(prefix + "LongLongSingleRangeCount");
+                new IntCounterMetric(prefix + "LongLongSingleRangeCount");
         intLongSingleRangeCount =
-            new IntCounterMetric(prefix + "IntLongSingleRangeCount");
+                new IntCounterMetric(prefix + "IntLongSingleRangeCount");
         longIntSingleRangeCount =
-            new IntCounterMetric(prefix + "LongIntSingleRangeCount");
+                new IntCounterMetric(prefix + "LongIntSingleRangeCount");
 
         sortedRangesCount =
-            new IntCounterMetric(prefix + "SortedRangesCount");
+                new IntCounterMetric(prefix + "SortedRangesCount");
         sortedRangesIndexCardinality =
-            new LongCounterLog2HistogramMetric(prefix + "SortedRangesIndexCardinality");
+                new LongCounterLog2HistogramMetric(prefix + "SortedRangesIndexCardinality");
         sortedRangesIndexBytesUnused =
-            new LongCounterLog2HistogramMetric(prefix + "SortedRangesIndexBytesUnused");
+                new LongCounterLog2HistogramMetric(prefix + "SortedRangesIndexBytesUnused");
         sortedRangesIndexBytesAllocated =
-            new LongCounterLog2HistogramMetric(prefix + "SortedRangesIndexBytesAllocated");
+                new LongCounterLog2HistogramMetric(prefix + "SortedRangesIndexBytesAllocated");
 
         rspCount =
-            new IntCounterMetric(prefix + "RspCount");
+                new IntCounterMetric(prefix + "RspCount");
         rspIndexCardinality =
-            new LongCounterLog2HistogramMetric(prefix + "RspIndexCardinality");
+                new LongCounterLog2HistogramMetric(prefix + "RspIndexCardinality");
 
         rspParallelArraysSizeUsed =
-            new LongCounterLog2HistogramMetric(prefix + "RspParallelArraysSizeUsed");
+                new LongCounterLog2HistogramMetric(prefix + "RspParallelArraysSizeUsed");
         rspParallelArraysSizeUnused =
-            new LongCounterLog2HistogramMetric(prefix + "RspParallelArraysSizeUnused");
+                new LongCounterLog2HistogramMetric(prefix + "RspParallelArraysSizeUnused");
 
         rspArrayContainersBytesUnused =
-            new LongCounterLog2HistogramMetric(prefix + "RspArrayContainersBytesUnused");
+                new LongCounterLog2HistogramMetric(prefix + "RspArrayContainersBytesUnused");
         rspArrayContainersBytesAllocated =
-            new LongCounterLog2HistogramMetric(prefix + "RspArrayContainersBytesAllocated");
+                new LongCounterLog2HistogramMetric(prefix + "RspArrayContainersBytesAllocated");
         rspArrayContainersCardinality =
-            new LongCounterLog2HistogramMetric(prefix + "RspArrayContainersCardinality");
+                new LongCounterLog2HistogramMetric(prefix + "RspArrayContainersCardinality");
         rspArrayContainersCount =
-            new LongCounterMetric(prefix + "RspArrayContainersCount");
+                new LongCounterMetric(prefix + "RspArrayContainersCount");
 
         rspBitmapContainersBytesUnused =
-            new LongCounterLog2HistogramMetric(prefix + "RspBitmapContainersBytesUnused");
+                new LongCounterLog2HistogramMetric(prefix + "RspBitmapContainersBytesUnused");
         rspBitmapContainersBytesAllocated =
-            new LongCounterLog2HistogramMetric(prefix + "RspBitmapContainersBytesAllocated");
+                new LongCounterLog2HistogramMetric(prefix + "RspBitmapContainersBytesAllocated");
         rspBitmapContainersCardinality =
-            new LongCounterLog2HistogramMetric(prefix + "RspBitmapContainersCardinality");
+                new LongCounterLog2HistogramMetric(prefix + "RspBitmapContainersCardinality");
         rspBitmapContainersCount =
-            new LongCounterMetric(prefix + "RspBitmapContainersCount");
+                new LongCounterMetric(prefix + "RspBitmapContainersCount");
 
         rspRunContainersBytesUnused =
-            new LongCounterLog2HistogramMetric(prefix + "RspRunContainersBytesUnused");
+                new LongCounterLog2HistogramMetric(prefix + "RspRunContainersBytesUnused");
         rspRunContainersBytesAllocated =
-            new LongCounterLog2HistogramMetric(prefix + "RspRunContainersBytesAllocated");
+                new LongCounterLog2HistogramMetric(prefix + "RspRunContainersBytesAllocated");
         rspRunContainersCardinality =
-            new LongCounterLog2HistogramMetric(prefix + "RspRunContainersCardinality");
+                new LongCounterLog2HistogramMetric(prefix + "RspRunContainersCardinality");
         rspRunContainersCount =
-            new LongCounterMetric(prefix + "RspRunContainersCount");
+                new LongCounterMetric(prefix + "RspRunContainersCount");
         rspRunContainersRunsCount =
-            new LongCounterLog2HistogramMetric(prefix + "RspRunContainersRunCount");
+                new LongCounterLog2HistogramMetric(prefix + "RspRunContainersRunCount");
         rspSingleRangeContainersCount =
-            new LongCounterMetric(prefix + "RspSingleRangeContainersCount");
+                new LongCounterMetric(prefix + "RspSingleRangeContainersCount");
         rspSingleRangeContainerCardinality =
-            new LongCounterLog2HistogramMetric(prefix + "RspSingleRangeContainerCardinality");
+                new LongCounterLog2HistogramMetric(prefix + "RspSingleRangeContainerCardinality");
 
         rspTwoValuesContainerCount =
-            new LongCounterMetric(prefix + "RspTwoValuesContainerCount");
+                new LongCounterMetric(prefix + "RspTwoValuesContainerCount");
 
         rspSingletonContainersCount =
-            new LongCounterMetric(prefix + "RspSingletonContainersCount");
+                new LongCounterMetric(prefix + "RspSingletonContainersCount");
     }
 
     public void sampleRsp(final RspBitmap rb) {
@@ -130,25 +130,25 @@ public final class IndexCounts {
         rspIndexCardinality.sample(rb.getCardinality());
         rspCount.sample(1);
         rb.sampleMetrics(
-            rspParallelArraysSizeUsed,
-            rspParallelArraysSizeUnused,
-            rspArrayContainersBytesAllocated,
-            rspArrayContainersBytesUnused,
-            rspArrayContainersCardinality,
-            rspArrayContainersCount,
-            rspBitmapContainersBytesAllocated,
-            rspBitmapContainersBytesUnused,
-            rspBitmapContainersCardinality,
-            rspBitmapContainersCount,
-            rspRunContainersBytesAllocated,
-            rspRunContainersBytesUnused,
-            rspRunContainersCardinality,
-            rspRunContainersCount,
-            rspRunContainersRunsCount,
-            rspSingleRangeContainersCount,
-            rspSingleRangeContainerCardinality,
-            rspSingletonContainersCount,
-            rspTwoValuesContainerCount);
+                rspParallelArraysSizeUsed,
+                rspParallelArraysSizeUnused,
+                rspArrayContainersBytesAllocated,
+                rspArrayContainersBytesUnused,
+                rspArrayContainersCardinality,
+                rspArrayContainersCount,
+                rspBitmapContainersBytesAllocated,
+                rspBitmapContainersBytesUnused,
+                rspBitmapContainersCardinality,
+                rspBitmapContainersCount,
+                rspRunContainersBytesAllocated,
+                rspRunContainersBytesUnused,
+                rspRunContainersCardinality,
+                rspRunContainersCount,
+                rspRunContainersRunsCount,
+                rspSingleRangeContainersCount,
+                rspSingleRangeContainerCardinality,
+                rspSingletonContainersCount,
+                rspTwoValuesContainerCount);
     }
 
     public void sampleSingleRange(final SingleRange sr) {

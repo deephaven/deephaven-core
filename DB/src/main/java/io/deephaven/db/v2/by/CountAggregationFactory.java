@@ -16,9 +16,8 @@ public class CountAggregationFactory implements AggregationContextFactory {
 
     @Override
     public AggregationContext makeAggregationContext(@NotNull final Table table,
-        @NotNull final String... groupByColumns) {
-        final IterativeChunkedAggregationOperator[] countOperator =
-            new IterativeChunkedAggregationOperator[1];
+            @NotNull final String... groupByColumns) {
+        final IterativeChunkedAggregationOperator[] countOperator = new IterativeChunkedAggregationOperator[1];
         countOperator[0] = new CountAggregationOperator(resultName);
 
         final String[][] inputNameArray = new String[1][0];
@@ -26,8 +25,8 @@ public class CountAggregationFactory implements AggregationContextFactory {
 
         // noinspection unchecked
         return new AggregationContext(countOperator,
-            inputNameArray,
-            nullSourceArray);
+                inputNameArray,
+                nullSourceArray);
     }
 
     @Override

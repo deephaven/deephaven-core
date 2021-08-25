@@ -40,9 +40,9 @@ public class JpyConfigFlagTest {
     public void flagCoverage() {
         for (Field field : Diag.class.getDeclaredFields()) {
             if (Modifier.isPublic(field.getModifiers())
-                && Modifier.isStatic(field.getModifiers())
-                && Modifier.isFinal(field.getModifiers())
-                && field.getType().equals(int.class)) {
+                    && Modifier.isStatic(field.getModifiers())
+                    && Modifier.isFinal(field.getModifiers())
+                    && field.getType().equals(int.class)) {
                 Assert.assertTrue(KNOWN.contains(field.getName()));
             }
         }

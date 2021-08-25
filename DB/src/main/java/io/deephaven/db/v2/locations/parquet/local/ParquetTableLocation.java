@@ -42,8 +42,8 @@ class ParquetTableLocation extends AbstractTableLocation {
     private volatile RowGroupReader[] rowGroupReaders;
 
     ParquetTableLocation(@NotNull final TableKey tableKey,
-        @NotNull final ParquetTableLocationKey tableLocationKey,
-        @NotNull final ParquetInstructions readInstructions) {
+            @NotNull final ParquetTableLocationKey tableLocationKey,
+            @NotNull final ParquetInstructions readInstructions) {
         super(tableKey, tableLocationKey, false);
         this.readInstructions = readInstructions;
         final ParquetMetadata parquetMetadata;
@@ -56,14 +56,12 @@ class ParquetTableLocation extends AbstractTableLocation {
 
         final int rowGroupCount = rowGroupIndices.length;
         rowGroups = IntStream.of(rowGroupIndices)
-            .mapToObj(rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi))
-            .sorted(Comparator.comparingInt(RowGroup::getOrdinal))
-            .toArray(RowGroup[]::new);
-        final long maxRowCount =
-            Arrays.stream(rowGroups).mapToLong(RowGroup::getNum_rows).max().orElse(0L);
+                .mapToObj(rgi -> parquetFileReader.fileMetaData.getRow_groups().get(rgi))
+                .sorted(Comparator.comparingInt(RowGroup::getOrdinal))
+                .toArray(RowGroup[]::new);
+        final long maxRowCount = Arrays.stream(rowGroups).mapToLong(RowGroup::getNum_rows).max().orElse(0L);
         regionParameters = new RegionedPageStore.Parameters(
-            RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK, rowGroupCount,
-            maxRowCount);
+                RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK, rowGroupCount, maxRowCount);
 
         parquetColumnNameToPath = new HashMap<>();
         for (final ColumnDescriptor column : parquetFileReader.getSchema().getColumns()) {
@@ -74,17 +72,13 @@ class ParquetTableLocation extends AbstractTableLocation {
         }
 
         // TODO (https://github.com/deephaven/deephaven-core/issues/958):
-        // When/if we support _metadata files for Deephaven-written Parquet tables, we may need to
-        // revise this
-        // in order to read *this* file's metadata, rather than inheriting file metadata from the
-        // _metadata file.
+        // When/if we support _metadata files for Deephaven-written Parquet tables, we may need to revise this
+        // in order to read *this* file's metadata, rather than inheriting file metadata from the _metadata file.
         // Obvious issues included grouping table paths, codecs, etc.
-        // Presumably, we could store per-file instances of the metadata in the _metadata file's
-        // map.
-        final Optional<TableInfo> tableInfo = ParquetSchemaReader
-            .parseMetadata(parquetMetadata.getFileMetaData().getKeyValueMetaData());
-        groupingColumns =
-            tableInfo.map(TableInfo::groupingColumnMap).orElse(Collections.emptyMap());
+        // Presumably, we could store per-file instances of the metadata in the _metadata file's map.
+        final Optional<TableInfo> tableInfo =
+                ParquetSchemaReader.parseMetadata(parquetMetadata.getFileMetaData().getKeyValueMetaData());
+        groupingColumns = tableInfo.map(TableInfo::groupingColumnMap).orElse(Collections.emptyMap());
         columnTypes = tableInfo.map(TableInfo::columnTypeMap).orElse(Collections.emptyMap());
 
         handleUpdate(computeIndex(), tableLocationKey.getFile().lastModified());
@@ -132,33 +126,29 @@ class ParquetTableLocation extends AbstractTableLocation {
                 return local;
             }
             return rowGroupReaders = IntStream.of(rowGroupIndices)
-                .mapToObj(parquetFileReader::getRowGroup)
-                .sorted(Comparator.comparingInt(rgr -> rgr.getRowGroup().getOrdinal()))
-                .toArray(RowGroupReader[]::new);
+                    .mapToObj(parquetFileReader::getRowGroup)
+                    .sorted(Comparator.comparingInt(rgr -> rgr.getRowGroup().getOrdinal()))
+                    .toArray(RowGroupReader[]::new);
         }
     }
 
     @NotNull
     @Override
     protected ParquetColumnLocation<Values> makeColumnLocation(@NotNull final String columnName) {
-        final String parquetColumnName =
-            readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
+        final String parquetColumnName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
         final String[] columnPath = parquetColumnNameToPath.get(parquetColumnName);
         final List<String> nameList =
-            columnPath == null ? Collections.singletonList(parquetColumnName)
-                : Arrays.asList(columnPath);
+                columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
         final ColumnChunkReader[] columnChunkReaders = Arrays.stream(getRowGroupReaders())
-            .map(rgr -> rgr.getColumnChunk(nameList)).toArray(ColumnChunkReader[]::new);
-        final boolean exists =
-            Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
+                .map(rgr -> rgr.getColumnChunk(nameList)).toArray(ColumnChunkReader[]::new);
+        final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
         return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
-            exists ? columnChunkReaders : null,
-            exists && groupingColumns.containsKey(parquetColumnName));
+                exists ? columnChunkReaders : null,
+                exists && groupingColumns.containsKey(parquetColumnName));
     }
 
     private CurrentOnlyIndex computeIndex() {
-        final CurrentOnlyIndex.SequentialBuilder sequentialBuilder =
-            Index.CURRENT_FACTORY.getSequentialBuilder();
+        final CurrentOnlyIndex.SequentialBuilder sequentialBuilder = Index.CURRENT_FACTORY.getSequentialBuilder();
 
         for (int rgi = 0; rgi < rowGroups.length; ++rgi) {
             final long subRegionSize = rowGroups[rgi].getNum_rows();

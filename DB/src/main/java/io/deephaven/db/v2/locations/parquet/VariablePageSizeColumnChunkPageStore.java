@@ -16,20 +16,17 @@ import java.util.Arrays;
 
 class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPageStore<ATTR> {
 
-    // We will set numPages after changing all of these arrays in place and/or setting additional
-    // elements to the
-    // end of the array. Thus, for i < numPages, array[i] will always have the same value, and be
-    // valid to use, as
-    // long as we fetch numPages before accessing the arrays. This is the thread-safe pattern used
-    // throughout.
+    // We will set numPages after changing all of these arrays in place and/or setting additional elements to the
+    // end of the array. Thus, for i < numPages, array[i] will always have the same value, and be valid to use, as
+    // long as we fetch numPages before accessing the arrays. This is the thread-safe pattern used throughout.
 
     private volatile int numPages = 0;
     private volatile long[] pageRowOffsets;
     private volatile ColumnPageReader[] columnPageReaders;
     private volatile WeakReference<IntrusivePage<ATTR>>[] pages;
 
-    VariablePageSizeColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader,
-        final long mask, @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
+    VariablePageSizeColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader, final long mask,
+            @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
         super(columnChunkReader, mask, toPage);
 
         final int INIT_ARRAY_SIZE = 15;
@@ -49,9 +46,8 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
 
             // Make sure that no one has has already extended to this page yet.
             if (localNumPages == prevNumPages) {
-                Assert.assertion(columnPageReaderIterator.hasNext(),
-                    "columnPageReaderIterator.hasNext()",
-                    "Parquet num rows and page iterator don't match, not enough pages.");
+                Assert.assertion(columnPageReaderIterator.hasNext(), "columnPageReaderIterator.hasNext()",
+                        "Parquet num rows and page iterator don't match, not enough pages.");
 
                 if (columnPageReaders.length == localNumPages) {
                     int newSize = 2 * localNumPages;
@@ -113,8 +109,7 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
 
                 if (page == null) {
                     try {
-                        page = new IntrusivePage<>(
-                            toPage(pageRowOffsets[pageNum], columnPageReaders[pageNum]));
+                        page = new IntrusivePage<>(toPage(pageRowOffsets[pageNum], columnPageReaders[pageNum]));
                     } catch (IOException except) {
                         throw new UncheckedIOException(except);
                     }

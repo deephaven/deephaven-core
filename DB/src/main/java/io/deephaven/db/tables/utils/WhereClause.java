@@ -31,11 +31,9 @@ public class WhereClause {
         ArrayList<SelectFilter> clauses = new ArrayList<>();
 
         for (Collection<SelectFilter> clause : filtersToApply) {
-            clauses.add(ConjunctiveFilter
-                .makeConjunctiveFilter(clause.toArray(new SelectFilter[clause.size()])));
+            clauses.add(ConjunctiveFilter.makeConjunctiveFilter(clause.toArray(new SelectFilter[clause.size()])));
         }
 
-        return DisjunctiveFilter
-            .makeDisjunctiveFilter(clauses.toArray(new SelectFilter[clauses.size()]));
+        return DisjunctiveFilter.makeDisjunctiveFilter(clauses.toArray(new SelectFilter[clauses.size()]));
     }
 }

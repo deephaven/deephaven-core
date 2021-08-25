@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.session_pb.HandshakeRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.session_pb.HandshakeRequest",
+        namespace = JsPackage.GLOBAL)
 public class HandshakeRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface GetPayloadUnionType {
@@ -119,13 +119,13 @@ public class HandshakeRequest {
         @JsOverlay
         default void setPayload(String payload) {
             setPayload(
-                Js.<HandshakeRequest.ToObjectReturnType.GetPayloadUnionType>uncheckedCast(payload));
+                    Js.<HandshakeRequest.ToObjectReturnType.GetPayloadUnionType>uncheckedCast(payload));
         }
 
         @JsOverlay
         default void setPayload(Uint8Array payload) {
             setPayload(
-                Js.<HandshakeRequest.ToObjectReturnType.GetPayloadUnionType>uncheckedCast(payload));
+                    Js.<HandshakeRequest.ToObjectReturnType.GetPayloadUnionType>uncheckedCast(payload));
         }
     }
 
@@ -179,27 +179,25 @@ public class HandshakeRequest {
         @JsOverlay
         default void setPayload(String payload) {
             setPayload(
-                Js.<HandshakeRequest.ToObjectReturnType0.GetPayloadUnionType>uncheckedCast(
-                    payload));
+                    Js.<HandshakeRequest.ToObjectReturnType0.GetPayloadUnionType>uncheckedCast(payload));
         }
 
         @JsOverlay
         default void setPayload(Uint8Array payload) {
             setPayload(
-                Js.<HandshakeRequest.ToObjectReturnType0.GetPayloadUnionType>uncheckedCast(
-                    payload));
+                    Js.<HandshakeRequest.ToObjectReturnType0.GetPayloadUnionType>uncheckedCast(payload));
         }
     }
 
     public static native HandshakeRequest deserializeBinary(Uint8Array bytes);
 
     public static native HandshakeRequest deserializeBinaryFromReader(
-        HandshakeRequest message, Object reader);
+            HandshakeRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(HandshakeRequest message, Object writer);
 
     public static native HandshakeRequest.ToObjectReturnType toObject(
-        boolean includeInstance, HandshakeRequest msg);
+            boolean includeInstance, HandshakeRequest msg);
 
     public native double getAuthProtocol();
 

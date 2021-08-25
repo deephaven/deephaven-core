@@ -10,14 +10,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The basic implementation of {@link BenchmarkTableBuilder}. It allows users to specify table type
- * and add columns, while specifying their RNG properties.
+ * The basic implementation of {@link BenchmarkTableBuilder}. It allows users to specify table type and add columns,
+ * while specifying their RNG properties.
  */
 public abstract class AbstractBenchmarkTableBuilder<SELF extends BenchmarkTableBuilder>
-    implements BenchmarkTableBuilder {
+        implements BenchmarkTableBuilder {
     protected final String name;
-    protected final KeyedObjectHash<String, ColumnGenerator> columns =
-        new KeyedObjectHash<>(new ColumnGeneratorKey());
+    protected final KeyedObjectHash<String, ColumnGenerator> columns = new KeyedObjectHash<>(new ColumnGeneratorKey());
     protected long rngSeed = 0;
     final long size;
 
@@ -50,8 +49,7 @@ public abstract class AbstractBenchmarkTableBuilder<SELF extends BenchmarkTableB
     }
 
 
-    private static final class ColumnGeneratorKey
-        extends KeyedObjectKey.Basic<String, ColumnGenerator> {
+    private static final class ColumnGeneratorKey extends KeyedObjectKey.Basic<String, ColumnGenerator> {
         @Override
         public String getKey(ColumnGenerator columnGenerator) {
             return columnGenerator.getName();

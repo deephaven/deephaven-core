@@ -60,35 +60,34 @@ public class TestReadOnlyRedirectedColumnSource {
             is[i] = v;
         }
         final Table t = new InMemoryTable(
-            new String[] {"StringsCol", "IntsCol"},
-            new Object[] {strs, is});
+                new String[] {"StringsCol", "IntsCol"},
+                new Object[] {strs, is});
         ((DynamicNode) t).setRefreshing(true);
         return t;
     }
 
     private void doCheck(
-        final ColumnSource cs,
-        final OrderedKeys oks,
-        final WritableObjectChunk<String, Values> chunk,
-        final long offset) {
+            final ColumnSource cs,
+            final OrderedKeys oks,
+            final WritableObjectChunk<String, Values> chunk,
+            final long offset) {
         final MutableLong pos = new MutableLong();
         oks.forAllLongs(k -> {
             final String s = (String) cs.get(k);
-            assertEquals("offset=" + (pos.intValue() + offset) + ", k=" + k, s,
-                chunk.get(pos.intValue()));
+            assertEquals("offset=" + (pos.intValue() + offset) + ", k=" + k, s, chunk.get(pos.intValue()));
             pos.increment();
         });
     }
 
     private Table doFillAndCheck(
-        final Table t,
-        final String col,
-        final WritableObjectChunk<String, Values> chunk,
-        final int sz) {
+            final Table t,
+            final String col,
+            final WritableObjectChunk<String, Values> chunk,
+            final int sz) {
         final ColumnSource cs = t.getColumnSource(col);
         final Index ix = t.getIndex();
         try (final ColumnSource.FillContext fc = cs.makeFillContext(sz);
-            final OrderedKeys.Iterator it = ix.getOrderedKeysIterator()) {
+                final OrderedKeys.Iterator it = ix.getOrderedKeysIterator()) {
             long offset = 0;
             while (it.hasMore()) {
                 final OrderedKeys oks = it.getNextOrderedKeysWithLength(sz);
@@ -108,8 +107,7 @@ public class TestReadOnlyRedirectedColumnSource {
         final IncrementalReleaseFilter incFilter = new IncrementalReleaseFilter(stepSz, stepSz);
         final Table live = t.where(incFilter).sort("IntsCol");
         final int chunkSz = stepSz - 7;
-        final WritableObjectChunk<String, Values> chunk =
-            WritableObjectChunk.makeWritableChunk(chunkSz);
+        final WritableObjectChunk<String, Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSz);
         while (live.size() < t.size()) {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incFilter::refresh);
             doFillAndCheck(live, "StringsCol", chunk, chunkSz);
@@ -118,8 +116,7 @@ public class TestReadOnlyRedirectedColumnSource {
 
     @Test
     public void testMixedFillChunk() {
-        final Table a =
-            TableTools.emptyTable(1_000_000L).update("A=(long) (Math.random() * 1_000_000L)");
+        final Table a = TableTools.emptyTable(1_000_000L).update("A=(long) (Math.random() * 1_000_000L)");
 
         final Table ab = a.update("B=A % 2");
         final Table expected = ab.by("B", "A").sort("A");
@@ -135,14 +132,14 @@ public class TestReadOnlyRedirectedColumnSource {
         final Boolean[] ids6196_values = new Boolean[] {true, null, false};
         QueryScope.addParam("ids6196_values", ids6196_values);
 
-        final QueryTable qt = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(6),
-            intCol("IntVal", 0, 1, 2, 3, 4, 5));
+        final QueryTable qt =
+                TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(6), intCol("IntVal", 0, 1, 2, 3, 4, 5));
 
-        final Table a = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> qt
-            .update("I2=3+IntVal", "BoolVal=ids6196_values[IntVal % ids6196_values.length]"));
+        final Table a = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(
+                () -> qt.update("I2=3+IntVal", "BoolVal=ids6196_values[IntVal % ids6196_values.length]"));
         TableTools.showWithIndex(a);
         final Table b = LiveTableMonitor.DEFAULT.sharedLock()
-            .computeLocked(() -> a.naturalJoin(a, "I2=IntVal", "BoolVal2=BoolVal"));
+                .computeLocked(() -> a.naturalJoin(a, "I2=IntVal", "BoolVal2=BoolVal"));
         TableTools.showWithIndex(b);
 
         final TByteList byteList = new TByteArrayList(6);
@@ -161,15 +158,14 @@ public class TestReadOnlyRedirectedColumnSource {
         assertArrayEquals(expecteds, byteList.toArray());
 
         try (final ChunkSource.GetContext context = reinterpretedB.makeGetContext(6)) {
-            final ByteChunk<? extends Values> result =
-                reinterpretedB.getChunk(context, b.getIndex()).asByteChunk();
+            final ByteChunk<? extends Values> result = reinterpretedB.getChunk(context, b.getIndex()).asByteChunk();
             final byte[] chunkResult = new byte[6];
             result.copyToTypedArray(0, chunkResult, 0, 6);
             assertArrayEquals(expecteds, chunkResult);
         }
 
         final Table c = LiveTableMonitor.DEFAULT.sharedLock()
-            .computeLocked(() -> a.naturalJoin(b, "I2=IntVal", "BoolVal3=BoolVal2"));
+                .computeLocked(() -> a.naturalJoin(b, "I2=IntVal", "BoolVal3=BoolVal2"));
         TableTools.showWithIndex(c);
         final ColumnSource reinterpretedC = c.getColumnSource("BoolVal3").reinterpret(byte.class);
         byteList.clear();
@@ -191,29 +187,26 @@ public class TestReadOnlyRedirectedColumnSource {
         assertArrayEquals(nullBytes, byteList.toArray());
 
         try (final ChunkSource.GetContext context = reinterpretedC.makeGetContext(6)) {
-            final ByteChunk<? extends Values> result =
-                reinterpretedC.getChunk(context, b.getIndex()).asByteChunk();
+            final ByteChunk<? extends Values> result = reinterpretedC.getChunk(context, b.getIndex()).asByteChunk();
             final byte[] chunkResult = new byte[6];
             result.copyToTypedArray(0, chunkResult, 0, 6);
             assertArrayEquals(nullBytes, chunkResult);
         }
 
         try (final ChunkSource.GetContext context = reinterpretedC.makeGetContext(6)) {
-            final ByteChunk<? extends Values> result =
-                reinterpretedC.getPrevChunk(context, b.getIndex()).asByteChunk();
+            final ByteChunk<? extends Values> result = reinterpretedC.getPrevChunk(context, b.getIndex()).asByteChunk();
             final byte[] chunkResult = new byte[6];
             result.copyToTypedArray(0, chunkResult, 0, 6);
             assertArrayEquals(nullBytes, chunkResult);
         }
 
-        final Table captured = LiveTableMonitor.DEFAULT.sharedLock()
-            .computeLocked(() -> TableTools.emptyTable(1).snapshot(c));
+        final Table captured =
+                LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(c));
         TableTools.showWithIndex(captured);
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
         TstUtils.addToTable(qt, Index.FACTORY.getFlatIndex(3), intCol("IntVal", 1, 2, 3));
-        qt.notifyListeners(Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex(),
-            Index.FACTORY.getFlatIndex(3));
+        qt.notifyListeners(Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex(), Index.FACTORY.getFlatIndex(3));
 
         LiveTableMonitor.DEFAULT.flushAllNormalNotificationsForUnitTests();
 

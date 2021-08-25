@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.SortDescriptor",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.SortDescriptor",
+        namespace = JsPackage.GLOBAL)
 public class SortDescriptor {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -71,12 +71,12 @@ public class SortDescriptor {
     public static native SortDescriptor deserializeBinary(Uint8Array bytes);
 
     public static native SortDescriptor deserializeBinaryFromReader(
-        SortDescriptor message, Object reader);
+            SortDescriptor message, Object reader);
 
     public static native void serializeBinaryToWriter(SortDescriptor message, Object writer);
 
     public static native SortDescriptor.ToObjectReturnType toObject(
-        boolean includeInstance, SortDescriptor msg);
+            boolean includeInstance, SortDescriptor msg);
 
     public native String getColumnName();
 

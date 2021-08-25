@@ -15,10 +15,8 @@ import java.util.Random;
 public class FastArrayMapTest extends TestCase {
 
     private FastArrayMap<LongWrapper, TrialClassA> constructTestMap() {
-        Function.Nullary<KeyValuePair<LongWrapper, TrialClassA>> factoryObjectToObject =
-            new FactoryObjectToObject();
-        FastArrayMap<LongWrapper, TrialClassA> map =
-            new FastArrayMap<LongWrapper, TrialClassA>(factoryObjectToObject);
+        Function.Nullary<KeyValuePair<LongWrapper, TrialClassA>> factoryObjectToObject = new FactoryObjectToObject();
+        FastArrayMap<LongWrapper, TrialClassA> map = new FastArrayMap<LongWrapper, TrialClassA>(factoryObjectToObject);
         return map;
     }
 
@@ -399,7 +397,7 @@ public class FastArrayMapTest extends TestCase {
     }
 
     public void checkExternalization(FastArrayMap<LongWrapper, TrialClassA> mapInput,
-        FastArrayMap<LongWrapper, TrialClassA> mapReceiver) throws Exception {
+            FastArrayMap<LongWrapper, TrialClassA> mapReceiver) throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(bos);
         try {
@@ -521,8 +519,7 @@ public class FastArrayMapTest extends TestCase {
         for (int i = 0; i < nItems; i++) {
             LongWrapper key = new LongWrapper(myRandom.nextLong());
             TrialClassA val = FastArrayTest.makeRandomTestObject(myRandom);
-            arrayReceiver.getArray().getUnsafeArray()[i] =
-                new KeyValuePair<LongWrapper, TrialClassA>(key, val);
+            arrayReceiver.getArray().getUnsafeArray()[i] = new KeyValuePair<LongWrapper, TrialClassA>(key, val);
         }
 
         // verify they are not equal
@@ -537,8 +534,7 @@ public class FastArrayMapTest extends TestCase {
             assertFalse(itemReceive.equals(itemInput));
         }
 
-        // copy the value from the input back into the receive array (now that we already have
-        // values in there
+        // copy the value from the input back into the receive array (now that we already have values in there
         arrayReceiver = arrayInput.cloneDeep();
 
         // check the receive array against the input array
@@ -625,8 +621,7 @@ class FactoryObjectToObject implements Function.Nullary<KeyValuePair<LongWrapper
     public KeyValuePair<LongWrapper, TrialClassA> call() {
         LongWrapper key = new LongWrapper(Long.MIN_VALUE);
         TrialClassA value = TrialClassA.makeNull();
-        KeyValuePair<LongWrapper, TrialClassA> result =
-            new KeyValuePair<LongWrapper, TrialClassA>(key, value);
+        KeyValuePair<LongWrapper, TrialClassA> result = new KeyValuePair<LongWrapper, TrialClassA>(key, value);
         return result;
     }
 }

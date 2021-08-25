@@ -108,8 +108,7 @@ public class StringSetWrapper implements StringSet, Serializable {
         for (String s : this) {
             final int key = toOffset.applyAsInt(s);
             if (key > 63) {
-                throw new RuntimeException(
-                    "Symbol " + s + " exceeds the limit of 63 symbols for StringSetWrapper");
+                throw new RuntimeException("Symbol " + s + " exceeds the limit of 63 symbols for StringSetWrapper");
             }
             encoding |= 1L << key;
         }

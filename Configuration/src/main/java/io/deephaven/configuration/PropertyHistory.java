@@ -1,21 +1,20 @@
 package io.deephaven.configuration;
 
 /**
- * A simple datastore to record one step in the history of a property. A property may have its value
- * overwritten by subsequent declarations or in subsequent files, but it is convenient to be able to
- * identify what the active value of a property is, where that value was created, and what other
- * values the property may have been assigned by other files before getting to this final value.
+ * A simple datastore to record one step in the history of a property. A property may have its value overwritten by
+ * subsequent declarations or in subsequent files, but it is convenient to be able to identify what the active value of
+ * a property is, where that value was created, and what other values the property may have been assigned by other files
+ * before getting to this final value.
  */
 public class PropertyHistory {
     /**
-     * The name of the file where the property value was set, or a note that the value was not set
-     * by a configuration file.
+     * The name of the file where the property value was set, or a note that the value was not set by a configuration
+     * file.
      */
     final public String fileName;
     /**
-     * The number of the line within the file where the property value was set. If the property
-     * value was not set via a configuration file (such as a system property or a programmatic
-     * change of value), then this should be 0.
+     * The number of the line within the file where the property value was set. If the property value was not set via a
+     * configuration file (such as a system property or a programmatic change of value), then this should be 0.
      */
     final public int lineNumber;
     /**

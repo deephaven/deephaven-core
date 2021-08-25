@@ -8,13 +8,11 @@ import java.util.Collection;
 import java.util.Collections;
 
 /**
- * A {@link TableLocationProvider} that provides access to exactly one, previously-known
- * {@link TableLocation}.
+ * A {@link TableLocationProvider} that provides access to exactly one, previously-known {@link TableLocation}.
  */
 public final class SingleTableLocationProvider implements TableLocationProvider {
 
-    private static final String IMPLEMENTATION_NAME =
-        SingleTableLocationProvider.class.getSimpleName();
+    private static final String IMPLEMENTATION_NAME = SingleTableLocationProvider.class.getSimpleName();
 
     private final TableLocation tableLocation;
 
@@ -71,8 +69,7 @@ public final class SingleTableLocationProvider implements TableLocationProvider 
 
     @Nullable
     @Override
-    public TableLocation getTableLocationIfPresent(
-        @NotNull final TableLocationKey tableLocationKey) {
+    public TableLocation getTableLocationIfPresent(@NotNull final TableLocationKey tableLocationKey) {
         return hasTableLocationKey(tableLocationKey) ? tableLocation : null;
     }
 }

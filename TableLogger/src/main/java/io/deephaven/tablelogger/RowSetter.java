@@ -5,8 +5,7 @@
 package io.deephaven.tablelogger;
 
 /**
- * Type-safe interface for setting cell values in individual columns of a row to allow a row to be
- * written.
+ * Type-safe interface for setting cell values in individual columns of a row to allow a row to be written.
  */
 public interface RowSetter<T> {
     void set(T value);

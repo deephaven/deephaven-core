@@ -32,8 +32,7 @@ public interface LogSink<T extends LogSink.Element> {
     void terminate();
 
     /**
-     * One element of a log sink - guaranteed to be logged without being split over rolling file
-     * boundaries, etc.
+     * One element of a log sink - guaranteed to be logged without being split over rolling file boundaries, etc.
      */
     interface Element {
         long getTimestampMicros();
@@ -48,9 +47,8 @@ public interface LogSink<T extends LogSink.Element> {
     }
 
     /**
-     * An interceptor is called with each element logged, *and* with the formatted output. It will
-     * receive buffers that are flipped, and should not change the position or limit of these
-     * buffers.
+     * An interceptor is called with each element logged, *and* with the formatted output. It will receive buffers that
+     * are flipped, and should not change the position or limit of these buffers.
      */
     interface Interceptor<T extends Element> {
         void element(T e, LogOutput output) throws IOException;
@@ -99,9 +97,8 @@ public interface LogSink<T extends LogSink.Element> {
     }
 
     interface Factory<T extends LogSink.Element> {
-        LogSink<T> create(String basePath, int rollInterval, DateFormat rollFormat,
-            Pool<T> elementPool, boolean append, LogOutput outputBuffer, String header,
-            LogSinkWriter<LogSinkImpl<T>> maybeWriter);
+        LogSink<T> create(String basePath, int rollInterval, DateFormat rollFormat, Pool<T> elementPool, boolean append,
+                LogOutput outputBuffer, String header, LogSinkWriter<LogSinkImpl<T>> maybeWriter);
     }
 
     public static final Null NULL = new Null();

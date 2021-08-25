@@ -12,13 +12,13 @@ import jsinterop.annotations.JsType;
 public class IdeClient {
     @Deprecated
     @JsMethod(name = "getExistingSession")
-    public Promise<IdeSession> getExistingSession_old(String websocketUrl, String authToken,
-        String serviceId, String language) {
+    public Promise<IdeSession> getExistingSession_old(String websocketUrl, String authToken, String serviceId,
+            String language) {
         return IdeClient.getExistingSession(websocketUrl, authToken, serviceId, language);
     }
 
-    public static CancellablePromise<IdeSession> getExistingSession(String websocketUrl,
-        String authToken, String serviceId, String language) {
+    public static CancellablePromise<IdeSession> getExistingSession(String websocketUrl, String authToken,
+            String serviceId, String language) {
         IdeConnectionOptions options = new IdeConnectionOptions();
         options.authToken = authToken;
         options.serviceId = serviceId;

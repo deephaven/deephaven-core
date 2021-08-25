@@ -20,10 +20,10 @@ interface DestructorModuleParent extends AutoCloseable {
     static DestructorModuleParent create(CreateModule createModule) {
         final String code = readResource("destructor_test.py");
         try (
-            final PyObject module = createModule.call("destructor_module", code)) {
+                final PyObject module = createModule.call("destructor_module", code)) {
             return module
-                .call("Parent")
-                .createProxy(DestructorModuleParent.class);
+                    .call("Parent")
+                    .createProxy(DestructorModuleParent.class);
         }
     }
 
@@ -35,9 +35,9 @@ interface DestructorModuleParent extends AutoCloseable {
     static String readResource(String name) {
         try {
             return new String(
-                Files.readAllBytes(Paths.get(
-                    DestructorModuleParent.class.getResource(name).toURI())),
-                StandardCharsets.UTF_8);
+                    Files.readAllBytes(Paths.get(
+                            DestructorModuleParent.class.getResource(name).toURI())),
+                    StandardCharsets.UTF_8);
         } catch (IOException | URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -53,8 +53,7 @@ interface DestructorModuleParent extends AutoCloseable {
 
         // todo: this *doesn't* actually get mapped to a PyCallable_Check b/c the code looks like:
         /**
-         * int PyCallable_Check(PyObject *x) { if (x == NULL) return 0; return Py_TYPE(x)->tp_call
-         * != NULL; }
+         * int PyCallable_Check(PyObject *x) { if (x == NULL) return 0; return Py_TYPE(x)->tp_call != NULL; }
          */
 
         public void __call__() {

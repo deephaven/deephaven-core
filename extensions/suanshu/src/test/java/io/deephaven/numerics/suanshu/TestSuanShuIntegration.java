@@ -33,13 +33,13 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testAbstractVector(actual);
         final DenseVector expected = new DenseVector(doubles);
         testVecEquals(expected, actual);
-        testVecEquals(expected, ssVec((byte) 1, (byte) 2, (byte) 3, (byte) 4, (byte) 5, (byte) 6,
-            (byte) 7, (byte) 8, (byte) 9, (byte) 10, (byte) 11, (byte) 12, (byte) 13, (byte) 14));
+        testVecEquals(expected, ssVec((byte) 1, (byte) 2, (byte) 3, (byte) 4, (byte) 5, (byte) 6, (byte) 7, (byte) 8,
+                (byte) 9, (byte) 10, (byte) 11, (byte) 12, (byte) 13, (byte) 14));
     }
 
     public void testConvertDbByteArrayToVector() throws Exception {
         final DbByteArrayDirect dbByteArrayDirect =
-            new DbByteArrayDirect(new byte[] {1, 2, 3, 4, QueryConstants.NULL_BYTE, 6});
+                new DbByteArrayDirect(new byte[] {1, 2, 3, 4, QueryConstants.NULL_BYTE, 6});
         final double[] doubles = new double[] {1, 2, 3, 4, Double.NaN, 6};
         final Vector actual = ssVec(dbByteArrayDirect);
         testAbstractVector(actual);
@@ -54,13 +54,12 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testAbstractVector(actual);
         final DenseVector expected = new DenseVector(doubles);
         testVecEquals(expected, actual);
-        testVecEquals(expected,
-            ssVec((short) 1, (short) 2, (short) 3, (short) 4, (short) 5, (short) 6));
+        testVecEquals(expected, ssVec((short) 1, (short) 2, (short) 3, (short) 4, (short) 5, (short) 6));
     }
 
     public void testConvertDbShortArrayToVector() throws Exception {
         final DbShortArrayDirect dbShortArrayDirect =
-            new DbShortArrayDirect(new short[] {1, 2, 3, 4, QueryConstants.NULL_SHORT, 6});
+                new DbShortArrayDirect(new short[] {1, 2, 3, 4, QueryConstants.NULL_SHORT, 6});
         final double[] doubles = new double[] {1, 2, 3, 4, Double.NaN, 6};
         final Vector actual = ssVec(dbShortArrayDirect);
         testAbstractVector(actual);
@@ -79,8 +78,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
     }
 
     public void testConvertDbIntArrayToVector() throws Exception {
-        final DbIntArrayDirect dbIntArrayDirect =
-            new DbIntArrayDirect(-1, 2, -3, 4, QueryConstants.NULL_INT, 6);
+        final DbIntArrayDirect dbIntArrayDirect = new DbIntArrayDirect(-1, 2, -3, 4, QueryConstants.NULL_INT, 6);
         final double[] doubles = new double[] {-1, 2, -3, 4, Double.NaN, 6};
         final Vector actual = ssVec(dbIntArrayDirect);
         testAbstractVector(actual);
@@ -100,7 +98,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
 
     public void testConvertDbFloatArrayToVector() throws Exception {
         final DbFloatArrayDirect dbFloatArrayDirect =
-            new DbFloatArrayDirect(1.2f, -562, -23.069f, 4.56f, QueryConstants.NULL_FLOAT, 6f);
+                new DbFloatArrayDirect(1.2f, -562, -23.069f, 4.56f, QueryConstants.NULL_FLOAT, 6f);
         final double[] doubles = new double[] {1.2f, -562, -23.069f, 4.56f, Double.NaN, 6f};
         final Vector actual = ssVec(dbFloatArrayDirect);
         testAbstractVector(actual);
@@ -110,8 +108,7 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
 
     public void testConvertLongArrayToVector() throws Exception {
         final long[] longs = new long[] {-126564L, 256746545L, 3545678945136L, 4544L, 5L, 6654845L};
-        final double[] doubles =
-            new double[] {-126564d, 256746545d, 3545678945136d, 4544d, 5d, 6654845L};
+        final double[] doubles = new double[] {-126564d, 256746545d, 3545678945136d, 4544d, 5d, 6654845L};
         final Vector actual = ssVec(longs);
         testAbstractVector(actual);
         final DenseVector expected = new DenseVector(doubles);
@@ -120,10 +117,9 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
     }
 
     public void testConvertDbLongArrayToVector() throws Exception {
-        final DbLongArrayDirect dbLongArrayDirect = new DbLongArrayDirect(-126564L, 256746545L,
-            3545678945136L, 4544L, QueryConstants.NULL_LONG, 6654845L);
-        final double[] doubles =
-            new double[] {-126564L, 256746545L, 3545678945136L, 4544L, Double.NaN, 6654845L};
+        final DbLongArrayDirect dbLongArrayDirect =
+                new DbLongArrayDirect(-126564L, 256746545L, 3545678945136L, 4544L, QueryConstants.NULL_LONG, 6654845L);
+        final double[] doubles = new double[] {-126564L, 256746545L, 3545678945136L, 4544L, Double.NaN, 6654845L};
         final Vector actual = ssVec(dbLongArrayDirect);
         testAbstractVector(actual);
         final DenseVector expected = new DenseVector(doubles);
@@ -131,23 +127,19 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
     }
 
     public void testConvertDoubleArrayToVector() throws Exception {
-        final double[] doublesActual =
-            new double[] {2.365d, 2125.5698d, -98231.2656897451d, 697, 3457836.7283648723d};
-        final double[] doubles =
-            new double[] {2.365d, 2125.5698d, -98231.2656897451d, 697, 3457836.7283648723d};
+        final double[] doublesActual = new double[] {2.365d, 2125.5698d, -98231.2656897451d, 697, 3457836.7283648723d};
+        final double[] doubles = new double[] {2.365d, 2125.5698d, -98231.2656897451d, 697, 3457836.7283648723d};
         final Vector actual = ssVec(doublesActual);
         testAbstractVector(actual);
         final DenseVector expected = new DenseVector(doubles);
         testVecEquals(expected, actual);
-        testVecEquals(expected,
-            ssVec(2.365d, 2125.5698d, -98231.2656897451d, 697, 3457836.7283648723d));
+        testVecEquals(expected, ssVec(2.365d, 2125.5698d, -98231.2656897451d, 697, 3457836.7283648723d));
     }
 
     public void testConvertDbDoubleArrayToVector() throws Exception {
-        final DbDoubleArrayDirect dbDoubleArrayDirect = new DbDoubleArrayDirect(2.365d, 2125.5698d,
-            -98231.2656897451d, QueryConstants.NULL_DOUBLE, 3457836.7283648723d);
-        final double[] doubles =
-            new double[] {2.365d, 2125.5698d, -98231.2656897451d, Double.NaN, 3457836.7283648723d};
+        final DbDoubleArrayDirect dbDoubleArrayDirect = new DbDoubleArrayDirect(2.365d, 2125.5698d, -98231.2656897451d,
+                QueryConstants.NULL_DOUBLE, 3457836.7283648723d);
+        final double[] doubles = new double[] {2.365d, 2125.5698d, -98231.2656897451d, Double.NaN, 3457836.7283648723d};
         final Vector actual = ssVec(dbDoubleArrayDirect);
         testAbstractVector(actual);
         final DenseVector expected = new DenseVector(doubles);
@@ -155,8 +147,8 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
     }
 
     public void testConvertDbNumberArrayToVector() throws Exception {
-        DbArray dbArray = new DbArrayDirect<>(BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.ZERO,
-            BigDecimal.ONE, null, BigDecimal.ONE);
+        DbArray dbArray = new DbArrayDirect<>(BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ONE, null,
+                BigDecimal.ONE);
         double[] doubles = new double[] {0, 1, 0, 1, Double.NaN, 1};
         Vector actual = ssVec(dbArray);
         testAbstractVector(actual);
@@ -164,10 +156,9 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         assertTrue(expected.equals(actual));
         assertEquals(expected.toArray(), actual.toArray());
 
-        dbArray = new DbArrayDirect<>(2.365d, 2125.5698d, -98231.2656897451d,
-            QueryConstants.NULL_DOUBLE, 3457836.7283648723d);
-        doubles =
-            new double[] {2.365d, 2125.5698d, -98231.2656897451d, Double.NaN, 3457836.7283648723d};
+        dbArray = new DbArrayDirect<>(2.365d, 2125.5698d, -98231.2656897451d, QueryConstants.NULL_DOUBLE,
+                3457836.7283648723d);
+        doubles = new double[] {2.365d, 2125.5698d, -98231.2656897451d, Double.NaN, 3457836.7283648723d};
         actual = ssVec(dbArray);
         testAbstractVector(actual);
         expected = new DenseVector(doubles);
@@ -182,11 +173,9 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         assertTrue(expected.equals(actual));
         assertEquals(expected.toArray(), actual.toArray());
 
-        dbArray = new DbArrayDirect<>(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT,
-            QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG,
-            QueryConstants.NULL_DOUBLE);
-        doubles =
-            new double[] {Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN};
+        dbArray = new DbArrayDirect<>(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT, QueryConstants.NULL_INT,
+                QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE);
+        doubles = new double[] {Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN};
         actual = ssVec(dbArray);
         testAbstractVector(actual);
         expected = new DenseVector(doubles);
@@ -232,8 +221,8 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         Matrix expected = new DenseMatrix(doubles);
         expected = new SimpleMatrixMathOperation().transpose(expected);
 
-        final byte[][] bytes = new byte[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, 16},
-                {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
+        final byte[][] bytes = new byte[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, 16}, {21, 22, 23, 24, 25, 26},
+                {31, 32, 33, 34, 35, 36}};
 
         final Matrix actual = ssMat(bytes);
         testAbstractMatrix(actual);
@@ -241,16 +230,13 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
     }
 
     public void testConvertDbByteArrayToMatrix() throws Exception {
-        final double[][] doubles =
-            new double[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, Double.NaN},
-                    {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
+        final double[][] doubles = new double[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, Double.NaN},
+                {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
 
-        final DbByteArray[] dbByteArrays =
-            new DbByteArray[] {new DbByteArrayDirect(new byte[] {1, 2, 3, 4, 5, 6}),
-                    new DbByteArrayDirect(
-                        new byte[] {11, 12, 13, 14, 15, QueryConstants.NULL_BYTE}),
-                    new DbByteArrayDirect(new byte[] {21, 22, 23, 24, 25, 26}),
-                    new DbByteArrayDirect(new byte[] {31, 32, 33, 34, 35, 36})};
+        final DbByteArray[] dbByteArrays = new DbByteArray[] {new DbByteArrayDirect(new byte[] {1, 2, 3, 4, 5, 6}),
+                new DbByteArrayDirect(new byte[] {11, 12, 13, 14, 15, QueryConstants.NULL_BYTE}),
+                new DbByteArrayDirect(new byte[] {21, 22, 23, 24, 25, 26}),
+                new DbByteArrayDirect(new byte[] {31, 32, 33, 34, 35, 36})};
         Matrix expected = new DenseMatrix(doubles);
         expected = new SimpleMatrixMathOperation().transpose(expected);
 
@@ -265,27 +251,24 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         Matrix expected = new DenseMatrix(doubles);
         expected = new SimpleMatrixMathOperation().transpose(expected);
 
-        final short[][] shorts = new short[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, 16},
-                {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
+        final short[][] shorts = new short[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, 16}, {21, 22, 23, 24, 25, 26},
+                {31, 32, 33, 34, 35, 36}};
         final Matrix actual = ssMat(shorts);
         testAbstractMatrix(actual);
         testMatEquals(expected, actual);
     }
 
     public void testConvertDbShortArrayToMatrix() throws Exception {
-        final double[][] doubles =
-            new double[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, Double.NaN},
-                    {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
+        final double[][] doubles = new double[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, Double.NaN},
+                {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
 
         Matrix expected = new DenseMatrix(doubles);
         expected = new SimpleMatrixMathOperation().transpose(expected);
 
-        final DbShortArray[] dbShortArrays =
-            new DbShortArray[] {new DbShortArrayDirect(new short[] {1, 2, 3, 4, 5, 6}),
-                    new DbShortArrayDirect(
-                        new short[] {11, 12, 13, 14, 15, QueryConstants.NULL_SHORT}),
-                    new DbShortArrayDirect(new short[] {21, 22, 23, 24, 25, 26}),
-                    new DbShortArrayDirect(new short[] {31, 32, 33, 34, 35, 36})};
+        final DbShortArray[] dbShortArrays = new DbShortArray[] {new DbShortArrayDirect(new short[] {1, 2, 3, 4, 5, 6}),
+                new DbShortArrayDirect(new short[] {11, 12, 13, 14, 15, QueryConstants.NULL_SHORT}),
+                new DbShortArrayDirect(new short[] {21, 22, 23, 24, 25, 26}),
+                new DbShortArrayDirect(new short[] {31, 32, 33, 34, 35, 36})};
         final Matrix actual = ssMat(dbShortArrays);
         testAbstractMatrix(actual);
         testMatEquals(expected, actual);
@@ -297,25 +280,23 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         Matrix expected = new DenseMatrix(doubles);
         expected = new SimpleMatrixMathOperation().transpose(expected);
 
-        final int[][] ints = new int[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, 16},
-                {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
+        final int[][] ints = new int[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, 16}, {21, 22, 23, 24, 25, 26},
+                {31, 32, 33, 34, 35, 36}};
         final Matrix actual = ssMat(ints);
         testAbstractMatrix(actual);
         testMatEquals(expected, actual);
     }
 
     public void testConvertDbIntArrayToMatrix() throws Exception {
-        final double[][] doubles =
-            new double[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, Double.NaN},
-                    {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
+        final double[][] doubles = new double[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, Double.NaN},
+                {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
 
         Matrix expected = new DenseMatrix(doubles);
         expected = new SimpleMatrixMathOperation().transpose(expected);
 
         final DbIntArray[] dbIntArrays = new DbIntArray[] {new DbIntArrayDirect(1, 2, 3, 4, 5, 6),
                 new DbIntArrayDirect(11, 12, 13, 14, 15, QueryConstants.NULL_INT),
-                new DbIntArrayDirect(21, 22, 23, 24, 25, 26),
-                new DbIntArrayDirect(31, 32, 33, 34, 35, 36)};
+                new DbIntArrayDirect(21, 22, 23, 24, 25, 26), new DbIntArrayDirect(31, 32, 33, 34, 35, 36)};
 
         final Matrix actual = ssMat(dbIntArrays);
         testAbstractMatrix(actual);
@@ -323,66 +304,58 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
     }
 
     public void testConvertFloat2dArrayToMatrix() throws Exception {
-        final double[][] doubles =
-            new double[][] {{1f, 2f, 3f, 4f, 5f, 6f}, {11f, 12f, 13f, 14f, 15f, 16f},
-                    {21f, 22f, 23f, 24f, 25f, 26f}, {31f, 32f, 33f, 34f, 35f, 36f}};
+        final double[][] doubles = new double[][] {{1f, 2f, 3f, 4f, 5f, 6f}, {11f, 12f, 13f, 14f, 15f, 16f},
+                {21f, 22f, 23f, 24f, 25f, 26f}, {31f, 32f, 33f, 34f, 35f, 36f}};
         Matrix expected = new DenseMatrix(doubles);
         expected = new SimpleMatrixMathOperation().transpose(expected);
 
-        final float[][] floats =
-            new float[][] {{1f, 2f, 3f, 4f, 5f, 6f}, {11f, 12f, 13f, 14f, 15f, 16f},
-                    {21f, 22f, 23f, 24f, 25f, 26f}, {31f, 32f, 33f, 34f, 35f, 36f}};
+        final float[][] floats = new float[][] {{1f, 2f, 3f, 4f, 5f, 6f}, {11f, 12f, 13f, 14f, 15f, 16f},
+                {21f, 22f, 23f, 24f, 25f, 26f}, {31f, 32f, 33f, 34f, 35f, 36f}};
         final Matrix actual = ssMat(floats);
         testAbstractMatrix(actual);
         testMatEquals(expected, actual);
     }
 
     public void testConvertDbFloatArrayToMatrix() throws Exception {
-        final double[][] doubles =
-            new double[][] {{1f, 2f, 3f, 4f, 5f, 6f}, {11f, 12f, 13f, 14f, 15f, Double.NaN},
-                    {21f, 22f, 23f, 24f, 25f, 26f}, {31f, 32f, 33f, 34f, 35f, 36f}};
+        final double[][] doubles = new double[][] {{1f, 2f, 3f, 4f, 5f, 6f}, {11f, 12f, 13f, 14f, 15f, Double.NaN},
+                {21f, 22f, 23f, 24f, 25f, 26f}, {31f, 32f, 33f, 34f, 35f, 36f}};
 
         Matrix expected = new DenseMatrix(doubles);
         expected = new SimpleMatrixMathOperation().transpose(expected);
 
-        final DbFloatArray[] dbFloatArrays =
-            new DbFloatArray[] {new DbFloatArrayDirect(1f, 2f, 3f, 4f, 5f, 6f),
-                    new DbFloatArrayDirect(11f, 12f, 13f, 14f, 15f, QueryConstants.NULL_FLOAT),
-                    new DbFloatArrayDirect(21f, 22f, 23f, 24f, 25f, 26f),
-                    new DbFloatArrayDirect(31f, 32f, 33f, 34f, 35f, 36f)};
+        final DbFloatArray[] dbFloatArrays = new DbFloatArray[] {new DbFloatArrayDirect(1f, 2f, 3f, 4f, 5f, 6f),
+                new DbFloatArrayDirect(11f, 12f, 13f, 14f, 15f, QueryConstants.NULL_FLOAT),
+                new DbFloatArrayDirect(21f, 22f, 23f, 24f, 25f, 26f),
+                new DbFloatArrayDirect(31f, 32f, 33f, 34f, 35f, 36f)};
         final Matrix actual = ssMat(dbFloatArrays);
         testAbstractMatrix(actual);
         testMatEquals(expected, actual);
     }
 
     public void testConvertLong2dArrayToMatrix() throws Exception {
-        final double[][] doubles =
-            new double[][] {{1L, 2L, 3L, 4L, 5L, 6L}, {11L, 12L, 13L, 14L, 15L, 16L},
-                    {21L, 22L, 23L, 24L, 25L, 26L}, {31L, 32L, 33L, 34L, 35L, 36L}};
+        final double[][] doubles = new double[][] {{1L, 2L, 3L, 4L, 5L, 6L}, {11L, 12L, 13L, 14L, 15L, 16L},
+                {21L, 22L, 23L, 24L, 25L, 26L}, {31L, 32L, 33L, 34L, 35L, 36L}};
         Matrix expected = new DenseMatrix(doubles);
         expected = new SimpleMatrixMathOperation().transpose(expected);
 
-        final long[][] longs =
-            new long[][] {{1L, 2L, 3L, 4L, 5L, 6L}, {11L, 12L, 13L, 14L, 15L, 16L},
-                    {21L, 22L, 23L, 24L, 25L, 26L}, {31L, 32L, 33L, 34L, 35L, 36L}};
+        final long[][] longs = new long[][] {{1L, 2L, 3L, 4L, 5L, 6L}, {11L, 12L, 13L, 14L, 15L, 16L},
+                {21L, 22L, 23L, 24L, 25L, 26L}, {31L, 32L, 33L, 34L, 35L, 36L}};
         final Matrix actual = ssMat(longs);
         testAbstractMatrix(actual);
         testMatEquals(expected, actual);
     }
 
     public void testConvertDbLongArrayToMatrix() throws Exception {
-        final double[][] doubles =
-            new double[][] {{1l, 2l, 3l, 4l, 5l, 6l}, {11l, 12l, 13l, 14l, 15l, Double.NaN},
-                    {21l, 22l, 23l, 24l, 25l, 26l}, {31l, 32l, 33l, 34l, 35l, 36l}};
+        final double[][] doubles = new double[][] {{1l, 2l, 3l, 4l, 5l, 6l}, {11l, 12l, 13l, 14l, 15l, Double.NaN},
+                {21l, 22l, 23l, 24l, 25l, 26l}, {31l, 32l, 33l, 34l, 35l, 36l}};
 
         Matrix expected = new DenseMatrix(doubles);
         expected = new SimpleMatrixMathOperation().transpose(expected);
 
-        final DbLongArray[] dbLongArrays =
-            new DbLongArray[] {new DbLongArrayDirect(1l, 2l, 3l, 4l, 5l, 6l),
-                    new DbLongArrayDirect(11l, 12l, 13l, 14l, 15l, QueryConstants.NULL_LONG),
-                    new DbLongArrayDirect(21l, 22l, 23l, 24l, 25l, 26l),
-                    new DbLongArrayDirect(31l, 32l, 33l, 34l, 35l, 36l)};
+        final DbLongArray[] dbLongArrays = new DbLongArray[] {new DbLongArrayDirect(1l, 2l, 3l, 4l, 5l, 6l),
+                new DbLongArrayDirect(11l, 12l, 13l, 14l, 15l, QueryConstants.NULL_LONG),
+                new DbLongArrayDirect(21l, 22l, 23l, 24l, 25l, 26l),
+                new DbLongArrayDirect(31l, 32l, 33l, 34l, 35l, 36l)};
         final Matrix actual = ssMat(dbLongArrays);
         testAbstractMatrix(actual);
         testMatEquals(expected, actual);
@@ -400,15 +373,13 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
     }
 
     public void testConvertDbDoubleArrayToMatrix() throws Exception {
-        final double[][] doubles =
-            new double[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, Double.NaN},
-                    {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
+        final double[][] doubles = new double[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, Double.NaN},
+                {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
 
-        final DbDoubleArray[] dbDoubleArrays =
-            new DbDoubleArray[] {new DbDoubleArrayDirect(1d, 2d, 3d, 4d, 5d, 6d),
-                    new DbDoubleArrayDirect(11d, 12d, 13d, 14d, 15d, QueryConstants.NULL_DOUBLE),
-                    new DbDoubleArrayDirect(21d, 22d, 23d, 24d, 25d, 26d),
-                    new DbDoubleArrayDirect(31d, 32d, 33d, 34d, 35d, 36d)};
+        final DbDoubleArray[] dbDoubleArrays = new DbDoubleArray[] {new DbDoubleArrayDirect(1d, 2d, 3d, 4d, 5d, 6d),
+                new DbDoubleArrayDirect(11d, 12d, 13d, 14d, 15d, QueryConstants.NULL_DOUBLE),
+                new DbDoubleArrayDirect(21d, 22d, 23d, 24d, 25d, 26d),
+                new DbDoubleArrayDirect(31d, 32d, 33d, 34d, 35d, 36d)};
         Matrix expected = new DenseMatrix(doubles);
         expected = new SimpleMatrixMathOperation().transpose(expected);
 
@@ -418,19 +389,14 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
     }
 
     public void testConvertDbArrayBasesToMatrix() throws Exception {
-        final double[][] doubles = new double[][] {{1, 2, 3, 4, 5, 6}, {1, 2, 3, 4, 5, 6},
-                {1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, 16}, {21, 22, 23, 24, 25, 26},
-                {31, 32, 33, 34, 35, 36}, {0, 1, 0, 1, 0, 1}};
+        final double[][] doubles = new double[][] {{1, 2, 3, 4, 5, 6}, {1, 2, 3, 4, 5, 6}, {1, 2, 3, 4, 5, 6},
+                {11, 12, 13, 14, 15, 16}, {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}, {0, 1, 0, 1, 0, 1}};
 
-        final DbArrayBase[] dbArrayBases =
-            new DbArrayBase[] {new DbByteArrayDirect(new byte[] {1, 2, 3, 4, 5, 6}),
-                    new DbShortArrayDirect(new short[] {1, 2, 3, 4, 5, 6}),
-                    new DbDoubleArrayDirect(1d, 2d, 3d, 4d, 5d, 6d),
-                    new DbIntArrayDirect(11, 12, 13, 14, 15, 16),
-                    new DbLongArrayDirect(21l, 22l, 23l, 24l, 25l, 26l),
-                    new DbFloatArrayDirect(31f, 32f, 33f, 34f, 35f, 36f),
-                    new DbArrayDirect<>(BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.ZERO,
-                        BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ONE)};
+        final DbArrayBase[] dbArrayBases = new DbArrayBase[] {new DbByteArrayDirect(new byte[] {1, 2, 3, 4, 5, 6}),
+                new DbShortArrayDirect(new short[] {1, 2, 3, 4, 5, 6}), new DbDoubleArrayDirect(1d, 2d, 3d, 4d, 5d, 6d),
+                new DbIntArrayDirect(11, 12, 13, 14, 15, 16), new DbLongArrayDirect(21l, 22l, 23l, 24l, 25l, 26l),
+                new DbFloatArrayDirect(31f, 32f, 33f, 34f, 35f, 36f), new DbArrayDirect<>(BigDecimal.ZERO,
+                        BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ONE)};
         Matrix expected = new DenseMatrix(doubles);
         expected = new SimpleMatrixMathOperation().transpose(expected);
 
@@ -440,20 +406,19 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
     }
 
     public void testConvertDbArraysToMatrix() throws Exception {
-        final double[][] doubles = new double[][] {{1, 2, 3, 4, Double.NaN, 6},
-                {1, 2, 3, 4, Double.NaN, 6}, {1, 2, 3, 4, Double.NaN, 6},
-                {11, 12, 13, 14, Double.NaN, 16}, {21, 22, 23, 24, Double.NaN, 26},
+        final double[][] doubles = new double[][] {{1, 2, 3, 4, Double.NaN, 6}, {1, 2, 3, 4, Double.NaN, 6},
+                {1, 2, 3, 4, Double.NaN, 6}, {11, 12, 13, 14, Double.NaN, 16}, {21, 22, 23, 24, Double.NaN, 26},
                 {31, 32, 33, 34, Double.NaN, 36}, {0, 1, 0, 1, Double.NaN, 1}};
 
-        final DbArray dbArrays = new DbArrayDirect(
-            new DbByteArrayDirect(new byte[] {1, 2, 3, 4, QueryConstants.NULL_BYTE, 6}),
-            new DbShortArrayDirect(new short[] {1, 2, 3, 4, QueryConstants.NULL_SHORT, 6}),
-            new DbDoubleArrayDirect(1d, 2d, 3d, 4d, QueryConstants.NULL_DOUBLE, 6d),
-            new DbIntArrayDirect(11, 12, 13, 14, QueryConstants.NULL_INT, 16),
-            new DbLongArrayDirect(21l, 22l, 23l, 24l, QueryConstants.NULL_LONG, 26l),
-            new DbFloatArrayDirect(31f, 32f, 33f, 34f, QueryConstants.NULL_FLOAT, 36f),
-            new DbArrayDirect<>(BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ONE,
-                null, BigDecimal.ONE));
+        final DbArray dbArrays =
+                new DbArrayDirect(new DbByteArrayDirect(new byte[] {1, 2, 3, 4, QueryConstants.NULL_BYTE, 6}),
+                        new DbShortArrayDirect(new short[] {1, 2, 3, 4, QueryConstants.NULL_SHORT, 6}),
+                        new DbDoubleArrayDirect(1d, 2d, 3d, 4d, QueryConstants.NULL_DOUBLE, 6d),
+                        new DbIntArrayDirect(11, 12, 13, 14, QueryConstants.NULL_INT, 16),
+                        new DbLongArrayDirect(21l, 22l, 23l, 24l, QueryConstants.NULL_LONG, 26l),
+                        new DbFloatArrayDirect(31f, 32f, 33f, 34f, QueryConstants.NULL_FLOAT, 36f),
+                        new DbArrayDirect<>(BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ONE, null,
+                                BigDecimal.ONE));
         Matrix expected = new DenseMatrix(doubles);
         expected = new SimpleMatrixMathOperation().transpose(expected);
 
@@ -482,12 +447,11 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
     }
 
     public void testConvertNumber2dArrayToMatrix() throws Exception {
-        final double[][] doubles =
-            new double[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, Double.NaN},
-                    {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
+        final double[][] doubles = new double[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, Double.NaN},
+                {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
 
-        final Integer[][] integers = new Integer[][] {{1, 2, 3, 4, 5, 6},
-                {11, 12, 13, 14, 15, null}, {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
+        final Integer[][] integers = new Integer[][] {{1, 2, 3, 4, 5, 6}, {11, 12, 13, 14, 15, null},
+                {21, 22, 23, 24, 25, 26}, {31, 32, 33, 34, 35, 36}};
         Matrix expected = new DenseMatrix(doubles);
         expected = new SimpleMatrixMathOperation().transpose(expected);
 
@@ -495,9 +459,9 @@ public class TestSuanShuIntegration extends BaseArrayTestCase {
         testAbstractMatrix(actual);
         testMatEquals(expected, actual);
         testMatEquals(expected, ssMat(ssVec(1, 2, 3, 4, 5, 6).toArray(),
-            ssVec(11, 12, 13, 14, 15, null).toArray(),
-            ssVec(21, 22, 23, 24, 25, 26).toArray(),
-            ssVec(31, 32, 33, 34, 35, 36).toArray()));
+                ssVec(11, 12, 13, 14, 15, null).toArray(),
+                ssVec(21, 22, 23, 24, 25, 26).toArray(),
+                ssVec(31, 32, 33, 34, 35, 36).toArray()));
     }
 
     private void testMatEquals(final Matrix expected, final Matrix actual) {

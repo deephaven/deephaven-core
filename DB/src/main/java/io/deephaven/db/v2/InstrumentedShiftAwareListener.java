@@ -7,15 +7,13 @@ package io.deephaven.db.v2;
 import io.deephaven.db.v2.utils.AbstractIndexUpdateNotification;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class InstrumentedShiftAwareListener extends InstrumentedListenerBase
-    implements ShiftAwareListener {
+public abstract class InstrumentedShiftAwareListener extends InstrumentedListenerBase implements ShiftAwareListener {
 
     public InstrumentedShiftAwareListener(@Nullable final String description) {
         super(description, false);
     }
 
-    public InstrumentedShiftAwareListener(@Nullable final String description,
-        final boolean terminalListener) {
+    public InstrumentedShiftAwareListener(@Nullable final String description, final boolean terminalListener) {
         super(description, terminalListener);
     }
 

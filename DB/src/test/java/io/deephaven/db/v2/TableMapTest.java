@@ -38,7 +38,7 @@ public class TableMapTest extends LiveTableTestCase {
     protected void setUp() throws Exception {
         if (null == ProcessEnvironment.tryGet()) {
             ProcessEnvironment.basicServerInitialization(Configuration.getInstance(),
-                "TestTransformableTableMapThenMerge", new StreamLoggerImpl());
+                    "TestTransformableTableMapThenMerge", new StreamLoggerImpl());
         }
         super.setUp();
         setExpectError(false);
@@ -56,9 +56,9 @@ public class TableMapTest extends LiveTableTestCase {
 
     public void testMergeSimple() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6),
-            c("Sym", "aa", "bb", "aa", "bb"),
-            c("intCol", 10, 20, 40, 60),
-            c("doubleCol", 0.1, 0.2, 0.4, 0.6));
+                c("Sym", "aa", "bb", "aa", "bb"),
+                c("intCol", 10, 20, 40, 60),
+                c("doubleCol", 0.1, 0.2, 0.4, 0.6));
 
         final Table withK = queryTable.update("K=k");
 
@@ -74,8 +74,7 @@ public class TableMapTest extends LiveTableTestCase {
         assertEquals("", TableTools.diff(mergedByK, withK, 10));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(queryTable, i(3, 9), c("Sym", "cc", "cc"), c("intCol", 30, 90),
-                c("doubleCol", 2.3, 2.9));
+            addToTable(queryTable, i(3, 9), c("Sym", "cc", "cc"), c("intCol", 30, 90), c("doubleCol", 2.3, 2.9));
             queryTable.notifyListeners(i(3, 9), i(), i());
         });
 
@@ -90,9 +89,9 @@ public class TableMapTest extends LiveTableTestCase {
 
     public void testMergePopulate() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6),
-            c("Sym", "aa", "bb", "aa", "bb"),
-            c("intCol", 10, 20, 40, 60),
-            c("doubleCol", 0.1, 0.2, 0.4, 0.6));
+                c("Sym", "aa", "bb", "aa", "bb"),
+                c("intCol", 10, 20, 40, 60),
+                c("doubleCol", 0.1, 0.2, 0.4, 0.6));
 
         final Table withK = queryTable.update("K=k");
 
@@ -110,8 +109,7 @@ public class TableMapTest extends LiveTableTestCase {
         assertEquals("", TableTools.diff(mergedByK, withK, 10));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(queryTable, i(3, 9), c("Sym", "cc", "cc"), c("intCol", 30, 90),
-                c("doubleCol", 2.3, 2.9));
+            addToTable(queryTable, i(3, 9), c("Sym", "cc", "cc"), c("intCol", 30, 90), c("doubleCol", 2.3, 2.9));
             queryTable.notifyListeners(i(3, 9), i(), i());
         });
 
@@ -137,24 +135,22 @@ public class TableMapTest extends LiveTableTestCase {
         final TstUtils.ColumnInfo[] columnInfo;
         final String[] syms = {"aa", "bb", "cc", "dd"};
         final QueryTable table = getTable(size, random,
-            columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
-                new SetGenerator<>(syms),
-                new TstUtils.IntGenerator(0, 20),
-                new TstUtils.DoubleGenerator(0, 100)));
+                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
+                        new SetGenerator<>(syms),
+                        new TstUtils.IntGenerator(0, 20),
+                        new TstUtils.DoubleGenerator(0, 100)));
 
         final EvalNugget en[] = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
-                        return table.byExternal("Sym").populateKeys((Object[]) syms).merge()
-                            .sort("Sym");
+                        return table.byExternal("Sym").populateKeys((Object[]) syms).merge().sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         return table.byExternal("intCol")
-                            .populateKeys(
-                                IntStream.rangeClosed(0, 20).boxed().toArray(Object[]::new))
-                            .merge().sort("intCol");
+                                .populateKeys(IntStream.rangeClosed(0, 20).boxed().toArray(Object[]::new)).merge()
+                                .sort("intCol");
                     }
                 },
         };
@@ -179,8 +175,7 @@ public class TableMapTest extends LiveTableTestCase {
 
         @Override
         public void validate(String msg) {
-            Assert.equals(originalTable.size(), "originalTable.size()", computedTable.size(),
-                "computedTable.size()");
+            Assert.equals(originalTable.size(), "originalTable.size()", computedTable.size(), "computedTable.size()");
         }
 
         @Override
@@ -196,16 +191,15 @@ public class TableMapTest extends LiveTableTestCase {
 
         final TstUtils.ColumnInfo[] columnInfo;
         final QueryTable table = getTable(size, random,
-            columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "Keys"},
-                new TstUtils.SetGenerator<>("aa", "bb", "cc", "dd"),
-                new TstUtils.IntGenerator(0, 20),
-                new TstUtils.DoubleGenerator(0, 100),
-                new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1)));
+                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "Keys"},
+                        new TstUtils.SetGenerator<>("aa", "bb", "cc", "dd"),
+                        new TstUtils.IntGenerator(0, 20),
+                        new TstUtils.DoubleGenerator(0, 100),
+                        new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1)));
 
         final Table withK = table.update("K=Keys");
 
-        final QueryTable rightTable = getTable(size, random,
-            initColumnInfos(new String[] {"Sym", "RightCol"},
+        final QueryTable rightTable = getTable(size, random, initColumnInfos(new String[] {"Sym", "RightCol"},
                 new TstUtils.SetGenerator<>("aa", "bb", "cc", "dd"),
                 new TstUtils.IntGenerator(100, 200)));
 
@@ -221,20 +215,16 @@ public class TableMapTest extends LiveTableTestCase {
                 new EvalNugget() {
                     public Table e() {
                         return ((TransformableTableMap) table.update("K=Keys").byExternal("Sym")
-                            .populateKeys("aa", "bb", "cc", "dd").asTable(false, false, false)
-                            .update("K2=Keys*2").select("K", "K2", "Half=doubleCol/2",
-                                "Sq=doubleCol*doubleCol", "Weight=intCol*doubleCol", "Sym")).merge()
-                                    .sort("K", "Sym");
+                                .populateKeys("aa", "bb", "cc", "dd").asTable(false, false, false).update("K2=Keys*2")
+                                .select("K", "K2", "Half=doubleCol/2", "Sq=doubleCol*doubleCol",
+                                        "Weight=intCol*doubleCol", "Sym")).merge().sort("K", "Sym");
                     }
                 },
                 new SizeNugget(table, asTable),
-                new QueryTableTest.TableComparator(
-                    withK.naturalJoin(rightTable.lastBy("Sym"), "Sym").sort("K", "Sym"),
-                    asTable.naturalJoin(rightTable.lastBy("Sym"), "Sym").coalesce().sort("K",
-                        "Sym")),
-                new QueryTableTest.TableComparator(
-                    withK.naturalJoin(rightTable.lastBy("Sym"), "Sym").sort("K", "Sym"),
-                    asTable.naturalJoin(rightAsTable.lastBy(), "Sym").coalesce().sort("K", "Sym")),
+                new QueryTableTest.TableComparator(withK.naturalJoin(rightTable.lastBy("Sym"), "Sym").sort("K", "Sym"),
+                        asTable.naturalJoin(rightTable.lastBy("Sym"), "Sym").coalesce().sort("K", "Sym")),
+                new QueryTableTest.TableComparator(withK.naturalJoin(rightTable.lastBy("Sym"), "Sym").sort("K", "Sym"),
+                        asTable.naturalJoin(rightAsTable.lastBy(), "Sym").coalesce().sort("K", "Sym")),
         };
 
         for (int i = 0; i < 100; i++) {
@@ -245,8 +235,8 @@ public class TableMapTest extends LiveTableTestCase {
     public void testTransformTableMapThenMerge() {
         LiveTableMonitor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
 
-        final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1), intCol("Key", 1),
-            intCol("Sentinel", 1), col("Sym", "a"), doubleCol("DoubleCol", 1.1));
+        final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1), intCol("Key", 1), intCol("Sentinel", 1),
+                col("Sym", "a"), doubleCol("DoubleCol", 1.1));
 
         final TableMap tableMap = sourceTable.byExternal("Key");
 
@@ -260,16 +250,19 @@ public class TableMapTest extends LiveTableTestCase {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return tableMap.transformTables(t -> t.update("K2=Key * 2")
-                            .update("K3=Key + K2").update("K5 = K3 + K2")).merge().sort("Key");
+                        return tableMap
+                                .transformTables(
+                                        t -> t.update("K2=Key * 2").update("K3=Key + K2").update("K5 = K3 + K2"))
+                                .merge().sort("Key");
                     }
                 },
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return tableMap.transformTablesWithMap(tableMap,
-                            (l, r) -> l.naturalJoin(r.lastBy("Key"), "Key", "Sentinel2=Sentinel"))
-                            .merge().sort("Key");
+                        return tableMap
+                                .transformTablesWithMap(tableMap,
+                                        (l, r) -> l.naturalJoin(r.lastBy("Key"), "Key", "Sentinel2=Sentinel"))
+                                .merge().sort("Key");
                     }
                 }
         };
@@ -278,18 +271,15 @@ public class TableMapTest extends LiveTableTestCase {
             final int iteration = ii + 1;
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final long baseLocation = iteration * 10;
-                final Index addIndex =
-                    Index.FACTORY.getIndexByRange(baseLocation, baseLocation + 4);
-                final int[] sentinels = {iteration * 5, iteration * 5 + 1, iteration * 5 + 2,
-                        iteration * 5 + 3, iteration * 5 + 4};
-                addToTable(sourceTable, addIndex,
-                    intCol("Key", 1, 3, iteration, iteration - 1, iteration * 2),
-                    intCol("Sentinel", sentinels), col("Sym", "aa", "bb", "cc", "dd", "ee"),
-                    doubleCol("DoubleCol", 2.2, 3.3, 4.4, 5.5, 6.6));
+                final Index addIndex = Index.FACTORY.getIndexByRange(baseLocation, baseLocation + 4);
+                final int[] sentinels =
+                        {iteration * 5, iteration * 5 + 1, iteration * 5 + 2, iteration * 5 + 3, iteration * 5 + 4};
+                addToTable(sourceTable, addIndex, intCol("Key", 1, 3, iteration, iteration - 1, iteration * 2),
+                        intCol("Sentinel", sentinels), col("Sym", "aa", "bb", "cc", "dd", "ee"),
+                        doubleCol("DoubleCol", 2.2, 3.3, 4.4, 5.5, 6.6));
                 sourceTable.notifyListeners(addIndex, i(), i());
                 if (printTableUpdates) {
-                    System.out
-                        .println("Source Table, iteration=" + iteration + ", added=" + addIndex);
+                    System.out.println("Source Table, iteration=" + iteration + ", added=" + addIndex);
                     TableTools.showWithIndex(sourceTable);
                 }
             });
@@ -299,9 +289,9 @@ public class TableMapTest extends LiveTableTestCase {
 
     public void testAttributes() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6),
-            c("Sym", "aa", "bb", "aa", "bb"),
-            c("intCol", 10, 20, 40, 60),
-            c("doubleCol", 0.1, 0.2, 0.4, 0.6));
+                c("Sym", "aa", "bb", "aa", "bb"),
+                c("intCol", 10, 20, 40, 60),
+                c("doubleCol", 0.1, 0.2, 0.4, 0.6));
 
         queryTable.setAttribute(Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar");
 
@@ -313,24 +303,25 @@ public class TableMapTest extends LiveTableTestCase {
 
         final Table asTable = tableMap.asTable(true, false, true);
         if (SystemicObjectTracker.isSystemicObjectMarkingEnabled()) {
-            TestCase.assertEquals(CollectionUtil.mapFromArray(String.class, Object.class, "quux",
-                "baz", Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.SYSTEMIC_TABLE_ATTRIBUTE,
-                Boolean.TRUE), asTable.getAttributes());
+            TestCase.assertEquals(
+                    CollectionUtil.mapFromArray(String.class, Object.class, "quux", "baz",
+                            Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE),
+                    asTable.getAttributes());
         } else {
-            TestCase.assertEquals(CollectionUtil.mapFromArray(String.class, Object.class, "quux",
-                "baz", Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar"), asTable.getAttributes());
+            TestCase.assertEquals(CollectionUtil.mapFromArray(String.class, Object.class, "quux", "baz",
+                    Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar"), asTable.getAttributes());
         }
 
         Table merged = ((TransformableTableMap) asTable).merge();
         if (SystemicObjectTracker.isSystemicObjectMarkingEnabled()) {
-            TestCase.assertEquals(CollectionUtil.mapFromArray(String.class, Object.class, "quux",
-                "baz", Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true,
-                Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE), merged.getAttributes());
+            TestCase.assertEquals(CollectionUtil.mapFromArray(String.class, Object.class, "quux", "baz",
+                    Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true,
+                    Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE), merged.getAttributes());
         } else {
             TestCase.assertEquals(
-                CollectionUtil.mapFromArray(String.class, Object.class, "quux", "baz",
-                    Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true),
-                merged.getAttributes());
+                    CollectionUtil.mapFromArray(String.class, Object.class, "quux", "baz",
+                            Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true),
+                    merged.getAttributes());
         }
 
         int tableCounter = 1;
@@ -343,41 +334,38 @@ public class TableMapTest extends LiveTableTestCase {
             asTable.getAttributes();
             TestCase.fail("Get attributes is inconsistent!");
         } catch (IllegalArgumentException e) {
-            TestCase.assertEquals("Underlying tables do not have consistent attributes.",
-                e.getMessage());
+            TestCase.assertEquals("Underlying tables do not have consistent attributes.", e.getMessage());
         }
 
         // the merged table just takes the set that is consistent
         merged = ((TransformableTableMap) asTable).merge();
         if (SystemicObjectTracker.isSystemicObjectMarkingEnabled()) {
-            TestCase.assertEquals(CollectionUtil.mapFromArray(String.class, Object.class, "quux",
-                "baz", Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true,
-                Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE), merged.getAttributes());
+            TestCase.assertEquals(CollectionUtil.mapFromArray(String.class, Object.class, "quux", "baz",
+                    Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true,
+                    Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE), merged.getAttributes());
         } else {
             TestCase.assertEquals(
-                CollectionUtil.mapFromArray(String.class, Object.class, "quux", "baz",
-                    Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true),
-                merged.getAttributes());
+                    CollectionUtil.mapFromArray(String.class, Object.class, "quux", "baz",
+                            Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true),
+                    merged.getAttributes());
         }
     }
 
     public void testJoinSanity() {
         final QueryTable left = TstUtils.testRefreshingTable(i(1, 2, 4, 6),
-            c("USym", "aa", "bb", "aa", "bb"),
-            c("Sym", "aa_1", "bb_1", "aa_2", "bb_2"),
-            c("LeftSentinel", 10, 20, 40, 60));
+                c("USym", "aa", "bb", "aa", "bb"),
+                c("Sym", "aa_1", "bb_1", "aa_2", "bb_2"),
+                c("LeftSentinel", 10, 20, 40, 60));
         final QueryTable right = TstUtils.testRefreshingTable(i(3, 5, 7, 9),
-            c("USym", "aa", "bb", "aa", "bb"),
-            c("Sym", "aa_1", "bb_1", "aa_2", "bb_2"),
-            c("RightSentinel", 30, 50, 70, 90));
+                c("USym", "aa", "bb", "aa", "bb"),
+                c("Sym", "aa_1", "bb_1", "aa_2", "bb_2"),
+                c("RightSentinel", 30, 50, 70, 90));
 
         final TableMap leftMap = left.byExternal("USym");
         final TableMap rightMap = right.byExternal("USym");
 
-        final Table leftAsTable =
-            leftMap.asTableBuilder().sanityCheckJoin(true).allowCoalesce(false).build();
-        final Table rightAsTable =
-            rightMap.asTableBuilder().sanityCheckJoin(true).allowCoalesce(false).build();
+        final Table leftAsTable = leftMap.asTableBuilder().sanityCheckJoin(true).allowCoalesce(false).build();
+        final Table rightAsTable = rightMap.asTableBuilder().sanityCheckJoin(true).allowCoalesce(false).build();
 
         final Table result = leftAsTable.join(rightAsTable, "Sym", "RightSentinel");
 
@@ -395,8 +383,8 @@ public class TableMapTest extends LiveTableTestCase {
             final Throwable throwable = throwables.get(0);
             TestCase.assertEquals(IllegalArgumentException.class, throwable.getClass());
             TestCase.assertEquals(
-                "join([Sym]) Left join key \"aa_1\" exists in multiple TableMap keys, \"aa\" and \"bb\"",
-                throwable.getMessage());
+                    "join([Sym]) Left join key \"aa_1\" exists in multiple TableMap keys, \"aa\" and \"bb\"",
+                    throwable.getMessage());
             return true;
         });
 
@@ -404,23 +392,23 @@ public class TableMapTest extends LiveTableTestCase {
 
     public void testDependencies() {
         final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6),
-            c("USym", "aa", "bb", "aa", "bb"),
-            c("Sentinel", 10, 20, 40, 60));
+                c("USym", "aa", "bb", "aa", "bb"),
+                c("Sentinel", 10, 20, 40, 60));
 
         final TableMap result = sourceTable.byExternal("USym");
         final Table aa = result.get("aa");
         final Table aa2 = aa.update("S2=Sentinel * 2");
         TableTools.show(aa2);
 
-        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> TestCase
-            .assertTrue(((QueryTable) aa2).satisfied(LogicalClock.DEFAULT.currentStep())));
+        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(
+                () -> TestCase.assertTrue(((QueryTable) aa2).satisfied(LogicalClock.DEFAULT.currentStep())));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(sourceTable, i(8), c("USym", "bb"), c("Sentinel", 80));
             sourceTable.notifyListeners(i(8), i(), i());
             TestCase.assertFalse(((QueryTable) aa2).satisfied(LogicalClock.DEFAULT.currentStep()));
-            // We need to flush one notification: one for the source table because we do not require
-            // an intermediate view table in this case
+            // We need to flush one notification: one for the source table because we do not require an intermediate
+            // view table in this case
             final boolean flushed = LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
             TestCase.assertTrue(((QueryTable) aa2).satisfied(LogicalClock.DEFAULT.currentStep()));
@@ -433,20 +421,18 @@ public class TableMapTest extends LiveTableTestCase {
 
         @SuppressWarnings("unused")
         public <T> T pauseValue(T retVal) {
-            System.out
-                .println((System.currentTimeMillis() - start) / 1000.0 + ": Reading: " + retVal);
+            System.out.println((System.currentTimeMillis() - start) / 1000.0 + ": Reading: " + retVal);
 
             synchronized (this) {
                 while (!released) {
                     try {
-                        System.out.println((System.currentTimeMillis() - start) / 1000.0
-                            + ": Waiting for release of: " + retVal);
+                        System.out.println(
+                                (System.currentTimeMillis() - start) / 1000.0 + ": Waiting for release of: " + retVal);
                         wait(5000);
                         if (!released) {
                             TestCase.fail("Not released!");
                         }
-                        System.out.println((System.currentTimeMillis() - start) / 1000.0
-                            + ": Release of: " + retVal);
+                        System.out.println((System.currentTimeMillis() - start) / 1000.0 + ": Release of: " + retVal);
                     } catch (InterruptedException e) {
                         TestCase.fail("Interrupted!");
                     }
@@ -471,12 +457,12 @@ public class TableMapTest extends LiveTableTestCase {
         LiveTableMonitor.DEFAULT.resetForUnitTests(false, true, 0, 2, 0, 0);
 
         final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2),
-            c("USym", "aa", "bb"),
-            c("Sentinel", 10, 20));
+                c("USym", "aa", "bb"),
+                c("Sentinel", 10, 20));
 
         final QueryTable sourceTable2 = TstUtils.testRefreshingTable(i(3, 5),
-            c("USym2", "aa", "bb"),
-            c("Sentinel2", 30, 50));
+                c("USym2", "aa", "bb"),
+                c("Sentinel2", 30, 50));
 
         final TableMap result = sourceTable.byExternal("USym");
 
@@ -488,8 +474,7 @@ public class TableMapTest extends LiveTableTestCase {
         pauseHelper.release();
         pauseHelper2.release();
 
-        final TableMap result2 =
-            sourceTable2.update("SlowItDown=pauseHelper.pauseValue(k)").byExternal("USym2")
+        final TableMap result2 = sourceTable2.update("SlowItDown=pauseHelper.pauseValue(k)").byExternal("USym2")
                 .transformTables(t -> t.update("SlowItDown2=pauseHelper2.pauseValue(2 * k)"));
 
         // pauseHelper.pause();
@@ -558,12 +543,12 @@ public class TableMapTest extends LiveTableTestCase {
         LiveTableMonitor.DEFAULT.resetForUnitTests(false, true, 0, 2, 0, 0);
 
         final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2),
-            c("USym", "aa", "bb"),
-            c("Sentinel", 10, 20));
+                c("USym", "aa", "bb"),
+                c("Sentinel", 10, 20));
 
         final QueryTable sourceTable2 = TstUtils.testRefreshingTable(i(3, 5, 9),
-            c("USym2", "aa", "bb", "dd"),
-            c("Sentinel2", 30, 50, 90));
+                c("USym2", "aa", "bb", "dd"),
+                c("Sentinel2", 30, 50, 90));
 
         final TableMap result = sourceTable.byExternal("USym");
 
@@ -573,7 +558,7 @@ public class TableMapTest extends LiveTableTestCase {
         pauseHelper.release();
 
         final TableMap result2 = sourceTable2.byExternal("USym2")
-            .transformTables(t -> t.update("SlowItDown2=pauseHelper.pauseValue(2 * k)"));
+                .transformTables(t -> t.update("SlowItDown2=pauseHelper.pauseValue(2 * k)"));
 
         final TableMap joined = result.transformTablesWithMap(result2, (l, r) -> {
             System.out.println("Doing naturalJoin");
@@ -613,8 +598,7 @@ public class TableMapTest extends LiveTableTestCase {
     }
 
     private void testTableMapScope(boolean refreshing) {
-        final DynamicTable table =
-            TableTools.newTable(TableTools.col("Key", "A", "B"), intCol("Value", 1, 2));
+        final DynamicTable table = TableTools.newTable(TableTools.col("Key", "A", "B"), intCol("Value", 1, 2));
         if (refreshing) {
             table.setRefreshing(true);
         }
@@ -652,15 +636,13 @@ public class TableMapTest extends LiveTableTestCase {
         testMemoize(source, op, op);
     }
 
-    private void testMemoize(Table source, Function.Unary<TableMap, Table> op,
-        Function.Unary<TableMap, Table> op2) {
+    private void testMemoize(Table source, Function.Unary<TableMap, Table> op, Function.Unary<TableMap, Table> op2) {
         final TableMap result = op.call(source);
         final TableMap result2 = op2.call(source);
         org.junit.Assert.assertSame(result, result2);
     }
 
-    private void testNoMemoize(Table source, Function.Unary<TableMap, Table> op,
-        Function.Unary<TableMap, Table> op2) {
+    private void testNoMemoize(Table source, Function.Unary<TableMap, Table> op, Function.Unary<TableMap, Table> op2) {
         final TableMap result = op.call(source);
         final TableMap result2 = op2.call(source);
         org.junit.Assert.assertNotSame(result, result2);
@@ -668,8 +650,8 @@ public class TableMapTest extends LiveTableTestCase {
 
     public void testMemoize() {
         final QueryTable sourceTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6),
-            c("USym", "aa", "bb", "aa", "bb"),
-            c("Sentinel", 10, 20, 40, 60));
+                c("USym", "aa", "bb", "aa", "bb"),
+                c("Sentinel", 10, 20, 40, 60));
 
         final boolean old = QueryTable.setMemoizeResults(true);
         try {
@@ -677,10 +659,8 @@ public class TableMapTest extends LiveTableTestCase {
             testMemoize(sourceTable, t -> t.byExternal("Sentinel"));
             testMemoize(sourceTable, t -> t.byExternal(true, "USym"));
             testMemoize(sourceTable, t -> t.byExternal(true, "Sentinel"));
-            testMemoize(sourceTable, t -> t.byExternal(false, "Sentinel"),
-                t -> t.byExternal("Sentinel"));
-            testNoMemoize(sourceTable, t -> t.byExternal(true, "Sentinel"),
-                t -> t.byExternal("Sentinel"));
+            testMemoize(sourceTable, t -> t.byExternal(false, "Sentinel"), t -> t.byExternal("Sentinel"));
+            testNoMemoize(sourceTable, t -> t.byExternal(true, "Sentinel"), t -> t.byExternal("Sentinel"));
             testNoMemoize(sourceTable, t -> t.byExternal("USym"), t -> t.byExternal("Sentinel"));
         } finally {
             QueryTable.setMemoizeResults(old);
@@ -689,13 +669,13 @@ public class TableMapTest extends LiveTableTestCase {
 
     public void testTableMapSupplierListeners() {
         final QueryTable base = TstUtils.testRefreshingTable(i(0, 1, 2, 3, 4, 5),
-            stringCol("Key", "Zero", "Zero", "One", "One", "One", "One"),
-            stringCol("Color", "Red", "Blue", "Red", "Blue", "Red", "Blue"),
-            intCol("Value", -1, 0, 1, 2, 3, 4));
+                stringCol("Key", "Zero", "Zero", "One", "One", "One", "One"),
+                stringCol("Color", "Red", "Blue", "Red", "Blue", "Red", "Blue"),
+                intCol("Value", -1, 0, 1, 2, 3, 4));
 
         final TableMap byKey = base.byExternal("Key");
         final TableMapSupplier supplier =
-            new TableMapSupplier(byKey, Collections.singletonList(t -> t.where("Color=`Red`")));
+                new TableMapSupplier(byKey, Collections.singletonList(t -> t.where("Color=`Red`")));
 
         assertTableEquals(base.where("Color=`Red`"), supplier.merge());
 
@@ -706,36 +686,36 @@ public class TableMapTest extends LiveTableTestCase {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Index idx = i(6, 7, 8, 9);
             addToTable(base, idx,
-                stringCol("Key", "Two", "Two", "Two", "Two"),
-                stringCol("Color", "Red", "Blue", "Red", "Blue"),
-                intCol("Value", 5, 6, 7, 8));
+                    stringCol("Key", "Two", "Two", "Two", "Two"),
+                    stringCol("Color", "Red", "Blue", "Red", "Blue"),
+                    intCol("Value", 5, 6, 7, 8));
             base.notifyListeners(idx, i(), i());
         });
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Index idx = i(10, 11, 12, 13);
             addToTable(base, idx,
-                stringCol("Key", "Three", "Three", "Three", "Three"),
-                stringCol("Color", "Red", "Red", "Red", "Blue"),
-                intCol("Value", 9, 10, 11, 12));
+                    stringCol("Key", "Three", "Three", "Three", "Three"),
+                    stringCol("Color", "Red", "Red", "Red", "Blue"),
+                    intCol("Value", 9, 10, 11, 12));
             base.notifyListeners(idx, i(), i());
         });
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Index idx = i(14, 15, 16, 17);
             addToTable(base, idx,
-                stringCol("Key", "Four", "Four", "Four", "Four"),
-                stringCol("Color", "Blue", "Blue", "Blue", "Blue"),
-                intCol("Value", 13, 14, 15, 16));
+                    stringCol("Key", "Four", "Four", "Four", "Four"),
+                    stringCol("Color", "Blue", "Blue", "Blue", "Blue"),
+                    intCol("Value", 13, 14, 15, 16));
             base.notifyListeners(idx, i(), i());
         });
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final Index idx = i(18, 19, 20, 21);
             addToTable(base, idx,
-                stringCol("Key", "Four", "Four", "Four", "Four"),
-                stringCol("Color", "Blue", "Blue", "Blue", "Blue"),
-                intCol("Value", 9, 10, 11, 12));
+                    stringCol("Key", "Four", "Four", "Four", "Four"),
+                    stringCol("Color", "Blue", "Blue", "Blue", "Blue"),
+                    intCol("Value", 9, 10, 11, 12));
             base.notifyListeners(idx, i(), i());
         });
 

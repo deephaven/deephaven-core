@@ -36,8 +36,7 @@ public class SeriesLocation implements Serializable {
 
         if (id != that.id)
             return false;
-        return axesLocation != null ? axesLocation.equals(that.axesLocation)
-            : that.axesLocation == null;
+        return axesLocation != null ? axesLocation.equals(that.axesLocation) : that.axesLocation == null;
     }
 
     @Override

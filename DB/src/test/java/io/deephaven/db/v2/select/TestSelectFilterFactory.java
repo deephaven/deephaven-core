@@ -33,11 +33,11 @@ public class TestSelectFilterFactory extends TestCase {
     protected void setUp() throws Exception {
         super.setUp();
         table = TableTools.newTable(
-            TableTools.col(STRING_COLUMN, NORMAL_STRING, NEEDS_ESCAPE, NO_COMMAS_A, NO_COMMAS_B,
-                WITH_COMMAS_A, WITH_COMMAS_B),
-            TableTools.col(INTEGER_COLUMN, 0, 1, 2, 3, 4, 5),
-            TableTools.col(FLOAT_COLUMN, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0),
-            TableTools.col(BOOLEAN_COLUMN, true, false, true, false, true, false));
+                TableTools.col(STRING_COLUMN, NORMAL_STRING, NEEDS_ESCAPE, NO_COMMAS_A, NO_COMMAS_B, WITH_COMMAS_A,
+                        WITH_COMMAS_B),
+                TableTools.col(INTEGER_COLUMN, 0, 1, 2, 3, 4, 5),
+                TableTools.col(FLOAT_COLUMN, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0),
+                TableTools.col(BOOLEAN_COLUMN, true, false, true, false, true, false));
     }
 
     public void testColumnNameInValueNormal() {
@@ -106,7 +106,7 @@ public class TestSelectFilterFactory extends TestCase {
 
     public void testQuotesAndBackTicksMixedCommas() {
         String values = String.join(", ", wrapQuotes(NO_COMMAS_A), wrapQuotes(WITH_COMMAS_A),
-            wrapBackTicks(NO_COMMAS_B), wrapBackTicks(WITH_COMMAS_B));
+                wrapBackTicks(NO_COMMAS_B), wrapBackTicks(WITH_COMMAS_B));
         List<Object> result = runDelimitedExpression(STRING_COLUMN, values);
         assertFalse(result.contains(NORMAL_STRING));
         assertFalse(result.contains(NEEDS_ESCAPE));
@@ -143,8 +143,7 @@ public class TestSelectFilterFactory extends TestCase {
     }
 
     public void testUnmatchedQuoteNoCommas() {
-        final String values =
-            String.join(", ", unmatchedQuote(NO_COMMAS_A), wrapQuotes(NO_COMMAS_B));
+        final String values = String.join(", ", unmatchedQuote(NO_COMMAS_A), wrapQuotes(NO_COMMAS_B));
         try {
             runDelimitedExpression(STRING_COLUMN, values);
             fail("Expected FormulaCompilationException");
@@ -154,8 +153,7 @@ public class TestSelectFilterFactory extends TestCase {
     }
 
     public void testUnmatchedQuoteCommas() {
-        final String values =
-            String.join(", ", unmatchedQuote(WITH_COMMAS_A), wrapQuotes(WITH_COMMAS_B));
+        final String values = String.join(", ", unmatchedQuote(WITH_COMMAS_A), wrapQuotes(WITH_COMMAS_B));
         try {
             runDelimitedExpression(STRING_COLUMN, values);
             fail("Expected FormulaCompilationException");
@@ -165,8 +163,7 @@ public class TestSelectFilterFactory extends TestCase {
     }
 
     public void testUnmatchedBackTicksNoCommas() {
-        final String values =
-            String.join(", ", unmatchedBackTick(NO_COMMAS_A), wrapBackTicks(NO_COMMAS_B));
+        final String values = String.join(", ", unmatchedBackTick(NO_COMMAS_A), wrapBackTicks(NO_COMMAS_B));
         try {
             runDelimitedExpression(STRING_COLUMN, values);
             fail("Expected FormulaCompilationException");
@@ -176,8 +173,7 @@ public class TestSelectFilterFactory extends TestCase {
     }
 
     public void testUnmatchedBackTicksCommas() {
-        final String values =
-            String.join(", ", unmatchedBackTick(WITH_COMMAS_A), wrapBackTicks(WITH_COMMAS_B));
+        final String values = String.join(", ", unmatchedBackTick(WITH_COMMAS_A), wrapBackTicks(WITH_COMMAS_B));
         try {
             runDelimitedExpression(STRING_COLUMN, values);
             fail("Expected FormulaCompilationException");

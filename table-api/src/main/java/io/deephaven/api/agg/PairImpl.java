@@ -27,7 +27,7 @@ abstract class PairImpl implements Pair, Serializable {
             // To make sure that Pair#equals() works as we would expect, we should always use
             // canonical ColumnName when applicable.
             throw new IllegalArgumentException(
-                "Should not construct PairImpl with the same columns, use the ColumnName directly");
+                    "Should not construct PairImpl with the same columns, use the ColumnName directly");
         }
     }
 }

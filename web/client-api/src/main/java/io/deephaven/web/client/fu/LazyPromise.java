@@ -15,8 +15,8 @@ import jsinterop.base.Js;
 /**
  * Tired of needing to create annoying promise lambdas?
  *
- * If you want to create a promise early in a method's scope, and then configure it's handling of
- * resolve/reject callbacks later, or in a conditional nature, than LazyPromise is for you!
+ * If you want to create a promise early in a method's scope, and then configure it's handling of resolve/reject
+ * callbacks later, or in a conditional nature, than LazyPromise is for you!
  *
  */
 public class LazyPromise<T> implements PromiseLike<T> {
@@ -42,9 +42,8 @@ public class LazyPromise<T> implements PromiseLike<T> {
      * @param timeout How many millis to wait until failing the promise with a timeout.
      * @return a real promise that we will resolve when we are resolved.
      *
-     *         This method overload is not strictly necessary to call when explicitly wiring up
-     *         failure handling for this LazyPromise which you can guarantee will be eventually
-     *         called.
+     *         This method overload is not strictly necessary to call when explicitly wiring up failure handling for
+     *         this LazyPromise which you can guarantee will be eventually called.
      *
      *         To create a promise without a timeout, see {@link #asPromise()}.
      */
@@ -56,9 +55,9 @@ public class LazyPromise<T> implements PromiseLike<T> {
     /**
      * @return a real promise that we will resolve when we are resolved.
      *
-     *         Use this method if you are safely wiring up failure handling for this LazyPromise. If
-     *         you aren't explicitly wiring up calls to {@link #fail(Object)} this LazyPromise, then
-     *         you should setup a timeout (see {@link #asPromise(int)} and {@link #timeout(int)}
+     *         Use this method if you are safely wiring up failure handling for this LazyPromise. If you aren't
+     *         explicitly wiring up calls to {@link #fail(Object)} this LazyPromise, then you should setup a timeout
+     *         (see {@link #asPromise(int)} and {@link #timeout(int)}
      */
     public final Promise<T> asPromise() {
         return new Promise<>(((resolve, reject) -> {
@@ -93,19 +92,19 @@ public class LazyPromise<T> implements PromiseLike<T> {
 
     public final <V> CancellablePromise<V> asPromise(JsFunction<T, V> mapper, JsRunnable cancel) {
         return CancellablePromise.from(
-            (resolve, reject) -> {
-                onSuccess(result -> {
-                    final V mapped;
-                    try {
-                        mapped = mapper.apply(result);
-                    } catch (Exception e) {
-                        reject.onInvoke(e.getMessage());
-                        return;
-                    }
-                    resolve.onInvoke(mapped);
-                });
-                onFailure(reject::onInvoke);
-            }, cancel.andThen(this::cancel));
+                (resolve, reject) -> {
+                    onSuccess(result -> {
+                        final V mapped;
+                        try {
+                            mapped = mapper.apply(result);
+                        } catch (Exception e) {
+                            reject.onInvoke(e.getMessage());
+                            return;
+                        }
+                        resolve.onInvoke(mapped);
+                    });
+                    onFailure(reject::onInvoke);
+                }, cancel.andThen(this::cancel));
     }
 
     protected boolean spyReject(RejectCallbackFn reject) {
@@ -226,13 +225,13 @@ public class LazyPromise<T> implements PromiseLike<T> {
     /**
      * Create a deferred promise from a known value.
      *
-     * Rather than resolve immediately, this forces asynchronicity, to give the calling code time to
-     * unwind its stack before running.
+     * Rather than resolve immediately, this forces asynchronicity, to give the calling code time to unwind its stack
+     * before running.
      */
     public static <T> Promise<T> promiseLater(T table) {
         // runs on next microtask
         return Promise.resolve((Object) null)
-            .then(ignored -> Promise.resolve(table));
+                .then(ignored -> Promise.resolve(table));
     }
 
     public static <V> IThenable<V> reject(Object failure) {
@@ -253,9 +252,8 @@ public class LazyPromise<T> implements PromiseLike<T> {
     /**
      * Eats exceptions in exchange for messages logged to the console.
      *
-     * Only use this when it is preferable to print a nice error message instead of leaving uncaught
-     * promises to bubble (confusing) stack traces into console, especially if it is reasonable for
-     * a given promise to fail.
+     * Only use this when it is preferable to print a nice error message instead of leaving uncaught promises to bubble
+     * (confusing) stack traces into console, especially if it is reasonable for a given promise to fail.
      *
      * This prevents "uncaught exceptions" when we have tests that expect failure.
      */

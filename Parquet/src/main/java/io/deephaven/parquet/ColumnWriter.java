@@ -10,8 +10,7 @@ public interface ColumnWriter {
 
     void addPage(Object pageData, Object nullValues, int valuesCount) throws IOException;
 
-    void addVectorPage(Object pageData, IntBuffer repeatCount, int valuesCount, Object nullValue)
-        throws IOException;
+    void addVectorPage(Object pageData, IntBuffer repeatCount, int valuesCount, Object nullValue) throws IOException;
 
     void close();
 }

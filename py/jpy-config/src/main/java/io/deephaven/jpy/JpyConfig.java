@@ -8,28 +8,26 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * This class encapsulates the configuration data and invocation of {/@link
- * PyLibInitializer#initPyLib(String, String, String)}, {/@link PyLib#setProgramName(String)},
- * {/@link PyLib#setPythonHome(String)}, and {/@link PyLib#startPython(int, String...)}.
+ * This class encapsulates the configuration data and invocation of {/@link PyLibInitializer#initPyLib(String, String,
+ * String)}, {/@link PyLib#setProgramName(String)}, {/@link PyLib#setPythonHome(String)}, and {/@link
+ * PyLib#startPython(int, String...)}.
  *
  * <p>
  * Note:
  * <p>
- * We *don't* want JpyConfig to have an explicit dependency on jpy anymore - that way we can still
- * configure jpy without having the unnecessary dependency. For example, the bootstrap kernel needs
- * to be able to configure jpy, but it should not depend on jpy. It's still useful at this time to
- * have fake @links to it though, as it gives useful context for developers. In a better world, the
- * jpy project itself would be better configure-able (ie, not static), and this type of external
- * configuration class wouldn't be necessary.
+ * We *don't* want JpyConfig to have an explicit dependency on jpy anymore - that way we can still configure jpy without
+ * having the unnecessary dependency. For example, the bootstrap kernel needs to be able to configure jpy, but it should
+ * not depend on jpy. It's still useful at this time to have fake @links to it though, as it gives useful context for
+ * developers. In a better world, the jpy project itself would be better configure-able (ie, not static), and this type
+ * of external configuration class wouldn't be necessary.
  */
 final public class JpyConfig {
     /**
-     * We can't reference the values in {/@link Diag} directly - that would cause {/@link
-     * org.jpy.PyLib} to prematurely initialize.
+     * We can't reference the values in {/@link Diag} directly - that would cause {/@link org.jpy.PyLib} to prematurely
+     * initialize.
      *
-     * We could: 1) Refactor {/@link Diag} so as not to initialize {/@link PyLib} 2) Use
-     * compile-time code generation against {/@link Diag} 3) Test to make sure {/@link Flag} and
-     * {/@link Diag} are in-sync
+     * We could: 1) Refactor {/@link Diag} so as not to initialize {/@link PyLib} 2) Use compile-time code generation
+     * against {/@link Diag} 3) Test to make sure {/@link Flag} and {/@link Diag} are in-sync
      *
      * We are currently doing the #3, see JpyConfigFlagTest
      */
@@ -95,8 +93,7 @@ final public class JpyConfig {
 
     private static void ensureAbsolute(Path path, String name) {
         if (path != null && !path.isAbsolute()) {
-            throw new IllegalArgumentException(
-                String.format("%s must be absolute, is '%s'", name, path));
+            throw new IllegalArgumentException(String.format("%s must be absolute, is '%s'", name, path));
         }
     }
 
@@ -111,24 +108,24 @@ final public class JpyConfig {
      * @param flags argument to {/@link PyLib#startPython(int, String...)}
      */
     public JpyConfig(
-        Path programName,
-        Path pythonHome,
-        Path pythonLib,
-        Path jpyLib,
-        Path jdlLib,
-        List<Path> extraPaths,
-        EnumSet<Flag> flags) {
+            Path programName,
+            Path pythonHome,
+            Path pythonLib,
+            Path jpyLib,
+            Path jdlLib,
+            List<Path> extraPaths,
+            EnumSet<Flag> flags) {
         ensureAbsolute(programName, "programName");
         ensureAbsolute(pythonHome, "pythonHome");
         ensureAbsolute(pythonLib, "pythonLib");
         ensureAbsolute(jpyLib, "jpyLib");
         ensureAbsolute(jdlLib, "jdlLib");
         if (jpyLib != null
-            && jdlLib != null
-            && !Objects.equals(jpyLib.getParent(), jdlLib.getParent())) {
+                && jdlLib != null
+                && !Objects.equals(jpyLib.getParent(), jdlLib.getParent())) {
             throw new IllegalArgumentException(String.format(
-                "jpy lib and jdl lib must be siblings, jpy is '%s', jdl is '%s', parents '%s' and '%s'",
-                jpyLib, jdlLib, jpyLib.getParent(), jdlLib.getParent()));
+                    "jpy lib and jdl lib must be siblings, jpy is '%s', jdl is '%s', parents '%s' and '%s'",
+                    jpyLib, jdlLib, jpyLib.getParent(), jdlLib.getParent()));
         }
         this.programName = programName;
         this.pythonHome = pythonHome;
@@ -179,14 +176,13 @@ final public class JpyConfig {
         @Override
         public Optional<String> getFlags() {
             return flags.isEmpty() ? Optional.empty()
-                : Optional.of(flags.stream().map(Enum::name).collect(Collectors.joining(",")));
+                    : Optional.of(flags.stream().map(Enum::name).collect(Collectors.joining(",")));
         }
 
         @Override
         public Optional<String> getExtraPaths() {
             return extraPaths.isEmpty() ? Optional.empty()
-                : Optional
-                    .of(extraPaths.stream().map(Path::toString).collect(Collectors.joining(",")));
+                    : Optional.of(extraPaths.stream().map(Path::toString).collect(Collectors.joining(",")));
         }
 
         @Override
@@ -227,15 +223,14 @@ final public class JpyConfig {
         JpyConfig jpyConfig = (JpyConfig) o;
 
         if (pythonHome != null ? !pythonHome.equals(jpyConfig.pythonHome)
-            : jpyConfig.pythonHome != null) {
+                : jpyConfig.pythonHome != null) {
             return false;
         }
         if (programName != null ? !programName.equals(jpyConfig.programName)
-            : jpyConfig.programName != null) {
+                : jpyConfig.programName != null) {
             return false;
         }
-        if (pythonLib != null ? !pythonLib.equals(jpyConfig.pythonLib)
-            : jpyConfig.pythonLib != null) {
+        if (pythonLib != null ? !pythonLib.equals(jpyConfig.pythonLib) : jpyConfig.pythonLib != null) {
             return false;
         }
         if (jpyLib != null ? !jpyLib.equals(jpyConfig.jpyLib) : jpyConfig.jpyLib != null) {

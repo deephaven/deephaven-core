@@ -10,7 +10,7 @@ import java.io.Serializable;
 import java.util.function.Function;
 
 public class SelectableDataSetSwappableTable<KEY_TYPE, VALUE_TYPE>
-    implements SelectableDataSet<KEY_TYPE, VALUE_TYPE>, Serializable {
+        implements SelectableDataSet<KEY_TYPE, VALUE_TYPE>, Serializable {
 
     private final SwappableTable swappableTable;
 
@@ -25,13 +25,13 @@ public class SelectableDataSetSwappableTable<KEY_TYPE, VALUE_TYPE>
 
     @Override
     public SelectableDataSet<KEY_TYPE, VALUE_TYPE> transform(@NotNull Object memoKey,
-        @NotNull Function<Table, Table> transformation) {
+            @NotNull Function<Table, Table> transformation) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public SwappableTable getSwappableTable(final Comparable seriesName, final ChartImpl chart,
-        Function<Table, Table> tableTransform, final String... col) {
+            Function<Table, Table> tableTransform, final String... col) {
         return swappableTable;
     }
 }

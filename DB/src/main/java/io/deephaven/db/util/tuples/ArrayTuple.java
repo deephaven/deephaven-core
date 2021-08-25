@@ -15,8 +15,8 @@ import java.util.function.UnaryOperator;
  * <p>
  * N-Tuple key class backed by an array of elements.
  */
-public class ArrayTuple implements Comparable<ArrayTuple>, Externalizable, StreamingExternalizable,
-    CanonicalizableTuple<ArrayTuple> {
+public class ArrayTuple
+        implements Comparable<ArrayTuple>, Externalizable, StreamingExternalizable, CanonicalizableTuple<ArrayTuple> {
 
     private static final long serialVersionUID = 1L;
 
@@ -25,8 +25,8 @@ public class ArrayTuple implements Comparable<ArrayTuple>, Externalizable, Strea
     private transient int cachedHashCode;
 
     /**
-     * Construct a tuple backed by the supplied array of elements. The elements array should not be
-     * changed after this call.
+     * Construct a tuple backed by the supplied array of elements. The elements array should not be changed after this
+     * call.
      *
      * @param elements The array to wrap
      */
@@ -85,14 +85,13 @@ public class ArrayTuple implements Comparable<ArrayTuple>, Externalizable, Strea
         }
         final int thisLength = elements.length;
         if (thisLength != other.elements.length) {
-            throw new IllegalArgumentException(
-                "Mismatched lengths in " + ArrayTuple.class.getSimpleName() +
+            throw new IllegalArgumentException("Mismatched lengths in " + ArrayTuple.class.getSimpleName() +
                     " comparison (this.elements=" + Arrays.toString(elements) +
                     ", other.elements=" + Arrays.toString(other.elements) + ')');
         }
         for (int ei = 0; ei < thisLength; ++ei) {
-            final int comparison = DBLanguageFunctionUtil.compareTo((Comparable) elements[ei],
-                (Comparable) other.elements[ei]);
+            final int comparison =
+                    DBLanguageFunctionUtil.compareTo((Comparable) elements[ei], (Comparable) other.elements[ei]);
             if (comparison != 0) {
                 return comparison;
             }
@@ -109,8 +108,7 @@ public class ArrayTuple implements Comparable<ArrayTuple>, Externalizable, Strea
     }
 
     @Override
-    public void readExternal(@NotNull final ObjectInput in)
-        throws IOException, ClassNotFoundException {
+    public void readExternal(@NotNull final ObjectInput in) throws IOException, ClassNotFoundException {
         final int inLength = in.readInt();
         final Object inElements[] = new Object[inLength];
         for (int ei = 0; ei < inLength; ++ei) {
@@ -121,7 +119,7 @@ public class ArrayTuple implements Comparable<ArrayTuple>, Externalizable, Strea
 
     @Override
     public void writeExternalStreaming(@NotNull final ObjectOutput out,
-        @NotNull final TIntObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {
+            @NotNull final TIntObjectMap<SerializationUtils.Writer> cachedWriters) throws IOException {
         final int length = elements.length;
         out.writeInt(length);
         for (int ei = 0; ei < length; ++ei) {
@@ -131,7 +129,7 @@ public class ArrayTuple implements Comparable<ArrayTuple>, Externalizable, Strea
 
     @Override
     public void readExternalStreaming(@NotNull final ObjectInput in,
-        @NotNull final TIntObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {
+            @NotNull final TIntObjectMap<SerializationUtils.Reader> cachedReaders) throws Exception {
         final int inLength = in.readInt();
         final Object inElements[] = new Object[inLength];
         for (int ei = 0; ei < inLength; ++ei) {

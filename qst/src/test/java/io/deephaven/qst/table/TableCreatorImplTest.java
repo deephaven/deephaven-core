@@ -18,27 +18,27 @@ public class TableCreatorImplTest {
     // stricter query validation
 
     private static final List<TableSpec> SOURCE_TABLES =
-        Arrays.asList(NewTable.of(Column.of("Foo", 0, -1, 1, 42, null, 1, Integer.MAX_VALUE)),
-            NewTable.of(Column.of("Bar", 0L, -1L, 1L, 42L, null, 1L, Long.MAX_VALUE)),
-            TableSpec.empty(0), TableSpec.empty(1), TableSpec.empty(100), TableSpec.empty(0));
+            Arrays.asList(NewTable.of(Column.of("Foo", 0, -1, 1, 42, null, 1, Integer.MAX_VALUE)),
+                    NewTable.of(Column.of("Bar", 0L, -1L, 1L, 42L, null, 1L, Long.MAX_VALUE)),
+                    TableSpec.empty(0), TableSpec.empty(1), TableSpec.empty(100), TableSpec.empty(0));
 
     private static final List<Function<TableSpec, TableSpec>> SINGLE_PARENT_OPS =
-        Arrays.asList(TableCreatorImplTest::head1, TableCreatorImplTest::headMax,
-            TableCreatorImplTest::tail1, TableCreatorImplTest::tailMax,
-            TableCreatorImplTest::whereFooEq1, TableCreatorImplTest::whereFooEqTest,
-            TableCreatorImplTest::whereFooIsNull, TableCreatorImplTest::viewFoo,
-            TableCreatorImplTest::viewFooPlus1, TableCreatorImplTest::viewFooEqBar,
-            TableCreatorImplTest::updateViewFoo, TableCreatorImplTest::updateViewFooPlus1,
-            TableCreatorImplTest::updateViewFooEqBar, TableCreatorImplTest::updateFoo,
-            TableCreatorImplTest::updateFooPlus1, TableCreatorImplTest::updateFooEqBar,
-            TableCreatorImplTest::selectFoo, TableCreatorImplTest::selectFooPlus1,
-            TableCreatorImplTest::selectFooEqBar, TableCreatorImplTest::selectAll);
+            Arrays.asList(TableCreatorImplTest::head1, TableCreatorImplTest::headMax,
+                    TableCreatorImplTest::tail1, TableCreatorImplTest::tailMax,
+                    TableCreatorImplTest::whereFooEq1, TableCreatorImplTest::whereFooEqTest,
+                    TableCreatorImplTest::whereFooIsNull, TableCreatorImplTest::viewFoo,
+                    TableCreatorImplTest::viewFooPlus1, TableCreatorImplTest::viewFooEqBar,
+                    TableCreatorImplTest::updateViewFoo, TableCreatorImplTest::updateViewFooPlus1,
+                    TableCreatorImplTest::updateViewFooEqBar, TableCreatorImplTest::updateFoo,
+                    TableCreatorImplTest::updateFooPlus1, TableCreatorImplTest::updateFooEqBar,
+                    TableCreatorImplTest::selectFoo, TableCreatorImplTest::selectFooPlus1,
+                    TableCreatorImplTest::selectFooEqBar, TableCreatorImplTest::selectAll);
 
     private static final List<BiFunction<TableSpec, TableSpec, TableSpec>> DUAL_TABLE_OPS =
-        Arrays.asList(TableCreatorImplTest::naturalJoin1, TableCreatorImplTest::naturalJoin2,
-            TableCreatorImplTest::naturalJoin3, TableCreatorImplTest::naturalJoin4,
-            TableCreatorImplTest::exactJoin1, TableCreatorImplTest::exactJoin2,
-            TableCreatorImplTest::exactJoin3, TableCreatorImplTest::exactJoin4);
+            Arrays.asList(TableCreatorImplTest::naturalJoin1, TableCreatorImplTest::naturalJoin2,
+                    TableCreatorImplTest::naturalJoin3, TableCreatorImplTest::naturalJoin4,
+                    TableCreatorImplTest::exactJoin1, TableCreatorImplTest::exactJoin2,
+                    TableCreatorImplTest::exactJoin3, TableCreatorImplTest::exactJoin4);
 
 
     static TableSpec head1(TableSpec table) {

@@ -10,9 +10,8 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 /**
- * Java wrapper to deal with the distinct ResponseStream types that are emitted. Provides strongly
- * typed methods for cleaner Java consumption, that can be used to represent any of the structural
- * types that are used for grpc methods.
+ * Java wrapper to deal with the distinct ResponseStream types that are emitted. Provides strongly typed methods for
+ * cleaner Java consumption, that can be used to represent any of the structural types that are used for grpc methods.
  *
  * @param <T> payload that is emitted from the stream
  */

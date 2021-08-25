@@ -54,33 +54,27 @@ public class DateUtil {
 
     /** Three letter abbreviations of month names. (Jan==1, title case) */
     public static final String[] MONTH_ABBREVIATIONS_3T =
-        {"Xxx", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+            {"Xxx", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
     /** Three letter abbreviations of month names. (Jan==1, upper case) */
     public static final String[] MONTH_ABBREVIATIONS_3U =
-        {"XXX", "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
+            {"XXX", "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
 
     /** Three letter abbreviations of month names. (Jan==1, lower case) */
     public static final String[] MONTH_ABBREVIATIONS_3L =
-        {"xxx", "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"};
+            {"xxx", "jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"};
 
     // some useful formatting objects
     /** Formats a year in YYYY format. */
-    private static final DateFormat ms_dateFormatYear =
-        new ThreadSafeDateFormat(new SimpleDateFormat("yyyy"));
+    private static final DateFormat ms_dateFormatYear = new ThreadSafeDateFormat(new SimpleDateFormat("yyyy"));
     /** Formats a month in MM format. */
-    private static final DateFormat ms_dateFormatMonth =
-        new ThreadSafeDateFormat(new SimpleDateFormat("MM"));
+    private static final DateFormat ms_dateFormatMonth = new ThreadSafeDateFormat(new SimpleDateFormat("MM"));
     /** Formats a day in DD format. */
-    private static final DateFormat ms_dateFormatDay =
-        new ThreadSafeDateFormat(new SimpleDateFormat("dd"));
+    private static final DateFormat ms_dateFormatDay = new ThreadSafeDateFormat(new SimpleDateFormat("dd"));
 
-    private static final DateFormat ms_dateFormatHour =
-        new ThreadSafeDateFormat(new SimpleDateFormat("HH"));
-    private static final DateFormat ms_dateFormatMinute =
-        new ThreadSafeDateFormat(new SimpleDateFormat("mm"));
-    private static final DateFormat ms_dateFormatSecond =
-        new ThreadSafeDateFormat(new SimpleDateFormat("ss"));
+    private static final DateFormat ms_dateFormatHour = new ThreadSafeDateFormat(new SimpleDateFormat("HH"));
+    private static final DateFormat ms_dateFormatMinute = new ThreadSafeDateFormat(new SimpleDateFormat("mm"));
+    private static final DateFormat ms_dateFormatSecond = new ThreadSafeDateFormat(new SimpleDateFormat("ss"));
 
 
     /**
@@ -163,8 +157,7 @@ public class DateUtil {
      */
     public static String getDateAsYYYYMMDD(Date date) {
         Require.neqNull(date, "date");
-        return ms_dateFormatYear.format(date) + ms_dateFormatMonth.format(date)
-            + ms_dateFormatDay.format(date);
+        return ms_dateFormatYear.format(date) + ms_dateFormatMonth.format(date) + ms_dateFormatDay.format(date);
     }
 
     // ----------------------------------------------------------------
@@ -182,8 +175,8 @@ public class DateUtil {
      */
     public static String getDateAsYYYYdMMdDDTHHcMMcSS(Date date) {
         return ms_dateFormatYear.format(date) + "-" + ms_dateFormatMonth.format(date) + "-"
-            + ms_dateFormatDay.format(date) + "T" + ms_dateFormatHour.format(date) + ":"
-            + ms_dateFormatMinute.format(date) + ":" + ms_dateFormatSecond.format(date);
+                + ms_dateFormatDay.format(date) + "T" + ms_dateFormatHour.format(date) + ":"
+                + ms_dateFormatMinute.format(date) + ":" + ms_dateFormatSecond.format(date);
     }
 
     // ----------------------------------------------------------------
@@ -202,8 +195,7 @@ public class DateUtil {
      */
     public static String getDateAsMMDDYYYY(Date date) {
         Require.neqNull(date, "date");
-        return ms_dateFormatMonth.format(date) + ms_dateFormatDay.format(date)
-            + ms_dateFormatYear.format(date);
+        return ms_dateFormatMonth.format(date) + ms_dateFormatDay.format(date) + ms_dateFormatYear.format(date);
     }
 
     // ----------------------------------------------------------------
@@ -233,27 +225,24 @@ public class DateUtil {
 
     // ----------------------------------------------------------------
     /**
-     * Gets the download path, in [DownloadBaseDir]/sDataSubdir/YYYY/YYYYMM/YYYYMMDD format given a
-     * date (local timezone).
+     * Gets the download path, in [DownloadBaseDir]/sDataSubdir/YYYY/YYYYMM/YYYYMMDD format given a date (local
+     * timezone).
      */
-    public static String getDateDownloadPath(PropertyFile configuration, String sDataSubdir,
-        Date date) {
+    public static String getDateDownloadPath(PropertyFile configuration, String sDataSubdir, Date date) {
         Require.nonempty(sDataSubdir, "sDataSubdir");
         Require.neqNull(date, "date");
-        return configuration.getProperty("DownloadBaseDir") + DIR_SEP + sDataSubdir + DIR_SEP
-            + getDateAsPath(date);
+        return configuration.getProperty("DownloadBaseDir") + DIR_SEP + sDataSubdir + DIR_SEP + getDateAsPath(date);
     }
 
     // ----------------------------------------------------------------
     /**
-     * Gets the download path, in [DownloadBaseDir]/sDataSubdir/YYYY/YYYYMM/YYYYMMDD format given an
-     * integer in YYYYMMDD format.
+     * Gets the download path, in [DownloadBaseDir]/sDataSubdir/YYYY/YYYYMM/YYYYMMDD format given an integer in YYYYMMDD
+     * format.
      */
-    public static String getYyyymmddIntDownloadPath(PropertyFile configuration, String sDataSubdir,
-        int nDateYyyymmdd) {
+    public static String getYyyymmddIntDownloadPath(PropertyFile configuration, String sDataSubdir, int nDateYyyymmdd) {
         Require.nonempty(sDataSubdir, "sDataSubdir");
         return configuration.getProperty("DownloadBaseDir") + DIR_SEP + sDataSubdir + DIR_SEP
-            + getYyyymmddIntAsPath(nDateYyyymmdd);
+                + getYyyymmddIntAsPath(nDateYyyymmdd);
     }
 
     // ----------------------------------------------------------------
@@ -266,8 +255,7 @@ public class DateUtil {
 
     // ----------------------------------------------------------------
     /**
-     * Gets a date object representing the next day at the same hour (which may not be exactly 24
-     * hours in the future).
+     * Gets a date object representing the next day at the same hour (which may not be exactly 24 hours in the future).
      */
     public static Date getNextDaySameTime(Date baseline, TimeZone zone) {
         Require.neqNull(baseline, "baseline");
@@ -280,9 +268,9 @@ public class DateUtil {
 
     // ----------------------------------------------------------------
     /**
-     * Subtracts zero or more 24hr periods from the given date until the day of week for the
-     * resulting date (local timezone) is a valid day according to the mask. If the strict flag is
-     * true, optional days are not considered valid.
+     * Subtracts zero or more 24hr periods from the given date until the day of week for the resulting date (local
+     * timezone) is a valid day according to the mask. If the strict flag is true, optional days are not considered
+     * valid.
      * <P>
      * See {@link #validateDayOfWeekMask}.
      */
@@ -293,8 +281,7 @@ public class DateUtil {
         Calendar calendar = Calendar.getInstance(ms_localTimeZone);
         while (true) {
             calendar.setTime(date);
-            char chDayType =
-                sValidDaysMask.charAt(calendar.get(Calendar.DAY_OF_WEEK) - Calendar.SUNDAY);
+            char chDayType = sValidDaysMask.charAt(calendar.get(Calendar.DAY_OF_WEEK) - Calendar.SUNDAY);
             if (DAY_VALID == chDayType || (!bStrict && DAY_OPTIONAL == chDayType)) {
                 break;
             }
@@ -305,9 +292,8 @@ public class DateUtil {
 
     // ----------------------------------------------------------------
     /**
-     * Adds one or more 24hr periods from the given date until the day of week for the resulting
-     * date (local timezone) is a valid day according to the mask. If the strict flag is true,
-     * optional days are not considered valid.
+     * Adds one or more 24hr periods from the given date until the day of week for the resulting date (local timezone)
+     * is a valid day according to the mask. If the strict flag is true, optional days are not considered valid.
      * <P>
      * See {@link #validateDayOfWeekMask}.
      */
@@ -319,8 +305,7 @@ public class DateUtil {
         while (true) {
             date = new Date(date.getTime() + MILLIS_PER_DAY);
             calendar.setTime(date);
-            char chDayType =
-                sValidDaysMask.charAt(calendar.get(Calendar.DAY_OF_WEEK) - Calendar.SUNDAY);
+            char chDayType = sValidDaysMask.charAt(calendar.get(Calendar.DAY_OF_WEEK) - Calendar.SUNDAY);
             if (DAY_VALID == chDayType || (!bStrict && DAY_OPTIONAL == chDayType)) {
                 break;
             }
@@ -342,9 +327,8 @@ public class DateUtil {
 
     // ----------------------------------------------------------------
     /**
-     * Throws a requirement exception if the given day of week mask is not valid. There must be at
-     * least one valid day in the mask. If the strict flag is set, optional days are not considered
-     * valid.
+     * Throws a requirement exception if the given day of week mask is not valid. There must be at least one valid day
+     * in the mask. If the strict flag is set, optional days are not considered valid.
      * <P>
      * See {@link #DAY_VALID}, {@link #DAY_INVALID}, {@link #DAY_OPTIONAL}, {@link #DAYMASK_STRICT},
      * {@link #DAYMASK_NOT_STRICT}
@@ -355,9 +339,8 @@ public class DateUtil {
         int nValidDaysFound = 0;
         for (int nIndex = 0; nIndex < DAYS_PER_WEEK; nIndex++) {
             char chDayType = sValidDaysMask.charAt(nIndex);
-            Require.requirement(
-                DAY_INVALID == chDayType || DAY_VALID == chDayType || DAY_OPTIONAL == chDayType,
-                "DAY_INVALID==chDayType || DAY_VALID==chDayType || DAY_OPTIONAL==chDayType", 1);
+            Require.requirement(DAY_INVALID == chDayType || DAY_VALID == chDayType || DAY_OPTIONAL == chDayType,
+                    "DAY_INVALID==chDayType || DAY_VALID==chDayType || DAY_OPTIONAL==chDayType", 1);
             if (DAY_VALID == chDayType || (!bStrict && DAY_OPTIONAL == chDayType)) {
                 nValidDaysFound++;
             }
@@ -393,7 +376,7 @@ public class DateUtil {
         Calendar calendar = Calendar.getInstance(ms_localTimeZone);
         calendar.setTime(date);
         return calendar.get(Calendar.YEAR) * 10000 + (calendar.get(Calendar.MONTH) + 1) * 100
-            + calendar.get(Calendar.DAY_OF_MONTH);
+                + calendar.get(Calendar.DAY_OF_MONTH);
     }
 
     // ----------------------------------------------------------------
@@ -414,7 +397,7 @@ public class DateUtil {
         Require.neqNull(sDateYyyymmdd, "sDateYyyymmdd");
         Require.eq(sDateYyyymmdd.length(), "sDateYyyymmdd.length()", 8);
         return sDateYyyymmdd.substring(0, 4) + "-" + sDateYyyymmdd.substring(4, 6) + "-"
-            + sDateYyyymmdd.substring(6, 8);
+                + sDateYyyymmdd.substring(6, 8);
     }
 
     // ----------------------------------------------------------------
@@ -423,7 +406,7 @@ public class DateUtil {
         Require.neqNull(sDateYyyymmdd, "sDateYyyymmdd");
         Require.eq(sDateYyyymmdd.length(), "sDateYyyymmdd.length()", 8);
         return sDateYyyymmdd.substring(4, 6) + "/" + sDateYyyymmdd.substring(6, 8) + "/"
-            + sDateYyyymmdd.substring(0, 4);
+                + sDateYyyymmdd.substring(0, 4);
     }
 
     // ----------------------------------------------------------------
@@ -467,8 +450,7 @@ public class DateUtil {
         String res;
 
         res = sDateddM3Uyyyy.substring(5);
-        int monthValue =
-            Arrays.asList(MONTH_ABBREVIATIONS_3U).indexOf(sDateddM3Uyyyy.substring(2, 5));
+        int monthValue = Arrays.asList(MONTH_ABBREVIATIONS_3U).indexOf(sDateddM3Uyyyy.substring(2, 5));
         res += "-" + ((monthValue < 10) ? "0" + monthValue : monthValue);
         res += "-" + (sDateddM3Uyyyy.substring(0, 2));
 
@@ -544,8 +526,7 @@ public class DateUtil {
      * @return date
      * @throws ParseException
      */
-    public static String formatDateFromStringToString(String date, String sourceFormat,
-        String resultFormat) {
+    public static String formatDateFromStringToString(String date, String sourceFormat, String resultFormat) {
         final DateFormat sourceDateFormat = new SimpleDateFormat(sourceFormat);
         final DateFormat resultDateFormat = new SimpleDateFormat(resultFormat);
         return formatDateFromFormatToFormat(date, sourceDateFormat, resultDateFormat);
@@ -561,7 +542,7 @@ public class DateUtil {
      * @throws ParseException
      */
     public static String formatDateFromFormatToFormat(String date, DateFormat sourceDateFormat,
-        DateFormat resultDateFormat) {
+            DateFormat resultDateFormat) {
         try {
             return resultDateFormat.format(sourceDateFormat.parse(date));
         } catch (ParseException e) {
@@ -575,11 +556,11 @@ public class DateUtil {
     /**
      * Returns the absolute timestamp of the most recent occurrence (before or exactly on the
      * <code>referenceTimestamp</code>) of a daily event. The time of day is taken from
-     * <code><I>sPropertyNameRoot</I>.time</code> in "h:mm a" format. The time zone for calculations
-     * is taken from <code><I>sPropertyNameRoot</I>.timeZone</code>.
+     * <code><I>sPropertyNameRoot</I>.time</code> in "h:mm a" format. The time zone for calculations is taken from
+     * <code><I>sPropertyNameRoot</I>.timeZone</code>.
      */
-    public static Date getTimestampOfMostRecentDailyEvent(PropertyFile configuration,
-        String sPropertyNameRoot, Date referenceTimestamp) {
+    public static Date getTimestampOfMostRecentDailyEvent(PropertyFile configuration, String sPropertyNameRoot,
+            Date referenceTimestamp) {
         Require.nonempty(sPropertyNameRoot, "sPropertyNameRoot");
         Require.neqNull(referenceTimestamp, "referenceTimestamp");
 
@@ -587,21 +568,18 @@ public class DateUtil {
         TimeZone timeZone = getTimeZoneOfEvent(configuration, sPropertyNameRoot);
 
         // get the time of day of the event from the system properties
-        Calendar eventTimestampCalendar =
-            buildEventTimestampCalendar(timeZone, sPropertyNameRoot, configuration);
+        Calendar eventTimestampCalendar = buildEventTimestampCalendar(timeZone, sPropertyNameRoot, configuration);
 
         // determine the exact timestamp of when the event happens today
         Calendar referenceTimestampCalendar = Calendar.getInstance(timeZone);
         referenceTimestampCalendar.setTime(referenceTimestamp);
         eventTimestampCalendar.set(
-            referenceTimestampCalendar.get(Calendar.YEAR),
-            referenceTimestampCalendar.get(Calendar.MONTH),
-            referenceTimestampCalendar.get(Calendar.DAY_OF_MONTH));
+                referenceTimestampCalendar.get(Calendar.YEAR),
+                referenceTimestampCalendar.get(Calendar.MONTH),
+                referenceTimestampCalendar.get(Calendar.DAY_OF_MONTH));
 
-        // if the event happens in the future, then the most recent occurrence was the one that
-        // happened one day ago
-        if (eventTimestampCalendar.getTimeInMillis() > referenceTimestampCalendar
-            .getTimeInMillis()) {
+        // if the event happens in the future, then the most recent occurrence was the one that happened one day ago
+        if (eventTimestampCalendar.getTimeInMillis() > referenceTimestampCalendar.getTimeInMillis()) {
             eventTimestampCalendar.add(Calendar.DAY_OF_MONTH, -1);
         }
 
@@ -610,66 +588,60 @@ public class DateUtil {
 
     // ----------------------------------------------------------------
     /**
-     * Returns the absolute timestamp of the occurrence of a daily event that happens in the same
-     * "day" as right now. The time of day of the event is taken from
-     * <code><I>sPropertyNameRoot</I>.time</code> in "h:mm a" format. The time zone for calculations
-     * (and for determining the boundaries of "today") is taken from
+     * Returns the absolute timestamp of the occurrence of a daily event that happens in the same "day" as right now.
+     * The time of day of the event is taken from <code><I>sPropertyNameRoot</I>.time</code> in "h:mm a" format. The
+     * time zone for calculations (and for determining the boundaries of "today") is taken from
      * <code><I>sPropertyNameRoot</I>.timeZone</code>.
      */
-    public static Date getTimestampOfEventToday(PropertyFile configuration,
-        String sPropertyNameRoot) {
+    public static Date getTimestampOfEventToday(PropertyFile configuration, String sPropertyNameRoot) {
         Require.nonempty(sPropertyNameRoot, "sPropertyNameRoot");
 
         // get the time zone of the event from the system properties
         TimeZone timeZone = getTimeZoneOfEvent(configuration, sPropertyNameRoot);
 
         // get the time of day of the event from the system properties
-        Calendar eventTimestampCalendar =
-            buildEventTimestampCalendar(timeZone, sPropertyNameRoot, configuration);
+        Calendar eventTimestampCalendar = buildEventTimestampCalendar(timeZone, sPropertyNameRoot, configuration);
 
         // determine the exact timestamp of when the event happens today
         Calendar referenceTimestampCalendar = Calendar.getInstance(timeZone);
         eventTimestampCalendar.set(
-            referenceTimestampCalendar.get(Calendar.YEAR),
-            referenceTimestampCalendar.get(Calendar.MONTH),
-            referenceTimestampCalendar.get(Calendar.DAY_OF_MONTH));
+                referenceTimestampCalendar.get(Calendar.YEAR),
+                referenceTimestampCalendar.get(Calendar.MONTH),
+                referenceTimestampCalendar.get(Calendar.DAY_OF_MONTH));
 
         return eventTimestampCalendar.getTime();
     }
 
     // ----------------------------------------------------------------
     /**
-     * Returns the absolute timestamp of the occurrence of a daily event that happens in the same
-     * "day" as right now. The time of day of the event is taken from
-     * <code><I>sPropertyNameRoot</I>.time</code> in "h:mm a" format. The time zone for calculations
-     * (and for determining the boundaries of "today") is taken from
+     * Returns the absolute timestamp of the occurrence of a daily event that happens in the same "day" as right now.
+     * The time of day of the event is taken from <code><I>sPropertyNameRoot</I>.time</code> in "h:mm a" format. The
+     * time zone for calculations (and for determining the boundaries of "today") is taken from
      * <code><I>sPropertyNameRoot</I>.timeZone</code>.
      */
-    public static Date getTimestampOfEventToday(PropertyFile configuration,
-        String sPropertyNameRoot, long nNowMillis) {
+    public static Date getTimestampOfEventToday(PropertyFile configuration, String sPropertyNameRoot, long nNowMillis) {
         Require.nonempty(sPropertyNameRoot, "sPropertyNameRoot");
 
         // get the time zone of the event from the system properties
         TimeZone timeZone = getTimeZoneOfEvent(configuration, sPropertyNameRoot);
 
         // get the time of day of the event from the system properties
-        Calendar eventTimestampCalendar =
-            buildEventTimestampCalendar(timeZone, sPropertyNameRoot, configuration);
+        Calendar eventTimestampCalendar = buildEventTimestampCalendar(timeZone, sPropertyNameRoot, configuration);
 
         // determine the exact timestamp of when the event happens today
         Calendar referenceTimestampCalendar = Calendar.getInstance(timeZone);
         referenceTimestampCalendar.setTimeInMillis(nNowMillis);
         eventTimestampCalendar.set(
-            referenceTimestampCalendar.get(Calendar.YEAR),
-            referenceTimestampCalendar.get(Calendar.MONTH),
-            referenceTimestampCalendar.get(Calendar.DAY_OF_MONTH));
+                referenceTimestampCalendar.get(Calendar.YEAR),
+                referenceTimestampCalendar.get(Calendar.MONTH),
+                referenceTimestampCalendar.get(Calendar.DAY_OF_MONTH));
 
         return eventTimestampCalendar.getTime();
     }
 
     // ----------------------------------------------------------------
     private static Calendar buildEventTimestampCalendar(TimeZone timeZone, String sPropertyNameRoot,
-        PropertyFile configuration) {
+            PropertyFile configuration) {
         String sTimeProperty = sPropertyNameRoot + ".time";
         String sTime = configuration.getProperty(sTimeProperty);
         Calendar eventTimestampCalendar = Calendar.getInstance(timeZone);
@@ -683,8 +655,8 @@ public class DateUtil {
             try {
                 timeFormat.parse(sTime);
             } catch (ParseException e2) {
-                throw Require.exceptionNeverCaught("Value of property " + sTimeProperty + " (\""
-                    + sTime + "\") not in proper format (\"" + timeFormat.toPattern() + "\").", e2);
+                throw Require.exceptionNeverCaught("Value of property " + sTimeProperty + " (\"" + sTime
+                        + "\") not in proper format (\"" + timeFormat.toPattern() + "\").", e2);
             }
         }
         return eventTimestampCalendar;
@@ -692,11 +664,10 @@ public class DateUtil {
 
     // ----------------------------------------------------------------
     /**
-     * Gets the timestamp of an event based upon a daily event and a date (retrieved from
-     * properties)
+     * Gets the timestamp of an event based upon a daily event and a date (retrieved from properties)
      */
     public static Date getTimestampOfEvent(PropertyFile configuration, String sEventPropertyRoot,
-        String sDateProperty) {
+            String sDateProperty) {
         Require.nonempty(sEventPropertyRoot, "sEventPropertyRoot");
         Require.nonempty(sDateProperty, "sDateProperty");
 
@@ -704,44 +675,40 @@ public class DateUtil {
         TimeZone timeZone = getTimeZoneOfEvent(configuration, sEventPropertyRoot);
 
         // get the time of day of the event from the system properties
-        Calendar eventTimestampCalendar =
-            buildEventTimestampCalendar(timeZone, sEventPropertyRoot, configuration);
+        Calendar eventTimestampCalendar = buildEventTimestampCalendar(timeZone, sEventPropertyRoot, configuration);
 
         // parse the date string and set the year, month, and day of the timestamp we are building
-        // note: time zone is irrelevant for the next step because we just want the numbers - we
-        // could use a regexp.
+        // note: time zone is irrelevant for the next step because we just want the numbers - we could use a regexp.
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         String sDate = configuration.getProperty(sDateProperty);
         try {
             dateFormat.parse(sDate);
         } catch (ParseException e) {
-            throw Require.exceptionNeverCaught(sDateProperty + " (\"" + sDate + "\") not in \""
-                + dateFormat.toPattern() + "\" format.", e);
+            throw Require.exceptionNeverCaught(
+                    sDateProperty + " (\"" + sDate + "\") not in \"" + dateFormat.toPattern() + "\" format.", e);
         }
         Calendar dateCalendar = dateFormat.getCalendar();
 
         // set the year, month, and day
-        eventTimestampCalendar.set(dateCalendar.get(Calendar.YEAR),
-            dateCalendar.get(Calendar.MONTH), dateCalendar.get(Calendar.DAY_OF_MONTH));
+        eventTimestampCalendar.set(dateCalendar.get(Calendar.YEAR), dateCalendar.get(Calendar.MONTH),
+                dateCalendar.get(Calendar.DAY_OF_MONTH));
 
         return eventTimestampCalendar.getTime();
     }
 
     // ----------------------------------------------------------------
     /**
-     * Gets the timestamp of an event based upon a daily event and a date specified by year, month
-     * (jan=1), day
+     * Gets the timestamp of an event based upon a daily event and a date specified by year, month (jan=1), day
      */
-    public static Date getTimestampOfEvent(PropertyFile configuration, String sEventPropertyRoot,
-        int nYear, int nMonth, int nDay) {
+    public static Date getTimestampOfEvent(PropertyFile configuration, String sEventPropertyRoot, int nYear, int nMonth,
+            int nDay) {
         Require.nonempty(sEventPropertyRoot, "sEventPropertyRoot");
 
         // get the time zone of the event from the system properties
         TimeZone timeZone = getTimeZoneOfEvent(configuration, sEventPropertyRoot);
 
         // get the time of day of the event from the system properties
-        Calendar eventTimestampCalendar =
-            buildEventTimestampCalendar(timeZone, sEventPropertyRoot, configuration);
+        Calendar eventTimestampCalendar = buildEventTimestampCalendar(timeZone, sEventPropertyRoot, configuration);
 
         // set the year, month, and day
         eventTimestampCalendar.set(nYear, nMonth - 1, nDay);
@@ -753,63 +720,55 @@ public class DateUtil {
     /**
      * Gets the timestamp of an event based upon a daily event and a date in YYYYMMDD format
      */
-    public static Date getTimestampOfEvent(PropertyFile configuration, String sEventPropertyRoot,
-        int nYYYYMMDD) {
+    public static Date getTimestampOfEvent(PropertyFile configuration, String sEventPropertyRoot, int nYYYYMMDD) {
         Require.nonempty(sEventPropertyRoot, "sEventPropertyRoot");
-        return getTimestampOfEvent(configuration, sEventPropertyRoot, nYYYYMMDD / 10000,
-            (nYYYYMMDD / 100) % 100, nYYYYMMDD % 100);
+        return getTimestampOfEvent(configuration, sEventPropertyRoot, nYYYYMMDD / 10000, (nYYYYMMDD / 100) % 100,
+                nYYYYMMDD % 100);
     }
 
     // ----------------------------------------------------------------
     /** Gets the time zone associated with a particular daily event. */
-    public static TimeZone getTimeZoneOfEvent(PropertyFile configuration,
-        String sPropertyNameRoot) {
+    public static TimeZone getTimeZoneOfEvent(PropertyFile configuration, String sPropertyNameRoot) {
         Require.nonempty(sPropertyNameRoot, "sPropertyNameRoot");
         return TimeZone.getTimeZone(configuration.getProperty(sPropertyNameRoot + ".timeZone"));
     }
 
     // ----------------------------------------------------------------
     /**
-     * Returns a date (noon in the local time zone) which is the date of the most recent occurrence
-     * (before or exactly on the <code>referenceTimestamp</code>) of the specified event, in the
-     * event's timezone.
+     * Returns a date (noon in the local time zone) which is the date of the most recent occurrence (before or exactly
+     * on the <code>referenceTimestamp</code>) of the specified event, in the event's timezone.
      */
-    public static Date getDateOfMostRecentDailyEvent(PropertyFile configuration,
-        String sPropertyNameRoot, Date referenceTimestamp) {
+    public static Date getDateOfMostRecentDailyEvent(PropertyFile configuration, String sPropertyNameRoot,
+            Date referenceTimestamp) {
         Require.nonempty(sPropertyNameRoot, "sPropertyNameRoot");
         Require.neqNull(referenceTimestamp, "referenceTimestamp");
-        Date eventTimestamp = getTimestampOfMostRecentDailyEvent(configuration, sPropertyNameRoot,
-            referenceTimestamp);
-        Calendar sourceCalendar =
-            Calendar.getInstance(getTimeZoneOfEvent(configuration, sPropertyNameRoot));
+        Date eventTimestamp = getTimestampOfMostRecentDailyEvent(configuration, sPropertyNameRoot, referenceTimestamp);
+        Calendar sourceCalendar = Calendar.getInstance(getTimeZoneOfEvent(configuration, sPropertyNameRoot));
         sourceCalendar.setTime(eventTimestamp);
         Calendar targetCalendar = Calendar.getInstance(ms_localTimeZone);
         targetCalendar.clear();
         targetCalendar.set(sourceCalendar.get(Calendar.YEAR), sourceCalendar.get(Calendar.MONTH),
-            sourceCalendar.get(Calendar.DAY_OF_MONTH), 12, 0, 0);
+                sourceCalendar.get(Calendar.DAY_OF_MONTH), 12, 0, 0);
         return targetCalendar.getTime();
     }
 
     // ----------------------------------------------------------------
     /**
-     * Returns a date (noon in the local time zone) which is the date of the most recent occurrence
-     * (before or exactly on the <code>referenceTimestamp</code>) of the specified event, in the
-     * event's timezone. If the (strict) valid days mask indicates that the date is not valid, days
-     * will be subtracted until the date is valid.
+     * Returns a date (noon in the local time zone) which is the date of the most recent occurrence (before or exactly
+     * on the <code>referenceTimestamp</code>) of the specified event, in the event's timezone. If the (strict) valid
+     * days mask indicates that the date is not valid, days will be subtracted until the date is valid.
      * <P>
      * See {@link #validateDayOfWeekMask}.
      */
-    public static Date getDateOfMostRecentDailyEvent(PropertyFile configuration,
-        String sPropertyNameRoot, Date referenceTimestamp, String sValidDaysMask) {
+    public static Date getDateOfMostRecentDailyEvent(PropertyFile configuration, String sPropertyNameRoot,
+            Date referenceTimestamp, String sValidDaysMask) {
         Require.nonempty(sPropertyNameRoot, "sPropertyNameRoot");
         Require.neqNull(referenceTimestamp, "referenceTimestamp");
         validateDayOfWeekMask(sValidDaysMask, DAYMASK_STRICT);
         Calendar calendar = Calendar.getInstance(ms_localTimeZone);
-        calendar.setTime(
-            getDateOfMostRecentDailyEvent(configuration, sPropertyNameRoot, referenceTimestamp));
+        calendar.setTime(getDateOfMostRecentDailyEvent(configuration, sPropertyNameRoot, referenceTimestamp));
         while (true) {
-            char chDayType =
-                sValidDaysMask.charAt(calendar.get(Calendar.DAY_OF_WEEK) - Calendar.SUNDAY);
+            char chDayType = sValidDaysMask.charAt(calendar.get(Calendar.DAY_OF_WEEK) - Calendar.SUNDAY);
             if (DAY_VALID == chDayType) {
                 break;
             }
@@ -821,9 +780,8 @@ public class DateUtil {
     // ----------------------------------------------------------------
     /**
      * Wraps a "daily event" as an object. The time of day of the event is taken from
-     * <code><I>sPropertyNameRoot</I>.time</code> in "h:mm a" format. The time zone for calculations
-     * (and for determining the boundaries of "today") is taken from
-     * <code><I>sPropertyNameRoot</I>.timeZone</code>.
+     * <code><I>sPropertyNameRoot</I>.time</code> in "h:mm a" format. The time zone for calculations (and for
+     * determining the boundaries of "today") is taken from <code><I>sPropertyNameRoot</I>.timeZone</code>.
      */
     public static class DailyEvent {
 
@@ -835,8 +793,8 @@ public class DateUtil {
             Require.neqNull(configuration, "configuration");
             Require.nonempty(sPropertyNameRoot, "sPropertyNameRoot");
             try {
-                buildEventTimestampCalendar(getTimeZoneOfEvent(configuration, sPropertyNameRoot),
-                    sPropertyNameRoot, configuration);
+                buildEventTimestampCalendar(getTimeZoneOfEvent(configuration, sPropertyNameRoot), sPropertyNameRoot,
+                        configuration);
             } catch (RequirementFailure e) {
                 throw e.adjustForDelegatingMethod();
             }
@@ -846,15 +804,14 @@ public class DateUtil {
 
         // ------------------------------------------------------------
         public long getTimestampOfEventToday(long nNow) {
-            return DateUtil.getTimestampOfEventToday(m_configuration, m_sPropertyNameRoot, nNow)
-                .getTime();
+            return DateUtil.getTimestampOfEventToday(m_configuration, m_sPropertyNameRoot, nNow).getTime();
         }
 
         // ------------------------------------------------------------
         @Override
         public String toString() {
             return m_configuration.getProperty(m_sPropertyNameRoot + ".time") + ", "
-                + m_configuration.getProperty(m_sPropertyNameRoot + ".timeZone");
+                    + m_configuration.getProperty(m_sPropertyNameRoot + ".timeZone");
         }
     }
 
@@ -971,18 +928,18 @@ public class DateUtil {
 
     // ----------------------------------------------------------------
     /**
-     * Formats the given microsecond timestamp with the given date formatter and then appends the
-     * last three microsend digits.
+     * Formats the given microsecond timestamp with the given date formatter and then appends the last three microsend
+     * digits.
      */
     public static String formatWithTrailingMicros(DateFormat dateFormat, long nTimestampMicros) {
         return dateFormat.format(nTimestampMicros / DateUtil.MICROS_PER_MILLI)
-            + DateUtil.formatTrailingMicros(nTimestampMicros);
+                + DateUtil.formatTrailingMicros(nTimestampMicros);
     }
 
     // ----------------------------------------------------------------
     /**
-     * Returns the last three digits of the given microsecond timestamp as a string, suitable for
-     * appending to a timestamp formatted to millisecond precision.
+     * Returns the last three digits of the given microsecond timestamp as a string, suitable for appending to a
+     * timestamp formatted to millisecond precision.
      */
     public static String formatTrailingMicros(long nTimestampMicros) {
         nTimestampMicros = nTimestampMicros % 1000;

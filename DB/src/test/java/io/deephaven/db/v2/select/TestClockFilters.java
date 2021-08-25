@@ -21,14 +21,14 @@ public class TestClockFilters extends LiveTableTestCase {
     private final Table testInput3;
     {
         final Table testInputRangeA = newTable(
-            col("Timestamp", nanosToTime(1000L), nanosToTime(2000L), nanosToTime(3000L),
-                nanosToTime(1000L), nanosToTime(2000L), nanosToTime(3000L)),
-            intCol("Int", 1, 2, 3, 1, 2, 3));
+                col("Timestamp", nanosToTime(1000L), nanosToTime(2000L), nanosToTime(3000L), nanosToTime(1000L),
+                        nanosToTime(2000L), nanosToTime(3000L)),
+                intCol("Int", 1, 2, 3, 1, 2, 3));
         testInput1 = merge(testInputRangeA, testInputRangeA, testInputRangeA);
         final Table testInputRangeB = newTable(
-            col("Timestamp", nanosToTime(2000L), nanosToTime(2000L), nanosToTime(3000L),
-                nanosToTime(2000L), nanosToTime(2000L), nanosToTime(3000L)),
-            intCol("Int", 2, 2, 3, 2, 2, 3));
+                col("Timestamp", nanosToTime(2000L), nanosToTime(2000L), nanosToTime(3000L), nanosToTime(2000L),
+                        nanosToTime(2000L), nanosToTime(3000L)),
+                intCol("Int", 2, 2, 3, 2, 2, 3));
         testInput2 = merge(testInputRangeA, testInputRangeB, testInputRangeA);
         testInput3 = merge(testInputRangeA, testInputRangeB, testInputRangeB);
     }
@@ -46,15 +46,14 @@ public class TestClockFilters extends LiveTableTestCase {
             clock.refresh();
             filter.refresh();
         });
-        assertEquals(new int[] {1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2},
-            (int[]) result.getColumn("Int").getDirect());
+        assertEquals(new int[] {1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             clock.refresh();
             filter.refresh();
         });
         assertEquals(new int[] {1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3},
-            (int[]) result.getColumn("Int").getDirect());
+                (int[]) result.getColumn("Int").getDirect());
     }
 
     public void testUnsorted1() {
@@ -68,15 +67,14 @@ public class TestClockFilters extends LiveTableTestCase {
             clock.refresh();
             filter.refresh();
         });
-        assertEquals(new int[] {1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2},
-            (int[]) result.getColumn("Int").getDirect());
+        assertEquals(new int[] {1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2}, (int[]) result.getColumn("Int").getDirect());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             clock.refresh();
             filter.refresh();
         });
         assertEquals(new int[] {1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3},
-            (int[]) result.getColumn("Int").getDirect());
+                (int[]) result.getColumn("Int").getDirect());
     }
 
     public void testSorted2() {
@@ -90,15 +88,14 @@ public class TestClockFilters extends LiveTableTestCase {
             clock.refresh();
             filter.refresh();
         });
-        assertEquals(new int[] {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2},
-            (int[]) result.getColumn("Int").getDirect());
+        assertEquals(new int[] {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             clock.refresh();
             filter.refresh();
         });
         assertEquals(new int[] {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3},
-            (int[]) result.getColumn("Int").getDirect());
+                (int[]) result.getColumn("Int").getDirect());
     }
 
     public void testUnsorted2() {
@@ -112,15 +109,14 @@ public class TestClockFilters extends LiveTableTestCase {
             clock.refresh();
             filter.refresh();
         });
-        assertEquals(new int[] {1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1, 2},
-            (int[]) result.getColumn("Int").getDirect());
+        assertEquals(new int[] {1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1, 2}, (int[]) result.getColumn("Int").getDirect());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             clock.refresh();
             filter.refresh();
         });
         assertEquals(new int[] {1, 2, 3, 1, 2, 3, 2, 2, 3, 2, 2, 3, 1, 2, 3, 1, 2, 3},
-            (int[]) result.getColumn("Int").getDirect());
+                (int[]) result.getColumn("Int").getDirect());
     }
 
     public void testSorted3() {
@@ -134,15 +130,14 @@ public class TestClockFilters extends LiveTableTestCase {
             clock.refresh();
             filter.refresh();
         });
-        assertEquals(new int[] {1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2},
-            (int[]) result.getColumn("Int").getDirect());
+        assertEquals(new int[] {1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             clock.refresh();
             filter.refresh();
         });
         assertEquals(new int[] {1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3},
-            (int[]) result.getColumn("Int").getDirect());
+                (int[]) result.getColumn("Int").getDirect());
     }
 
     public void testUnsorted3() {
@@ -156,14 +151,13 @@ public class TestClockFilters extends LiveTableTestCase {
             clock.refresh();
             filter.refresh();
         });
-        assertEquals(new int[] {1, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2},
-            (int[]) result.getColumn("Int").getDirect());
+        assertEquals(new int[] {1, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             clock.refresh();
             filter.refresh();
         });
         assertEquals(new int[] {1, 2, 3, 1, 2, 3, 2, 2, 3, 2, 2, 3, 2, 2, 3, 2, 2, 3},
-            (int[]) result.getColumn("Int").getDirect());
+                (int[]) result.getColumn("Int").getDirect());
     }
 }

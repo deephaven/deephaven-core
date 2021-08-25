@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.DocumentRange",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.DocumentRange",
+        namespace = JsPackage.GLOBAL)
 public class DocumentRange {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -96,12 +96,12 @@ public class DocumentRange {
     public static native DocumentRange deserializeBinary(Uint8Array bytes);
 
     public static native DocumentRange deserializeBinaryFromReader(
-        DocumentRange message, Object reader);
+            DocumentRange message, Object reader);
 
     public static native void serializeBinaryToWriter(DocumentRange message, Object writer);
 
     public static native DocumentRange.ToObjectReturnType toObject(
-        boolean includeInstance, DocumentRange msg);
+            boolean includeInstance, DocumentRange msg);
 
     public native void clearEnd();
 

@@ -36,25 +36,21 @@ public class CompletionItem implements Serializable {
     }
 
     /**
-     * This constructor matches CompletionFragment semantics; it is here to ease the transition to
-     * the LSP model.
+     * This constructor matches CompletionFragment semantics; it is here to ease the transition to the LSP model.
      */
     @JsIgnore
-    public CompletionItem(int start, int length, String completion, String displayed,
-        String source) {
-        this(start, length, completion, displayed,
-            DocumentRange.rangeFromSource(source, start, length));
+    public CompletionItem(int start, int length, String completion, String displayed, String source) {
+        this(start, length, completion, displayed, DocumentRange.rangeFromSource(source, start, length));
     }
 
     @JsIgnore
-    public CompletionItem(int start, int length, String completion, String displayed,
-        DocumentRange range) {
+    public CompletionItem(int start, int length, String completion, String displayed, DocumentRange range) {
         this();
         textEdit = new TextEdit();
         textEdit.text = completion;
         textEdit.range = range;
-        insertTextFormat = 2; // snippet format is insertTextFormat=2 in lsp, and insertTextRules=4.
-                              // See MonacoCompletionProvider.jsx.
+        insertTextFormat = 2; // snippet format is insertTextFormat=2 in lsp, and insertTextRules=4. See
+                              // MonacoCompletionProvider.jsx.
         label = displayed == null ? completion : displayed;
         this.start = start;
         this.length = length;
@@ -78,9 +74,7 @@ public class CompletionItem implements Serializable {
     @JsProperty(name = "additionalTextEdits")
     public Object additionalTextEdits_() {
         if (additionalTextEdits != null) {
-            return Js
-                .cast(Js.<JsArray<TextDocumentContentChangeEvent>>uncheckedCast(additionalTextEdits)
-                    .slice());
+            return Js.cast(Js.<JsArray<TextDocumentContentChangeEvent>>uncheckedCast(additionalTextEdits).slice());
         } else {
             return null;
         }
@@ -152,10 +146,10 @@ public class CompletionItem implements Serializable {
     @JsIgnore
     public String toString() {
         return "CompletionItem{" +
-            "start=" + start +
-            ", length=" + length +
-            ", textEdit=" + textEdit +
-            "}\n";
+                "start=" + start +
+                ", length=" + length +
+                ", textEdit=" + textEdit +
+                "}\n";
     }
 
     @Override

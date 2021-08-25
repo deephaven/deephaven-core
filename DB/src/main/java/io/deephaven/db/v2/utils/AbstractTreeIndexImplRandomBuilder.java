@@ -86,8 +86,7 @@ public abstract class AbstractTreeIndexImplRandomBuilder implements TreeIndexImp
     private void newRange(final long firstKey, final long lastKey) {
         if (firstKey > lastKey) {
             if (Index.BAD_RANGES_AS_ERROR) {
-                throw new IllegalArgumentException(
-                    "Illegal range start=" + firstKey + " > end=" + lastKey + ".");
+                throw new IllegalArgumentException("Illegal range start=" + firstKey + " > end=" + lastKey + ".");
             }
             // Ignore.
             return;

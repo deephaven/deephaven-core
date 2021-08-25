@@ -27,8 +27,7 @@ public class TestAppendableColumn extends TestCase {
                 data[i] = i / 4;
             }
 
-            final TableDefinition tableDefinition =
-                TableDefinition.of(ColumnDefinition.ofInt("v").withGrouping());
+            final TableDefinition tableDefinition = TableDefinition.of(ColumnDefinition.ofInt("v").withGrouping());
             Table table = TableTools.newTable(tableDefinition, TableTools.col("v", data));
             File dest = new File(directory, "testOverflow.parquet");
             ParquetTools.writeTable(table, dest, tableDefinition);
@@ -38,10 +37,9 @@ public class TestAppendableColumn extends TestCase {
             assertNotNull(tableR.getColumnSource("v").getGroupToRange());
             assertEquals(320000, tableR.getIndex().size());
             assertEquals(80000, tableR.getColumnSource("v").getGroupToRange().size());
-            assertEquals(80000,
-                tableR.getColumnSource("v").getValuesMapping(tableR.getIndex()).size());
+            assertEquals(80000, tableR.getColumnSource("v").getValuesMapping(tableR.getIndex()).size());
             assertEquals(80000, tableR.getColumnSource("v")
-                .getValuesMapping(tableR.getIndex().subindexByPos(0, tableR.size())).size());
+                    .getValuesMapping(tableR.getIndex().subindexByPos(0, tableR.size())).size());
             final Map mapper = tableR.getColumnSource("v").getGroupToRange();
             for (int i = 0; i < data.length / 4; i++) {
                 assertEquals(mapper.get(i), Index.FACTORY.getIndexByRange(i * 4, i * 4 + 3));

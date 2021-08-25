@@ -8,9 +8,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.grpcWeb.service.UnaryMethodDefinition",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.grpcWeb.service.UnaryMethodDefinition",
+        namespace = JsPackage.GLOBAL)
 public interface UnaryMethodDefinition<TRequest, TResponse> extends MethodDefinition {
     @JsOverlay
     static UnaryMethodDefinition create() {

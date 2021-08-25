@@ -19,7 +19,7 @@ import static io.deephaven.qst.column.header.ColumnHeader.DEFAULT_BUILDER_INITIA
 @Immutable
 @BuildableStyle
 public abstract class ColumnHeadersN<T1, T2, T3, T4, T5, T6, T7, T8, T9>
-    implements TableHeader.Buildable {
+        implements TableHeader.Buildable {
 
     public abstract List<ColumnHeader<?>> headers();
 
@@ -27,7 +27,7 @@ public abstract class ColumnHeadersN<T1, T2, T3, T4, T5, T6, T7, T8, T9>
 
     public final ColumnHeadersN<T1, T2, T3, T4, T5, T6, T7, T8, T9> header(ColumnHeader<?> header) {
         return ImmutableColumnHeadersN.<T1, T2, T3, T4, T5, T6, T7, T8, T9>builder()
-            .others(others()).addAllHeaders(headers()).addHeaders(header).build();
+                .others(others()).addAllHeaders(headers()).addHeaders(header).build();
     }
 
     public final Rows start(int initialCapacity) {
@@ -35,7 +35,7 @@ public abstract class ColumnHeadersN<T1, T2, T3, T4, T5, T6, T7, T8, T9>
     }
 
     public final Rows row(T1 a, T2 b, T3 c, T4 d, T5 e, T6 f, T7 g, T8 h, T9 i,
-        Object... remaining) {
+            Object... remaining) {
         return start(DEFAULT_BUILDER_INITIAL_CAPACITY).row(a, b, c, d, e, f, g, h, i, remaining);
     }
 
@@ -43,7 +43,7 @@ public abstract class ColumnHeadersN<T1, T2, T3, T4, T5, T6, T7, T8, T9>
     final void checkSize() {
         if (headers().isEmpty()) {
             throw new IllegalArgumentException(String
-                .format("Additional headers are empty, use %s instead", ColumnHeaders9.class));
+                    .format("Additional headers are empty, use %s instead", ColumnHeaders9.class));
         }
     }
 
@@ -60,12 +60,12 @@ public abstract class ColumnHeadersN<T1, T2, T3, T4, T5, T6, T7, T8, T9>
         }
 
         public final Rows row(T1 c1, T2 c2, T3 c3, T4 c4, T5 c5, T6 c6, T7 c7, T8 c8, T9 c9,
-            Object... remaining) {
+                Object... remaining) {
             if (remaining.length != headers().size()) {
                 final int expected = 9 + headers().size();
                 final int actual = 9 + remaining.length;
                 throw new IllegalArgumentException(
-                    String.format("Expected %d columns, found %d", expected, actual));
+                        String.format("Expected %d columns, found %d", expected, actual));
             }
             others.row(c1, c2, c3, c4, c5, c6, c7, c8, c9);
             int ix = 0;

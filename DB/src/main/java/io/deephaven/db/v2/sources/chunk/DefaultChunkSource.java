@@ -16,45 +16,39 @@ public interface DefaultChunkSource<ATTR extends Attributes.Any> extends ChunkSo
     }
 
     @Override
-    default FillContext makeFillContext(final int chunkCapacity,
-        final SharedContext sharedContext) {
+    default FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
         return DEFAULT_FILL_INSTANCE;
     }
 
     @Override
-    default Chunk<? extends ATTR> getChunk(@NotNull final GetContext context,
-        @NotNull final OrderedKeys orderedKeys) {
+    default Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
         return getChunkByFilling(context, orderedKeys);
     }
 
     @Override
-    default Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, long firstKey,
-        long lastKey) {
+    default Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, long firstKey, long lastKey) {
         try (OrderedKeys orderedKeys = OrderedKeys.forRange(firstKey, lastKey)) {
             return getChunk(context, orderedKeys);
         }
     }
 
     @FinalDefault
-    default Chunk<ATTR> getChunkByFilling(@NotNull final GetContext context,
-        @NotNull final OrderedKeys orderedKeys) {
+    default Chunk<ATTR> getChunkByFilling(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
         WritableChunk<ATTR> chunk = DefaultGetContext.getWritableChunk(context);
         fillChunk(DefaultGetContext.getFillContext(context), chunk, orderedKeys);
         return chunk;
     }
 
-    interface WithPrev<ATTR extends Attributes.Any>
-        extends DefaultChunkSource<ATTR>, ChunkSource.WithPrev<ATTR> {
+    interface WithPrev<ATTR extends Attributes.Any> extends DefaultChunkSource<ATTR>, ChunkSource.WithPrev<ATTR> {
 
         @Override
         default Chunk<? extends ATTR> getPrevChunk(@NotNull final GetContext context,
-            @NotNull final OrderedKeys orderedKeys) {
+                @NotNull final OrderedKeys orderedKeys) {
             return getPrevChunkByFilling(context, orderedKeys);
         }
 
         @Override
-        default Chunk<? extends ATTR> getPrevChunk(@NotNull final GetContext context, long firstKey,
-            long lastKey) {
+        default Chunk<? extends ATTR> getPrevChunk(@NotNull final GetContext context, long firstKey, long lastKey) {
             try (OrderedKeys orderedKeys = OrderedKeys.forRange(firstKey, lastKey)) {
                 return getPrevChunk(context, orderedKeys);
             }
@@ -62,7 +56,7 @@ public interface DefaultChunkSource<ATTR extends Attributes.Any> extends ChunkSo
 
         @FinalDefault
         default Chunk<ATTR> getPrevChunkByFilling(@NotNull final GetContext context,
-            @NotNull final OrderedKeys orderedKeys) {
+                @NotNull final OrderedKeys orderedKeys) {
             WritableChunk<ATTR> chunk = DefaultGetContext.getWritableChunk(context);
             fillPrevChunk(DefaultGetContext.getFillContext(context), chunk, orderedKeys);
             return chunk;
@@ -79,21 +73,18 @@ public interface DefaultChunkSource<ATTR extends Attributes.Any> extends ChunkSo
                 }
 
                 @Override
-                public Chunk<? extends ATTR> getChunk(@NotNull GetContext context,
-                    @NotNull OrderedKeys orderedKeys) {
+                public Chunk<? extends ATTR> getChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
                     return chunkSource.getPrevChunk(context, orderedKeys);
                 }
 
                 @Override
-                public Chunk<? extends ATTR> getChunk(@NotNull GetContext context, long firstKey,
-                    long lastKey) {
+                public Chunk<? extends ATTR> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
                     return chunkSource.getPrevChunk(context, firstKey, lastKey);
                 }
 
                 @Override
-                public void fillChunk(@NotNull FillContext context,
-                    @NotNull WritableChunk<? super ATTR> destination,
-                    @NotNull OrderedKeys orderedKeys) {
+                public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination,
+                        @NotNull OrderedKeys orderedKeys) {
                     chunkSource.fillPrevChunk(context, destination, orderedKeys);
                 }
 
@@ -121,21 +112,18 @@ public interface DefaultChunkSource<ATTR extends Attributes.Any> extends ChunkSo
     }
 
     /**
-     * An alternative set of defaults which may typically be used by {@link ChunkSource}s which
-     * support a get method which only works for contiguous ranges. They should just implement
-     * {@link #getChunk(GetContext, long, long)}.
+     * An alternative set of defaults which may typically be used by {@link ChunkSource}s which support a get method
+     * which only works for contiguous ranges. They should just implement {@link #getChunk(GetContext, long, long)}.
      */
     interface SupportsContiguousGet<ATTR extends Attributes.Any> extends DefaultChunkSource<ATTR> {
         @Override
         default Chunk<? extends ATTR> getChunk(@NotNull final GetContext context,
-            @NotNull final OrderedKeys orderedKeys) {
-            return orderedKeys.isContiguous()
-                ? getChunk(context, orderedKeys.firstKey(), orderedKeys.lastKey())
-                : getChunkByFilling(context, orderedKeys);
+                @NotNull final OrderedKeys orderedKeys) {
+            return orderedKeys.isContiguous() ? getChunk(context, orderedKeys.firstKey(), orderedKeys.lastKey())
+                    : getChunkByFilling(context, orderedKeys);
         }
 
         @Override
-        Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, long firstKey,
-            long lastKey);
+        Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, long firstKey, long lastKey);
     }
 }

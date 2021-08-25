@@ -15,8 +15,7 @@ import java.nio.file.Path;
 import java.util.*;
 
 /**
- * {@link SeekableChannelsProvider Channel provider} that will cache a bounded number of unused
- * channels.
+ * {@link SeekableChannelsProvider Channel provider} that will cache a bounded number of unused channels.
  */
 public class CachedChannelProvider implements SeekableChannelsProvider {
 
@@ -34,17 +33,17 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
 
     {
         final Map<ChannelType, KeyedObjectHashMap<String, PerPathPool>> channelPoolsTemp =
-            new EnumMap<>(ChannelType.class);
-        Arrays.stream(ChannelType.values()).forEach(
-            ct -> channelPoolsTemp.put(ct, new KeyedObjectHashMap<>((PerPathPool.KOHM_KEY))));
+                new EnumMap<>(ChannelType.class);
+        Arrays.stream(ChannelType.values())
+                .forEach(ct -> channelPoolsTemp.put(ct, new KeyedObjectHashMap<>((PerPathPool.KOHM_KEY))));
         channelPools = Collections.unmodifiableMap(channelPoolsTemp);
     }
 
     private final RAPriQueue<PerPathPool> releasePriority =
-        new RAPriQueue<>(8, PerPathPool.RAPQ_ADAPTER, PerPathPool.class);
+            new RAPriQueue<>(8, PerPathPool.RAPQ_ADAPTER, PerPathPool.class);
 
     public CachedChannelProvider(@NotNull final SeekableChannelsProvider wrappedProvider,
-        final int maximumPooledCount) {
+            final int maximumPooledCount) {
         this.wrappedProvider = wrappedProvider;
         this.maximumPooledCount = Require.gtZero(maximumPooledCount, "maximumPooledCount");
     }
@@ -52,30 +51,28 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     @Override
     public SeekableByteChannel getReadChannel(@NotNull final Path path) throws IOException {
         final String pathKey = path.toAbsolutePath().toString();
-        final KeyedObjectHashMap<String, PerPathPool> channelPool =
-            channelPools.get(ChannelType.Read);
+        final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(ChannelType.Read);
         final CachedChannel result = tryGetPooledChannel(pathKey, channelPool);
         return result == null
-            ? new CachedChannel(wrappedProvider.getReadChannel(path), ChannelType.Read, pathKey)
-            : result.position(0);
+                ? new CachedChannel(wrappedProvider.getReadChannel(path), ChannelType.Read, pathKey)
+                : result.position(0);
     }
 
     @Override
-    public SeekableByteChannel getWriteChannel(@NotNull final Path path, final boolean append)
-        throws IOException {
+    public SeekableByteChannel getWriteChannel(@NotNull final Path path, final boolean append) throws IOException {
         final String pathKey = path.toAbsolutePath().toString();
         final ChannelType channelType = append ? ChannelType.WriteAppend : ChannelType.Write;
         final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(channelType);
         final CachedChannel result = tryGetPooledChannel(pathKey, channelPool);
         return result == null
-            ? new CachedChannel(wrappedProvider.getWriteChannel(path, append), channelType, pathKey)
-            : result.position(append ? result.size() : 0); // The seek isn't really necessary for
-                                                           // append; will be at end no matter what.
+                ? new CachedChannel(wrappedProvider.getWriteChannel(path, append), channelType, pathKey)
+                : result.position(append ? result.size() : 0); // The seek isn't really necessary for append; will be at
+                                                               // end no matter what.
     }
 
     @Nullable
     private synchronized CachedChannel tryGetPooledChannel(@NotNull final String pathKey,
-        @NotNull final KeyedObjectHashMap<String, PerPathPool> channelPool) {
+            @NotNull final KeyedObjectHashMap<String, PerPathPool> channelPool) {
         final PerPathPool perPathPool = channelPool.get(pathKey);
         final CachedChannel result;
         if (perPathPool == null || perPathPool.availableChannels.isEmpty()) {
@@ -92,8 +89,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         return result;
     }
 
-    private synchronized void returnPoolableChannel(@NotNull final CachedChannel cachedChannel)
-        throws IOException {
+    private synchronized void returnPoolableChannel(@NotNull final CachedChannel cachedChannel) throws IOException {
         Assert.eqFalse(cachedChannel.isOpen, "cachedChannel.isOpen");
         cachedChannel.closeTime = advanceClock();
         if (pooledCount == maximumPooledCount) {
@@ -107,8 +103,8 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
             ++pooledCount;
         }
         final PerPathPool perPathPool = channelPools.get(cachedChannel.channelType)
-            .putIfAbsent(cachedChannel.pathKey,
-                pk -> new PerPathPool(cachedChannel.channelType, cachedChannel.pathKey));
+                .putIfAbsent(cachedChannel.pathKey,
+                        pk -> new PerPathPool(cachedChannel.channelType, cachedChannel.pathKey));
         perPathPool.availableChannels.addFirst(cachedChannel);
         releasePriority.enter(perPathPool);
     }
@@ -138,8 +134,8 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         private volatile boolean isOpen = true;
         private long closeTime;
 
-        private CachedChannel(@NotNull final SeekableByteChannel wrappedChannel,
-            @NotNull final ChannelType channelType, @NotNull final String pathKey) {
+        private CachedChannel(@NotNull final SeekableByteChannel wrappedChannel, @NotNull final ChannelType channelType,
+                @NotNull final String pathKey) {
             this.wrappedChannel = wrappedChannel;
             this.channelType = channelType;
             this.pathKey = pathKey;
@@ -210,39 +206,36 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
      */
     private static class PerPathPool {
 
-        private static final RAPriQueue.Adapter<PerPathPool> RAPQ_ADAPTER =
-            new RAPriQueue.Adapter<PerPathPool>() {
+        private static final RAPriQueue.Adapter<PerPathPool> RAPQ_ADAPTER = new RAPriQueue.Adapter<PerPathPool>() {
 
-                @Override
-                public boolean less(@NotNull final PerPathPool ppp1,
-                    @NotNull final PerPathPool ppp2) {
-                    final CachedChannel ch1 = ppp1.availableChannels.peekLast(); // Oldest channel
-                                                                                 // is at the tail
-                    final CachedChannel ch2 = ppp2.availableChannels.peekLast();
-                    Assert.neq(Objects.requireNonNull(ch1).closeTime, "ch1.closeTime",
+            @Override
+            public boolean less(@NotNull final PerPathPool ppp1, @NotNull final PerPathPool ppp2) {
+                final CachedChannel ch1 = ppp1.availableChannels.peekLast(); // Oldest channel is at the tail
+                final CachedChannel ch2 = ppp2.availableChannels.peekLast();
+                Assert.neq(Objects.requireNonNull(ch1).closeTime, "ch1.closeTime",
                         Objects.requireNonNull(ch2).closeTime, "ch2.closeTime");
-                    return ch1.closeTime < ch2.closeTime;
-                }
+                return ch1.closeTime < ch2.closeTime;
+            }
 
-                @Override
-                public void setPos(@NotNull final PerPathPool ppp, final int slot) {
-                    ppp.priorityQueueSlot = slot;
-                }
+            @Override
+            public void setPos(@NotNull final PerPathPool ppp, final int slot) {
+                ppp.priorityQueueSlot = slot;
+            }
 
-                @Override
-                public int getPos(@NotNull final PerPathPool ppp) {
-                    return ppp.priorityQueueSlot;
-                }
-            };
+            @Override
+            public int getPos(@NotNull final PerPathPool ppp) {
+                return ppp.priorityQueueSlot;
+            }
+        };
 
         private static final KeyedObjectKey<String, PerPathPool> KOHM_KEY =
-            new KeyedObjectKey.Basic<String, PerPathPool>() {
+                new KeyedObjectKey.Basic<String, PerPathPool>() {
 
-                @Override
-                public String getKey(@NotNull final PerPathPool ppp) {
-                    return ppp.path;
-                }
-            };
+                    @Override
+                    public String getKey(@NotNull final PerPathPool ppp) {
+                        return ppp.path;
+                    }
+                };
 
         @SuppressWarnings({"FieldCanBeLocal", "unused"}) // Field has debugging utility
         private final ChannelType channelType;

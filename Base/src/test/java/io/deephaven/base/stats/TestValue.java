@@ -64,8 +64,7 @@ public class TestValue extends TestCase {
         assertEquals(5, value.getMax());
 
         History history = value.getHistory();
-        // issue: actually, interval 0 did not turn over, so this should probably return -1 (and fix
-        // Value.update too)
+        // issue: actually, interval 0 did not turn over, so this should probably return -1 (and fix Value.update too)
         assertEquals(0, history.update(value, 1000L));
 
         assertEquals(5, history.getN(History.INTERVAL_1S_INDEX, 0));

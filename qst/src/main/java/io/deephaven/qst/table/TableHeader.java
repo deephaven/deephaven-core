@@ -14,8 +14,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * A table header is a list of {@link ColumnHeader column headers}. Each column header will have a
- * distinct name.
+ * A table header is a list of {@link ColumnHeader column headers}. Each column header will have a distinct name.
  */
 @Immutable
 @BuildableStyle
@@ -93,8 +92,8 @@ public abstract class TableHeader implements Iterable<ColumnHeader<?>> {
     @Override
     public final Spliterator<ColumnHeader<?>> spliterator() {
         return headers().entrySet().stream()
-            .map((Function<Entry<String, Type<?>>, ColumnHeader<?>>) TableHeader::adapt)
-            .spliterator();
+                .map((Function<Entry<String, Type<?>>, ColumnHeader<?>>) TableHeader::adapt)
+                .spliterator();
     }
 
     private static ColumnHeader<?> adapt(Entry<String, Type<?>> e) {

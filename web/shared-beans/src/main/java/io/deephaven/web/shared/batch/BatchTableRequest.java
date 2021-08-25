@@ -6,14 +6,12 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
- * A place to collect up table operations that can be batched. There are two ways to group
- * operations, a single step can perform more than one operation, and multiple steps can be
- * specified. Within a given step, the operations will be run in the default order and will only be
- * exported to the client once, but by providing multiple steps any preferred order can be achieve,
- * or intermediate tables can be exported to the client.
+ * A place to collect up table operations that can be batched. There are two ways to group operations, a single step can
+ * perform more than one operation, and multiple steps can be specified. Within a given step, the operations will be run
+ * in the default order and will only be exported to the client once, but by providing multiple steps any preferred
+ * order can be achieve, or intermediate tables can be exported to the client.
  *
- * This object is only meant for serialization; all brains to construct it are in the RequestBatcher
- * class.
+ * This object is only meant for serialization; all brains to construct it are in the RequestBatcher class.
  */
 public class BatchTableRequest implements Serializable {
 
@@ -114,16 +112,16 @@ public class BatchTableRequest implements Serializable {
         @Override
         public String toString() {
             return "SerializedTableOps{" +
-                "handles=" + handles +
-                ", viewColumns=" + Arrays.toString(viewColumns) +
-                ", dropColumns=" + Arrays.toString(dropColumns) +
-                ", headOrTail=" + headOrTail +
-                ", sorts=" + Arrays.toString(sorts) +
-                ", filters=" + Arrays.toString(filters) +
-                ", customColumns=" + Arrays.toString(customColumns) +
-                ", isFlat=" + isFlat +
-                ", updateIntervalMs=" + updateIntervalMs +
-                '}';
+                    "handles=" + handles +
+                    ", viewColumns=" + Arrays.toString(viewColumns) +
+                    ", dropColumns=" + Arrays.toString(dropColumns) +
+                    ", headOrTail=" + headOrTail +
+                    ", sorts=" + Arrays.toString(sorts) +
+                    ", filters=" + Arrays.toString(filters) +
+                    ", customColumns=" + Arrays.toString(customColumns) +
+                    ", isFlat=" + isFlat +
+                    ", updateIntervalMs=" + updateIntervalMs +
+                    '}';
         }
 
         public boolean hasDropColumns() {
@@ -143,8 +141,8 @@ public class BatchTableRequest implements Serializable {
         }
 
         /**
-         * @return true any time we expect to need to send a full table definition back to client
-         *         (columns added or removed, etc).
+         * @return true any time we expect to need to send a full table definition back to client (columns added or
+         *         removed, etc).
          */
         public boolean hasStructuralModification() {
             return hasCustomColumns();
@@ -177,8 +175,7 @@ public class BatchTableRequest implements Serializable {
 
         public boolean isEmpty() {
             return !(hasDropColumns() || hasViewColumns() || hasHeadOrTail()
-                || hasSorts() || hasFilters() || hasCustomColumns() || isFlat()
-                || hasUpdateIntervalMs());
+                    || hasSorts() || hasFilters() || hasCustomColumns() || isFlat() || hasUpdateIntervalMs());
         }
     }
 
@@ -193,8 +190,8 @@ public class BatchTableRequest implements Serializable {
     @Override
     public String toString() {
         return "BatchTableRequest{" +
-            "ops=" + Arrays.toString(ops) +
-            '}';
+                "ops=" + Arrays.toString(ops) +
+                '}';
     }
 
     public boolean isEmpty() {

@@ -193,20 +193,18 @@ public class UpdateBenchmark {
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
         final EnumStringColumnGenerator enumStringyCol =
-            (EnumStringColumnGenerator) BenchmarkTools.stringCol("Thingy", 30, 6, 6, 0xB00FB00F);
+                (EnumStringColumnGenerator) BenchmarkTools.stringCol("Thingy", 30, 6, 6, 0xB00FB00F);
 
         final BenchmarkTableBuilder builder;
         switch (tableType) {
             case "Historical":
-                builder = BenchmarkTools
-                    .persistentTableBuilder("Carlos", sizeWithSparsity(tableSize, sparsity))
-                    .addGroupingColumns("Thingy")
-                    .setPartitioningFormula("${autobalance_single}")
-                    .setPartitionCount(10);
+                builder = BenchmarkTools.persistentTableBuilder("Carlos", sizeWithSparsity(tableSize, sparsity))
+                        .addGroupingColumns("Thingy")
+                        .setPartitioningFormula("${autobalance_single}")
+                        .setPartitionCount(10);
                 break;
             case "Intraday":
-                builder = BenchmarkTools.persistentTableBuilder("Carlos",
-                    sizeWithSparsity(tableSize, sparsity));
+                builder = BenchmarkTools.persistentTableBuilder("Carlos", sizeWithSparsity(tableSize, sparsity));
                 break;
 
             default:
@@ -267,18 +265,16 @@ public class UpdateBenchmark {
         }
 
         bmTable = builder
-            .addColumn(BenchmarkTools.stringCol("C4", 4, 5, 7, 0xFEEDBEEF))
-            .addColumn(enumStringyCol)
-            .build();
+                .addColumn(BenchmarkTools.stringCol("C4", 4, 5, 7, 0xFEEDBEEF))
+                .addColumn(enumStringyCol)
+                .build();
 
-        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()),
-            params.getWarmup().getCount());
+        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
 
         final List<String> uniqueThingyVals = Arrays.asList(enumStringyCol.getEnumVals());
         final String updateString;
 
-        // filterString (where clause) is unused in the current version of this benchmark, but is
-        // included
+        // filterString (where clause) is unused in the current version of this benchmark, but is included
         // as a model in case it's needed in other benchmarks copied from this class.
         filterString = "";
 

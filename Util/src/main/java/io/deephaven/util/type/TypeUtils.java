@@ -52,10 +52,9 @@ public class TypeUtils {
         boxedToPrimitive = Collections.unmodifiableMap(boxedToPrimitiveTemp);
 
         PRIMITIVE_TYPES = Collections.unmodifiableSet(primitiveToBoxedTemp.keySet());
-        BOXED_TYPES =
-            Collections.unmodifiableSet(new LinkedHashSet<>(primitiveToBoxedTemp.values()));
-        primitiveClassNameToClass = Collections.unmodifiableMap(
-            PRIMITIVE_TYPES.stream().collect(Collectors.toMap(Class::getName, type -> type)));
+        BOXED_TYPES = Collections.unmodifiableSet(new LinkedHashSet<>(primitiveToBoxedTemp.values()));
+        primitiveClassNameToClass = Collections
+                .unmodifiableMap(PRIMITIVE_TYPES.stream().collect(Collectors.toMap(Class::getName, type -> type)));
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -64,9 +63,8 @@ public class TypeUtils {
     }
 
     /**
-     * Returns a reference type corresponding to the given {@code type}. If {@code type} is itself a
-     * reference type, then {@code type} is returned. If {@code type} is a primitive type, then the
-     * appropriate boxed type is returned.
+     * Returns a reference type corresponding to the given {@code type}. If {@code type} is itself a reference type,
+     * then {@code type} is returned. If {@code type} is a primitive type, then the appropriate boxed type is returned.
      * 
      * @param type The type
      */
@@ -78,9 +76,9 @@ public class TypeUtils {
     }
 
     /**
-     * Returns the primitive type corresponding to the given {@code type}. If {@code type} is itself
-     * a primitive type, then {@code type} is returned. If {@code type} is neither a primitive type
-     * nor a boxed type, then {@code null} is returned.
+     * Returns the primitive type corresponding to the given {@code type}. If {@code type} is itself a primitive type,
+     * then {@code type} is returned. If {@code type} is neither a primitive type nor a boxed type, then {@code null} is
+     * returned.
      * 
      * @param type The type
      * @return type's primitive equivalent, or null
@@ -343,9 +341,8 @@ public class TypeUtils {
 
     public static boolean isConvertibleToPrimitive(Class type) {
         final Class unboxedType = TypeUtils.getUnboxedType(type);
-        return unboxedType != null && unboxedType != boolean.class; // TODO:
-                                                                    // isConvertibleToPrimitive(Boolean.class)
-                                                                    // == false ???
+        return unboxedType != null && unboxedType != boolean.class; // TODO: isConvertibleToPrimitive(Boolean.class) ==
+                                                                    // false ???
     }
 
     public static boolean isBoxedType(Class exprType) {
@@ -375,16 +372,14 @@ public class TypeUtils {
     }
 
     /**
-     * Whether the class is equal to one of the six numeric primitives: float, double, int, long,
-     * short, or byte.
+     * Whether the class is equal to one of the six numeric primitives: float, double, int, long, short, or byte.
      *
      * @param c class
      * @return true if {@code c} is a numeric primitive, false otherwise
      */
     public static boolean isPrimitiveNumeric(@NotNull final Class c) {
         return c.equals(double.class) || c.equals(float.class)
-            || c.equals(int.class) || c.equals(long.class) || c.equals(short.class)
-            || c.equals(byte.class);
+                || c.equals(int.class) || c.equals(long.class) || c.equals(short.class) || c.equals(byte.class);
     }
 
     /**
@@ -525,7 +520,7 @@ public class TypeUtils {
      */
     public static boolean isDateTime(Class type) {
         return Date.class.isAssignableFrom(type) || type.getAnnotation(IsDateTime.class) != null
-            && ((IsDateTime) type.getAnnotation(IsDateTime.class)).value();
+                && ((IsDateTime) type.getAnnotation(IsDateTime.class)).value();
     }
 
     /**
@@ -565,15 +560,13 @@ public class TypeUtils {
      * @return true if it is a float type, false otherwise
      */
     public static boolean isFloatType(Class type) {
-        return type.equals(double.class) || type.equals(float.class) || isBoxedDouble(type)
-            || isBoxedFloat(type);
+        return type.equals(double.class) || type.equals(float.class) || isBoxedDouble(type) || isBoxedFloat(type);
     }
 
     /**
-     * Converts an Object to a String for writing to a workspace. This is meant to be used in
-     * conjunction with {@code TypeUtils.fromString}. Strings, Numbers, and primitives will all
-     * convert using {@code Obect.toString}. Serializable objects will be encoded in base64. All
-     * others will return null.
+     * Converts an Object to a String for writing to a workspace. This is meant to be used in conjunction with
+     * {@code TypeUtils.fromString}. Strings, Numbers, and primitives will all convert using {@code Obect.toString}.
+     * Serializable objects will be encoded in base64. All others will return null.
      *
      * @param o the object to convert
      * @return a String representation of the object, null if it cannot be converted
@@ -585,23 +578,21 @@ public class TypeUtils {
         }
 
         final Class<?> type = o.getClass();
-        // isNumeric gets BigInteger and BigDecimal in addition to everything gotten by
-        // isConvertibleToPrimitive
+        // isNumeric gets BigInteger and BigDecimal in addition to everything gotten by isConvertibleToPrimitive
         if (type == String.class || isConvertibleToPrimitive(type) || isNumeric(type)) {
             return o.toString();
         } else if (o instanceof Serializable) {
             return encode64Serializable((Serializable) o);
         }
 
-        throw new RuntimeException("Failed to convert object of type " + type.getCanonicalName()
-            + ".  Type not supported");
+        throw new RuntimeException(
+                "Failed to convert object of type " + type.getCanonicalName() + ".  Type not supported");
     }
 
     /**
-     * Creates an Object from a String. This is meant to be used in conjunction with
-     * {@code TypeUtils.objectToString} Strings, Numbers, and primitives will all parse using their
-     * boxed type parsing methods. Serializable types will be decoded from base64. Returns null if
-     * the String fails to parse.
+     * Creates an Object from a String. This is meant to be used in conjunction with {@code TypeUtils.objectToString}
+     * Strings, Numbers, and primitives will all parse using their boxed type parsing methods. Serializable types will
+     * be decoded from base64. Returns null if the String fails to parse.
      *
      * @param string the String to parse
      * @param typeString the Canonical Name of the class type
@@ -620,10 +611,9 @@ public class TypeUtils {
     }
 
     /**
-     * Creates an Object from a String. This is meant to be used in conjunction with
-     * {@code TypeUtils.objectToString} Strings, Numbers, and primitives will all parse using their
-     * boxed type parsing methods. Serializable types will be decoded from base64. Returns null if
-     * the String fails to parse.
+     * Creates an Object from a String. This is meant to be used in conjunction with {@code TypeUtils.objectToString}
+     * Strings, Numbers, and primitives will all parse using their boxed type parsing methods. Serializable types will
+     * be decoded from base64. Returns null if the String fails to parse.
      *
      * @param string the String to parse
      * @param type the type of the object
@@ -662,12 +652,11 @@ public class TypeUtils {
         } catch (IOException ioe) {
             throw ioe;
         } catch (Exception e) {
-            throw new RuntimeException(
-                "Failed to parse " + string + "into type " + type.getCanonicalName(), e);
+            throw new RuntimeException("Failed to parse " + string + "into type " + type.getCanonicalName(), e);
         }
 
-        throw new RuntimeException("Failed to parse " + string + "into type "
-            + type.getCanonicalName() + ".  Type not supported");
+        throw new RuntimeException(
+                "Failed to parse " + string + "into type " + type.getCanonicalName() + ".  Type not supported");
     }
 
     /**
@@ -679,7 +668,7 @@ public class TypeUtils {
      */
     public static String encode64Serializable(Serializable serializable) throws IOException {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ObjectOutputStream os = new ObjectOutputStream(bos)) {
+                ObjectOutputStream os = new ObjectOutputStream(bos)) {
             os.writeObject(serializable);
             return Base64.getEncoder().encodeToString(bos.toByteArray());
         }
@@ -693,10 +682,9 @@ public class TypeUtils {
      * @throws IOException if the string cannot be decoded
      * @throws ClassNotFoundException if the Object type is unknown
      */
-    public static Object decode64Serializable(String string)
-        throws IOException, ClassNotFoundException {
+    public static Object decode64Serializable(String string) throws IOException, ClassNotFoundException {
         try (ObjectInputStream is =
-            new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(string)))) {
+                new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(string)))) {
             return is.readObject();
         }
     }
@@ -711,8 +699,7 @@ public class TypeUtils {
         if (paramType instanceof Class) {
             return (Class) paramType;
         } else if (paramType instanceof ParameterizedType) {
-            return (Class) // We are asking the parameterized type for it's raw type, which is
-                           // always Class
+            return (Class) // We are asking the parameterized type for it's raw type, which is always Class
             ((ParameterizedType) paramType).getRawType();
         } else if (paramType instanceof WildcardType) {
             final Type[] upper = ((WildcardType) paramType).getUpperBounds();
@@ -769,8 +756,7 @@ public class TypeUtils {
                 return Object.class;
             }
         }
-        // Will be Object.class if there were no shared interfaces (or shared interfaces were not
-        // compatible).
+        // Will be Object.class if there were no shared interfaces (or shared interfaces were not compatible).
         return strongest;
     }
 

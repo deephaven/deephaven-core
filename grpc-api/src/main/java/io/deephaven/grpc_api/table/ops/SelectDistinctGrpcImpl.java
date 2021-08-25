@@ -19,12 +19,12 @@ public class SelectDistinctGrpcImpl extends GrpcTableOperation<SelectDistinctReq
     @Inject
     public SelectDistinctGrpcImpl() {
         super(BatchTableRequest.Operation::getSelectDistinct, SelectDistinctRequest::getResultId,
-            SelectDistinctRequest::getSourceId);
+                SelectDistinctRequest::getSourceId);
     }
 
     @Override
     public Table create(final SelectDistinctRequest request,
-        final List<SessionState.ExportObject<Table>> sourceTables) {
+            final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();
@@ -34,7 +34,7 @@ public class SelectDistinctGrpcImpl extends GrpcTableOperation<SelectDistinctReq
         requestedMissing.removeAll(parent.getDefinition().getColumnNameMap().keySet());
         if (!requestedMissing.isEmpty()) {
             throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                "column(s) not found: " + String.join(", ", requestedMissing));
+                    "column(s) not found: " + String.join(", ", requestedMissing));
         }
 
         return parent.selectDistinct(request.getColumnNamesList());

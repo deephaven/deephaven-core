@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.CompletionItem",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.CompletionItem",
+        namespace = JsPackage.GLOBAL)
 public class CompletionItem {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -56,7 +56,7 @@ public class CompletionItem {
 
                 @JsProperty
                 void setStart(
-                    CompletionItem.ToObjectReturnType.TextEditFieldType.RangeFieldType.StartFieldType start);
+                        CompletionItem.ToObjectReturnType.TextEditFieldType.RangeFieldType.StartFieldType start);
             }
 
             @JsOverlay
@@ -219,7 +219,7 @@ public class CompletionItem {
 
                 @JsProperty
                 void setStart(
-                    CompletionItem.ToObjectReturnType0.TextEditFieldType.RangeFieldType.StartFieldType start);
+                        CompletionItem.ToObjectReturnType0.TextEditFieldType.RangeFieldType.StartFieldType start);
             }
 
             @JsOverlay
@@ -234,8 +234,7 @@ public class CompletionItem {
             String getText();
 
             @JsProperty
-            void setRange(
-                CompletionItem.ToObjectReturnType0.TextEditFieldType.RangeFieldType range);
+            void setRange(CompletionItem.ToObjectReturnType0.TextEditFieldType.RangeFieldType range);
 
             @JsProperty
             void setText(String text);
@@ -344,12 +343,12 @@ public class CompletionItem {
     public static native CompletionItem deserializeBinary(Uint8Array bytes);
 
     public static native CompletionItem deserializeBinaryFromReader(
-        CompletionItem message, Object reader);
+            CompletionItem message, Object reader);
 
     public static native void serializeBinaryToWriter(CompletionItem message, Object writer);
 
     public static native CompletionItem.ToObjectReturnType toObject(
-        boolean includeInstance, CompletionItem msg);
+            boolean includeInstance, CompletionItem msg);
 
     public native TextEdit addAdditionalTextEdits();
 

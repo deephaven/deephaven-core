@@ -9,7 +9,7 @@ import io.deephaven.db.v2.ssms.SegmentedSortedMultiSet;
 
 public class SsmDistinctContext implements IterativeChunkedAggregationOperator.SingletonContext {
     public final SegmentedSortedMultiSet.RemoveContext removeContext =
-        SegmentedSortedMultiSet.makeRemoveContext(DistinctOperatorFactory.NODE_SIZE);
+            SegmentedSortedMultiSet.makeRemoveContext(DistinctOperatorFactory.NODE_SIZE);
     public final WritableChunk<Attributes.Values> valueCopy;
     public final WritableIntChunk<Attributes.ChunkLengths> counts;
 

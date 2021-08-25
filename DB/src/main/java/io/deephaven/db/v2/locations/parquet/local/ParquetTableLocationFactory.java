@@ -15,8 +15,7 @@ import java.io.File;
 /**
  * {@link TableLocationFactory} for {@link ParquetTableLocation}s.
  */
-public final class ParquetTableLocationFactory
-    implements TableLocationFactory<TableKey, ParquetTableLocationKey> {
+public final class ParquetTableLocationFactory implements TableLocationFactory<TableKey, ParquetTableLocationKey> {
 
     private final ParquetInstructions readInstructions;
 
@@ -27,8 +26,8 @@ public final class ParquetTableLocationFactory
     @Override
     @NotNull
     public TableLocation makeLocation(@NotNull final TableKey tableKey,
-        @NotNull final ParquetTableLocationKey locationKey,
-        @Nullable final TableDataRefreshService refreshService) {
+            @NotNull final ParquetTableLocationKey locationKey,
+            @Nullable final TableDataRefreshService refreshService) {
         final File parquetFile = locationKey.getFile();
         if (Utils.fileExistsPrivileged(parquetFile)) {
             return new ParquetTableLocation(tableKey, locationKey, readInstructions);

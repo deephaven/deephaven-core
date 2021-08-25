@@ -31,8 +31,8 @@ public abstract class PythonTest {
     public static String readResource(Class<?> clazz, String name) {
         try {
             return new String(
-                Files.readAllBytes(Paths.get(clazz.getResource(name).toURI())),
-                StandardCharsets.UTF_8);
+                    Files.readAllBytes(Paths.get(clazz.getResource(name).toURI())),
+                    StandardCharsets.UTF_8);
         } catch (IOException | URISyntaxException e) {
             throw new RuntimeException(e);
         }

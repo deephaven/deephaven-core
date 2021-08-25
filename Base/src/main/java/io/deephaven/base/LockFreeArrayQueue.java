@@ -13,23 +13,20 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 /**
  * A Java implementation of the algorithm described in:
  *
- * Philippas Tsigas, Yi Zhang, "A simple, fast and scalable non-blocking concurrent FIFO queue for
- * shared memory multiprocessor systems", Proceedings of the thirteenth annual ACM symposium on
- * Parallel algorithms and architectures, p.134-143, July 2001, Crete Island, Greece
+ * Philippas Tsigas, Yi Zhang, "A simple, fast and scalable non-blocking concurrent FIFO queue for shared memory
+ * multiprocessor systems", Proceedings of the thirteenth annual ACM symposium on Parallel algorithms and architectures,
+ * p.134-143, July 2001, Crete Island, Greece
  *
- * This version modifies the way we choose which NULL to use when dequeuing: 1) We let the head and
- * tail pointers range over the entire set of 32-bit unsigned values. We can convert a 32-bit
- * unsigned integer into a node index with the mod operator (or a bit mask, if we limit the queue
- * sizes to powers of two). 2) On each successive "pass" over the array, we want to alternate
- * between NULL(0) and NULL(1), that is, the first time the head pointer goes from zero to cap, we
- * replace dequeued values with NULL(0), then when head wraps back to zero we switch to using
- * NULL(1). Since we allow head to range over all 32-bit values, we can compute which null to use a
- * NULL((head / cap) % 2). If we are using powers of two, then the low-order bits [0,N] specify the
- * index into the nodes array, and bit N+1 specifies whether to use NULL(0) or NULL(1) when
- * dequeuing.
+ * This version modifies the way we choose which NULL to use when dequeuing: 1) We let the head and tail pointers range
+ * over the entire set of 32-bit unsigned values. We can convert a 32-bit unsigned integer into a node index with the
+ * mod operator (or a bit mask, if we limit the queue sizes to powers of two). 2) On each successive "pass" over the
+ * array, we want to alternate between NULL(0) and NULL(1), that is, the first time the head pointer goes from zero to
+ * cap, we replace dequeued values with NULL(0), then when head wraps back to zero we switch to using NULL(1). Since we
+ * allow head to range over all 32-bit values, we can compute which null to use a NULL((head / cap) % 2). If we are
+ * using powers of two, then the low-order bits [0,N] specify the index into the nodes array, and bit N+1 specifies
+ * whether to use NULL(0) or NULL(1) when dequeuing.
  */
-public class LockFreeArrayQueue<T>
-    implements ConcurrentQueue<T>, ProducerConsumer.MultiProducerConsumer<T> {
+public class LockFreeArrayQueue<T> implements ConcurrentQueue<T>, ProducerConsumer.MultiProducerConsumer<T> {
     /* private */ final int cap;
     // capacity of the queue - a power of two
     /* private */ final int mask;
@@ -80,8 +77,8 @@ public class LockFreeArrayQueue<T>
 
     public LockFreeArrayQueue(int log2cap) {
         if (log2cap < LOG2CAP_MIN || log2cap > LOG2CAP_MAX) {
-            throw new IllegalArgumentException("log2cap must be in [" + LOG2CAP_MIN + ","
-                + LOG2CAP_MAX + "], got " + log2cap + ".");
+            throw new IllegalArgumentException(
+                    "log2cap must be in [" + LOG2CAP_MIN + "," + LOG2CAP_MAX + "], got " + log2cap + ".");
         }
         this.cap = 1 << log2cap;
         this.mask = cap - 1;
@@ -190,8 +187,7 @@ public class LockFreeArrayQueue<T>
             // if ( debug_search_count > cap/2 ) {
             // debug_stop();
             // synchronized ( this ) {
-            // debug_dump(head.get(), tail.get(), head0, tail0, actual_tail, new_value,
-            // debug_search_count);
+            // debug_dump(head.get(), tail.get(), head0, tail0, actual_tail, new_value, debug_search_count);
             // }
             // debug_go();
             // }
@@ -285,8 +281,7 @@ public class LockFreeArrayQueue<T>
         while (true) {
             // initial value of the head index - must not change while we are working
             final int head0 = head.get();
-            // initial value of the tail index - most not change while we are searching for the
-            // actual head
+            // initial value of the tail index - most not change while we are searching for the actual head
             final int tail0 = tail.get();
             // the slot from which we are going to dequeue
             int actual_head = head0 + 1;
@@ -399,16 +394,15 @@ public class LockFreeArrayQueue<T>
         // }
     }
 
-    private void debug_dump(int h, int t, int h0, int t0, int at, Object new_value,
-        int scan_count) {
+    private void debug_dump(int h, int t, int h0, int t0, int at, Object new_value, int scan_count) {
         if (scan_count > 0) {
-            System.out.println("LFAQ.enqueuing " + new_value + ": scanned " + scan_count
-                + " slots looking for actual tail"
-                + ", h0=" + h0 + "=" + (h0 % cap) + "/" + (h0 >> shift) + "/" + get_null(h0)
-                + ", t0=" + t0 + "=" + (t0 % cap) + "/" + (t0 >> shift) + "/" + get_null(t0)
-                + ", h=" + h + "=" + (h % cap) + "/" + (h >> shift) + "/" + get_null(h)
-                + ", t=" + t + "=" + (t % cap) + "/" + (t >> shift) + "/" + get_null(t)
-                + ", at=" + at + "=" + (at % cap) + "/" + (at >> shift) + "/" + get_null(at));
+            System.out.println(
+                    "LFAQ.enqueuing " + new_value + ": scanned " + scan_count + " slots looking for actual tail"
+                            + ", h0=" + h0 + "=" + (h0 % cap) + "/" + (h0 >> shift) + "/" + get_null(h0)
+                            + ", t0=" + t0 + "=" + (t0 % cap) + "/" + (t0 >> shift) + "/" + get_null(t0)
+                            + ", h=" + h + "=" + (h % cap) + "/" + (h >> shift) + "/" + get_null(h)
+                            + ", t=" + t + "=" + (t % cap) + "/" + (t >> shift) + "/" + get_null(t)
+                            + ", at=" + at + "=" + (at % cap) + "/" + (at >> shift) + "/" + get_null(at));
         }
 
         for (int i = 0; i < cap; ++i) {

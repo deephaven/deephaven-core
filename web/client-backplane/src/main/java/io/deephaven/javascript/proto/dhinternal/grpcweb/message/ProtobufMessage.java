@@ -5,9 +5,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.grpcWeb.message.ProtobufMessage",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.grpcWeb.message.ProtobufMessage",
+        namespace = JsPackage.GLOBAL)
 public interface ProtobufMessage {
     Uint8Array serializeBinary();
 

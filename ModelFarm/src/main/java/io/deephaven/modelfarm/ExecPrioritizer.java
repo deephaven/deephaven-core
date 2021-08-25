@@ -15,11 +15,9 @@ public interface ExecPrioritizer<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends R
     /**
      * Compute the priority for processing the data at the indicated table index.
      *
-     * @param dataManager interface for accessing and querying data contained in rows of a dynamic
-     *        table.
+     * @param dataManager interface for accessing and querying data contained in rows of a dynamic table.
      * @param index index of the data in the fit data manager source table.
-     * @return priority of processing the data at the indicated index. Higher numbers are higher
-     *         priority.
+     * @return priority of processing the data at the indicated index. Higher numbers are higher priority.
      */
     int priority(final ROWDATAMANAGERTYPE dataManager, final long index);
 

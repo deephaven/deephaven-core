@@ -31,8 +31,8 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     private TreeIndexImpl impl;
     private transient TreeIndexImpl prevImpl;
     /**
-     * Protects prevImpl. Only updated in checkPrev() and initializePreviousValue() (this later
-     * supposed to be used only right after the constructor, in special cases).
+     * Protects prevImpl. Only updated in checkPrev() and initializePreviousValue() (this later supposed to be used only
+     * right after the constructor, in special cases).
      */
     private transient volatile long changeTimeStep;
 
@@ -147,8 +147,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public void insert(final LongChunk<OrderedKeyIndices> keys, final int offset,
-        final int length) {
+    public void insert(final LongChunk<OrderedKeyIndices> keys, final int offset, final int length) {
         Assert.leq(offset + length, "offset + length", keys.size(), "keys.size()");
         if (trace)
             pre("insert(chunk)");
@@ -162,8 +161,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     @Override
     public void insert(final ReadOnlyIndex added) {
         if (trace)
-            pre("insert(added_"
-                + (added == null ? "id=-1" : ((ImplementedByTreeIndexImpl) added).strid()) + ")");
+            pre("insert(added_" + (added == null ? "id=-1" : ((ImplementedByTreeIndexImpl) added).strid()) + ")");
         if (added != null) {
             checkPrevForWrite();
             assign(impl.ixInsert(getImpl(added)));
@@ -196,8 +194,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public void remove(final LongChunk<OrderedKeyIndices> keys, final int offset,
-        final int length) {
+    public void remove(final LongChunk<OrderedKeyIndices> keys, final int offset, final int length) {
         Assert.leq(offset + length, "offset + length", keys.size(), "keys.size()");
         if (trace)
             pre("remove(chunk)");
@@ -497,7 +494,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     public void update(final ReadOnlyIndex added, final ReadOnlyIndex removed) {
         if (trace)
             pre("update(added_" + ((ImplementedByTreeIndexImpl) added).strid() + ", removed_"
-                + ((ImplementedByTreeIndexImpl) removed).strid() + ")");
+                    + ((ImplementedByTreeIndexImpl) removed).strid() + ")");
         checkPrevForWrite();
         assign(impl.ixUpdate(getImpl(added), getImpl(removed)));
         super.onUpdate(added, removed);
@@ -594,8 +591,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
         return ans;
     }
 
-    private static class IndexRandomBuilder extends TreeIndexImplRandomBuilder
-        implements Index.RandomBuilder {
+    private static class IndexRandomBuilder extends TreeIndexImplRandomBuilder implements Index.RandomBuilder {
         @Override
         public Index getIndex() {
             return new TreeIndex(getTreeIndexImpl());
@@ -607,7 +603,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     private abstract static class IndexSequentialBuilderBase extends TreeIndexImplSequentialBuilder
-        implements Index.SequentialBuilder {
+            implements Index.SequentialBuilder {
         @Override
         public void appendIndex(final ReadOnlyIndex ix) {
             appendIndexWithOffset(ix, 0);
@@ -616,8 +612,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
         @Override
         public void appendIndexWithOffset(final ReadOnlyIndex ix, final long shiftAmount) {
             if (ix instanceof ImplementedByTreeIndexImpl) {
-                appendTreeIndexImpl(shiftAmount, ((ImplementedByTreeIndexImpl) ix).getImpl(),
-                    false);
+                appendTreeIndexImpl(shiftAmount, ((ImplementedByTreeIndexImpl) ix).getImpl(), false);
                 return;
             }
             ix.forAllLongRanges((start, end) -> {
@@ -638,7 +633,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     private static class CurrentOnlyIndexRandomBuilder extends TreeIndexImplRandomBuilder
-        implements Index.RandomBuilder {
+            implements Index.RandomBuilder {
         @Override
         public Index getIndex() {
             return new CurrentOnlyIndex(getTreeIndexImpl());
@@ -713,12 +708,10 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
             final long start = it.currentRangeStart();
             final long end = it.currentRangeEnd();
             Assert.assertion(start >= 0, m + "start >= 0", start, "start", this, "index");
-            Assert.assertion(end >= start, m + "end >= start", start, "start", end, "end", this,
-                "index");
-            Assert.assertion(start > lastEnd, m + "start > lastEnd", start, "start", lastEnd,
-                "lastEnd", this, "index");
-            Assert.assertion(start > lastEnd + 1, m + "start > lastEnd + 1", start, "start",
-                lastEnd, "lastEnd", this, "index");
+            Assert.assertion(end >= start, m + "end >= start", start, "start", end, "end", this, "index");
+            Assert.assertion(start > lastEnd, m + "start > lastEnd", start, "start", lastEnd, "lastEnd", this, "index");
+            Assert.assertion(start > lastEnd + 1, m + "start > lastEnd + 1", start, "start", lastEnd, "lastEnd", this,
+                    "index");
             lastEnd = end;
 
             totalSize += ((end - start) + 1);
@@ -761,20 +754,16 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
         ExternalizableIndexUtils.writeExternalCompressedDeltas(out, this);
     }
 
-    // If we've got a nasty bug, it can be useful to write the serialized version of indices when we
-    // detect the bug;
-    // because the creation of these things is so darn path dependent. We can't actually serialize
-    // the Index; because
-    // the representation that we'll write will be completely different (and likely saner) than what
-    // we have in-memory
+    // If we've got a nasty bug, it can be useful to write the serialized version of indices when we detect the bug;
+    // because the creation of these things is so darn path dependent. We can't actually serialize the Index; because
+    // the representation that we'll write will be completely different (and likely saner) than what we have in-memory
     // at any given point in time.
     public void writeImpl(ObjectOutput out) throws IOException {
         out.writeObject(impl);
     }
 
     @Override
-    public void readExternal(@NotNull final ObjectInput in)
-        throws IOException, ClassNotFoundException {
+    public void readExternal(@NotNull final ObjectInput in) throws IOException, ClassNotFoundException {
         try (final Index readIndex = ExternalizableIndexUtils.readExternalCompressedDelta(in)) {
             insert(readIndex);
         }
@@ -795,8 +784,7 @@ public class TreeIndex extends SortedIndex implements ImplementedByTreeIndexImpl
     }
 
     @Override
-    public OrderedKeys getOrderedKeysByKeyRange(final long startKeyInclusive,
-        final long endKeyInclusive) {
+    public OrderedKeys getOrderedKeysByKeyRange(final long startKeyInclusive, final long endKeyInclusive) {
         return impl.ixGetOrderedKeysByKeyRange(startKeyInclusive, endKeyInclusive);
 
     }

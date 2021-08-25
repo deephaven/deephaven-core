@@ -27,9 +27,9 @@ public class BarrageMessageConsumer {
          * @return a BarrageMessage filled out by the stream's payload
          */
         BarrageMessage safelyParseFrom(final Options options,
-            final ChunkType[] columnChunkTypes,
-            final Class<?>[] columnTypes,
-            final Class<?>[] componentTypes,
-            final InputStream stream);
+                final ChunkType[] columnChunkTypes,
+                final Class<?>[] columnTypes,
+                final Class<?>[] componentTypes,
+                final InputStream stream);
     }
 }

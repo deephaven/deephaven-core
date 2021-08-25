@@ -152,8 +152,7 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
         }
 
         final String[] cats = {"A", "B", "C"};
-        Table t = TableTools
-            .newTable(TableTools.doubleCol("Dubs", dsizes), TableTools.col("Str", cats)).ungroup();
+        Table t = TableTools.newTable(TableTools.doubleCol("Dubs", dsizes), TableTools.col("Str", cats)).ungroup();
         data.pointSize(t, "Dubs");
         for (int i = 0; i < t.size(); i++) {
             assertEquals(data.getPointSize(i), dsizes[i]);
@@ -168,13 +167,11 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
 
 
         // dsizes[0] = 2;
-        // t = TableTools.newTable(TableTools.doubleCol("Dubs", dsizes), TableTools.col("Str",
-        // cats)).ungroup();
+        // t = TableTools.newTable(TableTools.doubleCol("Dubs", dsizes), TableTools.col("Str", cats)).ungroup();
         // Set<String> set = new HashSet<>();
         // Collections.addAll(set, cats);
         //
-        // SwappableTableTestUtils.testSwappableTableMethod(t, "Str", set, data,
-        // XYDataSeries::pointSize, "Dubs");
+        // SwappableTableTestUtils.testSwappableTableMethod(t, "Str", set, data, XYDataSeries::pointSize, "Dubs");
         // data.getPointSize(0);
         // SwingTestUtils.emptySwingQueue();
         // for (int i = 0; i < t.size(); i++) {
@@ -235,8 +232,8 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
         }
 
         final String[] cats = {"A", "B", "C"};
-        Table t = TableTools.newTable(TableTools.intCol("ints", icolors),
-            TableTools.col("Str", cats), TableTools.col("Paints", colors));
+        Table t = TableTools.newTable(TableTools.intCol("ints", icolors), TableTools.col("Str", cats),
+                TableTools.col("Paints", colors));
         data.pointColor(t, "ints");
         for (int i = 0; i < t.size(); i++) {
             assertEquals(data.getPointColor(i), PlotUtils.intToColor(icolors[i]));
@@ -244,7 +241,7 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
 
         colors[0] = c3;
         t = TableTools.newTable(TableTools.intCol("ints", icolors), TableTools.col("Str", cats),
-            TableTools.col("Paints", colors));
+                TableTools.col("Paints", colors));
         data.pointColor(t, "Paints");
         for (int i = 0; i < t.size(); i++) {
             assertEquals(colors[i], data.getPointColor(i));
@@ -255,14 +252,12 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
         // TableTools.col("Paints", colors));
         // Set<String> set = new HashSet<>();
         // Collections.addAll(set, cats);
-        // SwappableTableTestUtils.testSwappableTableMethod(t, "Str", set, data,
-        // XYDataSeries::pointColor, "Paints");
+        // SwappableTableTestUtils.testSwappableTableMethod(t, "Str", set, data, XYDataSeries::pointColor, "Paints");
         // for (int i = 0; i < t.size(); i++) {
         // assertEquals(colors[i], data.getPointColor(i));
         // }
         //
-        // SwappableTableTestUtils.testSwappableTableMethod(t, "Str", set, data,
-        // XYDataSeries::pointColor, "ints");
+        // SwappableTableTestUtils.testSwappableTableMethod(t, "Str", set, data, XYDataSeries::pointColor, "ints");
         // for (int i = 0; i < t.size(); i++) {
         // assertEquals(theme.getSeriesColor(icolors[i]), data.getPointColor(i));
         // }
@@ -362,7 +357,7 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
 
         data.pointShape(new String[] {"up_triangle", "circle"});
         assertEquals(JShapes.shape((NamedShape) data.getPointShape(0)),
-            JShapes.shape(NamedShape.valueOf("up_triangle".toUpperCase())));
+                JShapes.shape(NamedShape.valueOf("up_triangle".toUpperCase())));
         assertEquals(data.getPointShape(1), NamedShape.valueOf("circle".toUpperCase()));
         assertEquals(data.getPointShape(2), NamedShape.valueOf("square".toUpperCase()));
 
@@ -383,16 +378,15 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
         assertEquals(data.getPointShape(1), NamedShape.valueOf("down_triangle".toUpperCase()));
         assertEquals(data.getPointShape(2), NamedShape.valueOf("right_triangle".toUpperCase()));
 
-        final DynamicTable shapeTable =
-            TableTools.newTable(TableTools.col("shapes", "diamond", "circle", "ellipse"));
+        final DynamicTable shapeTable = TableTools.newTable(TableTools.col("shapes", "diamond", "circle", "ellipse"));
         data.pointShape(shapeTable, "shapes");
         data.getPointShape(0);
         assertEquals(data.getPointShape(0), NamedShape.valueOf("diamond".toUpperCase()));
         assertEquals(data.getPointShape(1), NamedShape.valueOf("circle".toUpperCase()));
         assertEquals(data.getPointShape(2), NamedShape.valueOf("ellipse".toUpperCase()));
 
-        final DynamicTable shapeObjectTable = TableTools.newTable(TableTools.col("shapes",
-            NamedShape.DIAMOND, NamedShape.ELLIPSE, NamedShape.UP_TRIANGLE));
+        final DynamicTable shapeObjectTable = TableTools
+                .newTable(TableTools.col("shapes", NamedShape.DIAMOND, NamedShape.ELLIPSE, NamedShape.UP_TRIANGLE));
         data.pointShape(shapeObjectTable, "shapes");
         data.getPointShape(0);
         assertEquals(data.getPointShape(0), NamedShape.valueOf("diamond".toUpperCase()));
@@ -454,8 +448,7 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
             assertTrue(e.getMessage().contains("String"));
         }
 
-        final DynamicTable shapeTable =
-            TableTools.newTable(TableTools.col("shapes", "diamond", "circle", "ellips"));
+        final DynamicTable shapeTable = TableTools.newTable(TableTools.col("shapes", "diamond", "circle", "ellips"));
         data.pointShape(shapeTable, "shapes");
         try {
             data.getPointShape(2);
@@ -465,13 +458,12 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
         }
     }
 
-    public static void testCopy(final AbstractXYDataSeries original,
-        final AbstractXYDataSeries copy) {
+    public static void testCopy(final AbstractXYDataSeries original, final AbstractXYDataSeries copy) {
         testCopy(original, copy, true);
     }
 
-    public static void testCopy(final AbstractXYDataSeries original,
-        final AbstractXYDataSeries copy, final boolean testTables) {
+    public static void testCopy(final AbstractXYDataSeries original, final AbstractXYDataSeries copy,
+            final boolean testTables) {
         assertEquals(original.name(), copy.name());
         assertEquals(original.size(), copy.size());
         for (int i = 0; i < original.size(); i++) {

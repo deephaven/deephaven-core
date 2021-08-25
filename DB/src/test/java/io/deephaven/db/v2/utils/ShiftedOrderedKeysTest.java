@@ -13,8 +13,7 @@ public class ShiftedOrderedKeysTest extends OrderedKeysTestBase {
         for (int i = 0; i < values.length; ++i) {
             shifted[i] = values[i] + SHIFT;
         }
-        final OrderedKeys other =
-            OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(LongChunk.chunkWrap(shifted));
+        final OrderedKeys other = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(LongChunk.chunkWrap(shifted));
         return ShiftedOrderedKeys.wrap(closeOnTearDownCase(other), -SHIFT);
     }
 
@@ -22,8 +21,7 @@ public class ShiftedOrderedKeysTest extends OrderedKeysTestBase {
     @Override
     // The original test uses some large keys that overflow when shifted.
     public void testCanConstructOrderedKeys() {
-        final long[] indices =
-            indicesFromRanges(0, 4, Long.MAX_VALUE - 4 - SHIFT, Long.MAX_VALUE - SHIFT);
+        final long[] indices = indicesFromRanges(0, 4, Long.MAX_VALUE - 4 - SHIFT, Long.MAX_VALUE - SHIFT);
         try (final OrderedKeys OK = create(indices)) {
             assertContentsByIndices(indices, OK);
         }

@@ -8,10 +8,10 @@ import java.io.Serializable;
 import java.util.NoSuchElementException;
 
 /**
- * A trivial circular buffer for primitive longs, like java.util.concurrent.ArrayBlockingQueue but
- * without all the synchronization and collection cruft. Storage is between head (incl.) and tail
- * (excl.) wrapping around the end of the array. If the buffer is *not* growable, it will make room
- * for a new element by dropping off the oldest element in the buffer instead.
+ * A trivial circular buffer for primitive longs, like java.util.concurrent.ArrayBlockingQueue but without all the
+ * synchronization and collection cruft. Storage is between head (incl.) and tail (excl.) wrapping around the end of the
+ * array. If the buffer is *not* growable, it will make room for a new element by dropping off the oldest element in the
+ * buffer instead.
  */
 public class LongRingBuffer implements Serializable {
 

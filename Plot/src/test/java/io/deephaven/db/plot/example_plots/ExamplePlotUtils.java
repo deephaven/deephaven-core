@@ -17,7 +17,6 @@ public class ExamplePlotUtils {
      */
     public static void display(final Figure fig) {
         final BaseFigureImpl figImpl = ((FigureImpl) fig).getFigure();
-        // TODO: Do something here to actually display a sample plot, in the absence of Swing
-        // plotting support.
+        // TODO: Do something here to actually display a sample plot, in the absence of Swing plotting support.
     }
 }

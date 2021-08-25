@@ -29,8 +29,7 @@ public class InMemoryBlockTableWriter {
         this(definition, 1000);
     }
 
-    public InMemoryBlockTableWriter(TableDefinition definition, int baseBlockSize)
-        throws IOException {
+    public InMemoryBlockTableWriter(TableDefinition definition, int baseBlockSize) throws IOException {
         this.definition = definition;
         this.baseBlockSize = baseBlockSize;
         initialize();

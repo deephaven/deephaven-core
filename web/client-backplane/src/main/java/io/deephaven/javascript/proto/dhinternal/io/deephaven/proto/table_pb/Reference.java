@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.Reference",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.Reference",
+        namespace = JsPackage.GLOBAL)
 public class Reference {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -48,7 +48,7 @@ public class Reference {
     public static native void serializeBinaryToWriter(Reference message, Object writer);
 
     public static native Reference.ToObjectReturnType toObject(
-        boolean includeInstance, Reference msg);
+            boolean includeInstance, Reference msg);
 
     public native String getColumnName();
 

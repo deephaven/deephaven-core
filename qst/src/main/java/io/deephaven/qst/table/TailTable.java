@@ -33,7 +33,7 @@ public abstract class TailTable extends TableBase implements SingleParentTable {
     final void checkSize() {
         if (size() < 0) {
             throw new IllegalArgumentException(
-                String.format("tail must have a non-negative size: %d", size()));
+                    String.format("tail must have a non-negative size: %d", size()));
         }
     }
 }

@@ -46,9 +46,9 @@ public class IdeSession extends HasEventHandling {
 
     @JsIgnore
     public IdeSession(
-        WorkerConnection connection,
-        Ticket connectionResult,
-        JsRunnable closer) {
+            WorkerConnection connection,
+            Ticket connectionResult,
+            JsRunnable closer) {
         this.result = connectionResult;
         cancelled = new JsSet<>();
         this.connection = connection;
@@ -78,8 +78,7 @@ public class IdeSession extends HasEventHandling {
         return connection.getObject(definition, result);
     }
 
-    public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data,
-        String userTimeZone) {
+    public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data, String userTimeZone) {
         return connection.newTable(columnNames, types, data, userTimeZone, this).then(table -> {
             final CustomEventInit event = CustomEventInit.create();
             event.setDetail(table);
@@ -104,9 +103,9 @@ public class IdeSession extends HasEventHandling {
         bindRequest.setTableId(table.getHandle().makeTicket());
         bindRequest.setVariableName(name);
         return Callbacks
-            .grpcUnaryPromise(c -> connection.consoleServiceClient()
-                .bindTableToVariable(bindRequest, connection.metadata(), c::apply))
-            .then(ignore -> Promise.resolve((Void) null));
+                .grpcUnaryPromise(c -> connection.consoleServiceClient().bindTableToVariable(bindRequest,
+                        connection.metadata(), c::apply))
+                .then(ignore -> Promise.resolve((Void) null));
     }
 
     public void close() {
@@ -119,8 +118,7 @@ public class IdeSession extends HasEventHandling {
         request.setConsoleId(this.result);
         request.setCode(code);
         Promise<ExecuteCommandResponse> runCodePromise = Callbacks.grpcUnaryPromise(c -> {
-            connection.consoleServiceClient().executeCommand(request, connection.metadata(),
-                c::apply);
+            connection.consoleServiceClient().executeCommand(request, connection.metadata(), c::apply);
         });
         runCodePromise.then(response -> {
             CommandResult commandResult = new CommandResult();
@@ -138,15 +136,14 @@ public class IdeSession extends HasEventHandling {
         });
 
         CancellablePromise<JsCommandResult> result = promise.asPromise(
-            res -> new JsCommandResult(res),
-            () -> {
-                // cancelled.add(handle);
-                // CancelCommandRequest cancelRequest = new CancelCommandRequest();
-                // cancelRequest.setCommandid();
-                // connection.consoleServiceClient().cancelCommand(cancelRequest,
-                // connection.metadata());
-                throw new UnsupportedOperationException("cancelCommand");
-            });
+                res -> new JsCommandResult(res),
+                () -> {
+                    // cancelled.add(handle);
+                    // CancelCommandRequest cancelRequest = new CancelCommandRequest();
+                    // cancelRequest.setCommandid();
+                    // connection.consoleServiceClient().cancelCommand(cancelRequest, connection.metadata());
+                    throw new UnsupportedOperationException("cancelCommand");
+                });
 
         CommandInfo commandInfo = new CommandInfo(code, result);
         final CustomEventInit event = CustomEventInit.create();
@@ -157,11 +154,10 @@ public class IdeSession extends HasEventHandling {
     }
 
     private VariableDefinition[] copyVariables(
-        JsArray<io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.VariableDefinition> list) {
+            JsArray<io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.VariableDefinition> list) {
         VariableDefinition[] array = new VariableDefinition[0];
         // noinspection ConstantConditions
-        list.forEach((item, p1, p2) -> array[array.length] =
-            new VariableDefinition(item.getName(), item.getType()));
+        list.forEach((item, p1, p2) -> array[array.length] = new VariableDefinition(item.getName(), item.getType()));
         return array;
     }
 
@@ -184,7 +180,7 @@ public class IdeSession extends HasEventHandling {
 
         JsLog.debug("Opening document for autocomplete ", request);
         connection.consoleServiceClient().openDocument(request, connection.metadata(),
-            (p0, p1) -> JsLog.debug("open doc response", p0, p1));
+                (p0, p1) -> JsLog.debug("open doc response", p0, p1));
     }
 
     public void changeDocument(Object params) {
@@ -216,7 +212,7 @@ public class IdeSession extends HasEventHandling {
 
         JsLog.debug("Sending content changes", request);
         connection.consoleServiceClient().changeDocument(request, connection.metadata(),
-            (p0, p1) -> JsLog.debug("Updated doc", p0, p1));
+                (p0, p1) -> JsLog.debug("Updated doc", p0, p1));
     }
 
     private DocumentRange toRange(final Any range) {
@@ -235,32 +231,27 @@ public class IdeSession extends HasEventHandling {
         return result;
     }
 
-    public Promise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>> getCompletionItems(
-        Object params) {
+    public Promise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>> getCompletionItems(Object params) {
         final JsPropertyMap<Object> jsMap = Js.uncheckedCast(params);
         final GetCompletionItemsRequest request = new GetCompletionItemsRequest();
 
-        final VersionedTextDocumentIdentifier textDocument =
-            toVersionedTextDoc(jsMap.getAny("textDocument"));
+        final VersionedTextDocumentIdentifier textDocument = toVersionedTextDoc(jsMap.getAny("textDocument"));
         request.setTextDocument(textDocument);
         request.setPosition(toPosition(jsMap.getAny("position")));
         request.setContext(toContext(jsMap.getAny("context")));
         request.setConsoleId(this.result);
 
-        LazyPromise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>> promise =
-            new LazyPromise<>();
-        connection.consoleServiceClient().getCompletionItems(request, connection.metadata(),
-            (p0, p1) -> {
-                JsLog.debug("Got completions", p0, p1);
-                promise.succeed(cleanupItems(p1.getItemsList()));
-            });
+        LazyPromise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>> promise = new LazyPromise<>();
+        connection.consoleServiceClient().getCompletionItems(request, connection.metadata(), (p0, p1) -> {
+            JsLog.debug("Got completions", p0, p1);
+            promise.succeed(cleanupItems(p1.getItemsList()));
+        });
 
         return promise.asPromise(JsTable.MAX_BATCH_TIME)
-            .then(Promise::resolve);
+                .then(Promise::resolve);
     }
 
-    private JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem> cleanupItems(
-        final JsArray itemsList) {
+    private JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem> cleanupItems(final JsArray itemsList) {
         JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem> cleaned = new JsArray<>();
         if (itemsList != null) {
             for (int i = 0; i < itemsList.getLength(); i++) {
@@ -287,13 +278,12 @@ public class IdeSession extends HasEventHandling {
         final JsPropertyMap<Object> jsMap = Js.uncheckedCast(params);
         final CloseDocumentRequest request = new CloseDocumentRequest();
         request.setConsoleId(result);
-        final VersionedTextDocumentIdentifier textDocument =
-            toVersionedTextDoc(jsMap.getAny("textDocument"));
+        final VersionedTextDocumentIdentifier textDocument = toVersionedTextDoc(jsMap.getAny("textDocument"));
         request.setTextDocument(textDocument);
 
         JsLog.debug("Closing document for autocomplete ", request);
         connection.consoleServiceClient().closeDocument(request, connection.metadata(),
-            (p0, p1) -> JsLog.debug("response back", p0, p1));
+                (p0, p1) -> JsLog.debug("response back", p0, p1));
     }
 
     private VersionedTextDocumentIdentifier toVersionedTextDoc(final Any textDoc) {

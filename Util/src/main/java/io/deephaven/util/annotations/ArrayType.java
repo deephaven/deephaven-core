@@ -3,8 +3,7 @@ package io.deephaven.util.annotations;
 import java.lang.annotation.*;
 
 /**
- * This annotation indicates that the annotated class in some way represents an array of the
- * specified type.
+ * This annotation indicates that the annotated class in some way represents an array of the specified type.
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)

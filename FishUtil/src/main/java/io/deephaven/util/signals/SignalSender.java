@@ -25,8 +25,7 @@ public class SignalSender {
     }
 
     /**
-     * Helper method - sends SIQQUIT to a process. If this process is a JVM, it will send a stack
-     * dump to stdout.
+     * Helper method - sends SIQQUIT to a process. If this process is a JVM, it will send a stack dump to stdout.
      *
      * @param processId The process ID to send the signal to
      * @return true on success, false on error
@@ -73,8 +72,7 @@ public class SignalSender {
      * @return true on success, false on error
      */
     private boolean sendSignal(final int processId, final SignalUtils.Signal signal) {
-        Require.gtZero(processId, "processId"); // Don't want to allow fancier usages for now. See
-                                                // 'man -s 2 kill'.
+        Require.gtZero(processId, "processId"); // Don't want to allow fancier usages for now. See 'man -s 2 kill'.
         Require.neqNull(signal, "signal");
 
         final int rc;
@@ -84,9 +82,8 @@ public class SignalSender {
             try {
                 rc = SignalUtils.sendSignalWithBinKill(processId, signal.getSignalName());
             } catch (IOException e) {
-                log.error().append("sendSignal: Exception while using /bin/kill to send ")
-                    .append(signal.toString()).append(" to processId ").append(processId)
-                    .append(": ").append(e).endl();
+                log.error().append("sendSignal: Exception while using /bin/kill to send ").append(signal.toString())
+                        .append(" to processId ").append(processId).append(": ").append(e).endl();
                 return false;
             }
         }
@@ -94,11 +91,10 @@ public class SignalSender {
         if (rc == 0) {
             return true;
         }
-        log.error().append("sendSignal: Error while using ")
-            .append(useNative ? "native code" : "/bin/kill")
-            .append(" to send ").append(signal.toString())
-            .append(" to processId ").append(processId)
-            .append(": kill returned ").append(rc).endl();
+        log.error().append("sendSignal: Error while using ").append(useNative ? "native code" : "/bin/kill")
+                .append(" to send ").append(signal.toString())
+                .append(" to processId ").append(processId)
+                .append(": kill returned ").append(rc).endl();
         return false;
     }
 

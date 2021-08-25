@@ -9,8 +9,7 @@ import java.lang.ref.ReferenceQueue;
 /**
  * A weakly-held CleanupReference.
  */
-public abstract class WeakCleanupReference<T> extends WeakSimpleReference<T>
-    implements CleanupReference<T> {
+public abstract class WeakCleanupReference<T> extends WeakSimpleReference<T> implements CleanupReference<T> {
 
     public WeakCleanupReference(final T referent, final ReferenceQueue<? super T> referenceQueue) {
         super(referent, referenceQueue);

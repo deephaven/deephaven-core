@@ -70,10 +70,8 @@ public class TestPrimitiveParseUtil extends TestCase {
         }
 
         // Test with radix
-        Require.eq(parseUnsignedInt("1000000", NULL_INT),
-            "parseUnsignedInt(\"1_000_000\", NULL_INT)", NULL_INT);
-        Require.eq(parseUnsignedInt("1000000", 10), "parseUnsignedInt(\"1_000_000\", 10)",
-            1_000_000);
+        Require.eq(parseUnsignedInt("1000000", NULL_INT), "parseUnsignedInt(\"1_000_000\", NULL_INT)", NULL_INT);
+        Require.eq(parseUnsignedInt("1000000", 10), "parseUnsignedInt(\"1_000_000\", 10)", 1_000_000);
     }
 
     public void testParseLong() {
@@ -93,8 +91,7 @@ public class TestPrimitiveParseUtil extends TestCase {
 
     public void testParseUnsignedLong() {
         Require.eq(parseUnsignedLong(null), "parseUnsignedLong(null)", NULL_LONG);
-        Require.eq(parseUnsignedLong("4000000000"), "parseUnsignedLong(\"4000000000\")",
-            4_000_000_000L);
+        Require.eq(parseUnsignedLong("4000000000"), "parseUnsignedLong(\"4000000000\")", 4_000_000_000L);
 
         try {
             parseUnsignedLong("");
@@ -109,10 +106,9 @@ public class TestPrimitiveParseUtil extends TestCase {
         }
 
         // Test with radix
-        Require.eq(parseUnsignedLong("4000000000", NULL_INT),
-            "parseUnsignedLong(\"4_000_000_000\", NULL_INT)", NULL_LONG);
-        Require.eq(parseUnsignedLong("4000000000", 10), "parseUnsignedLong(\"4_000_000_000\", 10)",
-            4_000_000_000L);
+        Require.eq(parseUnsignedLong("4000000000", NULL_INT), "parseUnsignedLong(\"4_000_000_000\", NULL_INT)",
+                NULL_LONG);
+        Require.eq(parseUnsignedLong("4000000000", 10), "parseUnsignedLong(\"4_000_000_000\", 10)", 4_000_000_000L);
     }
 
     public void testParseDouble() {
@@ -140,8 +136,7 @@ public class TestPrimitiveParseUtil extends TestCase {
     public void testParseBoolean() {
         Require.eq(parseBoolean(null), "parseBoolean(null)", NULL_BOOLEAN);
         Require.eq(parseBoolean("true"), "parseBoolean(\"true\")", Boolean.TRUE);
-        Require.eq(parseBoolean(""), "parseBoolean(\"\")", Boolean.FALSE); // Unlike numbers, no
-                                                                           // Exception for this one
+        Require.eq(parseBoolean(""), "parseBoolean(\"\")", Boolean.FALSE); // Unlike numbers, no Exception for this one
     }
 
 }

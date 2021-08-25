@@ -67,8 +67,7 @@ abstract class FpChunkedNonNormalCounter {
         }
 
         final long totalNanCount;
-        totalNanCount =
-            NullSafeAddition.plusLong(nanCount.getUnsafe(destination), newNans - oldNans);
+        totalNanCount = NullSafeAddition.plusLong(nanCount.getUnsafe(destination), newNans - oldNans);
         nanCount.set(destination, totalNanCount);
         return totalNanCount;
     }
@@ -84,8 +83,8 @@ abstract class FpChunkedNonNormalCounter {
         }
         final long totalPositiveInfinityCount;
         if (hasPositiveInfinities) {
-            totalPositiveInfinityCount = NullSafeAddition
-                .plusLong(positiveInfinityCount.getUnsafe(destination), newPositiveInfinity);
+            totalPositiveInfinityCount =
+                    NullSafeAddition.plusLong(positiveInfinityCount.getUnsafe(destination), newPositiveInfinity);
             if (newPositiveInfinity != 0) {
                 positiveInfinityCount.set(destination, totalPositiveInfinityCount);
             }
@@ -96,8 +95,7 @@ abstract class FpChunkedNonNormalCounter {
     }
 
 
-    final long updatePositiveInfinityCount(long destination, int oldPositiveInfinities,
-        int newPositiveInfinities) {
+    final long updatePositiveInfinityCount(long destination, int oldPositiveInfinities, int newPositiveInfinities) {
         if (newPositiveInfinities == oldPositiveInfinities) {
             if (hasPositiveInfinities) {
                 return positiveInfinityCount.getUnsafe(destination);
@@ -116,8 +114,7 @@ abstract class FpChunkedNonNormalCounter {
         }
 
         final long totalPositiveInfinityCount;
-        totalPositiveInfinityCount =
-            NullSafeAddition.plusLong(positiveInfinityCount.getUnsafe(destination),
+        totalPositiveInfinityCount = NullSafeAddition.plusLong(positiveInfinityCount.getUnsafe(destination),
                 newPositiveInfinities - oldPositiveInfinities);
         positiveInfinityCount.set(destination, totalPositiveInfinityCount);
         return totalPositiveInfinityCount;
@@ -134,8 +131,8 @@ abstract class FpChunkedNonNormalCounter {
         }
         final long totalNegativeInfinityCount;
         if (hasNegativeInfinities) {
-            totalNegativeInfinityCount = NullSafeAddition
-                .plusLong(negativeInfinityCount.getUnsafe(destination), newNegativeInfinity);
+            totalNegativeInfinityCount =
+                    NullSafeAddition.plusLong(negativeInfinityCount.getUnsafe(destination), newNegativeInfinity);
             if (newNegativeInfinity != 0) {
                 negativeInfinityCount.set(destination, totalNegativeInfinityCount);
             }
@@ -145,8 +142,7 @@ abstract class FpChunkedNonNormalCounter {
         return totalNegativeInfinityCount;
     }
 
-    final long updateNegativeInfinityCount(long destination, int oldNegativeInfinities,
-        int newNegativeInfinities) {
+    final long updateNegativeInfinityCount(long destination, int oldNegativeInfinities, int newNegativeInfinities) {
         if (newNegativeInfinities == oldNegativeInfinities) {
             if (hasNegativeInfinities) {
                 return negativeInfinityCount.getUnsafe(destination);
@@ -165,8 +161,7 @@ abstract class FpChunkedNonNormalCounter {
         }
 
         final long totalNegativeInfinityCount;
-        totalNegativeInfinityCount =
-            NullSafeAddition.plusLong(negativeInfinityCount.getUnsafe(destination),
+        totalNegativeInfinityCount = NullSafeAddition.plusLong(negativeInfinityCount.getUnsafe(destination),
                 newNegativeInfinities - oldNegativeInfinities);
         negativeInfinityCount.set(destination, totalNegativeInfinityCount);
         return totalNegativeInfinityCount;
@@ -203,26 +198,25 @@ abstract class FpChunkedNonNormalCounter {
         if (nanCount != null) {
             results.put(name + ROLLUP_NAN_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, nanCount);
         } else {
-            results.put(name + ROLLUP_NAN_COLUMN_ID + ROLLUP_COLUMN_SUFFIX,
-                new WrappedLongArraySource(() -> nanCount));
+            results.put(name + ROLLUP_NAN_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, new WrappedLongArraySource(() -> nanCount));
         }
         if (positiveInfinityCount != null) {
             results.put(name + ROLLUP_PIC_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, positiveInfinityCount);
         } else {
             results.put(name + ROLLUP_PIC_COLUMN_ID + ROLLUP_COLUMN_SUFFIX,
-                new WrappedLongArraySource(() -> positiveInfinityCount));
+                    new WrappedLongArraySource(() -> positiveInfinityCount));
         }
         if (negativeInfinityCount != null) {
             results.put(name + ROLLUP_NIC_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, negativeInfinityCount);
         } else {
             results.put(name + ROLLUP_NIC_COLUMN_ID + ROLLUP_COLUMN_SUFFIX,
-                new WrappedLongArraySource(() -> negativeInfinityCount));
+                    new WrappedLongArraySource(() -> negativeInfinityCount));
         }
         return results;
     }
 
     private static class WrappedLongArraySource extends AbstractColumnSource<Long>
-        implements MutableColumnSourceGetDefaults.ForLong {
+            implements MutableColumnSourceGetDefaults.ForLong {
         final Supplier<LongArraySource> sourceSupplier;
 
         private WrappedLongArraySource(Supplier<LongArraySource> sourceSupplier) {
@@ -272,8 +266,7 @@ abstract class FpChunkedNonNormalCounter {
 
         @Override
         public void fillChunk(@NotNull FillContext context,
-            @NotNull WritableChunk<? super Attributes.Values> destination,
-            @NotNull OrderedKeys orderedKeys) {
+                @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
             final LongArraySource longArraySource = sourceSupplier.get();
             if (longArraySource == null) {
                 destination.fillWithNullValue(0, orderedKeys.intSize());
@@ -284,8 +277,7 @@ abstract class FpChunkedNonNormalCounter {
 
         @Override
         public void fillPrevChunk(@NotNull FillContext context,
-            @NotNull WritableChunk<? super Attributes.Values> destination,
-            @NotNull OrderedKeys orderedKeys) {
+                @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
             final LongArraySource longArraySource = sourceSupplier.get();
             if (longArraySource == null) {
                 destination.fillWithNullValue(0, orderedKeys.intSize());
@@ -296,7 +288,7 @@ abstract class FpChunkedNonNormalCounter {
 
         @Override
         public Chunk<? extends Attributes.Values> getChunk(@NotNull GetContext context,
-            @NotNull OrderedKeys orderedKeys) {
+                @NotNull OrderedKeys orderedKeys) {
             final LongArraySource longArraySource = sourceSupplier.get();
             if (longArraySource == null) {
                 return doNullFill((DefaultGetContext) context, orderedKeys.intSize());
@@ -306,12 +298,11 @@ abstract class FpChunkedNonNormalCounter {
         }
 
         @Override
-        public Chunk<? extends Attributes.Values> getChunk(@NotNull GetContext context,
-            long firstKey, long lastKey) {
+        public Chunk<? extends Attributes.Values> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
             final LongArraySource longArraySource = sourceSupplier.get();
             if (longArraySource == null) {
                 return doNullFill((DefaultGetContext) context,
-                    LongSizedDataStructure.intSize("getChunk", lastKey - firstKey + 1));
+                        LongSizedDataStructure.intSize("getChunk", lastKey - firstKey + 1));
             } else {
                 return longArraySource.getChunk(context, firstKey, lastKey);
             }
@@ -328,7 +319,7 @@ abstract class FpChunkedNonNormalCounter {
 
         @Override
         public Chunk<? extends Attributes.Values> getPrevChunk(@NotNull GetContext context,
-            @NotNull OrderedKeys orderedKeys) {
+                @NotNull OrderedKeys orderedKeys) {
             final LongArraySource longArraySource = sourceSupplier.get();
             if (longArraySource == null) {
                 return doNullFill((DefaultGetContext) context, orderedKeys.intSize());
@@ -338,12 +329,12 @@ abstract class FpChunkedNonNormalCounter {
         }
 
         @Override
-        public Chunk<? extends Attributes.Values> getPrevChunk(@NotNull GetContext context,
-            long firstKey, long lastKey) {
+        public Chunk<? extends Attributes.Values> getPrevChunk(@NotNull GetContext context, long firstKey,
+                long lastKey) {
             final LongArraySource longArraySource = sourceSupplier.get();
             if (longArraySource == null) {
                 return doNullFill((DefaultGetContext) context,
-                    LongSizedDataStructure.intSize("getPrevChunk", lastKey - firstKey + 1));
+                        LongSizedDataStructure.intSize("getPrevChunk", lastKey - firstKey + 1));
             } else {
                 return longArraySource.getPrevChunk(context, firstKey, lastKey);
             }

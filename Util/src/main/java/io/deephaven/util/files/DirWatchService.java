@@ -25,14 +25,10 @@ import java.util.regex.Pattern;
 public class DirWatchService {
 
     /**
-     * The preferred watcher type is the built-in Java one as it's more efficient, but it doesn't
-     * catch all new files
+     * The preferred watcher type is the built-in Java one as it's more efficient, but it doesn't catch all new files
      */
     public enum WatchServiceType {
-        /**
-         * The built-in Java classes are efficient on Linux but don't catch remotely-created NFS
-         * files
-         */
+        /** The built-in Java classes are efficient on Linux but don't catch remotely-created NFS files */
         JAVAWATCHSERVICE("JavaWatchService"),
         /** A simple poll loop watcher */
         POLLWATCHSERVICE("PollWatchService");
@@ -68,8 +64,8 @@ public class DirWatchService {
         private final boolean watchServiceTerminated;
         private final Path path;
 
-        private ExceptionConsumerParameter(final Exception exception,
-            final boolean watchServiceTerminated, final Path path) {
+        private ExceptionConsumerParameter(final Exception exception, final boolean watchServiceTerminated,
+                final Path path) {
             this.exception = exception;
             this.watchServiceTerminated = watchServiceTerminated;
             this.path = path;
@@ -89,8 +85,7 @@ public class DirWatchService {
     }
 
     /**
-     * Class to store the consumers and matcher types for use in the Maps used to track the files
-     * being watched for
+     * Class to store the consumers and matcher types for use in the Maps used to track the files being watched for
      */
     private class FileWatcher {
 
@@ -106,10 +101,9 @@ public class DirWatchService {
         }
 
         /**
-         * Wrap the call to the user's consumer in a try block, as these are called on the watcher
-         * thread and we don't want consumer exceptions to kill that thread. At some point we may
-         * want to consider moving this call into its own thread so that the file watches don't hang
-         * up on long-lived consume operations.
+         * Wrap the call to the user's consumer in a try block, as these are called on the watcher thread and we don't
+         * want consumer exceptions to kill that thread. At some point we may want to consider moving this call into its
+         * own thread so that the file watches don't hang up on long-lived consume operations.
          */
         void consume(final Path p, final WatchEvent.Kind k) {
             for (BiConsumer<Path, WatchEvent.Kind> consumer : consumers) {
@@ -123,28 +117,28 @@ public class DirWatchService {
     }
 
     /**
-     * An "exact-match" file watcher, keyed by the token that must appear before the separator
-     * (supplied on registration).
+     * An "exact-match" file watcher, keyed by the token that must appear before the separator (supplied on
+     * registration).
      */
     private class ExactMatchFileWatcher extends FileWatcher {
 
         private final String tokenToMatch;
 
         private ExactMatchFileWatcher(@NotNull final BiConsumer<Path, WatchEvent.Kind> consumer,
-            @NotNull final String tokenToMatch) {
+                @NotNull final String tokenToMatch) {
             super(consumer);
             this.tokenToMatch = tokenToMatch;
         }
     }
 
     private static final KeyedObjectKey<String, ExactMatchFileWatcher> EXACT_MATCH_KEY =
-        new KeyedObjectKey.Basic<String, ExactMatchFileWatcher>() {
+            new KeyedObjectKey.Basic<String, ExactMatchFileWatcher>() {
 
-            @Override
-            public String getKey(@NotNull final ExactMatchFileWatcher value) {
-                return value.tokenToMatch;
-            }
-        };
+                @Override
+                public String getKey(@NotNull final ExactMatchFileWatcher value) {
+                    return value.tokenToMatch;
+                }
+            };
 
     private class SeparatorToExactMatchWatchersPair {
 
@@ -157,10 +151,10 @@ public class DirWatchService {
         }
 
         private void addWatcher(@NotNull final String filePattern,
-            @NotNull final BiConsumer<Path, WatchEvent.Kind> consumer) {
+                @NotNull final BiConsumer<Path, WatchEvent.Kind> consumer) {
             exactMatchWatchers.compute(filePattern, (k, oldFileWatcher) -> {
-                // TODO: If we didn't need to take a consumer in the constructor, we could make this
-                // simpler and use putIfAbsent or computeIfAbsent.
+                // TODO: If we didn't need to take a consumer in the constructor, we could make this simpler and use
+                // putIfAbsent or computeIfAbsent.
                 if (oldFileWatcher != null) {
                     oldFileWatcher.addConsumer(consumer);
                     return oldFileWatcher;
@@ -179,7 +173,7 @@ public class DirWatchService {
         private final Predicate<String> matcher;
 
         private FilteringFileWatcher(@NotNull final BiConsumer<Path, WatchEvent.Kind> consumer,
-            @NotNull final Predicate<String> matcher) {
+                @NotNull final Predicate<String> matcher) {
             super(consumer);
             this.matcher = matcher;
         }
@@ -223,8 +217,7 @@ public class DirWatchService {
             watcher = FileSystems.getDefault().newWatchService();
             dir.register(watcher, watchEventKinds);
 
-            watcherThread =
-                new Thread(this::runJavaFileWatcher, "DirWatchService" + "-" + dirToWatch);
+            watcherThread = new Thread(this::runJavaFileWatcher, "DirWatchService" + "-" + dirToWatch);
             watcherThread.setDaemon(true);
             watcherThread.start();
         }
@@ -232,8 +225,7 @@ public class DirWatchService {
         @Override
         public synchronized void stop() throws IOException {
             if (watcherThread == null) {
-                throw new IllegalStateException(
-                    "Trying to stop an already-stopped DirWatchService!");
+                throw new IllegalStateException("Trying to stop an already-stopped DirWatchService!");
             }
 
             stopRequested = true;
@@ -272,12 +264,11 @@ public class DirWatchService {
 
                 for (WatchEvent<?> event : watchKey.pollEvents()) {
                     final WatchEvent.Kind kind = event.kind();
-                    // An overflow event means that too many file events have happened and we've
-                    // lost some - best to indicate a problem
+                    // An overflow event means that too many file events have happened and we've lost some - best to
+                    // indicate a problem
                     if (kind == StandardWatchEventKinds.OVERFLOW) {
                         callExceptionConsumer(new RuntimeException(
-                            "Overflow event received in DirWatchService, file events possibly lost"),
-                            true);
+                                "Overflow event received in DirWatchService, file events possibly lost"), true);
                         return;
                     }
 
@@ -290,30 +281,25 @@ public class DirWatchService {
                 }
 
                 if (!watchKey.reset()) {
-                    callExceptionConsumer(new RuntimeException(
-                        "Error resetting watch key in directory watch service"), true);
+                    callExceptionConsumer(new RuntimeException("Error resetting watch key in directory watch service"),
+                            true);
                     return;
                 }
             }
         }
     }
 
-    /**
-     * WatcherInterface implementation for an implementation that uses the Apache polling service
-     */
+    /** WatcherInterface implementation for an implementation that uses the Apache polling service */
     private class WatcherInterfacePollImpl implements WatcherInterface {
         private final FileAlterationMonitor fileAlterationMonitor;
         private boolean fileAlterationMonitorStarted;
 
-        private WatcherInterfacePollImpl(long pollIntervalMillis, final String dirToWatch,
-            WatchEvent.Kind... kinds) {
-            final FileAlterationObserver fileAlterationObserver =
-                new FileAlterationObserver(new File(dirToWatch));
+        private WatcherInterfacePollImpl(long pollIntervalMillis, final String dirToWatch, WatchEvent.Kind... kinds) {
+            final FileAlterationObserver fileAlterationObserver = new FileAlterationObserver(new File(dirToWatch));
 
             /*
-             * Convert the events to and from the Java standard - it would be nice to have all these
-             * in one listener... A switch statement won't work here as these values might look like
-             * enums or constants but aren't
+             * Convert the events to and from the Java standard - it would be nice to have all these in one listener...
+             * A switch statement won't work here as these values might look like enums or constants but aren't
              */
             for (WatchEvent.Kind kind : kinds) {
                 if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
@@ -339,20 +325,18 @@ public class DirWatchService {
                     });
                 } else {
                     throw new IllegalArgumentException(
-                        "DirWatchService passed unsupported watch event kind: " + kind.name());
+                            "DirWatchService passed unsupported watch event kind: " + kind.name());
                 }
             }
 
-            fileAlterationMonitor =
-                new FileAlterationMonitor(pollIntervalMillis, fileAlterationObserver);
+            fileAlterationMonitor = new FileAlterationMonitor(pollIntervalMillis, fileAlterationObserver);
             fileAlterationMonitorStarted = false;
         }
 
         @Override
         public synchronized void start() throws Exception {
             if (fileAlterationMonitorStarted) {
-                throw new IllegalStateException(
-                    "Trying to start an already-started DirWatchService!");
+                throw new IllegalStateException("Trying to start an already-started DirWatchService!");
             }
             fileAlterationMonitor.start();
             fileAlterationMonitorStarted = true;
@@ -383,26 +367,25 @@ public class DirWatchService {
     private final WatcherInterface watcherImpl;
 
     /**
-     * Constructor to create a directory watch service. This initializes the instance but doesn't
-     * add any watch patterns, and doesn't start the watch thread.
+     * Constructor to create a directory watch service. This initializes the instance but doesn't add any watch
+     * patterns, and doesn't start the watch thread.
      *
      * @param dirToWatch Directory to watch for changes
-     * @param exceptionConsumer Consumer to accept exceptions if they occur. Even if the watch
-     *        service has terminated, stop() should be called before restarting it. The
-     *        exceptionConsumer must accept two arguments - the Exception generated, and a boolean
-     *        which specifies whether the WatchService has terminated as a result of the exception.
+     * @param exceptionConsumer Consumer to accept exceptions if they occur. Even if the watch service has terminated,
+     *        stop() should be called before restarting it. The exceptionConsumer must accept two arguments - the
+     *        Exception generated, and a boolean which specifies whether the WatchService has terminated as a result of
+     *        the exception.
      * @param watchServiceType the watch service type, from the WatchServiceType enum
      * @param pollIntervalMillis for a poll service, the interval between polls
-     * @param kinds The kinds of events that may need to be watched from
-     *        java.nio.file.StandardWatchEventKinds, valid options are: ENTRY_CREATE, ENTRY_DELETE,
-     *        and ENTRY_MODIFY
+     * @param kinds The kinds of events that may need to be watched from java.nio.file.StandardWatchEventKinds, valid
+     *        options are: ENTRY_CREATE, ENTRY_DELETE, and ENTRY_MODIFY
      */
     @SuppressWarnings("WeakerAccess")
     public DirWatchService(@NotNull final String dirToWatch,
-        @NotNull final Consumer<ExceptionConsumerParameter> exceptionConsumer,
-        @NotNull final WatchServiceType watchServiceType,
-        final long pollIntervalMillis,
-        @NotNull final WatchEvent.Kind... kinds) {
+            @NotNull final Consumer<ExceptionConsumerParameter> exceptionConsumer,
+            @NotNull final WatchServiceType watchServiceType,
+            final long pollIntervalMillis,
+            @NotNull final WatchEvent.Kind... kinds) {
         separatorToExactMatchWatchers = new ArrayList<>();
         filteringFileWatchers = new ArrayDeque<>();
 
@@ -420,43 +403,38 @@ public class DirWatchService {
                 break;
 
             default:
-                throw new IllegalArgumentException(
-                    "Unknown watch service type: " + watchServiceType);
+                throw new IllegalArgumentException("Unknown watch service type: " + watchServiceType);
         }
     }
 
-    // If the exception consumer generates an exception, wrap it; this will terminate the watch
-    // service.
+    // If the exception consumer generates an exception, wrap it; this will terminate the watch service.
     private void callExceptionConsumer(final Exception e, final Boolean watchServiceTerminated) {
         try {
-            exceptionConsumer
-                .accept(new ExceptionConsumerParameter(e, watchServiceTerminated, keyDir));
+            exceptionConsumer.accept(new ExceptionConsumerParameter(e, watchServiceTerminated, keyDir));
         } catch (Exception e2) {
             throw new RuntimeException(e);
         }
     }
 
     /**
-     * Adds an exact match file pattern to watch for; equivalent to adding with the
-     * EXACT_MATCH_WITH_SEPARATOR MatcherType
+     * Adds an exact match file pattern to watch for; equivalent to adding with the EXACT_MATCH_WITH_SEPARATOR
+     * MatcherType
      * 
-     * @param filePattern The exact file pattern to watch for (i.e. the part before the separator
-     *        must match this)
+     * @param filePattern The exact file pattern to watch for (i.e. the part before the separator must match this)
      * @param consumer The consumer to be called when the pattern is matched
      */
     @SuppressWarnings("WeakerAccess")
     public synchronized void addExactFileWatch(@NotNull final String separator,
-        @NotNull final String filePattern,
-        @NotNull final BiConsumer<Path, WatchEvent.Kind> consumer) {
+            @NotNull final String filePattern,
+            @NotNull final BiConsumer<Path, WatchEvent.Kind> consumer) {
         final SeparatorToExactMatchWatchersPair pair = separatorToExactMatchWatchers.stream()
-            .filter((p) -> p.fileSeparator.equals(separator))
-            .findFirst()
-            .orElseGet(() -> {
-                final SeparatorToExactMatchWatchersPair p =
-                    new SeparatorToExactMatchWatchersPair(separator);
-                separatorToExactMatchWatchers.add(p);
-                return p;
-            });
+                .filter((p) -> p.fileSeparator.equals(separator))
+                .findFirst()
+                .orElseGet(() -> {
+                    final SeparatorToExactMatchWatchersPair p = new SeparatorToExactMatchWatchersPair(separator);
+                    separatorToExactMatchWatchers.add(p);
+                    return p;
+                });
         pair.addWatcher(filePattern, consumer);
     }
 
@@ -468,7 +446,7 @@ public class DirWatchService {
      */
     @SuppressWarnings("unused")
     public synchronized void addFileWatchAtEnd(@NotNull final Predicate<String> matcher,
-        @NotNull final BiConsumer<Path, WatchEvent.Kind> consumer) {
+            @NotNull final BiConsumer<Path, WatchEvent.Kind> consumer) {
         filteringFileWatchers.addLast(new FilteringFileWatcher(consumer, matcher));
     }
 
@@ -479,7 +457,7 @@ public class DirWatchService {
      * @param consumer Consumer to be called with the file and event type
      */
     public synchronized void addFileWatchAtStart(@NotNull final Predicate<String> matcher,
-        @NotNull final BiConsumer<Path, WatchEvent.Kind> consumer) {
+            @NotNull final BiConsumer<Path, WatchEvent.Kind> consumer) {
         filteringFileWatchers.addFirst(new FilteringFileWatcher(consumer, matcher));
     }
 
@@ -491,8 +469,8 @@ public class DirWatchService {
     }
 
     /**
-     * Starts the watch service thread. Even if it's initially empty the service should start as it
-     * could get files later.
+     * Starts the watch service thread. Even if it's initially empty the service should start as it could get files
+     * later.
      * 
      * @throws IOException from the Java watch service
      */
@@ -501,8 +479,8 @@ public class DirWatchService {
     }
 
     /**
-     * Check the exact matcher list for any matchers and call the consumer if one is found. Returns
-     * true if a match was found.
+     * Check the exact matcher list for any matchers and call the consumer if one is found. Returns true if a match was
+     * found.
      */
     private synchronized FileWatcher checkExactMatches(final String fileName) {
         for (final SeparatorToExactMatchWatchersPair pair : separatorToExactMatchWatchers) {
@@ -511,15 +489,9 @@ public class DirWatchService {
 
             final int fileSeparatorIndex = fileName.indexOf(fileSeparator);
             if (fileSeparatorIndex > 0) {
-                final String fileNameBeforeSeparator = fileName.substring(0, fileSeparatorIndex); // Must
-                                                                                                  // be
-                                                                                                  // non-zero
-                                                                                                  // length
-                                                                                                  // because
-                                                                                                  // of
-                                                                                                  // the
-                                                                                                  // above
-                                                                                                  // check
+                final String fileNameBeforeSeparator = fileName.substring(0, fileSeparatorIndex); // Must be non-zero
+                                                                                                  // length because of
+                                                                                                  // the above check
                 final FileWatcher fileWatcher = exactMatchWatchers.get(fileNameBeforeSeparator);
                 if (fileWatcher != null) {
                     return fileWatcher;
@@ -530,8 +502,7 @@ public class DirWatchService {
     }
 
     /**
-     * Check the pattern match list and call the first one found, if any. Returns true if a match
-     * was found.
+     * Check the pattern match list and call the first one found, if any. Returns true if a match was found.
      */
     private synchronized FileWatcher checkPatternMatches(final String fileName) {
         for (FilteringFileWatcher fileWatcher : filteringFileWatchers) {
@@ -545,8 +516,7 @@ public class DirWatchService {
     private void handleFileEvent(final String fileName, final WatchEvent.Kind kind) {
         FileWatcher foundFileWatcher;
         synchronized (this) {
-            // The first check is against the set of hash entries for the exact match - this
-            // requires a separator
+            // The first check is against the set of hash entries for the exact match - this requires a separator
             foundFileWatcher = checkExactMatches(fileName);
 
             // If an exact match wasn't found, then check for pattern matches

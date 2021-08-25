@@ -17,8 +17,7 @@ import java.nio.ByteBuffer;
  * Decodes values written in the grammar described in {@link RunLengthBitPackingHybridEncoder}
  */
 public class RunLenghBitPackingHybridBufferDecoder {
-    private static final Logger LOG =
-        LoggerFactory.getLogger(RunLenghBitPackingHybridBufferDecoder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RunLenghBitPackingHybridBufferDecoder.class);
     private int rangeCount;
     private final int maxLevel;
     private int rleCandidateValue;
@@ -40,8 +39,7 @@ public class RunLenghBitPackingHybridBufferDecoder {
         this.bitWidth = BytesUtils.getWidthFromMaxInt(maxLevel);
         this.maxLevel = maxLevel;
         LOG.debug("decoding bitWidth {}", bitWidth);
-        Preconditions.checkArgument(bitWidth >= 0 && bitWidth <= 32,
-            "bitWidth must be >= 0 and <= 32");
+        Preconditions.checkArgument(bitWidth >= 0 && bitWidth <= 32, "bitWidth must be >= 0 and <= 32");
         this.packer = Packer.LITTLE_ENDIAN.newBytePacker(bitWidth);
         this.in = in;
     }
@@ -99,8 +97,7 @@ public class RunLenghBitPackingHybridBufferDecoder {
                     currentCount = 0;
                     break;
                 case PACKED:
-                    while (currentCount > 0
-                        && (currentBuffer[currentBuffer.length - currentCount] == currentValue)) {
+                    while (currentCount > 0 && (currentBuffer[currentBuffer.length - currentCount] == currentValue)) {
                         currentCount--;
                         rangeCount++;
                     }
@@ -153,8 +150,8 @@ public class RunLenghBitPackingHybridBufferDecoder {
                 int bytesToRead = (int) Math.ceil(currentCount * bitWidth / 8.0);
                 bytesToRead = Math.min(bytesToRead, in.remaining());
                 int newPos = in.position() + bytesToRead;
-                for (int valueIndex = 0, byteIndex = 0; valueIndex < currentCount; valueIndex +=
-                    8, byteIndex += bitWidth) {
+                for (int valueIndex = 0, byteIndex = 0; valueIndex < currentCount; valueIndex += 8, byteIndex +=
+                        bitWidth) {
                     packer.unpack8Values(in, byteIndex + in.position(), currentBuffer, valueIndex);
                 }
                 in.position(newPos);

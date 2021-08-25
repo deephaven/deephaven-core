@@ -9,22 +9,17 @@ import io.deephaven.configuration.Configuration;
 /**
  * A RandomBuilder type that uses a priority queue of ranges.
  *
- * Each range entered into the Index is stored in a priority queue, backed by two long arrays. One
- * array contains the start elements, the second array contains the end elements. The priority
- * function is the start element.
+ * Each range entered into the Index is stored in a priority queue, backed by two long arrays. One array contains the
+ * start elements, the second array contains the end elements. The priority function is the start element.
  *
- * We may have many overlapping ranges in the priority queue; as an optimization, if two adjacent
- * ranges are entered into the queue consecutively, the range is not stored in the queue more than
- * once.
+ * We may have many overlapping ranges in the priority queue; as an optimization, if two adjacent ranges are entered
+ * into the queue consecutively, the range is not stored in the queue more than once.
  */
 public class RangePriorityQueueBuilder {
-    private static final int doublingAllocThreshold =
-        Configuration.getInstance().getIntegerForClassWithDefault(
+    private static final int doublingAllocThreshold = Configuration.getInstance().getIntegerForClassWithDefault(
             MixedBuilder.class, "doublingAllocThreshold", 128 * 1024);
-    // Things are nicer (integer division will be bit shift) if this is a power of 2, but it is not
-    // mandatory.
-    private static final int linearAllocStep =
-        Configuration.getInstance().getIntegerForClassWithDefault(
+    // Things are nicer (integer division will be bit shift) if this is a power of 2, but it is not mandatory.
+    private static final int linearAllocStep = Configuration.getInstance().getIntegerForClassWithDefault(
             MixedBuilder.class, "linearAllocStep", 128 * 1024);
 
     /** The range start keys, slot 0 is unused. */
@@ -36,10 +31,9 @@ public class RangePriorityQueueBuilder {
     private int lastEntered = -1;
 
     /**
-     * The size of the queue (invariant: size < start.length - 1). Note since we don't use element 0
-     * in start and end arrays, this size does not match the normal invariant in array access where
-     * the last element used is an array a[] is a[size - 1]; in our case the last element used is
-     * a[size].
+     * The size of the queue (invariant: size < start.length - 1). Note since we don't use element 0 in start and end
+     * arrays, this size does not match the normal invariant in array access where the last element used is an array a[]
+     * is a[size - 1]; in our case the last element used is a[size].
      */
     private int size = 0;
 
@@ -100,10 +94,9 @@ public class RangePriorityQueueBuilder {
      */
     private void enter(final long startKey, final long endKey) {
         if (lastEntered >= 1 &&
-            endKey >= start[lastEntered] - 1 &&
-            startKey <= end[lastEntered] + 1) {
-            // the endPosition is after the start position, and the start position is before the end
-            // position,
+                endKey >= start[lastEntered] - 1 &&
+                startKey <= end[lastEntered] + 1) {
+            // the endPosition is after the start position, and the start position is before the end position,
             // so we overlap this range
             if (endKey > end[lastEntered]) {
                 end[lastEntered] = endKey;
@@ -233,8 +226,7 @@ public class RangePriorityQueueBuilder {
         }
     }
 
-    private void populateSequentialBuilder(
-        final TreeIndexImpl.SequentialBuilder sequentialBuilder) {
+    private void populateSequentialBuilder(final TreeIndexImpl.SequentialBuilder sequentialBuilder) {
         long lastEnd = -1;
         while (!isEmpty()) {
             long firstKey = topStart();
@@ -255,8 +247,7 @@ public class RangePriorityQueueBuilder {
     }
 
     private TreeIndexImpl getTreeIndexImplInternal() {
-        final TreeIndexImpl.SequentialBuilder sequentialBuilder =
-            new TreeIndexImplSequentialBuilder();
+        final TreeIndexImpl.SequentialBuilder sequentialBuilder = new TreeIndexImplSequentialBuilder();
         populateSequentialBuilder(sequentialBuilder);
         return sequentialBuilder.getTreeIndexImpl();
     }

@@ -7,8 +7,8 @@ import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value;
 
 /**
- * Representation class for grouping column information stored in key-value metadata for
- * Deephaven-written Parquet files.
+ * Representation class for grouping column information stored in key-value metadata for Deephaven-written Parquet
+ * files.
  */
 @Value.Immutable
 @SimpleStyle

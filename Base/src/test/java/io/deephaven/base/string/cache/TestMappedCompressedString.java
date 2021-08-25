@@ -23,46 +23,40 @@ public class TestMappedCompressedString extends TestCase {
         assertEquals(mcs.hashCode(), "".hashCode());
         assertTrue(Arrays.equals(mcs.getData(), "".getBytes()));
 
-        assertTrue(
-            CharSequenceUtils.contentEquals(mcs = new MappedCompressedString("hello"), "hello"));
+        assertTrue(CharSequenceUtils.contentEquals(mcs = new MappedCompressedString("hello"), "hello"));
         assertEquals(mcs.toString(), "hello");
         assertEquals(mcs.hashCode(), "hello".hashCode());
         assertTrue(Arrays.equals(mcs.getData(), "hello".getBytes()));
 
-        assertTrue(CharSequenceUtils
-            .contentEquals(mcs = new MappedCompressedString("again".toCharArray()), "again"));
+        assertTrue(CharSequenceUtils.contentEquals(mcs = new MappedCompressedString("again".toCharArray()), "again"));
         assertEquals(mcs.toString(), "again");
         assertEquals(mcs.hashCode(), "again".hashCode());
         assertTrue(Arrays.equals(mcs.getData(), "again".getBytes()));
 
-        assertTrue(CharSequenceUtils
-            .contentEquals(mcs = new MappedCompressedString("!?!?".toCharArray(), 2, 1), "!"));
+        assertTrue(CharSequenceUtils.contentEquals(mcs = new MappedCompressedString("!?!?".toCharArray(), 2, 1), "!"));
         assertEquals(mcs.toString(), "!");
         assertEquals(mcs.hashCode(), "!".hashCode());
         assertTrue(Arrays.equals(mcs.getData(), "!".getBytes()));
 
-        assertTrue(CharSequenceUtils
-            .contentEquals(mcs = new MappedCompressedString("dancing".getBytes()), "dancing"));
+        assertTrue(CharSequenceUtils.contentEquals(mcs = new MappedCompressedString("dancing".getBytes()), "dancing"));
         assertEquals(mcs.toString(), "dancing");
         assertEquals(mcs.hashCode(), "dancing".hashCode());
         assertTrue(Arrays.equals(mcs.getData(), "dancing".getBytes()));
 
-        assertTrue(CharSequenceUtils.contentEquals(
-            mcs = new MappedCompressedString("dancing with the stars!".getBytes(), 17, 5),
-            "stars"));
+        assertTrue(CharSequenceUtils
+                .contentEquals(mcs = new MappedCompressedString("dancing with the stars!".getBytes(), 17, 5), "stars"));
         assertEquals(mcs.toString(), "stars");
         assertEquals(mcs.hashCode(), "stars".hashCode());
         assertTrue(Arrays.equals(mcs.getData(), "stars".getBytes()));
 
-        assertTrue(CharSequenceUtils.contentEquals(
-            mcs = new MappedCompressedString(ByteBuffer.wrap("happy".getBytes())), "happy"));
+        assertTrue(CharSequenceUtils
+                .contentEquals(mcs = new MappedCompressedString(ByteBuffer.wrap("happy".getBytes())), "happy"));
         assertEquals(mcs.toString(), "happy");
         assertEquals(mcs.hashCode(), "happy".hashCode());
         assertTrue(Arrays.equals(mcs.getData(), "happy".getBytes()));
 
-        assertTrue(CharSequenceUtils.contentEquals(
-            mcs = new MappedCompressedString(ByteBuffer.wrap("hedgehog!".getBytes()), 5, 3),
-            "hog"));
+        assertTrue(CharSequenceUtils
+                .contentEquals(mcs = new MappedCompressedString(ByteBuffer.wrap("hedgehog!".getBytes()), 5, 3), "hog"));
         assertEquals(mcs.toString(), "hog");
         assertEquals(mcs.hashCode(), "hog".hashCode());
         assertTrue(Arrays.equals(mcs.getData(), "hog".getBytes()));

@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.CompletionContext",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.CompletionContext",
+        namespace = JsPackage.GLOBAL)
 public class CompletionContext {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -56,12 +56,12 @@ public class CompletionContext {
     public static native CompletionContext deserializeBinary(Uint8Array bytes);
 
     public static native CompletionContext deserializeBinaryFromReader(
-        CompletionContext message, Object reader);
+            CompletionContext message, Object reader);
 
     public static native void serializeBinaryToWriter(CompletionContext message, Object writer);
 
     public static native CompletionContext.ToObjectReturnType toObject(
-        boolean includeInstance, CompletionContext msg);
+            boolean includeInstance, CompletionContext msg);
 
     public native String getTriggerCharacter();
 

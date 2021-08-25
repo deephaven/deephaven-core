@@ -170,8 +170,7 @@ public class ComparePrimitives {
      * @return maximum of the valid input values. If both inputs are invalid, null is returned.
      */
     public static short max(final short v1, final short v2) {
-        return ShortPrimitives.isNull(v1) ? v2
-            : ShortPrimitives.isNull(v2) ? v1 : v1 < v2 ? v2 : v1;
+        return ShortPrimitives.isNull(v1) ? v2 : ShortPrimitives.isNull(v2) ? v1 : v1 < v2 ? v2 : v1;
     }
 
     /**
@@ -237,8 +236,7 @@ public class ComparePrimitives {
      * @return minimum of the valid input values. If both inputs are invalid, null is returned.
      */
     public static short min(final short v1, final short v2) {
-        return ShortPrimitives.isNull(v1) ? v2
-            : ShortPrimitives.isNull(v2) ? v1 : v1 > v2 ? v2 : v1;
+        return ShortPrimitives.isNull(v1) ? v2 : ShortPrimitives.isNull(v2) ? v1 : v1 > v2 ? v2 : v1;
     }
 
     /**
@@ -296,8 +294,7 @@ public class ComparePrimitives {
      * @return maximum of the valid input values. If both inputs are invalid, null is returned.
      */
     public static int max(final int v1, final byte v2) {
-        return BytePrimitives.isNull(v2) ? v1
-            : IntegerPrimitives.isNull(v1) ? v2 : v1 < v2 ? v2 : v1;
+        return BytePrimitives.isNull(v2) ? v1 : IntegerPrimitives.isNull(v1) ? v2 : v1 < v2 ? v2 : v1;
     }
 
     /**
@@ -308,8 +305,7 @@ public class ComparePrimitives {
      * @return maximum of the valid input values. If both inputs are invalid, null is returned.
      */
     public static int max(final int v1, final short v2) {
-        return ShortPrimitives.isNull(v2) ? v1
-            : IntegerPrimitives.isNull(v1) ? v2 : v1 < v2 ? v2 : v1;
+        return ShortPrimitives.isNull(v2) ? v1 : IntegerPrimitives.isNull(v1) ? v2 : v1 < v2 ? v2 : v1;
     }
 
     /**
@@ -320,8 +316,7 @@ public class ComparePrimitives {
      * @return maximum of the valid input values. If both inputs are invalid, null is returned.
      */
     public static int max(final int v1, final int v2) {
-        return IntegerPrimitives.isNull(v1) ? v2
-            : IntegerPrimitives.isNull(v2) ? v1 : v1 < v2 ? v2 : v1;
+        return IntegerPrimitives.isNull(v1) ? v2 : IntegerPrimitives.isNull(v2) ? v1 : v1 < v2 ? v2 : v1;
     }
 
     /**
@@ -366,8 +361,7 @@ public class ComparePrimitives {
      * @return minimum of the valid input values. If both inputs are invalid, null is returned.
      */
     public static int min(final int v1, final byte v2) {
-        return BytePrimitives.isNull(v2) ? v1
-            : IntegerPrimitives.isNull(v1) ? v2 : v1 > v2 ? v2 : v1;
+        return BytePrimitives.isNull(v2) ? v1 : IntegerPrimitives.isNull(v1) ? v2 : v1 > v2 ? v2 : v1;
     }
 
     /**
@@ -378,8 +372,7 @@ public class ComparePrimitives {
      * @return minimum of the valid input values. If both inputs are invalid, null is returned.
      */
     public static int min(final int v1, final short v2) {
-        return ShortPrimitives.isNull(v2) ? v1
-            : IntegerPrimitives.isNull(v1) ? v2 : v1 > v2 ? v2 : v1;
+        return ShortPrimitives.isNull(v2) ? v1 : IntegerPrimitives.isNull(v1) ? v2 : v1 > v2 ? v2 : v1;
     }
 
     /**
@@ -390,8 +383,7 @@ public class ComparePrimitives {
      * @return minimum of the valid input values. If both inputs are invalid, null is returned.
      */
     public static int min(final int v1, final int v2) {
-        return IntegerPrimitives.isNull(v1) ? v2
-            : IntegerPrimitives.isNull(v2) ? v1 : v1 > v2 ? v2 : v1;
+        return IntegerPrimitives.isNull(v1) ? v2 : IntegerPrimitives.isNull(v2) ? v1 : v1 > v2 ? v2 : v1;
     }
 
     /**
@@ -460,8 +452,7 @@ public class ComparePrimitives {
      * @return maximum of the valid input values. If both inputs are invalid, null is returned.
      */
     public static long max(final long v1, final int v2) {
-        return IntegerPrimitives.isNull(v2) ? v1
-            : LongPrimitives.isNull(v1) ? v2 : v1 < v2 ? v2 : v1;
+        return IntegerPrimitives.isNull(v2) ? v1 : LongPrimitives.isNull(v1) ? v2 : v1 < v2 ? v2 : v1;
     }
 
     /**
@@ -528,8 +519,7 @@ public class ComparePrimitives {
      * @return minimum of the valid input values. If both inputs are invalid, null is returned.
      */
     public static long min(final long v1, final int v2) {
-        return IntegerPrimitives.isNull(v2) ? v1
-            : LongPrimitives.isNull(v1) ? v2 : v1 > v2 ? v2 : v1;
+        return IntegerPrimitives.isNull(v2) ? v1 : LongPrimitives.isNull(v1) ? v2 : v1 > v2 ? v2 : v1;
     }
 
     /**
@@ -577,7 +567,7 @@ public class ComparePrimitives {
      */
     public static float max(final float v1, final byte v2) {
         return BytePrimitives.isNull(v2) ? (Float.isNaN(v1) ? NULL_FLOAT : v1)
-            : (Float.isNaN(v1) || FloatPrimitives.isNull(v1)) ? v2 : v1 < v2 ? v2 : v1;
+                : (Float.isNaN(v1) || FloatPrimitives.isNull(v1)) ? v2 : v1 < v2 ? v2 : v1;
     }
 
     /**
@@ -589,7 +579,7 @@ public class ComparePrimitives {
      */
     public static float max(final float v1, final short v2) {
         return ShortPrimitives.isNull(v2) ? (Float.isNaN(v1) ? NULL_FLOAT : v1)
-            : (Float.isNaN(v1) || FloatPrimitives.isNull(v1)) ? v2 : v1 < v2 ? v2 : v1;
+                : (Float.isNaN(v1) || FloatPrimitives.isNull(v1)) ? v2 : v1 < v2 ? v2 : v1;
     }
 
     /**
@@ -629,8 +619,7 @@ public class ComparePrimitives {
         final boolean isV2Null = FloatPrimitives.isNull(v2);
         final boolean isV2Invalid = isV2NaN || isV2Null;
 
-        return isV1Invalid ? (isV2Invalid ? NULL_FLOAT : v2)
-            : (isV2Invalid ? v1 : v1 < v2 ? v2 : v1);
+        return isV1Invalid ? (isV2Invalid ? NULL_FLOAT : v2) : (isV2Invalid ? v1 : v1 < v2 ? v2 : v1);
     }
 
     /**
@@ -654,7 +643,7 @@ public class ComparePrimitives {
      */
     public static float min(final float v1, final byte v2) {
         return BytePrimitives.isNull(v2) ? (Float.isNaN(v1) ? NULL_FLOAT : v1)
-            : (Float.isNaN(v1) || FloatPrimitives.isNull(v1)) ? v2 : v1 > v2 ? v2 : v1;
+                : (Float.isNaN(v1) || FloatPrimitives.isNull(v1)) ? v2 : v1 > v2 ? v2 : v1;
     }
 
     /**
@@ -666,7 +655,7 @@ public class ComparePrimitives {
      */
     public static float min(final float v1, final short v2) {
         return ShortPrimitives.isNull(v2) ? (Float.isNaN(v1) ? NULL_FLOAT : v1)
-            : (Float.isNaN(v1) || FloatPrimitives.isNull(v1)) ? v2 : v1 > v2 ? v2 : v1;
+                : (Float.isNaN(v1) || FloatPrimitives.isNull(v1)) ? v2 : v1 > v2 ? v2 : v1;
     }
 
     /**
@@ -706,8 +695,7 @@ public class ComparePrimitives {
         final boolean isV2Null = FloatPrimitives.isNull(v2);
         final boolean isV2Invalid = isV2NaN || isV2Null;
 
-        return isV1Invalid ? (isV2Invalid ? NULL_FLOAT : v2)
-            : (isV2Invalid ? v1 : v1 > v2 ? v2 : v1);
+        return isV1Invalid ? (isV2Invalid ? NULL_FLOAT : v2) : (isV2Invalid ? v1 : v1 > v2 ? v2 : v1);
     }
 
     /**
@@ -733,7 +721,7 @@ public class ComparePrimitives {
      */
     public static double max(final double v1, final byte v2) {
         return BytePrimitives.isNull(v2) ? (Double.isNaN(v1) ? NULL_DOUBLE : v1)
-            : (Double.isNaN(v1) || DoublePrimitives.isNull(v1)) ? v2 : v1 < v2 ? v2 : v1;
+                : (Double.isNaN(v1) || DoublePrimitives.isNull(v1)) ? v2 : v1 < v2 ? v2 : v1;
     }
 
     /**
@@ -745,7 +733,7 @@ public class ComparePrimitives {
      */
     public static double max(final double v1, final short v2) {
         return ShortPrimitives.isNull(v2) ? (Double.isNaN(v1) ? NULL_DOUBLE : v1)
-            : (Double.isNaN(v1) || DoublePrimitives.isNull(v1)) ? v2 : v1 < v2 ? v2 : v1;
+                : (Double.isNaN(v1) || DoublePrimitives.isNull(v1)) ? v2 : v1 < v2 ? v2 : v1;
     }
 
     /**
@@ -757,7 +745,7 @@ public class ComparePrimitives {
      */
     public static double max(final double v1, final int v2) {
         return IntegerPrimitives.isNull(v2) ? (Double.isNaN(v1) ? NULL_DOUBLE : v1)
-            : (Double.isNaN(v1) || DoublePrimitives.isNull(v1)) ? v2 : v1 < v2 ? v2 : v1;
+                : (Double.isNaN(v1) || DoublePrimitives.isNull(v1)) ? v2 : v1 < v2 ? v2 : v1;
     }
 
     /**
@@ -778,9 +766,8 @@ public class ComparePrimitives {
                 try {
                     return returnValue(v2);
                 } catch (final Casting.LosingPrecisionWhileCastingException uoe) {
-                    throw new Casting.LosingPrecisionWhileCastingException("Not supported: max("
-                        + v1 + ", " + v2
-                        + "), because the result loses the precision while being cast to double.");
+                    throw new Casting.LosingPrecisionWhileCastingException("Not supported: max(" + v1 + ", " + v2
+                            + "), because the result loses the precision while being cast to double.");
                 }
             } else {
                 return v1;
@@ -803,8 +790,7 @@ public class ComparePrimitives {
         final boolean isV2Null = FloatPrimitives.isNull(v2);
         final boolean isV2Invalid = isV2NaN || isV2Null;
 
-        return isV1Invalid ? (isV2Invalid ? NULL_DOUBLE : v2)
-            : (isV2Invalid ? v1 : v1 < v2 ? v2 : v1);
+        return isV1Invalid ? (isV2Invalid ? NULL_DOUBLE : v2) : (isV2Invalid ? v1 : v1 < v2 ? v2 : v1);
     }
 
     /**
@@ -822,8 +808,7 @@ public class ComparePrimitives {
         final boolean isV2Null = DoublePrimitives.isNull(v2);
         final boolean isV2Invalid = isV2NaN || isV2Null;
 
-        return isV1Invalid ? (isV2Invalid ? NULL_DOUBLE : v2)
-            : (isV2Invalid ? v1 : v1 < v2 ? v2 : v1);
+        return isV1Invalid ? (isV2Invalid ? NULL_DOUBLE : v2) : (isV2Invalid ? v1 : v1 < v2 ? v2 : v1);
     }
 
     /**
@@ -835,7 +820,7 @@ public class ComparePrimitives {
      */
     public static double min(final double v1, final byte v2) {
         return BytePrimitives.isNull(v2) ? (Double.isNaN(v1) ? NULL_DOUBLE : v1)
-            : (Double.isNaN(v1) || DoublePrimitives.isNull(v1)) ? v2 : v1 > v2 ? v2 : v1;
+                : (Double.isNaN(v1) || DoublePrimitives.isNull(v1)) ? v2 : v1 > v2 ? v2 : v1;
     }
 
     /**
@@ -847,7 +832,7 @@ public class ComparePrimitives {
      */
     public static double min(final double v1, final short v2) {
         return ShortPrimitives.isNull(v2) ? (Double.isNaN(v1) ? NULL_DOUBLE : v1)
-            : (Double.isNaN(v1) || DoublePrimitives.isNull(v1)) ? v2 : v1 > v2 ? v2 : v1;
+                : (Double.isNaN(v1) || DoublePrimitives.isNull(v1)) ? v2 : v1 > v2 ? v2 : v1;
     }
 
     /**
@@ -859,7 +844,7 @@ public class ComparePrimitives {
      */
     public static double min(final double v1, final int v2) {
         return IntegerPrimitives.isNull(v2) ? (Double.isNaN(v1) ? NULL_DOUBLE : v1)
-            : (Double.isNaN(v1) || DoublePrimitives.isNull(v1)) ? v2 : v1 > v2 ? v2 : v1;
+                : (Double.isNaN(v1) || DoublePrimitives.isNull(v1)) ? v2 : v1 > v2 ? v2 : v1;
     }
 
     /**
@@ -880,9 +865,8 @@ public class ComparePrimitives {
                 try {
                     return returnValue(v2);
                 } catch (final Casting.LosingPrecisionWhileCastingException uoe) {
-                    throw new Casting.LosingPrecisionWhileCastingException("Not supported: min("
-                        + v1 + ", " + v2
-                        + "), because the result loses the precision while being cast to double.");
+                    throw new Casting.LosingPrecisionWhileCastingException("Not supported: min(" + v1 + ", " + v2
+                            + "), because the result loses the precision while being cast to double.");
                 }
 
             } else {
@@ -899,8 +883,7 @@ public class ComparePrimitives {
         if (isLosingPrecision(v)) {
             // throw error
             throw new Casting.LosingPrecisionWhileCastingException(
-                "Not supported because the value, " + v
-                    + ", loses the precision while being cast to double.");
+                    "Not supported because the value, " + v + ", loses the precision while being cast to double.");
         } else {
             return v;
         }
@@ -921,8 +904,7 @@ public class ComparePrimitives {
         final boolean isV2Null = DoublePrimitives.isNull(v2);
         final boolean isV2Invalid = isV2NaN || isV2Null;
 
-        return isV1Invalid ? (isV2Invalid ? NULL_DOUBLE : v2)
-            : (isV2Invalid ? v1 : v1 > v2 ? v2 : v1);
+        return isV1Invalid ? (isV2Invalid ? NULL_DOUBLE : v2) : (isV2Invalid ? v1 : v1 > v2 ? v2 : v1);
     }
 
     /**
@@ -940,7 +922,6 @@ public class ComparePrimitives {
         final boolean isV2Null = FloatPrimitives.isNull(v2);
         final boolean isV2Invalid = isV2NaN || isV2Null;
 
-        return isV1Invalid ? (isV2Invalid ? NULL_DOUBLE : v2)
-            : (isV2Invalid ? v1 : v1 > v2 ? v2 : v1);
+        return isV1Invalid ? (isV2Invalid ? NULL_DOUBLE : v2) : (isV2Invalid ? v1 : v1 > v2 ? v2 : v1);
     }
 }

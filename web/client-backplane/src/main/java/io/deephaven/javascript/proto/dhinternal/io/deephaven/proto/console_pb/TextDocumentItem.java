@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.TextDocumentItem",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.TextDocumentItem",
+        namespace = JsPackage.GLOBAL)
 public class TextDocumentItem {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -80,12 +80,12 @@ public class TextDocumentItem {
     public static native TextDocumentItem deserializeBinary(Uint8Array bytes);
 
     public static native TextDocumentItem deserializeBinaryFromReader(
-        TextDocumentItem message, Object reader);
+            TextDocumentItem message, Object reader);
 
     public static native void serializeBinaryToWriter(TextDocumentItem message, Object writer);
 
     public static native TextDocumentItem.ToObjectReturnType toObject(
-        boolean includeInstance, TextDocumentItem msg);
+            boolean includeInstance, TextDocumentItem msg);
 
     public native String getLanguageId();
 

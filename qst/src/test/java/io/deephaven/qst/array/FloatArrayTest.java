@@ -14,6 +14,6 @@ public class FloatArrayTest {
     @Test
     void rawInRawOut() {
         assertThat(FloatArray.ofUnsafe(1f, Util.NULL_FLOAT, 3f).values()).containsExactly(1f,
-            Util.NULL_FLOAT, 3f);
+                Util.NULL_FLOAT, 3f);
     }
 }

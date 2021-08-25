@@ -27,20 +27,17 @@ public class DbPrevArrayColumnWrapper<T> extends DbArray.Indirect<T> {
     private final long startPadding;
     private final long endPadding;
 
-    public DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource,
-        @NotNull final Index index) {
+    public DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final Index index) {
         this(columnSource, index, 0, 0);
     }
 
-    public DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource,
-        @NotNull final Index index,
-        final long startPadding, final long endPadding) {
+    public DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final Index index,
+            final long startPadding, final long endPadding) {
         this(columnSource, index, startPadding, endPadding, false);
     }
 
-    private DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource,
-        @NotNull final Index index,
-        final long startPadding, final long endPadding, final boolean alreadyPrevIndex) {
+    private DbPrevArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final Index index,
+            final long startPadding, final long endPadding, final boolean alreadyPrevIndex) {
         Assert.neqNull(index, "index");
         this.columnSource = columnSource;
         this.index = alreadyPrevIndex ? index : index.getPrevIndex();
@@ -66,14 +63,13 @@ public class DbPrevArrayColumnWrapper<T> extends DbArray.Indirect<T> {
         final long realFrom = ClampUtil.clampLong(0, index.size(), fromIndexInclusive);
         final long realTo = ClampUtil.clampLong(0, index.size(), toIndexExclusive);
 
-        long newStartPadding = toIndexExclusive < 0 ? toIndexExclusive - fromIndexInclusive
-            : Math.max(0, -fromIndexInclusive);
-        long newEndPadding =
-            fromIndexInclusive >= index.size() ? toIndexExclusive - fromIndexInclusive
+        long newStartPadding =
+                toIndexExclusive < 0 ? toIndexExclusive - fromIndexInclusive : Math.max(0, -fromIndexInclusive);
+        long newEndPadding = fromIndexInclusive >= index.size() ? toIndexExclusive - fromIndexInclusive
                 : (int) Math.max(0, toIndexExclusive - index.size());
 
-        return new DbPrevArrayColumnWrapper<>(columnSource, index.subindexByPos(realFrom, realTo),
-            newStartPadding, newEndPadding, true);
+        return new DbPrevArrayColumnWrapper<>(columnSource, index.subindexByPos(realFrom, realTo), newStartPadding,
+                newEndPadding, true);
     }
 
     @Override
@@ -105,7 +101,7 @@ public class DbPrevArrayColumnWrapper<T> extends DbArray.Indirect<T> {
 
         @SuppressWarnings("unchecked")
         T result[] = (T[]) Array.newInstance(TypeUtils.getBoxedType(columnSource.getType()),
-            LongSizedDataStructure.intSize("toArray", sz));
+                LongSizedDataStructure.intSize("toArray", sz));
         for (int i = 0; i < sz; i++) {
             result[i] = get(i);
         }

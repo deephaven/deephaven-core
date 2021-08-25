@@ -35,7 +35,7 @@ public abstract class OrderedKeysAsChunkImpl implements OrderedKeys {
 
     private void makeKeyRangesChunk(final int size) {
         final WritableLongChunk<OrderedKeyRanges> chunk =
-            WritableLongChunk.makeWritableChunk(size);
+                WritableLongChunk.makeWritableChunk(size);
         keyRangesChunk = chunk;
     }
 

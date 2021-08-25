@@ -17,12 +17,11 @@ import java.util.Arrays;
 import java.util.Collection;
 
 /**
- * A table specification is a declarative description of a table query. Part of a "query syntax
- * tree".
+ * A table specification is a declarative description of a table query. Part of a "query syntax tree".
  *
  * <p>
- * A table specification may be built-up explicitly via the individual implementation class build
- * patterns, or may be built-up in a fluent-manner via the {@link TableOperations} interface.
+ * A table specification may be built-up explicitly via the individual implementation class build patterns, or may be
+ * built-up in a fluent-manner via the {@link TableOperations} interface.
  *
  * <p>
  * A table specification can be "replayed" against the fluent interfaces, see
@@ -64,15 +63,15 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, Serial
      */
     static TableSpec file(Path path) throws IOException, ClassNotFoundException {
         try (InputStream in = Files.newInputStream(path);
-            BufferedInputStream buf = new BufferedInputStream(in);
-            ObjectInputStream oIn = new ObjectInputStream(buf)) {
+                BufferedInputStream buf = new BufferedInputStream(in);
+                ObjectInputStream oIn = new ObjectInputStream(buf)) {
             return (TableSpec) oIn.readObject();
         }
     }
 
     /**
-     * The depth of the table is the maximum depth of its dependencies plus one. A table with no
-     * dependencies has a depth of zero.
+     * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
+     * depth of zero.
      *
      * @return the depth
      */

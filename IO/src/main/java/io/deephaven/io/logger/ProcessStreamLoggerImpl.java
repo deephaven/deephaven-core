@@ -17,37 +17,34 @@ import java.io.UncheckedIOException;
 import java.util.TimeZone;
 
 /**
- * Preserve some of the simplicity of StreamLoggerImpl while also retaining the formatting
- * functionality of LoggerImpl.
+ * Preserve some of the simplicity of StreamLoggerImpl while also retaining the formatting functionality of LoggerImpl.
  */
 public class ProcessStreamLoggerImpl extends LoggerImpl {
 
     public static Logger makeLogger(@NotNull final LoggerTimeSource timeSource,
-        @NotNull final TimeZone tz) {
+            @NotNull final TimeZone tz) {
         return makeLogger(System.out, LogLevel.INFO, 1024, 2048, 1024, timeSource, tz);
     }
 
     @SuppressWarnings({"WeakerAccess", "SameParameterValue"})
     public static Logger makeLogger(@NotNull final OutputStream outputStream,
-        @NotNull final LogLevel loggingLevel,
-        final int bufferSize,
-        final int bufferCount,
-        final int entryCount,
-        @NotNull final LoggerTimeSource timeSource,
-        @NotNull final TimeZone tz) {
+            @NotNull final LogLevel loggingLevel,
+            final int bufferSize,
+            final int bufferCount,
+            final int entryCount,
+            @NotNull final LoggerTimeSource timeSource,
+            @NotNull final TimeZone tz) {
         final LogEntryPool logEntryPool =
-            new LogEntryPoolImpl(entryCount, new LogBufferPoolImpl(bufferCount, bufferSize));
-        return new ProcessStreamLoggerImpl(logEntryPool, outputStream, loggingLevel, timeSource,
-            tz);
+                new LogEntryPoolImpl(entryCount, new LogBufferPoolImpl(bufferCount, bufferSize));
+        return new ProcessStreamLoggerImpl(logEntryPool, outputStream, loggingLevel, timeSource, tz);
     }
 
     private ProcessStreamLoggerImpl(@NotNull final LogEntryPool logEntryPool,
-        @NotNull final OutputStream outputStream,
-        @NotNull final LogLevel loggingLevel,
-        @NotNull final LoggerTimeSource timeSource,
-        @NotNull final TimeZone tz) {
-        super(logEntryPool, new Sink(outputStream, logEntryPool), null, loggingLevel, timeSource,
-            tz, true, false);
+            @NotNull final OutputStream outputStream,
+            @NotNull final LogLevel loggingLevel,
+            @NotNull final LoggerTimeSource timeSource,
+            @NotNull final TimeZone tz) {
+        super(logEntryPool, new Sink(outputStream, logEntryPool), null, loggingLevel, timeSource, tz, true, false);
     }
 
     /**
@@ -61,7 +58,7 @@ public class ProcessStreamLoggerImpl extends LoggerImpl {
         private Interceptor<LogEntry>[] interceptors = null;
 
         private Sink(@NotNull final OutputStream outputStream,
-            @NotNull final LogEntryPool logEntryPool) {
+                @NotNull final LogEntryPool logEntryPool) {
             this.outputStream = outputStream;
             this.logEntryPool = logEntryPool;
         }
@@ -86,8 +83,8 @@ public class ProcessStreamLoggerImpl extends LoggerImpl {
 
         @Override
         public void addInterceptor(@NotNull final Interceptor<LogEntry> logEntryInterceptor) {
-            interceptors = ArrayUtil.pushArray(logEntryInterceptor, interceptors,
-                ClassUtil.generify(Interceptor.class));
+            interceptors =
+                    ArrayUtil.pushArray(logEntryInterceptor, interceptors, ClassUtil.generify(Interceptor.class));
         }
     }
 }

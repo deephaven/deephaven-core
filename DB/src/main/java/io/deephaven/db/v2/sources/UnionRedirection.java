@@ -10,45 +10,42 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
- * This class manages the constituent Tables for a UnionColumnSource, so that we can map from an
- * outer (merged) index into the appropriate segment of a component table.
+ * This class manages the constituent Tables for a UnionColumnSource, so that we can map from an outer (merged) index
+ * into the appropriate segment of a component table.
  */
 public class UnionRedirection implements Serializable {
     /**
      * What do we tell users when they try to insert into a full Redirection index.
      */
     private static final String INDEX_OVERFLOW_MESSAGE =
-        "Failure to insert index into UnionRedirection, Index values exceed long.  If you have several recursive merges, consider rewriting your query to do a single merge of many tables.";
+            "Failure to insert index into UnionRedirection, Index values exceed long.  If you have several recursive merges, consider rewriting your query to do a single merge of many tables.";
 
     /**
      * This is the minimum size of an initial allocation of a region.
      */
     public static final long CHUNK_MULTIPLE =
-        Configuration.getInstance().getLongWithDefault("UnionRedirection.chunkMultiple", 1 << 16);
+            Configuration.getInstance().getLongWithDefault("UnionRedirection.chunkMultiple", 1 << 16);
 
     /**
      * How many slots do we allocate for tables (one slot per table).
      */
     private static final int INITIAL_SIZE = 8;
 
-    // cached last position, used to avoid the binary search for the table id, when requesting it
-    // for consecutive indices
+    // cached last position, used to avoid the binary search for the table id, when requesting it for consecutive
+    // indices
     private final ThreadLocal<Integer> lastPos = ThreadLocal.withInitial(() -> 0);
     private final ThreadLocal<Integer> prevLastPos = ThreadLocal.withInitial(() -> 0);
 
     // how many tables have been added to this redirection
     private int size = 0;
 
-    // the start of our outer index for this entry, the end of the current entry (+ 1) is in the
-    // next table
+    // the start of our outer index for this entry, the end of the current entry (+ 1) is in the next table
     long[] startOfIndices = new long[INITIAL_SIZE];
 
-    // the start of our outer prev index for this entry, the end of the current entry (+ 1) is in
-    // the next table
+    // the start of our outer prev index for this entry, the end of the current entry (+ 1) is in the next table
     long[] prevStartOfIndices = new long[INITIAL_SIZE];
 
-    // copy of prevStartOfIndices to be updated during the LTM cycle and swapped as a terminal
-    // notification
+    // copy of prevStartOfIndices to be updated during the LTM cycle and swapped as a terminal notification
     long[] prevStartOfIndicesAlt = new long[INITIAL_SIZE];
 
     /**
@@ -114,14 +111,13 @@ public class UnionRedirection implements Serializable {
             throw new UnsupportedOperationException(INDEX_OVERFLOW_MESSAGE);
         }
 
-        // Require empty tables have non-empty keyspace so that we can binary search on key to find
-        // source table.
+        // Require empty tables have non-empty keyspace so that we can binary search on key to find source table.
         return Math.max(1, numChunks) * CHUNK_MULTIPLE;
     }
 
     /**
-     * Append a new table at the end of this union with the given maxKey. It is expected that tables
-     * will be added in tableId order.
+     * Append a new table at the end of this union with the given maxKey. It is expected that tables will be added in
+     * tableId order.
      *
      * @param maxKey the maximum key of the table
      */
@@ -139,8 +135,7 @@ public class UnionRedirection implements Serializable {
         prevStartOfIndices[size] = prevStartOfIndices[size - 1] + keySpace;
         prevStartOfIndicesAlt[size] = prevStartOfIndicesAlt[size - 1] + keySpace;
 
-        if (startOfIndices[size] < 0 || prevStartOfIndices[size] < 0
-            || prevStartOfIndicesAlt[size] < 0) {
+        if (startOfIndices[size] < 0 || prevStartOfIndices[size] < 0 || prevStartOfIndicesAlt[size] < 0) {
             throw new UnsupportedOperationException(INDEX_OVERFLOW_MESSAGE);
         }
     }

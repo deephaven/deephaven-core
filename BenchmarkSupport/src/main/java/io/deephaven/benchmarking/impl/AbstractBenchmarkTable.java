@@ -11,8 +11,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
 /**
- * The base implementation of {@link BenchmarkTable}. This includes all of the common things that
- * the other specializations require.
+ * The base implementation of {@link BenchmarkTable}. This includes all of the common things that the other
+ * specializations require.
  */
 public abstract class AbstractBenchmarkTable implements BenchmarkTable {
     private final String name;
@@ -20,8 +20,7 @@ public abstract class AbstractBenchmarkTable implements BenchmarkTable {
     private Map<String, ColumnGenerator> generatorMap = Collections.emptyMap();
     private ExtendedRandom rand;
 
-    AbstractBenchmarkTable(@NotNull String name, long rngSeed,
-        @NotNull List<ColumnGenerator> generators) {
+    AbstractBenchmarkTable(@NotNull String name, long rngSeed, @NotNull List<ColumnGenerator> generators) {
         this.name = name;
         this.rngSeed = rngSeed;
         this.rand = new NormalExtendedRandom(new Random(rngSeed));
