@@ -185,6 +185,8 @@ message GetCompletionItemsRequest {
     CompletionContext context = 2;
     VersionedTextDocumentIdentifier text_document = 3;
     Position position = 4;
+
+    int32 request_id = 5;
 }
 message CompletionContext {
     int32 trigger_kind = 1;
@@ -192,6 +194,9 @@ message CompletionContext {
 }
 message GetCompletionItemsResponse {
     repeated CompletionItem items = 1;
+
+    int32 request_id = 2;
+    bool success = 3;
 }
 message CompletionItem {
     int32 start = 1;

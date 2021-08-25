@@ -31,6 +31,7 @@ import io.deephaven.lang.completion.CompletionLookups;
 import io.deephaven.lang.parse.CompletionParser;
 import io.deephaven.lang.parse.LspTools;
 import io.deephaven.lang.parse.ParsedDocument;
+import io.deephaven.lang.shared.lsp.CompletionCancelled;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.script.grpc.*;
@@ -301,21 +302,37 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                                         // The only stateful part of a completer is the CompletionLookups, which are already once-per-session-cached
                                         // so, we'll just create a new completer for each request. No need to hand onto these guys.
                                         final ChunkerCompleter completer = new ChunkerCompleter(log, vars, h);
-                                        final ParsedDocument parsed = parser.finish(doc.getUri());
+
+                                        final ParsedDocument parsed;
+                                        try {
+                                            parsed = parser.finish(doc.getUri());
+                                        } catch (CompletionCancelled exception) {
+                                            if (log.isTraceEnabled()) {
+                                                log.trace().append("Completion canceled").append(exception).endl();
+                                            }
+                                            safelyExecuteLocked(responseObserver, () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
+                                                    .setCompletionItems(GetCompletionItemsResponse.newBuilder()
+                                                            .setSuccess(false)
+                                                            .setRequestId(request.getRequestId())
+                                                    )
+                                                    .build()));
+                                            return;
+                                        }
+
                                         int offset = LspTools.getOffsetFromPosition(parsed.getSource(), request.getPosition());
                                         final Collection<CompletionItem.Builder> results = completer.runCompletion(parsed, request.getPosition(), offset);
                                         final GetCompletionItemsResponse mangledResults = GetCompletionItemsResponse.newBuilder()
+                                                .setSuccess(true)
+                                                .setRequestId(request.getRequestId())
                                                 .addAllItems(results.stream().map(
                                                         // insertTextFormat is a default we used to set in constructor;
                                                         // for now, we'll just process the objects before sending back to client
                                                         item -> item.setInsertTextFormat(2).build()
                                                 ).collect(Collectors.toSet())).build();
 
-                                        safelyExecuteLocked(responseObserver, () -> {
-                                            responseObserver.onNext(AutoCompleteResponse.newBuilder()
-                                                    .setCompletionItems(mangledResults)
-                                                    .build());
-                                        });
+                                        safelyExecuteLocked(responseObserver, () -> responseObserver.onNext(AutoCompleteResponse.newBuilder()
+                                                .setCompletionItems(mangledResults)
+                                                .build()));
                                     });
                             break;
                         }
