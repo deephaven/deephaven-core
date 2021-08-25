@@ -40,6 +40,7 @@ abstract class FlightCannedTableBase extends FlightExampleBase {
                 System.out.println(stream.getRoot().contentToTSVString());
             }
             end = System.nanoTime();
+
         }
         System.out.printf("%s duration%n", Duration.ofNanos(end - start));
     }

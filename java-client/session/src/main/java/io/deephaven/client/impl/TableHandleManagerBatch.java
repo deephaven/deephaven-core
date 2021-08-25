@@ -114,7 +114,8 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
         }
 
         private TableHandleException mixinStacktrace(TableHandleException t) {
-            // TODO: improve this once original error is exposed to subsequent creation responses
+            // TODO (deephaven-core#986): ExportedTableUpdateMessage should contain first dependent ticket failure if
+            // exists
             TableSpec tableThatErrored = t.handle().table();
             return creator.elements(tableThatErrored).map(t::mixinStacktrace).orElse(t);
         }

@@ -4,14 +4,14 @@ import io.deephaven.client.impl.TableHandle.Lifecycle;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.client.impl.TableHandle.UncheckedInterruptedException;
 import io.deephaven.client.impl.TableHandle.UncheckedTableHandleException;
-import io.deephaven.qst.TableCreationLabeledLogic;
-import io.deephaven.qst.TableCreationLogic;
 import io.deephaven.qst.LabeledValues;
 import io.deephaven.qst.TableAdapterResults;
 import io.deephaven.qst.TableAdapterResults.GetOutput;
-import io.deephaven.qst.TableCreator;
+import io.deephaven.qst.TableCreationLabeledLogic;
+import io.deephaven.qst.TableCreationLogic;
 import io.deephaven.qst.TableCreationLogic1Input;
 import io.deephaven.qst.TableCreationLogic2Inputs;
+import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.TableSpec;
 
 import java.util.ArrayList;
@@ -49,7 +49,7 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
         final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
         final TableAdapterResults<TableHandle, TableHandle> results;
         try {
-            results = TableCreator.create(manager, i -> i, i -> i, table);
+            results = checked(() -> TableCreator.create(manager, i -> i, i -> i, table));
         } catch (Throwable t) {
             tracker.closeAllExceptAndRemoveAll(Collections.emptySet());
             throw t;
@@ -60,13 +60,12 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
     }
 
     @Override
-    public List<TableHandle> execute(Iterable<TableSpec> tables)
-            throws TableHandleException, InterruptedException {
+    public List<TableHandle> execute(Iterable<TableSpec> tables) throws TableHandleException, InterruptedException {
         final Tracker tracker = new Tracker();
         final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
         final TableAdapterResults<TableHandle, TableHandle> results;
         try {
-            results = TableCreator.create(manager, i -> i, i -> i, tables);
+            results = checked(() -> TableCreator.create(manager, i -> i, i -> i, tables));
         } catch (Throwable t) {
             tracker.closeAllExceptAndRemoveAll(Collections.emptySet());
             throw t;
@@ -82,13 +81,12 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
     }
 
     @Override
-    public TableHandle executeLogic(TableCreationLogic logic)
-            throws TableHandleException, InterruptedException {
+    public TableHandle executeLogic(TableCreationLogic logic) throws TableHandleException, InterruptedException {
         final Tracker tracker = new Tracker();
         final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
         final TableHandle out;
         try {
-            out = checkedCreate(manager, logic);
+            out = checked(() -> logic.create(manager));
         } catch (Throwable t) {
             tracker.closeAllExceptAndRemoveAll(Collections.emptySet());
             throw t;
@@ -105,7 +103,7 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
         final List<TableHandle> out = new ArrayList<>();
         try {
             for (TableCreationLogic logic : logics) {
-                out.add(checkedCreate(manager, logic));
+                out.add(checked(() -> logic.create(manager)));
             }
         } catch (Throwable t) {
             tracker.closeAllExceptAndRemoveAll(Collections.emptySet());
@@ -122,7 +120,7 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
         final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
         final LabeledValues<TableHandle> out;
         try {
-            out = checkedCreate(manager, logic);
+            out = checked(() -> logic.create(manager));
         } catch (Throwable t) {
             tracker.closeAllExceptAndRemoveAll(Collections.emptySet());
             throw t;
@@ -134,42 +132,22 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
     @Override
     public TableHandle executeInputs(TableCreationLogic1Input logic, TableHandle t1)
             throws TableHandleException, InterruptedException {
-        try {
-            return logic.create(t1);
-        } catch (UncheckedInterruptedException e) {
-            throw e.getCause();
-        } catch (UncheckedTableHandleException e) {
-            throw e.getCause();
-        }
+        return checked(() -> logic.create(t1));
     }
 
     @Override
-    public TableHandle executeInputs(TableCreationLogic2Inputs logic, TableHandle t1,
-            TableHandle t2) throws InterruptedException, TableHandleException {
-        try {
-            return logic.create(t1, t2);
-        } catch (UncheckedInterruptedException e) {
-            throw e.getCause();
-        } catch (UncheckedTableHandleException e) {
-            throw e.getCause();
-        }
-    }
-
-    private static TableHandle checkedCreate(TableHandleManager manager, TableCreationLogic logic)
+    public TableHandle executeInputs(TableCreationLogic2Inputs logic, TableHandle t1, TableHandle t2)
             throws InterruptedException, TableHandleException {
-        try {
-            return logic.create(manager);
-        } catch (UncheckedInterruptedException e) {
-            throw e.getCause();
-        } catch (UncheckedTableHandleException e) {
-            throw e.getCause();
-        }
+        return checked(() -> logic.create(t1, t2));
     }
 
-    private static LabeledValues<TableHandle> checkedCreate(TableHandleManager manager,
-            TableCreationLabeledLogic logic) throws InterruptedException, TableHandleException {
+    interface Unchecked<T> {
+        T run();
+    }
+
+    private static <T> T checked(Unchecked<T> uncheckedCode) throws InterruptedException, TableHandleException {
         try {
-            return logic.create(manager);
+            return uncheckedCode.run();
         } catch (UncheckedInterruptedException e) {
             throw e.getCause();
         } catch (UncheckedTableHandleException e) {

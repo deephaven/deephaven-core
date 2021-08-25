@@ -70,7 +70,7 @@ public class OperationHelper {
             case OP_NOT_SET:
                 throw new IllegalStateException("Operation id not set");
             default:
-                throw new IllegalStateException("Operation not implemented yet, " + opCase);
+                throw new UnsupportedOperationException("Operation not implemented yet, " + opCase);
         }
     }
 }

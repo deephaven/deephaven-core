@@ -28,7 +28,7 @@ public interface TableCreator<TABLE> {
      * @param toOps the table to operations
      * @param toTable the operations to table
      * @param table the table specification
-     * @return the output table
+     * @return the output results
      */
     static <TOPS extends TableOperations<TOPS, TABLE>, TABLE> TableAdapterResults<TOPS, TABLE> create(
             TableCreator<TABLE> creation, TableToOperations<TOPS, TABLE> toOps,
@@ -36,6 +36,17 @@ public interface TableCreator<TABLE> {
         return TableAdapterImpl.of(creation, toOps, toTable, table);
     }
 
+    /**
+     * "Replay" the {@code table} against the given interfaces.
+     *
+     * @param <TOPS> the table operations type
+     * @param <TABLE> the output table type
+     * @param creation the table creation
+     * @param toOps the table to operations
+     * @param toTable the operations to table
+     * @param tables the table specifications
+     * @return the output results
+     */
     static <TOPS extends TableOperations<TOPS, TABLE>, TABLE> TableAdapterResults<TOPS, TABLE> create(
             TableCreator<TABLE> creation, TableToOperations<TOPS, TABLE> toOps,
             OperationsToTable<TOPS, TABLE> toTable, Iterable<TableSpec> tables) {

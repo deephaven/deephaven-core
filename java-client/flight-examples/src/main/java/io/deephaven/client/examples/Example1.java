@@ -14,7 +14,7 @@ import picocli.CommandLine.Command;
 import java.util.Collections;
 
 @Command(name = "example-1", mixinStandardHelpOptions = true,
-        description = "Execute ExampleFunciotCanned example 1, sends a table, get the results, and convert to a TSV",
+        description = "Canned example 1, sends a table, get the results, and convert to a TSV",
         version = "0.1.0")
 class Example1 extends FlightCannedTableBase {
 
