@@ -2,6 +2,7 @@ package io.deephaven.parquet;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
+import io.deephaven.util.datastructures.LazyCachingSupplier;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Dictionary;
@@ -15,14 +16,16 @@ import org.apache.parquet.internal.column.columnindex.OffsetIndex;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.channels.Channels;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static io.deephaven.parquet.utils.Helpers.readFully;
 import static org.apache.parquet.format.Encoding.PLAIN_DICTIONARY;
@@ -37,24 +40,21 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     private final ColumnDescriptor path;
     private final OffsetIndex offsetIndex;
     private final List<Type> fieldTypes;
-    private Dictionary dictionary;
+    private final Supplier<Dictionary> dictionarySupplier;
 
-
-    ColumnChunkReaderImpl(ColumnChunk columnChunk, SeekableChannelsProvider channelsProvider, Path rootPath,
-            ThreadLocal<CodecFactory> codecFactory, MessageType type, OffsetIndex offsetIndex, List<Type> fieldTypes) {
+    ColumnChunkReaderImpl(ColumnChunk columnChunk, SeekableChannelsProvider channelsProvider, Path rootPath, ThreadLocal<CodecFactory> codecFactory, MessageType type, OffsetIndex offsetIndex, List<Type> fieldTypes) {
         this.channelsProvider = channelsProvider;
         this.columnChunk = columnChunk;
         this.rootPath = rootPath;
         this.path = type.getColumnDescription(columnChunk.meta_data.getPath_in_schema().toArray(new String[0]));
         if (columnChunk.getMeta_data().isSetCodec()) {
-            decompressor = ThreadLocal.withInitial(() -> codecFactory.get()
-                    .getDecompressor(CompressionCodecName.valueOf(columnChunk.getMeta_data().getCodec().name())));
+            decompressor = ThreadLocal.withInitial(() -> codecFactory.get().getDecompressor(CompressionCodecName.valueOf(columnChunk.getMeta_data().getCodec().name())));
         } else {
-            decompressor = ThreadLocal
-                    .withInitial(() -> codecFactory.get().getDecompressor(CompressionCodecName.UNCOMPRESSED));
+            decompressor = ThreadLocal.withInitial(() -> codecFactory.get().getDecompressor(CompressionCodecName.UNCOMPRESSED));
         }
         this.offsetIndex = offsetIndex;
         this.fieldTypes = fieldTypes;
+        this.dictionarySupplier = new LazyCachingSupplier<>(this::getDictionary);
     }
 
     @Override
@@ -81,14 +81,13 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     public ColumnPageReaderIterator getPageIterator() throws IOException {
         final SeekableByteChannel readChannel = channelsProvider.getReadChannel(getPath());
         final long dataPageOffset = columnChunk.meta_data.getData_page_offset();
-        final Dictionary dictionary = getDictionary(readChannel);
         if (offsetIndex == null) {
             return new ColumnPageReaderIteratorImpl(readChannel,
                     dataPageOffset, columnChunk.getMeta_data().getNum_values(), path,
-                    dictionary, channelsProvider);
+                    channelsProvider);
         } else {
             readChannel.close();
-            return new ColumnPageReaderIteratorIndexImpl(path, dictionary, channelsProvider);
+            return new ColumnPageReaderIteratorIndexImpl(path, channelsProvider);
         }
     }
 
@@ -123,35 +122,28 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
     }
 
     @Override
-    public Dictionary getDictionary() throws IOException {
-        if (dictionary != null) {
-            return dictionary;
-        }
-        try (SeekableByteChannel channel = channelsProvider.getReadChannel(getPath())) {
-            return getDictionary(channel);
-        }
+    public Supplier<Dictionary> getDictionarySupplier() {
+        return dictionarySupplier;
     }
 
-    @Nullable
-    private Dictionary getDictionary(SeekableByteChannel readChannel) throws IOException {
-        if (dictionary != null) {
-            return dictionary;
-        }
+    @NotNull
+    private Dictionary getDictionary() {
         final long dictionaryPageOffset;
         final ColumnMetaData chunkMeta = columnChunk.getMeta_data();
         if (chunkMeta.isSetDictionary_page_offset()) {
             dictionaryPageOffset = chunkMeta.getDictionary_page_offset();
-        } else if ((chunkMeta.isSetEncoding_stats() && (chunkMeta.getEncoding_stats().stream()
-                .anyMatch(pes -> pes.getEncoding() == PLAIN_DICTIONARY || pes.getEncoding() == RLE_DICTIONARY)))
-                || (chunkMeta.isSetEncodings() && (chunkMeta.getEncodings().stream()
-                        .anyMatch(en -> en == PLAIN_DICTIONARY || en == RLE_DICTIONARY)))) {
-            // Fallback, inspired by
-            // https://stackoverflow.com/questions/55225108/why-is-dictionary-page-offset-0-for-plain-dictionary-encoding
+        } else if ((chunkMeta.isSetEncoding_stats() && (chunkMeta.getEncoding_stats().stream().anyMatch(pes -> pes.getEncoding() == PLAIN_DICTIONARY || pes.getEncoding() == RLE_DICTIONARY)))
+                || (chunkMeta.isSetEncodings() && (chunkMeta.getEncodings().stream().anyMatch(en -> en == PLAIN_DICTIONARY || en == RLE_DICTIONARY)))) {
+            // Fallback, inspired by https://stackoverflow.com/questions/55225108/why-is-dictionary-page-offset-0-for-plain-dictionary-encoding
             dictionaryPageOffset = chunkMeta.getData_page_offset();
         } else {
-            return null;
+            return NULL_DICTIONARY;
         }
-        return dictionary = readDictionary(readChannel, dictionaryPageOffset);
+        try (SeekableByteChannel readChannel = channelsProvider.getReadChannel(getPath())) {
+            return readDictionary(readChannel, dictionaryPageOffset);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @Override
@@ -159,13 +151,14 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         return path.getPrimitiveType();
     }
 
+    @NotNull
     private Dictionary readDictionary(SeekableByteChannel file, long dictionaryPageOffset) throws IOException {
         file.position(dictionaryPageOffset);
         final InputStream inputStream = Channels.newInputStream(file);
         final PageHeader pageHeader = Util.readPageHeader(inputStream);
         if (pageHeader.getType() != PageType.DICTIONARY_PAGE) {
             // In case our fallback in getDictionary was too optimistic...
-            return null;
+            return NULL_DICTIONARY;
         }
         final DictionaryPageHeader dictHeader = pageHeader.getDictionary_page_header();
 
@@ -187,15 +180,12 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         private final ColumnDescriptor path;
 
         long remainingValues;
-        private final Dictionary dictionary;
 
-        ColumnPageReaderIteratorImpl(SeekableByteChannel file, long startOffset, long numValues, ColumnDescriptor path,
-                Dictionary dictionary, SeekableChannelsProvider channelsProvider) {
+        ColumnPageReaderIteratorImpl(SeekableByteChannel file, long startOffset, long numValues, ColumnDescriptor path, SeekableChannelsProvider channelsProvider) {
             this.remainingValues = numValues;
             this.currentOffset = startOffset;
             this.file = file;
             this.path = path;
-            this.dictionary = dictionary;
             this.channelsProvider = channelsProvider;
         }
 
@@ -219,9 +209,8 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                     return next();
                 }
                 if (!pageHeader.isSetData_page_header() && !pageHeader.isSetData_page_header_v2()) {
-                    throw new IllegalStateException(
-                            "Expected data page, but neither v1 nor v2 data page header is set in file "
-                                    + file + " at offset " + headerOffset);
+                    throw new IllegalStateException("Expected data page, but neither v1 nor v2 data page header is set in file "
+                            + file + " at offset " + headerOffset);
                 }
                 remainingValues -= pageHeader.isSetData_page_header()
                         ? pageHeader.getData_page_header().getNum_values()
@@ -235,17 +224,17 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
                         encoding = pageHeader.getData_page_header_v2().getEncoding();
                         break;
                     default:
-                        throw new UncheckedDeephavenException(
-                                "Unknown parquet data page header type " + pageHeader.type);
+                        throw new UncheckedDeephavenException("Unknown parquet data page header type " + pageHeader.type);
                 }
-                final Dictionary pageDictionary =
+                final Supplier<Dictionary> pageDictionarySupplier =
                         (encoding == PLAIN_DICTIONARY || encoding == RLE_DICTIONARY)
-                                ? dictionary
-                                : null;
+                        ? dictionarySupplier
+                        : null
+                        ;
                 return new ColumnPageReaderImpl(
-                        channelsProvider, file.position(), pageHeader,
-                        decompressor, path, pageDictionary, getPath(),
-                        -1, fieldTypes);
+                        channelsProvider, decompressor::get, pageDictionarySupplier,
+                        path, getPath(), fieldTypes,
+                        file.position(), pageHeader, -1);
             } catch (IOException e) {
                 throw new RuntimeException("Error reading page header", e);
             }
@@ -262,12 +251,8 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
         private int pos;
         private final ColumnDescriptor path;
 
-        private final Dictionary dictionary;
-
-        ColumnPageReaderIteratorIndexImpl(ColumnDescriptor path, Dictionary dictionary,
-                SeekableChannelsProvider channelsProvider) {
+        ColumnPageReaderIteratorIndexImpl(ColumnDescriptor path, SeekableChannelsProvider channelsProvider) {
             this.path = path;
-            this.dictionary = dictionary;
             this.channelsProvider = channelsProvider;
             pos = 0;
         }
@@ -282,16 +267,16 @@ public class ColumnChunkReaderImpl implements ColumnChunkReader {
             if (!hasNext()) {
                 throw new RuntimeException("No next element");
             }
-            int rowCount = (int) (offsetIndex.getLastRowIndex(pos, columnChunk.getMeta_data().getNum_values())
-                    - offsetIndex.getFirstRowIndex(pos) + 1);
-            ColumnPageReaderImpl columnPageReader =
-                    new ColumnPageReaderImpl(channelsProvider, offsetIndex.getOffset(pos),
-                            null, decompressor, path, dictionary, getPath(), rowCount, fieldTypes);
+            int rowCount = (int) (offsetIndex.getLastRowIndex(pos, columnChunk.getMeta_data().getNum_values()) - offsetIndex.getFirstRowIndex(pos) + 1);
+            ColumnPageReaderImpl columnPageReader = new ColumnPageReaderImpl(channelsProvider, decompressor::get, dictionarySupplier,
+                    path, getPath(), fieldTypes,
+                    offsetIndex.getOffset(pos), null, rowCount);
             pos++;
             return columnPageReader;
         }
 
         @Override
-        public void close() throws IOException {}
+        public void close() throws IOException {
+        }
     }
 }

@@ -56,7 +56,7 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
      * @return Produce the array of values from the result
      */
     default RESULT convertResult(Object result) {
-        // noinspection unchecked
+        //noinspection unchecked
         return (RESULT) result;
     }
 
@@ -68,7 +68,7 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
     }
 
     /**
-     * Produce the appropriately typed chunk page for the page read by the columnPageReader. The is the expected entry
+     * Produce the appropriately typed chunk page for the page read by the columnPageReader.  The is the expected entry
      * point for the ColumnChunkPageStore.
      */
     @NotNull
@@ -81,15 +81,15 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
     /**
      * @return the dictionary stored for this column, if one exists, otherwise null.
      */
-    default Chunk<ATTR> getDictionary() {
+    default Chunk<ATTR> getDictionaryChunk() {
         return null;
     }
 
     /**
-     * @return an object implementing ToChunk which will read the integral Dictionary Keys when there's a dictionary for
-     *         this column (as opposed to the values, which this object's toChunk will return.). This will return null
-     *         iff getDictionary returns null.
-     * @apiNote null iff {@link #getDictionary()} is null.
+     * @return an object implementing ToChunk which will read the integral Dictionary Keys when there's a dictionary
+     * for this column (as opposed to the values, which this object's toChunk will return.).  This will return null iff
+     * {@link #getDictionaryChunk()} returns null.
+     * @apiNote null iff {@link #getDictionaryChunk()} is null.
      */
     default ToPage<Attributes.DictionaryKeys, long[]> getDictionaryKeysToPage() {
         return null;
@@ -97,7 +97,7 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
 
     /**
      * @return an reverse lookup map of the dictionary.
-     * @apiNote null iff {@link #getDictionary()} is null.
+     * @apiNote null iff {@link #getDictionaryChunk()} is null.
      */
     default StringSetImpl.ReversibleLookup getReversibleLookup() {
         return null;
@@ -126,8 +126,8 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
 
 
         @Override
-        public Chunk<ATTR> getDictionary() {
-            return toPage.getDictionary();
+        public Chunk<ATTR> getDictionaryChunk() {
+            return toPage.getDictionaryChunk();
         }
 
         @Override

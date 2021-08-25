@@ -2,6 +2,7 @@ package io.deephaven.parquet;
 
 
 import org.apache.parquet.column.Dictionary;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.IntBuffer;
@@ -42,6 +43,10 @@ public interface ColumnPageReader extends AutoCloseable {
      */
     int numValues() throws IOException;
 
+    /**
+     * @return Parquet dictionary for this column chunk
+     * @apiNote The result will never be {@code null}. It will instead be {@link ColumnChunkReader#NULL_DICTIONARY}.
+     */
+    @NotNull
     Dictionary getDictionary();
-
 }

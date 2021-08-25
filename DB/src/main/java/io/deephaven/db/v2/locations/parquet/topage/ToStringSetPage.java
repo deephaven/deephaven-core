@@ -29,7 +29,7 @@ public class ToStringSetPage<ATTR extends Attributes.Any, STRING_ARRAY>
                     "is not compatible with String");
         }
 
-        Chunk<ATTR> dictionary = toPage.getDictionary();
+        Chunk<ATTR> dictionary = toPage.getDictionaryChunk();
 
         return dictionary != null && dictionary.size() <= 64 ? new ToStringSetPage.WithShortDictionary<>(toPage)
                 : new ToStringSetPage<>(toPage);

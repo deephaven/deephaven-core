@@ -20,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
+import java.util.function.Supplier;
 
 public abstract class ColumnChunkPageStore<ATTR extends Any>
         implements PageStore<ATTR, ATTR, ChunkPage<ATTR>>, Page<ATTR>, SafeCloseable, Releasable {
@@ -39,7 +40,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
             new IntrusiveSoftLRU<>(IntrusiveSoftLRU.Node.Adapter.<IntrusivePage<ATTR>>getInstance(), CACHE_SIZE);
 
     static <ATTR extends Any> WeakReference<IntrusivePage<ATTR>> getNullPage() {
-        // noinspection unchecked
+        //noinspection unchecked
         return (WeakReference<IntrusivePage<ATTR>>) NULL_PAGE;
     }
 
@@ -59,36 +60,33 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     public static class CreatorResult<ATTR extends Any> {
 
         public final ColumnChunkPageStore<ATTR> pageStore;
-        public final Chunk<ATTR> dictionary;
+        public final Supplier<Chunk<ATTR>> dictionaryChunkSupplier;
         public final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore;
 
         private CreatorResult(@NotNull final ColumnChunkPageStore<ATTR> pageStore,
-                final Chunk<ATTR> dictionary,
-                final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore) {
+                              final Supplier<Chunk<ATTR>> dictionaryChunkSupplier,
+                              final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore) {
             this.pageStore = pageStore;
-            this.dictionary = dictionary;
+            this.dictionaryChunkSupplier = dictionaryChunkSupplier;
             this.dictionaryKeysPageStore = dictionaryKeysPageStore;
         }
     }
 
     public static <ATTR extends Any> CreatorResult<ATTR> create(@NotNull final ColumnChunkReader columnChunkReader,
-            final long mask,
-            @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
+                                                                final long mask,
+                                                                @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
         final boolean fixedSizePages = columnChunkReader.getPageFixedSize() >= 1;
         final ColumnChunkPageStore<ATTR> columnChunkPageStore = fixedSizePages
                 ? new FixedPageSizeColumnChunkPageStore<>(columnChunkReader, mask, toPage)
                 : new VariablePageSizeColumnChunkPageStore<>(columnChunkReader, mask, toPage);
         final ToPage<DictionaryKeys, long[]> dictionaryKeysToPage = toPage.getDictionaryKeysToPage();
-        final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysColumnChunkPageStore = dictionaryKeysToPage == null
-                ? null
-                : fixedSizePages
-                        ? new FixedPageSizeColumnChunkPageStore<>(columnChunkReader, mask, dictionaryKeysToPage)
-                        : new VariablePageSizeColumnChunkPageStore<>(columnChunkReader, mask, dictionaryKeysToPage);
-        return new CreatorResult<>(columnChunkPageStore, toPage.getDictionary(), dictionaryKeysColumnChunkPageStore);
+        final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysColumnChunkPageStore = dictionaryKeysToPage == null ? null : fixedSizePages
+                ? new FixedPageSizeColumnChunkPageStore<>(columnChunkReader, mask, dictionaryKeysToPage)
+                : new VariablePageSizeColumnChunkPageStore<>(columnChunkReader, mask, dictionaryKeysToPage);
+        return new CreatorResult<>(columnChunkPageStore, toPage::getDictionaryChunk, dictionaryKeysColumnChunkPageStore);
     }
 
-    ColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader, final long mask,
-            final ToPage<ATTR, ?> toPage) throws IOException {
+    ColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader, final long mask, final ToPage<ATTR, ?> toPage) throws IOException {
         Require.requirement(((mask + 1) & mask) == 0, "mask is one less than a power of two");
 
         this.columnChunkReader = columnChunkReader;
