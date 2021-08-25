@@ -10,10 +10,9 @@ package io.deephaven.db.tables.utils;
  * </p>
  *
  * <p>
- * This interface only enables the widget developer to limit the users who may open the widget; it
- * does not provide any control over what users can see after the widget is opened. The widget
- * itself is responsible for determining which data should be presented to the user and applying any
- * appropriate viewer permissions.
+ * This interface only enables the widget developer to limit the users who may open the widget; it does not provide any
+ * control over what users can see after the widget is opened. The widget itself is responsible for determining which
+ * data should be presented to the user and applying any appropriate viewer permissions.
  * </p>
  *
  * <p>
@@ -21,14 +20,13 @@ package io.deephaven.db.tables.utils;
  * </p>
  *
  * <p>
- * Unlike tables, limiting the visibility of one widget does not affect the visibility of other
- * widgets.
+ * Unlike tables, limiting the visibility of one widget does not affect the visibility of other widgets.
  * </p>
  */
 public interface LiveWidgetVisibilityProvider {
     /**
-     * Provide a list of groups which may view this widget. null indicates that there are no viewing
-     * restrictions on this widget.
+     * Provide a list of groups which may view this widget. null indicates that there are no viewing restrictions on
+     * this widget.
      *
      * @return the list of groups which may view this widget, null for no restrictions
      */

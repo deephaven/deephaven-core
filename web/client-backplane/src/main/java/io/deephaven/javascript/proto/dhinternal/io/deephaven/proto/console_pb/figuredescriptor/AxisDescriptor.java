@@ -13,9 +13,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.AxisDescriptor",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.AxisDescriptor",
+        namespace = JsPackage.GLOBAL)
 public class AxisDescriptor {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -90,7 +90,7 @@ public class AxisDescriptor {
 
                 @JsProperty
                 void setDate(
-                    AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType.DateFieldType date);
+                        AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType.DateFieldType date);
             }
 
             @JsOverlay
@@ -123,27 +123,27 @@ public class AxisDescriptor {
 
             @JsOverlay
             default void setBusinessPeriodsList(
-                AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType[] businessPeriodsList) {
+                    AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType[] businessPeriodsList) {
                 setBusinessPeriodsList(
-                    Js.<JsArray<AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType>>uncheckedCast(
-                        businessPeriodsList));
+                        Js.<JsArray<AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType>>uncheckedCast(
+                                businessPeriodsList));
             }
 
             @JsProperty
             void setBusinessPeriodsList(
-                JsArray<AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType> businessPeriodsList);
+                    JsArray<AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType> businessPeriodsList);
 
             @JsOverlay
             default void setHolidaysList(
-                AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType[] holidaysList) {
+                    AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType[] holidaysList) {
                 setHolidaysList(
-                    Js.<JsArray<AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType>>uncheckedCast(
-                        holidaysList));
+                        Js.<JsArray<AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType>>uncheckedCast(
+                                holidaysList));
             }
 
             @JsProperty
             void setHolidaysList(
-                JsArray<AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType> holidaysList);
+                    JsArray<AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType.HolidaysListFieldType> holidaysList);
 
             @JsProperty
             void setName(String name);
@@ -222,7 +222,7 @@ public class AxisDescriptor {
 
         @JsProperty
         void setBusinessCalendarDescriptor(
-            AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType businessCalendarDescriptor);
+                AxisDescriptor.ToObjectReturnType.BusinessCalendarDescriptorFieldType businessCalendarDescriptor);
 
         @JsProperty
         void setColor(String color);
@@ -363,7 +363,7 @@ public class AxisDescriptor {
 
                 @JsProperty
                 void setDate(
-                    AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType.HolidaysListFieldType.DateFieldType date);
+                        AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType.HolidaysListFieldType.DateFieldType date);
             }
 
             @JsOverlay
@@ -396,27 +396,27 @@ public class AxisDescriptor {
 
             @JsOverlay
             default void setBusinessPeriodsList(
-                AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType[] businessPeriodsList) {
+                    AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType[] businessPeriodsList) {
                 setBusinessPeriodsList(
-                    Js.<JsArray<AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType>>uncheckedCast(
-                        businessPeriodsList));
+                        Js.<JsArray<AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType>>uncheckedCast(
+                                businessPeriodsList));
             }
 
             @JsProperty
             void setBusinessPeriodsList(
-                JsArray<AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType> businessPeriodsList);
+                    JsArray<AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType.BusinessPeriodsListFieldType> businessPeriodsList);
 
             @JsOverlay
             default void setHolidaysList(
-                AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType.HolidaysListFieldType[] holidaysList) {
+                    AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType.HolidaysListFieldType[] holidaysList) {
                 setHolidaysList(
-                    Js.<JsArray<AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType.HolidaysListFieldType>>uncheckedCast(
-                        holidaysList));
+                        Js.<JsArray<AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType.HolidaysListFieldType>>uncheckedCast(
+                                holidaysList));
             }
 
             @JsProperty
             void setHolidaysList(
-                JsArray<AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType.HolidaysListFieldType> holidaysList);
+                    JsArray<AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType.HolidaysListFieldType> holidaysList);
 
             @JsProperty
             void setName(String name);
@@ -495,7 +495,7 @@ public class AxisDescriptor {
 
         @JsProperty
         void setBusinessCalendarDescriptor(
-            AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType businessCalendarDescriptor);
+                AxisDescriptor.ToObjectReturnType0.BusinessCalendarDescriptorFieldType businessCalendarDescriptor);
 
         @JsProperty
         void setColor(String color);
@@ -570,12 +570,12 @@ public class AxisDescriptor {
     public static native AxisDescriptor deserializeBinary(Uint8Array bytes);
 
     public static native AxisDescriptor deserializeBinaryFromReader(
-        AxisDescriptor message, Object reader);
+            AxisDescriptor message, Object reader);
 
     public static native void serializeBinaryToWriter(AxisDescriptor message, Object writer);
 
     public static native AxisDescriptor.ToObjectReturnType toObject(
-        boolean includeInstance, AxisDescriptor msg);
+            boolean includeInstance, AxisDescriptor msg);
 
     public native double addMajorTickLocations(double value, double index);
 

@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.ChangeDocumentRequest.TextDocumentContentChangeEvent",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.ChangeDocumentRequest.TextDocumentContentChangeEvent",
+        namespace = JsPackage.GLOBAL)
 public class TextDocumentContentChangeEvent {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -54,7 +54,7 @@ public class TextDocumentContentChangeEvent {
 
             @JsProperty
             void setStart(
-                TextDocumentContentChangeEvent.ToObjectReturnType.RangeFieldType.StartFieldType start);
+                    TextDocumentContentChangeEvent.ToObjectReturnType.RangeFieldType.StartFieldType start);
         }
 
         @JsOverlay
@@ -121,7 +121,7 @@ public class TextDocumentContentChangeEvent {
 
             @JsProperty
             void setStart(
-                TextDocumentContentChangeEvent.ToObjectReturnType0.RangeFieldType.StartFieldType start);
+                    TextDocumentContentChangeEvent.ToObjectReturnType0.RangeFieldType.StartFieldType start);
         }
 
         @JsOverlay
@@ -151,13 +151,13 @@ public class TextDocumentContentChangeEvent {
     public static native TextDocumentContentChangeEvent deserializeBinary(Uint8Array bytes);
 
     public static native TextDocumentContentChangeEvent deserializeBinaryFromReader(
-        TextDocumentContentChangeEvent message, Object reader);
+            TextDocumentContentChangeEvent message, Object reader);
 
     public static native void serializeBinaryToWriter(
-        TextDocumentContentChangeEvent message, Object writer);
+            TextDocumentContentChangeEvent message, Object writer);
 
     public static native TextDocumentContentChangeEvent.ToObjectReturnType toObject(
-        boolean includeInstance, TextDocumentContentChangeEvent msg);
+            boolean includeInstance, TextDocumentContentChangeEvent msg);
 
     public native void clearRange();
 
@@ -182,5 +182,5 @@ public class TextDocumentContentChangeEvent {
     public native TextDocumentContentChangeEvent.ToObjectReturnType0 toObject();
 
     public native TextDocumentContentChangeEvent.ToObjectReturnType0 toObject(
-        boolean includeInstance);
+            boolean includeInstance);
 }

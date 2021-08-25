@@ -12,9 +12,9 @@ import java.util.Set;
  * </p>
  *
  * <p>
- * When this structure is created, if the table id is included then the query will fetch the table
- * from it's parent by the key, applying any filters and sorts required. Before data is returned to
- * the client, the set of children is updated to reflect any changes in the table.
+ * When this structure is created, if the table id is included then the query will fetch the table from it's parent by
+ * the key, applying any filters and sorts required. Before data is returned to the client, the set of children is
+ * updated to reflect any changes in the table.
  * </p>
  */
 public class TableDetails implements Serializable {
@@ -50,8 +50,7 @@ public class TableDetails implements Serializable {
 
     @Override
     public String toString() {
-        return "{key=" + key + ", children=" + children + ", table=" + table
-            + (removed ? ", REMOVED" : "") + "}";
+        return "{key=" + key + ", children=" + children + ", table=" + table + (removed ? ", REMOVED" : "") + "}";
     }
 
     public TableDetails copy() {

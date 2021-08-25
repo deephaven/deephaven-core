@@ -80,8 +80,7 @@ public class SmartKey implements Serializable, Comparable {
         return values_[position];
     }
 
-    // A bit of nastiness and interface pollution so we can reuse the same key and array in a lower
-    // garbage way
+    // A bit of nastiness and interface pollution so we can reuse the same key and array in a lower garbage way
     public void updateHashCode() {
         hashCode_ = HashCodeUtil.createHashCode(values_);
     }

@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.MergeTablesRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.MergeTablesRequest",
+        namespace = JsPackage.GLOBAL)
 public class MergeTablesRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -23,7 +23,7 @@ public class MergeTablesRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static MergeTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -58,20 +58,20 @@ public class MergeTablesRequest {
 
             @JsProperty
             void setTicket(
-                MergeTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    MergeTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<MergeTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<MergeTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<MergeTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<MergeTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -117,14 +117,14 @@ public class MergeTablesRequest {
 
         @JsProperty
         void setSourceIdsList(
-            JsArray<MergeTablesRequest.ToObjectReturnType.SourceIdsListFieldType> sourceIdsList);
+                JsArray<MergeTablesRequest.ToObjectReturnType.SourceIdsListFieldType> sourceIdsList);
 
         @JsOverlay
         default void setSourceIdsList(
-            MergeTablesRequest.ToObjectReturnType.SourceIdsListFieldType[] sourceIdsList) {
+                MergeTablesRequest.ToObjectReturnType.SourceIdsListFieldType[] sourceIdsList) {
             setSourceIdsList(
-                Js.<JsArray<MergeTablesRequest.ToObjectReturnType.SourceIdsListFieldType>>uncheckedCast(
-                    sourceIdsList));
+                    Js.<JsArray<MergeTablesRequest.ToObjectReturnType.SourceIdsListFieldType>>uncheckedCast(
+                            sourceIdsList));
         }
     }
 
@@ -136,7 +136,7 @@ public class MergeTablesRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static MergeTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -171,20 +171,20 @@ public class MergeTablesRequest {
 
             @JsProperty
             void setTicket(
-                MergeTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    MergeTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<MergeTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<MergeTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<MergeTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<MergeTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -230,26 +230,26 @@ public class MergeTablesRequest {
 
         @JsProperty
         void setSourceIdsList(
-            JsArray<MergeTablesRequest.ToObjectReturnType0.SourceIdsListFieldType> sourceIdsList);
+                JsArray<MergeTablesRequest.ToObjectReturnType0.SourceIdsListFieldType> sourceIdsList);
 
         @JsOverlay
         default void setSourceIdsList(
-            MergeTablesRequest.ToObjectReturnType0.SourceIdsListFieldType[] sourceIdsList) {
+                MergeTablesRequest.ToObjectReturnType0.SourceIdsListFieldType[] sourceIdsList) {
             setSourceIdsList(
-                Js.<JsArray<MergeTablesRequest.ToObjectReturnType0.SourceIdsListFieldType>>uncheckedCast(
-                    sourceIdsList));
+                    Js.<JsArray<MergeTablesRequest.ToObjectReturnType0.SourceIdsListFieldType>>uncheckedCast(
+                            sourceIdsList));
         }
     }
 
     public static native MergeTablesRequest deserializeBinary(Uint8Array bytes);
 
     public static native MergeTablesRequest deserializeBinaryFromReader(
-        MergeTablesRequest message, Object reader);
+            MergeTablesRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(MergeTablesRequest message, Object writer);
 
     public static native MergeTablesRequest.ToObjectReturnType toObject(
-        boolean includeInstance, MergeTablesRequest msg);
+            boolean includeInstance, MergeTablesRequest msg);
 
     public native TableReference addSourceIds();
 

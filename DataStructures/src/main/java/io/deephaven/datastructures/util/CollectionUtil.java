@@ -30,8 +30,7 @@ public class CollectionUtil {
     public static final String[][] ZERO_LENGTH_STRING_ARRAY_ARRAY = new String[0][];
 
     // ----------------------------------------------------------------
-    public static <K, V> Map<K, V> unmodifiableMapFromArray(Class<K> typeK, Class<V> typeV,
-        Object... data) {
+    public static <K, V> Map<K, V> unmodifiableMapFromArray(Class<K> typeK, Class<V> typeV, Object... data) {
         try {
             return Collections.unmodifiableMap(mapFromArray(typeK, typeV, data));
         } catch (RequirementFailure e) {
@@ -65,8 +64,8 @@ public class CollectionUtil {
 
     // ----------------------------------------------------------------
     @SuppressWarnings({"unchecked"})
-    public static <K, V> Map<K, V> mapFromArray(Class<K> typeK, Class<V> typeV,
-        final boolean allowDuplicateKeys, Object... data) {
+    public static <K, V> Map<K, V> mapFromArray(Class<K> typeK, Class<V> typeV, final boolean allowDuplicateKeys,
+            Object... data) {
         Require.neqNull(data, "data");
         Require.requirement(0 == data.length % 2, "0==data.length%2");
         Map<K, V> map = newSizedLinkedHashMap(data.length / 2);
@@ -76,8 +75,8 @@ public class CollectionUtil {
                 Require.instanceOf(key, "key", typeK);
             }
             if (!allowDuplicateKeys) {
-                Require.requirement(false == map.containsKey(key),
-                    "false==map.containsKey(data[nIndex])", key, "data[nIndex]");
+                Require.requirement(false == map.containsKey(key), "false==map.containsKey(data[nIndex])", key,
+                        "data[nIndex]");
             }
             Object value = data[nIndex + 1];
             if (null != value) {
@@ -95,8 +94,7 @@ public class CollectionUtil {
         for (Map.Entry<V, K> entry : sourceMap.entrySet()) {
             K key = entry.getValue();
             V value = entry.getKey();
-            Require.requirement(false == targetMap.containsKey(key),
-                "false==targetMap.containsKey(key)", key, "key");
+            Require.requirement(false == targetMap.containsKey(key), "false==targetMap.containsKey(key)", key, "key");
             targetMap.put(key, value);
         }
         return targetMap;
@@ -113,12 +111,10 @@ public class CollectionUtil {
     }
 
     // ----------------------------------------------------------------
-    public static <TYPE> Set<TYPE> setFromArray(@NotNull final Class<TYPE> type,
-        @NotNull final Object... data) {
+    public static <TYPE> Set<TYPE> setFromArray(@NotNull final Class<TYPE> type, @NotNull final Object... data) {
         final Set<TYPE> set = newSizedLinkedHashSet(data.length);
         for (final Object elem : data) {
-            Require.requirement(elem == null || type.isInstance(elem),
-                "elem == null || type.isInstance(elem)");
+            Require.requirement(elem == null || type.isInstance(elem), "elem == null || type.isInstance(elem)");
             // noinspection unchecked
             Require.requirement(set.add((TYPE) elem), "set.add((TYPE)elem)");
         }
@@ -137,8 +133,8 @@ public class CollectionUtil {
 
     // ----------------------------------------------------------------
     /**
-     * Returns an empty {@link HashMap} with a big enough capacity such that the given number of
-     * entries can be added without resizing.
+     * Returns an empty {@link HashMap} with a big enough capacity such that the given number of entries can be added
+     * without resizing.
      */
     public static <K, V> Map<K, V> newSizedHashMap(int nEntries) {
         return new HashMap<K, V>((nEntries + 1) * 4 / 3);
@@ -146,8 +142,8 @@ public class CollectionUtil {
 
     // ----------------------------------------------------------------
     /**
-     * Returns an empty {@link LinkedHashMap} with a big enough capacity such that the given number
-     * of entries can be added without resizing.
+     * Returns an empty {@link LinkedHashMap} with a big enough capacity such that the given number of entries can be
+     * added without resizing.
      */
     public static <K, V> Map<K, V> newSizedLinkedHashMap(int nEntries) {
         return new LinkedHashMap<K, V>((nEntries + 1) * 4 / 3);
@@ -155,8 +151,8 @@ public class CollectionUtil {
 
     // ----------------------------------------------------------------
     /**
-     * Returns an empty {@link HashSet} with a big enough capacity such that the given number of
-     * entries can be added without resizing.
+     * Returns an empty {@link HashSet} with a big enough capacity such that the given number of entries can be added
+     * without resizing.
      */
     public static <E> Set<E> newSizedHashSet(int nEntries) {
         return new HashSet<E>((nEntries + 1) * 4 / 3);
@@ -164,8 +160,8 @@ public class CollectionUtil {
 
     // ----------------------------------------------------------------
     /**
-     * Returns an empty {@link LinkedHashSet} with a big enough capacity such that the given number
-     * of entries can be added without resizing.
+     * Returns an empty {@link LinkedHashSet} with a big enough capacity such that the given number of entries can be
+     * added without resizing.
      */
     public static <E> Set<E> newSizedLinkedHashSet(int nEntries) {
         return new LinkedHashSet<E>((nEntries + 1) * 4 / 3);

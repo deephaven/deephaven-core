@@ -56,18 +56,17 @@ public class SingleTableKeyedOperations {
         type = Utils.primitiveTypeForName.get(typeName);
         Configuration.getInstance().setProperty("QueryTable.memoizeResults", "false");
 
-        final BenchmarkTableBuilder builder = BenchmarkTools.inMemoryTableBuilder(
-            "SingleTableOperations", BenchmarkTools.sizeWithSparsity(tableSize, sparsity));
+        final BenchmarkTableBuilder builder = BenchmarkTools.inMemoryTableBuilder("SingleTableOperations",
+                BenchmarkTools.sizeWithSparsity(tableSize, sparsity));
 
         builder.setSeed(0xDEADBEEF).addColumn(BenchmarkTools.numberCol("Mock", int.class));
         for (int i = 0; i < columnCount; i++) {
             builder.addColumn(BenchmarkTools.numberCol("InputColumn" + i, type, 0,
-                1 << Math.max(0, logSpaceSize - logColumnCount)));
+                    1 << Math.max(0, logSpaceSize - logColumnCount)));
         }
         bmTable = builder.build();
 
-        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()),
-            params.getWarmup().getCount());
+        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
 
 
         keyColumns = new String[columnCount];

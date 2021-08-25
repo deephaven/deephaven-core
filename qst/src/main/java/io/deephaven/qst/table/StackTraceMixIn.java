@@ -14,7 +14,7 @@ import java.util.Objects;
  * @see StackTraceMixInCreator
  */
 public final class StackTraceMixIn<TOPS extends TableOperations<TOPS, TABLE>, TABLE> extends
-    TableOperationsAdapter<StackTraceMixIn<TOPS, TABLE>, StackTraceMixIn<TOPS, TABLE>, TOPS, TABLE> {
+        TableOperationsAdapter<StackTraceMixIn<TOPS, TABLE>, StackTraceMixIn<TOPS, TABLE>, TOPS, TABLE> {
 
     // Note: StackWalker available in Java 9+
 
@@ -23,7 +23,7 @@ public final class StackTraceMixIn<TOPS extends TableOperations<TOPS, TABLE>, TA
     private final StackTraceElement[] elements;
 
     StackTraceMixIn(StackTraceMixInCreator<TOPS, TABLE> creator,
-        OperationsToTable<TOPS, TABLE> opsToTable, TOPS delegate, StackTraceElement[] elements) {
+            OperationsToTable<TOPS, TABLE> opsToTable, TOPS delegate, StackTraceElement[] elements) {
         super(delegate);
         this.opsToTable = Objects.requireNonNull(opsToTable);
         this.creator = Objects.requireNonNull(creator);
@@ -31,7 +31,7 @@ public final class StackTraceMixIn<TOPS extends TableOperations<TOPS, TABLE>, TA
     }
 
     StackTraceMixIn(StackTraceMixInCreator<TOPS, TABLE> creator,
-        OperationsToTable<TOPS, TABLE> opsToTable, TOPS delegate) {
+            OperationsToTable<TOPS, TABLE> opsToTable, TOPS delegate) {
         super(delegate);
         this.opsToTable = Objects.requireNonNull(opsToTable);
         this.creator = Objects.requireNonNull(creator);

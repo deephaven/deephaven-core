@@ -34,25 +34,25 @@ public class TestPartitioningColumns {
     @Test
     public void testEverything() {
         final Table input = newTable(
-            charCol("Ch", 'C', 'A', 'B'),
-            byteCol("By", (byte) 1, (byte) 2, (byte) 3),
-            shortCol("Sh", (short) 1, (short) 2, (short) 3),
-            intCol("In", 1 << 20, 2 << 20, 3 << 20),
-            longCol("Lo", 1L << 36, 2L << 36, 3L << 36),
-            floatCol("Fl", 0.1f, 0.2f, 0.3f),
-            doubleCol("Do", 0.1, 0.2, 0.3),
-            dateTimeCol("DT", DBDateTime.now(), DBTimeUtils.plus(DBDateTime.now(), 1),
-                DBTimeUtils.plus(DBDateTime.now(), 2)),
-            stringCol("St", "ABC", "DEF", "GHI"),
-            col("Bo", Boolean.TRUE, Boolean.FALSE, Boolean.TRUE));
+                charCol("Ch", 'C', 'A', 'B'),
+                byteCol("By", (byte) 1, (byte) 2, (byte) 3),
+                shortCol("Sh", (short) 1, (short) 2, (short) 3),
+                intCol("In", 1 << 20, 2 << 20, 3 << 20),
+                longCol("Lo", 1L << 36, 2L << 36, 3L << 36),
+                floatCol("Fl", 0.1f, 0.2f, 0.3f),
+                doubleCol("Do", 0.1, 0.2, 0.3),
+                dateTimeCol("DT", DBDateTime.now(), DBTimeUtils.plus(DBDateTime.now(), 1),
+                        DBTimeUtils.plus(DBDateTime.now(), 2)),
+                stringCol("St", "ABC", "DEF", "GHI"),
+                col("Bo", Boolean.TRUE, Boolean.FALSE, Boolean.TRUE));
 
         final RecordingLocationKeyFinder<SimpleTableLocationKey> recordingLocationKeyFinder =
-            new RecordingLocationKeyFinder<>();
+                new RecordingLocationKeyFinder<>();
         final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
         final String[] partitionKeys = input.getDefinition().getColumnNamesArray();
         // noinspection unchecked
         final ColumnSource<? extends Comparable<?>>[] partitionValueSources =
-            input.getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
+                input.getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         final int numColumns = partitionValueSources.length;
         input.getIndex().forAllLongs((final long indexKey) -> {
             for (int ci = 0; ci < numColumns; ++ci) {
@@ -61,21 +61,19 @@ public class TestPartitioningColumns {
             recordingLocationKeyFinder.accept(new SimpleTableLocationKey(partitions));
         });
 
-        final TableDefinition resultDefinition =
-            new TableDefinition(input.getDefinition().getColumnStream()
+        final TableDefinition resultDefinition = new TableDefinition(input.getDefinition().getColumnStream()
                 .map(ColumnDefinition::withPartitioning).collect(Collectors.toList()));
-        final Table result =
-            new PartitionAwareSourceTable(resultDefinition, "TestPartitioningColumns",
+        final Table result = new PartitionAwareSourceTable(resultDefinition, "TestPartitioningColumns",
                 RegionedTableComponentFactoryImpl.INSTANCE,
                 new PollingTableLocationProvider<>(
-                    StandaloneTableKey.getInstance(),
-                    recordingLocationKeyFinder,
-                    (tk, tlk, rs) -> {
-                        final DummyTableLocation tl = new DummyTableLocation(tk, tlk);
-                        tl.handleUpdate(Index.CURRENT_FACTORY.getFlatIndex(1), 1L);
-                        return tl;
-                    },
-                    null),
+                        StandaloneTableKey.getInstance(),
+                        recordingLocationKeyFinder,
+                        (tk, tlk, rs) -> {
+                            final DummyTableLocation tl = new DummyTableLocation(tk, tlk);
+                            tl.handleUpdate(Index.CURRENT_FACTORY.getFlatIndex(1), 1L);
+                            return tl;
+                        },
+                        null),
                 null);
 
         final Table expected = input.sort(input.getDefinition().getColumnNamesArray());
@@ -83,7 +81,7 @@ public class TestPartitioningColumns {
         TstUtils.assertTableEquals(expected, result);
 
         final SelectFilter[] filters = input.getDefinition().getColumnStream()
-            .map(cd -> new MatchFilter(cd.getName(), (Object) null)).toArray(SelectFilter[]::new);
+                .map(cd -> new MatchFilter(cd.getName(), (Object) null)).toArray(SelectFilter[]::new);
         TstUtils.assertTableEquals(expected.where(filters), result.where(filters));
 
         TstUtils.assertTableEquals(expected.selectDistinct(), result.selectDistinct());
@@ -92,7 +90,7 @@ public class TestPartitioningColumns {
     private static final class DummyTableLocation extends AbstractTableLocation {
 
         protected DummyTableLocation(@NotNull final TableKey tableKey,
-            @NotNull final TableLocationKey tableLocationKey) {
+                @NotNull final TableLocationKey tableLocationKey) {
             super(tableKey, tableLocationKey, false);
         }
 
@@ -124,56 +122,55 @@ public class TestPartitioningColumns {
 
                 @Nullable
                 @Override
-                public <METADATA_TYPE> METADATA_TYPE getMetadata(
-                    @NotNull ColumnDefinition<?> columnDefinition) {
+                public <METADATA_TYPE> METADATA_TYPE getMetadata(@NotNull ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
                 public ColumnRegionChar<Attributes.Values> makeColumnRegionChar(
-                    @NotNull ColumnDefinition<?> columnDefinition) {
+                        @NotNull ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
                 public ColumnRegionByte<Attributes.Values> makeColumnRegionByte(
-                    @NotNull ColumnDefinition<?> columnDefinition) {
+                        @NotNull ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
                 public ColumnRegionShort<Attributes.Values> makeColumnRegionShort(
-                    @NotNull ColumnDefinition<?> columnDefinition) {
+                        @NotNull ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
                 public ColumnRegionInt<Attributes.Values> makeColumnRegionInt(
-                    @NotNull ColumnDefinition<?> columnDefinition) {
+                        @NotNull ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
                 public ColumnRegionLong<Attributes.Values> makeColumnRegionLong(
-                    @NotNull ColumnDefinition<?> columnDefinition) {
+                        @NotNull ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
                 public ColumnRegionFloat<Attributes.Values> makeColumnRegionFloat(
-                    @NotNull ColumnDefinition<?> columnDefinition) {
+                        @NotNull ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
                 public ColumnRegionDouble<Attributes.Values> makeColumnRegionDouble(
-                    @NotNull ColumnDefinition<?> columnDefinition) {
+                        @NotNull ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
                 public <TYPE> ColumnRegionObject<TYPE, Attributes.Values> makeColumnRegionObject(
-                    @NotNull ColumnDefinition<TYPE> columnDefinition) {
+                        @NotNull ColumnDefinition<TYPE> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 

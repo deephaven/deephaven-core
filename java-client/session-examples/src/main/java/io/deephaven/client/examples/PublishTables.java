@@ -20,12 +20,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @Command(name = "publish-table", mixinStandardHelpOptions = true,
-    description = "Publish a QST as a globally scoped variable", version = "0.1.0")
+        description = "Publish a QST as a globally scoped variable", version = "0.1.0")
 class PublishTables extends SessionExampleBase {
 
     @Parameters(arity = "1..*", paramLabel = "QST",
-        description = "QST file(s) to publish. May be in the form <PATH> or <KEY>=<PATH>.",
-        converter = LabeledTableConverter.class)
+            description = "QST file(s) to publish. May be in the form <PATH> or <KEY>=<PATH>.",
+            converter = LabeledTableConverter.class)
     LabeledTable[] tables;
 
     @Override
@@ -52,7 +52,7 @@ class PublishTables extends SessionExampleBase {
                     if (throwable != null) {
                         StringWriter stringWriter = new StringWriter();
                         stringWriter.append("Error publishing '").append(labeledTable.label())
-                            .append("'").append(System.lineSeparator());
+                                .append("'").append(System.lineSeparator());
                         throwable.printStackTrace(new PrintWriter(stringWriter));
                         System.err.println(stringWriter);
                     }

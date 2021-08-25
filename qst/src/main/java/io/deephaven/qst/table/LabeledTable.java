@@ -25,9 +25,10 @@ public abstract class LabeledTable {
     public abstract TableSpec table();
 
     @Check
-    final void checkLabel() {
-        if (!SourceVersion.isName(label())) {
-            throw new IllegalArgumentException("label is not a valid name");
+    final void checkNotEmpty() {
+        if (label().isEmpty()) {
+            throw new IllegalArgumentException(
+                    "label is empty, must provide non-empty label for LabeledTable");
         }
     }
 }

@@ -5,14 +5,14 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.OpenDocumentResponse",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.OpenDocumentResponse",
+        namespace = JsPackage.GLOBAL)
 public class OpenDocumentResponse {
     public static native OpenDocumentResponse deserializeBinary(Uint8Array bytes);
 
     public static native OpenDocumentResponse deserializeBinaryFromReader(
-        OpenDocumentResponse message, Object reader);
+            OpenDocumentResponse message, Object reader);
 
     public static native void serializeBinaryToWriter(OpenDocumentResponse message, Object writer);
 

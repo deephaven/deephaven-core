@@ -62,10 +62,9 @@ public class TestRandomAccessDeque extends BaseArrayTestCase {
         assertFalse(deque.removeIf(x -> x == 999));
 
         TestCase.assertTrue(Arrays.equals(values.toArray(), deque.toArray()));
+        TestCase.assertTrue(Arrays.equals(values.toArray(new Integer[0]), deque.toArray(new Integer[0])));
         TestCase.assertTrue(
-            Arrays.equals(values.toArray(new Integer[0]), deque.toArray(new Integer[0])));
-        TestCase.assertTrue(Arrays.equals(values.toArray(new Integer[values.size()]),
-            deque.toArray(new Integer[deque.size()])));
+                Arrays.equals(values.toArray(new Integer[values.size()]), deque.toArray(new Integer[deque.size()])));
 
         values.addAll(Arrays.asList(7, 8, 9));
         deque.addAll(Arrays.asList(7, 8, 9));

@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.UngroupRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.UngroupRequest",
+        namespace = JsPackage.GLOBAL)
 public class UngroupRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -22,8 +22,7 @@ public class UngroupRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface GetTicketUnionType {
                 @JsOverlay
-                static UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                static UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(Object o) {
                     return Js.cast(o);
                 }
 
@@ -57,21 +56,20 @@ public class UngroupRequest {
             UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType getTicket();
 
             @JsProperty
-            void setTicket(
-                UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+            void setTicket(UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<UngroupRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -138,7 +136,7 @@ public class UngroupRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -173,20 +171,20 @@ public class UngroupRequest {
 
             @JsProperty
             void setTicket(
-                UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<UngroupRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -248,12 +246,12 @@ public class UngroupRequest {
     public static native UngroupRequest deserializeBinary(Uint8Array bytes);
 
     public static native UngroupRequest deserializeBinaryFromReader(
-        UngroupRequest message, Object reader);
+            UngroupRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(UngroupRequest message, Object writer);
 
     public static native UngroupRequest.ToObjectReturnType toObject(
-        boolean includeInstance, UngroupRequest msg);
+            boolean includeInstance, UngroupRequest msg);
 
     public native String addColumnsToUngroup(String value, double index);
 

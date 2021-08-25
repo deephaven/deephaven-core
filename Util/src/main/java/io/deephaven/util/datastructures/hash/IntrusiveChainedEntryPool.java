@@ -6,9 +6,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A pool for "free" entries to be use with IntrusiveChainedHash structures, implemented as a stack
- * using the same adapter and intrusive fields. Requires external synchronization of all methods for
- * concurrent use.
+ * A pool for "free" entries to be use with IntrusiveChainedHash structures, implemented as a stack using the same
+ * adapter and intrusive fields. Requires external synchronization of all methods for concurrent use.
  */
 public class IntrusiveChainedEntryPool<VALUE_TYPE> {
 
@@ -27,8 +26,7 @@ public class IntrusiveChainedEntryPool<VALUE_TYPE> {
      * 
      * @param adapter The adapter
      */
-    public IntrusiveChainedEntryPool(
-        @NotNull final IntrusiveChainedHashAdapter<VALUE_TYPE> adapter) {
+    public IntrusiveChainedEntryPool(@NotNull final IntrusiveChainedHashAdapter<VALUE_TYPE> adapter) {
         this.adapter = adapter;
     }
 

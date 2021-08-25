@@ -197,8 +197,7 @@ public class RandomAccessDeque<T> implements Collection<T> {
 
     public T get(int index) {
         if (start + index >= end || index < 0 || (start + index < start)) {
-            throw new ArrayIndexOutOfBoundsException(
-                "index=" + index + ", end=" + end + ", start=" + start);
+            throw new ArrayIndexOutOfBoundsException("index=" + index + ", end=" + end + ", start=" + start);
         }
         // noinspection unchecked
         return (T) array[start + index];

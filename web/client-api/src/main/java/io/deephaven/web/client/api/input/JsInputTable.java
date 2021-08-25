@@ -73,8 +73,7 @@ public class JsInputTable {
                 // assert that all keys are filled in...
                 for (String key : keys) {
                     if (!row.has(key)) {
-                        throw new IllegalStateException(
-                            "Missing key " + key + " in " + Global.JSON.stringify(row));
+                        throw new IllegalStateException("Missing key " + key + " in " + Global.JSON.stringify(row));
                     }
                 }
 
@@ -100,8 +99,8 @@ public class JsInputTable {
 
     public Promise<JsInputTable> addTables(JsTable[] tablesToAdd) {
         return Callbacks.<Void, String>promise(this.table, c -> {
-            // table.getServer().addTablesToInputTable(table.getHeadHandle(),
-            // Arrays.stream(tablesToAdd).map(t -> t.getHandle()).toArray(TableHandle[]::new), c);
+            // table.getServer().addTablesToInputTable(table.getHeadHandle(), Arrays.stream(tablesToAdd).map(t ->
+            // t.getHandle()).toArray(TableHandle[]::new), c);
             throw new UnsupportedOperationException("addTablesToInputTable");
         }).then(response -> Promise.resolve(this));
     }
@@ -123,8 +122,7 @@ public class JsInputTable {
             final ClientTableState cts = connection.newState(tableToDelete.state(), op);
             cleanups.add(cts.retain(this));
 
-            // final HandleMapping mapping = new HandleMapping(tableToDelete.getHandle(),
-            // cts.getHandle());
+            // final HandleMapping mapping = new HandleMapping(tableToDelete.getHandle(), cts.getHandle());
             // op.fromState(cts);
             // op.setAppendTo(cts.getPrevious());
             // op.setHandles(mapping);
@@ -142,12 +140,11 @@ public class JsInputTable {
             throw new UnsupportedOperationException("batch");
         }).then(response -> {
             if (response.getFailureMessages().length > 0) {
-                return (Promise) Promise.reject(
-                    "Unable to delete tables: " + Arrays.toString(response.getFailureMessages()));
+                return (Promise) Promise
+                        .reject("Unable to delete tables: " + Arrays.toString(response.getFailureMessages()));
             }
             return Callbacks.<Void, String>promise(this.table, c -> {
-                // table.getServer().deleteTablesFromInputTable(table.getHeadHandle(),
-                // response.getSuccess(), c);
+                // table.getServer().deleteTablesFromInputTable(table.getHeadHandle(), response.getSuccess(), c);
                 throw new UnsupportedOperationException("deleteTablesFromInputTable");
             });
         }).then(success -> {

@@ -41,7 +41,7 @@ public class StackTraceMixInTest {
         // note in io.deephaven.qst.table.StackTraceMixInCreator.trimElements
         StackTraceMixIn<TableSpec, TableSpec> mixin = example1(mixinCreator);
         assertThat(mixin.elements()[2].getClassName())
-            .isEqualTo(io.deephaven.qst.table.StackTraceMixInTest.class.getName());
+                .isEqualTo(io.deephaven.qst.table.StackTraceMixInTest.class.getName());
         assertThat(mixin.elements()[2].getMethodName()).isEqualTo("example1");
         assertThat(mixin.elements()[2].getLineNumber()).isEqualTo(15);
     }
@@ -52,7 +52,7 @@ public class StackTraceMixInTest {
         // note in io.deephaven.qst.table.StackTraceMixInCreator.trimElements
         StackTraceMixIn<TableSpec, TableSpec> mixin = example2(mixinCreator);
         assertThat(mixin.elements()[2].getClassName())
-            .isEqualTo(io.deephaven.qst.table.StackTraceMixInTest.class.getName());
+                .isEqualTo(io.deephaven.qst.table.StackTraceMixInTest.class.getName());
         assertThat(mixin.elements()[2].getMethodName()).isEqualTo("example2");
         assertThat(mixin.elements()[2].getLineNumber()).isEqualTo(19);
     }
@@ -63,7 +63,7 @@ public class StackTraceMixInTest {
         // note in io.deephaven.qst.table.StackTraceMixInCreator.trimElements
         StackTraceMixIn<TableSpec, TableSpec> mixin = example3(mixinCreator);
         assertThat(mixin.elements()[2].getClassName())
-            .isEqualTo(io.deephaven.qst.table.StackTraceMixInTest.class.getName());
+                .isEqualTo(io.deephaven.qst.table.StackTraceMixInTest.class.getName());
         assertThat(mixin.elements()[2].getMethodName()).isEqualTo("example3");
         assertThat(mixin.elements()[2].getLineNumber()).isEqualTo(26);
     }
@@ -72,7 +72,7 @@ public class StackTraceMixInTest {
     void mixinElementsTrimmed4() {
         StackTraceMixIn<TableSpec, TableSpec> mixin = example4(mixinCreator);
         assertThat(mixin.elements()[1].getClassName())
-            .isEqualTo(io.deephaven.qst.table.StackTraceMixInTest.class.getName());
+                .isEqualTo(io.deephaven.qst.table.StackTraceMixInTest.class.getName());
         assertThat(mixin.elements()[1].getMethodName()).isEqualTo("example4");
         assertThat(mixin.elements()[1].getLineNumber()).isEqualTo(33);
     }

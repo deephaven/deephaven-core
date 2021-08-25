@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest",
+        namespace = JsPackage.GLOBAL)
 public class CrossJoinTablesRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -43,7 +43,7 @@ public class CrossJoinTablesRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static CrossJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -78,20 +78,20 @@ public class CrossJoinTablesRequest {
 
             @JsProperty
             void setTicket(
-                CrossJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    CrossJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<CrossJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<CrossJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<CrossJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<CrossJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -175,7 +175,7 @@ public class CrossJoinTablesRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static CrossJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -210,20 +210,20 @@ public class CrossJoinTablesRequest {
 
             @JsProperty
             void setTicket(
-                CrossJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    CrossJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<CrossJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<CrossJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<CrossJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<CrossJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -282,13 +282,12 @@ public class CrossJoinTablesRequest {
     public static native CrossJoinTablesRequest deserializeBinary(Uint8Array bytes);
 
     public static native CrossJoinTablesRequest deserializeBinaryFromReader(
-        CrossJoinTablesRequest message, Object reader);
+            CrossJoinTablesRequest message, Object reader);
 
-    public static native void serializeBinaryToWriter(CrossJoinTablesRequest message,
-        Object writer);
+    public static native void serializeBinaryToWriter(CrossJoinTablesRequest message, Object writer);
 
     public static native CrossJoinTablesRequest.ToObjectReturnType toObject(
-        boolean includeInstance, CrossJoinTablesRequest msg);
+            boolean includeInstance, CrossJoinTablesRequest msg);
 
     public native String addColumnsToAdd(String value, double index);
 

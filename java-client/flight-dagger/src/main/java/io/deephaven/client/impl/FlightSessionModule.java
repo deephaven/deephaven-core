@@ -13,16 +13,16 @@ public class FlightSessionModule {
 
     @Provides
     public static FlightSession newFlightSession(SessionImpl session, BufferAllocator allocator,
-        ManagedChannel managedChannel) {
+            ManagedChannel managedChannel) {
         return FlightSession.of(session, allocator, managedChannel);
     }
 
     @Provides
     public static CompletableFuture<? extends FlightSession> newFlightSessionFuture(
-        CompletableFuture<? extends SessionImpl> sessionFuture, BufferAllocator allocator,
-        ManagedChannel managedChannel) {
+            CompletableFuture<? extends SessionImpl> sessionFuture, BufferAllocator allocator,
+            ManagedChannel managedChannel) {
         return sessionFuture
-            .thenApply((Function<SessionImpl, FlightSession>) session -> FlightSession.of(session,
-                allocator, managedChannel));
+                .thenApply((Function<SessionImpl, FlightSession>) session -> FlightSession.of(session,
+                        allocator, managedChannel));
     }
 }

@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest",
+        namespace = JsPackage.GLOBAL)
 public class SnapshotTableRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -43,7 +43,7 @@ public class SnapshotTableRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -78,20 +78,20 @@ public class SnapshotTableRequest {
 
             @JsProperty
             void setTicket(
-                SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<SnapshotTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -164,7 +164,7 @@ public class SnapshotTableRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -199,20 +199,20 @@ public class SnapshotTableRequest {
 
             @JsProperty
             void setTicket(
-                SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<SnapshotTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -260,12 +260,12 @@ public class SnapshotTableRequest {
     public static native SnapshotTableRequest deserializeBinary(Uint8Array bytes);
 
     public static native SnapshotTableRequest deserializeBinaryFromReader(
-        SnapshotTableRequest message, Object reader);
+            SnapshotTableRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(SnapshotTableRequest message, Object writer);
 
     public static native SnapshotTableRequest.ToObjectReturnType toObject(
-        boolean includeInstance, SnapshotTableRequest msg);
+            boolean includeInstance, SnapshotTableRequest msg);
 
     public native String addStampColumns(String value, double index);
 

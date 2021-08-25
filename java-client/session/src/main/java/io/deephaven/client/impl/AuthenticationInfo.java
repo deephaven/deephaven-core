@@ -14,7 +14,7 @@ public abstract class AuthenticationInfo {
 
     public static AuthenticationInfo of(HandshakeResponse response) {
         return ImmutableAuthenticationInfo.of(response.getMetadataHeader().toStringUtf8(),
-            response.getSessionToken().toStringUtf8());
+                response.getSessionToken().toStringUtf8());
     }
 
     @Parameter

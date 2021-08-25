@@ -27,9 +27,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A {@link Session} implementation that uses
- * {@link io.deephaven.proto.backplane.grpc.BatchTableRequest batch requests} and memoizes based on
- * {@link io.deephaven.qst.table.TableSpec} equality.
+ * A {@link Session} implementation that uses {@link io.deephaven.proto.backplane.grpc.BatchTableRequest batch requests}
+ * and memoizes based on {@link io.deephaven.qst.table.TableSpec} equality.
  *
  * <p>
  * {@inheritDoc}
@@ -86,12 +85,12 @@ public final class SessionImpl extends SessionBase {
     }
 
     public static SessionImpl create(SessionImplConfig config,
-        SessionServiceBlockingStub stubBlocking) {
+            SessionServiceBlockingStub stubBlocking) {
         final HandshakeRequest request = initialHandshake();
         final HandshakeResponse response = stubBlocking.newSession(request);
         final AuthenticationInfo initialAuth = AuthenticationInfo.of(response);
         final SessionImpl session =
-            new SessionImpl(config, new Retrying(REFRESH_RETRIES), initialAuth);
+                new SessionImpl(config, new Retrying(REFRESH_RETRIES), initialAuth);
         session.scheduleRefreshSessionToken(response);
         return session;
     }
@@ -108,7 +107,7 @@ public final class SessionImpl extends SessionBase {
     }
 
     private static class SessionObserver
-        implements ClientResponseObserver<HandshakeRequest, HandshakeResponse> {
+            implements ClientResponseObserver<HandshakeRequest, HandshakeResponse> {
 
         private final SessionImplConfig config;
         private final CompletableFuture<SessionImpl> future = new CompletableFuture<>();
@@ -130,7 +129,7 @@ public final class SessionImpl extends SessionBase {
         public void onNext(HandshakeResponse response) {
             AuthenticationInfo initialAuth = AuthenticationInfo.of(response);
             SessionImpl session =
-                new SessionImpl(config, new Retrying(REFRESH_RETRIES), initialAuth);
+                    new SessionImpl(config, new Retrying(REFRESH_RETRIES), initialAuth);
             if (future.complete(session)) {
                 session.scheduleRefreshSessionToken(response);
             } else {
@@ -148,7 +147,7 @@ public final class SessionImpl extends SessionBase {
         public void onCompleted() {
             if (!future.isDone()) {
                 future.completeExceptionally(
-                    new IllegalStateException("Observer completed without response"));
+                        new IllegalStateException("Observer completed without response"));
             }
         }
     }
@@ -175,7 +174,7 @@ public final class SessionImpl extends SessionBase {
         this.sessionService = config.sessionService().withCallCredentials(credentials);
         this.consoleService = config.consoleService().withCallCredentials(credentials);
         this.states = new ExportStates(this, sessionService,
-            config.tableService().withCallCredentials(credentials));
+                config.tableService().withCallCredentials(credentials));
         this.delegateToBatch = config.delegateToBatch();
         this.mixinStacktrace = config.mixinStacktrace();
         this.serialManager = TableHandleManagerSerial.of(this);
@@ -198,7 +197,7 @@ public final class SessionImpl extends SessionBase {
         }
         PublishObserver observer = new PublishObserver();
         consoleService.bindTableToVariable(BindTableToVariableRequest.newBuilder()
-            .setVariableName(name).setTableId(export.ticket()).build(), observer);
+                .setVariableName(name).setTableId(export.ticket()).build(), observer);
         return observer.future;
     }
 
@@ -210,7 +209,7 @@ public final class SessionImpl extends SessionBase {
     @Override
     public CompletableFuture<Void> closeFuture() {
         HandshakeRequest handshakeRequest = HandshakeRequest.newBuilder().setAuthProtocol(0)
-            .setPayload(ByteString.copyFromUtf8(auth.session())).build();
+                .setPayload(ByteString.copyFromUtf8(auth.session())).build();
         CloseSessionHandler handler = new CloseSessionHandler();
         sessionService.closeSession(handshakeRequest, handler);
         return handler.future;
@@ -249,10 +248,10 @@ public final class SessionImpl extends SessionBase {
 
     private void scheduleRefreshSessionToken(HandshakeResponse response) {
         final long refreshDelayMs = Math.min(
-            System.currentTimeMillis() + response.getTokenExpirationDelayMillis() / 3,
-            response.getTokenDeadlineTimeMillis() - response.getTokenExpirationDelayMillis() / 10);
+                System.currentTimeMillis() + response.getTokenExpirationDelayMillis() / 3,
+                response.getTokenDeadlineTimeMillis() - response.getTokenExpirationDelayMillis() / 10);
         executor.schedule(SessionImpl.this::refreshSessionToken, refreshDelayMs,
-            TimeUnit.MILLISECONDS);
+                TimeUnit.MILLISECONDS);
     }
 
     private void scheduleRefreshSessionTokenNow() {
@@ -261,18 +260,18 @@ public final class SessionImpl extends SessionBase {
 
     private void refreshSessionToken() {
         HandshakeRequest handshakeRequest = HandshakeRequest.newBuilder().setAuthProtocol(0)
-            .setPayload(ByteString.copyFromUtf8(auth.session())).build();
+                .setPayload(ByteString.copyFromUtf8(auth.session())).build();
         HandshakeHandler handler = new HandshakeHandler();
         sessionService.refreshSessionToken(handshakeRequest, handler);
     }
 
     private static class PublishObserver
-        implements ClientResponseObserver<BindTableToVariableRequest, BindTableToVariableResponse> {
+            implements ClientResponseObserver<BindTableToVariableRequest, BindTableToVariableResponse> {
         private final CompletableFuture<Void> future = new CompletableFuture<>();
 
         @Override
         public void beforeStart(
-            ClientCallStreamObserver<BindTableToVariableRequest> requestStream) {
+                ClientCallStreamObserver<BindTableToVariableRequest> requestStream) {
             future.whenComplete((session, throwable) -> {
                 if (future.isCancelled()) {
                     requestStream.cancel("User cancelled", null);
@@ -294,7 +293,7 @@ public final class SessionImpl extends SessionBase {
         public void onCompleted() {
             if (!future.isDone()) {
                 future.completeExceptionally(
-                    new IllegalStateException("Observer completed without response"));
+                        new IllegalStateException("Observer completed without response"));
             }
         }
     }
@@ -304,11 +303,11 @@ public final class SessionImpl extends SessionBase {
 
         @Override
         public void applyRequestMetadata(RequestInfo requestInfo, Executor appExecutor,
-            MetadataApplier applier) {
+                MetadataApplier applier) {
             AuthenticationInfo localAuth = auth;
             Metadata metadata = new Metadata();
             metadata.put(Key.of(localAuth.sessionHeaderKey(), Metadata.ASCII_STRING_MARSHALLER),
-                localAuth.session());
+                    localAuth.session());
             applier.apply(metadata);
         }
 

@@ -40,7 +40,7 @@ public class SmallIndexCreation {
     private static final TIntHashSet workSet = new TIntHashSet();
 
     private static void populateRandomBlockValues(
-        final Random random, final int[] blockValues, final int valuesPerBlock) {
+            final Random random, final int[] blockValues, final int valuesPerBlock) {
         workSet.clear();
         while (workSet.size() < valuesPerBlock) {
             workSet.add(random.nextInt(RspArray.BLOCK_SIZE));
@@ -142,8 +142,8 @@ public class SmallIndexCreation {
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-            .include(SmallIndexCreation.class.getSimpleName())
-            .build();
+                .include(SmallIndexCreation.class.getSimpleName())
+                .build();
 
         new Runner(opt).run();
     }

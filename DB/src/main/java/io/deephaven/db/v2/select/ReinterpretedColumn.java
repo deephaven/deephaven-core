@@ -20,18 +20,18 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Allows us to support ColumnSource reinterpretation via view-type Table operations. Currently,
- * this is only exposed in V2 tables' support for dateTimeColumnAsNanos().
+ * Allows us to support ColumnSource reinterpretation via view-type Table operations. Currently, this is only exposed in
+ * V2 tables' support for dateTimeColumnAsNanos().
  *
- * TODO: If we come up with other valid, useful reinterpretations, it would be trivial to create a
- * general purpose syntax for use in view()/updateView() column expressions.
+ * TODO: If we come up with other valid, useful reinterpretations, it would be trivial to create a general purpose
+ * syntax for use in view()/updateView() column expressions.
  *
  * The syntax I have in mind is: "&lt;ColumnNameB&gt;=&lt;ColumnNameA&gt;.as(&lt;ClassName&gt;)"
  * "&lt;ColumnName&gt;.as(&lt;ClassName&gt;)"
  *
- * Making this work would consist of any one of: 1. Adding a V1 version and updating
- * SelectColumnFactory and SelectColumnAdaptor 2. Adding the appropriate if-regex-matches to
- * realColumn selection in V2 SwitchColumn 3. Creating a V2-native SelectColumnFactory
+ * Making this work would consist of any one of: 1. Adding a V1 version and updating SelectColumnFactory and
+ * SelectColumnAdaptor 2. Adding the appropriate if-regex-matches to realColumn selection in V2 SwitchColumn 3. Creating
+ * a V2-native SelectColumnFactory
  */
 public class ReinterpretedColumn<S, D> implements SelectColumn {
 
@@ -46,8 +46,7 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
 
     private ColumnSource<S> sourceColumnSource;
 
-    public ReinterpretedColumn(String sourceName, Class<S> sourceDataType, String destName,
-        Class<D> destDataType) {
+    public ReinterpretedColumn(String sourceName, Class<S> sourceDataType, String destName, Class<D> destDataType) {
         this.sourceName = NameValidator.validateColumnName(sourceName);
         this.sourceDataType = Require.neqNull(sourceDataType, "sourceDataType");
         this.destName = NameValidator.validateColumnName(destName);
@@ -67,22 +66,19 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(Index index,
-        Map<String, ? extends ColumnSource> columnsOfInterest) {
+    public List<String> initInputs(Index index, Map<String, ? extends ColumnSource> columnsOfInterest) {
         // noinspection unchecked
         final ColumnSource<S> localSourceColumnSource = columnsOfInterest.get(sourceName);
         if (localSourceColumnSource == null) {
             throw new NoSuchColumnException(columnsOfInterest.keySet(), sourceName);
         }
         if (!localSourceColumnSource.getType().equals(sourceDataType)) {
-            throw new IllegalArgumentException(
-                "Source column " + sourceName + " has wrong data type "
+            throw new IllegalArgumentException("Source column " + sourceName + " has wrong data type "
                     + localSourceColumnSource.getType() + ", expected " + sourceDataType);
         }
         if (!(localSourceColumnSource.allowsReinterpret(destDataType))) {
-            throw new IllegalArgumentException(
-                "Source column " + sourceName + " (Class=" + localSourceColumnSource.getClass()
-                    + ") - cannot be reinterpreted as " + destDataType);
+            throw new IllegalArgumentException("Source column " + sourceName + " (Class="
+                    + localSourceColumnSource.getClass() + ") - cannot be reinterpreted as " + destDataType);
         }
         // noinspection unchecked
         sourceColumnSource = (ColumnSource<S>) columnsOfInterest.get(sourceName);
@@ -97,8 +93,7 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
             throw new NoSuchColumnException(columnDefinitionMap.keySet(), sourceName);
         }
         if (!sourceColumnDefinition.getDataType().equals(sourceDataType)) {
-            throw new IllegalArgumentException(
-                "Source column " + sourceName + " has wrong data type "
+            throw new IllegalArgumentException("Source column " + sourceName + " has wrong data type "
                     + sourceColumnDefinition.getDataType() + ", expected " + sourceDataType);
         }
         return getColumns();
@@ -124,8 +119,8 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
     public ColumnSource getDataView() {
         final ColumnSource<D> result = sourceColumnSource.reinterpret(destDataType);
         if (!result.getType().equals(destDataType)) {
-            throw new IllegalArgumentException("Reinterpreted column from " + sourceName
-                + " has wrong data type " + result.getType() + ", expected " + destDataType);
+            throw new IllegalArgumentException("Reinterpreted column from " + sourceName + " has wrong data type "
+                    + result.getType() + ", expected " + destDataType);
         }
         return result;
     }
@@ -166,7 +161,7 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
         ReinterpretedColumn<?, ?> that = (ReinterpretedColumn<?, ?>) o;
 
         return sourceName.equals(that.sourceName) && sourceDataType.equals(that.sourceDataType)
-            && destName.equals(that.destName) && destDataType.equals(that.destDataType);
+                && destName.equals(that.destName) && destDataType.equals(that.destDataType);
     }
 
     @Override

@@ -4,9 +4,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.grpcWeb.transports.http.xhrUtil",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.grpcWeb.transports.http.xhrUtil",
+        namespace = JsPackage.GLOBAL)
 public class XhrUtil {
     public static native boolean detectMozXHRSupport();
 

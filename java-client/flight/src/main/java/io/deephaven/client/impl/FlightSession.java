@@ -18,9 +18,9 @@ import java.util.Objects;
 public final class FlightSession implements AutoCloseable {
 
     public static FlightSession of(SessionImpl session, BufferAllocator incomingAllocator,
-        ManagedChannel channel) {
+            ManagedChannel channel) {
         final FlightClient client = FlightGrpcUtilsExtension.createFlightClientWithSharedChannel(
-            incomingAllocator, channel, Collections.singletonList(new SessionMiddleware(session)));
+                incomingAllocator, channel, Collections.singletonList(new SessionMiddleware(session)));
         return new FlightSession(session, client);
     }
 
@@ -59,7 +59,7 @@ public final class FlightSession implements AutoCloseable {
     }
 
     private static FlightDescriptor adapt(
-        org.apache.arrow.flight.impl.Flight.FlightDescriptor impl) {
+            org.apache.arrow.flight.impl.Flight.FlightDescriptor impl) {
         switch (impl.getType()) {
             case PATH:
                 return FlightDescriptor.path(impl.getPathList());

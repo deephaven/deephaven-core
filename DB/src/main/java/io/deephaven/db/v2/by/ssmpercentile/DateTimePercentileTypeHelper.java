@@ -13,8 +13,7 @@ import io.deephaven.util.QueryConstants;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 
-public class DateTimePercentileTypeHelper
-    implements SsmChunkedPercentileOperator.PercentileTypeHelper {
+public class DateTimePercentileTypeHelper implements SsmChunkedPercentileOperator.PercentileTypeHelper {
     private final double percentile;
     private final DateTimeArraySource resultColumn;
 
@@ -26,8 +25,7 @@ public class DateTimePercentileTypeHelper
     }
 
     @Override
-    public boolean setResult(SegmentedSortedMultiSet ssmLo, SegmentedSortedMultiSet ssmHi,
-        long destination) {
+    public boolean setResult(SegmentedSortedMultiSet ssmLo, SegmentedSortedMultiSet ssmHi, long destination) {
         final long loSize = ssmLo.totalSize();
         final long hiSize = ssmHi.totalSize();
         final long totalSize = loSize + hiSize;
@@ -57,20 +55,16 @@ public class DateTimePercentileTypeHelper
     }
 
     @Override
-    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet,
-        Chunk<? extends Attributes.Values> valueCopy, IntChunk<Attributes.ChunkLengths> counts,
-        int startPosition, int runLength, MutableInt leftOvers) {
+    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Attributes.Values> valueCopy,
+            IntChunk<Attributes.ChunkLengths> counts, int startPosition, int runLength, MutableInt leftOvers) {
         final LongChunk<? extends Attributes.Values> asLongChunk = valueCopy.asLongChunk();
-        final LongSegmentedSortedMultiset ssmLo =
-            (LongSegmentedSortedMultiset) segmentedSortedMultiSet;
+        final LongSegmentedSortedMultiset ssmLo = (LongSegmentedSortedMultiset) segmentedSortedMultiSet;
         final long hiValue = ssmLo.getMaxLong();
 
-        final int result =
-            upperBound(asLongChunk, startPosition, startPosition + runLength, hiValue);
+        final int result = upperBound(asLongChunk, startPosition, startPosition + runLength, hiValue);
 
         final long hiCount = ssmLo.getMaxCount();
-        if (result > startPosition && asLongChunk.get(result - 1) == hiValue
-            && counts.get(result - 1) > hiCount) {
+        if (result > startPosition && asLongChunk.get(result - 1) == hiValue && counts.get(result - 1) > hiCount) {
             leftOvers.setValue((int) (counts.get(result - 1) - hiCount));
         } else {
             leftOvers.setValue(0);
@@ -80,16 +74,13 @@ public class DateTimePercentileTypeHelper
     }
 
     @Override
-    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet,
-        Chunk<? extends Attributes.Values> valueCopy, IntChunk<Attributes.ChunkLengths> counts,
-        int startPosition, int runLength) {
+    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Attributes.Values> valueCopy,
+            IntChunk<Attributes.ChunkLengths> counts, int startPosition, int runLength) {
         final LongChunk<? extends Attributes.Values> asLongChunk = valueCopy.asLongChunk();
-        final LongSegmentedSortedMultiset ssmLo =
-            (LongSegmentedSortedMultiset) segmentedSortedMultiSet;
+        final LongSegmentedSortedMultiset ssmLo = (LongSegmentedSortedMultiset) segmentedSortedMultiSet;
         final long hiValue = ssmLo.getMaxLong();
 
-        final int result =
-            upperBound(asLongChunk, startPosition, startPosition + runLength, hiValue);
+        final int result = upperBound(asLongChunk, startPosition, startPosition + runLength, hiValue);
 
         return result - startPosition;
     }
@@ -103,8 +94,8 @@ public class DateTimePercentileTypeHelper
      * @param searchValue the value to find
      * @return the highest index that is less than or equal to valuesToSearch
      */
-    private static int upperBound(LongChunk<? extends Attributes.Values> valuesToSearch, int lo,
-        int hi, long searchValue) {
+    private static int upperBound(LongChunk<? extends Attributes.Values> valuesToSearch, int lo, int hi,
+            long searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final long testValue = valuesToSearch.get(mid);

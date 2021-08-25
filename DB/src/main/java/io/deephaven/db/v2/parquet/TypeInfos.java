@@ -20,8 +20,8 @@ import java.io.Externalizable;
 import java.util.*;
 
 /**
- * Contains the necessary information to convert a Deephaven table into a Parquet table. Both the
- * schema translation, and the data translation.
+ * Contains the necessary information to convert a Deephaven table into a Parquet table. Both the schema translation,
+ * and the data translation.
  */
 class TypeInfos {
 
@@ -55,10 +55,10 @@ class TypeInfos {
     }
 
     private static TypeInfo lookupTypeInfo(
-        @NotNull final ColumnDefinition<?> column,
-        @NotNull final ParquetInstructions instructions) {
+            @NotNull final ColumnDefinition<?> column,
+            @NotNull final ParquetInstructions instructions) {
         if (CodecLookup.codecRequired(column)
-            || CodecLookup.explicitCodecPresent(instructions.getCodecName(column.getName()))) {
+                || CodecLookup.explicitCodecPresent(instructions.getCodecName(column.getName()))) {
             return new CodecType<>();
         }
         final Class<?> componentType = column.getComponentType();
@@ -73,14 +73,13 @@ class TypeInfos {
     }
 
     static Pair<String, String> getCodecAndArgs(
-        @NotNull final ColumnDefinition<?> columnDefinition,
-        @NotNull final ParquetInstructions instructions) {
+            @NotNull final ColumnDefinition<?> columnDefinition,
+            @NotNull final ParquetInstructions instructions) {
         // Explicit codecs always take precedence
         final String colName = columnDefinition.getName();
         final String codecNameFromInstructions = instructions.getCodecName(colName);
         if (CodecLookup.explicitCodecPresent(codecNameFromInstructions)) {
-            return new ImmutablePair<>(codecNameFromInstructions,
-                instructions.getCodecArgs(colName));
+            return new ImmutablePair<>(codecNameFromInstructions, instructions.getCodecArgs(colName));
         }
         // No need to impute a codec for any basic formats we already understand
         if (!CodecLookup.codecRequired(columnDefinition)) {
@@ -95,8 +94,8 @@ class TypeInfos {
     }
 
     static TypeInfo getTypeInfo(
-        @NotNull final ColumnDefinition<?> column,
-        @NotNull final ParquetInstructions instructions) {
+            @NotNull final ColumnDefinition<?> column,
+            @NotNull final ParquetInstructions instructions) {
         return lookupTypeInfo(column, instructions);
     }
 
@@ -104,17 +103,15 @@ class TypeInfos {
         return false;// TODO change this when adding optionals support
     }
 
-    private static PrimitiveBuilder<PrimitiveType> type(PrimitiveTypeName type, boolean required,
-        boolean repeating) {
-        return repeating ? Types.repeated(type)
-            : (required ? Types.required(type) : Types.optional(type));
+    private static PrimitiveBuilder<PrimitiveType> type(PrimitiveTypeName type, boolean required, boolean repeating) {
+        return repeating ? Types.repeated(type) : (required ? Types.required(type) : Types.optional(type));
     }
 
     private enum IntType implements TypeInfo {
         INSTANCE;
 
         private static final Set<Class<?>> clazzes = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList(int.class, Integer.class)));
+                .unmodifiableSet(new HashSet<>(Arrays.asList(int.class, Integer.class)));
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -122,13 +119,11 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating,
-            Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
-            return type(PrimitiveTypeName.INT32, required, repeating)
-                .as(LogicalTypeAnnotation.intType(32, true));
+            return type(PrimitiveTypeName.INT32, required, repeating).as(LogicalTypeAnnotation.intType(32, true));
         }
     }
 
@@ -136,7 +131,7 @@ class TypeInfos {
         INSTANCE;
 
         private static final Set<Class<?>> clazzes = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList(long.class, Long.class)));
+                .unmodifiableSet(new HashSet<>(Arrays.asList(long.class, Long.class)));
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -144,8 +139,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating,
-            Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
@@ -157,7 +151,7 @@ class TypeInfos {
         INSTANCE;
 
         private static final Set<Class<?>> clazzes = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList(short.class, Short.class)));
+                .unmodifiableSet(new HashSet<>(Arrays.asList(short.class, Short.class)));
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -165,13 +159,11 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating,
-            Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
-            return type(PrimitiveTypeName.INT32, required, repeating)
-                .as(LogicalTypeAnnotation.intType(16, true));
+            return type(PrimitiveTypeName.INT32, required, repeating).as(LogicalTypeAnnotation.intType(16, true));
         }
     }
 
@@ -179,7 +171,7 @@ class TypeInfos {
         INSTANCE;
 
         private static final Set<Class<?>> clazzes = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList(boolean.class, Boolean.class)));
+                .unmodifiableSet(new HashSet<>(Arrays.asList(boolean.class, Boolean.class)));
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -187,8 +179,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating,
-            Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
@@ -200,7 +191,7 @@ class TypeInfos {
         INSTANCE;
 
         private static final Set<Class<?>> clazzes = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList(float.class, Float.class)));
+                .unmodifiableSet(new HashSet<>(Arrays.asList(float.class, Float.class)));
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -208,8 +199,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating,
-            Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
@@ -221,7 +211,7 @@ class TypeInfos {
         INSTANCE;
 
         private static final Set<Class<?>> clazzes = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList(double.class, Double.class)));
+                .unmodifiableSet(new HashSet<>(Arrays.asList(double.class, Double.class)));
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -229,8 +219,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating,
-            Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
@@ -242,7 +231,7 @@ class TypeInfos {
         INSTANCE;
 
         private static final Set<Class<?>> clazzes = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList(char.class, Character.class)));
+                .unmodifiableSet(new HashSet<>(Arrays.asList(char.class, Character.class)));
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -250,13 +239,11 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating,
-            Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
-            return type(PrimitiveTypeName.INT32, required, repeating)
-                .as(LogicalTypeAnnotation.intType(16, false));
+            return type(PrimitiveTypeName.INT32, required, repeating).as(LogicalTypeAnnotation.intType(16, false));
         }
     }
 
@@ -264,7 +251,7 @@ class TypeInfos {
         INSTANCE;
 
         private static final Set<Class<?>> clazzes = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList(byte.class, Byte.class)));
+                .unmodifiableSet(new HashSet<>(Arrays.asList(byte.class, Byte.class)));
 
         @Override
         public Set<Class<?>> getTypes() {
@@ -272,13 +259,11 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating,
-            Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
-            return type(PrimitiveTypeName.INT32, required, repeating)
-                .as(LogicalTypeAnnotation.intType(8, true));
+            return type(PrimitiveTypeName.INT32, required, repeating).as(LogicalTypeAnnotation.intType(8, true));
         }
     }
 
@@ -293,19 +278,17 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating,
-            Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
             return type(PrimitiveTypeName.BINARY, required, repeating)
-                .as(LogicalTypeAnnotation.stringType());
+                    .as(LogicalTypeAnnotation.stringType());
         }
     }
 
     /**
-     * TODO: newer versions of parquet seem to support NANOS, but this version seems to only support
-     * MICROS
+     * TODO: newer versions of parquet seem to support NANOS, but this version seems to only support MICROS
      */
     private enum DBDateTimeType implements TypeInfo {
         INSTANCE;
@@ -318,14 +301,12 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating,
-            Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
             if (!isValidFor(dataType)) {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
             return type(PrimitiveTypeName.INT64, required, repeating)
-                .as(LogicalTypeAnnotation.timestampType(true,
-                    LogicalTypeAnnotation.TimeUnit.NANOS));
+                    .as(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS));
         }
     }
 
@@ -338,16 +319,15 @@ class TypeInfos {
         }
 
         default Type createSchemaType(
-            @NotNull final ColumnDefinition<?> columnDefinition,
-            @NotNull final ParquetInstructions instructions) {
+                @NotNull final ColumnDefinition<?> columnDefinition,
+                @NotNull final ParquetInstructions instructions) {
             final Class<?> dataType = columnDefinition.getDataType();
             final Class<?> componentType = columnDefinition.getComponentType();
 
             final PrimitiveBuilder<PrimitiveType> builder;
             final boolean isRepeating;
-            if (CodecLookup
-                .explicitCodecPresent(instructions.getCodecName(columnDefinition.getName()))
-                || CodecLookup.codecRequired(columnDefinition)) {
+            if (CodecLookup.explicitCodecPresent(instructions.getCodecName(columnDefinition.getName()))
+                    || CodecLookup.codecRequired(columnDefinition)) {
                 builder = getBuilder(isRequired(columnDefinition), false, dataType);
                 isRepeating = false;
             } else if (componentType != null) {
@@ -364,13 +344,12 @@ class TypeInfos {
                 return builder.named(columnDefinition.getName());
             }
             return Types.buildGroup(Type.Repetition.OPTIONAL).addField(
-                Types.buildGroup(Type.Repetition.REPEATED).addField(
-                    builder.named("item")).named(columnDefinition.getName()))
-                .as(LogicalTypeAnnotation.listType()).named(columnDefinition.getName());
+                    Types.buildGroup(Type.Repetition.REPEATED).addField(
+                            builder.named("item")).named(columnDefinition.getName()))
+                    .as(LogicalTypeAnnotation.listType()).named(columnDefinition.getName());
         }
 
-        PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating,
-            Class dataType);
+        PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType);
     }
 
     private static class CodecType<T> implements TypeInfo {
@@ -383,8 +362,7 @@ class TypeInfos {
         }
 
         @Override
-        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating,
-            Class dataType) {
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
 
             return type(PrimitiveTypeName.BINARY, required, repeating);
         }

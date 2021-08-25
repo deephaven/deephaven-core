@@ -10,12 +10,12 @@ import java.io.Serializable;
 import java.util.Locale;
 
 /**
- * This creates an interface (with more permissive argument types, and generified return types) for
- * most public instance methods of class String.
+ * This creates an interface (with more permissive argument types, and generified return types) for most public instance
+ * methods of class String.
  *
- * For static methods, often the String implementation should be used and its results converted to
- * the desired type via construction. That is, for String method M, and StringAlike class SAC,
- * follow the following pattern: new SAC(String.M(args...))
+ * For static methods, often the String implementation should be used and its results converted to the desired type via
+ * construction. That is, for String method M, and StringAlike class SAC, follow the following pattern: new
+ * SAC(String.M(args...))
  *
  * For JavaDocs, see {@link String}.
  */
@@ -40,10 +40,10 @@ public interface StringAlike<TYPE> extends StringCompatible, Serializable {
     int compareToIgnoreCase(@NotNull CharSequence that);
 
     boolean regionMatches(boolean ignoreCase,
-        int offset,
-        CharSequence that,
-        int thatOffset,
-        int length);
+            int offset,
+            CharSequence that,
+            int thatOffset,
+            int length);
 
     boolean startsWith(@NotNull CharSequence prefix, int offset);
 

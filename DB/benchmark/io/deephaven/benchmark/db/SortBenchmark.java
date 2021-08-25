@@ -70,10 +70,8 @@ public class SortBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        Assert.eqTrue(tableSize % sizePerStep == 0,
-            "Cannot evenly divide input table size by step size.");
-        Assert.eqTrue(workingSize % sizePerStep == 0,
-            "Cannot evenly divide working size by step size.");
+        Assert.eqTrue(tableSize % sizePerStep == 0, "Cannot evenly divide input table size by step size.");
+        Assert.eqTrue(workingSize % sizePerStep == 0, "Cannot evenly divide working size by step size.");
         workingSizeInSteps = workingSize / sizePerStep;
 
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
@@ -81,7 +79,7 @@ public class SortBenchmark {
         final int nVals = (int) (enumSize < 1 ? enumSize * tableSize : enumSize);
         System.out.println("String Values: " + nVals);
         final EnumStringColumnGenerator enumStringyCol =
-            (EnumStringColumnGenerator) BenchmarkTools.stringCol("Thingy", nVals, 6, 6, 0xB00FB00F);
+                (EnumStringColumnGenerator) BenchmarkTools.stringCol("Thingy", nVals, 6, 6, 0xB00FB00F);
 
         final BenchmarkTableBuilder builder;
         final int actualSize = BenchmarkTools.sizeWithSparsity(tableSize, sparsity);
@@ -91,9 +89,9 @@ public class SortBenchmark {
         switch (tableType) {
             case "Historical":
                 builder = BenchmarkTools.persistentTableBuilder("Carlos", actualSize)
-                    .addGroupingColumns("Thingy")
-                    .setPartitioningFormula("${autobalance_single}")
-                    .setPartitionCount(10);
+                        .addGroupingColumns("Thingy")
+                        .setPartitioningFormula("${autobalance_single}")
+                        .setPartitionCount(10);
                 break;
             case "Intraday":
                 builder = BenchmarkTools.persistentTableBuilder("Carlos", actualSize);
@@ -115,21 +113,20 @@ public class SortBenchmark {
         }
 
         bmTable = builder
-            .setSeed(0xDEADBEEF)
-            .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF))
-            // .addColumn(BenchmarkTools.stringCol("Stringy", 1, 10))
-            // .addColumn(BenchmarkTools.numberCol("I1", int.class))
-            .addColumn(BenchmarkTools.numberCol("D1", double.class, -10e6, 10e6))
-            .addColumn(BenchmarkTools.numberCol("L1", long.class))
-            // .addColumn(BenchmarkTools.numberCol("B1", byte.class))
-            // .addColumn(BenchmarkTools.numberCol("S1", short.class))
-            // .addColumn(BenchmarkTools.numberCol("F1", float.class))
-            // .addColumn(BenchmarkTools.charCol("C1", 'A', 'Z'))
-            .addColumn(enumStringyCol)
-            .build();
+                .setSeed(0xDEADBEEF)
+                .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF))
+                // .addColumn(BenchmarkTools.stringCol("Stringy", 1, 10))
+                // .addColumn(BenchmarkTools.numberCol("I1", int.class))
+                .addColumn(BenchmarkTools.numberCol("D1", double.class, -10e6, 10e6))
+                .addColumn(BenchmarkTools.numberCol("L1", long.class))
+                // .addColumn(BenchmarkTools.numberCol("B1", byte.class))
+                // .addColumn(BenchmarkTools.numberCol("S1", short.class))
+                // .addColumn(BenchmarkTools.numberCol("F1", float.class))
+                // .addColumn(BenchmarkTools.charCol("C1", 'A', 'Z'))
+                .addColumn(enumStringyCol)
+                .build();
 
-        inputTable =
-            (QueryTable) applySparsity(bmTable.getTable(), tableSize, sparsity, 0).coalesce();
+        inputTable = (QueryTable) applySparsity(bmTable.getTable(), tableSize, sparsity, 0).coalesce();
 
         mcsWithSortColumn = inputTable.newModifiedColumnSet(sortCol);
         MutableInt ci = new MutableInt();
@@ -192,8 +189,7 @@ public class SortBenchmark {
 
         ShiftAwareListener.Update update = new ShiftAwareListener.Update();
         update.added = inputTable.getIndex().subindexByPos(addMarker, addMarker + sizePerStep - 1);
-        update.modified =
-            inputTable.getIndex().subindexByPos(modMarker, modMarker + sizePerStep - 1);
+        update.modified = inputTable.getIndex().subindexByPos(modMarker, modMarker + sizePerStep - 1);
         update.removed = inputTable.getIndex().subindexByPos(rmMarker, rmMarker + sizePerStep - 1);
         update.modified.retain(rollingInputIndex);
         update.removed.retain(rollingInputIndex);
@@ -206,7 +202,7 @@ public class SortBenchmark {
         });
 
         Assert.eq(rollingOutputTable.getIndex().size(), "rollingOutputTable.getIndex().size()",
-            rollingInputIndex.size(), "rollingInputIndex.size()");
+                rollingInputIndex.size(), "rollingInputIndex.size()");
         return rollingOutputTable;
     }
 
@@ -219,8 +215,7 @@ public class SortBenchmark {
 
         ShiftAwareListener.Update update = new ShiftAwareListener.Update();
         update.added = inputTable.getIndex().subindexByPos(addMarker, addMarker + sizePerStep - 1);
-        update.modified =
-            inputTable.getIndex().subindexByPos(modMarker, modMarker + sizePerStep - 1);
+        update.modified = inputTable.getIndex().subindexByPos(modMarker, modMarker + sizePerStep - 1);
         update.removed = inputTable.getIndex().subindexByPos(rmMarker, rmMarker + sizePerStep - 1);
         update.modified.retain(rollingInputIndex);
         update.removed.retain(rollingInputIndex);
@@ -233,7 +228,7 @@ public class SortBenchmark {
         });
 
         Assert.eq(rollingOutputTable.getIndex().size(), "rollingOutputTable.getIndex().size()",
-            rollingInputIndex.size(), "rollingInputIndex.size()");
+                rollingInputIndex.size(), "rollingInputIndex.size()");
         return rollingOutputTable;
     }
 

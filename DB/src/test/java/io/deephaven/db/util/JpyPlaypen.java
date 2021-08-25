@@ -16,7 +16,7 @@ public class JpyPlaypen {
     public static void main(String[] args) throws InterruptedException {
         System.setProperty("jpy.jdlLib", "/Library/Python/2.7/site-packages/jdl.so");
         System.setProperty("jpy.pythonLib",
-            "/System/Library/Frameworks/Python.framework/Versions/2.7/lib/libpython2.7.dylib");
+                "/System/Library/Frameworks/Python.framework/Versions/2.7/lib/libpython2.7.dylib");
         System.setProperty("jpy.jpyLib", "/Library/Python/2.7/site-packages/jpy.so");
         PyLib.startPython();
 
@@ -27,16 +27,14 @@ public class JpyPlaypen {
 
         Thread.sleep(1000);
 
-        PyObject s =
-            main.executeCode("s = 'Hello World'\nprint s\nii = 7\njj = 8.0\n", PyInputMode.SCRIPT);
+        PyObject s = main.executeCode("s = 'Hello World'\nprint s\nii = 7\njj = 8.0\n", PyInputMode.SCRIPT);
 
 
         if (s != null) {
             System.out.println("S = \"" + s + "\" (" + s.getClass().getCanonicalName() + ")");
             Object objectValue = s.getObjectValue();
             System.out.println("OV = \"" + objectValue + "\" ("
-                + (objectValue != null ? objectValue.getClass().getCanonicalName() : "(null)")
-                + ")");
+                    + (objectValue != null ? objectValue.getClass().getCanonicalName() : "(null)") + ")");
             PyObject type = s.getAttribute("__class__");
             System.out.println("Type = \"" + type);
         } else {
@@ -48,8 +46,7 @@ public class JpyPlaypen {
             System.out.println("S = \"" + s + "\" (" + s.getClass().getCanonicalName() + ")");
             Object objectValue = s.getObjectValue();
             System.out.println("OV = \"" + objectValue + "\" ("
-                + (objectValue != null ? objectValue.getClass().getCanonicalName() : "(null)")
-                + ")");
+                    + (objectValue != null ? objectValue.getClass().getCanonicalName() : "(null)") + ")");
             PyObject type = s.getAttribute("__class__");
             System.out.println("Type = \"" + type);
         } else {
@@ -61,8 +58,7 @@ public class JpyPlaypen {
             System.out.println("II = \"" + num + "\" (" + num.getClass().getCanonicalName() + ")");
             Object objectValue = num.getObjectValue();
             System.out.println("OV = \"" + objectValue + "\" ("
-                + (objectValue != null ? objectValue.getClass().getCanonicalName() : "(null)")
-                + ")");
+                    + (objectValue != null ? objectValue.getClass().getCanonicalName() : "(null)") + ")");
         } else {
             System.out.println("S = null");
         }
@@ -72,20 +68,17 @@ public class JpyPlaypen {
             System.out.println("JJ = \"" + num + "\" (" + num.getClass().getCanonicalName() + ")");
             Object objectValue = num.getObjectValue();
             System.out.println("OV = \"" + objectValue + "\" ("
-                + (objectValue != null ? objectValue.getClass().getCanonicalName() : "(null)")
-                + ")");
+                    + (objectValue != null ? objectValue.getClass().getCanonicalName() : "(null)") + ")");
         } else {
             System.out.println("S = null");
         }
 
         s = main.executeCode("globals().keys()", PyInputMode.EXPRESSION);
         if (s != null) {
-            System.out.println(
-                "Globals().keys() = \"" + s + "\" (" + num.getClass().getCanonicalName() + ")");
+            System.out.println("Globals().keys() = \"" + s + "\" (" + num.getClass().getCanonicalName() + ")");
             Object objectValue = s.getType();
             System.out.println("OV = \"" + objectValue + "\" ("
-                + (objectValue != null ? objectValue.getClass().getCanonicalName() : "(null)")
-                + ")");
+                    + (objectValue != null ? objectValue.getClass().getCanonicalName() : "(null)") + ")");
             if (s.isList()) {
                 System.out.println("isList()");
                 List<PyObject> asList = s.asList();
@@ -101,11 +94,10 @@ public class JpyPlaypen {
 
         s = main.executeCode("globals()", PyInputMode.EXPRESSION);
         if (s != null) {
-            System.out
-                .println("Globals() = \"" + s + "\" (" + num.getClass().getCanonicalName() + ")");
+            System.out.println("Globals() = \"" + s + "\" (" + num.getClass().getCanonicalName() + ")");
             PyObject type = s.getType();
-            System.out.println("Type = \"" + type + "\" ("
-                + (type != null ? type.getClass().getCanonicalName() : "(null)") + ")");
+            System.out.println(
+                    "Type = \"" + type + "\" (" + (type != null ? type.getClass().getCanonicalName() : "(null)") + ")");
 
             System.out.println("Dict: " + s.isDict());
 

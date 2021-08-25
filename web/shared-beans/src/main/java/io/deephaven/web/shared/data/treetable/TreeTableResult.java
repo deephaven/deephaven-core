@@ -119,17 +119,17 @@ public class TreeTableResult implements Serializable {
     @Override
     public String toString() {
         return "TreeTableResult{" +
-            "treeSize=" + treeSize +
-            ", snapshotStart=" + snapshotStart +
-            ", snapshotEnd=" + snapshotEnd +
-            ", snapshotData=" + Arrays.toString(snapshotData) +
-            ", constituentColumnNames=" + Arrays.toString(constituentColumnNames) +
-            ", constituentColumnData=" + Arrays.toString(constituentColumnData) +
-            ", tableDetails=" + Arrays.toString(tableDetails) +
-            ", keyColumn=" + Arrays.toString(keyColumn) +
-            ", parentKeyColumn=" + Arrays.toString(parentKeyColumn) +
-            ", childPresence=" + childPresence +
-            ", sourceTable=" + sourceTable +
-            '}';
+                "treeSize=" + treeSize +
+                ", snapshotStart=" + snapshotStart +
+                ", snapshotEnd=" + snapshotEnd +
+                ", snapshotData=" + Arrays.toString(snapshotData) +
+                ", constituentColumnNames=" + Arrays.toString(constituentColumnNames) +
+                ", constituentColumnData=" + Arrays.toString(constituentColumnData) +
+                ", tableDetails=" + Arrays.toString(tableDetails) +
+                ", keyColumn=" + Arrays.toString(keyColumn) +
+                ", parentKeyColumn=" + Arrays.toString(parentKeyColumn) +
+                ", childPresence=" + childPresence +
+                ", sourceTable=" + sourceTable +
+                '}';
     }
 }

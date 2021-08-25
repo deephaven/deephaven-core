@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 abstract class SessionExampleBase implements Callable<Void> {
     @Option(names = {"-t", "--target"}, description = "The host target.",
-        defaultValue = "localhost:10000")
+            defaultValue = "localhost:10000")
     String target;
 
     @Option(names = {"-p", "--plaintext"}, description = "Use plaintext.")
@@ -40,10 +40,10 @@ abstract class SessionExampleBase implements Callable<Void> {
         ManagedChannel managedChannel = channelBuilder.build();
 
         Runtime.getRuntime()
-            .addShutdownHook(new Thread(() -> onShutdown(scheduler, managedChannel)));
+                .addShutdownHook(new Thread(() -> onShutdown(scheduler, managedChannel)));
 
         SessionFactory factory = DaggerDeephavenSessionRoot.create().factoryBuilder()
-            .managedChannel(managedChannel).scheduler(scheduler).build();
+                .managedChannel(managedChannel).scheduler(scheduler).build();
         execute(factory);
 
         scheduler.shutdownNow();
@@ -52,7 +52,7 @@ abstract class SessionExampleBase implements Callable<Void> {
     }
 
     private static void onShutdown(ScheduledExecutorService scheduler,
-        ManagedChannel managedChannel) {
+            ManagedChannel managedChannel) {
         scheduler.shutdownNow();
         managedChannel.shutdownNow();
         try {

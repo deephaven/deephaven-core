@@ -35,9 +35,8 @@ public class ParentsVisitor implements Visitor {
      * Create a post-order set from {@code tables}.
      *
      * <p>
-     * Post-order means that for any given table, the table's dependencies will come before the
-     * table itself. There may be multiple valid post-orderings; callers should not rely on a
-     * specific post-ordering.
+     * Post-order means that for any given table, the table's dependencies will come before the table itself. There may
+     * be multiple valid post-orderings; callers should not rely on a specific post-ordering.
      *
      * @param tables the tables
      * @return the post-order set
@@ -53,9 +52,8 @@ public class ParentsVisitor implements Visitor {
      * Create a de-duplicated, post-order list from {@code tables}.
      *
      * <p>
-     * Post-order means that for any given table, the table's dependencies will come before the
-     * table itself. There may be multiple valid post-orderings; callers should not rely on a
-     * specific post-ordering.
+     * Post-order means that for any given table, the table's dependencies will come before the table itself. There may
+     * be multiple valid post-orderings; callers should not rely on a specific post-ordering.
      *
      * @param tables the tables
      * @return the de-duplicated, post-order list
@@ -67,13 +65,11 @@ public class ParentsVisitor implements Visitor {
     }
 
     /**
-     * Invoke the {@code consumer} for each table in the de-duplicated, post-order walk from
-     * {@code tables}.
+     * Invoke the {@code consumer} for each table in the de-duplicated, post-order walk from {@code tables}.
      *
      * <p>
-     * Post-order means that for any given table, the table's dependencies will come before the
-     * table itself. There may be multiple valid post-orderings; callers should not rely on a
-     * specific post-ordering.
+     * Post-order means that for any given table, the table's dependencies will come before the table itself. There may
+     * be multiple valid post-orderings; callers should not rely on a specific post-ordering.
      *
      * @param tables the tables
      * @param consumer the consumer
@@ -83,13 +79,11 @@ public class ParentsVisitor implements Visitor {
     }
 
     /**
-     * Walk the {@code visitor} for each table in the de-duplicated, post-order walk from
-     * {@code tables}.
+     * Walk the {@code visitor} for each table in the de-duplicated, post-order walk from {@code tables}.
      *
      * <p>
-     * Post-order means that for any given table, the table's dependencies will come before the
-     * table itself. There may be multiple valid post-orderings; callers should not rely on a
-     * specific post-ordering.
+     * Post-order means that for any given table, the table's dependencies will come before the table itself. There may
+     * be multiple valid post-orderings; callers should not rely on a specific post-ordering.
      *
      * @param tables the tables
      * @param visitor the visitor
@@ -110,16 +104,16 @@ public class ParentsVisitor implements Visitor {
     }
 
     /**
-     * Performs a search for a table that satisfies {@code searchPredicate}. Will follow the
-     * dependencies of {@code initialInputs}. Tables that match {@code excludePaths} will not be
-     * returned, and will not have its dependencies added to the search.
+     * Performs a search for a table that satisfies {@code searchPredicate}. Will follow the dependencies of
+     * {@code initialInputs}. Tables that match {@code excludePaths} will not be returned, and will not have its
+     * dependencies added to the search.
      *
      * <p>
-     * Note: a dependency of a table that matches {@code excludePaths} will be returned if there is
-     * any path to that dependency that doesn't go through {@code excludePaths}.
+     * Note: a dependency of a table that matches {@code excludePaths} will be returned if there is any path to that
+     * dependency that doesn't go through {@code excludePaths}.
      */
     public static Optional<TableSpec> search(Iterable<TableSpec> initialInputs,
-        Predicate<TableSpec> excludePaths, Predicate<TableSpec> searchPredicate) {
+            Predicate<TableSpec> excludePaths, Predicate<TableSpec> searchPredicate) {
         final Search search = new Search(excludePaths, searchPredicate);
         return search.search(initialInputs);
     }

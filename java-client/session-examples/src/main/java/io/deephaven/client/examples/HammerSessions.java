@@ -12,15 +12,15 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 
 @Command(name = "hammer-sessions", mixinStandardHelpOptions = true,
-    description = "Create a lot of sessions as fast as possible", version = "0.1.0")
+        description = "Create a lot of sessions as fast as possible", version = "0.1.0")
 public class HammerSessions extends SessionExampleBase {
 
     @Parameters(arity = "1", paramLabel = "OUTSTANDING",
-        description = "Maximum number of outstanding sessions.")
+            description = "Maximum number of outstanding sessions.")
     int outstanding;
 
     @Parameters(arity = "1", paramLabel = "TOTAL",
-        description = "The total number of sessions to create.")
+            description = "The total number of sessions to create.")
     int total;
 
     @Override
@@ -35,17 +35,17 @@ public class HammerSessions extends SessionExampleBase {
             }
             semaphore.acquire();
             factory.newSessionFuture()
-                .whenComplete((BiConsumer<Session, Throwable>) (session, throwable) -> {
-                    if (throwable != null) {
-                        throwable.printStackTrace();
-                        failed.add(1);
-                    }
-                    if (session != null) {
-                        session.closeFuture().whenComplete((x, y) -> semaphore.release());
-                    } else {
-                        semaphore.release();
-                    }
-                });
+                    .whenComplete((BiConsumer<Session, Throwable>) (session, throwable) -> {
+                        if (throwable != null) {
+                            throwable.printStackTrace();
+                            failed.add(1);
+                        }
+                        if (session != null) {
+                            session.closeFuture().whenComplete((x, y) -> semaphore.release());
+                        } else {
+                            semaphore.release();
+                        }
+                    });
         }
 
         semaphore.acquire(outstanding);
@@ -53,7 +53,7 @@ public class HammerSessions extends SessionExampleBase {
 
         long f = failed.longValue();
         System.out.printf("%d succeeded, %d failed, avg duration %s%n", total - f, f,
-            Duration.ofNanos(end - start).dividedBy(total));
+                Duration.ofNanos(end - start).dividedBy(total));
     }
 
     public static void main(String[] args) {

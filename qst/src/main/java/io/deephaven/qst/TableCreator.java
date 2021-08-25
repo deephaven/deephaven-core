@@ -31,14 +31,14 @@ public interface TableCreator<TABLE> {
      * @return the output table
      */
     static <TOPS extends TableOperations<TOPS, TABLE>, TABLE> TableAdapterResults<TOPS, TABLE> create(
-        TableCreator<TABLE> creation, TableToOperations<TOPS, TABLE> toOps,
-        OperationsToTable<TOPS, TABLE> toTable, TableSpec table) {
+            TableCreator<TABLE> creation, TableToOperations<TOPS, TABLE> toOps,
+            OperationsToTable<TOPS, TABLE> toTable, TableSpec table) {
         return TableAdapterImpl.of(creation, toOps, toTable, table);
     }
 
     static <TOPS extends TableOperations<TOPS, TABLE>, TABLE> TableAdapterResults<TOPS, TABLE> create(
-        TableCreator<TABLE> creation, TableToOperations<TOPS, TABLE> toOps,
-        OperationsToTable<TOPS, TABLE> toTable, Iterable<TableSpec> tables) {
+            TableCreator<TABLE> creation, TableToOperations<TOPS, TABLE> toOps,
+            OperationsToTable<TOPS, TABLE> toTable, Iterable<TableSpec> tables) {
         return TableAdapterImpl.of(creation, toOps, toTable, tables);
     }
 
@@ -182,7 +182,7 @@ public interface TableCreator<TABLE> {
      * @see #merge(Iterable)
      */
     default TABLE merge(TABLE t1, TABLE t2, TABLE t3, TABLE t4, TABLE t5, TABLE t6, TABLE t7,
-        TABLE t8) {
+            TABLE t8) {
         return merge(Arrays.asList(t1, t2, t3, t4, t5, t6, t7, t8));
     }
 
@@ -190,7 +190,7 @@ public interface TableCreator<TABLE> {
      * @see #merge(Iterable)
      */
     default TABLE merge(TABLE t1, TABLE t2, TABLE t3, TABLE t4, TABLE t5, TABLE t6, TABLE t7,
-        TABLE t8, TABLE t9) {
+            TABLE t8, TABLE t9) {
         return merge(Arrays.asList(t1, t2, t3, t4, t5, t6, t7, t8, t9));
     }
 
@@ -199,10 +199,10 @@ public interface TableCreator<TABLE> {
      */
     @SuppressWarnings("unchecked")
     default TABLE merge(TABLE t1, TABLE t2, TABLE t3, TABLE t4, TABLE t5, TABLE t6, TABLE t7,
-        TABLE t8, TABLE t9, TABLE... remaining) {
+            TABLE t8, TABLE t9, TABLE... remaining) {
         return merge(
-            () -> Stream.concat(Stream.of(t1, t2, t3, t4, t5, t6, t7, t8, t9), Stream.of(remaining))
-                .iterator());
+                () -> Stream.concat(Stream.of(t1, t2, t3, t4, t5, t6, t7, t8, t9), Stream.of(remaining))
+                        .iterator());
     }
 
     /**

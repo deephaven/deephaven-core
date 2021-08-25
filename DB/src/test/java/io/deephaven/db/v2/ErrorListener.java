@@ -16,8 +16,7 @@ class ErrorListener extends InstrumentedShiftAwareListenerAdapter {
     }
 
     @Override
-    public void onFailureInternal(Throwable originalException,
-        UpdatePerformanceTracker.Entry sourceEntry) {
+    public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
         this.originalException = originalException;
     }
 }

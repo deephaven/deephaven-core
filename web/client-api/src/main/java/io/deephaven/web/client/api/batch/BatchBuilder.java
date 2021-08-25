@@ -22,8 +22,8 @@ import java.util.stream.Stream;
 /**
  * Used by client to create batched requests.
  *
- * This allows us to store everything using the objects a client expects to interact with (Sort,
- * FilterCondition, etc), rather than DTO types like SortDescriptor, FilterDescriptor, etc.
+ * This allows us to store everything using the objects a client expects to interact with (Sort, FilterCondition, etc),
+ * rather than DTO types like SortDescriptor, FilterDescriptor, etc.
  *
  */
 public class BatchBuilder {
@@ -111,8 +111,7 @@ public class BatchBuilder {
 
             final BatchOp batchOp = (BatchOp) o;
 
-            // even if both have null handles, they should not be equal unless they are the same
-            // instance...
+            // even if both have null handles, they should not be equal unless they are the same instance...
             if (source != null ? !source.equals(batchOp.source) : batchOp.source != null)
                 return false;
             return target != null ? target.equals(batchOp.target) : batchOp.target == null;
@@ -138,16 +137,15 @@ public class BatchBuilder {
                 return false;
             }
             // Array properties where order is not important; properties are commutative
-            if (getFilters().size() != value.getFilters().size()
-                || !getFilters().containsAll(value.getFilters())) {
+            if (getFilters().size() != value.getFilters().size() || !getFilters().containsAll(value.getFilters())) {
                 return false;
             }
             if (getDropColumns().size() != value.getDropColumns().size()
-                || !getDropColumns().containsAll(value.getDropColumns())) {
+                    || !getDropColumns().containsAll(value.getDropColumns())) {
                 return false;
             }
             if (getViewColumns().size() != value.getViewColumns().size()
-                || !getViewColumns().containsAll(value.getViewColumns())) {
+                    || !getViewColumns().containsAll(value.getViewColumns())) {
                 return false;
             }
 
@@ -162,9 +160,9 @@ public class BatchBuilder {
         public String toString() {
             return "BatchOp{" +
             // "handles=" + handles +
-                ", state=" + (state == null ? null : state.toStringMinimal()) +
-                ", appendTo=" + (appendTo == null ? null : appendTo.toStringMinimal()) +
-                ", " + super.toString() + "}";
+                    ", state=" + (state == null ? null : state.toStringMinimal()) +
+                    ", appendTo=" + (appendTo == null ? null : appendTo.toStringMinimal()) +
+                    ", " + super.toString() + "}";
         }
     }
 
@@ -176,18 +174,16 @@ public class BatchBuilder {
         JsArray<Operation> send = new JsArray<>();
         for (BatchOp op : ops) {
             if (!op.hasHandles()) {
-                assert op.getState().isRunning()
-                    : "Only running states should be found in batch without a new handle";
+                assert op.getState().isRunning() : "Only running states should be found in batch without a new handle";
                 continue;
             }
             if (op.getState().isEmpty()) {
                 op.getState().setResolution(ClientTableState.ResolutionState.FAILED,
-                    "Table state abandoned before request was made");
+                        "Table state abandoned before request was made");
                 continue;
             }
 
-            // Each BatchOp is assumed to have one source table and a list of specific ordered
-            // operations to produce
+            // Each BatchOp is assumed to have one source table and a list of specific ordered operations to produce
             // a target. Intermediate items each use the offset before them
             Supplier<TableReference> prevTableSupplier = new Supplier<TableReference>() {
                 // initialize as -1 because a reference to the "first" will be zero
@@ -211,14 +207,14 @@ public class BatchBuilder {
             Consumer<Ticket>[] lastOp = new Consumer[1];
 
             List<Operation> operations = Stream.of(
-                buildCustomColumns(op, prevTableSupplier, lastOp),
-                buildViewColumns(op, prevTableSupplier, lastOp),
-                buildFilter(op, prevTableSupplier, lastOp),
-                buildSort(op, prevTableSupplier, lastOp),
-                buildDropColumns(op, prevTableSupplier, lastOp),
-                flattenOperation(op, prevTableSupplier, lastOp))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                    buildCustomColumns(op, prevTableSupplier, lastOp),
+                    buildViewColumns(op, prevTableSupplier, lastOp),
+                    buildFilter(op, prevTableSupplier, lastOp),
+                    buildSort(op, prevTableSupplier, lastOp),
+                    buildDropColumns(op, prevTableSupplier, lastOp),
+                    flattenOperation(op, prevTableSupplier, lastOp))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
 
             lastOp[0].accept(op.getNewId().makeTicket());
 
@@ -232,7 +228,7 @@ public class BatchBuilder {
     }
 
     private Operation buildCustomColumns(BatchOp op, Supplier<TableReference> prevTableSupplier,
-        Consumer<Ticket>[] lastOp) {
+            Consumer<Ticket>[] lastOp) {
         SelectOrUpdateRequest value = new SelectOrUpdateRequest();
 
         for (CustomColumnDescriptor customColumn : op.getCustomColumns()) {
@@ -254,7 +250,7 @@ public class BatchBuilder {
     }
 
     private Operation flattenOperation(BatchOp op, Supplier<TableReference> prevTableSupplier,
-        Consumer<Ticket>[] lastOp) {
+            Consumer<Ticket>[] lastOp) {
         if (!op.isFlat()) {
             return null;
         }
@@ -267,8 +263,7 @@ public class BatchBuilder {
         return flattenOp;
     }
 
-    private Operation buildSort(BatchOp op, Supplier<TableReference> prevTableSupplier,
-        Consumer<Ticket>[] lastOp) {
+    private Operation buildSort(BatchOp op, Supplier<TableReference> prevTableSupplier, Consumer<Ticket>[] lastOp) {
         SortTableRequest value = new SortTableRequest();
         for (Sort sort : op.getSorts()) {
             if (op.getAppendTo() == null || !op.getAppendTo().hasSort(sort)) {
@@ -287,8 +282,7 @@ public class BatchBuilder {
         return sortOp;
     }
 
-    private Operation buildFilter(BatchOp op, Supplier<TableReference> prevTableSupplier,
-        Consumer<Ticket>[] lastOp) {
+    private Operation buildFilter(BatchOp op, Supplier<TableReference> prevTableSupplier, Consumer<Ticket>[] lastOp) {
         FilterTableRequest value = new FilterTableRequest();
         for (FilterCondition filter : op.getFilters()) {
             if (op.getAppendTo() == null || !op.getAppendTo().hasFilter(filter)) {
@@ -308,7 +302,7 @@ public class BatchBuilder {
     }
 
     private Operation buildDropColumns(BatchOp op, Supplier<TableReference> prevTableSupplier,
-        Consumer<Ticket>[] lastOp) {
+            Consumer<Ticket>[] lastOp) {
         DropColumnsRequest value = new DropColumnsRequest();
         for (String dropColumn : op.getDropColumns()) {
             value.addColumnNames(dropColumn);
@@ -327,7 +321,7 @@ public class BatchBuilder {
     }
 
     private Operation buildViewColumns(BatchOp op, Supplier<TableReference> prevTableSupplier,
-        Consumer<Ticket>[] lastOp) {
+            Consumer<Ticket>[] lastOp) {
         SelectOrUpdateRequest value = new SelectOrUpdateRequest();
         for (String dropColumn : op.getDropColumns()) {
             value.addColumnSpecs(dropColumn);
@@ -398,8 +392,8 @@ public class BatchBuilder {
     @Override
     public String toString() {
         return "BatchBuilder{" +
-            "ops=" + ops +
-            '}';
+                "ops=" + ops +
+                '}';
     }
 
     public String toStringMinimal() {

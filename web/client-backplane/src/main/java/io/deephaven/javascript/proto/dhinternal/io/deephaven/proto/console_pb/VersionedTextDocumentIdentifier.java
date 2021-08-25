@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.VersionedTextDocumentIdentifier",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.VersionedTextDocumentIdentifier",
+        namespace = JsPackage.GLOBAL)
 public class VersionedTextDocumentIdentifier {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -56,13 +56,13 @@ public class VersionedTextDocumentIdentifier {
     public static native VersionedTextDocumentIdentifier deserializeBinary(Uint8Array bytes);
 
     public static native VersionedTextDocumentIdentifier deserializeBinaryFromReader(
-        VersionedTextDocumentIdentifier message, Object reader);
+            VersionedTextDocumentIdentifier message, Object reader);
 
     public static native void serializeBinaryToWriter(
-        VersionedTextDocumentIdentifier message, Object writer);
+            VersionedTextDocumentIdentifier message, Object writer);
 
     public static native VersionedTextDocumentIdentifier.ToObjectReturnType toObject(
-        boolean includeInstance, VersionedTextDocumentIdentifier msg);
+            boolean includeInstance, VersionedTextDocumentIdentifier msg);
 
     public native String getUri();
 
@@ -77,5 +77,5 @@ public class VersionedTextDocumentIdentifier {
     public native VersionedTextDocumentIdentifier.ToObjectReturnType0 toObject();
 
     public native VersionedTextDocumentIdentifier.ToObjectReturnType0 toObject(
-        boolean includeInstance);
+            boolean includeInstance);
 }

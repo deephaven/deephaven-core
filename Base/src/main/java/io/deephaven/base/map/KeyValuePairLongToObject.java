@@ -9,7 +9,7 @@ import io.deephaven.base.Copyable;
 import java.io.Externalizable;
 
 public class KeyValuePairLongToObject<V extends Externalizable & Copyable<V>>
-    implements Comparable<KeyValuePairLongToObject<V>>, Copyable<KeyValuePairLongToObject<V>> {
+        implements Comparable<KeyValuePairLongToObject<V>>, Copyable<KeyValuePairLongToObject<V>> {
 
     private long key;
     private V value;

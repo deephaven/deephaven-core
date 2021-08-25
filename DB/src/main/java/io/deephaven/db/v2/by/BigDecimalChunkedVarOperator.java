@@ -25,18 +25,15 @@ import static io.deephaven.db.v2.by.ComboAggregateFactory.*;
  */
 class BigDecimalChunkedVarOperator implements IterativeChunkedAggregationOperator {
     private final static int SCALE =
-        Configuration.getInstance().getIntegerWithDefault("BigDecimalStdOperator.scale", 10);
+            Configuration.getInstance().getIntegerWithDefault("BigDecimalStdOperator.scale", 10);
 
     private final String name;
     private final boolean exposeInternalColumns;
     private final boolean std;
     private final NonNullCounter nonNullCounter = new NonNullCounter();
-    private final ObjectArraySource<BigDecimal> resultColumn =
-        new ObjectArraySource<>(BigDecimal.class);
-    private final ObjectArraySource<BigDecimal> sumSource =
-        new ObjectArraySource<>(BigDecimal.class);
-    private final ObjectArraySource<BigDecimal> sum2Source =
-        new ObjectArraySource<>(BigDecimal.class);
+    private final ObjectArraySource<BigDecimal> resultColumn = new ObjectArraySource<>(BigDecimal.class);
+    private final ObjectArraySource<BigDecimal> sumSource = new ObjectArraySource<>(BigDecimal.class);
+    private final ObjectArraySource<BigDecimal> sum2Source = new ObjectArraySource<>(BigDecimal.class);
 
     BigDecimalChunkedVarOperator(boolean std, String name, boolean exposeInternalColumns) {
         this.std = std;
@@ -59,51 +56,48 @@ class BigDecimalChunkedVarOperator implements IterativeChunkedAggregationOperato
 
     @Override
     public void addChunk(BucketedContext context, Chunk<? extends Values> values,
-        LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
-        IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-        WritableBooleanChunk<Values> stateModified) {
+            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final ObjectChunk<BigDecimal, ? extends Values> asObjectChunk = values.asObjectChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-            stateModified.set(ii,
-                addChunk(asObjectChunk, destination, startPosition, length.get(ii)));
+            stateModified.set(ii, addChunk(asObjectChunk, destination, startPosition, length.get(ii)));
         }
     }
 
     @Override
     public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
-        LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
-        IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-        WritableBooleanChunk<Values> stateModified) {
+            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final ObjectChunk<BigDecimal, ? extends Values> asObjectChunk = values.asObjectChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-            stateModified.set(ii,
-                removeChunk(asObjectChunk, destination, startPosition, length.get(ii)));
+            stateModified.set(ii, removeChunk(asObjectChunk, destination, startPosition, length.get(ii)));
         }
     }
 
     @Override
     public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-        LongChunk<? extends KeyIndices> inputIndices, long destination) {
+            LongChunk<? extends KeyIndices> inputIndices, long destination) {
         return addChunk(values.asObjectChunk(), destination, 0, values.size());
     }
 
     @Override
-    public boolean removeChunk(SingletonContext context, int chunkSize,
-        Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices,
-        long destination) {
+    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends KeyIndices> inputIndices, long destination) {
         return removeChunk(values.asObjectChunk(), destination, 0, values.size());
     }
 
-    private boolean addChunk(ObjectChunk<BigDecimal, ? extends Values> values, long destination,
-        int chunkStart, int chunkSize) {
+    private boolean addChunk(ObjectChunk<BigDecimal, ? extends Values> values, long destination, int chunkStart,
+            int chunkSize) {
         final MutableObject<BigDecimal> sum2 = new MutableObject<>();
         final MutableInt chunkNonNull = new MutableInt(0);
-        final BigDecimal sum = SumBigDecimalChunk.sum2BigDecimalChunk(values, chunkStart, chunkSize,
-            chunkNonNull, sum2);
+        final BigDecimal sum =
+                SumBigDecimalChunk.sum2BigDecimalChunk(values, chunkStart, chunkSize, chunkNonNull, sum2);
 
         if (chunkNonNull.intValue() <= 0) {
             return false;
@@ -111,33 +105,30 @@ class BigDecimalChunkedVarOperator implements IterativeChunkedAggregationOperato
 
         final BigDecimal newSum = plus(sumSource.getUnsafe(destination), sum);
         final BigDecimal newSum2 = plus(sum2Source.getUnsafe(destination), sum2.getValue());
-        final long nonNullCount =
-            nonNullCounter.addNonNullUnsafe(destination, chunkNonNull.intValue());
+        final long nonNullCount = nonNullCounter.addNonNullUnsafe(destination, chunkNonNull.intValue());
         doUpdate(destination, newSum, newSum2, nonNullCount);
         return true;
     }
 
-    private boolean removeChunk(ObjectChunk<BigDecimal, ? extends Values> values, long destination,
-        int chunkStart, int chunkSize) {
+    private boolean removeChunk(ObjectChunk<BigDecimal, ? extends Values> values, long destination, int chunkStart,
+            int chunkSize) {
         final MutableObject<BigDecimal> sum2 = new MutableObject<>();
         final MutableInt chunkNonNull = new MutableInt(0);
-        final BigDecimal sum = SumBigDecimalChunk.sum2BigDecimalChunk(values, chunkStart, chunkSize,
-            chunkNonNull, sum2);
+        final BigDecimal sum =
+                SumBigDecimalChunk.sum2BigDecimalChunk(values, chunkStart, chunkSize, chunkNonNull, sum2);
 
         if (chunkNonNull.intValue() <= 0) {
             return false;
         }
 
         final BigDecimal newSum = plus(sumSource.getUnsafe(destination), sum.negate());
-        final BigDecimal newSum2 =
-            plus(sum2Source.getUnsafe(destination), sum2.getValue().negate());
+        final BigDecimal newSum2 = plus(sum2Source.getUnsafe(destination), sum2.getValue().negate());
         final long nonNullCount = nonNullCounter.addNonNull(destination, -chunkNonNull.intValue());
         doUpdate(destination, newSum, newSum2, nonNullCount);
         return true;
     }
 
-    private void doUpdate(long destination, BigDecimal newSum, BigDecimal newSum2,
-        long nonNullCount) {
+    private void doUpdate(long destination, BigDecimal newSum, BigDecimal newSum2, long nonNullCount) {
         if (nonNullCount == 0) {
             sumSource.set(destination, null);
             sum2Source.set(destination, null);
@@ -150,9 +141,9 @@ class BigDecimalChunkedVarOperator implements IterativeChunkedAggregationOperato
             resultColumn.set(destination, null);
         } else {
             final BigDecimal countMinus1 = BigDecimal.valueOf(nonNullCount - 1);
-            final BigDecimal variance = newSum2.subtract(
-                newSum.pow(2).divide(BigDecimal.valueOf(nonNullCount), BigDecimal.ROUND_HALF_UP))
-                .divide(countMinus1, BigDecimal.ROUND_HALF_UP);
+            final BigDecimal variance =
+                    newSum2.subtract(newSum.pow(2).divide(BigDecimal.valueOf(nonNullCount), BigDecimal.ROUND_HALF_UP))
+                            .divide(countMinus1, BigDecimal.ROUND_HALF_UP);
             if (std) {
                 resultColumn.set(destination, BigDecimalUtils.sqrt(variance, SCALE));
             } else {
@@ -177,8 +168,7 @@ class BigDecimalChunkedVarOperator implements IterativeChunkedAggregationOperato
             results.put(name, resultColumn);
             results.put(name + ROLLUP_RUNNING_SUM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, sumSource);
             results.put(name + ROLLUP_RUNNING_SUM2_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, sum2Source);
-            results.put(name + ROLLUP_NONNULL_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX,
-                nonNullCounter.getColumnSource());
+            results.put(name + ROLLUP_NONNULL_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX, nonNullCounter.getColumnSource());
             return results;
         } else {
             return Collections.singletonMap(name, resultColumn);

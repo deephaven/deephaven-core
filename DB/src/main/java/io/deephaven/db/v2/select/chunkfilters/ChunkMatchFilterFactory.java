@@ -6,8 +6,8 @@ import io.deephaven.db.v2.select.ChunkFilter;
 public class ChunkMatchFilterFactory {
     private ChunkMatchFilterFactory() {} // static only
 
-    public static ChunkFilter getChunkFilter(Class type, boolean caseInsensitive,
-        boolean invertMatch, final Object... keys) {
+    public static ChunkFilter getChunkFilter(Class type, boolean caseInsensitive, boolean invertMatch,
+            final Object... keys) {
         if (keys.length == 0) {
             if (invertMatch) {
                 return ChunkFilter.TRUE_FILTER_INSTANCE;

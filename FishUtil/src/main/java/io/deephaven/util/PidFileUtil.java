@@ -27,8 +27,7 @@ public class PidFileUtil {
      * @param configuration The configuration to use for property lookup
      * @throws IllegalStateException If pidFile exists or cannot be created/opened
      */
-    public static void checkAndCreatePidFileForThisProcess(
-        @NotNull final Configuration configuration) {
+    public static void checkAndCreatePidFileForThisProcess(@NotNull final Configuration configuration) {
         checkAndCreatePidFileForProcessName(configuration, configuration.getProcessName());
     }
 
@@ -36,12 +35,11 @@ public class PidFileUtil {
      * Atomically create a new file, and then write this process' PID to it.
      *
      * @param configuration The configuration to use for property lookup
-     * @param processName The name to be used for the per-process unique portion of the PID file's
-     *        path
+     * @param processName The name to be used for the per-process unique portion of the PID file's path
      * @throws IllegalStateException If pidFile exists or cannot be created/opened
      */
-    public static void checkAndCreatePidFileForProcessName(
-        @NotNull final Configuration configuration, @NotNull final String processName) {
+    public static void checkAndCreatePidFileForProcessName(@NotNull final Configuration configuration,
+            @NotNull final String processName) {
         final String directoryName = configuration.getProperty(PID_FILE_DIRECTORY_PROPERTY);
         checkAndCreatePidFile(new File(directoryName, processName + FILE_SUFFIX));
     }
@@ -85,7 +83,7 @@ public class PidFileUtil {
         try {
             if (!pidFile.createNewFile()) {
                 throw new IllegalStateException("Pid file " + pidFile
-                    + " already exists - check running process and manually delete if necessary");
+                        + " already exists - check running process and manually delete if necessary");
             }
         } catch (IOException e) {
             throw new IllegalStateException("Unable to create pid file " + pidFile, e);
@@ -96,8 +94,7 @@ public class PidFileUtil {
         try {
             fileWriter = new FileWriter(pidFile);
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to open pid file " + pidFile + " for writing",
-                e);
+            throw new IllegalStateException("Failed to open pid file " + pidFile + " for writing", e);
         }
 
         try {

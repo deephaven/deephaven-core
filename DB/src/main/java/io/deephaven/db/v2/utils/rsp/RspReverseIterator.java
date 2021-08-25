@@ -9,8 +9,7 @@ import static io.deephaven.db.v2.utils.rsp.RspArray.*;
 
 public class RspReverseIterator implements SafeCloseable {
     private RspArray.SpanCursor rp;
-    // Iterator pointing to the next value to deliver in the current RB Container if there is one,
-    // null otherwise.
+    // Iterator pointing to the next value to deliver in the current RB Container if there is one, null otherwise.
     private ShortAdvanceIterator ri;
     // Resource to hold the container that ri points to.
     private SpanView riView;
@@ -99,17 +98,16 @@ public class RspReverseIterator implements SafeCloseable {
     }
 
     /**
-     * @return current iterator value, without advancing it. A valid call to next() should have
-     *         happened before calling this method.
+     * @return current iterator value, without advancing it. A valid call to next() should have happened before calling
+     *         this method.
      */
     public long current() {
         return current;
     }
 
     /**
-     * This method should be called: * After the iterator is created and before calling any other
-     * methods; if it returns false, calling any other methods results in undefined behavior. *
-     * Right after a call to next, similar to above.
+     * This method should be called: * After the iterator is created and before calling any other methods; if it returns
+     * false, calling any other methods results in undefined behavior. * Right after a call to next, similar to above.
      *
      * @return true if a call to next leads to a valid next iterator value.
      */
@@ -137,8 +135,7 @@ public class RspReverseIterator implements SafeCloseable {
         if (flen > 0) {
             current = key;
         } else {
-            try (SpanView res =
-                workDataPerThread.get().borrowSpanView(rp.arr(), rp.arrIdx(), spanInfo, span)) {
+            try (SpanView res = workDataPerThread.get().borrowSpanView(rp.arr(), rp.arrIdx(), spanInfo, span)) {
                 current = key | res.getContainer().first();
             }
         }

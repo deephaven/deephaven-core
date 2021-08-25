@@ -21,8 +21,7 @@ public class IndexableDataInteger extends IndexableData<Integer> {
     /**
      * Creates an IndexableDataInteger instance.
      *
-     * Values in {@code data} equal to {@link io.deephaven.util.QueryConstants#NULL_INT} are treated
-     * as null.
+     * Values in {@code data} equal to {@link io.deephaven.util.QueryConstants#NULL_INT} are treated as null.
      *
      * @param data data
      * @param plotInfo plot information

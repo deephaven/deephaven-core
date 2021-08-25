@@ -8,11 +8,11 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 @Command(name = "list-tables", mixinStandardHelpOptions = true, description = "List the flights",
-    version = "0.1.0")
+        version = "0.1.0")
 class ListTables extends FlightExampleBase {
 
     @Option(names = {"-s", "--schema"}, description = "Whether to include schema",
-        defaultValue = "false")
+            defaultValue = "false")
     boolean showSchema;
 
     @Override
@@ -20,7 +20,7 @@ class ListTables extends FlightExampleBase {
         for (FlightInfo flightInfo : flight.list()) {
             if (showSchema) {
                 StringBuilder sb = new StringBuilder(flightInfo.getDescriptor().toString())
-                    .append(System.lineSeparator());
+                        .append(System.lineSeparator());
                 for (Field field : flightInfo.getSchema().getFields()) {
                     sb.append('\t').append(field).append(System.lineSeparator());
                 }

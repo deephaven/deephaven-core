@@ -11,10 +11,9 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
 /**
- * A pair of stream implementations which write to and read from sequences of byte buffers. They are
- * guaranteed to be "compatible", that is, a stream of buffers written by the Output stream is
- * guaranteed to be readable by the Input stream - given that the client correctly implements the
- * source and sink interfaces.
+ * A pair of stream implementations which write to and read from sequences of byte buffers. They are guaranteed to be
+ * "compatible", that is, a stream of buffers written by the Output stream is guaranteed to be readable by the Input
+ * stream - given that the client correctly implements the source and sink interfaces.
  */
 public class ByteBufferStreams {
 
@@ -24,10 +23,9 @@ public class ByteBufferStreams {
 
     public interface Sink {
         /**
-         * Dispose of the contents of the buffer b, probably by writing them to a channel, and
-         * return a new buffer in which writing can continue. The returned buffer must have at least
-         * need bytes of space remaining. The return value may be the same buffer, as long as it's
-         * remaining() value has been increased to be >= need.
+         * Dispose of the contents of the buffer b, probably by writing them to a channel, and return a new buffer in
+         * which writing can continue. The returned buffer must have at least need bytes of space remaining. The return
+         * value may be the same buffer, as long as it's remaining() value has been increased to be >= need.
          * 
          * @param b the buffer whose contents need to be disposed of.
          * @return the buffer in which further output should be written.
@@ -35,9 +33,9 @@ public class ByteBufferStreams {
         ByteBuffer acceptBuffer(ByteBuffer b, int need) throws IOException;
 
         /**
-         * Dispose of the contents of the final buffer in an output sequence, probably by writing
-         * them to a channel. Note that the argument buffer may be empty. Then do whatever it takes
-         * to release the resources of the sink, probably by closing a channel.
+         * Dispose of the contents of the final buffer in an output sequence, probably by writing them to a channel.
+         * Note that the argument buffer may be empty. Then do whatever it takes to release the resources of the sink,
+         * probably by closing a channel.
          */
         void close(ByteBuffer b) throws IOException;
     }
@@ -46,10 +44,7 @@ public class ByteBufferStreams {
     // Output stream - writes to a sequence of byye buffers
     // -------------------------------------------------------------------------------------------------------
 
-    public static class Output extends java.io.OutputStream implements DataOutput/*
-                                                                                  * ,
-                                                                                  * WritableByteChannel
-                                                                                  */ {
+    public static class Output extends java.io.OutputStream implements DataOutput/* , WritableByteChannel */ {
         protected volatile ByteBuffer buf;
         protected Sink sink;
 
@@ -375,7 +370,7 @@ public class ByteBufferStreams {
             if (buf.remaining() < n) {
                 if (buf.remaining() != 0) {
                     throw new IllegalStateException(
-                        "Partial primitive, input was not written by ByteBufferOutputStream?");
+                            "Partial primitive, input was not written by ByteBufferOutputStream?");
                 }
                 if (next() == null) {
                     throw new BufferUnderflowException();
@@ -384,9 +379,8 @@ public class ByteBufferStreams {
         }
 
         /**
-         * Get the next buffer from the source, if we have one. Skip empty buffers. The return value
-         * is either null (signaling the end of the buffer sequence) or a buffer with remaining() >
-         * 0.
+         * Get the next buffer from the source, if we have one. Skip empty buffers. The return value is either null
+         * (signaling the end of the buffer sequence) or a buffer with remaining() > 0.
          */
         private ByteBuffer next() {
             if (source == null) {
@@ -399,8 +393,8 @@ public class ByteBufferStreams {
         }
 
         /**
-         * Return true if we are at EOF. If the return value is true, then there is at least one
-         * byte immediately available in buf.
+         * Return true if we are at EOF. If the return value is true, then there is at least one byte immediately
+         * available in buf.
          */
         private boolean eof() {
             return buf == null || (buf.remaining() == 0 && next() == null);
@@ -640,8 +634,7 @@ public class ByteBufferStreams {
                     if (b2 == -1 || b3 == -1 || (b2 & 0xc0) != 0x80 || (b3 & 0xc0) != 0x80) {
                         throw new UTFDataFormatException();
                     }
-                    stringBuffer[length++] =
-                        (char) (((b1 & 0x0F) << 12) | ((b2 & 0x3F) << 6) | (b3 & 0x3F));
+                    stringBuffer[length++] = (char) (((b1 & 0x0F) << 12) | ((b2 & 0x3F) << 6) | (b3 & 0x3F));
                     total -= 3;
                 }
             }

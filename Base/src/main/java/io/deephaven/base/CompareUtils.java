@@ -60,8 +60,7 @@ public class CompareUtils {
     }
 
     /**
-     * Returns true if the given objects are both null, or equal by the first object's
-     * {@link #equals} method.
+     * Returns true if the given objects are both null, or equal by the first object's {@link #equals} method.
      */
     public static boolean nullSafeEquals(Object left, Object right) {
         if (null == left) {
@@ -72,13 +71,12 @@ public class CompareUtils {
     }
 
     /**
-     * You can't do double1 == double2 because floating point numbers are not exact values. Just
-     * make sure that x-y is less than some allowable error factor.
+     * You can't do double1 == double2 because floating point numbers are not exact values. Just make sure that x-y is
+     * less than some allowable error factor.
      *
      * @param x
      * @param y
-     * @return True if the two doubles are equal to each other (or so close that we don't care that
-     *         they are different).
+     * @return True if the two doubles are equal to each other (or so close that we don't care that they are different).
      */
     public static boolean EQ(double x, double y) {
         return doubleEquals(x, y);
@@ -93,13 +91,13 @@ public class CompareUtils {
     }
 
     /**
-     * You can't do double1 == double2 because floating point numbers are not exact values. Just
-     * make sure that x-y is less than some allowable error factor.
+     * You can't do double1 == double2 because floating point numbers are not exact values. Just make sure that x-y is
+     * less than some allowable error factor.
      *
      * @param x
      * @param y
-     * @return True if the two doubles are equal to each other (or so close that we don't care that
-     *         they are different). Also true if both are NaN.
+     * @return True if the two doubles are equal to each other (or so close that we don't care that they are different).
+     *         Also true if both are NaN.
      */
     public static boolean doubleEquals(double x, double y, double tolerance) {
         return (Double.isNaN(x) && Double.isNaN(y)) || (Math.abs(x - y) < tolerance);
@@ -119,17 +117,17 @@ public class CompareUtils {
 
     public static boolean doubleEquals2(double x, double y, double tolerance) {
         return Double.compare(x, y) == 0 ||
-            Math.abs(x - y) < tolerance;
+                Math.abs(x - y) < tolerance;
     }
 
     /**
-     * Since logical comparison of double values considerig error is effectively a three-value
-     * logic, you can't really do !equals when you mean notEquals.
+     * Since logical comparison of double values considerig error is effectively a three-value logic, you can't really
+     * do !equals when you mean notEquals.
      * 
      * @param x
      * @param y
-     * @return True if two doubles are apart from each other enough that we consider them different.
-     *         False if both of them are NaN
+     * @return True if two doubles are apart from each other enough that we consider them different. False if both of
+     *         them are NaN
      */
     public static boolean NE(double x, double y) {
         return doubleNotEquals(x, y);
@@ -158,12 +156,12 @@ public class CompareUtils {
 
     public static boolean doubleNotEquals2(double x, double y, double tolerance) {
         return Double.compare(x, y) != 0 &&
-            !(Math.abs(x - y) < tolerance);
+                !(Math.abs(x - y) < tolerance);
     }
 
     /**
-     * You can't do double1 > double2 because floating point numbers are not exact values. Just make
-     * sure that x-y is greater than some allowable error factor for equality
+     * You can't do double1 > double2 because floating point numbers are not exact values. Just make sure that x-y is
+     * greater than some allowable error factor for equality
      *
      * @param x
      * @param y
@@ -194,8 +192,8 @@ public class CompareUtils {
     }
 
     /**
-     * You can't do double1 < double2 because floating point numbers are not exact values. Just make
-     * sure that y - x is greater than some allowable error factor for equality
+     * You can't do double1 < double2 because floating point numbers are not exact values. Just make sure that y - x is
+     * greater than some allowable error factor for equality
      *
      * @param x
      * @param y

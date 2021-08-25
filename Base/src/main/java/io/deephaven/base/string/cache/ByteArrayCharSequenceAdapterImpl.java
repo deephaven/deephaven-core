@@ -32,8 +32,7 @@ public class ByteArrayCharSequenceAdapterImpl extends ByteOrientedCharSequenceAd
     /**
      * Set the byte array backing this CharSequenceAdapter.
      * 
-     * @param byteArray A byte[] instance that contains a proto-String this adapter knows how to
-     *        convert.
+     * @param byteArray A byte[] instance that contains a proto-String this adapter knows how to convert.
      * @param offset The index of the first char in byteArray that belongs to the proto-String.
      * @param length The length of the proto-String in chars.
      * @return This CharSequenceAdapter.

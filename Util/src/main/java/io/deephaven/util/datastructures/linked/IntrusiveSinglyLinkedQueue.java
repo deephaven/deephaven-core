@@ -4,8 +4,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Singly-linked queue. Supports basic queue operations, but not extended Collection methods that
- * would be required by actually implementing java.lang.Queue.
+ * Singly-linked queue. Supports basic queue operations, but not extended Collection methods that would be required by
+ * actually implementing java.lang.Queue.
  */
 public class IntrusiveSinglyLinkedQueue<VALUE_TYPE> {
     VALUE_TYPE head = null;

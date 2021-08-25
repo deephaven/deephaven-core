@@ -67,8 +67,7 @@ public class TestByteBufferStreams extends TestCase {
     }
 
     public void script(Object... os) throws Exception {
-        ByteBufferStreams.Output out =
-            new ByteBufferStreams.Output(ByteBuffer.allocate(BUFSZ), SINK);
+        ByteBufferStreams.Output out = new ByteBufferStreams.Output(ByteBuffer.allocate(BUFSZ), SINK);
         ByteBufferStreams.Input in = new ByteBufferStreams.Input(null, SOURCE);
         Arrays.fill(buffers, null);
         bufferPtr = 0;
@@ -170,9 +169,7 @@ public class TestByteBufferStreams extends TestCase {
         script((double) 3.14159);
         script((int) 314159, new FLUSH(), (int) 4711);
         script("123456789012345678901234567890", (int) 314159, "abcdefghijklmnopqrstuvwxyzabcd");
-        script(new BYTES("123456789012345678901234567890"), (int) 314159,
-            new BYTES("abcdefghijklmnopqrstuvwxyzabcd"));
-        script(new CHARS("123456789012345"), (int) 314159,
-            new CHARS("abcdefghijklmnopqrstuvwxyzabcd"));
+        script(new BYTES("123456789012345678901234567890"), (int) 314159, new BYTES("abcdefghijklmnopqrstuvwxyzabcd"));
+        script(new CHARS("123456789012345"), (int) 314159, new CHARS("abcdefghijklmnopqrstuvwxyzabcd"));
     }
 }

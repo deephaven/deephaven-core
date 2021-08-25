@@ -11,11 +11,11 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public final class StackTraceMixInCreator<TOPS extends TableOperations<TOPS, TABLE>, TABLE>
-    implements TableCreator<StackTraceMixIn<TOPS, TABLE>> {
+        implements TableCreator<StackTraceMixIn<TOPS, TABLE>> {
 
     public static StackTraceMixInCreator<TableSpec, TableSpec> of() {
         return new StackTraceMixInCreator<>(TableCreatorImpl.INSTANCE,
-            TableToOperationsImpl.INSTANCE, OperationsToTableImpl.INSTANCE);
+                TableToOperationsImpl.INSTANCE, OperationsToTableImpl.INSTANCE);
     }
 
     private final TableCreator<TABLE> creator;
@@ -24,7 +24,7 @@ public final class StackTraceMixInCreator<TOPS extends TableOperations<TOPS, TAB
     private final Map<TOPS, StackTraceMixIn<TOPS, TABLE>> map;
 
     StackTraceMixInCreator(TableCreator<TABLE> creator, TableToOperations<TOPS, TABLE> toOps,
-        OperationsToTable<TOPS, TABLE> toTable) {
+            OperationsToTable<TOPS, TABLE> toTable) {
         this.creator = Objects.requireNonNull(creator);
         this.toOps = Objects.requireNonNull(toOps);
         this.toTable = Objects.requireNonNull(toTable);
@@ -64,9 +64,9 @@ public final class StackTraceMixInCreator<TOPS extends TableOperations<TOPS, TAB
 
     @Override
     public synchronized StackTraceMixIn<TOPS, TABLE> merge(
-        Iterable<StackTraceMixIn<TOPS, TABLE>> stackTraceMixIns) {
+            Iterable<StackTraceMixIn<TOPS, TABLE>> stackTraceMixIns) {
         final Iterable<TABLE> tables = () -> StreamSupport
-            .stream(stackTraceMixIns.spliterator(), false).map(StackTraceMixIn::table).iterator();
+                .stream(stackTraceMixIns.spliterator(), false).map(StackTraceMixIn::table).iterator();
         final TOPS tops = toOps.of(creator.merge(tables));
         return map.computeIfAbsent(tops, this::mixin);
     }
@@ -84,7 +84,7 @@ public final class StackTraceMixInCreator<TOPS extends TableOperations<TOPS, TAB
         int lastMixInIndex = -1;
         for (int i = 0; i < Math.min(10, elements.length); ++i) {
             if (StackTraceMixIn.class.getName().equals(elements[i].getClassName())
-                || StackTraceMixInCreator.class.getName().equals(elements[i].getClassName())) {
+                    || StackTraceMixInCreator.class.getName().equals(elements[i].getClassName())) {
                 lastMixInIndex = i;
             }
         }

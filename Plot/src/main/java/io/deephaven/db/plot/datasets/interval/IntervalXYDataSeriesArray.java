@@ -19,7 +19,7 @@ import org.jetbrains.annotations.NotNull;
  * An {@link XYDataSeriesArray} suitable for bar charts.
  */
 public class IntervalXYDataSeriesArray extends XYDataSeriesArray
-    implements IntervalXYDataSeriesInternal, TableSnapshotSeries {
+        implements IntervalXYDataSeriesInternal, TableSnapshotSeries {
 
     private static final long serialVersionUID = 5911383536377254715L;
 
@@ -37,38 +37,30 @@ public class IntervalXYDataSeriesArray extends XYDataSeriesArray
     private final SwappableTable swappableTable;
 
     public IntervalXYDataSeriesArray(final AxesImpl axes, final int id, final Comparable name,
-        @NotNull final TableHandle tableHandle,
-        final IndexableNumericData startX, final IndexableNumericData midX,
-        final IndexableNumericData endX,
-        final IndexableNumericData startY, final IndexableNumericData midY,
-        final IndexableNumericData endY) {
+            @NotNull final TableHandle tableHandle,
+            final IndexableNumericData startX, final IndexableNumericData midX, final IndexableNumericData endX,
+            final IndexableNumericData startY, final IndexableNumericData midY, final IndexableNumericData endY) {
         this(axes, id, name, tableHandle, null, startX, midX, endX, startY, midY, endY);
     }
 
     public IntervalXYDataSeriesArray(final AxesImpl axes, final int id, final Comparable name,
-        @NotNull final SwappableTable swappableTable,
-        final IndexableNumericData startX, final IndexableNumericData midX,
-        final IndexableNumericData endX,
-        final IndexableNumericData startY, final IndexableNumericData midY,
-        final IndexableNumericData endY) {
+            @NotNull final SwappableTable swappableTable,
+            final IndexableNumericData startX, final IndexableNumericData midX, final IndexableNumericData endX,
+            final IndexableNumericData startY, final IndexableNumericData midY, final IndexableNumericData endY) {
         this(axes, id, name, null, swappableTable, startX, midX, endX, startY, midY, endY);
     }
 
     private IntervalXYDataSeriesArray(final AxesImpl axes, final int id, final Comparable name,
-        final TableHandle tableHandle, final SwappableTable swappableTable,
-        final IndexableNumericData startX, final IndexableNumericData midX,
-        final IndexableNumericData endX,
-        final IndexableNumericData startY, final IndexableNumericData midY,
-        final IndexableNumericData endY) {
-        this(axes, id, name, tableHandle, swappableTable, startX, midX, endX, startY, midY, endY,
-            null);
+            final TableHandle tableHandle, final SwappableTable swappableTable,
+            final IndexableNumericData startX, final IndexableNumericData midX, final IndexableNumericData endX,
+            final IndexableNumericData startY, final IndexableNumericData midY, final IndexableNumericData endY) {
+        this(axes, id, name, tableHandle, swappableTable, startX, midX, endX, startY, midY, endY, null);
     }
 
     /**
      * Creates an instance of IntervalXYDataSeriesArray with the specified data points.
      * <p>
-     * {@code startX}, {@code midX}, and {@code endX} at each index define the location of a bar in
-     * the chart.
+     * {@code startX}, {@code midX}, and {@code endX} at each index define the location of a bar in the chart.
      *
      * @param axes axes displaying the plot
      * @param id data series id
@@ -79,18 +71,16 @@ public class IntervalXYDataSeriesArray extends XYDataSeriesArray
      * @param startY lowest y-coordinate of the bar at the given index
      * @param midY middle y-coordinate of the bar at the given index
      * @param endY highest y-coordinate of the bar at the given index
-     * @throws io.deephaven.base.verify.RequirementFailure {@code startX}, {@code midX},
-     *         {@code endX}, {@code startY}, {@code midY}, and {@code endY} must not be null
-     * @throws IllegalArgumentException {@code startX}, {@code midX}, {@code endX}, {@code startY},
-     *         {@code midY}, and {@code endY} must be the same size
+     * @throws io.deephaven.base.verify.RequirementFailure {@code startX}, {@code midX}, {@code endX}, {@code startY},
+     *         {@code midY}, and {@code endY} must not be null
+     * @throws IllegalArgumentException {@code startX}, {@code midX}, {@code endX}, {@code startY}, {@code midY}, and
+     *         {@code endY} must be the same size
      */
     public IntervalXYDataSeriesArray(final AxesImpl axes, final int id, final Comparable name,
-        final TableHandle tableHandle, final SwappableTable swappableTable,
-        final IndexableNumericData startX, final IndexableNumericData midX,
-        final IndexableNumericData endX,
-        final IndexableNumericData startY, final IndexableNumericData midY,
-        final IndexableNumericData endY,
-        final XYDataSeriesArray series) {
+            final TableHandle tableHandle, final SwappableTable swappableTable,
+            final IndexableNumericData startX, final IndexableNumericData midX, final IndexableNumericData endX,
+            final IndexableNumericData startY, final IndexableNumericData midY, final IndexableNumericData endY,
+            final XYDataSeriesArray series) {
         super(axes, id, name, midX, midY, series);
 
         ArgumentValidations.assertNotNull(startX, "startX", getPlotInfo());
@@ -101,8 +91,7 @@ public class IntervalXYDataSeriesArray extends XYDataSeriesArray
         ArgumentValidations.assertNotNull(endY, "endY", getPlotInfo());
 
         if (tableHandle == null && swappableTable == null) {
-            throw new PlotIllegalArgumentException(
-                "One of tableHandle or swappableTable must be non null!", this);
+            throw new PlotIllegalArgumentException("One of tableHandle or swappableTable must be non null!", this);
         }
 
         this.tableHandle = tableHandle;
@@ -114,9 +103,8 @@ public class IntervalXYDataSeriesArray extends XYDataSeriesArray
         this.midY = midY;
         this.endY = endY;
 
-        ArgumentValidations.assertSameSize(
-            new IndexableNumericData[] {startX, midX, endX, startY, midY, endY},
-            new String[] {"startX", "midX", "endX", "startY", "midY", "endY"}, getPlotInfo());
+        ArgumentValidations.assertSameSize(new IndexableNumericData[] {startX, midX, endX, startY, midY, endY},
+                new String[] {"startX", "midX", "endX", "startY", "midY", "endY"}, getPlotInfo());
     }
 
     /**

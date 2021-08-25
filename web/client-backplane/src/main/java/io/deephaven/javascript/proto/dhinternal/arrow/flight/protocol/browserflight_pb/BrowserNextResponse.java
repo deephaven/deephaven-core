@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.BrowserFlight_pb.BrowserNextResponse",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.BrowserFlight_pb.BrowserNextResponse",
+        namespace = JsPackage.GLOBAL)
 public class BrowserNextResponse {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface GetAppMetadataUnionType {
@@ -108,21 +108,20 @@ public class BrowserNextResponse {
         BrowserNextResponse.ToObjectReturnType.GetAppMetadataUnionType getAppMetadata();
 
         @JsProperty
-        void setAppMetadata(
-            BrowserNextResponse.ToObjectReturnType.GetAppMetadataUnionType appMetadata);
+        void setAppMetadata(BrowserNextResponse.ToObjectReturnType.GetAppMetadataUnionType appMetadata);
 
         @JsOverlay
         default void setAppMetadata(String appMetadata) {
             setAppMetadata(
-                Js.<BrowserNextResponse.ToObjectReturnType.GetAppMetadataUnionType>uncheckedCast(
-                    appMetadata));
+                    Js.<BrowserNextResponse.ToObjectReturnType.GetAppMetadataUnionType>uncheckedCast(
+                            appMetadata));
         }
 
         @JsOverlay
         default void setAppMetadata(Uint8Array appMetadata) {
             setAppMetadata(
-                Js.<BrowserNextResponse.ToObjectReturnType.GetAppMetadataUnionType>uncheckedCast(
-                    appMetadata));
+                    Js.<BrowserNextResponse.ToObjectReturnType.GetAppMetadataUnionType>uncheckedCast(
+                            appMetadata));
         }
     }
 
@@ -166,32 +165,32 @@ public class BrowserNextResponse {
 
         @JsProperty
         void setAppMetadata(
-            BrowserNextResponse.ToObjectReturnType0.GetAppMetadataUnionType appMetadata);
+                BrowserNextResponse.ToObjectReturnType0.GetAppMetadataUnionType appMetadata);
 
         @JsOverlay
         default void setAppMetadata(String appMetadata) {
             setAppMetadata(
-                Js.<BrowserNextResponse.ToObjectReturnType0.GetAppMetadataUnionType>uncheckedCast(
-                    appMetadata));
+                    Js.<BrowserNextResponse.ToObjectReturnType0.GetAppMetadataUnionType>uncheckedCast(
+                            appMetadata));
         }
 
         @JsOverlay
         default void setAppMetadata(Uint8Array appMetadata) {
             setAppMetadata(
-                Js.<BrowserNextResponse.ToObjectReturnType0.GetAppMetadataUnionType>uncheckedCast(
-                    appMetadata));
+                    Js.<BrowserNextResponse.ToObjectReturnType0.GetAppMetadataUnionType>uncheckedCast(
+                            appMetadata));
         }
     }
 
     public static native BrowserNextResponse deserializeBinary(Uint8Array bytes);
 
     public static native BrowserNextResponse deserializeBinaryFromReader(
-        BrowserNextResponse message, Object reader);
+            BrowserNextResponse message, Object reader);
 
     public static native void serializeBinaryToWriter(BrowserNextResponse message, Object writer);
 
     public static native BrowserNextResponse.ToObjectReturnType toObject(
-        boolean includeInstance, BrowserNextResponse msg);
+            boolean includeInstance, BrowserNextResponse msg);
 
     public native BrowserNextResponse.GetAppMetadataUnionType getAppMetadata();
 

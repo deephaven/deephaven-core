@@ -48,47 +48,47 @@ public class ExportTicketHelper {
      */
     public static Flight.FlightDescriptor exportIdToDescriptor(int exportId) {
         return Flight.FlightDescriptor.newBuilder()
-            .setType(Flight.FlightDescriptor.DescriptorType.PATH).addPath(FLIGHT_DESCRIPTOR_ROUTE)
-            .addPath(Integer.toString(exportId)).build();
+                .setType(Flight.FlightDescriptor.DescriptorType.PATH).addPath(FLIGHT_DESCRIPTOR_ROUTE)
+                .addPath(Integer.toString(exportId)).build();
     }
 
     /**
      * Convenience method to convert from {@link Flight.Ticket} to export id.
      *
      * <p>
-     * Ticket's byte[0] must be {@link ExportTicketHelper#TICKET_PREFIX}, bytes[1-4] are a signed
-     * int export id in little-endian.
+     * Ticket's byte[0] must be {@link ExportTicketHelper#TICKET_PREFIX}, bytes[1-4] are a signed int export id in
+     * little-endian.
      *
      * @param ticket the grpc Ticket
      * @return the export id that the Ticket wraps
      */
     public static int ticketToExportId(final Ticket ticket) {
         return ticketToExportIdInternal(
-            ticket.getTicket().asReadOnlyByteBuffer().order(ByteOrder.LITTLE_ENDIAN));
+                ticket.getTicket().asReadOnlyByteBuffer().order(ByteOrder.LITTLE_ENDIAN));
     }
 
     /**
      * Convenience method to convert from {@link Flight.Ticket} to export id.
      *
      * <p>
-     * Ticket's byte[0] must be {@link ExportTicketHelper#TICKET_PREFIX}, bytes[1-4] are a signed
-     * int export id in little-endian.
+     * Ticket's byte[0] must be {@link ExportTicketHelper#TICKET_PREFIX}, bytes[1-4] are a signed int export id in
+     * little-endian.
      *
      * @param ticket the grpc Ticket
      * @return the export id that the Ticket wraps
      */
     public static int ticketToExportId(final Flight.Ticket ticket) {
         return ticketToExportIdInternal(
-            ticket.getTicket().asReadOnlyByteBuffer().order(ByteOrder.LITTLE_ENDIAN));
+                ticket.getTicket().asReadOnlyByteBuffer().order(ByteOrder.LITTLE_ENDIAN));
     }
 
     /**
-     * Convenience method to convert from {@link ByteBuffer} to export id. Most efficient when
-     * {@code ticket} is {@link ByteOrder#LITTLE_ENDIAN}.
+     * Convenience method to convert from {@link ByteBuffer} to export id. Most efficient when {@code ticket} is
+     * {@link ByteOrder#LITTLE_ENDIAN}.
      *
      * <p>
-     * Ticket's byte[0] must be {@link ExportTicketHelper#TICKET_PREFIX}, bytes[1-4] are a signed
-     * int export id in little-endian.
+     * Ticket's byte[0] must be {@link ExportTicketHelper#TICKET_PREFIX}, bytes[1-4] are a signed int export id in
+     * little-endian.
      *
      * <p>
      * Does not consume the {@code ticket}.
@@ -99,20 +99,20 @@ public class ExportTicketHelper {
     public static int ticketToExportId(final ByteBuffer ticket) {
         if (ticket == null) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                "Ticket not supplied");
+                    "Ticket not supplied");
         }
         return ticket.order() == ByteOrder.LITTLE_ENDIAN ? ticketToExportIdInternal(ticket)
-            : ticketToExportIdInternal(ticket.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN));
+                : ticketToExportIdInternal(ticket.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN));
     }
 
 
     /**
-     * Convenience method to convert from {@link ByteBuffer} to export ticket. Most efficient when
-     * {@code ticket} is {@link ByteOrder#LITTLE_ENDIAN}.
+     * Convenience method to convert from {@link ByteBuffer} to export ticket. Most efficient when {@code ticket} is
+     * {@link ByteOrder#LITTLE_ENDIAN}.
      *
      * <p>
-     * Ticket's byte[0] must be {@link ExportTicketHelper#TICKET_PREFIX}, bytes[1-4] are a signed
-     * int export id in little-endian.
+     * Ticket's byte[0] must be {@link ExportTicketHelper#TICKET_PREFIX}, bytes[1-4] are a signed int export id in
+     * little-endian.
      *
      * <p>
      * Does not consume the {@code ticket}.
@@ -122,7 +122,7 @@ public class ExportTicketHelper {
      */
     public static Ticket exportIdToTicket(final ByteBuffer ticket) {
         final ByteBuffer lebb = ticket.order() == ByteOrder.LITTLE_ENDIAN ? ticket
-            : ticket.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN);
+                : ticket.asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN);
         return Ticket.newBuilder().setTicket(ByteStringAccess.wrap(lebb)).build();
     }
 
@@ -138,24 +138,24 @@ public class ExportTicketHelper {
     public static int descriptorToExportId(final Flight.FlightDescriptor descriptor) {
         if (descriptor == null) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                "Descriptor not supplied");
+                    "Descriptor not supplied");
         }
         if (descriptor.getType() != Flight.FlightDescriptor.DescriptorType.PATH) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                "Cannot parse descriptor: not a path");
+                    "Cannot parse descriptor: not a path");
         }
         if (descriptor.getPathCount() != 2) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                "Cannot parse descriptor: unexpected path length (found: "
-                    + TicketRouterHelper.getLogNameFor(descriptor) + ", expected: 2)");
+                    "Cannot parse descriptor: unexpected path length (found: "
+                            + TicketRouterHelper.getLogNameFor(descriptor) + ", expected: 2)");
         }
 
         try {
             return Integer.parseInt(descriptor.getPath(1));
         } catch (final NumberFormatException nfe) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                "Cannot parse descriptor: export id not numeric (found: "
-                    + TicketRouterHelper.getLogNameFor(descriptor) + ")");
+                    "Cannot parse descriptor: export id not numeric (found: "
+                            + TicketRouterHelper.getLogNameFor(descriptor) + ")");
         }
     }
 
@@ -209,7 +209,7 @@ public class ExportTicketHelper {
      */
     public static String toReadableString(final Ticket ticket) {
         return toReadableString(
-            ticket.getTicket().asReadOnlyByteBuffer().order(ByteOrder.LITTLE_ENDIAN));
+                ticket.getTicket().asReadOnlyByteBuffer().order(ByteOrder.LITTLE_ENDIAN));
     }
 
     /**
@@ -229,8 +229,8 @@ public class ExportTicketHelper {
     }
 
     /**
-     * Convenience method to create a human readable string from the flight ticket (as ByteBuffer).
-     * Most efficient when {@code ticket} is {@link ByteOrder#LITTLE_ENDIAN}.
+     * Convenience method to create a human readable string from the flight ticket (as ByteBuffer). Most efficient when
+     * {@code ticket} is {@link ByteOrder#LITTLE_ENDIAN}.
      *
      * <p>
      * Does not consume the {@code ticket}.
@@ -267,7 +267,7 @@ public class ExportTicketHelper {
         int pos = ticket.position();
         if (ticket.remaining() != 5 || ticket.get(pos) != TICKET_PREFIX) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                "Cannot parse ticket: found 0x" + byteBufToHex(ticket) + " (hex)");
+                    "Cannot parse ticket: found 0x" + byteBufToHex(ticket) + " (hex)");
         }
         return ticket.getInt(pos + 1);
     }

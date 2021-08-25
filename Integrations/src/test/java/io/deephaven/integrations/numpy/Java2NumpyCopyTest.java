@@ -8,18 +8,18 @@ import io.deephaven.db.tables.utils.TableTools;
 public class Java2NumpyCopyTest extends BaseArrayTestCase {
 
     final private String file = Configuration.getInstance().getDevRootPath()
-        + "/Integrations/src/test/java/io/deephaven/integrations/numpy/dh.jpg";
+            + "/Integrations/src/test/java/io/deephaven/integrations/numpy/dh.jpg";
     final private String q1 = Configuration.getInstance().getDevRootPath()
-        + "/Integrations/src/test/java/io/deephaven/integrations/numpy/quadrant1.jpg";
+            + "/Integrations/src/test/java/io/deephaven/integrations/numpy/quadrant1.jpg";
     final private String q2 = Configuration.getInstance().getDevRootPath()
-        + "/Integrations/src/test/java/io/deephaven/integrations/numpy/quadrant2.png";
+            + "/Integrations/src/test/java/io/deephaven/integrations/numpy/quadrant2.png";
 
     public void testTableType() {
         final Table tNum = TableTools.emptyTable(10).update("A=i", "B=1.0", "C=(float)1.0");
-        final Table tImg = TableTools.emptyTable(10)
-            .update("D=io.deephaven.dbtypes.DbImage.newInstance(`" + file + "`)");
+        final Table tImg =
+                TableTools.emptyTable(10).update("D=io.deephaven.dbtypes.DbImage.newInstance(`" + file + "`)");
         final Table tFail = TableTools.emptyTable(10).update("A=i", "B=1.0", "C=(float)1.0",
-            "D=io.deephaven.dbtypes.DbImage.newInstance(`" + file + "`)");
+                "D=io.deephaven.dbtypes.DbImage.newInstance(`" + file + "`)");
 
         assertEquals(Java2NumpyCopy.TableType.NUMBER, Java2NumpyCopy.tableType(tNum));
         assertEquals(Java2NumpyCopy.TableType.IMAGE, Java2NumpyCopy.tableType(tImg));
@@ -627,16 +627,16 @@ public class Java2NumpyCopyTest extends BaseArrayTestCase {
 
     public void testCopyImageSliceShort() {
         final Table t = TableTools.emptyTable(10)
-            .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
-            .update("A=i%2==0 ? A : A.resize(2,2)");
+                .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
+                .update("A=i%2==0 ? A : A.resize(2,2)");
 
         final short[] targetBW = {85, 89, 150, 170, 206, 188, 171, 239};
         final short[] rstBW = new short[8];
         Java2NumpyCopy.copyImageSlice(t, 2, rstBW, 2, 2, 2, true, false);
         assertEquals(targetBW, rstBW);
 
-        final short[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229, 195,
-                214, 155, 217, 150, 148, 254, 254, 210};
+        final short[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229, 195, 214, 155, 217, 150,
+                148, 254, 254, 210};
         final short[] rstC = new short[24];
         Java2NumpyCopy.copyImageSlice(t, 2, rstC, 2, 2, 2, true, true);
         assertEquals(targetC, rstC);
@@ -644,16 +644,16 @@ public class Java2NumpyCopyTest extends BaseArrayTestCase {
 
     public void testCopyImageSliceInt() {
         final Table t = TableTools.emptyTable(10)
-            .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
-            .update("A=i%2==0 ? A : A.resize(2,2)");
+                .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
+                .update("A=i%2==0 ? A : A.resize(2,2)");
 
         final int[] targetBW = {85, 89, 150, 170, 206, 188, 171, 239};
         final int[] rstBW = new int[8];
         Java2NumpyCopy.copyImageSlice(t, 2, rstBW, 2, 2, 2, true, false);
         assertEquals(targetBW, rstBW);
 
-        final int[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229, 195,
-                214, 155, 217, 150, 148, 254, 254, 210};
+        final int[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229, 195, 214, 155, 217, 150,
+                148, 254, 254, 210};
         final int[] rstC = new int[24];
         Java2NumpyCopy.copyImageSlice(t, 2, rstC, 2, 2, 2, true, true);
         assertEquals(targetC, rstC);
@@ -661,16 +661,16 @@ public class Java2NumpyCopyTest extends BaseArrayTestCase {
 
     public void testCopyImageSliceLong() {
         final Table t = TableTools.emptyTable(10)
-            .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
-            .update("A=i%2==0 ? A : A.resize(2,2)");
+                .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
+                .update("A=i%2==0 ? A : A.resize(2,2)");
 
         final long[] targetBW = {85, 89, 150, 170, 206, 188, 171, 239};
         final long[] rstBW = new long[8];
         Java2NumpyCopy.copyImageSlice(t, 2, rstBW, 2, 2, 2, true, false);
         assertEquals(targetBW, rstBW);
 
-        final long[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229, 195,
-                214, 155, 217, 150, 148, 254, 254, 210};
+        final long[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229, 195, 214, 155, 217, 150,
+                148, 254, 254, 210};
         final long[] rstC = new long[24];
         Java2NumpyCopy.copyImageSlice(t, 2, rstC, 2, 2, 2, true, true);
         assertEquals(targetC, rstC);
@@ -678,16 +678,16 @@ public class Java2NumpyCopyTest extends BaseArrayTestCase {
 
     public void testCopyImageSliceFloat() {
         final Table t = TableTools.emptyTable(10)
-            .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
-            .update("A=i%2==0 ? A : A.resize(2,2)");
+                .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
+                .update("A=i%2==0 ? A : A.resize(2,2)");
 
         final float[] targetBW = {85, 89, 150, 170, 206, 188, 171, 239};
         final float[] rstBW = new float[8];
         Java2NumpyCopy.copyImageSlice(t, 2, rstBW, 2, 2, 2, true, false);
         assertEquals(targetBW, rstBW);
 
-        final float[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229, 195,
-                214, 155, 217, 150, 148, 254, 254, 210};
+        final float[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229, 195, 214, 155, 217, 150,
+                148, 254, 254, 210};
         final float[] rstC = new float[24];
         Java2NumpyCopy.copyImageSlice(t, 2, rstC, 2, 2, 2, true, true);
         assertEquals(targetC, rstC);
@@ -695,16 +695,16 @@ public class Java2NumpyCopyTest extends BaseArrayTestCase {
 
     public void testCopyImageSliceDouble() {
         final Table t = TableTools.emptyTable(10)
-            .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
-            .update("A=i%2==0 ? A : A.resize(2,2)");
+                .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
+                .update("A=i%2==0 ? A : A.resize(2,2)");
 
         final double[] targetBW = {85, 89, 150, 170, 206, 188, 171, 239};
         final double[] rstBW = new double[8];
         Java2NumpyCopy.copyImageSlice(t, 2, rstBW, 2, 2, 2, true, false);
         assertEquals(targetBW, rstBW);
 
-        final double[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229,
-                195, 214, 155, 217, 150, 148, 254, 254, 210};
+        final double[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229, 195, 214, 155, 217,
+                150, 148, 254, 254, 210};
         final double[] rstC = new double[24];
         Java2NumpyCopy.copyImageSlice(t, 2, rstC, 2, 2, 2, true, true);
         assertEquals(targetC, rstC);
@@ -712,16 +712,16 @@ public class Java2NumpyCopyTest extends BaseArrayTestCase {
 
     public void testCopyImageRandShort() {
         final Table t = TableTools.emptyTable(10)
-            .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
-            .update("A=i%2==0 ? A : A.resize(2,2)");
+                .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
+                .update("A=i%2==0 ? A : A.resize(2,2)");
 
         final short[] targetBW = {85, 89, 150, 170, 206, 188, 171, 239};
         final short[] rstBW = new short[8];
         Java2NumpyCopy.copyImageRand(t, rstBW, 2, 2, 2, true, false, new long[] {2, 3});
         assertEquals(targetBW, rstBW);
 
-        final short[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229, 195,
-                214, 155, 217, 150, 148, 254, 254, 210};
+        final short[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229, 195, 214, 155, 217, 150,
+                148, 254, 254, 210};
         final short[] rstC = new short[24];
         Java2NumpyCopy.copyImageRand(t, rstC, 2, 2, 2, true, true, new long[] {2, 3});
         assertEquals(targetC, rstC);
@@ -729,16 +729,16 @@ public class Java2NumpyCopyTest extends BaseArrayTestCase {
 
     public void testCopyImageRandInt() {
         final Table t = TableTools.emptyTable(10)
-            .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
-            .update("A=i%2==0 ? A : A.resize(2,2)");
+                .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
+                .update("A=i%2==0 ? A : A.resize(2,2)");
 
         final int[] targetBW = {85, 89, 150, 170, 206, 188, 171, 239};
         final int[] rstBW = new int[8];
         Java2NumpyCopy.copyImageRand(t, rstBW, 2, 2, 2, true, false, new long[] {2, 3});
         assertEquals(targetBW, rstBW);
 
-        final int[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229, 195,
-                214, 155, 217, 150, 148, 254, 254, 210};
+        final int[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229, 195, 214, 155, 217, 150,
+                148, 254, 254, 210};
         final int[] rstC = new int[24];
         Java2NumpyCopy.copyImageRand(t, rstC, 2, 2, 2, true, true, new long[] {2, 3});
         assertEquals(targetC, rstC);
@@ -746,16 +746,16 @@ public class Java2NumpyCopyTest extends BaseArrayTestCase {
 
     public void testCopyImageRandLong() {
         final Table t = TableTools.emptyTable(10)
-            .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
-            .update("A=i%2==0 ? A : A.resize(2,2)");
+                .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
+                .update("A=i%2==0 ? A : A.resize(2,2)");
 
         final long[] targetBW = {85, 89, 150, 170, 206, 188, 171, 239};
         final long[] rstBW = new long[8];
         Java2NumpyCopy.copyImageRand(t, rstBW, 2, 2, 2, true, false, new long[] {2, 3});
         assertEquals(targetBW, rstBW);
 
-        final long[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229, 195,
-                214, 155, 217, 150, 148, 254, 254, 210};
+        final long[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229, 195, 214, 155, 217, 150,
+                148, 254, 254, 210};
         final long[] rstC = new long[24];
         Java2NumpyCopy.copyImageRand(t, rstC, 2, 2, 2, true, true, new long[] {2, 3});
         assertEquals(targetC, rstC);
@@ -763,16 +763,16 @@ public class Java2NumpyCopyTest extends BaseArrayTestCase {
 
     public void testCopyImageRandFloat() {
         final Table t = TableTools.emptyTable(10)
-            .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
-            .update("A=i%2==0 ? A : A.resize(2,2)");
+                .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
+                .update("A=i%2==0 ? A : A.resize(2,2)");
 
         final float[] targetBW = {85, 89, 150, 170, 206, 188, 171, 239};
         final float[] rstBW = new float[8];
         Java2NumpyCopy.copyImageRand(t, rstBW, 2, 2, 2, true, false, new long[] {2, 3});
         assertEquals(targetBW, rstBW);
 
-        final float[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229, 195,
-                214, 155, 217, 150, 148, 254, 254, 210};
+        final float[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229, 195, 214, 155, 217, 150,
+                148, 254, 254, 210};
         final float[] rstC = new float[24];
         Java2NumpyCopy.copyImageRand(t, rstC, 2, 2, 2, true, true, new long[] {2, 3});
         assertEquals(targetC, rstC);
@@ -780,16 +780,16 @@ public class Java2NumpyCopyTest extends BaseArrayTestCase {
 
     public void testCopyImageRandDouble() {
         final Table t = TableTools.emptyTable(10)
-            .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
-            .update("A=i%2==0 ? A : A.resize(2,2)");
+                .update("A=io.deephaven.dbtypes.DbImage.newInstance(i%2==0?`" + q1 + "`:`" + q2 + "`)")
+                .update("A=i%2==0 ? A : A.resize(2,2)");
 
         final double[] targetBW = {85, 89, 150, 170, 206, 188, 171, 239};
         final double[] rstBW = new double[8];
         Java2NumpyCopy.copyImageRand(t, rstBW, 2, 2, 2, true, false, new long[] {2, 3});
         assertEquals(targetBW, rstBW);
 
-        final double[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229,
-                195, 214, 155, 217, 150, 148, 254, 254, 210};
+        final double[] targetC = {0, 255, 1, 255, 5, 7, 3, 193, 255, 255, 255, 0, 185, 205, 229, 195, 214, 155, 217,
+                150, 148, 254, 254, 210};
         final double[] rstC = new double[24];
         Java2NumpyCopy.copyImageRand(t, rstC, 2, 2, 2, true, true, new long[] {2, 3});
         assertEquals(targetC, rstC);

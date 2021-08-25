@@ -19,9 +19,9 @@ public class PyLibNullArgTest extends PythonTest {
     @Before
     public void setUp() throws Exception {
         someModule = getCreateModule().callAsFunctionModule(
-            "some_module",
-            readResource(PyLibNullArgTest.class, "pylib_null_arg_test.py"),
-            SomeModule.class);
+                "some_module",
+                readResource(PyLibNullArgTest.class, "pylib_null_arg_test.py"),
+                SomeModule.class);
     }
 
     @After

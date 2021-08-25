@@ -26,9 +26,8 @@ import java.util.Set;
  * A table handle manager that executes requests serially.
  *
  * <p>
- * Serial execution is useful for initial development and debugging. There will be a server/client
- * round-trip for each table operation. Exceptions should have the exact line if there is an error
- * in operation execution.
+ * Serial execution is useful for initial development and debugging. There will be a server/client round-trip for each
+ * table operation. Exceptions should have the exact line if there is an error in operation execution.
  */
 final class TableHandleManagerSerial extends TableHandleManagerBase {
 
@@ -62,7 +61,7 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
 
     @Override
     public List<TableHandle> execute(Iterable<TableSpec> tables)
-        throws TableHandleException, InterruptedException {
+            throws TableHandleException, InterruptedException {
         final Tracker tracker = new Tracker();
         final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
         final TableAdapterResults<TableHandle, TableHandle> results;
@@ -84,7 +83,7 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
 
     @Override
     public TableHandle executeLogic(TableCreationLogic logic)
-        throws TableHandleException, InterruptedException {
+            throws TableHandleException, InterruptedException {
         final Tracker tracker = new Tracker();
         final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
         final TableHandle out;
@@ -100,7 +99,7 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
 
     @Override
     public List<TableHandle> executeLogic(Iterable<TableCreationLogic> logics)
-        throws TableHandleException, InterruptedException {
+            throws TableHandleException, InterruptedException {
         final Tracker tracker = new Tracker();
         final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
         final List<TableHandle> out = new ArrayList<>();
@@ -118,7 +117,7 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
 
     @Override
     public LabeledValues<TableHandle> executeLogic(TableCreationLabeledLogic logic)
-        throws TableHandleException, InterruptedException {
+            throws TableHandleException, InterruptedException {
         final Tracker tracker = new Tracker();
         final TableHandleManager manager = new TableHandleManagerSerial(session, tracker);
         final LabeledValues<TableHandle> out;
@@ -134,7 +133,7 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
 
     @Override
     public TableHandle executeInputs(TableCreationLogic1Input logic, TableHandle t1)
-        throws TableHandleException, InterruptedException {
+            throws TableHandleException, InterruptedException {
         try {
             return logic.create(t1);
         } catch (UncheckedInterruptedException e) {
@@ -146,7 +145,7 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
 
     @Override
     public TableHandle executeInputs(TableCreationLogic2Inputs logic, TableHandle t1,
-        TableHandle t2) throws InterruptedException, TableHandleException {
+            TableHandle t2) throws InterruptedException, TableHandleException {
         try {
             return logic.create(t1, t2);
         } catch (UncheckedInterruptedException e) {
@@ -157,7 +156,7 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
     }
 
     private static TableHandle checkedCreate(TableHandleManager manager, TableCreationLogic logic)
-        throws InterruptedException, TableHandleException {
+            throws InterruptedException, TableHandleException {
         try {
             return logic.create(manager);
         } catch (UncheckedInterruptedException e) {
@@ -168,7 +167,7 @@ final class TableHandleManagerSerial extends TableHandleManagerBase {
     }
 
     private static LabeledValues<TableHandle> checkedCreate(TableHandleManager manager,
-        TableCreationLabeledLogic logic) throws InterruptedException, TableHandleException {
+            TableCreationLabeledLogic logic) throws InterruptedException, TableHandleException {
         try {
             return logic.create(manager);
         } catch (UncheckedInterruptedException e) {

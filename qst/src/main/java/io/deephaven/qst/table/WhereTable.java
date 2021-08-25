@@ -25,8 +25,7 @@ public abstract class WhereTable extends TableBase implements SingleParentTable 
     public abstract List<Filter> filters();
 
     /**
-     * Checks if any of the filters is, or contains, a {@linkplain io.deephaven.api.RawString
-     * raw-string} filter.
+     * Checks if any of the filters is, or contains, a {@linkplain io.deephaven.api.RawString raw-string} filter.
      *
      * @return true if there are any raw-string filters
      */

@@ -56,16 +56,15 @@ public class RingBufferTest extends TestCase {
         }
     }
 
-    private void assertAdd(RingBuffer<Object> rb, Object newElement, int expectedSize,
-        Object expectedHead) {
+    private void assertAdd(RingBuffer<Object> rb, Object newElement, int expectedSize, Object expectedHead) {
         assertTrue(rb.add(newElement));
         assertEquals(newElement, rb.back());
         assertEquals(newElement, rb.peekLast());
         assertNotEmpty(rb, expectedSize, expectedHead);
     }
 
-    private void assertAddOverwrite(RingBuffer<Object> rb, Object newElement, int expectedSize,
-        Object expectedHead, Object expectedOverwrite) {
+    private void assertAddOverwrite(RingBuffer<Object> rb, Object newElement, int expectedSize, Object expectedHead,
+            Object expectedOverwrite) {
         assertEquals(expectedOverwrite, rb.addOverwrite(newElement));
         assertEquals(newElement, rb.back());
         assertEquals(newElement, rb.peekLast());
@@ -79,8 +78,7 @@ public class RingBufferTest extends TestCase {
         assertNotEmpty(rb, expectedSize, newElement);
     }
 
-    private void assertOffer(RingBuffer<Object> rb, Object newElement, int expectedSize,
-        Object expectedHead) {
+    private void assertOffer(RingBuffer<Object> rb, Object newElement, int expectedSize, Object expectedHead) {
         assertTrue(rb.offer(newElement));
         assertEquals(newElement, rb.back());
         assertEquals(newElement, rb.peekLast());
@@ -108,8 +106,8 @@ public class RingBufferTest extends TestCase {
         }
     }
 
-    private void assertRemoveAtSwapLast(RingBuffer<Object> rb, int expectedSize,
-        Object expectedHead, Object expectedResult, int offset) {
+    private void assertRemoveAtSwapLast(RingBuffer<Object> rb, int expectedSize, Object expectedHead,
+            Object expectedResult, int offset) {
         assertNotEmpty(rb, expectedSize, expectedHead);
         try {
             assertTrue(expectedResult == rb.removeAtSwapLast(offset));
@@ -258,8 +256,8 @@ public class RingBufferTest extends TestCase {
     }
 
     public void testGrowSimple() {
-        // In order to keep internal storage size as a power of 2, the following now applies:
-        // capacity = 2^ceil(log2(requestedCapacity+1)) - 1
+        // In order to keep internal storage size as a power of 2, the following now applies: capacity =
+        // 2^ceil(log2(requestedCapacity+1)) - 1
         RingBuffer<Object> rb = new RingBuffer<>(5);
 
         assertAdd(rb, A, 1, A);
@@ -354,8 +352,7 @@ public class RingBufferTest extends TestCase {
     }
 
     public void testOverwrite() {
-        RingBuffer<Object> rb = new RingBuffer<>(3); // means array will be size 4, 1 always needs
-                                                     // to be null
+        RingBuffer<Object> rb = new RingBuffer<>(3); // means array will be size 4, 1 always needs to be null
         assertAddOverwrite(rb, A, 1, A, null);
         assertAddOverwrite(rb, B, 2, A, null);
         assertAddOverwrite(rb, C, 3, A, null);
@@ -367,8 +364,7 @@ public class RingBufferTest extends TestCase {
     }
 
     public void testPeekLast() {
-        RingBuffer<Object> rb = new RingBuffer<>(7); // means array will be size 8, 1 always needs
-                                                     // to be null
+        RingBuffer<Object> rb = new RingBuffer<>(7); // means array will be size 8, 1 always needs to be null
         assertOffer(rb, A, 1, A);
         assertOffer(rb, B, 2, A);
         assertOffer(rb, C, 3, A);

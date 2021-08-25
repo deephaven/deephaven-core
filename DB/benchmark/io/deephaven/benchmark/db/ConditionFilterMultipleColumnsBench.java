@@ -50,13 +50,12 @@ public class ConditionFilterMultipleColumnsBench {
         }
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
 
-        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()),
-            params.getWarmup().getCount());
+        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
         final BenchmarkTableBuilder builder;
         final String tPartCol = "TPartCol";
         builder = BenchmarkTools.persistentTableBuilder("T", tableSize);
         builder.setSeed(0xDEADB00F)
-            .addColumn(BenchmarkTools.stringCol(tPartCol, 4, 5, 7, 0xFEEDBEEF));
+                .addColumn(BenchmarkTools.stringCol(tPartCol, 4, 5, 7, 0xFEEDBEEF));
         tCols = new String[2 + nFilterCols + nAdditionalCols];
         int nT1Cols = 0;
         tCols[nT1Cols++] = tPartCol;
@@ -84,7 +83,7 @@ public class ConditionFilterMultipleColumnsBench {
         final Table t = bmTable.getTable();
         if (doSelect) {
             inputTable = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(
-                () -> t.select(tCols).sort(sortCol).coalesce());
+                    () -> t.select(tCols).sort(sortCol).coalesce());
         } else {
             inputTable = t.sort(sortCol).coalesce();
 
@@ -106,7 +105,7 @@ public class ConditionFilterMultipleColumnsBench {
     public void setupInvocation() {
         final long sizePerStep = Math.max(inputTable.size() / steps, 1);
         final IncrementalReleaseFilter incrementalReleaseFilter =
-            new IncrementalReleaseFilter(sizePerStep, sizePerStep);
+                new IncrementalReleaseFilter(sizePerStep, sizePerStep);
         final Table inputReleased = inputTable.where(incrementalReleaseFilter);
 
         final SelectFilter filter = ConditionFilter.createConditionFilter(filterExpression);

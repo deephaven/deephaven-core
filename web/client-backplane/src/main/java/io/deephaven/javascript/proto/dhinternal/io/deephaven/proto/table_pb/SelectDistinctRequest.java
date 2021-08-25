@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest",
+        namespace = JsPackage.GLOBAL)
 public class SelectDistinctRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -23,7 +23,7 @@ public class SelectDistinctRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -58,20 +58,20 @@ public class SelectDistinctRequest {
 
             @JsProperty
             void setTicket(
-                SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -132,7 +132,7 @@ public class SelectDistinctRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -167,20 +167,20 @@ public class SelectDistinctRequest {
 
             @JsProperty
             void setTicket(
-                SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -236,12 +236,12 @@ public class SelectDistinctRequest {
     public static native SelectDistinctRequest deserializeBinary(Uint8Array bytes);
 
     public static native SelectDistinctRequest deserializeBinaryFromReader(
-        SelectDistinctRequest message, Object reader);
+            SelectDistinctRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(SelectDistinctRequest message, Object writer);
 
     public static native SelectDistinctRequest.ToObjectReturnType toObject(
-        boolean includeInstance, SelectDistinctRequest msg);
+            boolean includeInstance, SelectDistinctRequest msg);
 
     public native String addColumnNames(String value, double index);
 

@@ -23,8 +23,8 @@ public abstract class ExportRequest {
 
     public interface Listener {
         /**
-         * Creates a stateful listener that warns on each creation responses that is not successful,
-         * and logs once on error.
+         * Creates a stateful listener that warns on each creation responses that is not successful, and logs once on
+         * error.
          *
          * @return the listener
          */
@@ -82,7 +82,7 @@ public abstract class ExportRequest {
             }
             String reference = ExportTicketHelper.toReadableString(response.getResultId());
             log.warn("ExportedTableCreationResponse for '{}' was not successful: {}", reference,
-                response.getErrorInfo());
+                    response.getErrorInfo());
         }
 
         @Override

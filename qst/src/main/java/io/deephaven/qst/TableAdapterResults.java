@@ -27,8 +27,7 @@ public abstract class TableAdapterResults<TOPS extends TableOperations<TOPS, TAB
     }
 
     /**
-     * Used to collapse an output when the table operations and table type are the same generic
-     * type.
+     * Used to collapse an output when the table operations and table type are the same generic type.
      *
      * @param <T> the table operations and table type
      */

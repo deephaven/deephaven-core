@@ -43,8 +43,7 @@ public class LayoutHintBuilder {
         }
 
         /**
-         * Serialize this object to a string suitable for inclusion in the builder's parameter
-         * string.
+         * Serialize this object to a string suitable for inclusion in the builder's parameter string.
          *
          * @return a string of the format column(:param&value)+
          */
@@ -58,8 +57,7 @@ public class LayoutHintBuilder {
         }
 
         /**
-         * Convert a string of the format defined by {@link #forBuilder()} into a proper
-         * AutoFilterData object
+         * Convert a string of the format defined by {@link #forBuilder()} into a proper AutoFilterData object
          *
          * @param string the string to parse
          * @return an AutoFilterData instance
@@ -68,8 +66,7 @@ public class LayoutHintBuilder {
         static AutoFilterData fromString(String string) {
             final String[] parts = string.split(":");
             if (parts.length == 0) {
-                throw new IllegalArgumentException(
-                    "Improperly formatted AutoFilterData string: " + string);
+                throw new IllegalArgumentException("Improperly formatted AutoFilterData string: " + string);
             }
 
             final String column = parts[0];
@@ -85,8 +82,8 @@ public class LayoutHintBuilder {
                     String[] paramParts = parts[i].split("&");
                     if (paramParts.length != 2) {
                         throw new IllegalArgumentException(
-                            "Only one value permitted in AutoFilterData parameter string; instead there are: "
-                                + parts.length + " in " + parts[i]);
+                                "Only one value permitted in AutoFilterData parameter string; instead there are: "
+                                        + parts.length + " in " + parts[i]);
                     }
 
                     // noinspection SwitchStatementWithTooFewBranches
@@ -96,8 +93,7 @@ public class LayoutHintBuilder {
                                 localFetchSize = Integer.parseInt(paramParts[1]);
                             } catch (NumberFormatException ex) {
                                 throw new IllegalArgumentException(
-                                    "Invalid value for AutoFilterData fetch size parameter: "
-                                        + paramParts[1]);
+                                        "Invalid value for AutoFilterData fetch size parameter: " + paramParts[1]);
                             }
                             break;
                     }
@@ -121,9 +117,8 @@ public class LayoutHintBuilder {
     @NotNull
     public static LayoutHintBuilder fromString(String attrs) {
         final Map<String, String> options = Arrays.stream(attrs.split(";"))
-            .map(attr -> attr.split("="))
-            .collect(
-                Collectors.toMap(parts -> parts[0], parts -> parts.length == 2 ? parts[1] : ""));
+                .map(attr -> attr.split("="))
+                .collect(Collectors.toMap(parts -> parts[0], parts -> parts.length == 2 ? parts[1] : ""));
 
         final LayoutHintBuilder lhb = new LayoutHintBuilder();
         if (options.containsKey("noSavedLayouts")) {
@@ -149,8 +144,8 @@ public class LayoutHintBuilder {
         if (!io.deephaven.db.util.string.StringUtils.isNullOrEmpty(autoStr)) {
             final String[] filters = autoStr.split(",");
             Arrays.stream(filters)
-                .map(AutoFilterData::fromString)
-                .forEach(lhb::addAutofilterData);
+                    .map(AutoFilterData::fromString)
+                    .forEach(lhb::addAutofilterData);
         }
 
         final String freezeStr = options.get("freeze");
@@ -193,8 +188,7 @@ public class LayoutHintBuilder {
     }
 
     /**
-     * Indicate the specified columns should appear as the first N columns of the table when
-     * displayed.
+     * Indicate the specified columns should appear as the first N columns of the table when displayed.
      *
      * @param cols the columns to show at front
      * @return this LayoutHintBuilder
@@ -228,8 +222,7 @@ public class LayoutHintBuilder {
     }
 
     /**
-     * Indicate the specified columns should appear as the last N columns of the table when
-     * displayed.
+     * Indicate the specified columns should appear as the last N columns of the table when displayed.
      *
      * @param cols the columns to show at the back
      * @return this LayoutHintBuilder
@@ -310,8 +303,8 @@ public class LayoutHintBuilder {
         }
 
         cols.stream()
-            .map(AutoFilterData::new)
-            .forEach(c -> autoFilterCols.put(c.column, c));
+                .map(AutoFilterData::new)
+                .forEach(c -> autoFilterCols.put(c.column, c));
 
         return this;
     }
@@ -361,8 +354,7 @@ public class LayoutHintBuilder {
     }
 
     /**
-     * Indicate the specified columns should be frozen (displayed as the first N, unmovable columns)
-     * upon display.
+     * Indicate the specified columns should be frozen (displayed as the first N, unmovable columns) upon display.
      *
      * @param cols the columns to freeze
      * @return this LayoutHintBuilder
@@ -384,8 +376,8 @@ public class LayoutHintBuilder {
     }
 
     /**
-     * Indicate that the UI should maintain a subscription to the specified columns within
-     * viewports, even if they are out of view.
+     * Indicate that the UI should maintain a subscription to the specified columns within viewports, even if they are
+     * out of view.
      *
      * @param columns the columns to keep subscribed
      * @return this LayoutHintBuilder
@@ -468,10 +460,9 @@ public class LayoutHintBuilder {
         }
 
         if (autoFilterCols != null && !autoFilterCols.isEmpty()) {
-            sb.append("autofilter=")
-                .append(StringUtils.joinStrings(
-                    autoFilterCols.values().stream().map(AutoFilterData::forBuilder), ","))
-                .append(';');
+            sb.append("autofilter=").append(
+                    StringUtils.joinStrings(autoFilterCols.values().stream().map(AutoFilterData::forBuilder), ","))
+                    .append(';');
         }
 
         if (freezeCols != null && !freezeCols.isEmpty()) {
@@ -523,8 +514,7 @@ public class LayoutHintBuilder {
      * @return the set of columns that should be hidden
      */
     public @NotNull Set<String> getHiddenCols() {
-        return hiddenCols == null ? Collections.emptySet()
-            : Collections.unmodifiableSet(hiddenCols);
+        return hiddenCols == null ? Collections.emptySet() : Collections.unmodifiableSet(hiddenCols);
     }
 
     /**
@@ -533,8 +523,7 @@ public class LayoutHintBuilder {
      * @return the set of columns enabled for AutoFilter
      */
     public @NotNull Set<String> getAutoFilterCols() {
-        return autoFilterCols == null ? Collections.emptySet()
-            : Collections.unmodifiableSet(autoFilterCols.keySet());
+        return autoFilterCols == null ? Collections.emptySet() : Collections.unmodifiableSet(autoFilterCols.keySet());
     }
 
     /**
@@ -558,8 +547,7 @@ public class LayoutHintBuilder {
      * @return the ordered set of columns that should be frozen
      */
     public @NotNull Set<String> getFreezeCols() {
-        return freezeCols == null ? Collections.emptySet()
-            : Collections.unmodifiableSet(freezeCols);
+        return freezeCols == null ? Collections.emptySet() : Collections.unmodifiableSet(freezeCols);
     }
 
     /**
@@ -569,7 +557,7 @@ public class LayoutHintBuilder {
      */
     public @NotNull Set<String> getAlwaysSubscribedCols() {
         return alwaysSubscribedCols == null ? Collections.emptySet()
-            : Collections.unmodifiableSet(alwaysSubscribedCols);
+                : Collections.unmodifiableSet(alwaysSubscribedCols);
     }
 
     /**
@@ -578,8 +566,7 @@ public class LayoutHintBuilder {
      * @return the set of columns
      */
     public @NotNull Set<String> getGroupableColumns() {
-        return groupableColumns == null ? Collections.emptySet()
-            : Collections.unmodifiableSet(groupableColumns);
+        return groupableColumns == null ? Collections.emptySet() : Collections.unmodifiableSet(groupableColumns);
     }
     // endregion
 }

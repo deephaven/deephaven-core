@@ -39,8 +39,7 @@ public final class IterPerformanceTest {
 
         ValuesBuilder builder();
 
-        // Since tests will run multiple times, and creation time is high (higher than individual
-        // operations),
+        // Since tests will run multiple times, and creation time is high (higher than individual operations),
         // we create the base index one and clone it before every run of update.
         long getBaseCrc32(long toBeOred);
 
@@ -212,8 +211,7 @@ public final class IterPerformanceTest {
             this.clusterMid = clusterMid;
         }
 
-        long populateFirstArgStep(final int jumpPropOneIn, final int d, final int halfClusterWidth,
-            final Random r) {
+        long populateFirstArgStep(final int jumpPropOneIn, final int d, final int halfClusterWidth, final Random r) {
             final long k;
             if (r.nextInt(jumpPropOneIn) == 0) {
                 k = clusterMid = halfClusterWidth + r.nextInt(d);
@@ -225,7 +223,7 @@ public final class IterPerformanceTest {
         }
 
         void populateSecondArgStep(final int sizePropOneIn, final int sharePropOneIn, final long k,
-            int cluster1Mid, final int halfClusterWidth, final Random r) {
+                int cluster1Mid, final int halfClusterWidth, final Random r) {
             if (sizePropOneIn != 1 && r.nextInt(sizePropOneIn) != 0) {
                 return;
             }
@@ -241,9 +239,8 @@ public final class IterPerformanceTest {
     }
 
     private static class Config {
-        Config(final String name, final int min, final int max, final int clusterWidth,
-            final int sizePropOneIn,
-            final int sharePropOneIn, final int jumpPropOneIn) {
+        Config(final String name, final int min, final int max, final int clusterWidth, final int sizePropOneIn,
+                final int sharePropOneIn, final int jumpPropOneIn) {
             this.name = name;
             this.clusterWidth = clusterWidth;
             this.sizePropOneIn = sizePropOneIn;
@@ -263,14 +260,14 @@ public final class IterPerformanceTest {
     };
 
     private static final Config sparse =
-        new Config("sparse", 10, 300000000, 50, 1, 1000, 25);
+            new Config("sparse", 10, 300000000, 50, 1, 1000, 25);
     private static final Config dense =
-        new Config("dense", 20, 30000000, 20, 1, 3, 20);
+            new Config("dense", 20, 30000000, 20, 1, 3, 20);
     private static final Config asymmetric =
-        new Config("asymmetric", 10, 300000000, 30000000, 160000, 1000, 25);
+            new Config("asymmetric", 10, 300000000, 30000000, 160000, 1000, 25);
 
-    public static void setupStrategy(final IterStrategy s, final int sz, final Config c,
-        final String pref, final boolean print) {
+    public static void setupStrategy(final IterStrategy s, final int sz, final Config c, final String pref,
+            final boolean print) {
         final int halfClusterWidth = c.clusterWidth / 2;
         final IterStrategy.ValuesBuilder b = s.builder();
         final ValuesBuilder vb = new ValuesBuilder(c.min + halfClusterWidth, b);
@@ -278,8 +275,7 @@ public final class IterPerformanceTest {
         final int d = c.max - c.min + 1 - c.clusterWidth;
         for (int i = 0; i < sz; ++i) {
             final long k = vb.populateFirstArgStep(c.jumpPropOneIn, d, halfClusterWidth, r);
-            vb.populateSecondArgStep(c.sizePropOneIn, c.sharePropOneIn, k, vb.clusterMid,
-                halfClusterWidth, r);
+            vb.populateSecondArgStep(c.sizePropOneIn, c.sharePropOneIn, k, vb.clusterMid, halfClusterWidth, r);
         }
         b.done();
         if (!print) {
@@ -328,8 +324,8 @@ public final class IterPerformanceTest {
     static final double s2ns = 1e9;
 
     static void runStep(
-        final Config c, final int sn, final IterStrategy[] ss,
-        final String stepName, final int sz, final int runs, final boolean print) {
+            final Config c, final int sn, final IterStrategy[] ss,
+            final String stepName, final int sz, final int runs, final boolean print) {
         final Runtime rt = Runtime.getRuntime();
         System.out.println(me + ": Running " + c.name + " " + stepName + " sz=" + nf(sz));
         final String pfx = me + "    ";
@@ -342,9 +338,9 @@ public final class IterPerformanceTest {
             final double dMb = pm.dm() / (1024.0 * 1024.0);
             if (print) {
                 System.out.println(pfx + String.format(
-                    "Building values for " + ss[si].toString() +
-                        " done in %.3f secs, delta memory used %s",
-                    pm.dt() / s2ns, mf(dMb)));
+                        "Building values for " + ss[si].toString() +
+                                " done in %.3f secs, delta memory used %s",
+                        pm.dt() / s2ns, mf(dMb)));
             }
             pm.reset();
         }
@@ -362,7 +358,7 @@ public final class IterPerformanceTest {
             System.out.println(pfx + "trick optimizer value = " + nf(trick));
             if (si != 0) {
                 PerfStats.comparePrint(
-                    pStats, ss[0].toString(), sStats, ss[si].toString(), pfx);
+                        pStats, ss[0].toString(), sStats, ss[si].toString(), pfx);
             }
         }
         final long t1 = System.nanoTime();
@@ -372,18 +368,18 @@ public final class IterPerformanceTest {
 
     // Having separate warmup and full methods helps separate them in JProfiler.
     static void runStepWarmup(final Config c, final int sn, final IterStrategy ss[],
-        final int sz, final int runs) {
+            final int sz, final int runs) {
         runStep(c, sn, ss, "warmup", sz, runs, false);
     }
 
     static void runStepFull(final Config c, final int sn, final IterStrategy ss[],
-        final int sz, final int runs) {
+            final int sz, final int runs) {
         runStep(c, sn, ss, "full test", sz, runs, true);
     }
 
     static void run(
-        final Config c, final int sn, final IterStrategy[] ss,
-        final int warmupSz, final int warmupRuns, final int fullSz, final int fullRuns) {
+            final Config c, final int sn, final IterStrategy[] ss,
+            final int warmupSz, final int warmupRuns, final int fullSz, final int fullRuns) {
         runStepWarmup(c, sn, ss, warmupSz, warmupRuns);
         runStepFull(c, sn, ss, fullSz, fullRuns);
     }
@@ -416,7 +412,7 @@ public final class IterPerformanceTest {
             final long t1 = System.nanoTime();
             final long dt = t1 - t0;
             System.out.println(me + ": " + ss[si].toString() + " Code warmup ran in " +
-                dt / s2ns + " seconds, output=" + wo);
+                    dt / s2ns + " seconds, output=" + wo);
         }
         final int warmupSz = 1 * 1000 * 1000;
         final int warmupRuns = 20;

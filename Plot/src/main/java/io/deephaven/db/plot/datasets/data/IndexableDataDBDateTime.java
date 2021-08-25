@@ -24,8 +24,7 @@ public class IndexableDataDBDateTime extends IndexableData<DBDateTime> {
     /**
      * Creates an IndexableDataDBDateTime instance.
      *
-     * Values in {@code data} equal to {@link io.deephaven.util.QueryConstants#NULL_LONG} are
-     * treated as null.
+     * Values in {@code data} equal to {@link io.deephaven.util.QueryConstants#NULL_LONG} are treated as null.
      *
      * @param data data
      * @param plotInfo plot information

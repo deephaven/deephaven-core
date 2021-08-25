@@ -16,8 +16,7 @@ public class JsMultiSeries {
     private final Map<String, JsAxis> axes;
     private final JsChart parent;
 
-    public JsMultiSeries(MultiSeriesDescriptor descriptor, JsFigure figure,
-        Map<String, JsAxis> axes, JsChart parent) {
+    public JsMultiSeries(MultiSeriesDescriptor descriptor, JsFigure figure, Map<String, JsAxis> axes, JsChart parent) {
 
         this.descriptor = descriptor;
         this.figure = figure;
@@ -27,20 +26,20 @@ public class JsMultiSeries {
 
     @JsIgnore
     public void initSources(Map<Integer, TableMap> plotHandlesToTableMaps) {
-        descriptor.getDataSourcesList().asList().stream()
-            .mapToInt(MultiSeriesSourceDescriptor::getTableMapId).distinct()
-            // TODO assert only one at this stage
-            .forEach(plotHandle -> {
-                TableMap tableMap = plotHandlesToTableMaps.get(plotHandle);
-                tableMap.getKeys().forEach((p0, p1, p2) -> {
-                    requestTable(tableMap, p0);
-                    return null;
-                });
-                tableMap.addEventListener(TableMap.EVENT_KEYADDED, event -> {
-                    requestTable(tableMap, ((CustomEvent) event).detail);
-                });
+        descriptor.getDataSourcesList().asList().stream().mapToInt(MultiSeriesSourceDescriptor::getTableMapId)
+                .distinct()
+                // TODO assert only one at this stage
+                .forEach(plotHandle -> {
+                    TableMap tableMap = plotHandlesToTableMaps.get(plotHandle);
+                    tableMap.getKeys().forEach((p0, p1, p2) -> {
+                        requestTable(tableMap, p0);
+                        return null;
+                    });
+                    tableMap.addEventListener(TableMap.EVENT_KEYADDED, event -> {
+                        requestTable(tableMap, ((CustomEvent) event).detail);
+                    });
 
-            });
+                });
     }
 
     private void requestTable(TableMap tableMap, Object key) {
@@ -55,37 +54,33 @@ public class JsMultiSeries {
             seriesInstance.setLineColor(getOrDefault(seriesName, descriptor.getLineColor()));
             seriesInstance.setShapeColor(getOrDefault(seriesName, descriptor.getPointColor()));
             seriesInstance.setLinesVisible(getOrDefault(seriesName, descriptor.getLinesVisible()));
-            seriesInstance
-                .setShapesVisible(getOrDefault(seriesName, descriptor.getPointsVisible()));
+            seriesInstance.setShapesVisible(getOrDefault(seriesName, descriptor.getPointsVisible()));
             Boolean gradientVisible = getOrDefault(seriesName, descriptor.getGradientVisible());
             if (gradientVisible != null) {
                 seriesInstance.setGradientVisible(gradientVisible);
             }
 
-            seriesInstance
-                .setYToolTipPattern(getOrDefault(seriesName, descriptor.getYToolTipPattern()));
-            seriesInstance
-                .setXToolTipPattern(getOrDefault(seriesName, descriptor.getXToolTipPattern()));
+            seriesInstance.setYToolTipPattern(getOrDefault(seriesName, descriptor.getYToolTipPattern()));
+            seriesInstance.setXToolTipPattern(getOrDefault(seriesName, descriptor.getXToolTipPattern()));
 
             seriesInstance.setShapeLabel(getOrDefault(seriesName, descriptor.getPointLabel()));
             seriesInstance.setShapeSize(getOrDefault(seriesName, descriptor.getPointSize()));
             seriesInstance.setShape(getOrDefault(seriesName, descriptor.getPointShape()));
 
-            seriesInstance
-                .setPointLabelFormat(getOrDefault(seriesName, descriptor.getPointLabelFormat()));
+            seriesInstance.setPointLabelFormat(getOrDefault(seriesName, descriptor.getPointLabelFormat()));
 
             int tableId = figure.registerTable(table);
 
             seriesInstance.setDataSourcesList(
-                descriptor.getDataSourcesList()
-                    .map((multiSeriesSource, p1, p2) -> {
-                        SourceDescriptor sourceDescriptor = new SourceDescriptor();
-                        sourceDescriptor.setColumnName(multiSeriesSource.getColumnName());
-                        sourceDescriptor.setAxisId(multiSeriesSource.getAxisId());
-                        sourceDescriptor.setTableId(tableId);
-                        sourceDescriptor.setType(multiSeriesSource.getType());
-                        return sourceDescriptor;
-                    })
+                    descriptor.getDataSourcesList()
+                            .map((multiSeriesSource, p1, p2) -> {
+                                SourceDescriptor sourceDescriptor = new SourceDescriptor();
+                                sourceDescriptor.setColumnName(multiSeriesSource.getColumnName());
+                                sourceDescriptor.setAxisId(multiSeriesSource.getAxisId());
+                                sourceDescriptor.setTableId(tableId);
+                                sourceDescriptor.setType(multiSeriesSource.getType());
+                                return sourceDescriptor;
+                            })
 
             );
 

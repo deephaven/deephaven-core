@@ -20,7 +20,7 @@ public class MinMaxIterativeOperatorFactory implements IterativeChunkedOperatorF
 
     @Override
     public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name,
-        boolean exposeInternalColumns) {
+            boolean exposeInternalColumns) {
         return getMinMaxChunked(type, minimum, isAddOnly, name);
     }
 

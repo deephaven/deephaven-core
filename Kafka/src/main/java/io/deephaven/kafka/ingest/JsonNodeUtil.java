@@ -17,8 +17,8 @@ import java.math.BigInteger;
 
 public class JsonNodeUtil {
     private static final ObjectMapper objectMapper = new ObjectMapper()
-        .setNodeFactory(JsonNodeFactory.withExactBigDecimals(true))
-        .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+            .setNodeFactory(JsonNodeFactory.withExactBigDecimals(true))
+            .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
 
     public static JsonNode makeJsonNode(final String json) {
         final JsonNode node;
@@ -30,16 +30,16 @@ public class JsonNodeUtil {
     }
 
     private static JsonNode checkAllowMissingOrNull(
-        final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
+            final JsonNode node, @NotNull final String key,
+            final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = node == null ? null : node.get(key);
         if (!allowMissingKeys && tmpNode == null) {
             throw new IllegalArgumentException(
-                "Key " + key + " not found in the record, and allowMissingKeys is false.");
+                    "Key " + key + " not found in the record, and allowMissingKeys is false.");
         }
         if (tmpNode != null && !allowNullValues && tmpNode.isNull()) {
             throw new IllegalArgumentException(
-                "Value for Key " + key + " is null in the record, and allowNullValues is false.");
+                    "Value for Key " + key + " is null in the record, and allowNullValues is false.");
         }
         return tmpNode;
     }
@@ -52,23 +52,20 @@ public class JsonNodeUtil {
     }
 
     /**
-     * Returns a Deephaven int (primitive int with reserved values for null) from a
-     * {@link JsonNode}.
+     * Returns a Deephaven int (primitive int with reserved values for null) from a {@link JsonNode}.
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
      * @param key The String key of the value to retrieve.
      * @return A Deephaven int (primitive int with reserved values for null)
      */
     public static int getInt(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getInt(tmpNode);
     }
 
     /**
-     * Returns a Deephaven int (primitive int with reserved values for null) from a
-     * {@link JsonNode}.
+     * Returns a Deephaven int (primitive int with reserved values for null) from a {@link JsonNode}.
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
      * @return A Deephaven int (primitive int with reserved values for null)
@@ -86,9 +83,8 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static Integer getBoxedInt(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getBoxedInt(tmpNode);
     }
 
@@ -104,23 +100,20 @@ public class JsonNodeUtil {
     }
 
     /**
-     * Returns a Deephaven short (primitive short with reserved values for Null) from a
-     * {@link JsonNode}.
+     * Returns a Deephaven short (primitive short with reserved values for Null) from a {@link JsonNode}.
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
      * @param key The String key of the value to retrieve.
      * @return A Deephaven short (primitive short with reserved values for Null)
      */
     public static short getShort(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getShort(tmpNode);
     }
 
     /**
-     * Returns a Deephaven short (primitive short with reserved values for Null) from a
-     * {@link JsonNode}.
+     * Returns a Deephaven short (primitive short with reserved values for Null) from a {@link JsonNode}.
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
      * @return A Deephaven short (primitive short with reserved values for Null)
@@ -138,9 +131,8 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static Short getBoxedShort(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getBoxedShort(tmpNode);
     }
 
@@ -150,23 +142,20 @@ public class JsonNodeUtil {
     }
 
     /**
-     * Returns a Deephaven long (primitive long with reserved values for Null) from a
-     * {@link JsonNode}.
+     * Returns a Deephaven long (primitive long with reserved values for Null) from a {@link JsonNode}.
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
      * @param key The String key of the value to retrieve.
      * @return A Deephaven long (primitive long with reserved values for Null)
      */
     public static long getLong(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getLong(tmpNode);
     }
 
     /**
-     * Returns a Deephaven long (primitive long with reserved values for null) from a
-     * {@link JsonNode}.
+     * Returns a Deephaven long (primitive long with reserved values for null) from a {@link JsonNode}.
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
      * @return A Deephaven long (primitive long with reserved values for null)
@@ -184,9 +173,8 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static Long getBoxedLong(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getBoxedLong(tmpNode);
     }
 
@@ -202,23 +190,20 @@ public class JsonNodeUtil {
     }
 
     /**
-     * Returns a Deephaven double (primitive double with reserved values for null) from a
-     * {@link JsonNode}.
+     * Returns a Deephaven double (primitive double with reserved values for null) from a {@link JsonNode}.
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
      * @param key The String key of the value to retrieve.
      * @return A Deephaven double (primitive double with reserved values for null)
      */
     public static double getDouble(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getDouble(tmpNode);
     }
 
     /**
-     * Returns a Deephaven double (primitive double with reserved values for null) from a
-     * {@link JsonNode}.
+     * Returns a Deephaven double (primitive double with reserved values for null) from a {@link JsonNode}.
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
      * @return A Deephaven double (primitive double with reserved values for null)
@@ -236,9 +221,8 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static Double getBoxedDouble(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getBoxedDouble(tmpNode);
     }
 
@@ -254,23 +238,20 @@ public class JsonNodeUtil {
     }
 
     /**
-     * Returns a Deephaven float (primitive float with reserved values for Null) from a
-     * {@link JsonNode}.
+     * Returns a Deephaven float (primitive float with reserved values for Null) from a {@link JsonNode}.
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
      * @param key The String key of the value to retrieve.
      * @return A Deephaven float (primitive float with reserved values for Null)
      */
     public static float getFloat(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getFloat(tmpNode);
     }
 
     /**
-     * Returns a Deephaven float (primitive float with reserved values for Null) from a
-     * {@link JsonNode}.
+     * Returns a Deephaven float (primitive float with reserved values for Null) from a {@link JsonNode}.
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
      * @return A Deephaven float (primitive float with reserved values for Null)
@@ -288,9 +269,8 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static Float getBoxedFloat(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getBoxedFloat(tmpNode);
     }
 
@@ -306,23 +286,20 @@ public class JsonNodeUtil {
     }
 
     /**
-     * Returns a Deephaven byte (primitive byte with a reserved value for Null) from a
-     * {@link JsonNode}.
+     * Returns a Deephaven byte (primitive byte with a reserved value for Null) from a {@link JsonNode}.
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
      * @param key The String key of the value to retrieve.
      * @return A Deephaven byte (primitive byte with a reserved value for Null)
      */
     public static byte getByte(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getByte(tmpNode);
     }
 
     /**
-     * Returns a Deephaven byte (primitive byte with a reserved value for Null) from a
-     * {@link JsonNode}.
+     * Returns a Deephaven byte (primitive byte with a reserved value for Null) from a {@link JsonNode}.
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
      * @return A Deephaven byte (primitive byte with a reserved value for Null)
@@ -347,9 +324,8 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static Byte getBoxedByte(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getBoxedByte(tmpNode);
     }
 
@@ -372,23 +348,20 @@ public class JsonNodeUtil {
     }
 
     /**
-     * Returns a Deephaven char (primitive char with a reserved value for Null) from a
-     * {@link JsonNode}.
+     * Returns a Deephaven char (primitive char with a reserved value for Null) from a {@link JsonNode}.
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
      * @param key The String key of the value to retrieve.
      * @return A Deephaven char (primitive char with a reserved value for Null)
      */
     public static char getChar(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getChar(tmpNode);
     }
 
     /**
-     * Returns a Deephaven char (primitive char with a reserved value for Null) from a
-     * {@link JsonNode}.
+     * Returns a Deephaven char (primitive char with a reserved value for Null) from a {@link JsonNode}.
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
      * @return A Deephaven char (primitive char with a reserved value for Null)
@@ -413,9 +386,8 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static Character getBoxedChar(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getBoxedChar(tmpNode);
     }
 
@@ -440,9 +412,8 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static String getString(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getString(tmpNode);
     }
 
@@ -465,9 +436,8 @@ public class JsonNodeUtil {
      * @return A Boolean
      */
     public static Boolean getBoolean(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getBoolean(tmpNode);
     }
 
@@ -490,9 +460,8 @@ public class JsonNodeUtil {
      * @return A BigInteger
      */
     public static BigInteger getBigInteger(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getBigInteger(tmpNode);
     }
 
@@ -516,9 +485,8 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static BigDecimal getBigDecimal(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getBigDecimal(tmpNode);
     }
 
@@ -542,9 +510,8 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static Object getValue(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getValue(tmpNode);
     }
 
@@ -560,10 +527,9 @@ public class JsonNodeUtil {
     }
 
     /**
-     * Returns a {@link DBDateTime} from a {@link JsonNode}. Will try to infer precision of a long
-     * value to be parsed using {@link DBTimeUtils} autoEpochToTime. If the value in the JSON record
-     * is not numeric, this method will attempt to parse it as a Deephaven DBDateTime string
-     * (yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ).
+     * Returns a {@link DBDateTime} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
+     * using {@link DBTimeUtils} autoEpochToTime. If the value in the JSON record is not numeric, this method will
+     * attempt to parse it as a Deephaven DBDateTime string (yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ).
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
      * @param key The String key of the value to retrieve.
@@ -571,17 +537,15 @@ public class JsonNodeUtil {
      */
     @Nullable
     public static DBDateTime getDBDateTime(@NotNull final JsonNode node, @NotNull final String key,
-        final boolean allowMissingKeys, final boolean allowNullValues) {
-        final JsonNode tmpNode =
-            checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
+            final boolean allowMissingKeys, final boolean allowNullValues) {
+        final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
         return getDBDateTime(tmpNode);
     }
 
     /**
-     * Returns a {@link DBDateTime} from a {@link JsonNode}. Will try to infer precision of a long
-     * value to be parsed using {@link DBTimeUtils} autoEpochToTime. If the value in the JSON record
-     * is not numeric, this method will attempt to parse it as a Deephaven DBDateTime string
-     * (yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ).
+     * Returns a {@link DBDateTime} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
+     * using {@link DBTimeUtils} autoEpochToTime. If the value in the JSON record is not numeric, this method will
+     * attempt to parse it as a Deephaven DBDateTime string (yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ).
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
      * @return A {@link DBDateTime}

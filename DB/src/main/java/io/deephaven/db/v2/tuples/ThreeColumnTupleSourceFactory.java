@@ -17,6 +17,6 @@ public interface ThreeColumnTupleSourceFactory<TUPLE_TYPE, COLUMN_SOURCE_1_TYPE,
      * @return The new tuple factory
      */
     TupleSource<TUPLE_TYPE> create(@NotNull ColumnSource<COLUMN_SOURCE_1_TYPE> columnSource1,
-        @NotNull ColumnSource<COLUMN_SOURCE_2_TYPE> columnSource2,
-        @NotNull ColumnSource<COLUMN_SOURCE_3_TYPE> columnSource3);
+            @NotNull ColumnSource<COLUMN_SOURCE_2_TYPE> columnSource2,
+            @NotNull ColumnSource<COLUMN_SOURCE_3_TYPE> columnSource3);
 }

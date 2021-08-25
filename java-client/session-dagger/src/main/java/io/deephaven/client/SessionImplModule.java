@@ -23,23 +23,23 @@ public interface SessionImplModule {
     @Provides
     static SessionImpl session(ManagedChannel managedChannel, ScheduledExecutorService scheduler) {
         return SessionImplConfig.builder()
-            .executor(scheduler)
-            .tableService(TableServiceGrpc.newStub(managedChannel))
-            .sessionService(SessionServiceGrpc.newStub(managedChannel))
-            .consoleService(ConsoleServiceGrpc.newStub(managedChannel))
-            .build()
-            .createSession(SessionServiceGrpc.newBlockingStub(managedChannel));
+                .executor(scheduler)
+                .tableService(TableServiceGrpc.newStub(managedChannel))
+                .sessionService(SessionServiceGrpc.newStub(managedChannel))
+                .consoleService(ConsoleServiceGrpc.newStub(managedChannel))
+                .build()
+                .createSession(SessionServiceGrpc.newBlockingStub(managedChannel));
     }
 
     @Provides
     static CompletableFuture<? extends SessionImpl> sessionFuture(ManagedChannel managedChannel,
-        ScheduledExecutorService scheduler) {
+            ScheduledExecutorService scheduler) {
         return SessionImplConfig.builder()
-            .executor(scheduler)
-            .tableService(TableServiceGrpc.newStub(managedChannel))
-            .sessionService(SessionServiceGrpc.newStub(managedChannel))
-            .consoleService(ConsoleServiceGrpc.newStub(managedChannel))
-            .build()
-            .createSessionFuture();
+                .executor(scheduler)
+                .tableService(TableServiceGrpc.newStub(managedChannel))
+                .sessionService(SessionServiceGrpc.newStub(managedChannel))
+                .consoleService(ConsoleServiceGrpc.newStub(managedChannel))
+                .build()
+                .createSessionFuture();
     }
 }

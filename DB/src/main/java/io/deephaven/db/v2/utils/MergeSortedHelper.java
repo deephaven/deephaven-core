@@ -17,13 +17,13 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
 /**
- * Utility to take a set of tables, each of which is sorted; and merge them together into a single
- * table, which will also be sorted. For now we do not support refreshing tables, just zipping
- * together tables that are already sorted and will not tick.
+ * Utility to take a set of tables, each of which is sorted; and merge them together into a single table, which will
+ * also be sorted. For now we do not support refreshing tables, just zipping together tables that are already sorted and
+ * will not tick.
  *
- * To handle ticking tables; the data structures would need to be changed, we're storing everything
- * in parallel arrays and to tick we would need to shift those around. Handling append only could
- * work; but there would be a lot of shifting if the data arrives particularly out of order.
+ * To handle ticking tables; the data structures would need to be changed, we're storing everything in parallel arrays
+ * and to tick we would need to shift those around. Handling append only could work; but there would be a lot of
+ * shifting if the data arrives particularly out of order.
  */
 public class MergeSortedHelper {
     private static class TableCursor implements Comparable<TableCursor> {
@@ -94,29 +94,25 @@ public class MergeSortedHelper {
         int tableIndex = 0;
         for (Table table : tables) {
             if (!(table instanceof BaseTable)) {
-                throw new UnsupportedOperationException(
-                    "Can not perform mergeSorted unless you pass in a BaseTable!");
+                throw new UnsupportedOperationException("Can not perform mergeSorted unless you pass in a BaseTable!");
             }
             if (((BaseTable) table).isRefreshing()) {
-                throw new UnsupportedOperationException(
-                    "mergeSorted does not yet support refreshing tables!");
+                throw new UnsupportedOperationException("mergeSorted does not yet support refreshing tables!");
             }
 
             if (tableIndex == 0) {
-                for (Map.Entry<String, ? extends ColumnSource> entry : table.getColumnSourceMap()
-                    .entrySet()) {
+                for (Map.Entry<String, ? extends ColumnSource> entry : table.getColumnSourceMap().entrySet()) {
                     // noinspection unchecked
                     columnSources.put(entry.getKey(),
-                        new SortedMergeColumnSource(tableList, indexList, entry.getValue()));
+                            new SortedMergeColumnSource(tableList, indexList, entry.getValue()));
                 }
             } else {
                 if (!table.getColumnSourceMap().keySet().equals(columnSources.keySet())) {
-                    throw new RuntimeException("Incompatible column sources: "
-                        + Arrays.toString(columnSources.keySet().toArray()) + " and "
-                        + Arrays.toString(table.getColumnSourceMap().keySet().toArray()));
+                    throw new RuntimeException(
+                            "Incompatible column sources: " + Arrays.toString(columnSources.keySet().toArray())
+                                    + " and " + Arrays.toString(table.getColumnSourceMap().keySet().toArray()));
                 }
-                for (Map.Entry<String, ? extends ColumnSource> entry : table.getColumnSourceMap()
-                    .entrySet()) {
+                for (Map.Entry<String, ? extends ColumnSource> entry : table.getColumnSourceMap().entrySet()) {
                     // noinspection unchecked
                     columnSources.get(entry.getKey()).addSource(entry.getValue());
                 }
@@ -155,7 +151,7 @@ public class MergeSortedHelper {
         }
 
         public SortedMergeColumnSource(TIntArrayList tableIndex, TLongArrayList columnIndex,
-            ColumnSource<T> firstSource) {
+                ColumnSource<T> firstSource) {
             super(firstSource.getType());
             this.tableIndex = tableIndex;
             this.columnIndex = columnIndex;
@@ -166,7 +162,7 @@ public class MergeSortedHelper {
         void addSource(ColumnSource<T> source) {
             innerSources.add(source);
             Require.eq(source.getType(), "source.getType()", innerSources.get(0).getType(),
-                "innerSources.get(0).getType()");
+                    "innerSources.get(0).getType()");
         }
 
         @Override

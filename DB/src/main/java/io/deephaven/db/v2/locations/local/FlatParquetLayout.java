@@ -15,8 +15,7 @@ import java.util.function.Consumer;
 import static io.deephaven.db.v2.parquet.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 
 /**
- * Parquet {@link TableLocationKeyFinder location finder} that will discover multiple files in a
- * single directory.
+ * Parquet {@link TableLocationKeyFinder location finder} that will discover multiple files in a single directory.
  */
 public final class FlatParquetLayout implements TableLocationKeyFinder<ParquetTableLocationKey> {
 
@@ -36,15 +35,13 @@ public final class FlatParquetLayout implements TableLocationKeyFinder<ParquetTa
     @Override
     public void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
         PrivilegedFileAccessUtil.doFilesystemAction(() -> {
-            try (final DirectoryStream<Path> parquetFileStream = Files
-                .newDirectoryStream(tableRootDirectory.toPath(), "*" + PARQUET_FILE_EXTENSION)) {
+            try (final DirectoryStream<Path> parquetFileStream =
+                    Files.newDirectoryStream(tableRootDirectory.toPath(), "*" + PARQUET_FILE_EXTENSION)) {
                 for (final Path parquetFilePath : parquetFileStream) {
-                    locationKeyObserver
-                        .accept(new ParquetTableLocationKey(parquetFilePath.toFile(), 0, null));
+                    locationKeyObserver.accept(new ParquetTableLocationKey(parquetFilePath.toFile(), 0, null));
                 }
             } catch (final IOException e) {
-                throw new TableDataException(
-                    "Error finding parquet locations under " + tableRootDirectory, e);
+                throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);
             }
         });
     }

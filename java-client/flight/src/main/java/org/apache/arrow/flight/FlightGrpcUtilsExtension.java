@@ -22,7 +22,7 @@ public class FlightGrpcUtilsExtension {
      * @param middleware the middleware
      */
     public static FlightClient createFlightClient(BufferAllocator incomingAllocator,
-        ManagedChannel channel, List<Factory> middleware) {
+            ManagedChannel channel, List<Factory> middleware) {
         return new FlightClient(incomingAllocator, channel, middleware);
     }
 
@@ -30,13 +30,13 @@ public class FlightGrpcUtilsExtension {
      * Creates a Flight client.
      * 
      * @param incomingAllocator Memory allocator
-     * @param channel provides a connection to a gRPC server. Will not be closed on closure of the
-     *        returned FlightClient.
+     * @param channel provides a connection to a gRPC server. Will not be closed on closure of the returned
+     *        FlightClient.
      * @param middleware the middleware
      */
     public static FlightClient createFlightClientWithSharedChannel(
-        BufferAllocator incomingAllocator, ManagedChannel channel, List<Factory> middleware) {
+            BufferAllocator incomingAllocator, ManagedChannel channel, List<Factory> middleware) {
         return new FlightClient(incomingAllocator, new NonClosingProxyManagedChannel(channel),
-            middleware);
+                middleware);
     }
 }

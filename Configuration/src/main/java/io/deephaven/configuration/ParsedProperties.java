@@ -18,9 +18,8 @@ import org.jetbrains.annotations.NotNull;
 import static io.deephaven.configuration.Configuration.QUIET_PROPERTY;
 
 /**
- * Class for reading in a customized properties file, applying only the locally-relevant properties
- * and keeping track of which properties may not be further modified. Maintains the ordering of the
- * properties from the input file.
+ * Class for reading in a customized properties file, applying only the locally-relevant properties and keeping track of
+ * which properties may not be further modified. Maintains the ordering of the properties from the input file.
  */
 @SuppressWarnings("SpellCheckingInspection")
 public class ParsedProperties extends Properties {
@@ -51,20 +50,18 @@ public class ParsedProperties extends Properties {
     private final LinkedList<ConfigurationScope> scope = new LinkedList<>();
     private final Map<String, Object> props;
 
-    // We want to report the line number in the case of errors within a line, and may want to report
-    // on it later other ways.
+    // We want to report the line number in the case of errors within a line, and may want to report on it later other
+    // ways.
     private int lineNum = 0;
 
-    // We also need to keep track of which properties have been finalized and may no longer be
-    // modified,
+    // We also need to keep track of which properties have been finalized and may no longer be modified,
     // regardless of scope.
     final private Set<String> finalProperties;
 
     // We also want to keep track of which properties were set by which line in the current file
     final private Map<String, List<PropertyHistory>> lineNumbers;
 
-    // The Context tells us which items in the input file can be ignored for whatever is calling
-    // this configuration.
+    // The Context tells us which items in the input file can be ignored for whatever is calling this configuration.
     final private ConfigurationContext context;
 
     final private PropertyInputStreamLoader propertyInputStreamLoader;
@@ -79,9 +76,9 @@ public class ParsedProperties extends Properties {
     // region Properties
 
     /**
-     * A mapping from each property name to the file and location where the property came from. This
-     * is public so that we can use this in a property inspector to get the full story about what
-     * properties exist and where those properties were defined.
+     * A mapping from each property name to the file and location where the property came from. This is public so that
+     * we can use this in a property inspector to get the full story about what properties exist and where those
+     * properties were defined.
      *
      * @return The current map
      */
@@ -107,9 +104,8 @@ public class ParsedProperties extends Properties {
     /**
      * A constructor that starts with no existing scoped or final properties.
      *
-     * @param ignoreScopes True if this parser should ignore scope restrictions, false otherwise.
-     *        Used by the PropertyInspector when checking whether required or disallowed properties
-     *        are present.
+     * @param ignoreScopes True if this parser should ignore scope restrictions, false otherwise. Used by the
+     *        PropertyInspector when checking whether required or disallowed properties are present.
      */
     public ParsedProperties(final boolean ignoreScopes) {
         context = new ConfigurationContext();
@@ -126,27 +122,23 @@ public class ParsedProperties extends Properties {
     }
 
     /**
-     * A constructor that passes through the current state of any scoped and final properties, used
-     * when processing includefiles.
+     * A constructor that passes through the current state of any scoped and final properties, used when processing
+     * includefiles.
      *
-     * @param callingProperties An existing ParsedProperties object with existing data that should
-     *        be further filled out.
+     * @param callingProperties An existing ParsedProperties object with existing data that should be further filled
+     *        out.
      */
     @SuppressWarnings("CopyConstructorMissesField")
     private ParsedProperties(final ParsedProperties callingProperties) {
         this.context = callingProperties.getContext();
         this.finalProperties = callingProperties.getFinalProperties();
-        this.lineNumbers = callingProperties.lineNumbers; // We actually want the original item, not
-                                                          // a copy.
+        this.lineNumbers = callingProperties.lineNumbers; // We actually want the original item, not a copy.
         this.props = callingProperties.props;
         this.ignoreScopes = callingProperties.ignoreScopes;
         this.propertyInputStreamLoader = callingProperties.propertyInputStreamLoader;
-        // explicitly do NOT copy over scope, since we should be back to root when the import
-        // happens.
-        // explicitly do not copy over filenames; those will get handled during the 'load' and
-        // 'merge' steps as needed.
-        // explicitly do not copy over 'expectingScopeOpen' - that should not propagate across
-        // includefiles.
+        // explicitly do NOT copy over scope, since we should be back to root when the import happens.
+        // explicitly do not copy over filenames; those will get handled during the 'load' and 'merge' steps as needed.
+        // explicitly do not copy over 'expectingScopeOpen' - that should not propagate across includefiles.
     }
     // endregion Constructors
 
@@ -161,19 +153,19 @@ public class ParsedProperties extends Properties {
 
         final boolean inScope = isContextValid();
 
-        if (nextLine == null || nextLine.startsWith(TOKEN_COMMENT_HASH)
-            || nextLine.startsWith(TOKEN_COMMENT_BANG) || nextLine.length() == 0) {
+        if (nextLine == null || nextLine.startsWith(TOKEN_COMMENT_HASH) || nextLine.startsWith(TOKEN_COMMENT_BANG)
+                || nextLine.length() == 0) {
             // If the line starts with # or with !, it is a comment and should be ignored.
             // Blank lines can also be ignored.
             // noinspection UnnecessaryReturnStatement
             return;
         } else {
             if (expectingScopeOpen && !nextLine.startsWith(TOKEN_SCOPE_OPEN)) {
-                throw new ConfigurationException(TOKEN_SCOPE_OPEN
-                    + " must immediately follow a scope declaration, found : " + nextLine);
+                throw new ConfigurationException(
+                        TOKEN_SCOPE_OPEN + " must immediately follow a scope declaration, found : " + nextLine);
             } else if (!expectingScopeOpen && nextLine.startsWith(TOKEN_SCOPE_OPEN)) {
-                throw new ConfigurationException(TOKEN_SCOPE_OPEN
-                    + " may not be used as the first character of a property name: " + nextLine);
+                throw new ConfigurationException(
+                        TOKEN_SCOPE_OPEN + " may not be used as the first character of a property name: " + nextLine);
             } else if (startsWithIgnoreCase(nextLine, TOKEN_FINALIZE) && inScope) {
                 finalizeProperty(nextLine);
             } else if (startsWithIgnoreCase(nextLine, TOKEN_FINAL) && inScope) {
@@ -204,17 +196,15 @@ public class ParsedProperties extends Properties {
     }
 
     /**
-     * Record the value of a property declaration in the form X=Y or X:Y (ignoring whitespace around
-     * the = or :). Since the property value may include terminal whitespace or any other character,
-     * it is NOT permitted to place further instructions immediately on the same line.
+     * Record the value of a property declaration in the form X=Y or X:Y (ignoring whitespace around the = or :). Since
+     * the property value may include terminal whitespace or any other character, it is NOT permitted to place further
+     * instructions immediately on the same line.
      *
      * @param nextLine The line to be parsed
-     * @param markFinal If this line was preceded by a 'final' directive, also mark this property as
-     *        final.
+     * @param markFinal If this line was preceded by a 'final' directive, also mark this property as final.
      */
     private void storePropertyDeclaration(String nextLine, boolean markFinal) throws IOException {
-        // Always starts with a token, then may have either : or =, followed by a value for the
-        // token.
+        // Always starts with a token, then may have either : or =, followed by a value for the token.
         String[] parts = propPattern.split(nextLine, 2);
         final String token = parts[0].trim();
         String value;
@@ -224,37 +214,30 @@ public class ParsedProperties extends Properties {
             value = "";
         }
 
-        // the 'includefiles' line get special handling; in that case, we want to explicitly just
-        // load up the specified files.
-        // Since 'includefiles' must be the first non-comment line (if present), just immediately
-        // load those files.
+        // the 'includefiles' line get special handling; in that case, we want to explicitly just load up the specified
+        // files.
+        // Since 'includefiles' must be the first non-comment line (if present), just immediately load those files.
         if (token.equals(TOKEN_INCLUDE)) {
             if (haveParsedFirstLine) {
-                throw new ConfigurationException(
-                    TOKEN_INCLUDE + " found in location other than first non-comment line in file "
-                        + thisFile + ".");
+                throw new ConfigurationException(TOKEN_INCLUDE
+                        + " found in location other than first non-comment line in file " + thisFile + ".");
             }
             ParsedProperties includeProps;
             for (String file : commaPattern.split(value)) {
-                // Since we're passing around the same collection objects, they'll automatically
-                // populate everything in one batch.
+                // Since we're passing around the same collection objects, they'll automatically populate everything in
+                // one batch.
                 includeProps = new ParsedProperties(this);
                 includeProps.load(file.trim());
             }
         } else if (token.equalsIgnoreCase(TOKEN_FINAL) || token.equalsIgnoreCase(TOKEN_FINALIZE)) {
-            // If someone tries to use 'final final = value' or 'final finalize = value', then smack
-            // them on the wrist.
-            throw new ConfigurationException(
-                token + " is a reserved keyword and may not be used as a property name.");
+            // If someone tries to use 'final final = value' or 'final finalize = value', then smack them on the wrist.
+            throw new ConfigurationException(token + " is a reserved keyword and may not be used as a property name.");
         } else {
             if (!isFinal(token)) {
-                List<PropertyHistory> tokenHistory =
-                    lineNumbers.computeIfAbsent(token, prop -> new ArrayList<>());
+                List<PropertyHistory> tokenHistory = lineNumbers.computeIfAbsent(token, prop -> new ArrayList<>());
                 props.put(token, value);
-                // Store the line number that this declaration was made on AFTER storing the actual
-                // declaration,
-                // so if there's a conflict with the 'final' descriptor, the previous line number
-                // will be persisted.
+                // Store the line number that this declaration was made on AFTER storing the actual declaration,
+                // so if there's a conflict with the 'final' descriptor, the previous line number will be persisted.
                 tokenHistory.add(0, new PropertyHistory(thisFile, lineNum, value, stringScope()));
                 if (markFinal) {
                     finalizeProperty(token);
@@ -266,27 +249,26 @@ public class ParsedProperties extends Properties {
     }
 
     /**
-     * Exit out of the current scope, returning to the next scope level up. It is permitted to place
-     * further instructions immediately after this on the same line.
+     * Exit out of the current scope, returning to the next scope level up. It is permitted to place further
+     * instructions immediately after this on the same line.
      *
      * @param nextLine The string to be parsed
      */
     private void closeScopeBlock(String nextLine) throws IOException {
-        // If the line starts with }, and the scope is not 0, then end the current scope and move up
-        // one level.
+        // If the line starts with }, and the scope is not 0, then end the current scope and move up one level.
         if (scope.size() > 0) {
             scope.removeLast(); // Whatever the last-added scope was, that is now removed.
         } else {
-            throw new ConfigurationException(TOKEN_SCOPE_CLOSE + " found at line " + lineNum
-                + " with no matching " + TOKEN_SCOPE_OPEN);
+            throw new ConfigurationException(
+                    TOKEN_SCOPE_CLOSE + " found at line " + lineNum + " with no matching " + TOKEN_SCOPE_OPEN);
         }
         String restOfLine = ltrim(nextLine.replaceFirst(TOKEN_SCOPE_CLOSE, ""));
         parseLine(restOfLine);
     }
 
     /**
-     * Start operating inside a scope block that has already been defined. It is permitted to place
-     * further instructions immediately after this on the same line.
+     * Start operating inside a scope block that has already been defined. It is permitted to place further instructions
+     * immediately after this on the same line.
      *
      * @param nextLine The line to be parsed.
      */
@@ -296,7 +278,7 @@ public class ParsedProperties extends Properties {
             expectingScopeOpen = false;
         } else {
             throw new ConfigurationException(
-                "Found " + TOKEN_SCOPE_OPEN + " at line " + lineNum + " when none was expected.");
+                    "Found " + TOKEN_SCOPE_OPEN + " at line " + lineNum + " when none was expected.");
         }
         if (nextLine.length() > 1) {
             parseLine(ltrim(nextLine.substring(TOKEN_SCOPE_OPEN.length())));
@@ -304,45 +286,39 @@ public class ParsedProperties extends Properties {
     }
 
     /**
-     * Define a scope block. It is permitted to place the open indicator immediately after this on
-     * the same line.
+     * Define a scope block. It is permitted to place the open indicator immediately after this on the same line.
      *
      * @param nextLine The line to be parsed.
      */
     private void defineScopeBlock(String nextLine) throws IOException {
-        // If the line starts with [, then it is a scope declaration, and may have a terminal
-        // open-brace, which may have more commands in it.
+        // If the line starts with [, then it is a scope declaration, and may have a terminal open-brace, which may have
+        // more commands in it.
 
         // It is possible to define multiple scope items on the same level, or 'or' blocks.
         final int endBlock = nextLine.indexOf(TOKEN_SCOPE_END);
         if (endBlock < 0) {
             throw new ConfigurationException(
-                "Invalid scope declaration: unterminated scope block at line " + lineNum + ": "
-                    + nextLine);
+                    "Invalid scope declaration: unterminated scope block at line " + lineNum + ": " + nextLine);
         }
         // Skip the first character, since we know it's the opening [.
         final String scopeSection = nextLine.substring(1, endBlock);
         final String[] scopeItems = commaPattern.split(scopeSection);
         if (scopeItems.length == 0) {
             throw new ConfigurationException(
-                "Invalid scope declaration: scope with no scope items at line " + lineNum + ": "
-                    + nextLine);
+                    "Invalid scope declaration: scope with no scope items at line " + lineNum + ": " + nextLine);
         }
         final ArrayList<ConfigurationScope> newScopes = new ArrayList<>();
         for (String aScope : scopeItems) {
             String[] parts = equalPattern.split(aScope, 2);
             if (parts.length < 2) {
                 throw new ConfigurationException(
-                    "Invalid scope declaration: no '=' found at line " + lineNum + ":" + nextLine);
+                        "Invalid scope declaration: no '=' found at line " + lineNum + ":" + nextLine);
             }
             final String contextToken = parts[0].trim();
             final String contextValue = ltrim(parts[1]);
 
-            newScopes.add(new ConfigurationScope(contextToken, contextValue)); // Whatever scope
-                                                                               // we've just
-                                                                               // entered, add it to
-                                                                               // the end of the
-                                                                               // current list of
+            newScopes.add(new ConfigurationScope(contextToken, contextValue)); // Whatever scope we've just entered, add
+                                                                               // it to the end of the current list of
                                                                                // scope conditions.
         }
 
@@ -356,41 +332,37 @@ public class ParsedProperties extends Properties {
     }
 
     /**
-     * Finalize a given property. If the property does not exist, it will be created with a value of
-     * empty-string. It is not permitted to place additional instructions on this line; anything
-     * after 'finalize' will be treated as the name of the token.
+     * Finalize a given property. If the property does not exist, it will be created with a value of empty-string. It is
+     * not permitted to place additional instructions on this line; anything after 'finalize' will be treated as the
+     * name of the token.
      *
      * @param nextLine The string to be processed, in the form "finalize [token]".
      */
     private void finalizeProperty(String nextLine) {
-        // If we're ignoring scopes, we have to ignore finalization as well; properties could be
-        // finalized in different scopes.
+        // If we're ignoring scopes, we have to ignore finalization as well; properties could be finalized in different
+        // scopes.
         if (ignoreScopes)
             return;
-        // if the line starts with 'finalize ', then the remainder of the line is a token to be
-        // marked as final.
-        // Note that if the token has not been declared yet, it will be marked as final, and may not
-        // then be created.
-        // It is non-harmful to finalize something that is already final, since at that point it
-        // can't be modified anyway.
+        // if the line starts with 'finalize ', then the remainder of the line is a token to be marked as final.
+        // Note that if the token has not been declared yet, it will be marked as final, and may not then be created.
+        // It is non-harmful to finalize something that is already final, since at that point it can't be modified
+        // anyway.
         final String[] tokens = commaPattern.split(nextLine.replaceFirst(TOKEN_FINALIZE, ""));
         for (String aToken : tokens) {
             final String token = aToken.trim();
             if (!this.containsKey(token)) {
-                List<PropertyHistory> tokenHistory =
-                    lineNumbers.computeIfAbsent(token, prop -> new ArrayList<>());
-                tokenHistory.add(0, new PropertyHistory(thisFile, lineNum,
-                    "(Property finalized with no value defined)", stringScope()));
+                List<PropertyHistory> tokenHistory = lineNumbers.computeIfAbsent(token, prop -> new ArrayList<>());
+                tokenHistory.add(0, new PropertyHistory(thisFile, lineNum, "(Property finalized with no value defined)",
+                        stringScope()));
             }
             makePropertyFinal(token);
         }
     }
 
     /**
-     * Indicate whether a specified property has already been marked as final. Note that wildcard
-     * values may be included in 'finalize' uses, so a property will be considered 'final' if it
-     * matches a finalized value with a wildcard. Example: If 'a.*.b' has been finalized, then
-     * 'a.foo.b' will be considered final after that.
+     * Indicate whether a specified property has already been marked as final. Note that wildcard values may be included
+     * in 'finalize' uses, so a property will be considered 'final' if it matches a finalized value with a wildcard.
+     * Example: If 'a.*.b' has been finalized, then 'a.foo.b' will be considered final after that.
      *
      * @param token The name of the property to check.
      * @return True if the property has been marked as final, false otherwise.
@@ -405,16 +377,15 @@ public class ParsedProperties extends Properties {
     }
 
     /**
-     * Make a property final, so that it can no longer have a new value entered. It is non-harmful
-     * to mark a property final multiple times, since the check for 'final' status is binary and
-     * irreversible. There could exist cases where a property might be conditionally marked final in
-     * one block, then universally finalized later, so this is explicitly permitted.
+     * Make a property final, so that it can no longer have a new value entered. It is non-harmful to mark a property
+     * final multiple times, since the check for 'final' status is binary and irreversible. There could exist cases
+     * where a property might be conditionally marked final in one block, then universally finalized later, so this is
+     * explicitly permitted.
      *
      * @param token The name of the property to mark as final.
      */
     private void makePropertyFinal(String token) {
-        // If we're ignoring scopes, we have to ignore finalization as well; a property could be
-        // included in two
+        // If we're ignoring scopes, we have to ignore finalization as well; a property could be included in two
         // different scopes and be 'final' in both.
         if (ignoreScopes)
             return;
@@ -422,8 +393,8 @@ public class ParsedProperties extends Properties {
     }
 
     /**
-     * Indiciate whether, given the current scope, the context is valid for the current line. Null
-     * values are automatically considered invalid.
+     * Indiciate whether, given the current scope, the context is valid for the current line. Null values are
+     * automatically considered invalid.
      *
      * @return True if the current scope matches the context, false otherwise.
      */
@@ -443,8 +414,8 @@ public class ParsedProperties extends Properties {
 
     // region Properties class overrides
 
-    // A variety of Hashtable properties need to be overridden to redirect them to the LinkedHashMap
-    // we're actually using.
+    // A variety of Hashtable properties need to be overridden to redirect them to the LinkedHashMap we're actually
+    // using.
 
     @Override
     public void clear() {
@@ -548,24 +519,21 @@ public class ParsedProperties extends Properties {
     }
 
     /**
-     * Load the properties from the specified InputStream, ignoring any directives that do not match
-     * the current context. Automatically closes the stream when the last line has been processed.
+     * Load the properties from the specified InputStream, ignoring any directives that do not match the current
+     * context. Automatically closes the stream when the last line has been processed.
      *
      * @param stream The open stream providing a view into the data to be parsed.
      * @throws IOException If the stream cannot be read at some point.
      */
     @Override
     public synchronized void load(InputStream stream) throws IOException {
-        // Since logical lines are allowed to be represented as multiple actual lines due to
-        // trailing \,
+        // Since logical lines are allowed to be represented as multiple actual lines due to trailing \,
         // we need to assemble the logical lines for parsing.
         Reader reader = new BufferedReader(new InputStreamReader(stream));
         final ParsedPropertiesLineReader lr = new ParsedPropertiesLineReader(reader);
 
-        // When we include a file, that file needs to be processed before anything else in this one
-        // -
-        // the fact that the other file is listed means it is assumed to pre-exist this one, and
-        // should
+        // When we include a file, that file needs to be processed before anything else in this one -
+        // the fact that the other file is listed means it is assumed to pre-exist this one, and should
         // be handled first.
         String nextLine;
 
@@ -575,9 +543,8 @@ public class ParsedProperties extends Properties {
                 break;
             }
             nextLine = convertUnicodeEncoding(rawLine);
-            lineNum += lr.getNumLinesLastRead(); // Since a logical line can break across multiple
-                                                 // actual lines, need to track the actual line
-                                                 // numbers.
+            lineNum += lr.getNumLinesLastRead(); // Since a logical line can break across multiple actual lines, need to
+                                                 // track the actual line numbers.
             if (nextLine == null) {
                 break;
             }
@@ -586,16 +553,15 @@ public class ParsedProperties extends Properties {
         if (scope.size() != 0) {
             throw new ConfigurationException("Failed to close scope in file " + thisFile);
         }
-        // Once the load is finished, we also want to make sure that if someone tries to set a value
-        // from code or otherwise,
+        // Once the load is finished, we also want to make sure that if someone tries to set a value from code or
+        // otherwise,
         // they don't get told that it happened inside this file.
         this.thisFile = "(Modified outside of configuration file)";
         this.lineNum = -1;
     }
 
     /**
-     * Determine whether a property is final or not, and only allow the update if it is not already
-     * final.
+     * Determine whether a property is final or not, and only allow the update if it is not already final.
      *
      * @param key The name of the property to set a value for.
      * @param value The value of the property being set.
@@ -607,8 +573,8 @@ public class ParsedProperties extends Properties {
     }
 
     /**
-     * Remove a non-final property from the collection. Attempting to remove a final property will
-     * cause a ConfigurationException to be thrown.
+     * Remove a non-final property from the collection. Attempting to remove a final property will cause a
+     * ConfigurationException to be thrown.
      *
      * @param key The name of the property to be removed.
      * @return The value of the property, if it existed.
@@ -622,8 +588,8 @@ public class ParsedProperties extends Properties {
     }
 
     /**
-     * Determine whether a property is final or not, and only allow the update if it is not already
-     * final. This should not be called from within the load operation for this class.
+     * Determine whether a property is final or not, and only allow the update if it is not already final. This should
+     * not be called from within the load operation for this class.
      *
      * @param key The name of the property to set a value for.
      * @param value The value of the property being set.
@@ -632,20 +598,14 @@ public class ParsedProperties extends Properties {
     @Override
     public synchronized Object setProperty(String key, String value) {
         if (!isFinal(key)) {
-            // If something calls 'put' on this property other than during a load, then we don't
-            // have a location for it.
-            List<PropertyHistory> tokenHistory =
-                lineNumbers.computeIfAbsent(key, prop -> new ArrayList<>());
-            // Once we're fully converted to Java 9 or higher, we could use the StackWalker API to
-            // get this more
-            // efficiently. Since we're currently moving away from Java 8, which would want to use
-            // SharedSecrets instead,
-            // and since our code internally does not appear to have any cases where properties get
-            // set in a loop
-            // where performance would be notably impacted, we can go ahead and use the full stack
-            // for now.
-            // We also want to skip frame 0, since that's THIS method, which we know is in use
-            // anyway.
+            // If something calls 'put' on this property other than during a load, then we don't have a location for it.
+            List<PropertyHistory> tokenHistory = lineNumbers.computeIfAbsent(key, prop -> new ArrayList<>());
+            // Once we're fully converted to Java 9 or higher, we could use the StackWalker API to get this more
+            // efficiently. Since we're currently moving away from Java 8, which would want to use SharedSecrets
+            // instead,
+            // and since our code internally does not appear to have any cases where properties get set in a loop
+            // where performance would be notably impacted, we can go ahead and use the full stack for now.
+            // We also want to skip frame 0, since that's THIS method, which we know is in use anyway.
             StackTraceElement[] stack = new Throwable().getStackTrace();
             StringBuilder stackOutput = new StringBuilder("<not from configuration file>: ");
             if (stack != null && stack.length > 1) {
@@ -654,8 +614,7 @@ public class ParsedProperties extends Properties {
                     stackOutput.append(stack[fc].toString()).append(System.lineSeparator());
                 }
             }
-            tokenHistory.add(0,
-                new PropertyHistory(stackOutput.toString(), 0, value, stringScope()));
+            tokenHistory.add(0, new PropertyHistory(stackOutput.toString(), 0, value, stringScope()));
             return props.put(key, value);
         } else {
             handleFinalConflict(key);
@@ -673,15 +632,12 @@ public class ParsedProperties extends Properties {
      * @return A String representing the current scope.
      */
     private String stringScope() {
-        return "["
-            + scope.stream().map(ConfigurationScope::toString).collect(Collectors.joining("]-["))
-            + "]";
+        return "[" + scope.stream().map(ConfigurationScope::toString).collect(Collectors.joining("]-[")) + "]";
     }
 
     /**
-     * Load the properties from the specified file, ignoring any directives that do not match the
-     * current context. Directories may be specified, including relative paths, but the '~' operator
-     * is not supported.
+     * Load the properties from the specified file, ignoring any directives that do not match the current context.
+     * Directories may be specified, including relative paths, but the '~' operator is not supported.
      *
      * <p>
      * Loads the fileName via {@link PropertyInputStreamLoader}.
@@ -698,23 +654,21 @@ public class ParsedProperties extends Properties {
         thisFile = fileName;
 
         try (InputStream resourceAsStream = propertyInputStreamLoader
-            .openConfiguration(fileName)) {
+                .openConfiguration(fileName)) {
             this.load(resourceAsStream);
         }
     }
 
     /**
-     * In a property name, "*" should be treated as a wildcard, so if we find one, it should be
-     * treated as a regex for ".*" - but everything else has to be an exact match. Enclose the
-     * entire thing in the regex literal markers "\Q" and "\E" to mark the entire name as being a
-     * string literal, then replace any instances of "*" with ".*" and make everything around the
-     * "*" into the end of the prior literal and the start of a new literal. So "A*B" ->
-     * "\QA\E.*\QB\E" == "Match the pattern of the exact string 'A', then any text, then the exact
-     * string 'B'."
+     * In a property name, "*" should be treated as a wildcard, so if we find one, it should be treated as a regex for
+     * ".*" - but everything else has to be an exact match. Enclose the entire thing in the regex literal markers "\Q"
+     * and "\E" to mark the entire name as being a string literal, then replace any instances of "*" with ".*" and make
+     * everything around the "*" into the end of the prior literal and the start of a new literal. So "A*B" ->
+     * "\QA\E.*\QB\E" == "Match the pattern of the exact string 'A', then any text, then the exact string 'B'."
      *
      * @param token The string to be wildcard-expanded
-     * @return The possibly-wildcarded string turned into a regex, with all non-asterisk characters
-     *         treated as string literals, not a pattern.
+     * @return The possibly-wildcarded string turned into a regex, with all non-asterisk characters treated as string
+     *         literals, not a pattern.
      */
     private String createWildcardExpansionPattern(String token) {
         return ("\\Q" + token + "\\E").replaceAll("\\*", "\\\\E.*\\\\Q");
@@ -722,23 +676,21 @@ public class ParsedProperties extends Properties {
 
 
     /**
-     * Handle situations where something tries to modify a property that has been marked as 'final.'
-     * If an included file marks something as final, this file may not edit that value, regardless
-     * of whether this file calls it final or not. If this file includes a property twice, and the
-     * first one is marked final, then that's also an issue.
+     * Handle situations where something tries to modify a property that has been marked as 'final.' If an included file
+     * marks something as final, this file may not edit that value, regardless of whether this file calls it final or
+     * not. If this file includes a property twice, and the first one is marked final, then that's also an issue.
      *
      * @param token The name of the property that was being set.
      */
     private void handleFinalConflict(final String token) throws ConfigurationException {
         // Since includefiles has to be the first effective line, if present at all,
-        // we don't need to handle backreferences - everything from the included files will be
-        // present
+        // we don't need to handle backreferences - everything from the included files will be present
         // by the time the current file is processed.
         List<PropertyHistory> tokenHistory = lineNumbers.get(token);
         String finalPattern = null;
         if (tokenHistory == null) {
-            // This token was finalized via a pattern-match, and this exact value doesn't exist.
-            // Find the matching pattern.
+            // This token was finalized via a pattern-match, and this exact value doesn't exist. Find the matching
+            // pattern.
             finalPattern = finalProperties.stream().filter(str -> {
                 final String pattern = createWildcardExpansionPattern(str);
                 Pattern pat = Pattern.compile(pattern);
@@ -746,23 +698,22 @@ public class ParsedProperties extends Properties {
                 return pat.matcher(token).matches();
             }).findFirst().orElse("");
             tokenHistory = lineNumbers.get(finalPattern);
-            // It shouldn't be possible to have something final but not be able to find it, but if
-            // it did happen, just return a less-informative error.
+            // It shouldn't be possible to have something final but not be able to find it, but if it did happen, just
+            // return a less-informative error.
             if (tokenHistory == null) {
-                throw new ConfigurationException(("Property '" + token
-                    + "' previously marked as final was then modified in file '" + thisFile
-                    + "' at line " + lineNum));
+                throw new ConfigurationException(
+                        ("Property '" + token + "' previously marked as final was then modified in file '" + thisFile
+                                + "' at line " + lineNum));
             }
         }
         StringBuilder msgBuilder = new StringBuilder("Property '" + token +
-            "' marked as final in file '" + tokenHistory.get(0).fileName +
-            "' with value at line " + tokenHistory.get(0).lineNumber);
+                "' marked as final in file '" + tokenHistory.get(0).fileName +
+                "' with value at line " + tokenHistory.get(0).lineNumber);
         if (finalPattern != null) {
             msgBuilder.append(" with pattern '").append(finalPattern).append("' and");
         }
         if (lineNum >= 0) {
-            msgBuilder.append(" was then modified in file '").append(thisFile).append("' at line ")
-                .append(lineNum);
+            msgBuilder.append(" was then modified in file '").append(thisFile).append("' at line ").append(lineNum);
         } else {
             msgBuilder.append(" was then modified outside of a configuration file");
         }
@@ -770,8 +721,7 @@ public class ParsedProperties extends Properties {
     }
 
     /**
-     * A list of all the properties that have been marked as final and thus may not be further
-     * updated.
+     * A list of all the properties that have been marked as final and thus may not be further updated.
      *
      * @return The set of all the properties that have thus far been marked as final.
      */
@@ -780,8 +730,8 @@ public class ParsedProperties extends Properties {
     }
 
     /**
-     * Get the context for the current process, along with all the values that have been retrieved
-     * thus far so they don't need to be looked up again.
+     * Get the context for the current process, along with all the values that have been retrieved thus far so they
+     * don't need to be looked up again.
      *
      * @return The existing context
      */
@@ -819,8 +769,8 @@ public class ParsedProperties extends Properties {
     // endregion Utilities
 
     /**
-     * Take a properties file and return it line by line - taking into account the 'this continues
-     * on next line' indicators.
+     * Take a properties file and return it line by line - taking into account the 'this continues on next line'
+     * indicators.
      */
     private class ParsedPropertiesLineReader {
         private final BufferedReader breader;
@@ -838,8 +788,8 @@ public class ParsedProperties extends Properties {
         }
 
         /**
-         * Return the next logical line from the file, where a line ending in \ means to continue on
-         * the next line. Automatically closes the stream when the last line has been read.
+         * Return the next logical line from the file, where a line ending in \ means to continue on the next line.
+         * Automatically closes the stream when the last line has been read.
          *
          * @return The next logical line.
          * @throws IOException If the file cannot be read.
@@ -856,15 +806,13 @@ public class ParsedProperties extends Properties {
                 if (retLine.toString().endsWith("\\") && !retLine.toString().endsWith("\\\\")) {
                     retLine.deleteCharAt(retLine.length() - 1);
                 }
-                // StringBuilder will explicitly write 'null' if a null is appended, so give that
-                // special handling.
+                // StringBuilder will explicitly write 'null' if a null is appended, so give that special handling.
                 if (nextLine != null) {
                     retLine.append(nextLine);
                 }
                 nextLine = ltrim(breader.readLine());
                 numLinesLastRead++;
-            } while (retLine.toString().endsWith("\\") && !retLine.toString().endsWith("\\\\")
-                && nextLine != null);
+            } while (retLine.toString().endsWith("\\") && !retLine.toString().endsWith("\\\\") && nextLine != null);
             // If we've read the last line, close the reader.
             if (nextLine == null) {
                 open = false;
@@ -889,8 +837,8 @@ public class ParsedProperties extends Properties {
     }
 
     /**
-     * Return the configuration contexts. This is the list of system properties that may have been
-     * used to parse the configuration file. This collection will be immutable.
+     * Return the configuration contexts. This is the list of system properties that may have been used to parse the
+     * configuration file. This collection will be immutable.
      *
      * @return the configuration contexts.
      */

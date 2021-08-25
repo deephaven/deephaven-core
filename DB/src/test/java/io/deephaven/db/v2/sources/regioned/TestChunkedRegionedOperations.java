@@ -126,10 +126,10 @@ public class TestChunkedRegionedOperations {
         originalScope = QueryScope.getScope();
         final QueryScope queryScope = new QueryScope.StandaloneImpl();
         Arrays.stream(originalScope.getParams(originalScope.getParamNames()))
-            .forEach(p -> queryScope.putParam(p.getName(), p.getValue()));
+                .forEach(p -> queryScope.putParam(p.getName(), p.getValue()));
         queryScope.putParam("nowNanos", DBTimeUtils.currentTime().getNanos());
-        queryScope.putParam("letters", IntStream.range('A', 'A' + 64)
-            .mapToObj(c -> new String(new char[] {(char) c})).toArray(String[]::new));
+        queryScope.putParam("letters",
+                IntStream.range('A', 'A' + 64).mapToObj(c -> new String(new char[] {(char) c})).toArray(String[]::new));
         queryScope.putParam("emptySymbolSet", new StringSetArrayWrapper());
         queryScope.putParam("stripeSize", STRIPE_SIZE);
         QueryScope.setScope(queryScope);
@@ -143,129 +143,126 @@ public class TestChunkedRegionedOperations {
         QueryLibrary.importStatic(BooleanUtils.class);
 
         final TableDefinition definition = TableDefinition.of(
-            ColumnDefinition.ofLong("II"),
-            ColumnDefinition.ofString("PC").withPartitioning(),
-            ColumnDefinition.ofByte("B"),
-            ColumnDefinition.ofChar("C"),
-            ColumnDefinition.ofShort("S"),
-            ColumnDefinition.ofInt("I"),
-            ColumnDefinition.ofLong("L"),
-            ColumnDefinition.ofFloat("F"),
-            ColumnDefinition.ofDouble("D"),
-            ColumnDefinition.ofBoolean("Bl"),
-            ColumnDefinition.ofString("Sym"),
-            ColumnDefinition.ofString("Str"),
-            ColumnDefinition.ofTime("DT"),
-            ColumnDefinition.fromGenericType("SymS", StringSet.class),
-            ColumnDefinition.fromGenericType("Ser", SimpleSerializable.class),
-            ColumnDefinition.fromGenericType("Ext", SimpleExternalizable.class),
-            ColumnDefinition.fromGenericType("Fix", BigInteger.class),
-            ColumnDefinition.fromGenericType("Var", BigInteger.class));
+                ColumnDefinition.ofLong("II"),
+                ColumnDefinition.ofString("PC").withPartitioning(),
+                ColumnDefinition.ofByte("B"),
+                ColumnDefinition.ofChar("C"),
+                ColumnDefinition.ofShort("S"),
+                ColumnDefinition.ofInt("I"),
+                ColumnDefinition.ofLong("L"),
+                ColumnDefinition.ofFloat("F"),
+                ColumnDefinition.ofDouble("D"),
+                ColumnDefinition.ofBoolean("Bl"),
+                ColumnDefinition.ofString("Sym"),
+                ColumnDefinition.ofString("Str"),
+                ColumnDefinition.ofTime("DT"),
+                ColumnDefinition.fromGenericType("SymS", StringSet.class),
+                ColumnDefinition.fromGenericType("Ser", SimpleSerializable.class),
+                ColumnDefinition.fromGenericType("Ext", SimpleExternalizable.class),
+                ColumnDefinition.fromGenericType("Fix", BigInteger.class),
+                ColumnDefinition.fromGenericType("Var", BigInteger.class));
         final ParquetInstructions parquetInstructions = new ParquetInstructions.Builder()
-            .addColumnCodec("Fix", BigIntegerCodec.class.getName(), "4")
-            .addColumnCodec("Var", BigIntegerCodec.class.getName())
-            .useDictionary("Sym", true)
-            .setMaximumDictionaryKeys(100) // Force "Str" to use non-dictionary encoding
-            .build();
+                .addColumnCodec("Fix", BigIntegerCodec.class.getName(), "4")
+                .addColumnCodec("Var", BigIntegerCodec.class.getName())
+                .useDictionary("Sym", true)
+                .setMaximumDictionaryKeys(100) // Force "Str" to use non-dictionary encoding
+                .build();
 
         final Table inputData = ((QueryTable) TableTools.emptyTable(TABLE_SIZE)
-            .update(
-                "II   = ii")
-            .updateView(
-                "PC   = Long.toString((long) (II / stripeSize))",
-                "B    = II % 1000  == 0  ? NULL_BYTE   : (byte)  II",
-                "C    = II % 27    == 26 ? NULL_CHAR   : (char)  ('A' + II % 27)",
-                "S    = II % 30000 == 0  ? NULL_SHORT  : (short) II",
-                "I    = II % 512   == 0  ? NULL_INT    : (int)   II",
-                "L    = II % 1024  == 0  ? NULL_LONG   :         II",
-                "F    = II % 2048  == 0  ? NULL_FLOAT  : (float) (II * 0.25)",
-                "D    = II % 4096  == 0  ? NULL_DOUBLE :         II * 1.25",
-                "Bl   = II % 8192  == 0  ? null        :         II % 2 == 0",
-                "Sym  = II % 64    == 0  ? null        :         Long.toString(II % 1000)",
-                "Str  = II % 128   == 0  ? null        :         Long.toString(II)",
-                "DT   = II % 256   == 0  ? null        :         new DBDateTime(nowNanos + II)",
-                "SymS = (StringSet) new StringSetArrayWrapper(letters[((int) II) % 64], letters[(((int) II) + 7) % 64])",
-                "Ser  = II % 1024  == 0  ? null        : new SimpleSerializable(II)",
-                "Ext  = II % 1024  == 0  ? null        : new SimpleExternalizable(II)",
-                "Fix  = Sym == null      ? null        : new BigInteger(Sym, 10)",
-                "Var  = Str == null      ? null        : new BigInteger(Str, 10)"))
-                    .withDefinitionUnsafe(definition);
+                .update(
+                        "II   = ii")
+                .updateView(
+                        "PC   = Long.toString((long) (II / stripeSize))",
+                        "B    = II % 1000  == 0  ? NULL_BYTE   : (byte)  II",
+                        "C    = II % 27    == 26 ? NULL_CHAR   : (char)  ('A' + II % 27)",
+                        "S    = II % 30000 == 0  ? NULL_SHORT  : (short) II",
+                        "I    = II % 512   == 0  ? NULL_INT    : (int)   II",
+                        "L    = II % 1024  == 0  ? NULL_LONG   :         II",
+                        "F    = II % 2048  == 0  ? NULL_FLOAT  : (float) (II * 0.25)",
+                        "D    = II % 4096  == 0  ? NULL_DOUBLE :         II * 1.25",
+                        "Bl   = II % 8192  == 0  ? null        :         II % 2 == 0",
+                        "Sym  = II % 64    == 0  ? null        :         Long.toString(II % 1000)",
+                        "Str  = II % 128   == 0  ? null        :         Long.toString(II)",
+                        "DT   = II % 256   == 0  ? null        :         new DBDateTime(nowNanos + II)",
+                        "SymS = (StringSet) new StringSetArrayWrapper(letters[((int) II) % 64], letters[(((int) II) + 7) % 64])",
+                        "Ser  = II % 1024  == 0  ? null        : new SimpleSerializable(II)",
+                        "Ext  = II % 1024  == 0  ? null        : new SimpleExternalizable(II)",
+                        "Fix  = Sym == null      ? null        : new BigInteger(Sym, 10)",
+                        "Var  = Str == null      ? null        : new BigInteger(Str, 10)"))
+                                .withDefinitionUnsafe(definition);
         // TODO: Add (Fixed|Variable)WidthObjectCodec columns
 
         final Table inputMissingData = ((QueryTable) TableTools.emptyTable(TABLE_SIZE)
-            .update(
-                "II   = ii")
-            .updateView(
-                "PC   = `N` + Long.toString((long) (II / stripeSize))",
-                "B    = NULL_BYTE",
-                "C    = NULL_CHAR",
-                "S    = NULL_SHORT",
-                "I    = NULL_INT",
-                "L    = NULL_LONG",
-                "F    = NULL_FLOAT",
-                "D    = NULL_DOUBLE",
-                "Bl   = (Boolean) null",
-                "Sym  = (String) null",
-                "Str  = (String) null",
-                "DT   = (DBDateTime) null",
-                "SymS = (StringSet) null",
-                "Ser  = (SimpleSerializable) null",
-                "Ext  = (SimpleExternalizable) null",
-                "Fix  = (BigInteger) null",
-                "Var  = (BigInteger) null")).withDefinitionUnsafe(definition);
+                .update(
+                        "II   = ii")
+                .updateView(
+                        "PC   = `N` + Long.toString((long) (II / stripeSize))",
+                        "B    = NULL_BYTE",
+                        "C    = NULL_CHAR",
+                        "S    = NULL_SHORT",
+                        "I    = NULL_INT",
+                        "L    = NULL_LONG",
+                        "F    = NULL_FLOAT",
+                        "D    = NULL_DOUBLE",
+                        "Bl   = (Boolean) null",
+                        "Sym  = (String) null",
+                        "Str  = (String) null",
+                        "DT   = (DBDateTime) null",
+                        "SymS = (StringSet) null",
+                        "Ser  = (SimpleSerializable) null",
+                        "Ext  = (SimpleExternalizable) null",
+                        "Fix  = (BigInteger) null",
+                        "Var  = (BigInteger) null")).withDefinitionUnsafe(definition);
 
-        dataDirectory =
-            Files.createTempDirectory(Paths.get(""), "TestChunkedRegionedOperations-").toFile();
+        dataDirectory = Files.createTempDirectory(Paths.get(""), "TestChunkedRegionedOperations-").toFile();
         dataDirectory.deleteOnExit();
 
-        final TableDefinition partitionedDataDefinition =
-            new TableDefinition(inputData.getDefinition());
+        final TableDefinition partitionedDataDefinition = new TableDefinition(inputData.getDefinition());
 
         final TableDefinition partitionedMissingDataDefinition =
-            new TableDefinition(inputData.view("PC", "II").getDefinition());
+                new TableDefinition(inputData.view("PC", "II").getDefinition());
 
         final String tableName = "TestTable";
 
         final TableMap partitionedInputData = inputData.byExternal("PC");
         ParquetTools.writeParquetTables(
-            partitionedInputData.values().toArray(Table.ZERO_LENGTH_TABLE_ARRAY),
-            partitionedDataDefinition.getWritable(),
-            parquetInstructions,
-            Arrays.stream(partitionedInputData.getKeySet())
-                .map(pcv -> new File(dataDirectory,
-                    "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator
-                        + PARQUET_FILE_NAME))
-                .toArray(File[]::new),
-            CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                partitionedInputData.values().toArray(Table.ZERO_LENGTH_TABLE_ARRAY),
+                partitionedDataDefinition.getWritable(),
+                parquetInstructions,
+                Arrays.stream(partitionedInputData.getKeySet())
+                        .map(pcv -> new File(dataDirectory,
+                                "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator
+                                        + PARQUET_FILE_NAME))
+                        .toArray(File[]::new),
+                CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
-        final TableMap partitionedInputMissingData =
-            inputMissingData.view("PC", "II").byExternal("PC");
+        final TableMap partitionedInputMissingData = inputMissingData.view("PC", "II").byExternal("PC");
         ParquetTools.writeParquetTables(
-            partitionedInputMissingData.values().toArray(Table.ZERO_LENGTH_TABLE_ARRAY),
-            partitionedMissingDataDefinition.getWritable(),
-            parquetInstructions,
-            Arrays.stream(partitionedInputMissingData.getKeySet())
-                .map(pcv -> new File(dataDirectory,
-                    "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator
-                        + PARQUET_FILE_NAME))
-                .toArray(File[]::new),
-            CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                partitionedInputMissingData.values().toArray(Table.ZERO_LENGTH_TABLE_ARRAY),
+                partitionedMissingDataDefinition.getWritable(),
+                parquetInstructions,
+                Arrays.stream(partitionedInputMissingData.getKeySet())
+                        .map(pcv -> new File(dataDirectory,
+                                "IP" + File.separator + "P" + pcv + File.separator + tableName + File.separator
+                                        + PARQUET_FILE_NAME))
+                        .toArray(File[]::new),
+                CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
         expected = TableTools
-            .merge(
-                inputData.updateView("PC = `P` + PC"),
-                inputMissingData.updateView("PC = `P` + PC"))
-            .updateView(
-                "Bl_R = booleanAsByte(Bl)",
-                "DT_R = nanos(DT)");
+                .merge(
+                        inputData.updateView("PC = `P` + PC"),
+                        inputMissingData.updateView("PC = `P` + PC"))
+                .updateView(
+                        "Bl_R = booleanAsByte(Bl)",
+                        "DT_R = nanos(DT)");
 
         actual = ParquetTools.readPartitionedTable(
-            DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "PC", null),
-            ParquetInstructions.EMPTY,
-            partitionedDataDefinition).updateView(
-                new ReinterpretedColumn<>("Bl", Boolean.class, "Bl_R", byte.class),
-                new ReinterpretedColumn<>("DT", DBDateTime.class, "DT_R", long.class))
-            .coalesce();
+                DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "PC", null),
+                ParquetInstructions.EMPTY,
+                partitionedDataDefinition).updateView(
+                        new ReinterpretedColumn<>("Bl", Boolean.class, "Bl_R", byte.class),
+                        new ReinterpretedColumn<>("DT", DBDateTime.class, "DT_R", long.class))
+                .coalesce();
     }
 
     @After
@@ -303,49 +300,43 @@ public class TestChunkedRegionedOperations {
         assertTableEquals(expected, actual);
     }
 
-    private static void assertChunkWiseEquals(@NotNull final Table expected,
-        @NotNull final Table actual, final int chunkCapacity) {
+    private static void assertChunkWiseEquals(@NotNull final Table expected, @NotNull final Table actual,
+            final int chunkCapacity) {
         boolean first = true;
         assertEquals(expected.size(), actual.size());
         try (final SafeCloseableList closeables = new SafeCloseableList();
-            final OrderedKeys.Iterator expectedIterator =
-                expected.getIndex().getOrderedKeysIterator();
-            final OrderedKeys.Iterator actualIterator =
-                actual.getIndex().getOrderedKeysIterator()) {
-            final ChunkType[] chunkTypes =
-                expected.getDefinition().getColumnStream().map(ColumnDefinition::getDataType)
+                final OrderedKeys.Iterator expectedIterator = expected.getIndex().getOrderedKeysIterator();
+                final OrderedKeys.Iterator actualIterator = actual.getIndex().getOrderedKeysIterator()) {
+            final ChunkType[] chunkTypes = expected.getDefinition().getColumnStream().map(ColumnDefinition::getDataType)
                     .map(ChunkType::fromElementType).toArray(ChunkType[]::new);
-            final Equals[] equals =
-                Arrays.stream(chunkTypes).map(Equals::make).toArray(Equals[]::new);
+            final Equals[] equals = Arrays.stream(chunkTypes).map(Equals::make).toArray(Equals[]::new);
 
             // noinspection unchecked
             final WritableChunk<Values>[] expectedChunks = Arrays.stream(chunkTypes)
-                .map(ct -> ct.makeWritableChunk(chunkCapacity)).toArray(WritableChunk[]::new);
+                    .map(ct -> ct.makeWritableChunk(chunkCapacity)).toArray(WritableChunk[]::new);
             // noinspection unchecked
             final WritableChunk<Values>[] actualChunks = Arrays.stream(chunkTypes)
-                .map(ct -> ct.makeWritableChunk(chunkCapacity)).toArray(WritableChunk[]::new);
+                    .map(ct -> ct.makeWritableChunk(chunkCapacity)).toArray(WritableChunk[]::new);
 
             final ColumnSource[] expectedSources =
-                expected.getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
+                    expected.getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
             final ColumnSource[] actualSources =
-                actual.getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
+                    actual.getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
 
-            final ColumnSource.FillContext[] expectedContexts = Arrays.stream(expectedSources)
-                .map(cs -> closeables.add(cs.makeFillContext(chunkCapacity)))
-                .toArray(ColumnSource.FillContext[]::new);
-            final ColumnSource.FillContext[] actualContexts = Arrays.stream(actualSources)
-                .map(cs -> closeables.add(cs.makeFillContext(chunkCapacity)))
-                .toArray(ColumnSource.FillContext[]::new);
+            final ColumnSource.FillContext[] expectedContexts =
+                    Arrays.stream(expectedSources).map(cs -> closeables.add(cs.makeFillContext(chunkCapacity)))
+                            .toArray(ColumnSource.FillContext[]::new);
+            final ColumnSource.FillContext[] actualContexts =
+                    Arrays.stream(actualSources).map(cs -> closeables.add(cs.makeFillContext(chunkCapacity)))
+                            .toArray(ColumnSource.FillContext[]::new);
 
             assertEquals(expectedChunks.length, expectedContexts.length);
             assertEquals(actualChunks.length, actualContexts.length);
 
             while (expectedIterator.hasMore()) {
                 assertTrue(actualIterator.hasMore());
-                final OrderedKeys expectedKeys =
-                    expectedIterator.getNextOrderedKeysWithLength(chunkCapacity);
-                final OrderedKeys actualKeys =
-                    actualIterator.getNextOrderedKeysWithLength(chunkCapacity);
+                final OrderedKeys expectedKeys = expectedIterator.getNextOrderedKeysWithLength(chunkCapacity);
+                final OrderedKeys actualKeys = actualIterator.getNextOrderedKeysWithLength(chunkCapacity);
                 for (int ci = 0; ci < expectedChunks.length; ++ci) {
                     final Equals equal = equals[ci];
                     final WritableChunk<Values> expectedChunk = expectedChunks[ci];
@@ -354,10 +345,10 @@ public class TestChunkedRegionedOperations {
                     if (first) {
                         // Let's exercise the legacy get code, too, while we're in here
 
-                        ((AbstractColumnSource) expectedSources[ci])
-                            .defaultFillChunk(expectedContexts[ci], expectedChunk, expectedKeys);
-                        ((AbstractColumnSource) actualSources[ci])
-                            .defaultFillChunk(actualContexts[ci], actualChunk, actualKeys);
+                        ((AbstractColumnSource) expectedSources[ci]).defaultFillChunk(expectedContexts[ci],
+                                expectedChunk, expectedKeys);
+                        ((AbstractColumnSource) actualSources[ci]).defaultFillChunk(actualContexts[ci], actualChunk,
+                                actualKeys);
 
                         assertEquals(expectedChunk.size(), actualChunk.size());
                         for (int ei = 0; ei < expectedChunk.size(); ++ei) {
@@ -367,8 +358,7 @@ public class TestChunkedRegionedOperations {
 
                     assertEquals(expectedKeys.size(), actualKeys.size());
 
-                    expectedSources[ci].fillChunk(expectedContexts[ci], expectedChunk,
-                        expectedKeys);
+                    expectedSources[ci].fillChunk(expectedContexts[ci], expectedChunk, expectedKeys);
                     actualSources[ci].fillChunk(actualContexts[ci], actualChunk, actualKeys);
 
                     assertEquals(expectedKeys.size(), expectedChunk.size());
@@ -408,8 +398,7 @@ public class TestChunkedRegionedOperations {
                 case Double:
                     return (e, a, i) -> e.asDoubleChunk().get(i) == a.asDoubleChunk().get(i);
                 case Object:
-                    return (e, a, i) -> Objects.equals(e.asObjectChunk().get(i),
-                        a.asObjectChunk().get(i));
+                    return (e, a, i) -> Objects.equals(e.asObjectChunk().get(i), a.asObjectChunk().get(i));
             }
             throw new IllegalArgumentException("Unknown ChunkType " + chunkType);
         }
@@ -432,26 +421,23 @@ public class TestChunkedRegionedOperations {
 
     @Test
     public void testHalfDenseTableFullChunks() {
-        assertChunkWiseEquals(expected.where("(ii / 100) % 2 == 0"),
-            actual.where("(ii / 100) % 2 == 0"), expected.intSize());
+        assertChunkWiseEquals(expected.where("(ii / 100) % 2 == 0"), actual.where("(ii / 100) % 2 == 0"),
+                expected.intSize());
     }
 
     @Test
     public void testHalfDenseTableNormalChunks() {
-        assertChunkWiseEquals(expected.where("(ii / 100) % 2 == 0"),
-            actual.where("(ii / 100) % 2 == 0"), 4096);
+        assertChunkWiseEquals(expected.where("(ii / 100) % 2 == 0"), actual.where("(ii / 100) % 2 == 0"), 4096);
     }
 
     @Test
     public void testHalfDenseTableSmallChunks() {
-        assertChunkWiseEquals(expected.where("(ii / 100) % 2 == 0"),
-            actual.where("(ii / 100) % 2 == 0"), 8);
+        assertChunkWiseEquals(expected.where("(ii / 100) % 2 == 0"), actual.where("(ii / 100) % 2 == 0"), 8);
     }
 
     @Test
     public void testSparseTableFullChunks() {
-        assertChunkWiseEquals(expected.where("ii % 2 == 0"), actual.where("ii % 2 == 0"),
-            expected.intSize());
+        assertChunkWiseEquals(expected.where("ii % 2 == 0"), actual.where("ii % 2 == 0"), expected.intSize());
     }
 
     @Test
@@ -466,18 +452,16 @@ public class TestChunkedRegionedOperations {
 
     @Test
     public void testEqualSymbols() {
-        // TODO (https://github.com/deephaven/deephaven-core/issues/949): Uncomment this once we
-        // write encoding stats
+        // TODO (https://github.com/deephaven/deephaven-core/issues/949): Uncomment this once we write encoding stats
         // //noinspection unchecked
         // final SymbolTableSource<String> symbolTableSource = (SymbolTableSource<String>)
         // actual.getColumnSource("Sym");
         //
         // assertTrue(symbolTableSource.hasSymbolTable(actual.getIndex()));
-        // final Table symbolTable = symbolTableSource.getStaticSymbolTable(actual.getIndex(),
-        // false);
+        // final Table symbolTable = symbolTableSource.getStaticSymbolTable(actual.getIndex(), false);
         //
-        // assertTableEquals(expected.view("PC", "Sym").where("Sym != null").firstBy("PC",
-        // "Sym").dropColumns("PC"), symbolTable.view("Sym = Symbol").where("Sym != null"));
+        // assertTableEquals(expected.view("PC", "Sym").where("Sym != null").firstBy("PC", "Sym").dropColumns("PC"),
+        // symbolTable.view("Sym = Symbol").where("Sym != null"));
         //
         // final Table joined = actual
         // .updateView(new ReinterpretedColumn<>("Sym", String.class, "SymId", long.class))

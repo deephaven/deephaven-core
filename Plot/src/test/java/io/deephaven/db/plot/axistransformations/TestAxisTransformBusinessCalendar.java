@@ -12,8 +12,7 @@ import io.deephaven.util.calendar.Calendars;
 
 public class TestAxisTransformBusinessCalendar extends BaseArrayTestCase {
 
-    private final AxisTransformBusinessCalendar bt =
-        new AxisTransformBusinessCalendar(Calendars.calendar("JPOSE"));
+    private final AxisTransformBusinessCalendar bt = new AxisTransformBusinessCalendar(Calendars.calendar("JPOSE"));
 
     private final DBDateTime holiday = DBTimeUtils.convertDateTime("2017-01-03T10:00:00 JP");
     private final DBDateTime weekend = DBTimeUtils.convertDateTime("2017-01-02T10:00:00 JP");
@@ -85,31 +84,29 @@ public class TestAxisTransformBusinessCalendar extends BaseArrayTestCase {
     // tests bugs where first day was transformed incorrectly
     public void testFirstTransformedDay() {
         AxisTransform transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE"));
-        double d =
-            transform.transform(DBTimeUtils.convertDateTime("2018-02-02T09:30:01 NY").getNanos());
-        double d2 =
-            transform.transform(DBTimeUtils.convertDateTime("2018-02-02T14:30:01 NY").getNanos());
+        double d = transform.transform(DBTimeUtils.convertDateTime("2018-02-02T09:30:01 NY").getNanos());
+        double d2 = transform.transform(DBTimeUtils.convertDateTime("2018-02-02T14:30:01 NY").getNanos());
         assertFalse(d == d2);
 
         // first day holiday
         transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE"));
         transform.transform(DBTimeUtils.convertDateTime("2018-02-03T09:30:01 NY").getNanos());
         assertEquals(0.0 + 30 * DBTimeUtils.MINUTE,
-            transform.transform(DBTimeUtils.convertDateTime("2018-02-02T10:00:00 NY").getNanos()));
+                transform.transform(DBTimeUtils.convertDateTime("2018-02-02T10:00:00 NY").getNanos()));
         assertEquals(2.34E13 + 30 * DBTimeUtils.MINUTE,
-            transform.transform(DBTimeUtils.convertDateTime("2018-02-05T10:00:00 NY").getNanos()));
+                transform.transform(DBTimeUtils.convertDateTime("2018-02-05T10:00:00 NY").getNanos()));
 
         // first time outside business hours
         transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE"));
         transform.transform(DBTimeUtils.convertDateTime("2018-02-02T09:29:00 NY").getNanos());
         assertEquals(2.34E13 + 30 * DBTimeUtils.MINUTE,
-            transform.transform(DBTimeUtils.convertDateTime("2018-02-02T10:00:00 NY").getNanos()));
+                transform.transform(DBTimeUtils.convertDateTime("2018-02-02T10:00:00 NY").getNanos()));
 
         // previous day was holiday
         transform = new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE"));
         transform.transform(DBTimeUtils.convertDateTime("2018-01-29T09:29:00 NY").getNanos());
         assertEquals(2 * 2.34E13 + 30 * DBTimeUtils.MINUTE,
-            transform.transform(DBTimeUtils.convertDateTime("2018-01-30T10:00:00 NY").getNanos()));
+                transform.transform(DBTimeUtils.convertDateTime("2018-01-30T10:00:00 NY").getNanos()));
     }
 
     private void testTransform(final DBDateTime tIn, final DBDateTime tTarget) {

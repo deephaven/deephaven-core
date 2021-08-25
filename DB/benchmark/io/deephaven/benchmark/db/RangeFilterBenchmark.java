@@ -54,8 +54,8 @@ public class RangeFilterBenchmark {
         switch (tableType) {
             case "Historical":
                 builder = BenchmarkTools.persistentTableBuilder("Carlos", actualSize)
-                    .setPartitioningFormula("${autobalance_single}")
-                    .setPartitionCount(10);
+                        .setPartitioningFormula("${autobalance_single}")
+                        .setPartitionCount(10);
                 break;
             case "Intraday":
                 builder = BenchmarkTools.persistentTableBuilder("Carlos", actualSize);
@@ -66,7 +66,7 @@ public class RangeFilterBenchmark {
         }
 
         builder.setSeed(0xDEADBEEF)
-            .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF));
+                .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF));
 
         final DBDateTime startTime = DBTimeUtils.convertDateTime("2019-01-01T12:00:00 NY");
         final DBDateTime endTime = DBTimeUtils.convertDateTime("2019-12-31T12:00:00 NY");
@@ -79,12 +79,10 @@ public class RangeFilterBenchmark {
                 builder.addColumn(BenchmarkTools.numberCol("F1", float.class, -10e6f, 10e6f));
                 break;
             case "L1":
-                builder
-                    .addColumn(BenchmarkTools.numberCol("L1", long.class, -10_000_000, 10_000_000));
+                builder.addColumn(BenchmarkTools.numberCol("L1", long.class, -10_000_000, 10_000_000));
                 break;
             case "I1":
-                builder
-                    .addColumn(BenchmarkTools.numberCol("I1", int.class, -10_000_000, 10_000_000));
+                builder.addColumn(BenchmarkTools.numberCol("I1", int.class, -10_000_000, 10_000_000));
                 break;
             case "Timestamp":
                 builder.addColumn(BenchmarkTools.dateCol("Timestamp", startTime, endTime));
@@ -102,10 +100,8 @@ public class RangeFilterBenchmark {
             } else {
                 final long midpoint = (startTime.getNanos() + endTime.getNanos()) / 2;
                 final long range = (endTime.getNanos() - startTime.getNanos());
-                lowerBound =
-                    DBTimeUtils.nanosToTime(midpoint - (long) (range * (selectivity / 100.0)));
-                upperBound =
-                    DBTimeUtils.nanosToTime(midpoint + (long) (range * (selectivity / 100.0)));
+                lowerBound = DBTimeUtils.nanosToTime(midpoint - (long) (range * (selectivity / 100.0)));
+                upperBound = DBTimeUtils.nanosToTime(midpoint + (long) (range * (selectivity / 100.0)));
             }
 
             assert lowerBound != null;
@@ -129,8 +125,7 @@ public class RangeFilterBenchmark {
         }
 
         final BenchmarkTable bmTable = builder.build();
-        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()),
-            params.getWarmup().getCount());
+        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
         inputTable = applySparsity(bmTable.getTable(), tableSize, sparsity, 0).coalesce();
     }
 
@@ -156,7 +151,7 @@ public class RangeFilterBenchmark {
     private <R> R incrementalBenchmark(Function<Table, R> function) {
         final long sizePerStep = Math.max(inputTable.size() / 10, 1);
         final IncrementalReleaseFilter incrementalReleaseFilter =
-            new IncrementalReleaseFilter(sizePerStep, sizePerStep);
+                new IncrementalReleaseFilter(sizePerStep, sizePerStep);
         final Table filtered = inputTable.where(incrementalReleaseFilter);
 
         final R result = function.apply(filtered);

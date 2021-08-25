@@ -10,15 +10,15 @@ import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.LogEntryPool;
 
 public class DynamicDelayedLogEntryUnsafePoolImpl extends ThreadSafeLenientFixedSizePool<LogEntry>
-    implements LogEntryPool {
+        implements LogEntryPool {
 
     public DynamicDelayedLogEntryUnsafePoolImpl(String name, int entryCount) {
         super(name, entryCount,
-            new Function.Nullary<LogEntry>() {
-                public LogEntry call() {
-                    return new DelayedLogEntryUnsafeImpl();
-                }
-            }, null);
+                new Function.Nullary<LogEntry>() {
+                    public LogEntry call() {
+                        return new DelayedLogEntryUnsafeImpl();
+                    }
+                }, null);
     }
 
     @Override

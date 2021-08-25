@@ -430,7 +430,7 @@ public class TestNameValidator {
         }
 
         final String[] canBeLegalized2 =
-            {invalidTable1, invalidTable2, invalidTable3, validTable1, validTable2, validTable3};
+                {invalidTable1, invalidTable2, invalidTable3, validTable1, validTable2, validTable3};
 
         // table names
         try {
@@ -453,7 +453,7 @@ public class TestNameValidator {
         }
 
         final String[] canBeLegalized3 =
-            {invalidTable2, invalidTable3, validTable1, validTable2, validTable3};
+                {invalidTable2, invalidTable3, validTable1, validTable2, validTable3};
 
         ret = NameValidator.legalizeNamespaceNames(canBeLegalized3, true);
         correct = new String[] {"a0", "a02", validTable1, "a03", validTable3};

@@ -48,16 +48,15 @@ public class TestSortIncrementalPerformance {
 
         final double lgsize = Math.log(size) / Math.log(2);
         System.out.println("Size = " + size + ", Steps = " + steps + ", Average (s): "
-            + ((double) sum / count) / 1000_000_000.0 + ", ns/Element: "
-            + (double) (sum / (size * count)) + ", ns/n lg n: "
-            + (double) (sum / (size * lgsize * count)));
+                + ((double) sum / count) / 1000_000_000.0 + ", ns/Element: " + (double) (sum / (size * count))
+                + ", ns/n lg n: " + (double) (sum / (size * lgsize * count)));
     }
 
     private long incrementalSort(int seed, long size, int steps) {
         final Random random = new Random(seed);
         QueryScope.addParam("random", random);
-        final Table tableToSort = TableTools.emptyTable(size).update("Sentinel=ii",
-            "D=random.nextDouble()", "L=random.nextLong()");
+        final Table tableToSort =
+                TableTools.emptyTable(size).update("Sentinel=ii", "D=random.nextDouble()", "L=random.nextLong()");
 
         final long start = System.nanoTime();
         final Table result = incrementalBenchmark(tableToSort, (Table t) -> t.sort("D"), steps);
@@ -70,7 +69,7 @@ public class TestSortIncrementalPerformance {
     private <R> R incrementalBenchmark(Table inputTable, Function<Table, R> function, int steps) {
         final long sizePerStep = Math.max(inputTable.size() / steps, 1);
         final IncrementalReleaseFilter incrementalReleaseFilter =
-            new IncrementalReleaseFilter(sizePerStep, sizePerStep);
+                new IncrementalReleaseFilter(sizePerStep, sizePerStep);
         final Table filtered = inputTable.where(incrementalReleaseFilter);
 
         final R result = function.apply(filtered);
@@ -86,8 +85,7 @@ public class TestSortIncrementalPerformance {
     static public void setup() {
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
         AsyncClientErrorNotifier.setReporter(t -> {
-            System.err.println(
-                "Received error notification: " + new ExceptionDetails(t).getFullStackTrace());
+            System.err.println("Received error notification: " + new ExceptionDetails(t).getFullStackTrace());
             TestCase.fail(t.getMessage());
         });
     }

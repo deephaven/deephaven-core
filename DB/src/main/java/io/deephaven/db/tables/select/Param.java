@@ -40,12 +40,12 @@ public class Param<T> {
 
     public Class<?> getDeclaredType() {
         final Class type = value == null ? Object.class
-            : value instanceof Enum ? ((Enum) value).getDeclaringClass()
-                // in newer versions of groovy, our closures will be subtypes that evade the logic
-                // in getDeclaredType
-                // (they will return a null Class#getCanonicalName b/c they are dynamic classes).
-                : value instanceof Closure ? Closure.class
-                    : value.getClass();
+                : value instanceof Enum ? ((Enum) value).getDeclaringClass()
+                        // in newer versions of groovy, our closures will be subtypes that evade the logic in
+                        // getDeclaredType
+                        // (they will return a null Class#getCanonicalName b/c they are dynamic classes).
+                        : value instanceof Closure ? Closure.class
+                                : value.getClass();
         return getDeclaredType(type);
     }
 
@@ -87,8 +87,7 @@ public class Param<T> {
     }
 
     /**
-     * Get a map from binary name to declared type for the dynamic classes referenced by an array of
-     * param classes.
+     * Get a map from binary name to declared type for the dynamic classes referenced by an array of param classes.
      *
      * @param params The parameters to operate on
      * @return The result map
@@ -113,8 +112,8 @@ public class Param<T> {
         if (seen != null) {
             if (seen != cls) {
                 throw new UnsupportedOperationException(
-                    "Parameter list may not include multiple versions of the same class: "
-                        + name + ". Was the class redefined in your shell?");
+                        "Parameter list may not include multiple versions of the same class: "
+                                + name + ". Was the class redefined in your shell?");
             }
             // we don't need to revisit this class
             return;

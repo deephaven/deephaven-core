@@ -33,13 +33,13 @@ public class CategoryErrorBarDataSeriesTableMapTest extends BaseArrayTestCase {
         dataYHigh[0] = Double.NaN;
         dataX[10] = null;
         Table t = TableTools.newTable(TableTools.col("x", dataX),
-            TableTools.doubleCol("y", dataY),
-            TableTools.doubleCol("yLow", dataYLow),
-            TableTools.doubleCol("yHigh", dataYHigh));
+                TableTools.doubleCol("y", dataY),
+                TableTools.doubleCol("yLow", dataYLow),
+                TableTools.doubleCol("yHigh", dataYHigh));
 
         final TableHandle h = PlotUtils.createCategoryTableHandle(t, "x", "y", "yLow", "yHigh");
-        final CategoryErrorBarDataSeriesTableMap series = new CategoryErrorBarDataSeriesTableMap(
-            chart.newAxes(), 1, "Test", h, "x", "y", "yLow", "yHigh");
+        final CategoryErrorBarDataSeriesTableMap series =
+                new CategoryErrorBarDataSeriesTableMap(chart.newAxes(), 1, "Test", h, "x", "y", "yLow", "yHigh");
         final CategoryErrorBarDataSeriesTableMap copy = series.copy(chart.newAxes());
 
         series.size();
@@ -51,7 +51,7 @@ public class CategoryErrorBarDataSeriesTableMapTest extends BaseArrayTestCase {
     }
 
     private void testCopy(final CategoryErrorBarDataSeriesTableMap series,
-        final CategoryErrorBarDataSeriesInternal copy) {
+            final CategoryErrorBarDataSeriesInternal copy) {
         assertEquals(series.getValue("0"), copy.getValue("0"));
         assertEquals(series.getValue("5"), copy.getValue("5"));
         assertEquals(series.getValue("55"), copy.getValue("55"));

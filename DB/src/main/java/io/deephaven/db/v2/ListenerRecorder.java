@@ -6,11 +6,10 @@ import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.IndexShiftDataExpander;
 
 /**
- * A listener recorder stores references to added, removed, modified, and shifted indices; and then
- * notifies a {@link MergedListener} that a change has occurred. The combination of a
- * {@link ListenerRecorder} and {@link MergedListener} should be used when a table has multiple
- * sources, such that each table can process all of it's dependencies at once and fire a single
- * notification to its children.
+ * A listener recorder stores references to added, removed, modified, and shifted indices; and then notifies a
+ * {@link MergedListener} that a change has occurred. The combination of a {@link ListenerRecorder} and
+ * {@link MergedListener} should be used when a table has multiple sources, such that each table can process all of it's
+ * dependencies at once and fire a single notification to its children.
  */
 public class ListenerRecorder extends BaseTable.ShiftAwareListenerImpl {
     protected final String logPrefix;
@@ -76,8 +75,7 @@ public class ListenerRecorder extends BaseTable.ShiftAwareListenerImpl {
     }
 
     public Index getModifiedPreShift() {
-        return recordedVariablesAreValid() ? update.getModifiedPreShift()
-            : Index.FACTORY.getEmptyIndex();
+        return recordedVariablesAreValid() ? update.getModifiedPreShift() : Index.FACTORY.getEmptyIndex();
     }
 
     public IndexShiftData getShifted() {
@@ -95,12 +93,10 @@ public class ListenerRecorder extends BaseTable.ShiftAwareListenerImpl {
     /**
      * The caller is responsible for closing the {@link IndexShiftDataExpander}.
      * 
-     * @return a backwards compatible version of added / removed / modified that account for
-     *         shifting
+     * @return a backwards compatible version of added / removed / modified that account for shifting
      */
     public IndexShiftDataExpander getExpandedARM() {
-        return recordedVariablesAreValid()
-            ? new IndexShiftDataExpander(update, getParent().getIndex())
-            : IndexShiftDataExpander.EMPTY;
+        return recordedVariablesAreValid() ? new IndexShiftDataExpander(update, getParent().getIndex())
+                : IndexShiftDataExpander.EMPTY;
     }
 }

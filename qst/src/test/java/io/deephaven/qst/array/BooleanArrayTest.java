@@ -9,12 +9,12 @@ public class BooleanArrayTest {
     @Test
     void boxInRawOut() {
         assertThat(BooleanArray.of(false, null, true).values()).containsExactly(Util.FALSE_BOOL,
-            Util.NULL_BOOL, Util.TRUE_BOOL);
+                Util.NULL_BOOL, Util.TRUE_BOOL);
     }
 
     @Test
     void rawInRawOut() {
         assertThat(BooleanArray.ofUnsafe(Util.FALSE_BOOL, Util.NULL_BOOL, Util.TRUE_BOOL).values())
-            .containsExactly(Util.FALSE_BOOL, Util.NULL_BOOL, Util.TRUE_BOOL);
+                .containsExactly(Util.FALSE_BOOL, Util.NULL_BOOL, Util.TRUE_BOOL);
     }
 }

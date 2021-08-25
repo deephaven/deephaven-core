@@ -41,17 +41,17 @@ import java.util.stream.Collectors;
 class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> implements Visitor {
 
     static <TOPS extends TableOperations<TOPS, TABLE>, TABLE> TableAdapterResults<TOPS, TABLE> of(
-        TableCreator<TABLE> creation, TableCreator.TableToOperations<TOPS, TABLE> toOps,
-        TableCreator.OperationsToTable<TOPS, TABLE> toTable, Iterable<TableSpec> tables) {
+            TableCreator<TABLE> creation, TableCreator.TableToOperations<TOPS, TABLE> toOps,
+            TableCreator.OperationsToTable<TOPS, TABLE> toTable, Iterable<TableSpec> tables) {
         final TableAdapterImpl<TOPS, TABLE> visitor =
-            new TableAdapterImpl<>(creation, toOps, toTable);
+                new TableAdapterImpl<>(creation, toOps, toTable);
         ParentsVisitor.postOrderWalk(tables, visitor);
         return visitor.getOut();
     }
 
     static <TOPS extends TableOperations<TOPS, TABLE>, TABLE> TableAdapterResults<TOPS, TABLE> of(
-        TableCreator<TABLE> creation, TableCreator.TableToOperations<TOPS, TABLE> toOps,
-        TableCreator.OperationsToTable<TOPS, TABLE> toTable, TableSpec table) {
+            TableCreator<TABLE> creation, TableCreator.TableToOperations<TOPS, TABLE> toOps,
+            TableCreator.OperationsToTable<TOPS, TABLE> toTable, TableSpec table) {
         return of(creation, toOps, toTable, Collections.singleton(table));
     }
 
@@ -61,8 +61,8 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     private final Map<TableSpec, Output<TOPS, TABLE>> outputs;
 
     private TableAdapterImpl(TableCreator<TABLE> tableCreation,
-        TableCreator.TableToOperations<TOPS, TABLE> toOps,
-        TableCreator.OperationsToTable<TOPS, TABLE> toTable) {
+            TableCreator.TableToOperations<TOPS, TABLE> toOps,
+            TableCreator.OperationsToTable<TOPS, TABLE> toTable) {
         this.tableCreation = Objects.requireNonNull(tableCreation);
         this.toOps = Objects.requireNonNull(toOps);
         this.toTable = Objects.requireNonNull(toTable);
@@ -115,7 +115,7 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     @Override
     public void visit(MergeTable mergeTable) {
         List<TABLE> tables =
-            mergeTable.tables().stream().map(this::table).collect(Collectors.toList());
+                mergeTable.tables().stream().map(this::table).collect(Collectors.toList());
         addTable(mergeTable, tableCreation.merge(tables));
     }
 
@@ -144,7 +144,7 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
         final TOPS trigger = ops(snapshotTable.trigger());
         final TABLE base = table(snapshotTable.base());
         addOp(snapshotTable, trigger.snapshot(base, snapshotTable.doInitialSnapshot(),
-            snapshotTable.stampColumns()));
+                snapshotTable.stampColumns()));
     }
 
     @Override
@@ -191,7 +191,7 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
         final TOPS left = ops(naturalJoinTable.left());
         final TABLE right = table(naturalJoinTable.right());
         addOp(naturalJoinTable,
-            left.naturalJoin(right, naturalJoinTable.matches(), naturalJoinTable.additions()));
+                left.naturalJoin(right, naturalJoinTable.matches(), naturalJoinTable.additions()));
     }
 
     @Override
@@ -199,7 +199,7 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
         final TOPS left = ops(exactJoinTable.left());
         final TABLE right = table(exactJoinTable.right());
         addOp(exactJoinTable,
-            left.exactJoin(right, exactJoinTable.matches(), exactJoinTable.additions()));
+                left.exactJoin(right, exactJoinTable.matches(), exactJoinTable.additions()));
     }
 
     @Override
@@ -207,7 +207,7 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
         final TOPS left = ops(joinTable.left());
         final TABLE right = table(joinTable.right());
         addOp(joinTable,
-            left.join(right, joinTable.matches(), joinTable.additions(), joinTable.reserveBits()));
+                left.join(right, joinTable.matches(), joinTable.additions(), joinTable.reserveBits()));
     }
 
     @Override
@@ -215,7 +215,7 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
         final TOPS left = ops(leftJoinTable.left());
         final TABLE right = table(leftJoinTable.right());
         addOp(leftJoinTable,
-            left.exactJoin(right, leftJoinTable.matches(), leftJoinTable.additions()));
+                left.exactJoin(right, leftJoinTable.matches(), leftJoinTable.additions()));
     }
 
     @Override
@@ -240,7 +240,7 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     @Override
     public void visit(AggregationTable aggregationTable) {
         addOp(aggregationTable, parentOps(aggregationTable).by(aggregationTable.columns(),
-            aggregationTable.aggregations()));
+                aggregationTable.aggregations()));
     }
 
     private final class OutputTable implements Output<TOPS, TABLE> {

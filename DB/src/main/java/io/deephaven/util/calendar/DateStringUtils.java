@@ -18,16 +18,15 @@ import java.util.regex.Pattern;
  *
  * To comply with the ISO-8601 standard for dates, Strings should be of the form "yyyy-MM-dd"
  *
- * Quiet methods are functionally equivalent to their counterparts, but assume Date String validity
- * to remove the overhead of checking.
+ * Quiet methods are functionally equivalent to their counterparts, but assume Date String validity to remove the
+ * overhead of checking.
  */
 @SuppressWarnings("WeakerAccess")
 public class DateStringUtils {
     private DateStringUtils() {}
 
     private static final Locale DATE_STRING_LOCALE = new Locale("en", "US");
-    private static final DateTimeFormatter DATE_STRING_FORMATTER =
-        DateTimeFormatter.ofPattern("uuuu-MM-dd")
+    private static final DateTimeFormatter DATE_STRING_FORMATTER = DateTimeFormatter.ofPattern("uuuu-MM-dd")
             .withLocale(DATE_STRING_LOCALE)
             .withChronology(IsoChronology.INSTANCE)
             .withResolverStyle(ResolverStyle.STRICT);
@@ -101,7 +100,7 @@ public class DateStringUtils {
      */
     static boolean isLeapYear(final int year) {
         return ((year % 4 == 0) &&
-            (!(year % 100 == 0) || (year % 400) == 0));
+                (!(year % 100 == 0) || (year % 400) == 0));
     }
 
     /**
@@ -125,8 +124,8 @@ public class DateStringUtils {
     /**
      * Is one date before another?
      *
-     * This does not check that dates are formatted correctly. Could be disastrous if {@code date1}
-     * and {@code date2} are not ISO-8601 compliant!
+     * This does not check that dates are formatted correctly. Could be disastrous if {@code date1} and {@code date2}
+     * are not ISO-8601 compliant!
      *
      * @param date1 if {@code null} return false
      * @param date2 if {@code null} return false
@@ -158,8 +157,8 @@ public class DateStringUtils {
     /**
      * Is one date after another?
      *
-     * This does not check that dates are formatted correctly. Could be disastrous if {@code date1}
-     * and {@code date2} are not ISO-8601 compliant!
+     * This does not check that dates are formatted correctly. Could be disastrous if {@code date1} and {@code date2}
+     * are not ISO-8601 compliant!
      *
      * @param date1 if {@code null} return false
      * @param date2 if {@code null} return false
@@ -185,8 +184,7 @@ public class DateStringUtils {
     }
 
     /**
-     * Parses a string as a local date. If the string is not a valid ISO-8601 Date String, throws an
-     * exception.
+     * Parses a string as a local date. If the string is not a valid ISO-8601 Date String, throws an exception.
      *
      * This method can beused to verify that a date string is properly formed.
      *
@@ -201,14 +199,13 @@ public class DateStringUtils {
         final boolean matchesPattern = DATE_STRING_PATTERN.matcher(date).matches();
         if (!matchesPattern) {
             throw new IllegalArgumentException(
-                "Text '" + date + "' could not be parsed as a date: format must be yyyy-MM-dd");
+                    "Text '" + date + "' could not be parsed as a date: format must be yyyy-MM-dd");
         }
 
         try {
             return LocalDate.parse(date, DATE_STRING_FORMATTER);
         } catch (Exception e) {
-            throw new IllegalArgumentException(
-                "Text '" + date + "' could not be parsed as a date: " + e.getMessage());
+            throw new IllegalArgumentException("Text '" + date + "' could not be parsed as a date: " + e.getMessage());
         }
     }
 

@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.NotCondition",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.NotCondition",
+        namespace = JsPackage.GLOBAL)
 public class NotCondition {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -106,11 +106,11 @@ public class NotCondition {
 
                     @JsProperty
                     void setLiteral(
-                        NotCondition.ToObjectReturnType.FilterFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
+                            NotCondition.ToObjectReturnType.FilterFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
 
                     @JsProperty
                     void setReference(
-                        NotCondition.ToObjectReturnType.FilterFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
+                            NotCondition.ToObjectReturnType.FilterFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
                 }
 
                 @JsOverlay
@@ -135,7 +135,7 @@ public class NotCondition {
 
                 @JsProperty
                 void setLhs(
-                    NotCondition.ToObjectReturnType.FilterFieldType.CompareFieldType.LhsFieldType lhs);
+                        NotCondition.ToObjectReturnType.FilterFieldType.CompareFieldType.LhsFieldType lhs);
 
                 @JsProperty
                 void setOperation(double operation);
@@ -327,8 +327,7 @@ public class NotCondition {
 
                 @JsOverlay
                 default void setOptionalReferencesList(Object[] optionalReferencesList) {
-                    setOptionalReferencesList(
-                        Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
+                    setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
                 }
 
                 @JsProperty
@@ -374,12 +373,10 @@ public class NotCondition {
             void setAnd(NotCondition.ToObjectReturnType.FilterFieldType.AndFieldType and);
 
             @JsProperty
-            void setCompare(
-                NotCondition.ToObjectReturnType.FilterFieldType.CompareFieldType compare);
+            void setCompare(NotCondition.ToObjectReturnType.FilterFieldType.CompareFieldType compare);
 
             @JsProperty
-            void setContains(
-                NotCondition.ToObjectReturnType.FilterFieldType.ContainsFieldType contains);
+            void setContains(NotCondition.ToObjectReturnType.FilterFieldType.ContainsFieldType contains);
 
             @JsProperty
             void setInvoke(NotCondition.ToObjectReturnType.FilterFieldType.InvokeFieldType invoke);
@@ -388,8 +385,7 @@ public class NotCondition {
             void setIsNull(NotCondition.ToObjectReturnType.FilterFieldType.IsNullFieldType isNull);
 
             @JsProperty
-            void setMatches(
-                NotCondition.ToObjectReturnType.FilterFieldType.MatchesFieldType matches);
+            void setMatches(NotCondition.ToObjectReturnType.FilterFieldType.MatchesFieldType matches);
 
             @JsProperty
             void setNot(Object not);
@@ -508,11 +504,11 @@ public class NotCondition {
 
                     @JsProperty
                     void setLiteral(
-                        NotCondition.ToObjectReturnType0.FilterFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
+                            NotCondition.ToObjectReturnType0.FilterFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
 
                     @JsProperty
                     void setReference(
-                        NotCondition.ToObjectReturnType0.FilterFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
+                            NotCondition.ToObjectReturnType0.FilterFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
                 }
 
                 @JsOverlay
@@ -537,7 +533,7 @@ public class NotCondition {
 
                 @JsProperty
                 void setLhs(
-                    NotCondition.ToObjectReturnType0.FilterFieldType.CompareFieldType.LhsFieldType lhs);
+                        NotCondition.ToObjectReturnType0.FilterFieldType.CompareFieldType.LhsFieldType lhs);
 
                 @JsProperty
                 void setOperation(double operation);
@@ -729,8 +725,7 @@ public class NotCondition {
 
                 @JsOverlay
                 default void setOptionalReferencesList(Object[] optionalReferencesList) {
-                    setOptionalReferencesList(
-                        Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
+                    setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
                 }
 
                 @JsProperty
@@ -776,12 +771,10 @@ public class NotCondition {
             void setAnd(NotCondition.ToObjectReturnType0.FilterFieldType.AndFieldType and);
 
             @JsProperty
-            void setCompare(
-                NotCondition.ToObjectReturnType0.FilterFieldType.CompareFieldType compare);
+            void setCompare(NotCondition.ToObjectReturnType0.FilterFieldType.CompareFieldType compare);
 
             @JsProperty
-            void setContains(
-                NotCondition.ToObjectReturnType0.FilterFieldType.ContainsFieldType contains);
+            void setContains(NotCondition.ToObjectReturnType0.FilterFieldType.ContainsFieldType contains);
 
             @JsProperty
             void setInvoke(NotCondition.ToObjectReturnType0.FilterFieldType.InvokeFieldType invoke);
@@ -790,8 +783,7 @@ public class NotCondition {
             void setIsNull(NotCondition.ToObjectReturnType0.FilterFieldType.IsNullFieldType isNull);
 
             @JsProperty
-            void setMatches(
-                NotCondition.ToObjectReturnType0.FilterFieldType.MatchesFieldType matches);
+            void setMatches(NotCondition.ToObjectReturnType0.FilterFieldType.MatchesFieldType matches);
 
             @JsProperty
             void setNot(Object not);
@@ -821,12 +813,12 @@ public class NotCondition {
     public static native NotCondition deserializeBinary(Uint8Array bytes);
 
     public static native NotCondition deserializeBinaryFromReader(
-        NotCondition message, Object reader);
+            NotCondition message, Object reader);
 
     public static native void serializeBinaryToWriter(NotCondition message, Object writer);
 
     public static native NotCondition.ToObjectReturnType toObject(
-        boolean includeInstance, NotCondition msg);
+            boolean includeInstance, NotCondition msg);
 
     public native void clearFilter();
 

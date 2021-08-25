@@ -13,12 +13,11 @@ import java.util.Arrays;
 
 /**
  * <p>
- * Array-backed set that stores generic listener objects, only enforcing hard reachability on
- * listeners that are SubstitutionWeakReferences.
+ * Array-backed set that stores generic listener objects, only enforcing hard reachability on listeners that are
+ * SubstitutionWeakReferences.
  * <p>
  * <p>
- * All public operations (except clear and isEmpty) are O(n). All comparisons are based on object
- * reference equality.
+ * All public operations (except clear and isEmpty) are O(n). All comparisons are based on object reference equality.
  * <p>
  * <p>
  * Requires external synchronization for thread safe usage, except where otherwise noted.
@@ -35,8 +34,8 @@ public class SubscriptionSet<LISTENER_TYPE> {
         private boolean active;
 
         private Entry(final LISTENER_TYPE listener) {
-            this.listenerReference = WeakReferenceWrapper
-                .maybeCreateWeakReference(Require.neqNull(listener, "listener"));
+            this.listenerReference =
+                    WeakReferenceWrapper.maybeCreateWeakReference(Require.neqNull(listener, "listener"));
         }
 
         private LISTENER_TYPE getListener() {
@@ -91,8 +90,7 @@ public class SubscriptionSet<LISTENER_TYPE> {
         for (int si = 0; si < size;) {
             if (subscriptions[si].getListener() == null) {
                 removeAt(si);
-                continue; // si is not incremented in this case - we'll reconsider the same slot if
-                          // necessary.
+                continue; // si is not incremented in this case - we'll reconsider the same slot if necessary.
             }
             ++si;
         }
@@ -100,8 +98,8 @@ public class SubscriptionSet<LISTENER_TYPE> {
     }
 
     /**
-     * Make an entry for a listener, in order to pass it to {@link #add(Object, Entry)}. May be
-     * called without holding any locks.
+     * Make an entry for a listener, in order to pass it to {@link #add(Object, Entry)}. May be called without holding
+     * any locks.
      *
      * @param listener The listener
      * @return A new entry for the listener
@@ -128,8 +126,7 @@ public class SubscriptionSet<LISTENER_TYPE> {
             final LISTENER_TYPE currentListener = currentEntry.getListener();
             if (currentListener == null) {
                 removeAt(si);
-                continue; // si is not incremented in this case - we'll reconsider the same slot if
-                          // necessary.
+                continue; // si is not incremented in this case - we'll reconsider the same slot if necessary.
             }
             if (currentEntry == entry || currentListener == listener) {
                 found = true;
@@ -158,8 +155,7 @@ public class SubscriptionSet<LISTENER_TYPE> {
             final LISTENER_TYPE currentListener = subscriptions[si].getListener();
             if (currentListener == null || currentListener == listener) {
                 removeAt(si);
-                continue; // si is not incremented in this case - we'll reconsider the same slot if
-                          // necessary.
+                continue; // si is not incremented in this case - we'll reconsider the same slot if necessary.
             }
             ++si;
         }
@@ -173,17 +169,15 @@ public class SubscriptionSet<LISTENER_TYPE> {
      * @param activeOnly Whether to restrict this notification to active subscriptions only
      * @return Whether this operation caused the set to become <b>empty</b>
      */
-    public final boolean deliverNotification(
-        @NotNull final Procedure.Unary<LISTENER_TYPE> procedure,
-        final boolean activeOnly) {
+    public final boolean deliverNotification(@NotNull final Procedure.Unary<LISTENER_TYPE> procedure,
+            final boolean activeOnly) {
         final int initialSize = size;
         for (int si = 0; si < size;) {
             final Entry currentEntry = subscriptions[si];
             final LISTENER_TYPE currentListener = currentEntry.getListener();
             if (currentListener == null) {
                 removeAt(si);
-                continue; // si is not incremented in this case - we'll reconsider the same slot if
-                          // necessary.
+                continue; // si is not incremented in this case - we'll reconsider the same slot if necessary.
             }
             if (!activeOnly || currentEntry.isActive()) {
                 procedure.call(currentListener);
@@ -202,17 +196,16 @@ public class SubscriptionSet<LISTENER_TYPE> {
      * @return Whether this operation caused the set to become <b>empty</b>
      */
     public final <NOTIFICATION_TYPE> boolean deliverNotification(
-        @NotNull final Procedure.Binary<LISTENER_TYPE, NOTIFICATION_TYPE> procedure,
-        @Nullable final NOTIFICATION_TYPE notification,
-        final boolean activeOnly) {
+            @NotNull final Procedure.Binary<LISTENER_TYPE, NOTIFICATION_TYPE> procedure,
+            @Nullable final NOTIFICATION_TYPE notification,
+            final boolean activeOnly) {
         final int initialSize = size;
         for (int si = 0; si < size;) {
             final Entry currentEntry = subscriptions[si];
             final LISTENER_TYPE currentListener = currentEntry.getListener();
             if (currentListener == null) {
                 removeAt(si);
-                continue; // si is not incremented in this case - we'll reconsider the same slot if
-                          // necessary.
+                continue; // si is not incremented in this case - we'll reconsider the same slot if necessary.
             }
             if (!activeOnly || currentEntry.isActive()) {
                 procedure.call(currentListener, notification);

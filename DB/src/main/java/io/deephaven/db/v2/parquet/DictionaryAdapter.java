@@ -7,23 +7,17 @@ public abstract class DictionaryAdapter<RESULT_ARRAY> {
 
     static DictionaryAdapter getAdapter(Dictionary dictionary, Object nullValue) {
         if (dictionary instanceof PlainValuesDictionary.PlainLongDictionary) {
-            return new LongAdapter((PlainValuesDictionary.PlainLongDictionary) dictionary,
-                nullValue);
+            return new LongAdapter((PlainValuesDictionary.PlainLongDictionary) dictionary, nullValue);
         } else if (dictionary instanceof PlainValuesDictionary.PlainFloatDictionary) {
-            return new FloatAdapter((PlainValuesDictionary.PlainFloatDictionary) dictionary,
-                nullValue);
+            return new FloatAdapter((PlainValuesDictionary.PlainFloatDictionary) dictionary, nullValue);
         } else if (dictionary instanceof PlainValuesDictionary.PlainIntegerDictionary) {
-            return new IntegerAdapter((PlainValuesDictionary.PlainIntegerDictionary) dictionary,
-                nullValue);
+            return new IntegerAdapter((PlainValuesDictionary.PlainIntegerDictionary) dictionary, nullValue);
         } else if (dictionary instanceof PlainValuesDictionary.PlainDoubleDictionary) {
-            return new DoubleAdapter((PlainValuesDictionary.PlainDoubleDictionary) dictionary,
-                nullValue);
+            return new DoubleAdapter((PlainValuesDictionary.PlainDoubleDictionary) dictionary, nullValue);
         } else if (dictionary instanceof PlainValuesDictionary.PlainBinaryDictionary) {
-            return new BinaryAdapter((PlainValuesDictionary.PlainBinaryDictionary) dictionary,
-                nullValue);
+            return new BinaryAdapter((PlainValuesDictionary.PlainBinaryDictionary) dictionary, nullValue);
         }
-        throw new UnsupportedOperationException(
-            "No adapter available for " + dictionary.getClass().getSimpleName());
+        throw new UnsupportedOperationException("No adapter available for " + dictionary.getClass().getSimpleName());
     }
 
     public abstract void apply(RESULT_ARRAY result, int destIndex, int keyIndex);
@@ -56,8 +50,7 @@ public abstract class DictionaryAdapter<RESULT_ARRAY> {
     private static class FloatAdapter extends DictionaryAdapter<float[]> {
         private final float[] dictionaryMapping;
 
-        public FloatAdapter(PlainValuesDictionary.PlainFloatDictionary dictionary,
-            Object nullValue) {
+        public FloatAdapter(PlainValuesDictionary.PlainFloatDictionary dictionary, Object nullValue) {
             super();
             dictionaryMapping = new float[dictionary.getMaxId() + 2];
             for (int i = 0; i < dictionaryMapping.length - 1; i++) {
@@ -80,8 +73,7 @@ public abstract class DictionaryAdapter<RESULT_ARRAY> {
     private static class IntegerAdapter extends DictionaryAdapter<int[]> {
         private final int[] dictionaryMapping;
 
-        public IntegerAdapter(PlainValuesDictionary.PlainIntegerDictionary dictionary,
-            Object nullValue) {
+        public IntegerAdapter(PlainValuesDictionary.PlainIntegerDictionary dictionary, Object nullValue) {
             super();
             dictionaryMapping = new int[dictionary.getMaxId() + 2];
             for (int i = 0; i < dictionaryMapping.length - 1; i++) {
@@ -104,8 +96,7 @@ public abstract class DictionaryAdapter<RESULT_ARRAY> {
     private static class DoubleAdapter extends DictionaryAdapter<double[]> {
         private final double[] dictionaryMapping;
 
-        public DoubleAdapter(PlainValuesDictionary.PlainDoubleDictionary dictionary,
-            Object nullValue) {
+        public DoubleAdapter(PlainValuesDictionary.PlainDoubleDictionary dictionary, Object nullValue) {
             super();
             dictionaryMapping = new double[dictionary.getMaxId() + 2];
             for (int i = 0; i < dictionaryMapping.length - 1; i++) {
@@ -128,8 +119,7 @@ public abstract class DictionaryAdapter<RESULT_ARRAY> {
     private static class BinaryAdapter extends DictionaryAdapter<String[]> {
         private final String[] dictionaryMapping;
 
-        public BinaryAdapter(PlainValuesDictionary.PlainBinaryDictionary dictionary,
-            Object nullValue) {
+        public BinaryAdapter(PlainValuesDictionary.PlainBinaryDictionary dictionary, Object nullValue) {
             super();
             dictionaryMapping = new String[dictionary.getMaxId() + 2];
             for (int i = 0; i < dictionaryMapping.length - 1; i++) {

@@ -17,7 +17,7 @@ import java.io.Serializable;
 @Immutable
 @SimpleStyle
 public abstract class ColumnName
-    implements Selectable, Value, Expression, Pair, JoinMatch, JoinAddition, Serializable {
+        implements Selectable, Value, Expression, Pair, JoinMatch, JoinAddition, Serializable {
 
     public static boolean isValidColumnName(String name) {
         try {

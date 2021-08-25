@@ -10,10 +10,10 @@ public class TypeTest extends PythonTest {
     @Test
     public void checkReferenceCount() {
         try (
-            final ReferenceCounting ref = ReferenceCounting.create();
-            final IdentityModule identity = IdentityModule.create(getCreateModule());
-            final PyObject pyObject = SimpleObject.create(getCreateModule());
-            final PyObject type = pyObject.getType()) {
+                final ReferenceCounting ref = ReferenceCounting.create();
+                final IdentityModule identity = IdentityModule.create(getCreateModule());
+                final PyObject pyObject = SimpleObject.create(getCreateModule());
+                final PyObject type = pyObject.getType()) {
 
             // It's hard for me to be more precise about this - jpy, and python itself, might be
             // keeping their own references to the type for lookup purposes.

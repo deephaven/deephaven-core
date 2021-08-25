@@ -20,23 +20,23 @@ public interface TableHandleManager extends TableCreator<TableHandle> {
     TableHandle execute(TableSpec table) throws TableHandleException, InterruptedException;
 
     List<TableHandle> execute(Iterable<TableSpec> tables)
-        throws TableHandleException, InterruptedException;
+            throws TableHandleException, InterruptedException;
 
     LabeledValues<TableHandle> execute(LabeledTables tables)
-        throws TableHandleException, InterruptedException;
+            throws TableHandleException, InterruptedException;
 
     TableHandle executeLogic(TableCreationLogic logic)
-        throws TableHandleException, InterruptedException;
+            throws TableHandleException, InterruptedException;
 
     List<TableHandle> executeLogic(Iterable<TableCreationLogic> logics)
-        throws TableHandleException, InterruptedException;
+            throws TableHandleException, InterruptedException;
 
     LabeledValues<TableHandle> executeLogic(TableCreationLabeledLogic logic)
-        throws TableHandleException, InterruptedException;
+            throws TableHandleException, InterruptedException;
 
     TableHandle executeInputs(TableCreationLogic1Input logic, TableHandle t1)
-        throws TableHandleException, InterruptedException;
+            throws TableHandleException, InterruptedException;
 
     TableHandle executeInputs(TableCreationLogic2Inputs logic, TableHandle t1, TableHandle t2)
-        throws TableHandleException, InterruptedException;
+            throws TableHandleException, InterruptedException;
 }

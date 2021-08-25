@@ -11,7 +11,7 @@ public class OperationHelper {
         final OpCase opCase = op.getOpCase();
         if (opCase == null) {
             throw new IllegalArgumentException(
-                "Protocol has been updated, seeing unknown Operation");
+                    "Protocol has been updated, seeing unknown Operation");
         }
         switch (opCase) {
             case EMPTY_TABLE:

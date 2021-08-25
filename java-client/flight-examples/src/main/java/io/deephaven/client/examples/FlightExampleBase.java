@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 abstract class FlightExampleBase implements Callable<Void> {
 
     @Option(names = {"-t", "--target"}, description = "The host target.",
-        defaultValue = "localhost:10000")
+            defaultValue = "localhost:10000")
     String target;
 
     protected abstract void execute(FlightSession flight) throws Exception;
@@ -27,17 +27,17 @@ abstract class FlightExampleBase implements Callable<Void> {
         BufferAllocator bufferAllocator = new RootAllocator();
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
         ManagedChannel managedChannel =
-            ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+                ManagedChannelBuilder.forTarget(target).usePlaintext().build();
 
         Runtime.getRuntime()
-            .addShutdownHook(new Thread(() -> onShutdown(scheduler, managedChannel)));
+                .addShutdownHook(new Thread(() -> onShutdown(scheduler, managedChannel)));
 
         FlightSessionFactory flightSessionFactory =
-            DaggerDeephavenFlightRoot.create().factoryBuilder()
-                .managedChannel(managedChannel)
-                .scheduler(scheduler)
-                .allocator(bufferAllocator)
-                .build();
+                DaggerDeephavenFlightRoot.create().factoryBuilder()
+                        .managedChannel(managedChannel)
+                        .scheduler(scheduler)
+                        .allocator(bufferAllocator)
+                        .build();
 
         FlightSession flightSession = flightSessionFactory.newFlightSession();
 
@@ -57,7 +57,7 @@ abstract class FlightExampleBase implements Callable<Void> {
     }
 
     private static void onShutdown(ScheduledExecutorService scheduler,
-        ManagedChannel managedChannel) {
+            ManagedChannel managedChannel) {
         scheduler.shutdownNow();
         managedChannel.shutdownNow();
         try {

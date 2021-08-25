@@ -23,8 +23,7 @@ public class TestLog4jLoggerImpl extends TestCase {
         log4jlogger = context.mock(org.apache.log4j.Logger.class);
     }
 
-    // TODO: this is NOT a test of the Log4jLogger class, it's just enough so I can watch it in the
-    // debugger once.
+    // TODO: this is NOT a test of the Log4jLogger class, it's just enough so I can watch it in the debugger once.
 
     public void testSimple() {
         Log4jLoggerImpl SUT = new Log4jLoggerImpl(log4jlogger);

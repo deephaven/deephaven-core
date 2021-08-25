@@ -47,9 +47,9 @@ public class StaticSingleValueRedirectionIndexImpl implements SingleValueRedirec
 
     @Override
     public void fillChunk(
-        @NotNull final FillContext fillContext,
-        @NotNull final WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
-        @NotNull final OrderedKeys keysToMap) {
+            @NotNull final FillContext fillContext,
+            @NotNull final WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
+            @NotNull final OrderedKeys keysToMap) {
         final int sz = keysToMap.intSize();
         mappedKeysOut.setSize(sz);
         mappedKeysOut.fillWithValue(0, sz, value);
@@ -57,9 +57,9 @@ public class StaticSingleValueRedirectionIndexImpl implements SingleValueRedirec
 
     @Override
     public void fillPrevChunk(
-        @NotNull final FillContext fillContext,
-        @NotNull final WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
-        @NotNull final OrderedKeys keysToMap) {
+            @NotNull final FillContext fillContext,
+            @NotNull final WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
+            @NotNull final OrderedKeys keysToMap) {
         // no prev
         fillChunk(fillContext, mappedKeysOut, keysToMap);
     }

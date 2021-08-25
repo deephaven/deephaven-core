@@ -288,8 +288,7 @@ public class FastCharArrayTest extends TestCase {
         assertTrue(arrayCopy.equals(arrayOrig));
     }
 
-    public void checkExternalization(FastCharArray arrayInput, FastCharArray arrayReceiver)
-        throws Exception {
+    public void checkExternalization(FastCharArray arrayInput, FastCharArray arrayReceiver) throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(bos);
         try {
@@ -450,8 +449,7 @@ public class FastCharArrayTest extends TestCase {
             assertFalse(itemInput == itemReceive);
         }
 
-        // copy the value from the input back into the receive array (now that we already have
-        // values in there
+        // copy the value from the input back into the receive array (now that we already have values in there
         arrayReceiver = arrayInput.safeClone();
 
         // check the receive array against the input array

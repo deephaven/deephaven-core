@@ -25,7 +25,7 @@ public abstract class TableHandleManagerBase implements TableHandleManager {
 
     @Override
     public final LabeledValues<TableHandle> execute(LabeledTables tables)
-        throws TableHandleException, InterruptedException {
+            throws TableHandleException, InterruptedException {
         return LabeledValues.of(tables.labels(), execute(tables.values()));
     }
 

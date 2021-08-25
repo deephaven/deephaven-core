@@ -10,7 +10,7 @@ import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, REGION_TYPE extends Page<INNER_ATTR>>
-    extends PageStore<ATTR, INNER_ATTR, REGION_TYPE> {
+        extends PageStore<ATTR, INNER_ATTR, REGION_TYPE> {
 
     /**
      * @return The parameters object that describes this regioned page store
@@ -27,8 +27,8 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
     }
 
     /**
-     * @return The mask that should be applied to {@link io.deephaven.db.v2.utils.OrderedKeys}
-     *         indices when calculating their address within a region
+     * @return The mask that should be applied to {@link io.deephaven.db.v2.utils.OrderedKeys} indices when calculating
+     *         their address within a region
      */
     @FinalDefault
     default long regionMask() {
@@ -87,8 +87,7 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
     }
 
     @Override
-    default FillContext makeFillContext(final int chunkCapacity,
-        final SharedContext sharedContext) {
+    default FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
         return new RegionContextHolder();
     }
 
@@ -103,29 +102,25 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
         public final long regionMask;
         public final int regionMaskNumBits;
 
-        public Parameters(final long pageMask, final int maximumRegionCount,
-            final long maximumRegionSize) {
+        public Parameters(final long pageMask, final int maximumRegionCount, final long maximumRegionSize) {
             this.pageMask = validateMask(pageMask, "page");
             this.maximumRegionCount = Require.geqZero(maximumRegionCount, "maximum region count");
             this.maximumRegionSize = Require.geqZero(maximumRegionSize, "maximum region size");
 
-            final int regionNumBits =
-                maximumRegionCount == 0 ? 0 : MathUtil.ceilLog2(maximumRegionCount);
+            final int regionNumBits = maximumRegionCount == 0 ? 0 : MathUtil.ceilLog2(maximumRegionCount);
             regionMask = validateMask(pageMask >>> regionNumBits, "region");
             regionMaskNumBits = MathUtil.ceilLog2(regionMask);
-            final long maxRegionSizeNumBits =
-                maximumRegionSize == 0 ? 0 : MathUtil.ceilLog2(maximumRegionSize);
+            final long maxRegionSizeNumBits = maximumRegionSize == 0 ? 0 : MathUtil.ceilLog2(maximumRegionSize);
             if (maxRegionSizeNumBits > regionMaskNumBits) {
                 throw new IllegalArgumentException(String.format(
-                    "Maximum region size %,d is too large to access with page mask %#016X and maximum region count %,d",
-                    maximumRegionSize, pageMask, maximumRegionCount));
+                        "Maximum region size %,d is too large to access with page mask %#016X and maximum region count %,d",
+                        maximumRegionSize, pageMask, maximumRegionCount));
             }
         }
 
         private static long validateMask(final long mask, final String name) {
             if (mask < 0 || (Long.SIZE - Long.numberOfLeadingZeros(mask)) != Long.bitCount(mask)) {
-                throw new IllegalArgumentException(
-                    String.format("Invalid %s mask %#016X", name, mask));
+                throw new IllegalArgumentException(String.format("Invalid %s mask %#016X", name, mask));
             }
             return mask;
         }
@@ -135,25 +130,23 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
      * A regioned page store for use when the full set of regions and their sizes are known.
      */
     abstract class Static<ATTR extends Any, INNER_ATTR extends ATTR, REGION_TYPE extends Page<INNER_ATTR>>
-        implements RegionedPageStore<ATTR, INNER_ATTR, REGION_TYPE> {
+            implements RegionedPageStore<ATTR, INNER_ATTR, REGION_TYPE> {
 
         private final Parameters parameters;
         private final REGION_TYPE[] regions;
 
         /**
          * @param parameters Mask and shift parameters
-         * @param regions Array of all regions in this page store. Array becomes property of the
-         *        page store.
+         * @param regions Array of all regions in this page store. Array becomes property of the page store.
          */
         public Static(@NotNull final Parameters parameters,
-            @NotNull final REGION_TYPE[] regions) {
+                @NotNull final REGION_TYPE[] regions) {
             this.parameters = parameters;
             this.regions = Require.elementsNeqNull(regions, "regions");
             Require.leq(regions.length, "regions.length", parameters.maximumRegionCount,
-                "parameters.maximumRegionCount");
+                    "parameters.maximumRegionCount");
             for (final REGION_TYPE region : regions) {
-                Require.eq(region.mask(), "region.mask()", parameters.regionMask,
-                    "parameters.regionMask");
+                Require.eq(region.mask(), "region.mask()", parameters.regionMask, "parameters.regionMask");
             }
         }
 

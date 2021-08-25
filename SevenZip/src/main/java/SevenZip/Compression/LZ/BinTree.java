@@ -65,16 +65,15 @@ public class BinTree extends InWindow {
 
 
     public boolean Create(int historySize, int keepAddBufferBefore,
-        int matchMaxLen, int keepAddBufferAfter) {
+            int matchMaxLen, int keepAddBufferAfter) {
         if (historySize > kMaxValForNormalize - 256)
             return false;
         _cutValue = 16 + (matchMaxLen >> 1);
 
         int windowReservSize = (historySize + keepAddBufferBefore +
-            matchMaxLen + keepAddBufferAfter) / 2 + 256;
+                matchMaxLen + keepAddBufferAfter) / 2 + 256;
 
-        super.Create(historySize + keepAddBufferBefore, matchMaxLen + keepAddBufferAfter,
-            windowReservSize);
+        super.Create(historySize + keepAddBufferBefore, matchMaxLen + keepAddBufferAfter, windowReservSize);
 
         _matchMaxLen = matchMaxLen;
 
@@ -166,7 +165,7 @@ public class BinTree extends InWindow {
         if (kNumHashDirectBytes != 0) {
             if (curMatch > matchMinPos) {
                 if (_bufferBase[_bufferOffset + curMatch + kNumHashDirectBytes] != _bufferBase[cur
-                    + kNumHashDirectBytes]) {
+                        + kNumHashDirectBytes]) {
                     distances[offset++] = maxLen = kNumHashDirectBytes;
                     distances[offset++] = _pos - curMatch - 1;
                 }
@@ -182,7 +181,7 @@ public class BinTree extends InWindow {
             }
             int delta = _pos - curMatch;
             int cyclicPos = ((delta <= _cyclicBufferPos) ? (_cyclicBufferPos - delta)
-                : (_cyclicBufferPos - delta + _cyclicBufferSize)) << 1;
+                    : (_cyclicBufferPos - delta + _cyclicBufferSize)) << 1;
 
             int pby1 = _bufferOffset + curMatch;
             int len = Math.min(len0, len1);
@@ -243,8 +242,7 @@ public class BinTree extends InWindow {
                 _hash[kHash3Offset + hash3Value] = _pos;
                 hashValue = (temp ^ (CrcTable[_bufferBase[cur + 3] & 0xFF] << 5)) & _hashMask;
             } else
-                hashValue =
-                    ((_bufferBase[cur] & 0xFF) ^ ((int) (_bufferBase[cur + 1] & 0xFF) << 8));
+                hashValue = ((_bufferBase[cur] & 0xFF) ^ ((int) (_bufferBase[cur + 1] & 0xFF) << 8));
 
             int curMatch = _hash[kFixHashSize + hashValue];
             _hash[kFixHashSize + hashValue] = _pos;
@@ -264,7 +262,7 @@ public class BinTree extends InWindow {
 
                 int delta = _pos - curMatch;
                 int cyclicPos = ((delta <= _cyclicBufferPos) ? (_cyclicBufferPos - delta)
-                    : (_cyclicBufferPos - delta + _cyclicBufferSize)) << 1;
+                        : (_cyclicBufferPos - delta + _cyclicBufferSize)) << 1;
 
                 int pby1 = _bufferOffset + curMatch;
                 int len = Math.min(len0, len1);

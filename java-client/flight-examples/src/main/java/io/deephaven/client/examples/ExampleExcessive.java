@@ -9,12 +9,12 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 @Command(name = "excessive", mixinStandardHelpOptions = true,
-    description = "Executes a deep query",
-    version = "0.1.0")
+        description = "Executes a deep query",
+        version = "0.1.0")
 class ExampleExcessive extends FlightCannedTableBase implements TableCreationLogic {
 
     @Option(names = {"-c", "--count"}, description = "The amount of heads/tails",
-        defaultValue = "256")
+            defaultValue = "256")
     long count;
 
     @Override

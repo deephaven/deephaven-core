@@ -9,7 +9,7 @@ public class JoinAdditionTest {
 
     public static final JoinAddition FOO = ColumnName.of("Foo");
     public static final JoinAddition FOO_BAR =
-        JoinAddition.of(ColumnName.of("Foo"), ColumnName.of("Bar"));
+            JoinAddition.of(ColumnName.of("Foo"), ColumnName.of("Bar"));
 
     @Test
     void newColumn() {

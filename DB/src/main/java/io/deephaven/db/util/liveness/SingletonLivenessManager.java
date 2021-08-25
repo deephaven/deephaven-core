@@ -6,14 +6,13 @@ import java.lang.ref.WeakReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
- * {@link ReleasableLivenessManager} to manage exactly one object, passed at construction time or
- * managed later.
+ * {@link ReleasableLivenessManager} to manage exactly one object, passed at construction time or managed later.
  */
 public class SingletonLivenessManager implements ReleasableLivenessManager {
 
     private static final AtomicReferenceFieldUpdater<SingletonLivenessManager, WeakReference> RETAINED_REFERENCE_UPDATER =
-        AtomicReferenceFieldUpdater.newUpdater(SingletonLivenessManager.class, WeakReference.class,
-            "retainedReference");
+            AtomicReferenceFieldUpdater.newUpdater(SingletonLivenessManager.class, WeakReference.class,
+                    "retainedReference");
 
     private volatile WeakReference<? extends LivenessReferent> retainedReference;
 
@@ -29,19 +28,17 @@ public class SingletonLivenessManager implements ReleasableLivenessManager {
     }
 
     private void initializeRetainedReference(
-        @NotNull final WeakReference<? extends LivenessReferent> retainedReference) {
+            @NotNull final WeakReference<? extends LivenessReferent> retainedReference) {
         this.retainedReference = retainedReference;
     }
 
-    private boolean setRetainedReference(
-        @NotNull final WeakReference<? extends LivenessReferent> retainedReference) {
+    private boolean setRetainedReference(@NotNull final WeakReference<? extends LivenessReferent> retainedReference) {
         return RETAINED_REFERENCE_UPDATER.compareAndSet(this, null, retainedReference);
     }
 
     private WeakReference<? extends LivenessReferent> getRetainedReference() {
         // noinspection unchecked
-        return (WeakReference<? extends LivenessReferent>) RETAINED_REFERENCE_UPDATER
-            .getAndSet(this, null);
+        return (WeakReference<? extends LivenessReferent>) RETAINED_REFERENCE_UPDATER.getAndSet(this, null);
     }
 
     @Override
@@ -54,8 +51,7 @@ public class SingletonLivenessManager implements ReleasableLivenessManager {
         }
         if (!setRetainedReference(referent.getWeakReference())) {
             referent.dropReference();
-            throw new UnsupportedOperationException(
-                "SingletonLivenessManager can only manage one referent");
+            throw new UnsupportedOperationException("SingletonLivenessManager can only manage one referent");
         }
         return true;
     }

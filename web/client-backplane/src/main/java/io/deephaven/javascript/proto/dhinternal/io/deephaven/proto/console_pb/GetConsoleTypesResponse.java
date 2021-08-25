@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.GetConsoleTypesResponse",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.GetConsoleTypesResponse",
+        namespace = JsPackage.GLOBAL)
 public class GetConsoleTypesResponse {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -55,13 +55,12 @@ public class GetConsoleTypesResponse {
     public static native GetConsoleTypesResponse deserializeBinary(Uint8Array bytes);
 
     public static native GetConsoleTypesResponse deserializeBinaryFromReader(
-        GetConsoleTypesResponse message, Object reader);
+            GetConsoleTypesResponse message, Object reader);
 
-    public static native void serializeBinaryToWriter(GetConsoleTypesResponse message,
-        Object writer);
+    public static native void serializeBinaryToWriter(GetConsoleTypesResponse message, Object writer);
 
     public static native GetConsoleTypesResponse.ToObjectReturnType toObject(
-        boolean includeInstance, GetConsoleTypesResponse msg);
+            boolean includeInstance, GetConsoleTypesResponse msg);
 
     public native String addConsoleTypes(String value, double index);
 

@@ -22,8 +22,8 @@ import java.util.stream.StreamSupport;
  * A batch request is executed in a single round-trip.
  *
  * <p>
- * Note: individual {@linkplain io.deephaven.api.TableOperations table operations} executed against
- * a {@linkplain TableHandle table handle} are still executed serially.
+ * Note: individual {@linkplain io.deephaven.api.TableOperations table operations} executed against a
+ * {@linkplain TableHandle table handle} are still executed serially.
  */
 class TableHandleManagerBatch extends TableHandleManagerBase {
 
@@ -45,13 +45,13 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
 
     @Override
     public List<TableHandle> execute(Iterable<TableSpec> tables)
-        throws TableHandleException, InterruptedException {
+            throws TableHandleException, InterruptedException {
         return TableHandle.of(session, tables, lifecycle);
     }
 
     @Override
     public TableHandle executeLogic(TableCreationLogic logic)
-        throws TableHandleException, InterruptedException {
+            throws TableHandleException, InterruptedException {
         if (mixinStacktraces) {
             return new MixinBasic(logic).run();
         }
@@ -60,17 +60,17 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
 
     @Override
     public List<TableHandle> executeLogic(Iterable<TableCreationLogic> logics)
-        throws TableHandleException, InterruptedException {
+            throws TableHandleException, InterruptedException {
         if (mixinStacktraces) {
             return new MixinIterable(logics).run();
         }
         return execute(
-            () -> StreamSupport.stream(logics.spliterator(), false).map(TableSpec::of).iterator());
+                () -> StreamSupport.stream(logics.spliterator(), false).map(TableSpec::of).iterator());
     }
 
     @Override
     public LabeledValues<TableHandle> executeLogic(TableCreationLabeledLogic logic)
-        throws TableHandleException, InterruptedException {
+            throws TableHandleException, InterruptedException {
         if (mixinStacktraces) {
             return new MixinLabeled(logic).run();
         }
@@ -79,7 +79,7 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
 
     @Override
     public TableHandle executeInputs(TableCreationLogic1Input logic, TableHandle t1)
-        throws TableHandleException, InterruptedException {
+            throws TableHandleException, InterruptedException {
         if (mixinStacktraces) {
             return new Mixin1Handle(logic, t1).run();
         }
@@ -90,7 +90,7 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
 
     @Override
     public TableHandle executeInputs(TableCreationLogic2Inputs logic, TableHandle t1,
-        TableHandle t2) throws TableHandleException, InterruptedException {
+            TableHandle t2) throws TableHandleException, InterruptedException {
         if (mixinStacktraces) {
             return new Mixin2Handles(logic, t1, t2).run();
         }
@@ -144,11 +144,11 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
 
         @Override
         protected LabeledValues<TableHandle> runImpl()
-            throws InterruptedException, TableHandleException {
+                throws InterruptedException, TableHandleException {
             final LabeledValues<StackTraceMixIn<TableSpec, TableSpec>> mixins =
-                logic.create(creator);
+                    logic.create(creator);
             final LabeledTables labeledTables = LabeledTables.of(mixins.labels(),
-                () -> mixins.valuesStream().map(StackTraceMixIn::ops).iterator());
+                    () -> mixins.valuesStream().map(StackTraceMixIn::ops).iterator());
             return execute(labeledTables);
         }
     }
@@ -163,8 +163,8 @@ class TableHandleManagerBatch extends TableHandleManagerBase {
         @Override
         protected List<TableHandle> runImpl() throws InterruptedException, TableHandleException {
             final Iterable<TableSpec> tables =
-                () -> StreamSupport.stream(logics.spliterator(), false).map(this::create)
-                    .map(StackTraceMixIn::ops).iterator();
+                    () -> StreamSupport.stream(logics.spliterator(), false).map(this::create)
+                            .map(StackTraceMixIn::ops).iterator();
             return execute(tables);
         }
 

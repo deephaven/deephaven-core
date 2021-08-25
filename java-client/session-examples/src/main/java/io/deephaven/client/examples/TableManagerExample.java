@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 @Command(name = "table-manager", mixinStandardHelpOptions = true,
-    description = "Table Manager example code", version = "0.1.0")
+        description = "Table Manager example code", version = "0.1.0")
 class TableManagerExample extends SessionExampleBase {
 
     static class Mode {
@@ -75,10 +75,10 @@ class TableManagerExample extends SessionExampleBase {
     <T extends TableOperations<T, T>> T joinStuff(T a, T b) {
         if (error) {
             return a.tail(5).join(b.reverse().head(4), Collections.emptyList(),
-                Collections.singletonList(ColumnName.of("BadColumn")));
+                    Collections.singletonList(ColumnName.of("BadColumn")));
         } else {
             return a.tail(5).join(b.reverse().head(4), Collections.emptyList(),
-                Collections.emptyList());
+                    Collections.emptyList());
         }
     }
 
@@ -98,31 +98,31 @@ class TableManagerExample extends SessionExampleBase {
         T t3 = joinStuff(t1, t2);
         T t4 = modifyStuff(t3);
         return LabeledValues.<T>builder().add("t1", t1).add("t2", t2).add("t3", t3).add("t4", t4)
-            .build();
+                .build();
     }
 
     /**
      * batch: 4 messages, serial: 22 messages
      */
     void executeFourStages(Session session, TableHandleManager manager)
-        throws TableHandleException, InterruptedException {
+            throws TableHandleException, InterruptedException {
         // batch or serial, based on manager
         //
         // batch: 1 message
         // serial: 7 messages
         final TableHandle t1 =
-            manager.executeLogic((TableCreationLogic) TableManagerExample::timeStuff1);
+                manager.executeLogic((TableCreationLogic) TableManagerExample::timeStuff1);
         System.out.printf("Stage 1 (%d)%nt1=%s%n%n", ((SessionImpl) session).batchCount(),
-            t1.export().toReadableString());
+                t1.export().toReadableString());
 
         // batch or serial, based on manager
         //
         // batch: 1 message
         // serial: 8 messages
         final TableHandle t2 =
-            manager.executeLogic((TableCreationLogic) TableManagerExample::timeStuff2);
+                manager.executeLogic((TableCreationLogic) TableManagerExample::timeStuff2);
         System.out.printf("Stage 2 (%d)%nt2=%s%n%n", ((SessionImpl) session).batchCount(),
-            t2.export().toReadableString());
+                t2.export().toReadableString());
 
         // batch or serial, based on manager
         //
@@ -130,7 +130,7 @@ class TableManagerExample extends SessionExampleBase {
         // serial: 4 messages
         final TableHandle t3 = manager.executeInputs(this::joinStuff, t1, t2);
         System.out.printf("Stage 3 (%d)%nt3=%s%n%n", ((SessionImpl) session).batchCount(),
-            t3.export().toReadableString());
+                t3.export().toReadableString());
 
         // batch or serial, based on manager
         //
@@ -138,7 +138,7 @@ class TableManagerExample extends SessionExampleBase {
         // serial: 3 messages
         final TableHandle t4 = manager.executeInputs(TableManagerExample::modifyStuff, t3);
         System.out.printf("Stage 4 (%d)%nt4=%s%n%n", ((SessionImpl) session).batchCount(),
-            t4.export().toReadableString());
+                t4.export().toReadableString());
     }
 
 
@@ -163,14 +163,14 @@ class TableManagerExample extends SessionExampleBase {
      * batch: 1 message, serial: 22 messages
      */
     void executeOneStage(TableHandleManager manager)
-        throws TableHandleException, InterruptedException {
+            throws TableHandleException, InterruptedException {
         // batch or serial, based on manager
         LabeledValues<TableHandle> handles =
-            manager.executeLogic((TableCreationLabeledLogic) this::oneStage);
+                manager.executeLogic((TableCreationLabeledLogic) this::oneStage);
         StringBuilder sb = new StringBuilder("Stage 1").append(System.lineSeparator());
         for (LabeledValue<TableHandle> handle : handles) {
             sb.append(handle.name()).append('=').append(handle.value().export().toReadableString())
-                .append(System.lineSeparator());
+                    .append(System.lineSeparator());
         }
         System.out.println(sb);
     }
@@ -179,24 +179,24 @@ class TableManagerExample extends SessionExampleBase {
         if (oneStage) {
             if (mode == null) {
                 System.out
-                    .println("Executing in default mode, in 1 stages. (1 | 22) messages expected.");
+                        .println("Executing in default mode, in 1 stages. (1 | 22) messages expected.");
             } else if (mode.batch) {
                 System.out
-                    .println("Executing in explicit batch mode, in 1 stages. 1 message expected.");
+                        .println("Executing in explicit batch mode, in 1 stages. 1 message expected.");
             } else {
                 System.out.println(
-                    "Executing in explicit serial mode, in 1 stages. 22 messages expected.");
+                        "Executing in explicit serial mode, in 1 stages. 22 messages expected.");
             }
         } else {
             if (mode == null) {
                 System.out
-                    .println("Executing in default mode, in 4 stages. (1 | 22) messages expected.");
+                        .println("Executing in default mode, in 4 stages. (1 | 22) messages expected.");
             } else if (mode.batch) {
                 System.out
-                    .println("Executing in explicit batch mode, in 4 stages. 1 message expected.");
+                        .println("Executing in explicit batch mode, in 4 stages. 1 message expected.");
             } else {
                 System.out.println(
-                    "Executing in explicit serial mode, in 4 stages. 22 messages expected.");
+                        "Executing in explicit serial mode, in 4 stages. 22 messages expected.");
             }
         }
         System.out.println();

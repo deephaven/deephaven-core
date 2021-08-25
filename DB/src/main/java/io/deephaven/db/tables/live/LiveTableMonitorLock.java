@@ -27,7 +27,7 @@ class LiveTableMonitorLock {
     private static final Logger log = LoggerFactory.getLogger(LiveTableMonitorLock.class);
 
     private static final boolean STACK_DUMP_LOCKS =
-        Configuration.getInstance().getBooleanWithDefault("LiveTableMonitor.stackDumpLocks", false);
+            Configuration.getInstance().getBooleanWithDefault("LiveTableMonitor.stackDumpLocks", false);
 
     /**
      * The {@link LogicalClock} used for instrumentation and assertions.
@@ -76,11 +76,9 @@ class LiveTableMonitorLock {
      * @param logicalClock The {@link LogicalClock} instance to use
      * @param allowUnitTestMode for unit tests only
      */
-    LiveTableMonitorLock(@NotNull final LogicalClock logicalClock,
-        final boolean allowUnitTestMode) {
+    LiveTableMonitorLock(@NotNull final LogicalClock logicalClock, final boolean allowUnitTestMode) {
         this.logicalClock = logicalClock;
-        // TODO: Consider whether using a fair lock causes unacceptable performance degradation
-        // under significant
+        // TODO: Consider whether using a fair lock causes unacceptable performance degradation under significant
         // contention, and determine an alternative policy (maybe relying on Thread.yield() if so.
         rwLock = new ReentrantReadWriteLock(true);
         readLock = rwLock.readLock();
@@ -96,9 +94,8 @@ class LiveTableMonitorLock {
     }
 
     /**
-     * Get the shared lock (similar to {@link java.util.concurrent.locks.ReadWriteLock#readLock()},
-     * but with LTM-specific instrumentation). See {@link LiveTableMonitor#sharedLock()} for
-     * user-facing documentation.
+     * Get the shared lock (similar to {@link java.util.concurrent.locks.ReadWriteLock#readLock()}, but with
+     * LTM-specific instrumentation). See {@link LiveTableMonitor#sharedLock()} for user-facing documentation.
      *
      * @return The shared lock
      */
@@ -107,9 +104,8 @@ class LiveTableMonitorLock {
     }
 
     /**
-     * Get the exclusive lock (similar to
-     * {@link java.util.concurrent.locks.ReadWriteLock#writeLock()} ()}, but with LTM-specific
-     * instrumentation). See {@link LiveTableMonitor#exclusiveLock()} for user-facing documentation.
+     * Get the exclusive lock (similar to {@link java.util.concurrent.locks.ReadWriteLock#writeLock()} ()}, but with
+     * LTM-specific instrumentation). See {@link LiveTableMonitor#exclusiveLock()} for user-facing documentation.
      *
      * @return The exclusive lock
      */
@@ -136,8 +132,7 @@ class LiveTableMonitorLock {
                 });
                 maybeLogStackTrace("locked (shared)");
             } catch (Throwable t) {
-                // If the recorder instrumentation causes us to throw an exception after the
-                // readLock was successfully
+                // If the recorder instrumentation causes us to throw an exception after the readLock was successfully
                 // acquired, we'd better unlock it on the way out.
                 if (lockSucceeded.isTrue()) {
                     readLock.unlock();
@@ -150,15 +145,13 @@ class LiveTableMonitorLock {
         public final void lockInterruptibly() throws InterruptedException {
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
-                QueryPerformanceRecorder
-                    .withNuggetThrowing("Acquire LiveTableMonitor readLock interruptibly", () -> {
-                        readLock.lockInterruptibly();
-                        lockSucceeded.setValue(true);
-                    });
+                QueryPerformanceRecorder.withNuggetThrowing("Acquire LiveTableMonitor readLock interruptibly", () -> {
+                    readLock.lockInterruptibly();
+                    lockSucceeded.setValue(true);
+                });
                 maybeLogStackTrace("locked (shared)");
             } catch (Throwable t) {
-                // If the recorder instrumentation causes us to throw an exception after the
-                // readLock was successfully
+                // If the recorder instrumentation causes us to throw an exception after the readLock was successfully
                 // acquired, we'd better unlock it on the way out.
                 if (lockSucceeded.isTrue()) {
                     readLock.unlock();
@@ -177,8 +170,7 @@ class LiveTableMonitorLock {
         }
 
         @Override
-        public final boolean tryLock(final long time, @NotNull final TimeUnit unit)
-            throws InterruptedException {
+        public final boolean tryLock(final long time, @NotNull final TimeUnit unit) throws InterruptedException {
             if (readLock.tryLock(time, unit)) {
                 maybeLogStackTrace("locked (shared)");
                 return true;
@@ -219,12 +211,10 @@ class LiveTableMonitorLock {
                     writeLock.lock();
                     lockSucceeded.setValue(true);
                 });
-                Assert.eq(logicalClock.currentState(), "logicalClock.currentState()",
-                    LogicalClock.State.Idle);
+                Assert.eq(logicalClock.currentState(), "logicalClock.currentState()", LogicalClock.State.Idle);
                 maybeLogStackTrace("locked (exclusive)");
             } catch (Throwable t) {
-                // If the recorder instrumentation causes us to throw an exception after the
-                // writeLock was
+                // If the recorder instrumentation causes us to throw an exception after the writeLock was
                 // successfully acquired, we'd better unlock it on the way out.
                 if (lockSucceeded.isTrue()) {
                     writeLock.unlock();
@@ -238,17 +228,14 @@ class LiveTableMonitorLock {
             checkForUpgradeAttempt();
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
-                QueryPerformanceRecorder
-                    .withNuggetThrowing("Acquire LiveTableMonitor writeLock interruptibly", () -> {
-                        writeLock.lockInterruptibly();
-                        lockSucceeded.setValue(true);
-                    });
-                Assert.eq(logicalClock.currentState(), "logicalClock.currentState()",
-                    LogicalClock.State.Idle);
+                QueryPerformanceRecorder.withNuggetThrowing("Acquire LiveTableMonitor writeLock interruptibly", () -> {
+                    writeLock.lockInterruptibly();
+                    lockSucceeded.setValue(true);
+                });
+                Assert.eq(logicalClock.currentState(), "logicalClock.currentState()", LogicalClock.State.Idle);
                 maybeLogStackTrace("locked (exclusive)");
             } catch (Throwable t) {
-                // If the recorder instrumentation causes us to throw an exception after the
-                // writeLock was
+                // If the recorder instrumentation causes us to throw an exception after the writeLock was
                 // successfully acquired, we'd better unlock it on the way out.
                 if (lockSucceeded.isTrue()) {
                     writeLock.unlock();
@@ -268,8 +255,7 @@ class LiveTableMonitorLock {
         }
 
         @Override
-        public final boolean tryLock(final long time, @NotNull final TimeUnit unit)
-            throws InterruptedException {
+        public final boolean tryLock(final long time, @NotNull final TimeUnit unit) throws InterruptedException {
             checkForUpgradeAttempt();
             if (writeLock.tryLock(time, unit)) {
                 maybeLogStackTrace("locked (exclusive)");
@@ -280,8 +266,7 @@ class LiveTableMonitorLock {
 
         @Override
         public final void unlock() {
-            Assert.eq(logicalClock.currentState(), "logicalClock.currentState()",
-                LogicalClock.State.Idle);
+            Assert.eq(logicalClock.currentState(), "logicalClock.currentState()", LogicalClock.State.Idle);
             writeLock.unlock();
             maybeLogStackTrace("unlocked (exclusive)");
         }
@@ -353,29 +338,28 @@ class LiveTableMonitorLock {
 
         @Override
         public <EXCEPTION_TYPE extends Exception> void doLocked(
-            @NotNull FunctionalInterfaces.ThrowingRunnable<EXCEPTION_TYPE> runnable)
-            throws EXCEPTION_TYPE {
+                @NotNull FunctionalInterfaces.ThrowingRunnable<EXCEPTION_TYPE> runnable) throws EXCEPTION_TYPE {
             delegate.doLocked(runnable);
         }
 
         @Override
         public <EXCEPTION_TYPE extends Exception> void doLockedInterruptibly(
-            @NotNull FunctionalInterfaces.ThrowingRunnable<EXCEPTION_TYPE> runnable)
-            throws InterruptedException, EXCEPTION_TYPE {
+                @NotNull FunctionalInterfaces.ThrowingRunnable<EXCEPTION_TYPE> runnable)
+                throws InterruptedException, EXCEPTION_TYPE {
             delegate.doLockedInterruptibly(runnable);
         }
 
         @Override
         public <RESULT_TYPE, EXCEPTION_TYPE extends Exception> RESULT_TYPE computeLocked(
-            @NotNull FunctionalInterfaces.ThrowingSupplier<RESULT_TYPE, EXCEPTION_TYPE> supplier)
-            throws EXCEPTION_TYPE {
+                @NotNull FunctionalInterfaces.ThrowingSupplier<RESULT_TYPE, EXCEPTION_TYPE> supplier)
+                throws EXCEPTION_TYPE {
             return delegate.computeLocked(supplier);
         }
 
         @Override
         public <RESULT_TYPE, EXCEPTION_TYPE extends Exception> RESULT_TYPE computeLockedInterruptibly(
-            @NotNull FunctionalInterfaces.ThrowingSupplier<RESULT_TYPE, EXCEPTION_TYPE> supplier)
-            throws InterruptedException, EXCEPTION_TYPE {
+                @NotNull FunctionalInterfaces.ThrowingSupplier<RESULT_TYPE, EXCEPTION_TYPE> supplier)
+                throws InterruptedException, EXCEPTION_TYPE {
             return delegate.computeLockedInterruptibly(supplier);
         }
 
@@ -390,8 +374,7 @@ class LiveTableMonitorLock {
 
     private void checkForUpgradeAttempt() {
         if (sharedLock.isHeldByCurrentThread()) {
-            throw new UnsupportedOperationException(
-                "Cannot upgrade a shared lock to an exclusive lock");
+            throw new UnsupportedOperationException("Cannot upgrade a shared lock to an exclusive lock");
         }
     }
 

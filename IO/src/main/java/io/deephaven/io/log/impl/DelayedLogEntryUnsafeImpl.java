@@ -135,8 +135,7 @@ public class DelayedLogEntryUnsafeImpl implements LogEntry {
     }
 
     @Override
-    public LogEntry start(final LogSink sink, final LogLevel level, final long currentTimeMicros,
-        final Throwable t) {
+    public LogEntry start(final LogSink sink, final LogLevel level, final long currentTimeMicros, final Throwable t) {
         starts.getAndIncrement();
         this.timestamp = currentTimeMicros;
         this.level = level;
@@ -500,20 +499,19 @@ public class DelayedLogEntryUnsafeImpl implements LogEntry {
                     logOutputBuffer = logOutputBuffer.appendDouble(reader.nextDouble());
                     break;
                 case APPEND_CHARSEQ:
-                    logOutputBuffer =
-                        logOutputBuffer.append((CharSequence) im[immutablePosition++]);
+                    logOutputBuffer = logOutputBuffer.append((CharSequence) im[immutablePosition++]);
                     break;
                 case APPEND_CHARSEQ_RANGE:
-                    logOutputBuffer = logOutputBuffer.append((CharSequence) im[immutablePosition++],
-                        reader.nextInt(), reader.nextInt());
+                    logOutputBuffer = logOutputBuffer.append((CharSequence) im[immutablePosition++], reader.nextInt(),
+                            reader.nextInt());
                     break;
                 case APPEND_TIMESTAMP:
                     logOutputBuffer = logOutputBuffer.appendTimestamp(reader.nextLong(),
-                        (TimestampBuffer) im[immutablePosition++]);
+                            (TimestampBuffer) im[immutablePosition++]);
                     break;
                 case APPEND_TIMESTAMP_MICROS:
                     logOutputBuffer = logOutputBuffer.appendTimestampMicros(reader.nextLong(),
-                        (TimestampBufferMicros) im[immutablePosition++]);
+                            (TimestampBufferMicros) im[immutablePosition++]);
                     break;
                 case APPEND_NULL:
                     logOutputBuffer = logOutputBuffer.append((LogOutputAppendable) null);
@@ -537,12 +535,8 @@ public class DelayedLogEntryUnsafeImpl implements LogEntry {
                     }
                     break;
                 case APPEND_BYTE:
-                    logOutputBuffer = logOutputBuffer.append((short) reader.nextByte()); // cast to
-                                                                                         // short so
-                                                                                         // it gets
-                                                                                         // printed
-                                                                                         // as
-                                                                                         // decimal
+                    logOutputBuffer = logOutputBuffer.append((short) reader.nextByte()); // cast to short so it gets
+                                                                                         // printed as decimal
                     break;
                 case END_OF_HEADER:
                     logOutputBuffer.markEndOfHeader();

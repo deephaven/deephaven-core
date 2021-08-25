@@ -8,9 +8,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.CompareCondition.CompareOperationMap",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.CompareCondition.CompareOperationMap",
+        namespace = JsPackage.GLOBAL)
 public interface CompareOperationMap {
     @JsOverlay
     static CompareOperationMap create() {

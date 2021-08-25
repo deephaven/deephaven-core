@@ -20,7 +20,7 @@ public class WeightedSumStateFactoryImpl extends IterativeOperatorStateFactory {
 
     @Override
     public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name,
-        boolean exposeInternalColumns) {
+            boolean exposeInternalColumns) {
         return null;
     }
 

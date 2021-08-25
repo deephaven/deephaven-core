@@ -104,10 +104,10 @@ public class ShapeUtils implements Serializable {
         for (int i = 0; i < 4; i++) {
             double cos = Math.cos(angle);
             double sin = Math.sin(angle);
-            newXPoints[i] = s.getCenterX() + ((xPoints[i] - s.getCenterX()) * cos)
-                - ((xPoints[i] - s.getCenterY()) * sin);
-            newYPoints[i] = s.getCenterY() + ((yPoints[i] - s.getCenterY()) * cos)
-                - ((yPoints[i] - s.getCenterX()) * sin);
+            newXPoints[i] =
+                    s.getCenterX() + ((xPoints[i] - s.getCenterX()) * cos) - ((xPoints[i] - s.getCenterY()) * sin);
+            newYPoints[i] =
+                    s.getCenterY() + ((yPoints[i] - s.getCenterY()) * cos) - ((yPoints[i] - s.getCenterX()) * sin);
         }
 
         Path2D path = new Path2D.Double();
@@ -131,10 +131,8 @@ public class ShapeUtils implements Serializable {
         for (int i = 0; i < p.npoints; i++) {
             double cos = Math.cos(angle);
             double sin = Math.sin(angle);
-            xPoints[i] =
-                center[0] + ((p.xpoints[i] - center[0]) * cos) - ((p.ypoints[i] - center[1]) * sin);
-            yPoints[i] =
-                center[1] + ((p.ypoints[i] - center[1]) * cos) - ((p.xpoints[i] - center[0]) * sin);
+            xPoints[i] = center[0] + ((p.xpoints[i] - center[0]) * cos) - ((p.ypoints[i] - center[1]) * sin);
+            yPoints[i] = center[1] + ((p.ypoints[i] - center[1]) * cos) - ((p.xpoints[i] - center[0]) * sin);
         }
 
         Path2D path = new Path2D.Double();

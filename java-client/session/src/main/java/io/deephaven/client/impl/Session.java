@@ -12,8 +12,7 @@ import java.util.concurrent.CompletableFuture;
 public interface Session extends AutoCloseable, TableHandleManager {
 
     /**
-     * Creates a new export with a {@link io.deephaven.client.impl.ExportRequest.Listener#logging()
-     * logging listener}.
+     * Creates a new export with a {@link io.deephaven.client.impl.ExportRequest.Listener#logging() logging listener}.
      *
      * <p>
      * Equivalent to {@code export(ExportsRequest.logging(table)).get(0)}.
@@ -36,8 +35,7 @@ public interface Session extends AutoCloseable, TableHandleManager {
     /**
      * Publishes {@code export} into the global scope with {@code name}.
      *
-     * @param name the name, must conform to
-     *        {@link javax.lang.model.SourceVersion#isName(CharSequence)}
+     * @param name the name, must conform to {@link javax.lang.model.SourceVersion#isName(CharSequence)}
      * @param export the export
      * @return the publish completable future
      */

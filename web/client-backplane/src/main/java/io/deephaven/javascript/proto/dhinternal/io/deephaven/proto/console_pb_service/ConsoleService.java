@@ -8,9 +8,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb_service.ConsoleService",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb_service.ConsoleService",
+        namespace = JsPackage.GLOBAL)
 public class ConsoleService {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface BindTableToVariableType {

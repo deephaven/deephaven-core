@@ -24,7 +24,7 @@ public abstract class Pct implements Aggregation {
 
     public Pct withAverage() {
         return ImmutablePct.builder().percentile(percentile()).pair(pair()).averageMedian(true)
-            .build();
+                .build();
     }
 
     @Override

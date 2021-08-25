@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest.ZoomRange",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest.ZoomRange",
+        namespace = JsPackage.GLOBAL)
 public class ZoomRange {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -60,7 +60,7 @@ public class ZoomRange {
     public static native void serializeBinaryToWriter(ZoomRange message, Object writer);
 
     public static native ZoomRange.ToObjectReturnType toObject(
-        boolean includeInstance, ZoomRange msg);
+            boolean includeInstance, ZoomRange msg);
 
     public native void clearMaxDateNanos();
 

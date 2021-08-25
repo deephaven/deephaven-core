@@ -25,8 +25,7 @@ public interface StringSet extends Iterable<String> {
     String[] values();
 
     /**
-     * Get a sorted array of the values in this StringSet. May or may not match the value returned
-     * by {@link #values()}.
+     * Get a sorted array of the values in this StringSet. May or may not match the value returned by {@link #values()}.
      *
      * @return A sorted array of this StringSet's values
      */

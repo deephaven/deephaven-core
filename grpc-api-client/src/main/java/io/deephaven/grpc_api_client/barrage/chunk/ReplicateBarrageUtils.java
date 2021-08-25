@@ -12,8 +12,7 @@ import java.io.IOException;
 public class ReplicateBarrageUtils {
     public static void main(final String[] args) throws IOException {
         ReplicatePrimitiveCode.charToAllButBoolean(CharChunkInputStreamGenerator.class,
-            ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToAll(CharArrayExpansionKernel.class,
-            ReplicatePrimitiveCode.MAIN_SRC);
+                ReplicatePrimitiveCode.MAIN_SRC);
+        ReplicatePrimitiveCode.charToAll(CharArrayExpansionKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
     }
 }

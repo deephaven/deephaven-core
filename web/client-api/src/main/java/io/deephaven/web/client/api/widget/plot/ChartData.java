@@ -17,9 +17,9 @@ import java.util.*;
 import java.util.Map.Entry;
 
 /**
- * Helper class to manage snapshots and deltas and keep not only a contiguous JS array of data per
- * column in the underlying table, but also support a mapping function to let client code translate
- * data in some way for display and keep that cached as well.
+ * Helper class to manage snapshots and deltas and keep not only a contiguous JS array of data per column in the
+ * underlying table, but also support a mapping function to let client code translate data in some way for display and
+ * keep that cached as well.
  */
 @JsType(namespace = "dh.plot")
 public class ChartData {
@@ -33,8 +33,7 @@ public class ChartData {
     }
 
     public void update(Object eventDetail) {
-        assert eventDetail instanceof UpdateEventData
-            : "update() can only take table subscription event instances";
+        assert eventDetail instanceof UpdateEventData : "update() can only take table subscription event instances";
 
         UpdateEventData tableData = (UpdateEventData) eventDetail;
         Iterator<Range> addedIterator = tableData.getAdded().getRange().rangeIterator();
@@ -50,28 +49,24 @@ public class ChartData {
         JsArray<Any>[] allColumns;
         if (nextRemoved != null) {
             // noinspection unchecked
-            allColumns = cachedData.values().stream().flatMap(m -> m.values().stream())
-                .toArray(JsArray[]::new);
+            allColumns = cachedData.values().stream().flatMap(m -> m.values().stream()).toArray(JsArray[]::new);
         } else {
             allColumns = null;
         }
 
         while (nextAdded != null || nextRemoved != null || nextModified != null) {
             if (i >= indexes.length) {
-                // We're past the end, nothing possibly left to remove, just append all the new
-                // items
+                // We're past the end, nothing possibly left to remove, just append all the new items
                 // Note that this is the first case we'll hit on initial snapshot
                 assert nextRemoved == null;
                 assert nextModified == null;
                 while (nextAdded != null) {
                     insertDataRange(tableData, nextAdded, i);
 
-                    // increment i past these new items so our offset is correct if there is a next
-                    // block
+                    // increment i past these new items so our offset is correct if there is a next block
                     i += nextAdded.size();
 
-                    // not bothering with i or lastIndexSeen since we will break after this while
-                    // loop
+                    // not bothering with i or lastIndexSeen since we will break after this while loop
                     nextAdded = addedIterator.hasNext() ? addedIterator.next() : null;
                 }
                 break;
@@ -92,11 +87,10 @@ public class ChartData {
 
                 nextAdded = addedIterator.hasNext() ? addedIterator.next() : null;
             } else if (nextModified != null && nextModified.getFirst() == nextIndex) {
-                assert nextModified.getLast() >= nextIndex; // somehow being asked to update an item
-                                                            // which wasn't present
+                assert nextModified.getLast() >= nextIndex; // somehow being asked to update an item which wasn't
+                                                            // present
 
-                // the updated block is contiguous, make sure there are at least that many items to
-                // tweak
+                // the updated block is contiguous, make sure there are at least that many items to tweak
                 assert indexes.length - i >= nextModified.size();
 
                 replaceDataRange(tableData, nextModified, i);
@@ -106,11 +100,9 @@ public class ChartData {
 
                 nextModified = modifiedIterator.hasNext() ? modifiedIterator.next() : null;
             } else if (nextRemoved != null && nextRemoved.getFirst() == nextIndex) {
-                assert nextRemoved.getLast() >= nextIndex; // somehow being asked to remove an item
-                                                           // which wasn't present
+                assert nextRemoved.getLast() >= nextIndex; // somehow being asked to remove an item which wasn't present
 
-                // the block being removed is contiguous, so make sure there are at least that many
-                // and splice them out
+                // the block being removed is contiguous, so make sure there are at least that many and splice them out
                 assert indexes.length - i >= nextRemoved.size();
 
                 // splice out the indexes
@@ -134,10 +126,9 @@ public class ChartData {
         if (JsSettings.isDevMode()) {
             assert ((UpdateEventData) eventDetail).getRows().length == indexes.length;
             assert cachedData.values().stream().flatMap(m -> m.values().stream())
-                .allMatch(arr -> arr.length == indexes.length);
-            assert cachedData.values().stream().flatMap(m -> m.values().stream()).allMatch(
-                arr -> arr.reduce((Object val, Any p1, int p2, Any[] p3) -> ((Integer) val) + 1,
-                    0) == indexes.length);
+                    .allMatch(arr -> arr.length == indexes.length);
+            assert cachedData.values().stream().flatMap(m -> m.values().stream()).allMatch(arr -> arr
+                    .reduce((Object val, Any p1, int p2, Any[] p3) -> ((Integer) val) + 1, 0) == indexes.length);
 
             JsRangeSet fullIndex = tableData.getFullIndex();
             PrimitiveIterator.OfLong iter = fullIndex.getRange().indexIterator();
@@ -148,13 +139,10 @@ public class ChartData {
     }
 
     private void replaceDataRange(UpdateEventData tableData, Range range, int offset) {
-        // we don't touch the indexes at all, only need to walk each column and replace values in
-        // this range
-        for (Entry<String, Map<JsFunction<Any, Any>, JsArray<Any>>> columnMap : cachedData
-            .entrySet()) {
+        // we don't touch the indexes at all, only need to walk each column and replace values in this range
+        for (Entry<String, Map<JsFunction<Any, Any>, JsArray<Any>>> columnMap : cachedData.entrySet()) {
             Column col = table.findColumn(columnMap.getKey());
-            for (Entry<JsFunction<Any, Any>, JsArray<Any>> mapFuncAndArray : columnMap.getValue()
-                .entrySet()) {
+            for (Entry<JsFunction<Any, Any>, JsArray<Any>> mapFuncAndArray : columnMap.getValue().entrySet()) {
                 JsFunction<Any, Any> func = mapFuncAndArray.getKey();
                 JsArray<Any> arr = mapFuncAndArray.getValue();
 
@@ -165,8 +153,7 @@ public class ChartData {
                     }
                 } else {
                     for (int i = 0; i < range.size(); i++) {
-                        arr.setAt(offset + i,
-                            func.apply(tableData.getData(range.getFirst() + i, col)));
+                        arr.setAt(offset + i, func.apply(tableData.getData(range.getFirst() + i, col)));
                     }
                 }
             }
@@ -178,17 +165,14 @@ public class ChartData {
         batchSplice(offset, asArray(indexes), longs(range));
 
         // splice in data to each column
-        for (Entry<String, Map<JsFunction<Any, Any>, JsArray<Any>>> columnMap : cachedData
-            .entrySet()) {
+        for (Entry<String, Map<JsFunction<Any, Any>, JsArray<Any>>> columnMap : cachedData.entrySet()) {
             String columnName = columnMap.getKey();
             Column col = table.findColumn(columnName);
-            for (Entry<JsFunction<Any, Any>, JsArray<Any>> mapFuncAndArray : columnMap.getValue()
-                .entrySet()) {
+            for (Entry<JsFunction<Any, Any>, JsArray<Any>> mapFuncAndArray : columnMap.getValue().entrySet()) {
                 JsFunction<Any, Any> func = mapFuncAndArray.getKey();
                 JsArray<Any> arr = mapFuncAndArray.getValue();
 
-                // here we create a new array and splice it in, to avoid slowly growing the data
-                // array in the case
+                // here we create a new array and splice it in, to avoid slowly growing the data array in the case
                 // of many rows being added
                 Any[] values = values(tableData, func, col, range);
                 batchSplice(offset, arr, values);
@@ -204,15 +188,13 @@ public class ChartData {
         int batchSize = 1 << 15;
 
         for (int i = 0; i < lengthToInsert; i += batchSize) {
-            existingData.splice(offset + i, 0,
-                jsArrayToInsert.slice(i, Math.min(i + batchSize, lengthToInsert)));
+            existingData.splice(offset + i, 0, jsArrayToInsert.slice(i, Math.min(i + batchSize, lengthToInsert)));
         }
 
         return Js.uncheckedCast(existingData);
     }
 
-    private Any[] values(UpdateEventData tableData, JsFunction<Any, Any> mapFunc, Column col,
-        Range insertedRange) {
+    private Any[] values(UpdateEventData tableData, JsFunction<Any, Any> mapFunc, Column col, Range insertedRange) {
         JsArray<Any> result = new JsArray<>();
 
         if (mapFunc == null) {
@@ -243,34 +225,29 @@ public class ChartData {
         return Js.uncheckedCast(longs);
     }
 
-    public JsArray<Any> getColumn(String columnName, JsFunction<Any, Any> mappingFunc,
-        TableData currentUpdate) {
+    public JsArray<Any> getColumn(String columnName, JsFunction<Any, Any> mappingFunc, TableData currentUpdate) {
         // returns the existing column, if any, otherwise iterates over existing data and builds it
 
         return cachedData
-            .computeIfAbsent(columnName, ignore -> new IdentityHashMap<>())
-            .computeIfAbsent(mappingFunc,
-                ignore -> collectAllData(columnName, mappingFunc, currentUpdate));
+                .computeIfAbsent(columnName, ignore -> new IdentityHashMap<>())
+                .computeIfAbsent(mappingFunc, ignore -> collectAllData(columnName, mappingFunc, currentUpdate));
     }
 
     /**
      * Helper to build the full array since it hasn't been requested before.
      */
-    private JsArray<Any> collectAllData(String columnName, JsFunction<Any, Any> mappingFunc,
-        TableData currentUpdate) {
+    private JsArray<Any> collectAllData(String columnName, JsFunction<Any, Any> mappingFunc, TableData currentUpdate) {
         Column column = table.findColumn(columnName);
         if (mappingFunc == null) {
             return Js.uncheckedCast(currentUpdate.getRows().map((p0, p1, p2) -> p0.get(column)));
         }
 
-        return Js.uncheckedCast(
-            currentUpdate.getRows().map((p0, p1, p2) -> mappingFunc.apply(p0.get(column))));
+        return Js.uncheckedCast(currentUpdate.getRows().map((p0, p1, p2) -> mappingFunc.apply(p0.get(column))));
     }
 
     /**
-     * Removes some column from the cache, avoiding extra computation on incoming events, and
-     * possibly freeing some memory. If this pair of column name and map function are requested
-     * again, it will be recomputed from scratch.
+     * Removes some column from the cache, avoiding extra computation on incoming events, and possibly freeing some
+     * memory. If this pair of column name and map function are requested again, it will be recomputed from scratch.
      */
     public void removeColumn(String columnName, JsFunction<Any, Any> mappingFunc) {
         Map<JsFunction<Any, Any>, JsArray<Any>> map = cachedData.get(columnName);

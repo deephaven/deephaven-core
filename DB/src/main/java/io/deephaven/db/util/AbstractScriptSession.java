@@ -20,13 +20,12 @@ import java.io.File;
 import java.util.*;
 
 /**
- * This class exists to make all script sessions to be liveness artifacts, and provide a default
- * implementation for evaluateScript which handles liveness and diffs in a consistent way.
+ * This class exists to make all script sessions to be liveness artifacts, and provide a default implementation for
+ * evaluateScript which handles liveness and diffs in a consistent way.
  */
-public abstract class AbstractScriptSession extends LivenessScope
-    implements ScriptSession, VariableProvider {
+public abstract class AbstractScriptSession extends LivenessScope implements ScriptSession, VariableProvider {
     public static final String CLASS_CACHE_LOCATION = Configuration.getInstance()
-        .getStringWithDefault("ScriptSession.classCacheDirectory", "/tmp/dh_class_cache");
+            .getStringWithDefault("ScriptSession.classCacheDirectory", "/tmp/dh_class_cache");
 
     public static void createScriptCache() {
         final File classCacheDirectory = new File(CLASS_CACHE_LOCATION);
@@ -39,7 +38,7 @@ public abstract class AbstractScriptSession extends LivenessScope
         }
         if (!directory.mkdirs()) {
             throw new UncheckedDeephavenException(
-                "Failed to create class cache directory " + directory.getAbsolutePath());
+                    "Failed to create class cache directory " + directory.getAbsolutePath());
         }
     }
 
@@ -58,23 +57,21 @@ public abstract class AbstractScriptSession extends LivenessScope
         queryScope = newQueryScope();
         queryLibrary = QueryLibrary.makeNewLibrary();
 
-        compilerContext =
-            new CompilerTools.Context(classCacheDirectory, getClass().getClassLoader()) {
-                {
-                    addClassSource(getFakeClassDestination());
-                }
+        compilerContext = new CompilerTools.Context(classCacheDirectory, getClass().getClassLoader()) {
+            {
+                addClassSource(getFakeClassDestination());
+            }
 
-                @Override
-                public File getFakeClassDestination() {
-                    return classCacheDirectory;
-                }
+            @Override
+            public File getFakeClassDestination() {
+                return classCacheDirectory;
+            }
 
-                @Override
-                public String getClassPath() {
-                    return classCacheDirectory.getAbsolutePath() + File.pathSeparatorChar
-                        + super.getClassPath();
-                }
-            };
+            @Override
+            public String getClassPath() {
+                return classCacheDirectory.getAbsolutePath() + File.pathSeparatorChar + super.getClassPath();
+            }
+        };
 
         if (isDefaultScriptSession) {
             CompilerTools.setDefaultContext(compilerContext);
@@ -82,8 +79,7 @@ public abstract class AbstractScriptSession extends LivenessScope
             QueryLibrary.setDefaultLibrary(queryLibrary);
         }
         @SuppressWarnings("rawtypes")
-        ServiceLoader<CompletionParseService> loader =
-            ServiceLoader.load(CompletionParseService.class);
+        ServiceLoader<CompletionParseService> loader = ServiceLoader.load(CompletionParseService.class);
         @SuppressWarnings("rawtypes")
         final Iterator<CompletionParseService> itr = loader.iterator();
         if (itr.hasNext()) {
@@ -103,8 +99,7 @@ public abstract class AbstractScriptSession extends LivenessScope
         final CompilerTools.Context prevCompilerContext = CompilerTools.getContext();
         final QueryScope prevQueryScope = QueryScope.getScope();
 
-        // retain any objects which are created in the executed code, we'll release them when the
-        // script session closes
+        // retain any objects which are created in the executed code, we'll release them when the script session closes
         try (final SafeCloseable ignored = LivenessScopeStack.open(this, false)) {
             // point query scope static state to our session's state
             QueryScope.setScope(queryScope);
@@ -150,8 +145,7 @@ public abstract class AbstractScriptSession extends LivenessScope
             final ExportedObjectType type = ExportedObjectType.fromObject(value);
             if (type.isDisplayableInSwing()) {
                 if (type != types.get(name)) {
-                    // either the name no longer exists, or it has a new type, and we mark it as
-                    // removed (see above)
+                    // either the name no longer exists, or it has a new type, and we mark it as removed (see above)
                     diff.removed.put(entry.getKey(), type);
                 }
             }
@@ -172,8 +166,8 @@ public abstract class AbstractScriptSession extends LivenessScope
      * Evaluates command in the context of the current ScriptSession.
      * 
      * @param command the command to evaluate
-     * @param scriptName an optional script name, which may be ignored by the implementation, or
-     *        used improve error messages or for other internal purposes
+     * @param scriptName an optional script name, which may be ignored by the implementation, or used improve error
+     *        messages or for other internal purposes
      */
     protected abstract void evaluate(String command, @Nullable String scriptName);
 

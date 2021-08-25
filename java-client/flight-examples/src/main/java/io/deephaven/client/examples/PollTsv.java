@@ -15,7 +15,7 @@ import picocli.CommandLine.Parameters;
 import java.time.Duration;
 
 @Command(name = "poll-tsv", mixinStandardHelpOptions = true,
-    description = "Send a QST, poll the results, and convert to TSV", version = "0.1.0")
+        description = "Send a QST, poll the results, and convert to TSV", version = "0.1.0")
 class PollTsv extends FlightExampleBase {
 
     static class Mode {
@@ -36,14 +36,14 @@ class PollTsv extends FlightExampleBase {
     Long count;
 
     @Parameters(arity = "1", paramLabel = "QST", description = "QST file to send and get.",
-        converter = TableConverter.class)
+            converter = TableConverter.class)
     TableSpec table;
 
     @Override
     protected void execute(FlightSession flight) throws Exception {
 
         final TableHandleManager manager = mode == null ? flight.session()
-            : mode.batch ? flight.session().batch() : flight.session().serial();
+                : mode.batch ? flight.session().batch() : flight.session().serial();
 
         long times = count == null ? Long.MAX_VALUE : count;
 

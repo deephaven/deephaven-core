@@ -18,21 +18,21 @@ public class SimpleCategoryPlot2 {
 
         Figure fig = FigureFactory.figure();
         Figure cht = fig.newChart(0)
-            .chartTitle("Chart Title");
+                .chartTitle("Chart Title");
         Figure axs1 = cht.newAxes()
-            .xLabel("X")
-            .yLabel("Y").plotStyle("SCATTER")
+                .xLabel("X")
+                .yLabel("Y").plotStyle("SCATTER")
 
-            .catPlot("Test1", x1, y1)
-            .pointShape("circle")
-            .pointSize(2);
+                .catPlot("Test1", x1, y1)
+                .pointShape("circle")
+                .pointSize(2);
 
         Figure axs2 = axs1.twin().plotStyle("SCATTER")
-            .catPlot("Test2", x2, y2)
-            .pointShape("up_triangle")
-            .pointSize(2)
-            .axis(0).axisLabelFont("Courier", "BOLD_ITALIC", 25)
-            .xTickLabelAngle(45);
+                .catPlot("Test2", x2, y2)
+                .pointShape("up_triangle")
+                .pointSize(2)
+                .axis(0).axisLabelFont("Courier", "BOLD_ITALIC", 25)
+                .xTickLabelAngle(45);
 
         ExamplePlotUtils.display(axs2);
     }

@@ -12,12 +12,11 @@ import org.jetbrains.annotations.NotNull;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
 public class ColumnRegionReferencingImpl<ATTR extends Any, REFERENCED_COLUMN_REGION extends ColumnRegion<ATTR>>
-    implements ColumnRegionReferencing<ATTR, REFERENCED_COLUMN_REGION>, Page.WithDefaults<ATTR> {
+        implements ColumnRegionReferencing<ATTR, REFERENCED_COLUMN_REGION>, Page.WithDefaults<ATTR> {
 
     private final REFERENCED_COLUMN_REGION referencedColumnRegion;
 
-    public ColumnRegionReferencingImpl(
-        @NotNull final REFERENCED_COLUMN_REGION referencedColumnRegion) {
+    public ColumnRegionReferencingImpl(@NotNull final REFERENCED_COLUMN_REGION referencedColumnRegion) {
         this.referencedColumnRegion = referencedColumnRegion;
     }
 
@@ -34,10 +33,9 @@ public class ColumnRegionReferencingImpl<ATTR extends Any, REFERENCED_COLUMN_REG
 
     @Override
     public void fillChunkAppend(@NotNull ChunkSource.FillContext context,
-        @NotNull WritableChunk<? super ATTR> destination, @NotNull OrderedKeys orderedKeys) {
+            @NotNull WritableChunk<? super ATTR> destination, @NotNull OrderedKeys orderedKeys) {
         FillContext.<ATTR>converter(context).convertRegion(destination,
-            referencedColumnRegion.getChunk(FillContext.nativeGetContext(context), orderedKeys),
-            orderedKeys);
+                referencedColumnRegion.getChunk(FillContext.nativeGetContext(context), orderedKeys), orderedKeys);
     }
 
     @Override
@@ -52,7 +50,7 @@ public class ColumnRegionReferencingImpl<ATTR extends Any, REFERENCED_COLUMN_REG
         private final Converter<ATTR> converter;
 
         FillContext(GetContextMaker getContextMaker, Converter<ATTR> converter, int chunkCapacity,
-            SharedContext sharedContext) {
+                SharedContext sharedContext) {
             this.converter = converter;
             this.nativeGetContext = getContextMaker.makeGetContext(chunkCapacity, sharedContext);
         }

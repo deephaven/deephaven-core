@@ -221,14 +221,11 @@ public class ExerciseLockFreeArrayQueue {
                 } else if (spin > 1000000) {
                     if (spin % 1000000 == 0) {
                         long dt = System.nanoTime() - t0;
-                        error("TZ2: stuck producer " + runner.id + ": " + spin
-                            + " spins on element " + el
-                            + ", initial: " + head0 + "/" + tail0 + ", now: " + q.head.get() + "/"
-                            + q.tail.get()
-                            + ", dt=" + (dt / 1000000) + " " + runnerState());
+                        error("TZ2: stuck producer " + runner.id + ": " + spin + " spins on element " + el
+                                + ", initial: " + head0 + "/" + tail0 + ", now: " + q.head.get() + "/" + q.tail.get()
+                                + ", dt=" + (dt / 1000000) + " " + runnerState());
                         if (dt - t0 > ABORT_NANOS) {
-                            error("TZ2: aborting producer " + runner.id + " after " + (dt / 1000000)
-                                + " millis");
+                            error("TZ2: aborting producer " + runner.id + " after " + (dt / 1000000) + " millis");
                             break;
                         }
                     }
@@ -255,12 +252,10 @@ public class ExerciseLockFreeArrayQueue {
                 } else if (spin % 1000000 == 0) {
                     long dt = System.nanoTime() - t0;
                     error("TZ2: stuck consumer " + runner.id + ": " + spin + " spins"
-                        + ", initial: " + head0 + "/" + tail0 + ", now: " + q.head.get() + "/"
-                        + q.tail.get()
-                        + ", dt=" + (dt / 1000000) + " " + runnerState());
+                            + ", initial: " + head0 + "/" + tail0 + ", now: " + q.head.get() + "/" + q.tail.get()
+                            + ", dt=" + (dt / 1000000) + " " + runnerState());
                     if (dt > ABORT_NANOS) {
-                        error("TZ2: aborting consumer " + runner.id + " after " + (dt / 1000000)
-                            + " millis");
+                        error("TZ2: aborting consumer " + runner.id + " after " + (dt / 1000000) + " millis");
                         break;
                     }
                 }
@@ -350,8 +345,8 @@ public class ExerciseLockFreeArrayQueue {
                 if (spin == 1000000) {
                     t0 = System.nanoTime();
                 } else if (spin % 1000000 == 0 && System.nanoTime() - t0 > ABORT_NANOS) {
-                    error("PBQ: aborting stuck producer after " + (ABORT_NANOS / 1000000)
-                        + " millis and " + spin + " spins on element " + el);
+                    error("PBQ: aborting stuck producer after " + (ABORT_NANOS / 1000000) + " millis and " + spin
+                            + " spins on element " + el);
                     break;
                 }
             }
@@ -368,8 +363,8 @@ public class ExerciseLockFreeArrayQueue {
                 if (spin == 1000000) {
                     t0 = System.nanoTime();
                 } else if (spin % 1000000 == 0 && System.nanoTime() - t0 > ABORT_NANOS) {
-                    error("PBQ: aborting stuck consumer after " + (ABORT_NANOS / 1000000)
-                        + " millis and " + spin + " spins");
+                    error("PBQ: aborting stuck consumer after " + (ABORT_NANOS / 1000000) + " millis and " + spin
+                            + " spins");
                     break;
                 }
             }
@@ -476,8 +471,8 @@ public class ExerciseLockFreeArrayQueue {
     public static AtomicBoolean testTwoThreadsFailed = new AtomicBoolean(false);
 
     public static void testOrdered(final int trial, final BenchQueue<Int> q, final int N,
-        final int PRODUCER_MIN_WORK, final int PRODUCER_MAX_WORK,
-        final int CONSUMER_MIN_WORK, final int CONSUMER_MAX_WORK) {
+            final int PRODUCER_MIN_WORK, final int PRODUCER_MAX_WORK,
+            final int CONSUMER_MIN_WORK, final int CONSUMER_MAX_WORK) {
         q.init();
         resetRunners();
 
@@ -519,25 +514,25 @@ public class ExerciseLockFreeArrayQueue {
         long t1 = System.nanoTime();
 
         System.out.println("testOrdered" + ","
-            + q.getClass().getSimpleName() + ","
-            + trial + ","
-            + q.cap() + ","
-            + N + ","
-            + 1 + ","
-            + 1 + ","
-            + PRODUCER_MIN_WORK + ","
-            + PRODUCER_MAX_WORK + ","
-            + CONSUMER_MIN_WORK + ","
-            + CONSUMER_MAX_WORK + ","
-            + (runners[0].put_work / N) + ","
-            + (runners[1].get_work / N) + ","
-            + ((double) runners[0].put_spins / N) + ","
-            + ((double) runners[1].get_spins / N) + ","
-            + ((t1 - t0) / N) + ","
-            + q.head() + ","
-            + q.tail() + ","
-            + (q.head() % q.cap()) + ","
-            + (q.tail() % q.cap()) + ",");
+                + q.getClass().getSimpleName() + ","
+                + trial + ","
+                + q.cap() + ","
+                + N + ","
+                + 1 + ","
+                + 1 + ","
+                + PRODUCER_MIN_WORK + ","
+                + PRODUCER_MAX_WORK + ","
+                + CONSUMER_MIN_WORK + ","
+                + CONSUMER_MAX_WORK + ","
+                + (runners[0].put_work / N) + ","
+                + (runners[1].get_work / N) + ","
+                + ((double) runners[0].put_spins / N) + ","
+                + ((double) runners[1].get_spins / N) + ","
+                + ((t1 - t0) / N) + ","
+                + q.head() + ","
+                + q.tail() + ","
+                + (q.head() % q.cap()) + ","
+                + (q.tail() % q.cap()) + ",");
 
         if (testTwoThreadsFailed.get()) {
             System.err.println("Trial " + trial + ": testOrdered: failed ");
@@ -549,9 +544,9 @@ public class ExerciseLockFreeArrayQueue {
     // ------------------------------------------------------------------------------------------------
 
     public static void testManyThreads(final int trial, final BenchQueue<Int> q,
-        final int num_producers, final int num_consumers, final int N,
-        final int PRODUCER_MIN_WORK, final int PRODUCER_MAX_WORK,
-        final int CONSUMER_MIN_WORK, final int CONSUMER_MAX_WORK) {
+            final int num_producers, final int num_consumers, final int N,
+            final int PRODUCER_MIN_WORK, final int PRODUCER_MAX_WORK,
+            final int CONSUMER_MIN_WORK, final int CONSUMER_MAX_WORK) {
         q.init();
         resetDequeueCounts();
         resetRunners();
@@ -620,30 +615,30 @@ public class ExerciseLockFreeArrayQueue {
         }
 
         System.out.println("testManyThreads" + ","
-            + q.getClass().getSimpleName() + ","
-            + trial + ","
-            + q.cap() + ","
-            + N + ","
-            + num_producers + ","
-            + num_consumers + ","
-            + PRODUCER_MIN_WORK + ","
-            + PRODUCER_MAX_WORK + ","
-            + CONSUMER_MIN_WORK + ","
-            + CONSUMER_MAX_WORK + ","
-            + (total_producer_work / N) + ","
-            + (total_consumer_work / N) + ","
-            + ((double) total_producer_spins / N) + ","
-            + ((double) total_consumer_spins / N) + ","
-            + ((t1 - t0) / N) + ","
-            + q.head() + ","
-            + q.tail() + ","
-            + (q.head() % q.cap()) + ","
-            + (q.tail() % q.cap()) + ",");
+                + q.getClass().getSimpleName() + ","
+                + trial + ","
+                + q.cap() + ","
+                + N + ","
+                + num_producers + ","
+                + num_consumers + ","
+                + PRODUCER_MIN_WORK + ","
+                + PRODUCER_MAX_WORK + ","
+                + CONSUMER_MIN_WORK + ","
+                + CONSUMER_MAX_WORK + ","
+                + (total_producer_work / N) + ","
+                + (total_consumer_work / N) + ","
+                + ((double) total_producer_spins / N) + ","
+                + ((double) total_consumer_spins / N) + ","
+                + ((t1 - t0) / N) + ","
+                + q.head() + ","
+                + q.tail() + ","
+                + (q.head() % q.cap()) + ","
+                + (q.tail() % q.cap()) + ",");
 
         for (int i = 0; i < N; ++i) {
             if (dequeueCounts.get(i) != 1) {
-                error("Trial " + trial + " testManyThreads: object " + i + " was dequeued "
-                    + dequeueCounts.get(i) + " times");
+                error("Trial " + trial + " testManyThreads: object " + i + " was dequeued " + dequeueCounts.get(i)
+                        + " times");
             }
         }
     }
@@ -695,11 +690,10 @@ public class ExerciseLockFreeArrayQueue {
                                     // 0, cw); // min, max consumer work iterations between ops
 
                                     testManyThreads(i, q,
-                                        p, c, // number of producers/consumers
-                                        10000000, // number of operations
-                                        0, pw * 20, // min, max producer work iterations between ops
-                                        0, cw * 20); // min, max consumer work iterations between
-                                                     // ops
+                                            p, c, // number of producers/consumers
+                                            10000000, // number of operations
+                                            0, pw * 20, // min, max producer work iterations between ops
+                                            0, cw * 20); // min, max consumer work iterations between ops
                                 }
                             }
                         }

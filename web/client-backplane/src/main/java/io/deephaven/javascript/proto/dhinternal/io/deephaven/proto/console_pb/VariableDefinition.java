@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.VariableDefinition",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.VariableDefinition",
+        namespace = JsPackage.GLOBAL)
 public class VariableDefinition {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -56,12 +56,12 @@ public class VariableDefinition {
     public static native VariableDefinition deserializeBinary(Uint8Array bytes);
 
     public static native VariableDefinition deserializeBinaryFromReader(
-        VariableDefinition message, Object reader);
+            VariableDefinition message, Object reader);
 
     public static native void serializeBinaryToWriter(VariableDefinition message, Object writer);
 
     public static native VariableDefinition.ToObjectReturnType toObject(
-        boolean includeInstance, VariableDefinition msg);
+            boolean includeInstance, VariableDefinition msg);
 
     public native String getName();
 

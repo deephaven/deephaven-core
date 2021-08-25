@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdateMessage",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdateMessage",
+        namespace = JsPackage.GLOBAL)
 public class ExportedTableUpdateMessage {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -21,8 +21,7 @@ public class ExportedTableUpdateMessage {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface GetTicketUnionType {
                 @JsOverlay
-                static ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                static ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType.GetTicketUnionType of(Object o) {
                     return Js.cast(o);
                 }
 
@@ -57,20 +56,20 @@ public class ExportedTableUpdateMessage {
 
             @JsProperty
             void setTicket(
-                ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType.GetTicketUnionType ticket);
+                    ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -106,7 +105,7 @@ public class ExportedTableUpdateMessage {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -141,20 +140,20 @@ public class ExportedTableUpdateMessage {
 
             @JsProperty
             void setTicket(
-                ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType.GetTicketUnionType ticket);
+                    ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -185,13 +184,13 @@ public class ExportedTableUpdateMessage {
     public static native ExportedTableUpdateMessage deserializeBinary(Uint8Array bytes);
 
     public static native ExportedTableUpdateMessage deserializeBinaryFromReader(
-        ExportedTableUpdateMessage message, Object reader);
+            ExportedTableUpdateMessage message, Object reader);
 
     public static native void serializeBinaryToWriter(
-        ExportedTableUpdateMessage message, Object writer);
+            ExportedTableUpdateMessage message, Object writer);
 
     public static native ExportedTableUpdateMessage.ToObjectReturnType toObject(
-        boolean includeInstance, ExportedTableUpdateMessage msg);
+            boolean includeInstance, ExportedTableUpdateMessage msg);
 
     public native void clearExportId();
 

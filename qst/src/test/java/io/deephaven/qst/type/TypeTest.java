@@ -137,40 +137,40 @@ public class TypeTest {
     @Test
     void nestedPrimitive2x() {
         assertThat(find(int[][].class)).isEqualTo(
-            NativeArrayType.of(int[][].class, NativeArrayType.of(int[].class, IntType.instance())));
+                NativeArrayType.of(int[][].class, NativeArrayType.of(int[].class, IntType.instance())));
     }
 
     @Test
     void nestedPrimitive3x() {
         assertThat(find(int[][][].class))
-            .isEqualTo(NativeArrayType.of(int[][][].class, NativeArrayType.of(int[][].class,
-                NativeArrayType.of(int[].class, IntType.instance()))));
+                .isEqualTo(NativeArrayType.of(int[][][].class, NativeArrayType.of(int[][].class,
+                        NativeArrayType.of(int[].class, IntType.instance()))));
     }
 
     @Test
     void nestedStatic2x() {
         assertThat(find(String[][].class)).isEqualTo(NativeArrayType.of(String[][].class,
-            NativeArrayType.of(String[].class, StringType.instance())));
+                NativeArrayType.of(String[].class, StringType.instance())));
     }
 
     @Test
     void nestedStatic3x() {
         assertThat(find(String[][][].class))
-            .isEqualTo(NativeArrayType.of(String[][][].class, NativeArrayType.of(String[][].class,
-                NativeArrayType.of(String[].class, StringType.instance()))));
+                .isEqualTo(NativeArrayType.of(String[][][].class, NativeArrayType.of(String[][].class,
+                        NativeArrayType.of(String[].class, StringType.instance()))));
     }
 
     @Test
     void nestedCustom2x() {
         assertThat(find(Custom[][].class)).isEqualTo(NativeArrayType.of(Custom[][].class,
-            NativeArrayType.of(Custom[].class, CustomType.of(Custom.class))));
+                NativeArrayType.of(Custom[].class, CustomType.of(Custom.class))));
     }
 
     @Test
     void nestedCustom3x() {
         assertThat(find(Custom[][][].class))
-            .isEqualTo(NativeArrayType.of(Custom[][][].class, NativeArrayType.of(Custom[][].class,
-                NativeArrayType.of(Custom[].class, CustomType.of(Custom.class)))));
+                .isEqualTo(NativeArrayType.of(Custom[][][].class, NativeArrayType.of(Custom[][].class,
+                        NativeArrayType.of(Custom[].class, CustomType.of(Custom.class)))));
     }
 
     @Test
@@ -187,7 +187,7 @@ public class TypeTest {
 
     @Test
     void dbPrimitiveTypesAreEmpty()
-        throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+            throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         // Db primitive array types are not on the classpath as QST dependency, make sure
         // they are not found.
         try {

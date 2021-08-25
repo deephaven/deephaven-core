@@ -45,8 +45,7 @@ public abstract class ExportsRequest implements Iterable<ExportRequest> {
     }
 
     /**
-     * A convenience method for creating an export requests with a shared {@link Listener#logging()
-     * logging listener}.
+     * A convenience method for creating an export requests with a shared {@link Listener#logging() logging listener}.
      *
      * @param tables the tables
      * @return the requests
@@ -56,8 +55,7 @@ public abstract class ExportsRequest implements Iterable<ExportRequest> {
     }
 
     /**
-     * A convenience method for creating an export requests with a shared {@link Listener#logging()
-     * logging listener}.
+     * A convenience method for creating an export requests with a shared {@link Listener#logging() logging listener}.
      *
      * @param tables the tables
      * @return the requests

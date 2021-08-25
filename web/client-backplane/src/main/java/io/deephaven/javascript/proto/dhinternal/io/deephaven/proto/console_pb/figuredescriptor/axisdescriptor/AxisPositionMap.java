@@ -8,9 +8,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.AxisDescriptor.AxisPositionMap",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.AxisDescriptor.AxisPositionMap",
+        namespace = JsPackage.GLOBAL)
 public interface AxisPositionMap {
     @JsOverlay
     static AxisPositionMap create() {

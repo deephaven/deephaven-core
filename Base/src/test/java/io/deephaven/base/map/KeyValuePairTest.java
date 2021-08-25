@@ -20,12 +20,11 @@ public class KeyValuePairTest extends TestCase {
         return new KeyValuePair<LongWrapper, TrialClassA>(key, value);
     }
 
-    private static class Reader
-        implements FastArray.ReadExternalFunction<KeyValuePair<LongWrapper, TrialClassA>> {
+    private static class Reader implements FastArray.ReadExternalFunction<KeyValuePair<LongWrapper, TrialClassA>> {
 
         @Override
         public void readExternal(ObjectInput in, KeyValuePair<LongWrapper, TrialClassA> item)
-            throws IOException, ClassNotFoundException {
+                throws IOException, ClassNotFoundException {
             byte nullByteA = in.readByte();
             // System.out.println("read nullByteA: " + nullByteA);
             if (nullByteA == 1) {
@@ -49,8 +48,7 @@ public class KeyValuePairTest extends TestCase {
                     oldKey.readExternal(in);
                     // System.out.println("read in key\n" + oldKey);
                 } else {
-                    throw new IllegalStateException(
-                        "did not recognize your nullByteB: " + nullByteB);
+                    throw new IllegalStateException("did not recognize your nullByteB: " + nullByteB);
                 }
 
                 // value
@@ -69,8 +67,7 @@ public class KeyValuePairTest extends TestCase {
                     oldValue.readExternal(in);
                     // System.out.println("read in value\n" + oldValue);
                 } else {
-                    throw new IllegalStateException(
-                        "did not recognize your nullByteC: " + nullByteC);
+                    throw new IllegalStateException("did not recognize your nullByteC: " + nullByteC);
                 }
 
 
@@ -80,12 +77,10 @@ public class KeyValuePairTest extends TestCase {
         }
     }
 
-    private static class Writer
-        implements FastArray.WriteExternalFunction<KeyValuePair<LongWrapper, TrialClassA>> {
+    private static class Writer implements FastArray.WriteExternalFunction<KeyValuePair<LongWrapper, TrialClassA>> {
 
         @Override
-        public void writeExternal(ObjectOutput out, KeyValuePair<LongWrapper, TrialClassA> item)
-            throws IOException {
+        public void writeExternal(ObjectOutput out, KeyValuePair<LongWrapper, TrialClassA> item) throws IOException {
             if (item == null) {
                 // System.out.println("write nullByteA = 1");
                 out.writeByte(1); // nullByteA
@@ -133,8 +128,7 @@ public class KeyValuePairTest extends TestCase {
         long long1 = 978234897L;
         TrialClassA value = new TrialClassA(double1, int1, long1);
 
-        KeyValuePair<LongWrapper, TrialClassA> kvp =
-            new KeyValuePair<LongWrapper, TrialClassA>(key, value);
+        KeyValuePair<LongWrapper, TrialClassA> kvp = new KeyValuePair<LongWrapper, TrialClassA>(key, value);
         // values in key
         assertEquals(longKey, kvp.getKey().getVal());
 
@@ -191,7 +185,7 @@ public class KeyValuePairTest extends TestCase {
     }
 
     public void checkExternalization(KeyValuePair<LongWrapper, TrialClassA> kvpInput,
-        KeyValuePair<LongWrapper, TrialClassA> kvpReceiver) throws Exception {
+            KeyValuePair<LongWrapper, TrialClassA> kvpReceiver) throws Exception {
         if (kvpInput == null) {
             fail("writing from a null kvpInput");
         }
@@ -219,25 +213,21 @@ public class KeyValuePairTest extends TestCase {
     }
 
     public void testExternalizationNullInputsNullReceiver() throws Exception {
-        KeyValuePair<LongWrapper, TrialClassA> kvpInput =
-            new KeyValuePair<LongWrapper, TrialClassA>();
-        KeyValuePair<LongWrapper, TrialClassA> kvpReceiver =
-            new KeyValuePair<LongWrapper, TrialClassA>();
+        KeyValuePair<LongWrapper, TrialClassA> kvpInput = new KeyValuePair<LongWrapper, TrialClassA>();
+        KeyValuePair<LongWrapper, TrialClassA> kvpReceiver = new KeyValuePair<LongWrapper, TrialClassA>();
         checkExternalization(kvpInput, kvpReceiver);
     }
 
     public void testExternalizationNullInputsValidReceiver() throws Exception {
         Random myRandom = new Random(89324L);
-        KeyValuePair<LongWrapper, TrialClassA> kvpInput =
-            new KeyValuePair<LongWrapper, TrialClassA>();
+        KeyValuePair<LongWrapper, TrialClassA> kvpInput = new KeyValuePair<LongWrapper, TrialClassA>();
         KeyValuePair<LongWrapper, TrialClassA> kvpReceiver = makeRandomKvp(myRandom);
         checkExternalization(kvpInput, kvpReceiver);
     }
 
     public void testExternalizationValidInputsNullReceiver() throws Exception {
         Random myRandom = new Random(89324L);
-        KeyValuePair<LongWrapper, TrialClassA> kvpReceiver =
-            new KeyValuePair<LongWrapper, TrialClassA>();
+        KeyValuePair<LongWrapper, TrialClassA> kvpReceiver = new KeyValuePair<LongWrapper, TrialClassA>();
         KeyValuePair<LongWrapper, TrialClassA> kvpInput = makeRandomKvp(myRandom);
         checkExternalization(kvpInput, kvpReceiver);
     }

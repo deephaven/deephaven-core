@@ -10,23 +10,18 @@ import java.util.Collections;
 public class ReplicateChunkFilters {
     public static void main(String[] args) throws IOException {
 
-        ReplicatePrimitiveCode.charToShortAndByte(CharRangeComparator.class,
-            ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToInteger(CharRangeComparator.class,
-            ReplicatePrimitiveCode.MAIN_SRC, Collections.emptyMap());
+        ReplicatePrimitiveCode.charToShortAndByte(CharRangeComparator.class, ReplicatePrimitiveCode.MAIN_SRC);
+        ReplicatePrimitiveCode.charToInteger(CharRangeComparator.class, ReplicatePrimitiveCode.MAIN_SRC,
+                Collections.emptyMap());
 
-        ReplicatePrimitiveCode.charToShortAndByte(CharRangeFilter.class,
-            ReplicatePrimitiveCode.MAIN_SRC);
+        ReplicatePrimitiveCode.charToShortAndByte(CharRangeFilter.class, ReplicatePrimitiveCode.MAIN_SRC);
         ReplicatePrimitiveCode.charToInteger(CharRangeFilter.class, ReplicatePrimitiveCode.MAIN_SRC,
-            Collections.emptyMap());
+                Collections.emptyMap());
         ReplicatePrimitiveCode.charToLong(CharRangeFilter.class, ReplicatePrimitiveCode.MAIN_SRC);
 
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(FloatRangeComparator.class,
-            ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(FloatRangeFilter.class,
-            ReplicatePrimitiveCode.MAIN_SRC);
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(FloatRangeComparator.class, ReplicatePrimitiveCode.MAIN_SRC);
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(FloatRangeFilter.class, ReplicatePrimitiveCode.MAIN_SRC);
 
-        ReplicatePrimitiveCode.charToAllButBoolean(CharChunkMatchFilterFactory.class,
-            ReplicatePrimitiveCode.MAIN_SRC);
+        ReplicatePrimitiveCode.charToAllButBoolean(CharChunkMatchFilterFactory.class, ReplicatePrimitiveCode.MAIN_SRC);
     }
 }

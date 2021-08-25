@@ -21,8 +21,7 @@ public class IndexableDataByte extends IndexableData<Byte> {
     /**
      * Creates an IndexableDataByte instance.
      *
-     * Values in {@code data} equal to {@link io.deephaven.util.QueryConstants#NULL_INT} are treated
-     * as null.
+     * Values in {@code data} equal to {@link io.deephaven.util.QueryConstants#NULL_INT} are treated as null.
      *
      * @param data data
      * @param plotInfo plot information

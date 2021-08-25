@@ -40,7 +40,7 @@ public class UngroupedColumnSourceBench extends RedirectionBenchBase {
         final BenchmarkTableBuilder builder1;
         builder1 = BenchmarkTools.persistentTableBuilder("T1", tableSize / 10);
         builder1.setSeed(0xDEADB00F)
-            .addColumn(BenchmarkTools.stringCol("PartCol1", 4, 5, 7, 0xFEEDBEEF));
+                .addColumn(BenchmarkTools.stringCol("PartCol1", 4, 5, 7, 0xFEEDBEEF));
         final String joinCol = "L";
         builder1.addColumn(BenchmarkTools.seqNumberCol(joinCol, long.class, 0, 1));
         builder1.addColumn(BenchmarkTools.numberCol("I1", int.class, -10_000_000, 10_000_000));
@@ -49,31 +49,30 @@ public class UngroupedColumnSourceBench extends RedirectionBenchBase {
         final BenchmarkTableBuilder builder2;
         builder2 = BenchmarkTools.persistentTableBuilder("T2", tableSize);
         builder2.setSeed(0xDEADBEEF)
-            .addColumn(BenchmarkTools.stringCol("PartCol2", 4, 5, 7, 0xFEEDB00F));
+                .addColumn(BenchmarkTools.stringCol("PartCol2", 4, 5, 7, 0xFEEDB00F));
         builder2.addColumn(BenchmarkTools.numberCol(joinCol, long.class, 0, tableSize));
         final BenchmarkTable bmTable2 = builder2.build();
         final Table t1 = bmTable1.getTable().coalesce();
         final Table t2 = bmTable2.getTable().coalesce();
         final long sizePerStep = Math.max(t1.size() / steps, 1);
         final IncrementalReleaseFilter incrementalReleaseFilter =
-            new IncrementalReleaseFilter(sizePerStep, sizePerStep);
+                new IncrementalReleaseFilter(sizePerStep, sizePerStep);
         final Table live;
         if (doSelect) {
             live = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(
-                () -> t1.where(incrementalReleaseFilter).select(joinCol, "PartCol1", "I1")
-                    .sort("I1").join(
-                        t2, joinCol, "PartCol2"));
+                    () -> t1.where(incrementalReleaseFilter).select(joinCol, "PartCol1", "I1").sort("I1").join(
+                            t2, joinCol, "PartCol2"));
         } else {
             live = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(
-                () -> t1.where(incrementalReleaseFilter).sort("I1").join(
-                    t2, joinCol, "PartCol2"));
+                    () -> t1.where(incrementalReleaseFilter).sort("I1").join(
+                            t2, joinCol, "PartCol2"));
         }
         return new QueryData(
-            live,
-            incrementalReleaseFilter,
-            steps,
-            new String[] {joinCol},
-            WritableLongChunk.makeWritableChunk(chunkCapacity));
+                live,
+                incrementalReleaseFilter,
+                steps,
+                new String[] {joinCol},
+                WritableLongChunk.makeWritableChunk(chunkCapacity));
     }
 
     public static void main(final String[] args) {

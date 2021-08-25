@@ -34,8 +34,7 @@ public class Calendars implements Map<String, BusinessCalendar> {
     private static final String BUSINESS_CALENDAR_PROP_INTERNAL = "Calendar.internalPath";
     private static final String BUSINESS_CALENDAR_PROP_USER = "Calendar.resourcePath";
     private static final Calendars instance = new Calendars();
-    private static final String defaultName =
-        Configuration.getInstance().getProperty("Calendar.default");
+    private static final String defaultName = Configuration.getInstance().getProperty("Calendar.default");
 
     /**
      * Gets the singleton map of business calendars.
@@ -68,8 +67,7 @@ public class Calendars implements Map<String, BusinessCalendar> {
     /**
      * Returns a business calendar.
      *
-     * @return default business calendar. The deault is specified by the {@code Calendar.default}
-     *         property.
+     * @return default business calendar. The deault is specified by the {@code Calendar.default} property.
      */
     public static BusinessCalendar calendar() {
         return calendar(defaultName);
@@ -114,24 +112,21 @@ public class Calendars implements Map<String, BusinessCalendar> {
         try {
             load(configuration, locations);
         } catch (NoSuchFileException e) {
-            logger.warn().append("Problem loading calendars. locations=").append(locations)
-                .append(e).endl();
+            logger.warn().append("Problem loading calendars. locations=").append(locations).append(e).endl();
         }
     }
 
     private void load(final Configuration configuration, final String businessCalendarLocations)
-        throws NoSuchFileException {
+            throws NoSuchFileException {
         final ResourceResolution resourceResolution =
-            new io.deephaven.util.files.ResourceResolution(configuration, ";",
-                businessCalendarLocations);
+                new io.deephaven.util.files.ResourceResolution(configuration, ";", businessCalendarLocations);
 
         final BiConsumer<URL, String> consumer = (URL, filePath) -> {
             try {
                 final InputStream inputStream = URL.openStream();
                 if (inputStream != null) {
                     final File calendarFile = inputStreamToFile(inputStream);
-                    final BusinessCalendar businessCalendar =
-                        DefaultBusinessCalendar.getInstance(calendarFile);
+                    final BusinessCalendar businessCalendar = DefaultBusinessCalendar.getInstance(calendarFile);
                     addCalendar(businessCalendar);
                     calendarFile.deleteOnExit();
                 } else {
@@ -140,8 +135,7 @@ public class Calendars implements Map<String, BusinessCalendar> {
                 }
             } catch (IOException e) {
                 logger.warn("Problem loading calendar: locations=" + businessCalendarLocations, e);
-                throw new RuntimeException(
-                    "Problem loading calendar: locations=" + businessCalendarLocations, e);
+                throw new RuntimeException("Problem loading calendar: locations=" + businessCalendarLocations, e);
             }
         };
 
@@ -153,8 +147,7 @@ public class Calendars implements Map<String, BusinessCalendar> {
             throw e;
         } catch (IOException e) {
             logger.warn("Problem loading calendar: locations=" + businessCalendarLocations, e);
-            throw new RuntimeException(
-                "Problem loading calendar: locations=" + businessCalendarLocations, e);
+            throw new RuntimeException("Problem loading calendar: locations=" + businessCalendarLocations, e);
         }
     }
 
@@ -171,8 +164,7 @@ public class Calendars implements Map<String, BusinessCalendar> {
             if (oldCalendar.equals(cal)) {
                 return;
             }
-            throw new IllegalArgumentException(
-                "Multiple calendars have the same name: name='" + name + "'");
+            throw new IllegalArgumentException("Multiple calendars have the same name: name='" + name + "'");
         }
 
         put(name, cal);
@@ -214,7 +206,7 @@ public class Calendars implements Map<String, BusinessCalendar> {
     @Override
     public boolean containsKey(Object key) {
         return !(key == null || !key.getClass().isAssignableFrom(String.class))
-            && calendars.containsKey(((String) key).toUpperCase());
+                && calendars.containsKey(((String) key).toUpperCase());
 
     }
 
@@ -271,7 +263,7 @@ public class Calendars implements Map<String, BusinessCalendar> {
     private static File inputStreamToFile(@NotNull InputStream inputStream) throws IOException {
         File calendarFile = File.createTempFile("temp-file-name", ".calendar");
         FileOutputStream outputStream =
-            new FileOutputStream(calendarFile);
+                new FileOutputStream(calendarFile);
 
         int read;
         byte[] bytes = new byte[1024];

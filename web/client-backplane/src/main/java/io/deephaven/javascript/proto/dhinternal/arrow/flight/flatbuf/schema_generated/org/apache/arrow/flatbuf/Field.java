@@ -11,9 +11,9 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Field",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Field",
+        namespace = JsPackage.GLOBAL)
 public class Field {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface NameUnionType {

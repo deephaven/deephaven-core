@@ -18,16 +18,15 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
     private final Comparable<?> pivot;
     private final boolean isGreaterThan;
 
-    SingleSidedComparableRangeFilter(String columnName, Comparable<?> val, boolean inclusive,
-        boolean isGreaterThan) {
+    SingleSidedComparableRangeFilter(String columnName, Comparable<?> val, boolean inclusive, boolean isGreaterThan) {
         super(columnName, inclusive, inclusive);
         this.isGreaterThan = isGreaterThan;
         pivot = val;
     }
 
     @TestUseOnly
-    public static SingleSidedComparableRangeFilter makeForTest(String columnName,
-        Comparable<?> value, boolean inclusive, boolean isGreaterThan) {
+    public static SingleSidedComparableRangeFilter makeForTest(String columnName, Comparable<?> value,
+            boolean inclusive, boolean isGreaterThan) {
         return new SingleSidedComparableRangeFilter(columnName, value, inclusive, isGreaterThan);
     }
 
@@ -39,20 +38,17 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
 
         final ColumnDefinition<?> def = tableDefinition.getColumn(columnName);
         if (def == null) {
-            throw new RuntimeException(
-                "Column \"" + columnName + "\" doesn't exist in this table, available columns: "
+            throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: "
                     + tableDefinition.getColumnNames());
         }
 
         Assert.assertion(Comparable.class.isAssignableFrom(def.getDataType()),
-            "Comparable.class.isAssignableFrom(def.getDataType())", def.getDataType(),
-            "def.getDataType()");
+                "Comparable.class.isAssignableFrom(def.getDataType())", def.getDataType(), "def.getDataType()");
 
         chunkFilter = makeComparableChunkFilter(pivot, lowerInclusive, isGreaterThan);
     }
 
-    public static ChunkFilter makeComparableChunkFilter(Comparable<?> pivot, boolean inclusive,
-        boolean isGreaterThan) {
+    public static ChunkFilter makeComparableChunkFilter(Comparable<?> pivot, boolean inclusive, boolean isGreaterThan) {
         if (inclusive) {
             if (isGreaterThan) {
                 return new GeqComparableChunkFilter(pivot);
@@ -70,14 +66,13 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
 
     @Override
     public SelectFilter copy() {
-        return new SingleSidedComparableRangeFilter(columnName, pivot, lowerInclusive,
-            upperInclusive);
+        return new SingleSidedComparableRangeFilter(columnName, pivot, lowerInclusive, upperInclusive);
     }
 
     @Override
     public String toString() {
         return "SingleSidedComparableRangeFilter(" + columnName + (isGreaterThan ? '>' : '>')
-            + (lowerInclusive ? "=" : "") + pivot + ")";
+                + (lowerInclusive ? "=" : "") + pivot + ")";
     }
 
     private static class GeqComparableChunkFilter implements ChunkFilter {
@@ -89,9 +84,8 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
 
         @Override
         public void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-            WritableLongChunk<OrderedKeyIndices> results) {
-            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk =
-                values.asObjectChunk();
+                WritableLongChunk<OrderedKeyIndices> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
 
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
@@ -112,9 +106,8 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
 
         @Override
         public void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-            WritableLongChunk<OrderedKeyIndices> results) {
-            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk =
-                values.asObjectChunk();
+                WritableLongChunk<OrderedKeyIndices> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
 
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
@@ -135,9 +128,8 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
 
         @Override
         public void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-            WritableLongChunk<OrderedKeyIndices> results) {
-            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk =
-                values.asObjectChunk();
+                WritableLongChunk<OrderedKeyIndices> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
 
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
@@ -158,9 +150,8 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
 
         @Override
         public void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-            WritableLongChunk<OrderedKeyIndices> results) {
-            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk =
-                values.asObjectChunk();
+                WritableLongChunk<OrderedKeyIndices> results) {
+            final ObjectChunk<? extends Comparable<?>, ? extends Values> objectChunk = values.asObjectChunk();
 
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
@@ -173,19 +164,17 @@ public class SingleSidedComparableRangeFilter extends AbstractRangeFilter {
     }
 
     @Override
-    Index binarySearch(Index selection, ColumnSource columnSource, boolean usePrev,
-        boolean reverse) {
+    Index binarySearch(Index selection, ColumnSource columnSource, boolean usePrev, boolean reverse) {
         if (selection.isEmpty()) {
             return selection;
         }
 
         // noinspection unchecked
-        final ColumnSource<Comparable> comparableColumnSource =
-            (ColumnSource<Comparable>) columnSource;
+        final ColumnSource<Comparable> comparableColumnSource = (ColumnSource<Comparable>) columnSource;
 
         final int compareSign = reverse ? -1 : 1;
-        long lowerBoundMin = ComparableRangeFilter.bound(selection, usePrev, comparableColumnSource,
-            0, selection.size(), pivot, lowerInclusive, compareSign, isGreaterThan == reverse);
+        long lowerBoundMin = ComparableRangeFilter.bound(selection, usePrev, comparableColumnSource, 0,
+                selection.size(), pivot, lowerInclusive, compareSign, isGreaterThan == reverse);
 
         if (isGreaterThan == reverse) {
             return selection.subindexByPos(0, lowerBoundMin);

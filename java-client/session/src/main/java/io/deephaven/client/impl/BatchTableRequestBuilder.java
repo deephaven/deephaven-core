@@ -130,7 +130,7 @@ class BatchTableRequestBuilder {
         for (TableSpec table : postOrder) {
             final Ticket ticket = lookup.ticket(table).orElse(Ticket.getDefaultInstance());
             final Operation operation =
-                table.walk(new OperationAdapter(ticket, indices, lookup)).getOut();
+                    table.walk(new OperationAdapter(ticket, indices, lookup)).getOut();
             builder.addOps(operation);
             indices.put(table, ix++);
         }
@@ -167,19 +167,19 @@ class BatchTableRequestBuilder {
                 return TableReference.newBuilder().setBatchOffset(ix).build();
             }
             throw new IllegalStateException(
-                "Unable to reference table - batch table request logic has a bug.");
+                    "Unable to reference table - batch table request logic has a bug.");
         }
 
         @Override
         public void visit(EmptyTable emptyTable) {
             out = op(Builder::setEmptyTable,
-                EmptyTableRequest.newBuilder().setResultId(ticket).setSize(emptyTable.size()));
+                    EmptyTableRequest.newBuilder().setResultId(ticket).setSize(emptyTable.size()));
         }
 
         @Override
         public void visit(NewTable newTable) {
             throw new UnsupportedOperationException(
-                "TODO(deephaven-core#992): TableService implementation of NewTable, https://github.com/deephaven/deephaven-core/issues/992");
+                    "TODO(deephaven-core#992): TableService implementation of NewTable, https://github.com/deephaven/deephaven-core/issues/992");
         }
 
         @Override
@@ -195,11 +195,11 @@ class BatchTableRequestBuilder {
             });
 
             TimeTableRequest.Builder builder = TimeTableRequest.newBuilder().setResultId(ticket)
-                .setPeriodNanos(timeTable.interval().toNanos());
+                    .setPeriodNanos(timeTable.interval().toNanos());
             if (timeTable.startTime().isPresent()) {
                 final Instant startTime = timeTable.startTime().get();
                 final long epochNanos = Math.addExact(
-                    TimeUnit.SECONDS.toNanos(startTime.getEpochSecond()), startTime.getNano());
+                        TimeUnit.SECONDS.toNanos(startTime.getEpochSecond()), startTime.getNano());
                 builder.setStartTimeNanos(epochNanos);
             }
             out = op(Builder::setTimeTable, builder.build());
@@ -208,7 +208,7 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(MergeTable mergeTable) {
             MergeTablesRequest.Builder builder =
-                MergeTablesRequest.newBuilder().setResultId(ticket);
+                    MergeTablesRequest.newBuilder().setResultId(ticket);
             for (TableSpec table : mergeTable.tables()) {
                 builder.addSourceIds(ref(table));
             }
@@ -218,36 +218,36 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(HeadTable headTable) {
             out = op(Builder::setHead, HeadOrTailRequest.newBuilder().setResultId(ticket)
-                .setSourceId(ref(headTable.parent())).setNumRows(headTable.size()));
+                    .setSourceId(ref(headTable.parent())).setNumRows(headTable.size()));
         }
 
         @Override
         public void visit(TailTable tailTable) {
             out = op(Builder::setTail, HeadOrTailRequest.newBuilder().setResultId(ticket)
-                .setSourceId(ref(tailTable.parent())).setNumRows(tailTable.size()));
+                    .setSourceId(ref(tailTable.parent())).setNumRows(tailTable.size()));
         }
 
         @Override
         public void visit(ReverseTable reverseTable) {
             // a bit hacky at the proto level, but this is how to specify a reverse
             out = op(Builder::setSort,
-                SortTableRequest.newBuilder().setResultId(ticket)
-                    .setSourceId(ref(reverseTable.parent()))
-                    .addSorts(
-                        SortDescriptor.newBuilder().setDirection(SortDirection.REVERSE).build())
-                    .build());
+                    SortTableRequest.newBuilder().setResultId(ticket)
+                            .setSourceId(ref(reverseTable.parent()))
+                            .addSorts(
+                                    SortDescriptor.newBuilder().setDirection(SortDirection.REVERSE).build())
+                            .build());
         }
 
         @Override
         public void visit(SortTable sortTable) {
             SortTableRequest.Builder builder = SortTableRequest.newBuilder().setResultId(ticket)
-                .setSourceId(ref(sortTable.parent()));
+                    .setSourceId(ref(sortTable.parent()));
             for (SortColumn column : sortTable.columns()) {
                 SortDescriptor descriptor =
-                    SortDescriptor.newBuilder().setColumnName(column.column().name())
-                        .setDirection(column.order() == Order.ASCENDING ? SortDirection.ASCENDING
-                            : SortDirection.DESCENDING)
-                        .build();
+                        SortDescriptor.newBuilder().setColumnName(column.column().name())
+                                .setDirection(column.order() == Order.ASCENDING ? SortDirection.ASCENDING
+                                        : SortDirection.DESCENDING)
+                                .build();
                 builder.addSorts(descriptor);
             }
             out = op(Builder::setSort, builder.build());
@@ -256,8 +256,8 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(SnapshotTable snapshotTable) {
             SnapshotTableRequest.Builder builder = SnapshotTableRequest.newBuilder()
-                .setResultId(ticket).setDoInitialSnapshot(snapshotTable.doInitialSnapshot())
-                .setLeftId(ref(snapshotTable.trigger())).setRightId(ref(snapshotTable.base()));
+                    .setResultId(ticket).setDoInitialSnapshot(snapshotTable.doInitialSnapshot())
+                    .setLeftId(ref(snapshotTable.trigger())).setRightId(ref(snapshotTable.base()));
             for (ColumnName stampColumn : snapshotTable.stampColumns()) {
                 builder.addStampColumns(stampColumn.name());
             }
@@ -268,14 +268,14 @@ class BatchTableRequestBuilder {
         public void visit(WhereTable whereTable) {
             if (whereTable.hasRawFilter()) {
                 UnstructuredFilterTableRequest.Builder builder = UnstructuredFilterTableRequest
-                    .newBuilder().setResultId(ticket).setSourceId(ref(whereTable.parent()));
+                        .newBuilder().setResultId(ticket).setSourceId(ref(whereTable.parent()));
                 for (Filter filter : whereTable.filters()) {
                     builder.addFilters(Strings.of(filter));
                 }
                 out = op(Builder::setUnstructuredFilter, builder.build());
             } else {
                 FilterTableRequest.Builder builder = FilterTableRequest.newBuilder()
-                    .setResultId(ticket).setSourceId(ref(whereTable.parent()));
+                        .setResultId(ticket).setSourceId(ref(whereTable.parent()));
                 for (Filter filter : whereTable.filters()) {
                     builder.addFilters(FilterAdapter.of(filter));
                 }
@@ -286,19 +286,19 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(WhereInTable whereInTable) {
             throw new UnsupportedOperationException(
-                "TODO(deephaven-core#990): TableService implementation of whereIn/whereNotIn, https://github.com/deephaven/deephaven-core/issues/990");
+                    "TODO(deephaven-core#990): TableService implementation of whereIn/whereNotIn, https://github.com/deephaven/deephaven-core/issues/990");
         }
 
         @Override
         public void visit(WhereNotInTable whereNotInTable) {
             throw new UnsupportedOperationException(
-                "TODO(deephaven-core#990): TableService implementation of whereIn/whereNotIn, https://github.com/deephaven/deephaven-core/issues/990");
+                    "TODO(deephaven-core#990): TableService implementation of whereIn/whereNotIn, https://github.com/deephaven/deephaven-core/issues/990");
         }
 
         @Override
         public void visit(NaturalJoinTable j) {
             NaturalJoinTablesRequest.Builder builder = NaturalJoinTablesRequest.newBuilder()
-                .setResultId(ticket).setLeftId(ref(j.left())).setRightId(ref(j.right()));
+                    .setResultId(ticket).setLeftId(ref(j.left())).setRightId(ref(j.right()));
             for (JoinMatch match : j.matches()) {
                 builder.addColumnsToMatch(Strings.of(match));
             }
@@ -311,7 +311,7 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(ExactJoinTable j) {
             ExactJoinTablesRequest.Builder builder = ExactJoinTablesRequest.newBuilder()
-                .setResultId(ticket).setLeftId(ref(j.left())).setRightId(ref(j.right()));
+                    .setResultId(ticket).setLeftId(ref(j.left())).setRightId(ref(j.right()));
             for (JoinMatch match : j.matches()) {
                 builder.addColumnsToMatch(Strings.of(match));
             }
@@ -324,8 +324,8 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(JoinTable j) {
             CrossJoinTablesRequest.Builder builder =
-                CrossJoinTablesRequest.newBuilder().setResultId(ticket).setLeftId(ref(j.left()))
-                    .setRightId(ref(j.right())).setReserveBits(j.reserveBits());
+                    CrossJoinTablesRequest.newBuilder().setResultId(ticket).setLeftId(ref(j.left()))
+                            .setRightId(ref(j.right())).setReserveBits(j.reserveBits());
             for (JoinMatch match : j.matches()) {
                 builder.addColumnsToMatch(Strings.of(match));
             }
@@ -338,7 +338,7 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(LeftJoinTable j) {
             LeftJoinTablesRequest.Builder builder = LeftJoinTablesRequest.newBuilder()
-                .setResultId(ticket).setLeftId(ref(j.left())).setRightId(ref(j.right()));
+                    .setResultId(ticket).setLeftId(ref(j.left())).setRightId(ref(j.right()));
             for (JoinMatch match : j.matches()) {
                 builder.addColumnsToMatch(Strings.of(match));
             }
@@ -351,10 +351,10 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(AsOfJoinTable aj) {
             AsOfJoinTablesRequest.Builder builder = AsOfJoinTablesRequest.newBuilder()
-                .setLeftId(ref(aj.left())).setRightId(ref(aj.right()))
-                .setAsOfMatchRule(aj.rule() == AsOfJoinRule.LESS_THAN_EQUAL
-                    ? AsOfJoinTablesRequest.MatchRule.LESS_THAN_EQUAL
-                    : AsOfJoinTablesRequest.MatchRule.LESS_THAN);
+                    .setLeftId(ref(aj.left())).setRightId(ref(aj.right()))
+                    .setAsOfMatchRule(aj.rule() == AsOfJoinRule.LESS_THAN_EQUAL
+                            ? AsOfJoinTablesRequest.MatchRule.LESS_THAN_EQUAL
+                            : AsOfJoinTablesRequest.MatchRule.LESS_THAN);
             for (JoinMatch match : aj.matches()) {
                 builder.addColumnsToMatch(Strings.of(match));
             }
@@ -367,10 +367,10 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(ReverseAsOfJoinTable raj) {
             AsOfJoinTablesRequest.Builder builder = AsOfJoinTablesRequest.newBuilder()
-                .setLeftId(ref(raj.left())).setRightId(ref(raj.right()))
-                .setAsOfMatchRule(raj.rule() == ReverseAsOfJoinRule.GREATER_THAN_EQUAL
-                    ? AsOfJoinTablesRequest.MatchRule.GREATER_THAN_EQUAL
-                    : AsOfJoinTablesRequest.MatchRule.GREATER_THAN);
+                    .setLeftId(ref(raj.left())).setRightId(ref(raj.right()))
+                    .setAsOfMatchRule(raj.rule() == ReverseAsOfJoinRule.GREATER_THAN_EQUAL
+                            ? AsOfJoinTablesRequest.MatchRule.GREATER_THAN_EQUAL
+                            : AsOfJoinTablesRequest.MatchRule.GREATER_THAN);
             for (JoinMatch match : raj.matches()) {
                 builder.addColumnsToMatch(Strings.of(match));
             }
@@ -403,7 +403,7 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(ByTable byTable) {
             ComboAggregateRequest.Builder builder = ComboAggregateRequest.newBuilder()
-                .setResultId(ticket).setSourceId(ref(byTable.parent()));
+                    .setResultId(ticket).setSourceId(ref(byTable.parent()));
             for (Selectable column : byTable.columns()) {
                 builder.addGroupByColumns(Strings.of(column));
             }
@@ -413,7 +413,7 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(AggregationTable aggregationTable) {
             ComboAggregateRequest.Builder builder = ComboAggregateRequest.newBuilder()
-                .setResultId(ticket).setSourceId(ref(aggregationTable.parent()));
+                    .setResultId(ticket).setSourceId(ref(aggregationTable.parent()));
             for (Selectable column : aggregationTable.columns()) {
                 builder.addGroupByColumns(Strings.of(column));
             }
@@ -424,9 +424,9 @@ class BatchTableRequestBuilder {
         }
 
         private SelectOrUpdateRequest selectOrUpdate(SingleParentTable x,
-            Collection<Selectable> columns) {
+                Collection<Selectable> columns) {
             SelectOrUpdateRequest.Builder builder =
-                SelectOrUpdateRequest.newBuilder().setResultId(ticket).setSourceId(ref(x.parent()));
+                    SelectOrUpdateRequest.newBuilder().setResultId(ticket).setSourceId(ref(x.parent()));
             for (Selectable column : columns) {
                 builder.addColumnSpecs(Strings.of(column));
             }
@@ -501,7 +501,7 @@ class BatchTableRequestBuilder {
         public void visit(Med med) {
             if (!med.averageMedian()) {
                 throw new UnsupportedOperationException(
-                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+                        "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
             }
             out = of(AggType.MEDIAN, med.pair()).build();
         }
@@ -510,7 +510,7 @@ class BatchTableRequestBuilder {
         public void visit(Pct pct) {
             if (pct.averageMedian()) {
                 throw new UnsupportedOperationException(
-                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+                        "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
             }
             out = of(AggType.PERCENTILE, pct.pair()).build();
         }
@@ -518,7 +518,7 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(WSum wSum) {
             throw new UnsupportedOperationException(
-                "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override
@@ -529,19 +529,19 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(Count count) {
             out = Aggregate.newBuilder().setType(AggType.COUNT).setColumnName(count.column().name())
-                .build();
+                    .build();
         }
 
         @Override
         public void visit(CountDistinct countDistinct) {
             throw new UnsupportedOperationException(
-                "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override
         public void visit(Distinct distinct) {
             throw new UnsupportedOperationException(
-                "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override
@@ -557,19 +557,19 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(Unique unique) {
             throw new UnsupportedOperationException(
-                "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override
         public void visit(SortedFirst sortedFirst) {
             throw new UnsupportedOperationException(
-                "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override
         public void visit(SortedLast sortedLast) {
             throw new UnsupportedOperationException(
-                "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override
@@ -604,13 +604,13 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(ColumnName x) {
             out = io.deephaven.proto.backplane.grpc.Value.newBuilder().setReference(reference(x))
-                .build();
+                    .build();
         }
 
         @Override
         public void visit(long x) {
             out =
-                io.deephaven.proto.backplane.grpc.Value.newBuilder().setLiteral(literal(x)).build();
+                    io.deephaven.proto.backplane.grpc.Value.newBuilder().setLiteral(literal(x)).build();
         }
     }
 
@@ -648,9 +648,9 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(FilterIsNull isNull) {
             out = Condition.newBuilder()
-                .setIsNull(
-                    IsNullCondition.newBuilder().setReference(reference(isNull.column())).build())
-                .build();
+                    .setIsNull(
+                            IsNullCondition.newBuilder().setReference(reference(isNull.column())).build())
+                    .build();
         }
 
         @Override
@@ -662,16 +662,16 @@ class BatchTableRequestBuilder {
         public void visit(FilterCondition condition) {
             FilterCondition preferred = condition.maybeTranspose();
             out = Condition.newBuilder()
-                .setCompare(CompareCondition.newBuilder().setOperation(adapt(preferred.operator()))
-                    .setLhs(ValueAdapter.adapt(preferred.lhs()))
-                    .setRhs(ValueAdapter.adapt(preferred.rhs())).build())
-                .build();
+                    .setCompare(CompareCondition.newBuilder().setOperation(adapt(preferred.operator()))
+                            .setLhs(ValueAdapter.adapt(preferred.lhs()))
+                            .setRhs(ValueAdapter.adapt(preferred.rhs())).build())
+                    .build();
         }
 
         @Override
         public void visit(FilterNot not) {
             out = Condition.newBuilder()
-                .setNot(NotCondition.newBuilder().setFilter(of(not.filter())).build()).build();
+                    .setNot(NotCondition.newBuilder().setFilter(of(not.filter())).build()).build();
         }
 
         @Override

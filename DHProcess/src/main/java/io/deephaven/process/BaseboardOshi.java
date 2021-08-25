@@ -59,21 +59,20 @@ public abstract class BaseboardOshi implements PropertySet {
 
     public static BaseboardOshi from(Baseboard baseboard) {
         return ImmutableBaseboardOshi.builder()
-            .manufacturer(baseboard.getManufacturer())
-            .model(baseboard.getModel())
-            .version(baseboard.getVersion())
-            .serialNumber(baseboard.getSerialNumber())
-            .build();
+                .manufacturer(baseboard.getManufacturer())
+                .model(baseboard.getModel())
+                .version(baseboard.getVersion())
+                .serialNumber(baseboard.getSerialNumber())
+                .build();
     }
 
     /*
-     * public static BaseboardOshi from(PropertySet properties) { return
-     * Parser.INSTANCE.parse(properties); }
+     * public static BaseboardOshi from(PropertySet properties) { return Parser.INSTANCE.parse(properties); }
      * 
      * enum Parser implements PropertySetParser<BaseboardOshi> { INSTANCE;
      * 
-     * @Override public BaseboardOshi parse(PropertySet properties) { final Visitor builder = new
-     * Visitor(); builder.visitProperties(properties); return builder.build(); } }
+     * @Override public BaseboardOshi parse(PropertySet properties) { final Visitor builder = new Visitor();
+     * builder.visitProperties(properties); return builder.build(); } }
      * 
      * static class Visitor implements PropertyVisitor {
      * 
@@ -83,14 +82,13 @@ public abstract class BaseboardOshi implements PropertySet {
      * 
      * @Override public void visit(String key, String value) { switch (key) { case MANUFACTURER:
      * builder.manufacturer(value); break; case MODEL: builder.model(value); break; case VERSION:
-     * builder.version(value); break; case SERIAL_NUMBER: builder.serialNumber(value); break;
-     * default: Error.INSTANCE.visit(key, value); } }
+     * builder.version(value); break; case SERIAL_NUMBER: builder.serialNumber(value); break; default:
+     * Error.INSTANCE.visit(key, value); } }
      * 
      * @Override public void visit(String key, int value) { Error.INSTANCE.visit(key, value); }
      * 
      * @Override public void visit(String key, long value) { Error.INSTANCE.visit(key, value); }
      * 
-     * @Override public void visit(String key, boolean value) { Error.INSTANCE.visit(key, value); }
-     * }
+     * @Override public void visit(String key, boolean value) { Error.INSTANCE.visit(key, value); } }
      */
 }

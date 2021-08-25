@@ -9,7 +9,7 @@ public class JoinMatchTest {
 
     public static final JoinMatch FOO = ColumnName.of("Foo");
     public static final JoinMatch FOO_BAR =
-        JoinMatch.of(ColumnName.of("Foo"), ColumnName.of("Bar"));
+            JoinMatch.of(ColumnName.of("Foo"), ColumnName.of("Bar"));
 
     @Test
     void left() {

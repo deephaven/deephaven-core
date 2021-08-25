@@ -9,7 +9,7 @@ public final class LoggerFactoryStream extends LoggerFactorySingleCache {
 
     private static PrintStream getStream() {
         final String value =
-            System.getProperty("io.deephaven.internal.log.LoggerFactoryStream.stream", "OUT");
+                System.getProperty("io.deephaven.internal.log.LoggerFactoryStream.stream", "OUT");
         switch (value.toUpperCase()) {
             case "OUT":
                 return System.out;
@@ -22,7 +22,7 @@ public final class LoggerFactoryStream extends LoggerFactorySingleCache {
 
     private static LogLevel getLevel() {
         return LogLevel.valueOf(
-            System.getProperty("io.deephaven.internal.log.LoggerFactoryStream.level", "INFO"));
+                System.getProperty("io.deephaven.internal.log.LoggerFactoryStream.level", "INFO"));
     }
 
     @Override

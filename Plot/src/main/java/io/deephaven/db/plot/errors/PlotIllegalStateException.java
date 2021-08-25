@@ -9,8 +9,7 @@ package io.deephaven.db.plot.errors;
  */
 public class PlotIllegalStateException extends IllegalStateException {
 
-    public PlotIllegalStateException(final String exception,
-        final PlotExceptionCause exceptionCause) {
+    public PlotIllegalStateException(final String exception, final PlotExceptionCause exceptionCause) {
         this(exception, exceptionCause == null ? null : exceptionCause.getPlotInfo());
     }
 
@@ -19,7 +18,7 @@ public class PlotIllegalStateException extends IllegalStateException {
     }
 
     public PlotIllegalStateException(final String exception, final PlotInfo plotInfo) {
-        super("" + (plotInfo == null || plotInfo.toString() == null ? ""
-            : "Plot Information: " + plotInfo + " ") + exception);
+        super("" + (plotInfo == null || plotInfo.toString() == null ? "" : "Plot Information: " + plotInfo + " ")
+                + exception);
     }
 }

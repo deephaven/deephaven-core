@@ -17,8 +17,7 @@ public class InterpolatorTest extends TestCase {
         final double extrapolateDistance = 0.01;
         final int nSteps = 95;
         final int nStepsInterp = 100;
-        final Interpolator.InterpolationAlgorithm method =
-            Interpolator.InterpolationAlgorithm.SPLINE;
+        final Interpolator.InterpolationAlgorithm method = Interpolator.InterpolationAlgorithm.SPLINE;
 
         t1(tol, nSteps, nStepsInterp, extrapolateDistance, method);
     }
@@ -28,8 +27,7 @@ public class InterpolatorTest extends TestCase {
         final double extrapolateDistance = 0.1;
         final int nSteps = 40;
         final int nStepsInterp = 100;
-        final Interpolator.InterpolationAlgorithm method =
-            Interpolator.InterpolationAlgorithm.LINEAR;
+        final Interpolator.InterpolationAlgorithm method = Interpolator.InterpolationAlgorithm.LINEAR;
 
         t1(tol, nSteps, nStepsInterp, extrapolateDistance, method);
     }
@@ -39,8 +37,7 @@ public class InterpolatorTest extends TestCase {
         final double extrapolateDistance = 0.1;
         final int nSteps = 35;
         final int nStepsInterp = 100;
-        final Interpolator.InterpolationAlgorithm method =
-            Interpolator.InterpolationAlgorithm.PCHIP;
+        final Interpolator.InterpolationAlgorithm method = Interpolator.InterpolationAlgorithm.PCHIP;
 
         t1(tol, nSteps, nStepsInterp, extrapolateDistance, method);
     }
@@ -50,14 +47,13 @@ public class InterpolatorTest extends TestCase {
         final double extrapolateDistance = 0.1;
         final int nSteps = 20;
         final int nStepsInterp = 100;
-        final Interpolator.InterpolationAlgorithm method =
-            Interpolator.InterpolationAlgorithm.SPLINE;
+        final Interpolator.InterpolationAlgorithm method = Interpolator.InterpolationAlgorithm.SPLINE;
 
         t1(tol, nSteps, nStepsInterp, extrapolateDistance, method);
     }
 
     private void t1(double tol, int nSteps, int nStepsInterp, double extrapolateDistance,
-        Interpolator.InterpolationAlgorithm method) {
+            Interpolator.InterpolationAlgorithm method) {
         final boolean extrapolate = true;
 
         final double xMin = extrapolateDistance;
@@ -106,8 +102,7 @@ public class InterpolatorTest extends TestCase {
         double[] x = new double[] {1, 2, 3, 4, 5};
         double[] y = new double[] {2, 3, 2, 1, 1};
         double[] xi = new double[] {0, 2, 4, 6};
-        double[] yi =
-            Interpolator.interpolate(x, y, xi, Interpolator.InterpolationAlgorithm.PCHIP, false);
+        double[] yi = Interpolator.interpolate(x, y, xi, Interpolator.InterpolationAlgorithm.PCHIP, false);
         assertTrue(Double.isNaN(yi[0]));
         assertTrue(Double.isNaN(yi[3]));
     }
@@ -116,8 +111,7 @@ public class InterpolatorTest extends TestCase {
         double[] x = new double[] {1, 2, 3, 4, 5};
         double[] y = new double[] {2, 3, 2, 1, 1};
         double[] xi = new double[] {1, 2, QueryConstants.NULL_DOUBLE, 5};
-        double[] yi =
-            Interpolator.interpolate(x, y, xi, Interpolator.InterpolationAlgorithm.PCHIP, false);
+        double[] yi = Interpolator.interpolate(x, y, xi, Interpolator.InterpolationAlgorithm.PCHIP, false);
         assertFalse(yi[0] == QueryConstants.NULL_DOUBLE);
         assertFalse(yi[1] == QueryConstants.NULL_DOUBLE);
         assertTrue(yi[2] == QueryConstants.NULL_DOUBLE);

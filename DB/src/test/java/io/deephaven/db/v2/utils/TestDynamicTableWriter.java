@@ -35,11 +35,9 @@ public class TestDynamicTableWriter {
 
     @Test
     public void testTypes() throws IOException {
-        final String[] names =
-            new String[] {"BC", "CC", "SC", "IC", "LC", "FC", "DC", "StrC", "BLC", "DTC", "BIC"};
-        final Class[] types =
-            new Class[] {byte.class, char.class, short.class, int.class, long.class, float.class,
-                    double.class, String.class, Boolean.class, DBDateTime.class, BigInteger.class};
+        final String[] names = new String[] {"BC", "CC", "SC", "IC", "LC", "FC", "DC", "StrC", "BLC", "DTC", "BIC"};
+        final Class[] types = new Class[] {byte.class, char.class, short.class, int.class, long.class, float.class,
+                double.class, String.class, Boolean.class, DBDateTime.class, BigInteger.class};
         final DynamicTableWriter writer = new DynamicTableWriter(names, types);
         final LiveQueryTable result = writer.getTable();
 
@@ -52,23 +50,22 @@ public class TestDynamicTableWriter {
         writer.getSetter("DC").setDouble(6.6);
         writer.getSetter("StrC", String.class).set("Seven");
         writer.getSetter("BLC", Boolean.class).setBoolean(true);
-        writer.getSetter("DTC", DBDateTime.class)
-            .set(DBTimeUtils.convertDateTime("2020-09-16T07:55:00 NY"));
+        writer.getSetter("DTC", DBDateTime.class).set(DBTimeUtils.convertDateTime("2020-09-16T07:55:00 NY"));
         writer.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(8));
         writer.writeRow();
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(result::refresh);
 
         final DynamicTable expected1 = newTable(byteCol("BC", (byte) 1),
-            charCol("CC", 'A'),
-            shortCol("SC", (short) 2),
-            intCol("IC", 3),
-            longCol("LC", 4),
-            floatCol("FC", 5.5f),
-            doubleCol("DC", 6.6),
-            stringCol("StrC", "Seven"),
-            col("BLC", true),
-            col("DTC", DBTimeUtils.convertDateTime("2020-09-16T07:55:00 NY")),
-            col("BIC", BigInteger.valueOf(8)));
+                charCol("CC", 'A'),
+                shortCol("SC", (short) 2),
+                intCol("IC", 3),
+                longCol("LC", 4),
+                floatCol("FC", 5.5f),
+                doubleCol("DC", 6.6),
+                stringCol("StrC", "Seven"),
+                col("BLC", true),
+                col("DTC", DBTimeUtils.convertDateTime("2020-09-16T07:55:00 NY")),
+                col("BIC", BigInteger.valueOf(8)));
         TstUtils.assertTableEquals(expected1, result);
 
         final Row row = writer.getRowWriter();
@@ -82,8 +79,7 @@ public class TestDynamicTableWriter {
         row.getSetter("DC").setDouble(14.14);
         row.getSetter("StrC", String.class).set("Fifteen");
         row.getSetter("BLC", Boolean.class).setBoolean(true);
-        row.getSetter("DTC", DBDateTime.class)
-            .set(DBTimeUtils.convertDateTime("2020-09-16T08:55:00 NY"));
+        row.getSetter("DTC", DBDateTime.class).set(DBTimeUtils.convertDateTime("2020-09-16T08:55:00 NY"));
         row.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(16));
         row.setFlags(Row.Flags.StartTransaction);
         row.writeRow();
@@ -98,8 +94,7 @@ public class TestDynamicTableWriter {
         row2.getSetter("DC").setDouble(22.22);
         row2.getSetter("StrC", String.class).set("Twenty Three");
         row2.getSetter("BLC", Boolean.class).setBoolean(false);
-        row2.getSetter("DTC", DBDateTime.class)
-            .set(DBTimeUtils.convertDateTime("2020-09-16T09:55:00 NY"));
+        row2.getSetter("DTC", DBDateTime.class).set(DBTimeUtils.convertDateTime("2020-09-16T09:55:00 NY"));
         row2.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(24));
         row2.setFlags(Row.Flags.StartTransaction);
         row2.writeRow();
@@ -117,8 +112,7 @@ public class TestDynamicTableWriter {
         row3.getSetter("DC", double.class).set(30.30);
         row3.getSetter("StrC", String.class).set("Thirty One");
         row3.getSetter("BLC", Boolean.class).set(null);
-        row3.getSetter("DTC", DBDateTime.class)
-            .set(DBTimeUtils.convertDateTime("2020-09-16T10:55:00 NY"));
+        row3.getSetter("DTC", DBDateTime.class).set(DBTimeUtils.convertDateTime("2020-09-16T10:55:00 NY"));
         row3.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(32));
         row3.setFlags(Row.Flags.EndTransaction);
         row3.writeRow();
@@ -126,29 +120,27 @@ public class TestDynamicTableWriter {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(result::refresh);
 
         final DynamicTable expected2 = newTable(byteCol("BC", (byte) 1, (byte) 17, (byte) 25),
-            charCol("CC", 'A', 'C', 'D'),
-            shortCol("SC", (short) 2, (short) 18, (short) 26),
-            intCol("IC", 3, 19, 27),
-            longCol("LC", 4, 20, 28),
-            floatCol("FC", 5.5f, 21.21f, 29.29f),
-            doubleCol("DC", 6.6, 22.22, 30.30),
-            stringCol("StrC", "Seven", "Twenty Three", "Thirty One"),
-            col("BLC", true, false, null),
-            col("DTC", DBTimeUtils.convertDateTime("2020-09-16T07:55:00 NY"),
-                DBTimeUtils.convertDateTime("2020-09-16T09:55:00 NY"),
-                DBTimeUtils.convertDateTime("2020-09-16T10:55:00 NY")),
-            col("BIC", BigInteger.valueOf(8), BigInteger.valueOf(24), BigInteger.valueOf(32)));
+                charCol("CC", 'A', 'C', 'D'),
+                shortCol("SC", (short) 2, (short) 18, (short) 26),
+                intCol("IC", 3, 19, 27),
+                longCol("LC", 4, 20, 28),
+                floatCol("FC", 5.5f, 21.21f, 29.29f),
+                doubleCol("DC", 6.6, 22.22, 30.30),
+                stringCol("StrC", "Seven", "Twenty Three", "Thirty One"),
+                col("BLC", true, false, null),
+                col("DTC", DBTimeUtils.convertDateTime("2020-09-16T07:55:00 NY"),
+                        DBTimeUtils.convertDateTime("2020-09-16T09:55:00 NY"),
+                        DBTimeUtils.convertDateTime("2020-09-16T10:55:00 NY")),
+                col("BIC", BigInteger.valueOf(8), BigInteger.valueOf(24), BigInteger.valueOf(32)));
         TstUtils.assertTableEquals(expected2, result);
 
     }
 
     @Test
     public void testNulls() throws IOException {
-        final String[] names =
-            new String[] {"BC", "CC", "SC", "IC", "LC", "FC", "DC", "StrC", "BLC", "DTC", "BIC"};
-        final Class[] types =
-            new Class[] {byte.class, char.class, short.class, int.class, long.class, float.class,
-                    double.class, String.class, Boolean.class, DBDateTime.class, BigInteger.class};
+        final String[] names = new String[] {"BC", "CC", "SC", "IC", "LC", "FC", "DC", "StrC", "BLC", "DTC", "BIC"};
+        final Class[] types = new Class[] {byte.class, char.class, short.class, int.class, long.class, float.class,
+                double.class, String.class, Boolean.class, DBDateTime.class, BigInteger.class};
         final DynamicTableWriter writer = new DynamicTableWriter(names, types);
         final LiveQueryTable result = writer.getTable();
 
@@ -162,14 +154,14 @@ public class TestDynamicTableWriter {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(result::refresh);
 
         final Table expected1 = newTable(byteCol("BC", (byte) 1),
-            charCol("CC", 'A'),
-            shortCol("SC", (short) 2),
-            intCol("IC", 3),
-            longCol("LC", 4),
-            floatCol("FC", 5.5f),
-            doubleCol("DC", QueryConstants.NULL_DOUBLE))
-                .updateView("StrC=(String)null", "BLC=(Boolean)null", "DTC=(DBDateTime)null",
-                    "BIC=(java.math.BigInteger)null");
+                charCol("CC", 'A'),
+                shortCol("SC", (short) 2),
+                intCol("IC", 3),
+                longCol("LC", 4),
+                floatCol("FC", 5.5f),
+                doubleCol("DC", QueryConstants.NULL_DOUBLE))
+                        .updateView("StrC=(String)null", "BLC=(Boolean)null", "DTC=(DBDateTime)null",
+                                "BIC=(java.math.BigInteger)null");
         TstUtils.assertTableEquals(expected1, result);
 
         final Row row = writer.getRowWriter();
@@ -177,8 +169,7 @@ public class TestDynamicTableWriter {
         row.getSetter("DC").setDouble(14.14);
         row.getSetter("StrC", String.class).set("Fifteen");
         row.getSetter("BLC", Boolean.class).setBoolean(true);
-        row.getSetter("DTC", DBDateTime.class)
-            .set(DBTimeUtils.convertDateTime("2020-09-16T08:55:00 NY"));
+        row.getSetter("DTC", DBDateTime.class).set(DBTimeUtils.convertDateTime("2020-09-16T08:55:00 NY"));
         row.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(16));
         row.setFlags(Row.Flags.SingleRow);
         row.writeRow();
@@ -186,16 +177,16 @@ public class TestDynamicTableWriter {
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(result::refresh);
 
         final DynamicTable expected2 = newTable(byteCol("BC", QueryConstants.NULL_BYTE),
-            charCol("CC", QueryConstants.NULL_CHAR),
-            shortCol("SC", QueryConstants.NULL_SHORT),
-            intCol("IC", QueryConstants.NULL_INT),
-            longCol("LC", QueryConstants.NULL_LONG),
-            floatCol("FC", QueryConstants.NULL_FLOAT),
-            doubleCol("DC", 14.14),
-            stringCol("StrC", "Fifteen"),
-            col("BLC", true),
-            col("DTC", DBTimeUtils.convertDateTime("2020-09-16T08:55:00 NY")),
-            col("BIC", BigInteger.valueOf(16)));
+                charCol("CC", QueryConstants.NULL_CHAR),
+                shortCol("SC", QueryConstants.NULL_SHORT),
+                intCol("IC", QueryConstants.NULL_INT),
+                longCol("LC", QueryConstants.NULL_LONG),
+                floatCol("FC", QueryConstants.NULL_FLOAT),
+                doubleCol("DC", 14.14),
+                stringCol("StrC", "Fifteen"),
+                col("BLC", true),
+                col("DTC", DBTimeUtils.convertDateTime("2020-09-16T08:55:00 NY")),
+                col("BIC", BigInteger.valueOf(16)));
         TstUtils.assertTableEquals(merge(expected1, expected2), result);
 
     }
@@ -206,15 +197,14 @@ public class TestDynamicTableWriter {
         final Class[] columnTypes = new Class[] {String.class, int.class};
         final DynamicTableWriter writer = new DynamicTableWriter(columnNames, columnTypes);
         final LiveQueryTable result = writer.getTable();
-        TstUtils.assertTableEquals(
-            TableTools.newTable(TableTools.stringCol("A"), TableTools.intCol("B")), result);
+        TstUtils.assertTableEquals(TableTools.newTable(TableTools.stringCol("A"), TableTools.intCol("B")), result);
 
         addRow(writer, Row.Flags.SingleRow, "Fred", 1);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(result::refresh);
 
         final DynamicTable lonelyFred =
-            TableTools.newTable(TableTools.stringCol("A", "Fred"), TableTools.intCol("B", 1));
+                TableTools.newTable(TableTools.stringCol("A", "Fred"), TableTools.intCol("B", 1));
         TstUtils.assertTableEquals(lonelyFred, result);
 
         addRow(writer, Row.Flags.StartTransaction, "Barney", 2);
@@ -229,9 +219,8 @@ public class TestDynamicTableWriter {
         TstUtils.assertTableEquals(lonelyFred, result);
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(result::refresh);
 
-        final DynamicTable withRubbles =
-            TableTools.newTable(TableTools.stringCol("A", "Fred", "Barney", "Betty", "Bam-Bam"),
-                TableTools.intCol("B", 1, 2, 3, 4));
+        final DynamicTable withRubbles = TableTools.newTable(
+                TableTools.stringCol("A", "Fred", "Barney", "Betty", "Bam-Bam"), TableTools.intCol("B", 1, 2, 3, 4));
         TstUtils.assertTableEquals(withRubbles, result);
 
         addRow(writer, Row.Flags.StartTransaction, "Wilma", 5);
@@ -244,14 +233,14 @@ public class TestDynamicTableWriter {
 
         addRow(writer, Row.Flags.EndTransaction, "Wilma", 7);
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(result::refresh);
-        final DynamicTable allTogether = TableTools.newTable(
-            TableTools.stringCol("A", "Fred", "Barney", "Betty", "Bam-Bam", "Pebbles", "Wilma"),
-            TableTools.intCol("B", 1, 2, 3, 4, 6, 7));
+        final DynamicTable allTogether =
+                TableTools.newTable(TableTools.stringCol("A", "Fred", "Barney", "Betty", "Bam-Bam", "Pebbles", "Wilma"),
+                        TableTools.intCol("B", 1, 2, 3, 4, 6, 7));
         TstUtils.assertTableEquals(allTogether, result);
     }
 
     private void addRow(DynamicTableWriter writer, Row.Flags startTransaction, String barney, int i)
-        throws IOException {
+            throws IOException {
         final Row rw = writer.getRowWriter();
         rw.setFlags(startTransaction);
         rw.getSetter("A", String.class).set(barney);

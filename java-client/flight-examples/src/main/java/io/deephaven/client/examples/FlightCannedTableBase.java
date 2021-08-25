@@ -29,12 +29,12 @@ abstract class FlightCannedTableBase extends FlightExampleBase {
     protected void execute(FlightSession flight) throws Exception {
 
         final TableHandleManager manager = mode == null ? flight.session()
-            : mode.batch ? flight.session().batch() : flight.session().serial();
+                : mode.batch ? flight.session().batch() : flight.session().serial();
 
         final long start = System.nanoTime();
         final long end;
         try (final TableHandle handle = manager.executeLogic(logic());
-            final FlightStream stream = flight.getStream(handle.export())) {
+                final FlightStream stream = flight.getStream(handle.export())) {
             System.out.println(stream.getSchema());
             while (stream.next()) {
                 System.out.println(stream.getRoot().contentToTSVString());

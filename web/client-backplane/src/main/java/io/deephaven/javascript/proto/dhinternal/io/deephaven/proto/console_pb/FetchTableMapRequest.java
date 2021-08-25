@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FetchTableMapRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.FetchTableMapRequest",
+        namespace = JsPackage.GLOBAL)
 public class FetchTableMapRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -22,7 +22,7 @@ public class FetchTableMapRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static FetchTableMapRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -57,20 +57,20 @@ public class FetchTableMapRequest {
 
             @JsProperty
             void setTicket(
-                FetchTableMapRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    FetchTableMapRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<FetchTableMapRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FetchTableMapRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<FetchTableMapRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FetchTableMapRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -94,7 +94,7 @@ public class FetchTableMapRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static FetchTableMapRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -129,20 +129,20 @@ public class FetchTableMapRequest {
 
             @JsProperty
             void setTicket(
-                FetchTableMapRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    FetchTableMapRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<FetchTableMapRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FetchTableMapRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<FetchTableMapRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FetchTableMapRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -161,12 +161,12 @@ public class FetchTableMapRequest {
     public static native FetchTableMapRequest deserializeBinary(Uint8Array bytes);
 
     public static native FetchTableMapRequest deserializeBinaryFromReader(
-        FetchTableMapRequest message, Object reader);
+            FetchTableMapRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(FetchTableMapRequest message, Object writer);
 
     public static native FetchTableMapRequest.ToObjectReturnType toObject(
-        boolean includeInstance, FetchTableMapRequest msg);
+            boolean includeInstance, FetchTableMapRequest msg);
 
     public native void clearConsoleId();
 

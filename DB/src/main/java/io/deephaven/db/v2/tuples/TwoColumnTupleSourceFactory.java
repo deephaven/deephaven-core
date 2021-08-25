@@ -16,5 +16,5 @@ public interface TwoColumnTupleSourceFactory<TUPLE_TYPE, COLUMN_SOURCE_1_TYPE, C
      * @return The new tuple factory
      */
     TupleSource<TUPLE_TYPE> create(@NotNull ColumnSource<COLUMN_SOURCE_1_TYPE> columnSource1,
-        @NotNull ColumnSource<COLUMN_SOURCE_2_TYPE> columnSource2);
+            @NotNull ColumnSource<COLUMN_SOURCE_2_TYPE> columnSource2);
 }

@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.session_pb.ReleaseResponse",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.session_pb.ReleaseResponse",
+        namespace = JsPackage.GLOBAL)
 public class ReleaseResponse {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -44,12 +44,12 @@ public class ReleaseResponse {
     public static native ReleaseResponse deserializeBinary(Uint8Array bytes);
 
     public static native ReleaseResponse deserializeBinaryFromReader(
-        ReleaseResponse message, Object reader);
+            ReleaseResponse message, Object reader);
 
     public static native void serializeBinaryToWriter(ReleaseResponse message, Object writer);
 
     public static native ReleaseResponse.ToObjectReturnType toObject(
-        boolean includeInstance, ReleaseResponse msg);
+            boolean includeInstance, ReleaseResponse msg);
 
     public native boolean getSuccess();
 

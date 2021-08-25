@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.TextEdit",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.TextEdit",
+        namespace = JsPackage.GLOBAL)
 public class TextEdit {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -139,8 +139,7 @@ public class TextEdit {
 
     public static native void serializeBinaryToWriter(TextEdit message, Object writer);
 
-    public static native TextEdit.ToObjectReturnType toObject(boolean includeInstance,
-        TextEdit msg);
+    public static native TextEdit.ToObjectReturnType toObject(boolean includeInstance, TextEdit msg);
 
     public native void clearRange();
 

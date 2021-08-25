@@ -25,18 +25,16 @@ public class Column {
     private final int jsIndex;
 
     /**
-     * Specific to rollup tables when constituent columns are enabled. Used in toString(), but
-     * ignored for equals/hashcode, since it might be helpful for debugging, but could potentially
-     * confuse some comparisons between instances since this is set after the CTS is created, ready
-     * for use.
+     * Specific to rollup tables when constituent columns are enabled. Used in toString(), but ignored for
+     * equals/hashcode, since it might be helpful for debugging, but could potentially confuse some comparisons between
+     * instances since this is set after the CTS is created, ready for use.
      */
     private String constituentType;
 
     private String description;
 
-    public Column(int jsIndex, int index, Integer formatColumnIndex, Integer styleColumnIndex,
-        String type, String name, boolean isPartitionColumn, Integer formatStringColumnIndex,
-        String description) {
+    public Column(int jsIndex, int index, Integer formatColumnIndex, Integer styleColumnIndex, String type, String name,
+            boolean isPartitionColumn, Integer formatStringColumnIndex, String description) {
         this.jsIndex = jsIndex;
         this.index = index;
         this.formatColumnIndex = formatColumnIndex;
@@ -139,13 +137,13 @@ public class Column {
     @Override
     public String toString() {
         return "Column{" +
-            "index=" + index +
-            ", formatColumnIndex=" + formatColumnIndex +
-            ", styleColumnIndex=" + styleColumnIndex +
-            ", formatStringColumnIndex=" + formatStringColumnIndex +
-            ", type='" + type + '\'' +
-            ", name='" + name + '\'' +
-            '}';
+                "index=" + index +
+                ", formatColumnIndex=" + formatColumnIndex +
+                ", styleColumnIndex=" + styleColumnIndex +
+                ", formatStringColumnIndex=" + formatStringColumnIndex +
+                ", type='" + type + '\'' +
+                ", name='" + name + '\'' +
+                '}';
     }
 
     @Override
@@ -160,14 +158,13 @@ public class Column {
         if (index != column.index)
             return false;
         if (formatColumnIndex != null ? !formatColumnIndex.equals(column.formatColumnIndex)
-            : column.formatColumnIndex != null)
+                : column.formatColumnIndex != null)
             return false;
         if (styleColumnIndex != null ? !styleColumnIndex.equals(column.styleColumnIndex)
-            : column.styleColumnIndex != null)
+                : column.styleColumnIndex != null)
             return false;
-        if (formatStringColumnIndex != null
-            ? !formatStringColumnIndex.equals(column.formatStringColumnIndex)
-            : column.formatStringColumnIndex != null)
+        if (formatStringColumnIndex != null ? !formatStringColumnIndex.equals(column.formatStringColumnIndex)
+                : column.formatStringColumnIndex != null)
             return false;
         if (!type.equals(column.type))
             return false;
@@ -179,8 +176,7 @@ public class Column {
         int result = index;
         result = 31 * result + (formatColumnIndex != null ? formatColumnIndex.hashCode() : 0);
         result = 31 * result + (styleColumnIndex != null ? styleColumnIndex.hashCode() : 0);
-        result = 31 * result
-            + (formatStringColumnIndex != null ? formatStringColumnIndex.hashCode() : 0);
+        result = 31 * result + (formatStringColumnIndex != null ? formatStringColumnIndex.hashCode() : 0);
         result = 31 * result + type.hashCode();
         result = 31 * result + name.hashCode();
         return result;

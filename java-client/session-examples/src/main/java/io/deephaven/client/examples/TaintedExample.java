@@ -15,7 +15,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 @Command(name = "tainted", mixinStandardHelpOptions = true,
-    description = "Try to execute a tainted table", version = "0.1.0")
+        description = "Try to execute a tainted table", version = "0.1.0")
 class TaintedExample extends SessionExampleBase {
 
     static class Mode {
@@ -39,7 +39,7 @@ class TaintedExample extends SessionExampleBase {
         final Session session = factory.newSession();
         try {
             final TableHandleManager manager =
-                mode == null ? session : mode.batch ? session.batch() : session.serial();
+                    mode == null ? session : mode.batch ? session.batch() : session.serial();
 
             final TableHandle handleT2 = manager.execute(t2);
 
@@ -47,7 +47,7 @@ class TaintedExample extends SessionExampleBase {
             final TableHandle handleT3 = manager.execute(t3);
 
             System.out.printf("t2=%s, t3=%s%n%n", handleT2.export().toReadableString(),
-                handleT3.export().toReadableString());
+                    handleT3.export().toReadableString());
         } finally {
             session.closeFuture().get(5, TimeUnit.SECONDS);
         }

@@ -42,13 +42,13 @@ public class SimpleTsPlot2 {
         final Number[] y1 = values.toArray(new Number[values.size()]);
 
         Figure fig = FigureFactory.figure()
-            .newChart(0)
-            .chartTitle(fileName)
-            .newAxes()
-            .xLabel("X")
-            .yLabel("Y")
-            .plot("Test1", x1, y1)
-            .pointsVisible(false);
+                .newChart(0)
+                .chartTitle(fileName)
+                .newAxes()
+                .xLabel("X")
+                .yLabel("Y")
+                .plot("Test1", x1, y1)
+                .pointsVisible(false);
 
         ExamplePlotUtils.display(fig);
     }

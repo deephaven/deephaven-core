@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.BoolMapWithDefault",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.BoolMapWithDefault",
+        namespace = JsPackage.GLOBAL)
 public class BoolMapWithDefault {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -89,12 +89,12 @@ public class BoolMapWithDefault {
     public static native BoolMapWithDefault deserializeBinary(Uint8Array bytes);
 
     public static native BoolMapWithDefault deserializeBinaryFromReader(
-        BoolMapWithDefault message, Object reader);
+            BoolMapWithDefault message, Object reader);
 
     public static native void serializeBinaryToWriter(BoolMapWithDefault message, Object writer);
 
     public static native BoolMapWithDefault.ToObjectReturnType toObject(
-        boolean includeInstance, BoolMapWithDefault msg);
+            boolean includeInstance, BoolMapWithDefault msg);
 
     public native String addKeys(String value, double index);
 

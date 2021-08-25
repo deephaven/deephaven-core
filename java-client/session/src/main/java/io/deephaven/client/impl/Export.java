@@ -64,8 +64,8 @@ public final class Export implements AutoCloseable {
     }
 
     /**
-     * Creates a new reference export that has its own ownership and lifecycle. Must not be called
-     * after {@code this} export has been {@link #release() released}.
+     * Creates a new reference export that has its own ownership and lifecycle. Must not be called after {@code this}
+     * export has been {@link #release() released}.
      *
      * @param listener the listener
      * @return the new reference export

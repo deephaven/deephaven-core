@@ -149,7 +149,7 @@ public class AxisImpl implements Axis, PlotExceptionCause {
     void setType(final Type type) {
         if (this.type != null && this.type != type) {
             throw new PlotUnsupportedOperationException(
-                "Switching axis types is not supported: " + this.type + " " + type, this);
+                    "Switching axis types is not supported: " + this.type + " " + type, this);
         }
 
         this.type = type;
@@ -451,7 +451,7 @@ public class AxisImpl implements Axis, PlotExceptionCause {
     @Override
     public AxisImpl businessTime(final SelectableDataSet sds, final String valueColumn) {
         throw new PlotUnsupportedOperationException(
-            "Selectable business time transformation is not currently supported", this);
+                "Selectable business time transformation is not currently supported", this);
     }
 
     @Override
@@ -498,14 +498,12 @@ public class AxisImpl implements Axis, PlotExceptionCause {
 
     @Override
     public AxisImpl min(final SelectableDataSet sds, final String valueColumn) {
-        throw new PlotUnsupportedOperationException(
-            "Selectable min transformation is not currently supported", this);
+        throw new PlotUnsupportedOperationException("Selectable min transformation is not currently supported", this);
     }
 
     @Override
     public AxisImpl max(final SelectableDataSet sds, final String valueColumn) {
-        throw new PlotUnsupportedOperationException(
-            "Selectable max transformation is not currently supported", this);
+        throw new PlotUnsupportedOperationException("Selectable max transformation is not currently supported", this);
     }
 
 

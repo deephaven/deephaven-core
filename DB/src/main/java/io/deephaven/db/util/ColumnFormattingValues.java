@@ -16,9 +16,8 @@ public interface ColumnFormattingValues {
      * @return true if the columnName is a formatting column; false otherwise
      */
     static boolean isFormattingColumn(String columnName) {
-        return columnName.endsWith(TABLE_FORMAT_NAME)
-            || columnName.endsWith(TABLE_NUMERIC_FORMAT_NAME)
-            || columnName.endsWith(TABLE_DATE_FORMAT_NAME);
+        return columnName.endsWith(TABLE_FORMAT_NAME) || columnName.endsWith(TABLE_NUMERIC_FORMAT_NAME)
+                || columnName.endsWith(TABLE_DATE_FORMAT_NAME);
     }
 
     /**

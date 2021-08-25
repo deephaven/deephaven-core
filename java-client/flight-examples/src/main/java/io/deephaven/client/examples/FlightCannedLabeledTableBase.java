@@ -29,7 +29,7 @@ abstract class FlightCannedLabeledTableBase extends FlightExampleBase {
     @Override
     protected void execute(FlightSession flight) throws Exception {
         final TableHandleManager manager = mode == null ? flight.session()
-            : mode.batch ? flight.session().batch() : flight.session().serial();
+                : mode.batch ? flight.session().batch() : flight.session().serial();
 
         final long start = System.nanoTime();
         final long end;

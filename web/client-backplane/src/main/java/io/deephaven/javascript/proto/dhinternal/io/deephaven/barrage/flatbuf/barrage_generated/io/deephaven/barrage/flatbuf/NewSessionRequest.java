@@ -11,9 +11,9 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.barrage.flatbuf.Barrage_generated.io.deephaven.barrage.flatbuf.NewSessionRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.barrage.flatbuf.Barrage_generated.io.deephaven.barrage.flatbuf.NewSessionRequest",
+        namespace = JsPackage.GLOBAL)
 public class NewSessionRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface CreatePayloadVectorDataUnionType {
@@ -58,31 +58,31 @@ public class NewSessionRequest {
     public static native void addProtocolVersion(Builder builder, double protocolVersion);
 
     public static native double createNewSessionRequest(
-        Builder builder, double protocolVersion, double payloadOffset);
+            Builder builder, double protocolVersion, double payloadOffset);
 
     @Deprecated
     public static native double createPayloadVector(
-        Builder builder, NewSessionRequest.CreatePayloadVectorDataUnionType data);
+            Builder builder, NewSessionRequest.CreatePayloadVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createPayloadVector(Builder builder, Int8Array data) {
         return createPayloadVector(
-            builder, Js.<NewSessionRequest.CreatePayloadVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<NewSessionRequest.CreatePayloadVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createPayloadVector(Builder builder, JsArray<Double> data) {
         return createPayloadVector(
-            builder, Js.<NewSessionRequest.CreatePayloadVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<NewSessionRequest.CreatePayloadVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createPayloadVector(Builder builder, Uint8Array data) {
         return createPayloadVector(
-            builder, Js.<NewSessionRequest.CreatePayloadVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<NewSessionRequest.CreatePayloadVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
@@ -94,12 +94,12 @@ public class NewSessionRequest {
     public static native double endNewSessionRequest(Builder builder);
 
     public static native NewSessionRequest getRootAsNewSessionRequest(
-        ByteBuffer bb, NewSessionRequest obj);
+            ByteBuffer bb, NewSessionRequest obj);
 
     public static native NewSessionRequest getRootAsNewSessionRequest(ByteBuffer bb);
 
     public static native NewSessionRequest getSizePrefixedRootAsNewSessionRequest(
-        ByteBuffer bb, NewSessionRequest obj);
+            ByteBuffer bb, NewSessionRequest obj);
 
     public static native NewSessionRequest getSizePrefixedRootAsNewSessionRequest(ByteBuffer bb);
 

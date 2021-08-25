@@ -55,8 +55,8 @@ final class ExportStates {
     }
 
     /**
-     * An unreferencable table is a table that is reachable from the current set of exports, but
-     * isn't an export itself. An unreferencable table can no longer be referenced by the client.
+     * An unreferencable table is a table that is reachable from the current set of exports, but isn't an export itself.
+     * An unreferencable table can no longer be referenced by the client.
      */
     private Set<TableSpec> unreferencableTables() {
         // todo: potentially keep around Set<TableSpec> unreferencableTables as class member
@@ -71,7 +71,7 @@ final class ExportStates {
         // Note: this is *not* excluding everything that can be reached via exports.keySet(), it
         // just excludes paths from the request roots that go through an export.keySet().
         return ParentsVisitor.search(request.tables(), keySet::contains,
-            unreferencableTables::contains);
+                unreferencableTables::contains);
     }
 
     synchronized boolean hasUnreferencableTable(ExportsRequest request) {
@@ -115,7 +115,7 @@ final class ExportStates {
                 throw new IllegalStateException();
             }
             final BatchTableRequest request =
-                BatchTableRequestBuilder.buildNoChecks(this::lookupTicket, postOrder);
+                    BatchTableRequestBuilder.buildNoChecks(this::lookupTicket, postOrder);
             if (request.getOpsCount() == 0) {
                 throw new IllegalStateException();
             }
@@ -144,7 +144,7 @@ final class ExportStates {
     }
 
     private static List<TableSpec> postOrderNewDependencies(Set<TableSpec> oldExports,
-        Set<TableSpec> newExports) {
+            Set<TableSpec> newExports) {
         Set<TableSpec> reachableOld = ParentsVisitor.reachable(oldExports);
         List<TableSpec> postOrderNew = ParentsVisitor.postOrderList(newExports);
         List<TableSpec> postOrderNewExcludeOld = new ArrayList<>(postOrderNew.size());
@@ -163,8 +163,8 @@ final class ExportStates {
             // existing export and a list of parent indices to rehydrate an "unreferencable" table?
             // Alternatively, our impl could export everything.
             throw new IllegalArgumentException(String.format(
-                "Unable to complete request, contains an unreferencable table: %s",
-                unreferencable.get()));
+                    "Unable to complete request, contains an unreferencable table: %s",
+                    unreferencable.get()));
         }
     }
 
@@ -201,7 +201,7 @@ final class ExportStates {
         synchronized Export newReference(Listener listener) {
             if (released) {
                 throw new IllegalStateException(
-                    "Should not be creating new references from state after the state has been released");
+                        "Should not be creating new references from state after the state has been released");
             }
             Export export = new Export(this, listener);
             addChild(export);
@@ -280,14 +280,14 @@ final class ExportStates {
         public void onNext(ReleaseResponse value) {
             if (!value.getSuccess()) {
                 log.warn("Unable to release ticket '{}'",
-                    ExportTicketHelper.toReadableString(ticket));
+                        ExportTicketHelper.toReadableString(ticket));
             }
         }
 
         @Override
         public void onError(Throwable t) {
             log.error(String.format("onError releasing ticket '%s'",
-                ExportTicketHelper.toReadableString(ticket)), t);
+                    ExportTicketHelper.toReadableString(ticket)), t);
         }
 
         @Override
@@ -297,7 +297,7 @@ final class ExportStates {
     }
 
     private static final class BatchHandler
-        implements StreamObserver<ExportedTableCreationResponse> {
+            implements StreamObserver<ExportedTableCreationResponse> {
 
         private final Map<Ticket, State> newStates;
 
@@ -316,7 +316,7 @@ final class ExportStates {
             }
             if (Ticket.getDefaultInstance().equals(value.getResultId().getTicket())) {
                 throw new IllegalStateException(
-                    "Not expecting export creation responses for empty tickets");
+                        "Not expecting export creation responses for empty tickets");
             }
             final State state = newStates.remove(value.getResultId().getTicket());
             if (state == null) {

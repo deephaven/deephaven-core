@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.DoubleMapWithDefault",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.DoubleMapWithDefault",
+        namespace = JsPackage.GLOBAL)
 public class DoubleMapWithDefault {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -89,12 +89,12 @@ public class DoubleMapWithDefault {
     public static native DoubleMapWithDefault deserializeBinary(Uint8Array bytes);
 
     public static native DoubleMapWithDefault deserializeBinaryFromReader(
-        DoubleMapWithDefault message, Object reader);
+            DoubleMapWithDefault message, Object reader);
 
     public static native void serializeBinaryToWriter(DoubleMapWithDefault message, Object writer);
 
     public static native DoubleMapWithDefault.ToObjectReturnType toObject(
-        boolean includeInstance, DoubleMapWithDefault msg);
+            boolean includeInstance, DoubleMapWithDefault msg);
 
     public native String addKeys(String value, double index);
 

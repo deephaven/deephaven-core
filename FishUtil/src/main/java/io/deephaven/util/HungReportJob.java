@@ -18,9 +18,9 @@ public class HungReportJob extends TimedJob {
     private final String actionMessage;
 
     public HungReportJob(@NotNull final Logger log,
-        @NotNull final String errorEmailRecipientAddress,
-        @NotNull final String monitoredJobName,
-        @NotNull final String actionMessage) {
+            @NotNull final String errorEmailRecipientAddress,
+            @NotNull final String monitoredJobName,
+            @NotNull final String actionMessage) {
         this.log = log;
         this.errorEmailRecipientAddress = errorEmailRecipientAddress;
         this.monitoredJobName = monitoredJobName;
@@ -31,10 +31,10 @@ public class HungReportJob extends TimedJob {
     public void timedOut() {
         try {
             new SMTPMailer().sendEmail(null, errorEmailRecipientAddress,
-                "[ERROR] " + monitoredJobName + " may be hung!", actionMessage);
+                    "[ERROR] " + monitoredJobName + " may be hung!", actionMessage);
         } catch (IOException e) {
             log.warn().append("HungReportJob: Failed to send delay report email for monitored job ")
-                .append(monitoredJobName).append(": ").append(e).endl();
+                    .append(monitoredJobName).append(": ").append(e).endl();
         }
     }
 }

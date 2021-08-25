@@ -128,8 +128,7 @@ public class ParentsVisitorTest {
     }
 
     /**
-     * This is specifically designed to break implementations that don't have already-visited
-     * checks.
+     * This is specifically designed to break implementations that don't have already-visited checks.
      */
     @Test
     void heavilyBranchedWalk() {
@@ -206,11 +205,11 @@ public class ParentsVisitorTest {
         List<TableSpec> heavilyBranchedTable = createHeavilyBranchedTable(HEAVILY_BRANCHED_SIZE);
 
         return () -> Stream
-            .concat(
-                Stream.of(S4, heavilyBranchedTable.get(heavilyBranchedTable.size() - 1),
-                    deepWalk.get(deepWalk.size() - 1)),
-                TableCreatorImplTest.createTables().stream())
-            .iterator();
+                .concat(
+                        Stream.of(S4, heavilyBranchedTable.get(heavilyBranchedTable.size() - 1),
+                                deepWalk.get(deepWalk.size() - 1)),
+                        TableCreatorImplTest.createTables().stream())
+                .iterator();
     }
 
     private static void checkValidPostOrder(Iterable<TableSpec> items) {
@@ -218,14 +217,14 @@ public class ParentsVisitorTest {
         for (TableSpec item : items) {
             boolean allDependenciesSatisfied = getParents(item).allMatch(visited::contains);
             assertThat(allDependenciesSatisfied).withFailMessage("items are not in post-order")
-                .isTrue();
+                    .isTrue();
             assertThat(visited.add(item)).withFailMessage("items are not de-duplicated").isTrue();
         }
     }
 
     /**
-     * This is a table that branches at every level except the leaf. Naive implementations may need
-     * to search every single path through the DAG; but that is not feasible (2^64 paths).
+     * This is a table that branches at every level except the leaf. Naive implementations may need to search every
+     * single path through the DAG; but that is not feasible (2^64 paths).
      */
     private static List<TableSpec> createHeavilyBranchedTable(int size) {
         List<TableSpec> out = new ArrayList<>(size + 1);
@@ -264,12 +263,12 @@ public class ParentsVisitorTest {
     }
 
     /**
-     * In general, a set of tables will have multiple valid post-orders. To check against a specific
-     * order, we should ensure that there is one canonical ordering.
+     * In general, a set of tables will have multiple valid post-orders. To check against a specific order, we should
+     * ensure that there is one canonical ordering.
      *
      * <p>
-     * This is a check against adding an overly-specific test that depends on a specific
-     * post-ordering, which we should not do.
+     * This is a check against adding an overly-specific test that depends on a specific post-ordering, which we should
+     * not do.
      */
     private static void checkIsCanonicalOrder(Iterable<TableSpec> items) {
         TableSpec prev = null;

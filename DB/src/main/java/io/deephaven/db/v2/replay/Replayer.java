@@ -66,8 +66,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
      */
     @Override
     public void start() {
-        delta = nanosToTime(millisToNanos(System.currentTimeMillis())).getNanos()
-            - startTime.getNanos();
+        delta = nanosToTime(millisToNanos(System.currentTimeMillis())).getNanos() - startTime.getNanos();
         for (LiveTable currentTable : currentTables) {
             LiveTableMonitor.DEFAULT.addTable(currentTable);
         }
@@ -103,8 +102,8 @@ public class Replayer implements ReplayerInterface, LiveTable {
     }
 
     /**
-     * Wait a specified interval for the replayer to complete. If the replayer has not completed by
-     * the end of the interval, the method returns.
+     * Wait a specified interval for the replayer to complete. If the replayer has not completed by the end of the
+     * interval, the method returns.
      *
      * @param maxTimeMillis maximum number of milliseconds to wait.
      * @throws QueryCancellationException thread was interrupted.
@@ -118,8 +117,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
         LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(() -> {
             while (!done && expiryTime > System.currentTimeMillis()) {
                 try {
-                    ltmCondition.await(expiryTime - System.currentTimeMillis(),
-                        TimeUnit.MILLISECONDS);
+                    ltmCondition.await(expiryTime - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
                 } catch (InterruptedException interruptIsCancel) {
                     throw new QueryCancellationException("Interrupt detected", interruptIsCancel);
                 }
@@ -181,8 +179,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
     public DBDateTime currentTime() {
         if (delta == Long.MAX_VALUE)
             return startTime;
-        final DBDateTime result =
-            DBTimeUtils.minus(nanosToTime(millisToNanos(System.currentTimeMillis())), delta);
+        final DBDateTime result = DBTimeUtils.minus(nanosToTime(millisToNanos(System.currentTimeMillis())), delta);
         if (result.getNanos() > endTime.getNanos()) {
             return endTime;
         }
@@ -215,8 +212,8 @@ public class Replayer implements ReplayerInterface, LiveTable {
      */
     @Override
     public DynamicTable replay(Table dataSource, String timeColumn) {
-        final ReplayTable result = new ReplayTable(dataSource.getIndex(),
-            dataSource.getColumnSourceMap(), timeColumn, this);
+        final ReplayTable result =
+                new ReplayTable(dataSource.getIndex(), dataSource.getColumnSourceMap(), timeColumn, this);
         currentTables.add(result);
         if (delta < Long.MAX_VALUE) {
             LiveTableMonitor.DEFAULT.addTable(result);
@@ -225,9 +222,9 @@ public class Replayer implements ReplayerInterface, LiveTable {
     }
 
     /**
-     * Prepares a grouped historical table for replaying. This method can be faster than the
-     * ungrouped replay, but the performance increase comes with a cost. Within a group, the data
-     * ordering is maintained. Between groups, data ordering is not maintained for a time interval.
+     * Prepares a grouped historical table for replaying. This method can be faster than the ungrouped replay, but the
+     * performance increase comes with a cost. Within a group, the data ordering is maintained. Between groups, data
+     * ordering is not maintained for a time interval.
      *
      * @param dataSource historical table to replay
      * @param timeColumn column in the table containing timestamps
@@ -236,7 +233,7 @@ public class Replayer implements ReplayerInterface, LiveTable {
     @Override
     public DynamicTable replayGrouped(Table dataSource, String timeColumn, String groupingColumn) {
         final ReplayGroupedFullTable result = new ReplayGroupedFullTable(dataSource.getIndex(),
-            dataSource.getColumnSourceMap(), timeColumn, this, groupingColumn);
+                dataSource.getColumnSourceMap(), timeColumn, this, groupingColumn);
         currentTables.add(result);
         if (delta < Long.MAX_VALUE) {
             LiveTableMonitor.DEFAULT.addTable(result);
@@ -253,10 +250,9 @@ public class Replayer implements ReplayerInterface, LiveTable {
      * @return dynamic, replayed version of the last-by table.
      */
     @Override
-    public DynamicTable replayGroupedLastBy(Table dataSource, String timeColumn,
-        String... groupingColumns) {
+    public DynamicTable replayGroupedLastBy(Table dataSource, String timeColumn, String... groupingColumns) {
         final ReplayLastByGroupedTable result = new ReplayLastByGroupedTable(dataSource.getIndex(),
-            dataSource.getColumnSourceMap(), timeColumn, this, groupingColumns);
+                dataSource.getColumnSourceMap(), timeColumn, this, groupingColumns);
         currentTables.add(result);
         if (delta < Long.MAX_VALUE) {
             LiveTableMonitor.DEFAULT.addTable(result);
@@ -265,9 +261,8 @@ public class Replayer implements ReplayerInterface, LiveTable {
     }
 
     /**
-     * Register the time column and index from a new table to replay. Most users will use
-     * <code>replay</code>, <code>replayGrouped</code>, or <code>replayGroupedLastBy</code> instead
-     * of this function.
+     * Register the time column and index from a new table to replay. Most users will use <code>replay</code>,
+     * <code>replayGrouped</code>, or <code>replayGroupedLastBy</code> instead of this function.
      *
      * @param index table index
      * @param timestampSource column source containing time information.

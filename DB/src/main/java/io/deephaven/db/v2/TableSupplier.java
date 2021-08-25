@@ -27,8 +27,8 @@ import java.util.function.BiFunction;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * TableSupplier creates a Proxy to a Table with a list of Table operations to be applied when a
- * filter method is called.<br>
+ * TableSupplier creates a Proxy to a Table with a list of Table operations to be applied when a filter method is
+ * called.<br>
  */
 @ScriptApi
 public class TableSupplier extends LivenessArtifact implements InvocationHandler {
@@ -37,38 +37,32 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
     private static final Map<Method, InvocationHandler> HIJACKED_DELEGATIONS = new HashMap<>();
     static {
         try {
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("coalesce"), (proxy, method,
-                args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).coalesce());
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("coalesce"),
+                    (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).coalesce());
             HIJACKED_DELEGATIONS.put(Table.class.getMethod("hasColumns", Collection.class),
-                (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
-                    .hasColumns((Collection<String>) args[0]));
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("hasColumns", String[].class),
-                (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
-                    .hasColumns((String[]) args[0]));
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("byExternal", String[].class),
-                (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
-                    .byExternal((String[]) args[0]));
-            HIJACKED_DELEGATIONS.put(
-                Table.class.getMethod("byExternal", boolean.class, String[].class),
-                (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
-                    .byExternal((Boolean) args[0], (String[]) args[1]));
+                    (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
+                            .hasColumns((Collection<String>) args[0]));
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("hasColumns", String[].class), (proxy, method,
+                    args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).hasColumns((String[]) args[0]));
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("byExternal", String[].class), (proxy, method,
+                    args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).byExternal((String[]) args[0]));
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("byExternal", boolean.class, String[].class),
+                    (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
+                            .byExternal((Boolean) args[0], (String[]) args[1]));
             HIJACKED_DELEGATIONS.put(Table.class.getMethod("apply", Function.Unary.class),
-                (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
-                    .apply((Function.Unary) args[0], (Table) proxy));
-            HIJACKED_DELEGATIONS.put(
-                Table.class.getMethod("setAttribute", String.class, Object.class),
-                (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
-                    .setAttribute((String) args[0], args[1]));
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttribute", String.class),
-                (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
-                    .getAttribute((String) args[0]));
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttributeNames"), (proxy, method,
-                args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).getAttributeNames());
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("hasAttribute", String.class),
-                (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
-                    .hasAttribute((String) args[0]));
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttributes"), (proxy, method,
-                args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).getAttributes());
+                    (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
+                            .apply((Function.Unary) args[0], (Table) proxy));
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("setAttribute", String.class, Object.class),
+                    (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
+                            .setAttribute((String) args[0], args[1]));
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttribute", String.class), (proxy, method,
+                    args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).getAttribute((String) args[0]));
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttributeNames"),
+                    (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).getAttributeNames());
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("hasAttribute", String.class), (proxy, method,
+                    args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).hasAttribute((String) args[0]));
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttributes"),
+                    (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).getAttributes());
         } catch (NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
@@ -121,16 +115,14 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
      */
     @ScriptApi
     public static Table build(Table sourceTable) {
-        return (Table) Proxy.newProxyInstance(TableSupplier.class.getClassLoader(),
-            PROXY_INTERFACES,
-            new TableSupplier(sourceTable, TableTools.newTable(sourceTable.getDefinition()),
-                Collections.emptyList(), false));
+        return (Table) Proxy.newProxyInstance(TableSupplier.class.getClassLoader(), PROXY_INTERFACES,
+                new TableSupplier(sourceTable, TableTools.newTable(sourceTable.getDefinition()),
+                        Collections.emptyList(), false));
     }
 
     /**
-     * Sets a Table Supplier to be complete. This means that the supplier will generate a table the
-     * next time a filter operation is called. This method has no affect on Tables that are not
-     * suppliers.
+     * Sets a Table Supplier to be complete. This means that the supplier will generate a table the next time a filter
+     * operation is called. This method has no affect on Tables that are not suppliers.
      *
      * @param maybeSupplier a Table that may be a supplier
      * @return a completed Supplier or unaltered Table
@@ -141,8 +133,8 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
     }
 
     /**
-     * Gets an empty version of the supplied table with all current operations applied to it. If the
-     * Table is not a Table Supplier then this will return the table unaltered.
+     * Gets an empty version of the supplied table with all current operations applied to it. If the Table is not a
+     * Table Supplier then this will return the table unaltered.
      *
      * @param maybeSupplier a Table that may be a supplier
      * @return an applied empty table or an unaltered table
@@ -153,7 +145,7 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
     }
 
     private static Table callTableSupplierMethod(Table maybeSupplier,
-        java.util.function.Function<TableSupplier, Table> method) {
+            java.util.function.Function<TableSupplier, Table> method) {
         if (maybeSupplier == null) {
             return null;
         }
@@ -169,8 +161,8 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
         }
     }
 
-    private TableSupplier(Table sourceTable, Table appliedEmptyTable,
-        List<Operation> tableOperations, boolean isComplete) {
+    private TableSupplier(Table sourceTable, Table appliedEmptyTable, List<Operation> tableOperations,
+            boolean isComplete) {
         this.sourceTable = sourceTable;
         this.appliedEmptyTable = appliedEmptyTable;
         // This is intended to be a copy
@@ -181,10 +173,8 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
 
     private Table complete() {
         log.info().append("TableSupplier setting complete").endl();
-        final TableSupplier copy =
-            new TableSupplier(sourceTable, appliedEmptyTable, tableOperations, true);
-        return (Table) Proxy.newProxyInstance(TableSupplier.class.getClassLoader(),
-            PROXY_INTERFACES, copy);
+        final TableSupplier copy = new TableSupplier(sourceTable, appliedEmptyTable, tableOperations, true);
+        return (Table) Proxy.newProxyInstance(TableSupplier.class.getClassLoader(), PROXY_INTERFACES, copy);
     }
 
     private Table getAppliedEmptyTable() {
@@ -207,19 +197,17 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
         // All TableMap operations should be hijacked
         if (TableMap.class.isAssignableFrom(method.getReturnType())) {
             throw new IllegalStateException(
-                "TableSupplier byExternal methods should be hijacked but invoked "
-                    + method.getName());
+                    "TableSupplier byExternal methods should be hijacked but invoked " + method.getName());
         }
 
-        log.info().append("TableSupplier invoking on applied empty table ").append(method.getName())
-            .endl();
+        log.info().append("TableSupplier invoking on applied empty table ").append(method.getName()).endl();
 
         // Let the source table handle everything else
         return method.invoke(appliedEmptyTable, args);
     }
 
     private Table deferOrExecute(Method method, Object[] args)
-        throws InvocationTargetException, IllegalAccessException {
+            throws InvocationTargetException, IllegalAccessException {
         if (isComplete && isFilterOperation(method)) {
             return execute(method, args);
         } else {
@@ -227,15 +215,13 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
         }
     }
 
-    private Table defer(Method method, Object[] args)
-        throws InvocationTargetException, IllegalAccessException {
+    private Table defer(Method method, Object[] args) throws InvocationTargetException, IllegalAccessException {
         log.info().append("TableSupplier defer ").append(method.getName()).endl();
         // Defer the table operation by adding to a copy of this table
-        final TableSupplier copy = new TableSupplier(sourceTable,
-            (Table) method.invoke(appliedEmptyTable, args), tableOperations, isComplete);
+        final TableSupplier copy = new TableSupplier(sourceTable, (Table) method.invoke(appliedEmptyTable, args),
+                tableOperations, isComplete);
         copy.tableOperations.add(new Operation(method, args));
-        return (Table) Proxy.newProxyInstance(TableSupplier.class.getClassLoader(),
-            PROXY_INTERFACES, copy);
+        return (Table) Proxy.newProxyInstance(TableSupplier.class.getClassLoader(), PROXY_INTERFACES, copy);
     }
 
     private Table execute(Method method, Object[] args) {
@@ -249,8 +235,7 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
         }
     }
 
-    private Table applyOperations(Table table)
-        throws IllegalAccessException, InvocationTargetException {
+    private Table applyOperations(Table table) throws IllegalAccessException, InvocationTargetException {
         for (Operation operation : tableOperations) {
             table = (Table) operation.method.invoke(table, operation.args);
         }
@@ -260,8 +245,8 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
     // region Hijacked Operations
 
     /**
-     * Coalesce will apply all of the table operations at any point in the suppliers construction.
-     * The supplier need not be complete nor does coalesce require a filter operation.
+     * Coalesce will apply all of the table operations at any point in the suppliers construction. The supplier need not
+     * be complete nor does coalesce require a filter operation.
      *
      * @return a coalesced Table from the supplier
      */
@@ -275,13 +260,12 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
     }
 
     /**
-     * This hasColumns implementation is intentionally permissive. It returns true if the table
-     * supplier a column prior to applying operations or after applying operations. This allows
-     * various one click implementations to succeed when they check for columns.
+     * This hasColumns implementation is intentionally permissive. It returns true if the table supplier a column prior
+     * to applying operations or after applying operations. This allows various one click implementations to succeed
+     * when they check for columns.
      *
      * @param columnNames the column names to check
-     * @return true if the table supplier has each column either before or after operations, false
-     *         otherwise
+     * @return true if the table supplier has each column either before or after operations, false otherwise
      */
     private boolean hasColumns(Collection<String> columnNames) {
         // Check that either the "before table" or "after table" has the column
@@ -303,7 +287,7 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
 
     private TableMap byExternal(boolean dropKeys, String... columnNames) {
         return new TableMapSupplier(sourceTable.byExternal(dropKeys, columnNames), tableOperations,
-            Collections.emptyList());
+                Collections.emptyList());
     }
 
     private TableMap byExternal(String... columnNames) {
@@ -366,8 +350,7 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
         // This list of functions is for table map transformations
         private final List<TransformTablesFunction> functions;
 
-        TableMapSupplier(TableMap sourceMap, List<Operation> tableOperations,
-            List<TransformTablesFunction> functions) {
+        TableMapSupplier(TableMap sourceMap, List<Operation> tableOperations, List<TransformTablesFunction> functions) {
             this.sourceMap = sourceMap;
             this.tableOperations = new ArrayList<>(tableOperations);
             this.functions = new ArrayList<>(functions);
@@ -383,7 +366,7 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
         }
 
         private Table applyOperations(Object key, Table table)
-            throws IllegalAccessException, InvocationTargetException {
+                throws IllegalAccessException, InvocationTargetException {
             // Apply operations from the supplier
             for (Operation operation : tableOperations) {
                 table = (Table) operation.method.invoke(table, operation.args);
@@ -398,8 +381,7 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
         }
 
         @Override
-        public Table getWithTransform(Object key,
-            java.util.function.Function<Table, Table> transform) {
+        public Table getWithTransform(Object key, java.util.function.Function<Table, Table> transform) {
             return transform.apply(get(key));
         }
 
@@ -460,26 +442,22 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
 
         @Override
         public TableMap transformTablesWithKey(BiFunction<Object, Table, Table> function) {
-            final TableMapSupplier copy =
-                new TableMapSupplier(sourceMap, tableOperations, functions);
+            final TableMapSupplier copy = new TableMapSupplier(sourceMap, tableOperations, functions);
             copy.functions.add(new TransformTablesFunction(function));
             return copy;
         }
 
         @Override
         public TableMap transformTablesWithKey(TableDefinition returnDefinition,
-            BiFunction<Object, Table, Table> function) {
-            final TableMapSupplier copy =
-                new TableMapSupplier(sourceMap, tableOperations, functions);
+                BiFunction<Object, Table, Table> function) {
+            final TableMapSupplier copy = new TableMapSupplier(sourceMap, tableOperations, functions);
             copy.functions.add(new TransformTablesFunction(returnDefinition, function));
             return copy;
         }
 
         @Override
-        public TableMap transformTablesWithMap(TableMap otherMap,
-            BiFunction<Table, Table, Table> function) {
-            throw new UnsupportedOperationException(
-                "TableSupplierMap does not support transformTablesWithMap");
+        public TableMap transformTablesWithMap(TableMap otherMap, BiFunction<Table, Table, Table> function) {
+            throw new UnsupportedOperationException("TableSupplierMap does not support transformTablesWithMap");
         }
 
         @Override

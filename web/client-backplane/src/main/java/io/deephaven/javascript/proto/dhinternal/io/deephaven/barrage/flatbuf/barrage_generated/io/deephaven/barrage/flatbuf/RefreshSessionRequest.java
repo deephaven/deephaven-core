@@ -11,9 +11,9 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.barrage.flatbuf.Barrage_generated.io.deephaven.barrage.flatbuf.RefreshSessionRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.barrage.flatbuf.Barrage_generated.io.deephaven.barrage.flatbuf.RefreshSessionRequest",
+        namespace = JsPackage.GLOBAL)
 public class RefreshSessionRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface CreateSessionVectorDataUnionType {
@@ -59,30 +59,27 @@ public class RefreshSessionRequest {
 
     @Deprecated
     public static native double createSessionVector(
-        Builder builder, RefreshSessionRequest.CreateSessionVectorDataUnionType data);
+            Builder builder, RefreshSessionRequest.CreateSessionVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createSessionVector(Builder builder, Int8Array data) {
         return createSessionVector(
-            builder,
-            Js.<RefreshSessionRequest.CreateSessionVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<RefreshSessionRequest.CreateSessionVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createSessionVector(Builder builder, JsArray<Double> data) {
         return createSessionVector(
-            builder,
-            Js.<RefreshSessionRequest.CreateSessionVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<RefreshSessionRequest.CreateSessionVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createSessionVector(Builder builder, Uint8Array data) {
         return createSessionVector(
-            builder,
-            Js.<RefreshSessionRequest.CreateSessionVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<RefreshSessionRequest.CreateSessionVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
@@ -94,15 +91,15 @@ public class RefreshSessionRequest {
     public static native double endRefreshSessionRequest(Builder builder);
 
     public static native RefreshSessionRequest getRootAsRefreshSessionRequest(
-        ByteBuffer bb, RefreshSessionRequest obj);
+            ByteBuffer bb, RefreshSessionRequest obj);
 
     public static native RefreshSessionRequest getRootAsRefreshSessionRequest(ByteBuffer bb);
 
     public static native RefreshSessionRequest getSizePrefixedRootAsRefreshSessionRequest(
-        ByteBuffer bb, RefreshSessionRequest obj);
+            ByteBuffer bb, RefreshSessionRequest obj);
 
     public static native RefreshSessionRequest getSizePrefixedRootAsRefreshSessionRequest(
-        ByteBuffer bb);
+            ByteBuffer bb);
 
     public static native void startRefreshSessionRequest(Builder builder);
 

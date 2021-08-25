@@ -54,8 +54,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
         return this;
     }
 
-    // This doesn't apply for this implementation, it's intended for when the buffer is being
-    // created
+    // This doesn't apply for this implementation, it's intended for when the buffer is being created
     @Override
     public int getEndOfHeaderOffset() {
         return 0;
@@ -89,14 +88,12 @@ public class DelayedLogEntryImpl2 implements LogEntry {
         }
     };
 
-    private final ByteBufferStreams.Output primitiveWriter =
-        new ByteBufferStreams.Output(null, SINK);
+    private final ByteBufferStreams.Output primitiveWriter = new ByteBufferStreams.Output(null, SINK);
     private Object[] objects = null;
     private int objectsPtr = 0;
     private int numActions = 0;
 
-    private final ByteBufferStreams.Input primitiveReader =
-        new ByteBufferStreams.Input(null, SOURCE);
+    private final ByteBufferStreams.Input primitiveReader = new ByteBufferStreams.Input(null, SOURCE);
 
     private void reset() {
         primitiveWriter.setBuffer(bufferPool.take());
@@ -133,14 +130,13 @@ public class DelayedLogEntryImpl2 implements LogEntry {
     }
 
     @Override
-    public LogEntry start(final LogSink logSink, final LogLevel level,
-        final long currentTimeMicros) {
+    public LogEntry start(final LogSink logSink, final LogLevel level, final long currentTimeMicros) {
         return start(logSink, level, currentTimeMicros, null);
     }
 
     @Override
     public LogEntry start(final LogSink logSink, final LogLevel level, final long currentTimeMicros,
-        final Throwable t) {
+            final Throwable t) {
         this.timestamp = currentTimeMicros;
         this.level = level;
         this.throwable = t;
@@ -494,13 +490,11 @@ public class DelayedLogEntryImpl2 implements LogEntry {
                         break;
                     }
                     case APPEND_DOUBLE: {
-                        logOutputBuffer =
-                            logOutputBuffer.appendDouble(primitiveReader.readDouble());
+                        logOutputBuffer = logOutputBuffer.appendDouble(primitiveReader.readDouble());
                         break;
                     }
                     case APPEND_CHARSEQ: {
-                        logOutputBuffer =
-                            logOutputBuffer.append((CharSequence) objects[objectsPtr++]);
+                        logOutputBuffer = logOutputBuffer.append((CharSequence) objects[objectsPtr++]);
                         break;
                     }
                     case APPEND_CHARSEQ_RANGE: {

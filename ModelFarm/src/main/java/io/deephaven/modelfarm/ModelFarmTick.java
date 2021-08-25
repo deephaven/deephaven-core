@@ -17,9 +17,9 @@ import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
- * A multithreaded resource to execute data driven models. Every time a row of the data table ticks,
- * the unique identifier is executed using the data from the tick. Successive executions for a
- * unique identifier are processed in order.
+ * A multithreaded resource to execute data driven models. Every time a row of the data table ticks, the unique
+ * identifier is executed using the data from the tick. Successive executions for a unique identifier are processed in
+ * order.
  * <p>
  * This is useful for executing against historical data at a regular interval.
  *
@@ -27,19 +27,19 @@ import java.util.concurrent.locks.ReentrantLock;
  * @param <DATATYPE> data type
  */
 public class ModelFarmTick<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends RowDataManager<KEYTYPE, DATATYPE>>
-    extends RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE> {
+        extends RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE> {
 
     private static final Logger log = LoggerFactory.getLogger(ModelFarmTick.class);
-    private static final boolean LOG_PERF = Configuration.getInstance()
-        .getBooleanWithDefault("ModelFarm.logModelFarmTickPerformance", false);
+    private static final boolean LOG_PERF =
+            Configuration.getInstance().getBooleanWithDefault("ModelFarm.logModelFarmTickPerformance", false);
     private final int maxQueueSize;
 
     /**
      * A Queue for a unique identifier.
      * <p>
-     * The queue uses a lock to ensure that only one item in the UQueue executes at a given time.
-     * Some models are stateful, and the order of input data matters. This locking ensures that
-     * models receive data in an expected order (e.g. time).
+     * The queue uses a lock to ensure that only one item in the UQueue executes at a given time. Some models are
+     * stateful, and the order of input data matters. This locking ensures that models receive data in an expected order
+     * (e.g. time).
      *
      * @param <T> data type.
      */
@@ -58,13 +58,11 @@ public class ModelFarmTick<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends RowData
      *
      * @param nThreads number of worker threads.
      * @param model model to execute.
-     * @param dataManager interface for accessing and querying data contained in rows of a dynamic
-     *        table.
-     * @param maxQueueSize number of elements in the work queue backlog before the blocking new
-     *        updates.
+     * @param dataManager interface for accessing and querying data contained in rows of a dynamic table.
+     * @param maxQueueSize number of elements in the work queue backlog before the blocking new updates.
      */
-    public ModelFarmTick(final int nThreads, final Model<DATATYPE> model,
-        final ROWDATAMANAGERTYPE dataManager, final int maxQueueSize) {
+    public ModelFarmTick(final int nThreads, final Model<DATATYPE> model, final ROWDATAMANAGERTYPE dataManager,
+            final int maxQueueSize) {
         super(nThreads, model, dataManager);
         this.maxQueueSize = maxQueueSize;
         this.queue = new ArrayDeque<>(this.maxQueueSize);
@@ -105,8 +103,8 @@ public class ModelFarmTick<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends RowData
                     while (queue.size() >= maxQueueSize || !queue.offer(uqueue)) {
                         if (getState() == State.WAITING) {
                             throw new IllegalStateException(
-                                "Queue is full, but model farm is not started! Possible deadlock.  Consider increasing maxQueueSize: maxQueueSize="
-                                    + maxQueueSize);
+                                    "Queue is full, but model farm is not started! Possible deadlock.  Consider increasing maxQueueSize: maxQueueSize="
+                                            + maxQueueSize);
                         }
 
                         try {
@@ -142,8 +140,8 @@ public class ModelFarmTick<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends RowData
                 }
             }
 
-            // notify that the queue has changed, so that other threads can check if queue is empty,
-            // and so that updateQueue() can see if queue has more capacity
+            // notify that the queue has changed, so that other threads can check if queue is empty, and so that
+            // updateQueue() can see if queue has more capacity
             this.notifyAll();
         }
 
@@ -167,12 +165,10 @@ public class ModelFarmTick<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends RowData
         final long t7 = System.nanoTime();
 
         if (LOG_PERF) {
-            log.warn().append("ModelFarmTick.execute PERFORMANCE: all=").append((t7 - t0) / 1000)
-                .append(" take=")
-                .append((t1 - t0) / 1000).append(" lock=" + (t2 - t1) / 1000).append(" poll=")
-                .append((t3 - t2) / 1000)
-                .append(" exec=").append((t4 - t3) / 1000).append(" unlock=")
-                .append((t6 - t5) / 1000).endl();
+            log.warn().append("ModelFarmTick.execute PERFORMANCE: all=").append((t7 - t0) / 1000).append(" take=")
+                    .append((t1 - t0) / 1000).append(" lock=" + (t2 - t1) / 1000).append(" poll=")
+                    .append((t3 - t2) / 1000)
+                    .append(" exec=").append((t4 - t3) / 1000).append(" unlock=").append((t6 - t5) / 1000).endl();
         }
 
     }

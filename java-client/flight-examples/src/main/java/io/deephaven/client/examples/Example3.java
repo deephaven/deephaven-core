@@ -15,8 +15,8 @@ import picocli.CommandLine.Command;
 import java.util.Collections;
 
 @Command(name = "example-3", mixinStandardHelpOptions = true,
-    description = "Canned example 3, sends a table, get the results, and convert to a TSV",
-    version = "0.1.0")
+        description = "Canned example 3, sends a table, get the results, and convert to a TSV",
+        version = "0.1.0")
 class Example3 extends FlightCannedTableBase {
 
     @Override
@@ -26,9 +26,9 @@ class Example3 extends FlightCannedTableBase {
 
     public static <T extends TableOperations<T, T>> T create(TableCreator<T> c) {
         return c.of(TableSpec.empty(100)).view("I=i").where(Collections.singletonList(FilterOr.of(
-            FilterCondition.lt(ColumnName.of("I"), Value.of(42L)),
-            FilterCondition.eq(ColumnName.of("I"), Value.of(93L)),
-            RawString.of("I % 2 == 0"))));
+                FilterCondition.lt(ColumnName.of("I"), Value.of(42L)),
+                FilterCondition.eq(ColumnName.of("I"), Value.of(93L)),
+                RawString.of("I % 2 == 0"))));
     }
 
     public static void main(String[] args) {

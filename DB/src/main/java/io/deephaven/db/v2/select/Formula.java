@@ -134,8 +134,7 @@ public abstract class Formula implements ElementSource {
         final WritableChunk<Values> sourceChunk;
         final FillContext fillContext;
 
-        FormulaGetContext(final ChunkType chunkType, final FillContext fillContext,
-            final int chunkCapacity) {
+        FormulaGetContext(final ChunkType chunkType, final FillContext fillContext, final int chunkCapacity) {
             this.sourceChunk = chunkType.makeWritableChunk(chunkCapacity);
             this.fillContext = fillContext;
         }
@@ -153,8 +152,7 @@ public abstract class Formula implements ElementSource {
 
     public abstract FillContext makeFillContext(final int chunkCapacity);
 
-    public Chunk<Values> getChunk(@NotNull final GetContext context,
-        @NotNull final OrderedKeys orderedKeys) {
+    public Chunk<Values> getChunk(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
         final FormulaGetContext formulaGetContext = (FormulaGetContext) context;
         final WritableChunk<Values> sourceChunk = formulaGetContext.sourceChunk;
         fillChunk(formulaGetContext.fillContext, sourceChunk, orderedKeys);
@@ -163,7 +161,7 @@ public abstract class Formula implements ElementSource {
 
 
     public Chunk<Values> getPrevChunk(@NotNull final GetContext context,
-        @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final OrderedKeys orderedKeys) {
         final FormulaGetContext formulaGetContext = (FormulaGetContext) context;
         final WritableChunk<Values> sourceChunk = formulaGetContext.sourceChunk;
         fillPrevChunk(formulaGetContext.fillContext, sourceChunk, orderedKeys);
@@ -171,12 +169,12 @@ public abstract class Formula implements ElementSource {
     }
 
     public abstract void fillChunk(@NotNull final FillContext context,
-        @NotNull final WritableChunk<? super Values> destination,
-        @NotNull final OrderedKeys orderedKeys);
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final OrderedKeys orderedKeys);
 
     public abstract void fillPrevChunk(@NotNull final FillContext context,
-        @NotNull final WritableChunk<? super Values> destination,
-        @NotNull final OrderedKeys orderedKeys);
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final OrderedKeys orderedKeys);
 
     protected abstract ChunkType getChunkType();
 }

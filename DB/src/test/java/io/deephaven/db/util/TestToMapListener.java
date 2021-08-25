@@ -10,16 +10,16 @@ import static io.deephaven.db.v2.TstUtils.i;
 public class TestToMapListener extends LiveTableTestCase {
     public void testToMap() {
         final QueryTable source = TstUtils.testRefreshingTable(
-            i(2, 4, 6, 8),
-            TstUtils.c("Sentinel", "A", "B", "C", "D"),
-            TstUtils.c("Sentinel2", "H", "I", "J", "K"));
+                i(2, 4, 6, 8),
+                TstUtils.c("Sentinel", "A", "B", "C", "D"),
+                TstUtils.c("Sentinel2", "H", "I", "J", "K"));
         io.deephaven.db.tables.utils.TableTools.show(source);
 
         final ColumnSource<String> sentinelSource = source.getColumnSource("Sentinel");
         final ColumnSource<String> sentinel2Source = source.getColumnSource("Sentinel2");
 
         final ToMapListener<String, String> tml = ToMapListener.make(source, sentinelSource::get,
-            sentinelSource::getPrev, sentinel2Source::get, sentinel2Source::getPrev);
+                sentinelSource::getPrev, sentinel2Source::get, sentinel2Source::getPrev);
         source.listenForUpdates(tml);
 
         assertEquals("H", tml.get("A"));

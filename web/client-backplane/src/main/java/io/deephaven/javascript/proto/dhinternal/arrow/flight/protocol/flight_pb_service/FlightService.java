@@ -8,9 +8,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.Flight_pb_service.FlightService",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.Flight_pb_service.FlightService",
+        namespace = JsPackage.GLOBAL)
 public class FlightService {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface DoActionType {

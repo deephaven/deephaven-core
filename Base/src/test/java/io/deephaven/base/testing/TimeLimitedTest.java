@@ -1,13 +1,12 @@
 package io.deephaven.base.testing;
 
 /**
- * A "fishlib JUnit" compatible test class with a timeout that can fail tests after a given timeout
- * expires.
+ * A "fishlib JUnit" compatible test class with a timeout that can fail tests after a given timeout expires.
  *
  * Override {@link #maxMillis()} to configure.
  *
- * If you are writing any new tests using junit 4+, instead use @Test(timeout=15_000) to set
- * timeouts directly on each method.
+ * If you are writing any new tests using junit 4+, instead use @Test(timeout=15_000) to set timeouts directly on each
+ * method.
  */
 public abstract class TimeLimitedTest extends BaseCachedJMockTestCase {
 
@@ -39,7 +38,7 @@ public abstract class TimeLimitedTest extends BaseCachedJMockTestCase {
                     // but it's still better than a deadlocked VM staying alive for hours
                     System.err.println("Force killing thread after exceeding " + ttl + " ms");
                     new IllegalStateException()
-                        .printStackTrace();
+                            .printStackTrace();
                     running.stop();
                 }
             }

@@ -19,8 +19,7 @@ public class IsWidget {
     public static boolean isWidget(Object value) {
         if (value instanceof LiveWidget) {
             return true;
-        } else if ((value instanceof PyObject
-            && ((PyObject) value).hasAttribute(GET_WIDGET_ATTRIBUTE))) {
+        } else if ((value instanceof PyObject && ((PyObject) value).hasAttribute(GET_WIDGET_ATTRIBUTE))) {
             try (final PyObject widget = ((PyObject) value).callMethod(GET_WIDGET_ATTRIBUTE)) {
                 return !widget.isNone();
             }
@@ -55,8 +54,7 @@ public class IsWidget {
     public static boolean isLiveWidgetVisibilityProvider(Object value) {
         if (value instanceof LiveWidgetVisibilityProvider) {
             return true;
-        } else if ((value instanceof PyObject
-            && ((PyObject) value).hasAttribute(GET_WIDGET_VISIBILITY_ATTRIBUTE))) {
+        } else if ((value instanceof PyObject && ((PyObject) value).hasAttribute(GET_WIDGET_VISIBILITY_ATTRIBUTE))) {
             return true;
         }
 
@@ -78,8 +76,7 @@ public class IsWidget {
                     }
                 }
             } else {
-                throw new StateException(
-                    "PyObject " + object + " isLiveWidgetVisibilityProvider, but has no attribute "
+                throw new StateException("PyObject " + object + " isLiveWidgetVisibilityProvider, but has no attribute "
                         + GET_WIDGET_VISIBILITY_ATTRIBUTE);
             }
         }
@@ -90,8 +87,7 @@ public class IsWidget {
     public static boolean isTable(Object value) {
         if (value instanceof Table) {
             return true;
-        } else if ((value instanceof PyObject
-            && ((PyObject) value).hasAttribute(GET_TABLE_ATTRIBUTE))) {
+        } else if ((value instanceof PyObject && ((PyObject) value).hasAttribute(GET_TABLE_ATTRIBUTE))) {
             try (final PyObject widget = ((PyObject) value).callMethod(GET_TABLE_ATTRIBUTE)) {
                 return !widget.isNone();
             }

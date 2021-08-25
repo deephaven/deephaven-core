@@ -19,8 +19,7 @@ public class BaseLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    void populateModifiedColumnSetRecurse(ModifiedColumnSet mcsBuilder,
-        Set<String> remainingDepsToSatisfy) {
+    void populateModifiedColumnSetRecurse(ModifiedColumnSet mcsBuilder, Set<String> remainingDepsToSatisfy) {
         mcsBuilder.setAll(remainingDepsToSatisfy.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
     }
 
@@ -35,21 +34,18 @@ public class BaseLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    public void updateColumnDefinitionsFromTopLayer(
-        Map<String, ColumnDefinition> columnDefinitions) {
+    public void updateColumnDefinitionsFromTopLayer(Map<String, ColumnDefinition> columnDefinitions) {
         for (Map.Entry<String, ColumnSource> entry : sources.entrySet()) {
             final String name = entry.getKey();
             final ColumnSource cs = entry.getValue();
             // noinspection unchecked
-            final ColumnDefinition cd =
-                ColumnDefinition.fromGenericType(name, cs.getType(), cs.getComponentType());
+            final ColumnDefinition cd = ColumnDefinition.fromGenericType(name, cs.getType(), cs.getComponentType());
             columnDefinitions.put(name, cd);
         }
     }
 
     @Override
-    public void applyUpdate(ShiftAwareListener.Update upstream, ReadOnlyIndex toClear,
-        UpdateHelper helper) {
+    public void applyUpdate(ShiftAwareListener.Update upstream, ReadOnlyIndex toClear, UpdateHelper helper) {
         // nothing to do at the base layer
     }
 

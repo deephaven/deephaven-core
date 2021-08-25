@@ -36,13 +36,11 @@ public class TestSeriesCollection extends BaseArrayTestCase {
 
         sc.add(SeriesCollection.SeriesType.CATEGORY, false, s1);
         assertEquals(1, sc.getSeriesDescriptions().size());
-        assertSeriesDescription(sc.getSeriesDescriptions().get("S1"),
-            SeriesCollection.SeriesType.CATEGORY, false, s1);
+        assertSeriesDescription(sc.getSeriesDescriptions().get("S1"), SeriesCollection.SeriesType.CATEGORY, false, s1);
 
         sc.add(SeriesCollection.SeriesType.XY, true, s2);
         assertEquals(2, sc.getSeriesDescriptions().size());
-        assertSeriesDescription(sc.getSeriesDescriptions().get("S2"),
-            SeriesCollection.SeriesType.XY, true, s2);
+        assertSeriesDescription(sc.getSeriesDescriptions().get("S2"), SeriesCollection.SeriesType.XY, true, s2);
 
         try {
             sc.add(SeriesCollection.SeriesType.XY, true, s3);
@@ -64,8 +62,7 @@ public class TestSeriesCollection extends BaseArrayTestCase {
     }
 
     private void assertSeriesDescription(final SeriesCollection.SeriesDescription sd,
-        final SeriesCollection.SeriesType type, final boolean isMultiSeries,
-        final SeriesInternal series) {
+            final SeriesCollection.SeriesType type, final boolean isMultiSeries, final SeriesInternal series) {
         assertNotNull(sd);
         assertEquals(type, sd.getType());
         assertEquals(isMultiSeries, sd.isMultiSeries());
@@ -125,10 +122,9 @@ public class TestSeriesCollection extends BaseArrayTestCase {
 
         assertNotNull(copy);
         assertEquals(2, copy.getSeriesDescriptions().size());
-        assertSeriesDescription(copy.getSeriesDescriptions().get("S1C"),
-            SeriesCollection.SeriesType.CATEGORY, false, s1copy);
-        assertSeriesDescription(copy.getSeriesDescriptions().get("S2C"),
-            SeriesCollection.SeriesType.XY, true, s2copy);
+        assertSeriesDescription(copy.getSeriesDescriptions().get("S1C"), SeriesCollection.SeriesType.CATEGORY, false,
+                s1copy);
+        assertSeriesDescription(copy.getSeriesDescriptions().get("S2C"), SeriesCollection.SeriesType.XY, true, s2copy);
     }
 
 }

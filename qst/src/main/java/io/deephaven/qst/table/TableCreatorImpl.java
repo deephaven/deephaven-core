@@ -4,9 +4,8 @@ import io.deephaven.api.TableOperations;
 import io.deephaven.qst.TableCreator;
 
 /**
- * A "no-op" table creator impl, based on the QST structure itself. Mainly useful for testing the
- * equivalence for the {@link TableOperations} of {@link TableSpec}; but publicly available for
- * functional completeness.
+ * A "no-op" table creator impl, based on the QST structure itself. Mainly useful for testing the equivalence for the
+ * {@link TableOperations} of {@link TableSpec}; but publicly available for functional completeness.
  */
 public enum TableCreatorImpl implements TableCreator<TableSpec> {
     INSTANCE;

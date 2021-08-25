@@ -16,21 +16,20 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A table handle implements {@link io.deephaven.api.TableOperations} such that each the initial
- * table handle and derived table handles are managed as {@linkplain Export exports}.
+ * A table handle implements {@link io.deephaven.api.TableOperations} such that each the initial table handle and
+ * derived table handles are managed as {@linkplain Export exports}.
  *
  * <p>
- * A table handle may only be combined with other table handles from the same {@linkplain Session
- * session}.
+ * A table handle may only be combined with other table handles from the same {@linkplain Session session}.
  *
  * <p>
- * A table handle throws {@link UncheckedInterruptedException} and
- * {@link UncheckedTableHandleException} on further {@link io.deephaven.api.TableOperations}.
+ * A table handle throws {@link UncheckedInterruptedException} and {@link UncheckedTableHandleException} on further
+ * {@link io.deephaven.api.TableOperations}.
  *
  * @see TableHandleManager
  */
 public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle>
-    implements Closeable {
+        implements Closeable {
 
     public interface Lifecycle {
         void onInit(TableHandle handle);
@@ -39,8 +38,8 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
     }
 
     /**
-     * Create a table handle, exporting {@code table}. The table handle will be
-     * {@linkplain #isSuccessful() successful} on return.
+     * Create a table handle, exporting {@code table}. The table handle will be {@linkplain #isSuccessful() successful}
+     * on return.
      *
      * @param session the session
      * @param table the table
@@ -49,15 +48,14 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
      * @throws TableHandleException if there is a table creation exception
      */
     public static TableHandle of(Session session, TableSpec table)
-        throws InterruptedException, TableHandleException {
+            throws InterruptedException, TableHandleException {
         return of(session, Collections.singletonList(table), null).get(0);
     }
 
     /**
-     * Create a table handle, exporting {@code table}. The table handle will be
-     * {@linkplain #isSuccessful() successful} on return. The given {@code lifecycle} will be called
-     * on initialization and on release. Derived table handles will inherit the same
-     * {@code lifecycle}.
+     * Create a table handle, exporting {@code table}. The table handle will be {@linkplain #isSuccessful() successful}
+     * on return. The given {@code lifecycle} will be called on initialization and on release. Derived table handles
+     * will inherit the same {@code lifecycle}.
      *
      * @param session the session
      * @param table the table
@@ -67,15 +65,14 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
      * @throws TableHandleException if there is a table creation exception
      */
     public static TableHandle of(Session session, TableSpec table, Lifecycle lifecycle)
-        throws InterruptedException, TableHandleException {
+            throws InterruptedException, TableHandleException {
         return of(session, Collections.singletonList(table), lifecycle).get(0);
     }
 
     /**
-     * Create the table handles, exporting {@code tables}. The table handles will be
-     * {@linkplain #isSuccessful() successful} on return. The given {@code lifecycle} will be called
-     * on initialization and on release. Derived table handles will inherit the same
-     * {@code lifecycle}.
+     * Create the table handles, exporting {@code tables}. The table handles will be {@linkplain #isSuccessful()
+     * successful} on return. The given {@code lifecycle} will be called on initialization and on release. Derived table
+     * handles will inherit the same {@code lifecycle}.
      *
      * @param session the session
      * @param tables the tables
@@ -85,7 +82,7 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
      * @throws TableHandleException if there is a table creation exception
      */
     public static List<TableHandle> of(Session session, Iterable<TableSpec> tables,
-        Lifecycle lifecycle) throws InterruptedException, TableHandleException {
+            Lifecycle lifecycle) throws InterruptedException, TableHandleException {
         List<TableHandle> handles = impl(session, tables, lifecycle);
         for (TableHandle handle : handles) {
             handle.await();
@@ -107,7 +104,7 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
     }
 
     private static List<TableHandle> impl(Session session, Iterable<TableSpec> specs,
-        Lifecycle lifecycle) {
+            Lifecycle lifecycle) {
         ExportsRequest.Builder exportBuilder = ExportsRequest.builder();
         List<TableHandle> handles = new ArrayList<>();
         for (TableSpec spec : specs) {
@@ -151,8 +148,8 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
     }
 
     /**
-     * Causes the current thread to wait until {@code this} {@linkplain #isDone() is done}, unless
-     * the thread is {@linkplain Thread#interrupt interrupted}.
+     * Causes the current thread to wait until {@code this} {@linkplain #isDone() is done}, unless the thread is
+     * {@linkplain Thread#interrupt interrupted}.
      *
      * @throws InterruptedException if the current thread is interrupted while waiting
      */
@@ -169,12 +166,12 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
     }
 
     /**
-     * Causes the current thread to wait until {@code this} {@linkplain #isDone() is done}, unless
-     * the thread is {@linkplain Thread#interrupt interrupted}, or {@code timeout} elapses.
+     * Causes the current thread to wait until {@code this} {@linkplain #isDone() is done}, unless the thread is
+     * {@linkplain Thread#interrupt interrupted}, or {@code timeout} elapses.
      *
      * @param timeout the timeout
-     * @return {@code true} if {@code this} has become {@linkplain #isDone() is done} and
-     *         {@code false} if the {@code timeout} has elapsed
+     * @return {@code true} if {@code this} has become {@linkplain #isDone() is done} and {@code false} if the
+     *         {@code timeout} has elapsed
      * @throws InterruptedException if the current thread is interrupted while waiting
      */
     public boolean await(Duration timeout) throws InterruptedException {
@@ -182,8 +179,8 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
     }
 
     /**
-     * The table proxy is done when the response from the server is done, which yields either a
-     * successful response or an error.
+     * The table proxy is done when the response from the server is done, which yields either a successful response or
+     * an error.
      *
      * <p>
      * Note: the table proxy can create further derived table proxies before being done.
@@ -199,8 +196,8 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
     /**
      * The table proxy is successful when the response from the server indicates success.
      *
-     * @return {@code true} if the response from the server indicates success and {@code false} if
-     *         the response indicates it was not successful or there has been no response yet
+     * @return {@code true} if the response from the server indicates success and {@code false} if the response
+     *         indicates it was not successful or there has been no response yet
      * @see #isDone()
      */
     public boolean isSuccessful() {

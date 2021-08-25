@@ -53,8 +53,7 @@ public class SingleTableOperations {
         type = Utils.primitiveTypeForName.get(typeName);
         Configuration.getInstance().setProperty("QueryTable.memoizeResults", "false");
 
-        final BenchmarkTableBuilder builder =
-            BenchmarkTools.inMemoryTableBuilder("SingleTableOperations",
+        final BenchmarkTableBuilder builder = BenchmarkTools.inMemoryTableBuilder("SingleTableOperations",
                 BenchmarkTools.sizeWithSparsity(tableSize, sparsity));
 
         builder.setSeed(0xDEADBEEF);
@@ -63,8 +62,7 @@ public class SingleTableOperations {
         }
         bmTable = builder.build();
 
-        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()),
-            params.getWarmup().getCount());
+        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
 
 
         inputTable = applySparsity(bmTable.getTable(), tableSize, sparsity, 0);

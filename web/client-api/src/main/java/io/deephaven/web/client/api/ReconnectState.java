@@ -5,13 +5,12 @@ import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.fu.JsRunnable;
 
 /**
- * Util class using exponential backoff to keep trying to connect to a server. Any disconnect should
- * call failed(), and the given retry callback will be invoked as appropriate. Once connection is
- * established, success() should be invoked to clear the reset tries attempted.
+ * Util class using exponential backoff to keep trying to connect to a server. Any disconnect should call failed(), and
+ * the given retry callback will be invoked as appropriate. Once connection is established, success() should be invoked
+ * to clear the reset tries attempted.
  *
- * Max backoff is doubled each failure, to a max of one minute. A random value between 0 and that
- * backoff is selected to wait before trying again, to avoid clients all attempting to
- * simultaneously reconnect.
+ * Max backoff is doubled each failure, to a max of one minute. A random value between 0 and that backoff is selected to
+ * wait before trying again, to avoid clients all attempting to simultaneously reconnect.
  *
  * A maximum number of times to try can be specified, otherwise defaults to MAX_VALUE.
  */
@@ -41,8 +40,8 @@ public class ReconnectState {
     }
 
     /**
-     * Call once it is time to connect for the first time, will invoke the retry function. Can also
-     * be called after failure to start trying to connect fresh.
+     * Call once it is time to connect for the first time, will invoke the retry function. Can also be called after
+     * failure to start trying to connect fresh.
      */
     public void initialConnection() {
         if (state == State.Connecting || state == State.Reconnecting || state == State.Connected) {
@@ -87,8 +86,8 @@ public class ReconnectState {
         // randomly pick a delay, exponentially back off based on number of tries
         // https://en.wikipedia.org/wiki/Exponential_backoff
         double delay = Math.random() * Math.min(
-            MIN_BACKOFF_MILLIS * Math.pow(2, currentTry - 1),
-            MAX_BACKOFF_MILLIS // don't go above the max delay
+                MIN_BACKOFF_MILLIS * Math.pow(2, currentTry - 1),
+                MAX_BACKOFF_MILLIS // don't go above the max delay
         );
         JsLog.debug("Attempting reconnect in ", delay, "ms", this);
         cancel = DomGlobal.setTimeout(ignore -> {
@@ -99,8 +98,7 @@ public class ReconnectState {
     }
 
     /**
-     * After the connection has been deliberately closed, call this to prepare for a later
-     * connection.
+     * After the connection has been deliberately closed, call this to prepare for a later connection.
      */
     public void disconnected() {
         state = State.Disconnected;

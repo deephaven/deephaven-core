@@ -6,7 +6,6 @@ import java.io.IOException;
 
 public class ReplicateUnboxerKernel {
     public static void main(String[] args) throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean(CharUnboxer.class,
-            ReplicatePrimitiveCode.MAIN_SRC);
+        ReplicatePrimitiveCode.charToAllButBoolean(CharUnboxer.class, ReplicatePrimitiveCode.MAIN_SRC);
     }
 }

@@ -11,11 +11,11 @@ import picocli.CommandLine.Parameters;
 import java.time.Duration;
 
 @Command(name = "get-schema", mixinStandardHelpOptions = true,
-    description = "Get the schema of a QST", version = "0.1.0")
+        description = "Get the schema of a QST", version = "0.1.0")
 class GetSchema extends FlightExampleBase {
 
     @Parameters(arity = "1", paramLabel = "QST", description = "QST file to send.",
-        converter = TableConverter.class)
+            converter = TableConverter.class)
     TableSpec table;
 
     @Override

@@ -55,13 +55,13 @@ public class ExportStatesTest {
     TableServiceImplBase table = new TableServiceGrpc.TableServiceImplBase() {
         @Override
         public void batch(BatchTableRequest request,
-            StreamObserver<ExportedTableCreationResponse> responseObserver) {
+                StreamObserver<ExportedTableCreationResponse> responseObserver) {
             batches.add(request);
             int ix = 0;
             for (Operation operation : request.getOpsList()) {
                 ExportedTableCreationResponse response = ExportedTableCreationResponse.newBuilder()
-                    .setSuccess(true)
-                    .setResultId(TableReference.newBuilder().setBatchOffset(ix).build()).build();
+                        .setSuccess(true)
+                        .setResultId(TableReference.newBuilder().setBatchOffset(ix).build()).build();
                 responseObserver.onNext(response);
                 ++ix;
             }
@@ -77,13 +77,13 @@ public class ExportStatesTest {
         String serverName = InProcessServerBuilder.generateName();
 
         grpcCleanup.register(InProcessServerBuilder.forName(serverName).directExecutor()
-            .addService(session).addService(table).build().start());
+                .addService(session).addService(table).build().start());
 
         ManagedChannel channel = grpcCleanup
-            .register(InProcessChannelBuilder.forName(serverName).directExecutor().build());
+                .register(InProcessChannelBuilder.forName(serverName).directExecutor().build());
 
         states = new ExportStates(null, SessionServiceGrpc.newStub(channel),
-            TableServiceGrpc.newStub(channel));
+                TableServiceGrpc.newStub(channel));
     }
 
     Export export(TableSpec table) {
@@ -235,7 +235,7 @@ public class ExportStatesTest {
 
     private static boolean hasSourceId(Operation op, Ticket ticket) {
         final List<TableReference> references =
-            OperationHelper.getSourceIds(op).limit(2).collect(Collectors.toList());
+                OperationHelper.getSourceIds(op).limit(2).collect(Collectors.toList());
         if (references.size() != 1) {
             return false;
         }

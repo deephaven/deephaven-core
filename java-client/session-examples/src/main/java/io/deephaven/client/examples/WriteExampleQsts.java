@@ -14,18 +14,18 @@ import java.nio.file.StandardOpenOption;
 import java.util.concurrent.Callable;
 
 @Command(name = "write-qsts", mixinStandardHelpOptions = true,
-    description = "Write some example QSTs to disk", version = "0.1.0")
+        description = "Write some example QSTs to disk", version = "0.1.0")
 public class WriteExampleQsts implements Callable<Void> {
 
     @Option(names = {"-d", "--dir"}, description = "The output directory, defaults to .",
-        defaultValue = ".")
+            defaultValue = ".")
     Path dir;
 
     @Override
     public Void call() throws Exception {
         if (!Files.isDirectory(dir)) {
             throw new IllegalArgumentException(
-                String.format("'%s' is not a directory, or does not exist", dir));
+                    String.format("'%s' is not a directory, or does not exist", dir));
         }
 
         writeObject(dir.resolve("hundred.qst"), TableSpec.empty(100).view("I=i"));
@@ -52,7 +52,7 @@ public class WriteExampleQsts implements Callable<Void> {
 
     private void writeObject(Path path, Object o) throws IOException {
         try (final OutputStream out = Files.newOutputStream(path, StandardOpenOption.CREATE);
-            final ObjectOutputStream objectOut = new ObjectOutputStream(out)) {
+                final ObjectOutputStream objectOut = new ObjectOutputStream(out)) {
             objectOut.writeObject(o);
         }
     }

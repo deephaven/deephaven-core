@@ -7,7 +7,7 @@ import java.util.Collection;
 import java.util.Objects;
 
 public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS_1, TABLE_1>, TABLE_1, TOPS_2 extends TableOperations<TOPS_2, TABLE_2>, TABLE_2>
-    implements TableOperations<TOPS_1, TABLE_1> {
+        implements TableOperations<TOPS_1, TABLE_1> {
 
     private final TOPS_2 delegate;
 
@@ -45,13 +45,13 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
 
     @Override
     public final TOPS_1 snapshot(TABLE_1 baseTable, boolean doInitialSnapshot,
-        String... stampColumns) {
+            String... stampColumns) {
         return adapt(delegate.snapshot(adapt(baseTable), doInitialSnapshot, stampColumns));
     }
 
     @Override
     public final TOPS_1 snapshot(TABLE_1 baseTable, boolean doInitialSnapshot,
-        Collection<ColumnName> stampColumns) {
+            Collection<ColumnName> stampColumns) {
         return adapt(delegate.snapshot(adapt(baseTable), doInitialSnapshot, stampColumns));
     }
 
@@ -87,7 +87,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
 
     @Override
     public final TOPS_1 whereIn(TABLE_1 rightTable,
-        Collection<? extends JoinMatch> columnsToMatch) {
+            Collection<? extends JoinMatch> columnsToMatch) {
         return adapt(delegate.whereIn(adapt(rightTable), columnsToMatch));
     }
 
@@ -98,7 +98,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
 
     @Override
     public final TOPS_1 whereNotIn(TABLE_1 rightTable,
-        Collection<? extends JoinMatch> columnsToMatch) {
+            Collection<? extends JoinMatch> columnsToMatch) {
         return adapt(delegate.whereNotIn(adapt(rightTable), columnsToMatch));
     }
 
@@ -149,14 +149,14 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
 
     @Override
     public final TOPS_1 naturalJoin(TABLE_1 rightTable, String columnsToMatch,
-        String columnsToAdd) {
+            String columnsToAdd) {
         return adapt(delegate.naturalJoin(adapt(rightTable), columnsToMatch, columnsToAdd));
     }
 
     @Override
     public final TOPS_1 naturalJoin(TABLE_1 rightTable,
-        Collection<? extends JoinMatch> columnsToMatch,
-        Collection<? extends JoinAddition> columnsToAdd) {
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
         return adapt(delegate.naturalJoin(adapt(rightTable), columnsToMatch, columnsToAdd));
     }
 
@@ -172,8 +172,8 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
 
     @Override
     public final TOPS_1 exactJoin(TABLE_1 rightTable,
-        Collection<? extends JoinMatch> columnsToMatch,
-        Collection<? extends JoinAddition> columnsToAdd) {
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
         return adapt(delegate.exactJoin(adapt(rightTable), columnsToMatch, columnsToAdd));
     }
 
@@ -189,7 +189,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
 
     @Override
     public final TOPS_1 leftJoin(TABLE_1 rightTable, Collection<? extends JoinMatch> columnsToMatch,
-        Collection<? extends JoinAddition> columnsToAdd) {
+            Collection<? extends JoinAddition> columnsToAdd) {
         return adapt(delegate.leftJoin(adapt(rightTable), columnsToMatch, columnsToAdd));
     }
 
@@ -205,13 +205,13 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
 
     @Override
     public final TOPS_1 join(TABLE_1 rightTable, Collection<? extends JoinMatch> columnsToMatch,
-        Collection<? extends JoinAddition> columnsToAdd) {
+            Collection<? extends JoinAddition> columnsToAdd) {
         return adapt(delegate.join(adapt(rightTable), columnsToMatch, columnsToAdd));
     }
 
     @Override
     public final TOPS_1 join(TABLE_1 rightTable, Collection<? extends JoinMatch> columnsToMatch,
-        Collection<? extends JoinAddition> columnsToAdd, int reserveBits) {
+            Collection<? extends JoinAddition> columnsToAdd, int reserveBits) {
         return adapt(delegate.join(adapt(rightTable), columnsToMatch, columnsToAdd, reserveBits));
     }
 
@@ -227,13 +227,13 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
 
     @Override
     public final TOPS_1 aj(TABLE_1 rightTable, Collection<? extends JoinMatch> columnsToMatch,
-        Collection<? extends JoinAddition> columnsToAdd) {
+            Collection<? extends JoinAddition> columnsToAdd) {
         return adapt(delegate.aj(adapt(rightTable), columnsToMatch, columnsToAdd));
     }
 
     @Override
     public final TOPS_1 aj(TABLE_1 rightTable, Collection<? extends JoinMatch> columnsToMatch,
-        Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
+            Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
         return adapt(delegate.aj(adapt(rightTable), columnsToMatch, columnsToAdd, asOfJoinRule));
     }
 
@@ -249,15 +249,15 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
 
     @Override
     public final TOPS_1 raj(TABLE_1 rightTable, Collection<? extends JoinMatch> columnsToMatch,
-        Collection<? extends JoinAddition> columnsToAdd) {
+            Collection<? extends JoinAddition> columnsToAdd) {
         return adapt(delegate.raj(adapt(rightTable), columnsToMatch, columnsToAdd));
     }
 
     @Override
     public final TOPS_1 raj(TABLE_1 rightTable, Collection<? extends JoinMatch> columnsToMatch,
-        Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
+            Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
         return adapt(
-            delegate.raj(adapt(rightTable), columnsToMatch, columnsToAdd, reverseAsOfJoinRule));
+                delegate.raj(adapt(rightTable), columnsToMatch, columnsToAdd, reverseAsOfJoinRule));
     }
 
     @Override
@@ -277,7 +277,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
 
     @Override
     public final TOPS_1 by(Collection<? extends Selectable> groupByColumns,
-        Collection<? extends Aggregation> aggregations) {
+            Collection<? extends Aggregation> aggregations) {
         return adapt(delegate.by(groupByColumns, aggregations));
     }
 }

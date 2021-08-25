@@ -22,8 +22,7 @@ public class ViewportRow implements TableData.Row {
 
     @Override
     public LongWrapper getIndex() {
-        throw new UnsupportedOperationException(
-            "Viewports don't currently represent their position with an index");
+        throw new UnsupportedOperationException("Viewports don't currently represent their position with an index");
     }
 
     @Override
@@ -31,8 +30,8 @@ public class ViewportRow implements TableData.Row {
     public Any get(Column column) {
         JsArray<Any> uncheckedData = Js.uncheckedCast(dataColumns[column.getIndex()]);
         if (uncheckedData == null) {
-            throw new java.util.NoSuchElementException("Column " + column.getName()
-                + " not found in row, was it specified in the viewport?");
+            throw new java.util.NoSuchElementException(
+                    "Column " + column.getName() + " not found in row, was it specified in the viewport?");
         }
         return uncheckedData.getAnyAt(offsetInSnapshot);
     }
@@ -52,13 +51,11 @@ public class ViewportRow implements TableData.Row {
             rowColors = rowStyleColumn.getAnyAt(offsetInSnapshot).asLong();
         }
         if (column.getFormatColumnIndex() != null) {
-            JsArray<Any> formatStrings =
-                Js.uncheckedCast(dataColumns[column.getFormatColumnIndex()]);
+            JsArray<Any> formatStrings = Js.uncheckedCast(dataColumns[column.getFormatColumnIndex()]);
             numberFormat = formatStrings.getAnyAt(offsetInSnapshot).asString();
         }
         if (column.getFormatStringColumnIndex() != null) {
-            JsArray<Any> formatStrings =
-                Js.uncheckedCast(dataColumns[column.getFormatStringColumnIndex()]);
+            JsArray<Any> formatStrings = Js.uncheckedCast(dataColumns[column.getFormatStringColumnIndex()]);
             formatString = formatStrings.getAnyAt(offsetInSnapshot).asString();
         }
         return new Format(cellColors, rowColors, numberFormat, formatString);

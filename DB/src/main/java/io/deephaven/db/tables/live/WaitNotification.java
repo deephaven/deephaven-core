@@ -11,9 +11,8 @@ import java.util.stream.Collectors;
 
 /**
  * One-shot {@link NotificationQueue.Notification} that can be delivered when a set of
- * {@link NotificationQueue.Dependency dependencies} are satisfied. This allows for an external
- * observer to wait for multiple dependencies to be satisfied using
- * {@link #waitForSatisfaction(long, NotificationQueue.Dependency...)}.
+ * {@link NotificationQueue.Dependency dependencies} are satisfied. This allows for an external observer to wait for
+ * multiple dependencies to be satisfied using {@link #waitForSatisfaction(long, NotificationQueue.Dependency...)}.
  */
 public final class WaitNotification extends AbstractNotification {
 
@@ -40,7 +39,7 @@ public final class WaitNotification extends AbstractNotification {
     @Override
     public LogOutput append(LogOutput logOutput) {
         return logOutput.append(getClass().getSimpleName()).append(": for dependencies")
-            .append(LogOutput.APPENDABLE_COLLECTION_FORMATTER, Arrays.asList(dependencies));
+                .append(LogOutput.APPENDABLE_COLLECTION_FORMATTER, Arrays.asList(dependencies));
     }
 
     @Override
@@ -71,22 +70,18 @@ public final class WaitNotification extends AbstractNotification {
      *
      * @param step The step to wait for satisfaction on
      * @param dependencies The dependencies to wait for
-     * @return True if the dependencies became satisfied on the specified step, false if the cycle
-     *         had already completed
+     * @return True if the dependencies became satisfied on the specified step, false if the cycle had already completed
      */
     public static boolean waitForSatisfaction(final long step,
-        @NotNull final NotificationQueue.Dependency... dependencies) {
+            @NotNull final NotificationQueue.Dependency... dependencies) {
         final WaitNotification waitNotification = new WaitNotification(dependencies);
         if (LiveTableMonitor.DEFAULT.maybeAddNotification(waitNotification, step)) {
             try {
                 waitNotification.await();
             } catch (InterruptedException e) {
-                throw new QueryCancellationException(
-                    "Interrupted while awaiting dependency satisfaction for "
-                        + Arrays.stream(dependencies).map(Objects::toString)
-                            .collect(Collectors.joining(","))
-                        + " on step " + step,
-                    e);
+                throw new QueryCancellationException("Interrupted while awaiting dependency satisfaction for "
+                        + Arrays.stream(dependencies).map(Objects::toString).collect(Collectors.joining(","))
+                        + " on step " + step, e);
             }
             return true;
         }

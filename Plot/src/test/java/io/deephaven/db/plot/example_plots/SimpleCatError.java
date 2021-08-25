@@ -38,9 +38,9 @@ public class SimpleCatError {
         final Number[] close = {4, 5, 4, 6};
 
         Figure fig = FigureFactory.figure()
-            .catErrorBar("S1", x1, y1, yLow, yHigh)
-            .plotStyle("bar")
-            .plotOrientation("H");
+                .catErrorBar("S1", x1, y1, yLow, yHigh)
+                .plotStyle("bar")
+                .plotOrientation("H");
 
         ExamplePlotUtils.display(fig);
     }

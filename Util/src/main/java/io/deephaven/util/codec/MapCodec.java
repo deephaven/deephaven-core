@@ -25,8 +25,7 @@ public abstract class MapCodec<K, V> implements ObjectCodec<Map<K, V>> {
 
     private static final int MINIMUM_SCRATCH_CAPACITY = 4096;
     private static final ThreadLocal<SoftReference<ByteBuffer>> scratchBufferThreadLocal =
-        ThreadLocal
-            .withInitial(() -> new SoftReference<>(ByteBuffer.allocate(MINIMUM_SCRATCH_CAPACITY)));
+            ThreadLocal.withInitial(() -> new SoftReference<>(ByteBuffer.allocate(MINIMUM_SCRATCH_CAPACITY)));
 
     MapCodec(@Nullable final String arguments) {}
 
@@ -67,12 +66,10 @@ public abstract class MapCodec<K, V> implements ObjectCodec<Map<K, V>> {
 
         int estimatedCapacity = -1;
         // on the first try, we'll use whatever our scratch buffer was
-        // on the second try, we'll have an estimate which is 10% bigger than if every character was
-        // 1 byte
+        // on the second try, we'll have an estimate which is 10% bigger than if every character was 1 byte
         // on the third try, we'll allow for every character to be two bytes
         // on the fourth try, we'll allow for every character to be four bytes
-        // if there is a fifth try, it means that we could not encode this properly, given that
-        // there is a limit of
+        // if there is a fifth try, it means that we could not encode this properly, given that there is a limit of
         // 4 bytes in a UTF-8 character.
         for (int tryCount = 0; tryCount < 4; ++tryCount) {
             try {
@@ -98,8 +95,7 @@ public abstract class MapCodec<K, V> implements ObjectCodec<Map<K, V>> {
 
     private ByteBuffer allocateScratch(int estimatedCapacity) {
         final ByteBuffer holdScratch;
-        scratchBufferThreadLocal
-            .set(new SoftReference<>(holdScratch = ByteBuffer.allocate(estimatedCapacity)));
+        scratchBufferThreadLocal.set(new SoftReference<>(holdScratch = ByteBuffer.allocate(estimatedCapacity)));
         return holdScratch;
     }
 
@@ -140,9 +136,9 @@ public abstract class MapCodec<K, V> implements ObjectCodec<Map<K, V>> {
     /**
      * Estimate the size of the encoded map.
      *
-     * The estimated size is used to encode the map; and is doubled twice if there is a buffer
-     * underflow exception. Thus if you are wrong by more than a factor of 4x, the map can not be
-     * encoded and a BufferUnderflow exception is returned to the caller.
+     * The estimated size is used to encode the map; and is doubled twice if there is a buffer underflow exception. Thus
+     * if you are wrong by more than a factor of 4x, the map can not be encoded and a BufferUnderflow exception is
+     * returned to the caller.
      *
      * @param input the input map
      * @return the estimated size of the map
