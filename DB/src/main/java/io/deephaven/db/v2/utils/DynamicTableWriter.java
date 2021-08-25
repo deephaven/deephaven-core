@@ -71,27 +71,28 @@ public class DynamicTableWriter implements TableWriter {
      */
     @SuppressWarnings("WeakerAccess")
     public DynamicTableWriter(final String[] columnNames, final Type<?>[] columnTypes,
-                              final Map<String, Object> constantValues) {
+        final Map<String, Object> constantValues) {
         this(columnNames, columnTypes.length, (int i) -> columnTypes[i].clazz(), constantValues);
     }
 
     // Convenience implementation method.
     private DynamicTableWriter(final String[] columnNames, final int columnTypesSize,
-                               final IntFunction<Class<?>> columnTypes,
-                               final Map<String, Object> constantValues) {
+        final IntFunction<Class<?>> columnTypes,
+        final Map<String, Object> constantValues) {
         final Map<String, ColumnSource> sources = new LinkedHashMap<>();
         arrayColumnSources = new ArrayBackedColumnSource[columnTypesSize];
         allocatedSize = 256;
         for (int i = 0; i < columnTypesSize; i++) {
             if (constantValues.containsKey(columnNames[i])) {
                 final SingleValueColumnSource singleValueColumnSource =
-                        SingleValueColumnSource.getSingleValueColumnSource(columnTypes.apply(i));
+                    SingleValueColumnSource.getSingleValueColumnSource(columnTypes.apply(i));
                 // noinspection unchecked
                 singleValueColumnSource.set(constantValues.get(columnNames[i]));
                 sources.put(columnNames[i], singleValueColumnSource);
             } else {
                 arrayColumnSources[i] =
-                        ArrayBackedColumnSource.getMemoryColumnSource(allocatedSize, columnTypes.apply(i));
+                    ArrayBackedColumnSource.getMemoryColumnSource(allocatedSize,
+                        columnTypes.apply(i));
                 sources.put(columnNames[i], arrayColumnSources[i]);
             }
         }
@@ -107,8 +108,8 @@ public class DynamicTableWriter implements TableWriter {
             }
             final int index = ii;
             factoryMap.put(columns[index].getName(),
-                    (currentRow) -> createRowSetter(columns[index].getType(),
-                            arrayColumnSources[index]));
+                (currentRow) -> createRowSetter(columns[index].getType(),
+                    arrayColumnSources[index]));
         }
     }
 
