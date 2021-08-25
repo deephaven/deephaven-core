@@ -163,7 +163,8 @@ final class ExportStates {
             // existing export and a list of parent indices to rehydrate an "unreferencable" table?
             // Alternatively, our impl could export everything.
             throw new IllegalArgumentException(String.format(
-                "Unable to complete request, contains an unreferencable table: %s", unreferencable.get()));
+                "Unable to complete request, contains an unreferencable table: %s",
+                unreferencable.get()));
         }
     }
 
