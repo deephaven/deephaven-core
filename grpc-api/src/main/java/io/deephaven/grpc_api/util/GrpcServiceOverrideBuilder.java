@@ -25,11 +25,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class GrpcServiceOverrideBuilder {
-    private static class GrpcOverrride<ReqT, RespT> {
+    private static class GrpcOverride<ReqT, RespT> {
         private final MethodDescriptor<ReqT, RespT> method;
         private final ServerCallHandler<ReqT, RespT> handler;
 
-        private GrpcOverrride(@NotNull MethodDescriptor<ReqT, RespT> method, @NotNull ServerCallHandler<ReqT, RespT> handler) {
+        private GrpcOverride(@NotNull MethodDescriptor<ReqT, RespT> method, @NotNull ServerCallHandler<ReqT, RespT> handler) {
             this.method = method;
             this.handler = handler;
         }
@@ -40,7 +40,7 @@ public class GrpcServiceOverrideBuilder {
     }
 
     private final ServerServiceDefinition baseDefinition;
-    private final List<GrpcOverrride<?, ?>> overrides = new ArrayList<>();
+    private final List<GrpcOverride<?, ?>> overrides = new ArrayList<>();
 
     private GrpcServiceOverrideBuilder(ServerServiceDefinition baseDefinition) {
         this.baseDefinition = baseDefinition;
@@ -52,19 +52,19 @@ public class GrpcServiceOverrideBuilder {
 
     private <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.BidiStreamingMethod<ReqT, RespT> handler) {
         validateMethodType(method.getType(), MethodDescriptor.MethodType.BIDI_STREAMING);
-        overrides.add(new GrpcOverrride<>(method, ServerCalls.asyncBidiStreamingCall(handler)));
+        overrides.add(new GrpcOverride<>(method, ServerCalls.asyncBidiStreamingCall(handler)));
         return this;
     }
 
     private <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.ServerStreamingMethod<ReqT, RespT> handler) {
         validateMethodType(method.getType(), MethodDescriptor.MethodType.SERVER_STREAMING);
-        overrides.add(new GrpcOverrride<>(method, ServerCalls.asyncServerStreamingCall(handler)));
+        overrides.add(new GrpcOverride<>(method, ServerCalls.asyncServerStreamingCall(handler)));
         return this;
     }
 
     private <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.UnaryMethod<ReqT, RespT> handler) {
         validateMethodType(method.getType(), MethodDescriptor.MethodType.UNARY);
-        overrides.add(new GrpcOverrride<>(method, ServerCalls.asyncUnaryCall(handler)));
+        overrides.add(new GrpcOverride<>(method, ServerCalls.asyncUnaryCall(handler)));
         return this;
     }
 
@@ -243,9 +243,10 @@ public class GrpcServiceOverrideBuilder {
                 if (!streamData.isHalfClose()) {
                     // if this isn't a half-close, we should export it for later calls - if it is, the client won't send more messages
                     session.newExport(streamData.getRpcTicket())
-                            .onError(responseObserver::onError)
+                            // not setting an onError here, failure can only happen if the session ends
                             .submit(() -> browserStream);
                 }
+
             });
         }
 

@@ -25,10 +25,10 @@ import java.io.InputStream;
 @Singleton
 public class FlightServiceGrpcBinding implements BindableService {
 
-    private final FlightServiceGrpcImpl<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> delegate;
+    private final FlightServiceGrpcImpl delegate;
 
     @Inject
-    public FlightServiceGrpcBinding(final FlightServiceGrpcImpl<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> service) {
+    public FlightServiceGrpcBinding(final FlightServiceGrpcImpl service) {
         this.delegate = service;
     }
 

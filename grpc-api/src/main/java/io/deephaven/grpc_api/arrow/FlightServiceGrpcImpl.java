@@ -32,7 +32,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 @Singleton
-public class FlightServiceGrpcImpl<Options, View> extends FlightServiceGrpc.FlightServiceImplBase {
+public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBase {
     // TODO NATE: pull app_metadata off of DoGet -- what about doPut? (core#412): use app_metadata to communicate serialization options
     private static final ChunkInputStreamGenerator.Options DEFAULT_DESER_OPTIONS = new ChunkInputStreamGenerator.Options.Builder().build();
 
@@ -40,12 +40,12 @@ public class FlightServiceGrpcImpl<Options, View> extends FlightServiceGrpc.Flig
 
     private final SessionService sessionService;
     private final TicketRouter ticketRouter;
-    private final ArrowFlightUtil.DoExchangeMarshaller.Factory<Options, View> doExchangeFactory;
+    private final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory;
 
-    @Inject()
+    @Inject
     public FlightServiceGrpcImpl(final SessionService sessionService,
                                  final TicketRouter ticketRouter,
-                                 final ArrowFlightUtil.DoExchangeMarshaller.Factory<Options, View> doExchangeFactory) {
+                                 final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory) {
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.doExchangeFactory = doExchangeFactory;

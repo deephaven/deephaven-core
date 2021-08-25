@@ -1192,6 +1192,24 @@ public class SessionState {
         }
 
         /**
+         * Invoke this method to set the error handler to be notified if this export fails. Only one error handler may be set.
+         * This is a convenience method for use with {@link io.grpc.stub.StreamObserver}.
+         * <p></p>
+         * This differs from {@link #onError(ExportErrorGrpcHandler)} in that it will synchronize on an instance, usually
+         * the observer in question, to ensure thread safety when interacting with the grpc response stream.
+         *
+         * @param errorHandler the error handler to be notified
+         * @return this builder
+         */
+        public ExportBuilder<T> onErrorSynchronized(Object instance, final ExportErrorGrpcHandler errorHandler) {
+            return onError(statusRuntimeException -> {
+                synchronized (instance) {
+                    errorHandler.onError(statusRuntimeException);
+                }
+            });
+        }
+
+        /**
          * This method is the final method for submitting an export to the session. The provided callable is enqueued on
          * the scheduler when all dependencies have been satisfied. Only the dependencies supplied to the builder are
          * guaranteed to be resolved when the exportMain is executing.

@@ -289,7 +289,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                             SessionState.ExportObject<ScriptSession> exportedConsole = session.getExport(request.getConsoleId());
                             session.nonExport()
                                     .require(exportedConsole)
-                                    .onError(responseObserver::onError)
+                                    .onErrorSynchronized(responseObserver, responseObserver::onError)
                                     .submit(() -> {
                                         final VersionedTextDocumentIdentifier doc = request.getTextDocument();
                                         ScriptSession scriptSession = exportedConsole.get();
@@ -308,7 +308,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                                                         item -> item.setInsertTextFormat(2).build()
                                                 ).collect(Collectors.toSet())).build();
 
-                                        safelyExecute(() -> {
+                                        safelyExecuteLocked(responseObserver, () -> {
                                             responseObserver.onNext(AutoCompleteResponse.newBuilder()
                                                     .setCompletionItems(mangledResults)
                                                     .build());
@@ -335,7 +335,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 @Override
                 public void onCompleted() {
                     // just hang up too, browser will reconnect if interested
-                    responseObserver.onCompleted();
+                    synchronized (responseObserver) {
+                        responseObserver.onCompleted();
+                    }
                 }
             };
         });

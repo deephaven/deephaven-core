@@ -177,7 +177,7 @@ public class ArrowFlightUtil {
                     }
                     resultExportBuilder = ticketRouter
                             .<Table>publish(session, mi.descriptor)
-                            .onError(observer::onError);
+                            .onErrorSynchronized(observer, observer::onError);
                     manage(resultExportBuilder.getExport());
                 }
 
@@ -249,7 +249,7 @@ public class ArrowFlightUtil {
                 resultTable.handleBarrageMessage(msg);
 
                 // no app_metadata to report; but ack the processing
-                GrpcUtil.safelyExecute(() -> observer.onNext(Flight.PutResult.newBuilder().build()));
+                GrpcUtil.safelyExecuteLocked(observer, () -> observer.onNext(Flight.PutResult.newBuilder().build()));
             });
         }
 
@@ -295,7 +295,7 @@ public class ArrowFlightUtil {
                     // transfer ownership to submit's liveness scope, drop our extra reference
                     resultTable.manageWithCurrentScope();
                     resultTable.dropReference();
-                    GrpcUtil.safelyExecute(observer::onCompleted);
+                    GrpcUtil.safelyExecuteLocked(observer, observer::onCompleted);
                     return resultTable;
                 }), () -> GrpcUtil.safelyError(observer, Code.DATA_LOSS, "Do put could not be sealed"));
             });
@@ -328,34 +328,34 @@ public class ArrowFlightUtil {
      * and will not send out-of-order requests (due to out-of-band requests). The client should already anticipate
      * subscription changes may be coalesced by the BarrageMessageProducer.
      */
-    public static class DoExchangeMarshaller<Options, View> extends SingletonLivenessManager implements StreamObserver<InputStream>, Closeable {
+    public static class DoExchangeMarshaller extends SingletonLivenessManager implements StreamObserver<InputStream>, Closeable {
         @AssistedFactory
-        public interface Factory<Options, View> {
-            DoExchangeMarshaller<Options, View> openExchange(SessionState session, StreamObserver<InputStream> observer);
+        public interface Factory {
+            DoExchangeMarshaller openExchange(SessionState session, StreamObserver<InputStream> observer);
         }
 
         private final String myPrefix;
         private final SessionState session;
 
         private boolean isViewport;
-        private BarrageMessageProducer<Options, View> bmp;
+        private BarrageMessageProducer<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> bmp;
         private Queue<BarrageSubscriptionRequest> preExportSubscriptions;
 
-        private final StreamObserver<View> listener;
+        private final StreamObserver<BarrageStreamGenerator.View> listener;
 
         private boolean isClosed = false;
         private SessionState.ExportObject<?> onExportResolvedContinuation;
 
         private final TicketRouter ticketRouter;
-        private final BarrageMessageProducer.Operation.Factory<Options, View> operationFactory;
-        private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, Options> optionsAdapter;
+        private final BarrageMessageProducer.Operation.Factory<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> operationFactory;
+        private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, ChunkInputStreamGenerator.Options> optionsAdapter;
 
         @AssistedInject
         public DoExchangeMarshaller(
                 final TicketRouter ticketRouter,
-                final BarrageMessageProducer.Operation.Factory<Options, View> operationFactory,
-                final BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<View>> listenerAdapter,
-                final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, Options> optionsAdapter,
+                final BarrageMessageProducer.Operation.Factory<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> operationFactory,
+                final BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGenerator.View>> listenerAdapter,
+                final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, ChunkInputStreamGenerator.Options> optionsAdapter,
                 @Assisted final SessionState session, @Assisted final StreamObserver<InputStream> responseObserver) {
 
             this.myPrefix = "DoExchangeMarshaller{" + Integer.toHexString(System.identityHashCode(this)) + "}: ";

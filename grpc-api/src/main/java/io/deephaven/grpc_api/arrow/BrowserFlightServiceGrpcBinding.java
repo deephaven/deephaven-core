@@ -28,12 +28,12 @@ public class BrowserFlightServiceGrpcBinding implements BindableService {
     private static final Logger log = LoggerFactory.getLogger(BrowserFlightServiceGrpcBinding.class);
 
 
-    private final FlightServiceGrpcImpl<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> delegate;
+    private final FlightServiceGrpcImpl delegate;
     private final SessionService sessionService;
 
     @Inject
-    public BrowserFlightServiceGrpcBinding(final FlightServiceGrpcImpl<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> service, SessionService sessionService) {
-        delegate = service;
+    public BrowserFlightServiceGrpcBinding(final FlightServiceGrpcImpl service, SessionService sessionService) {
+        this.delegate = service;
         this.sessionService = sessionService;
     }
 

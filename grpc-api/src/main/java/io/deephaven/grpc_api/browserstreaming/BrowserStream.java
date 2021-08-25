@@ -195,8 +195,14 @@ public class BrowserStream<T> implements Closeable {
 
             synchronized (this) {
                 if (mode == Mode.IN_ORDER) {
-                    message = pendingSeq == null ? null : pendingSeq.top().getMessage();
-                    streamData = pendingSeq == null ? null : pendingSeq.top().getStreamData();
+                    if (pendingSeq == null || pendingSeq.top() == null) {
+                        message = null;
+                        streamData = null;
+                    } else {
+                        Message<T> top = pendingSeq.top();
+                        message = top.getMessage();
+                        streamData = top.getStreamData();
+                    }
                     if (streamData == null || streamData.getSequence() != nextSeq) {
                         processingMessage = false;
                         break;
