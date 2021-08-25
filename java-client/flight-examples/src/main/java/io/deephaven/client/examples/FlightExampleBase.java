@@ -20,14 +20,28 @@ abstract class FlightExampleBase implements Callable<Void> {
             defaultValue = "localhost:10000")
     String target;
 
+    @Option(names = {"-p", "--plaintext"}, description = "Use plaintext.")
+    Boolean plaintext;
+
+    @Option(names = {"-u", "--user-agent"}, description = "User-agent.")
+    String userAgent;
+
     protected abstract void execute(FlightSession flight) throws Exception;
 
     @Override
     public final Void call() throws Exception {
         BufferAllocator bufferAllocator = new RootAllocator();
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
-        ManagedChannel managedChannel =
-                ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+        ManagedChannelBuilder<?> channelBuilder = ManagedChannelBuilder.forTarget(target);
+        if ((plaintext != null && plaintext) || "localhost:10000".equals(target)) {
+            channelBuilder.usePlaintext();
+        } else {
+            channelBuilder.useTransportSecurity();
+        }
+        if (userAgent != null) {
+            channelBuilder.userAgent(userAgent);
+        }
+        ManagedChannel managedChannel = channelBuilder.build();
 
         Runtime.getRuntime()
                 .addShutdownHook(new Thread(() -> onShutdown(scheduler, managedChannel)));
