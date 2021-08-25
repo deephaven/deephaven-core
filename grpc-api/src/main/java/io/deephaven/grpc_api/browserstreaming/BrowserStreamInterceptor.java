@@ -14,7 +14,6 @@ import javax.inject.Singleton;
  * later parts of BrowserStream tooling so that unary and server-streaming calls can
  * be combined into an emulated bidirectional stream.
  */
-@Singleton
 public class BrowserStreamInterceptor implements ServerInterceptor {
     private static final String TICKET_HEADER_NAME = "x-deephaven-stream-ticket";
     private static final String SEQUENCE_HEADER_NAME = "x-deephaven-stream-sequence";
@@ -30,10 +29,6 @@ public class BrowserStreamInterceptor implements ServerInterceptor {
      * open a stream, never send a message, and then close it.
      */
     private static final Metadata.Key<String> HALF_CLOSE_HEADER = Metadata.Key.of("x-deephaven-stream-halfclose", Metadata.ASCII_STRING_MARSHALLER);
-
-    @Inject
-    public BrowserStreamInterceptor() {
-    }
 
     @Override
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {

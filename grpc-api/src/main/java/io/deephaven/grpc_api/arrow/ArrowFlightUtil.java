@@ -246,7 +246,7 @@ public class ArrowFlightUtil {
                 resultTable.handleBarrageMessage(msg);
 
                 // no app_metadata to report; but ack the processing
-                GrpcUtil.safelyExecuteLocked(observer, () -> observer.onNext(Flight.PutResult.newBuilder().build()));
+                GrpcUtil.safelyExecuteLocked(observer, () -> observer.onNext(Flight.PutResult.getDefaultInstance()));
             });
         }
 

@@ -6,14 +6,12 @@ package io.deephaven.grpc_api.util;
 
 import com.google.rpc.Code;
 import io.deephaven.grpc_api.browserstreaming.BrowserStream;
+import io.deephaven.grpc_api.browserstreaming.BrowserStreamInterceptor;
 import io.deephaven.grpc_api.browserstreaming.StreamData;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.io.logger.Logger;
-import io.grpc.MethodDescriptor;
-import io.grpc.ServerCallHandler;
-import io.grpc.ServerServiceDefinition;
-import io.grpc.ServiceDescriptor;
+import io.grpc.*;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
@@ -41,6 +39,8 @@ public class GrpcServiceOverrideBuilder {
 
     private final ServerServiceDefinition baseDefinition;
     private final List<GrpcOverride<?, ?>> overrides = new ArrayList<>();
+    private final BrowserStreamInterceptor browserStreamInterceptor = new BrowserStreamInterceptor();
+    private boolean needsBrowserInterceptor = false;
 
     private GrpcServiceOverrideBuilder(ServerServiceDefinition baseDefinition) {
         this.baseDefinition = baseDefinition;
@@ -137,6 +137,7 @@ public class GrpcServiceOverrideBuilder {
             BrowserStream.Mode mode,
             Logger log, SessionService sessionService) {
         BrowserStreamMethod<ReqT, RespT, NextRespT> method = new BrowserStreamMethod<>(log, mode, delegate, sessionService);
+        needsBrowserInterceptor = true;
         return this
                 .override(MethodDescriptor.<ReqT, RespT>newBuilder()
                         .setType(MethodDescriptor.MethodType.SERVER_STREAMING)
@@ -186,7 +187,11 @@ public class GrpcServiceOverrideBuilder {
                 .filter(d -> !overrideMethodNames.contains(d.getMethodDescriptor().getFullMethodName()))
                 .forEach(serviceBuilder::addMethod);
 
-        return serviceBuilder.build();
+        ServerServiceDefinition serviceDef = serviceBuilder.build();
+        if (needsBrowserInterceptor) {
+            return ServerInterceptors.intercept(serviceDef, browserStreamInterceptor);
+        }
+        return serviceDef;
     }
 
     public static <ReqT, RespT> MethodDescriptor<ReqT, RespT> descriptorFor(
