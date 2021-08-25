@@ -67,9 +67,10 @@ final class ExportStates {
 
     private Optional<TableSpec> searchUnreferencableTable(ExportsRequest request) {
         final Set<TableSpec> unreferencableTables = unreferencableTables();
+        final Set<TableSpec> keySet = exports.keySet();
         // Note: this is *not* excluding everything that can be reached via exports.keySet(), it
         // just excludes paths from the request roots that go through an export.keySet().
-        return ParentsVisitor.reachableExcludePathsSearch(request.tables(), exports.keySet(),
+        return ParentsVisitor.search(request.tables(), keySet::contains,
             unreferencableTables::contains);
     }
 

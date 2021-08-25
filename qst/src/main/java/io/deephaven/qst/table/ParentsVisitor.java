@@ -4,7 +4,6 @@ import io.deephaven.qst.table.TableSpec.Visitor;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -62,7 +61,7 @@ public class ParentsVisitor implements Visitor {
      * @return the de-duplicated, post-order list
      */
     public static List<TableSpec> postOrderList(Iterable<TableSpec> tables) {
-        List<TableSpec> postOrder = new ArrayList<>(anyOrder(tables));
+        List<TableSpec> postOrder = new ArrayList<>(reachable(tables));
         postOrder.sort(Comparator.comparingInt(TableSpec::depth));
         return postOrder;
     }
@@ -106,121 +105,23 @@ public class ParentsVisitor implements Visitor {
      * @return the reachable set
      */
     public static Set<TableSpec> reachable(Iterable<TableSpec> tables) {
-        return anyOrder(tables);
+        final Search search = new Search(null, null);
+        return search.reachable(tables);
     }
 
     /**
-     * todo: document, it only excludes searching excludePaths - it does *not* mean that the subdag
-     * under excludePaths can't be in the output (for example, the initial inputs could point to the
-     * subdag directly)
+     * Performs a search for a table that satisfies {@code searchPredicate}. Will follow the
+     * dependencies of {@code initialInputs}. Tables that match {@code excludePaths} will not be
+     * returned, and will not have its dependencies added to the search.
+     *
+     * <p>
+     * Note: a dependency of a table that matches {@code excludePaths} will be returned if there is
+     * any path to that dependency that doesn't go through {@code excludePaths}.
      */
-    public static Set<TableSpec> reachableExcludePaths(Iterable<TableSpec> initialInputs,
-        Set<TableSpec> excludePaths) {
-        return reachableExcludePathsImpl(initialInputs, excludePaths);
-    }
-
-    /**
-     * todo: document, it only excludes searching excludePaths - it does *not* mean that the subdag
-     * under excludePaths can't be in the output (for example, the initial inputs could point to the
-     * subdag directly)
-     */
-    public static Optional<TableSpec> reachableExcludePathsSearch(Iterable<TableSpec> initialInputs,
-        Set<TableSpec> excludePaths, Predicate<TableSpec> searchPredicate) {
-        return reachableExcludePathsSearchImpl(initialInputs, excludePaths, searchPredicate);
-    }
-
-    public static Optional<TableSpec> reachableAnyMatches(Iterable<TableSpec> tables,
-        Predicate<TableSpec> predicate) {
-        Set<TableSpec> output = new HashSet<>();
-        Queue<TableSpec> toProcess = new ArrayDeque<>();
-        for (TableSpec initialInput : tables) {
-            toProcess.add(initialInput);
-            do {
-                final TableSpec table = toProcess.remove();
-                if (output.add(table)) {
-                    if (predicate.test(table)) {
-                        return Optional.of(table);
-                    }
-                    ParentsVisitor.getParents(table).forEachOrdered(toProcess::add);
-                }
-            } while (!toProcess.isEmpty());
-        }
-        return Optional.empty();
-    }
-
-    private static Set<TableSpec> anyOrder(Iterable<TableSpec> initialInputs) {
-        return reachableExcludePathsImpl(initialInputs, Collections.emptySet());
-    }
-
-    private static Set<TableSpec> reachableExcludePathsImpl(Iterable<TableSpec> initialInputs,
-        Set<TableSpec> excludePaths) {
-        Set<TableSpec> output = new HashSet<>();
-        Queue<TableSpec> toProcess = new ArrayDeque<>();
-        for (TableSpec initialInput : initialInputs) {
-            toProcess.add(initialInput);
-            do {
-                final TableSpec table = toProcess.remove();
-                if (!excludePaths.contains(table) && output.add(table)) {
-                    ParentsVisitor.getParents(table).forEachOrdered(toProcess::add);
-                }
-            } while (!toProcess.isEmpty());
-        }
-        return output;
-    }
-
-    private static Optional<TableSpec> reachableExcludePathsSearchImpl(
-        Iterable<TableSpec> initialInputs, Set<TableSpec> excludePaths,
-        Predicate<TableSpec> searchPredicate) {
-        Set<TableSpec> output = new HashSet<>();
-        Queue<TableSpec> toProcess = new ArrayDeque<>();
-        for (TableSpec initialInput : initialInputs) {
-            toProcess.add(initialInput);
-            do {
-                final TableSpec table = toProcess.remove();
-                if (!excludePaths.contains(table) && output.add(table)) {
-                    if (searchPredicate.test(table)) {
-                        return Optional.of(table);
-                    }
-                    ParentsVisitor.getParents(table).forEachOrdered(toProcess::add);
-                }
-            } while (!toProcess.isEmpty());
-        }
-        return Optional.empty();
-    }
-
-    private static Set<TableSpec> anyOrder(Iterable<TableSpec> initialInputs,
-        Set<TableSpec> excludePaths) {
-        Set<TableSpec> output = new HashSet<>();
-        Queue<TableSpec> toProcess = new ArrayDeque<>();
-        for (TableSpec initialInput : initialInputs) {
-            toProcess.add(initialInput);
-            do {
-                final TableSpec table = toProcess.remove();
-                if (!excludePaths.contains(table) && output.add(table)) {
-                    ParentsVisitor.getParents(table).forEachOrdered(toProcess::add);
-                }
-            } while (!toProcess.isEmpty());
-        }
-        return output;
-    }
-
-    private static boolean anyMatch(Iterable<TableSpec> initialInputs,
-        Predicate<TableSpec> predicate) {
-        Set<TableSpec> output = new HashSet<>();
-        Queue<TableSpec> toProcess = new ArrayDeque<>();
-        for (TableSpec initialInput : initialInputs) {
-            toProcess.add(initialInput);
-            do {
-                final TableSpec table = toProcess.remove();
-                if (output.add(table)) {
-                    if (predicate.test(table)) {
-                        return true;
-                    }
-                    ParentsVisitor.getParents(table).forEachOrdered(toProcess::add);
-                }
-            } while (!toProcess.isEmpty());
-        }
-        return false;
+    public static Optional<TableSpec> search(Iterable<TableSpec> initialInputs,
+        Predicate<TableSpec> excludePaths, Predicate<TableSpec> searchPredicate) {
+        final Search search = new Search(excludePaths, searchPredicate);
+        return search.search(initialInputs);
     }
 
     private Stream<TableSpec> out;
@@ -357,5 +258,39 @@ public class ParentsVisitor implements Visitor {
     @Override
     public void visit(AggregationTable aggregationTable) {
         out = single(aggregationTable);
+    }
+
+    private static class Search {
+
+        private final Predicate<TableSpec> excludePaths;
+        private final Predicate<TableSpec> searchPredicate;
+        private final Queue<TableSpec> toSearch = new ArrayDeque<>();
+        private final Set<TableSpec> visited = new HashSet<>();
+
+        private Search(Predicate<TableSpec> excludePaths, Predicate<TableSpec> searchPredicate) {
+            this.excludePaths = excludePaths;
+            this.searchPredicate = searchPredicate;
+        }
+
+        public Set<TableSpec> reachable(Iterable<TableSpec> initialInputs) {
+            search(initialInputs);
+            return visited;
+        }
+
+        public Optional<TableSpec> search(Iterable<TableSpec> initialInputs) {
+            for (TableSpec initialInput : initialInputs) {
+                toSearch.add(initialInput);
+                do {
+                    final TableSpec table = toSearch.remove();
+                    if ((excludePaths == null || !excludePaths.test(table)) && visited.add(table)) {
+                        if (searchPredicate != null && searchPredicate.test(table)) {
+                            return Optional.of(table);
+                        }
+                        ParentsVisitor.getParents(table).forEachOrdered(toSearch::add);
+                    }
+                } while (!toSearch.isEmpty());
+            }
+            return Optional.empty();
+        }
     }
 }
