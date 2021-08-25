@@ -77,28 +77,28 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     @Override
     public Object materialize(Object nullValue) throws IOException {
-        try (SeekableByteChannel file = channelsProvider.getReadChannel(filePath)) {
-            file.position(offset);
-            ensurePageHeader(file);
-            return readDataPage(nullValue, file);
+        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
+            readChannel.position(offset);
+            ensurePageHeader(readChannel);
+            return readDataPage(nullValue, readChannel);
         }
     }
 
     public int readRowCount() throws IOException {
-        try (SeekableByteChannel file = channelsProvider.getReadChannel(filePath)) {
-            file.position(offset);
-            ensurePageHeader(file);
-            return readRowCountFromDataPage(file);
+        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
+            readChannel.position(offset);
+            ensurePageHeader(readChannel);
+            return readRowCountFromDataPage(readChannel);
         }
     }
 
 
     @Override
     public IntBuffer readKeyValues(IntBuffer keyDest, int nullPlaceholder) throws IOException {
-        try (SeekableByteChannel file = channelsProvider.getReadChannel(filePath)) {
-            file.position(offset);
-            ensurePageHeader(file);
-            return readKeyFromDataPage(keyDest, nullPlaceholder, file);
+        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
+            readChannel.position(offset);
+            ensurePageHeader(readChannel);
+            return readKeyFromDataPage(keyDest, nullPlaceholder, readChannel);
         }
     }
 
