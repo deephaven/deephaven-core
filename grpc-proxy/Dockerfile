@@ -1,3 +1,5 @@
+# Deliberately using old alpine, see issue #1034 in deephaven-core
+# See also alpinelinux/docker-alpine#155
 FROM docker.io/library/alpine:3.12
 
 COPY contents/ .
