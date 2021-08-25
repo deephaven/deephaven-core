@@ -53,3 +53,11 @@ def createMainExecTask = {
 }
 
 createMainExecTask('replicateKafka', 'io.deephaven.kafka.ingest.ReplicateKafka')
+
+spotless {
+    java {
+        targetExclude(
+                '**/**FieldCopier.java',
+        )
+    }
+}

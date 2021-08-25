@@ -12,7 +12,7 @@ buildscript {
 plugins {
   id "com.github.hierynomus.license" version "0.14.0" apply false
   id "com.google.protobuf" version "0.8.10" apply false
-  id 'com.diffplug.spotless' version '5.10.2' apply false
+  id 'com.diffplug.spotless' version '5.14.2' apply false
 }
 
 import io.deephaven.tools.Java
@@ -260,6 +260,16 @@ configure modsRegular,
 
         finalizedBy jacocoTestReport
     } }
+}
+
+configure subprojects - [ ':ParquetHadoop', ':deephaven-jpy' ].collect( { project(it) }), { Project p ->
+    p.apply plugin: 'com.diffplug.spotless'
+    p.spotless {
+        ratchetFrom 'pre-style-guide-apply'
+        java {
+            eclipse().configFile("${rootDir}/style/eclipse-java-google-style.xml")
+        }
+    }
 }
 
 (tasks.clean as Delete).delete(
