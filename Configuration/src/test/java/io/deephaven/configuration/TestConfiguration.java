@@ -446,14 +446,14 @@ public class TestConfiguration extends TestCase {
         assertEquals("[]", history.get(0).context);
         if ("1.8".equals(System.getProperty("java.specification.version"))) {
             assertEquals(
-                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:426)\n"
+                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:440)\n"
                             +
                             "sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n" +
                             "sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n",
                     history.get(0).fileName);
         } else {
             assertEquals(
-                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:426)\n"
+                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:440)\n"
                             +
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n" +
                             "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n",
