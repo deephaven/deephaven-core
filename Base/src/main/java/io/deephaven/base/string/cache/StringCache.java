@@ -16,8 +16,8 @@ public interface StringCache<STRING_LIKE_TYPE extends CharSequence> {
     /**
      * Get a hint about this cache's capacity and behavior.
      * 
-     * @return -1 : This is an unbounded cache. 0 : This "cache" doesn't actually perform any
-     *         caching. >0 : Actual capacity bound.
+     * @return -1 : This is an unbounded cache. 0 : This "cache" doesn't actually perform any caching. >0 : Actual
+     *         capacity bound.
      */
     int capacity();
 
@@ -35,8 +35,8 @@ public interface StringCache<STRING_LIKE_TYPE extends CharSequence> {
 
     /**
      * @param protoString The string-like CharSequence to look up
-     * @return A cached STRING_LIKE_TYPE that corresponds to the current value of the CharSequence
-     *         expressed by protoString
+     * @return A cached STRING_LIKE_TYPE that corresponds to the current value of the CharSequence expressed by
+     *         protoString
      */
     @NotNull
     STRING_LIKE_TYPE getCachedString(@NotNull StringCompatible protoString);
@@ -55,8 +55,7 @@ public interface StringCache<STRING_LIKE_TYPE extends CharSequence> {
      * @return A cached STRING_LIKE_TYPE that corresponds to charSequence
      */
     default @NotNull STRING_LIKE_TYPE getCachedString(@NotNull CharSequence charSequence) {
-        return charSequence instanceof StringCompatible
-            ? getCachedString((StringCompatible) charSequence)
-            : getCachedString(charSequence.toString());
+        return charSequence instanceof StringCompatible ? getCachedString((StringCompatible) charSequence)
+                : getCachedString(charSequence.toString());
     }
 }

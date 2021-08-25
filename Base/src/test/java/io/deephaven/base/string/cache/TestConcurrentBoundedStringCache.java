@@ -13,14 +13,14 @@ public class TestConcurrentBoundedStringCache extends TestCase {
 
     @SuppressWarnings("unchecked")
     private static StringCacheTypeAdapter<? extends CompressedString>[] COMPRESSED_TYPE_ADAPTERS =
-        (StringCacheTypeAdapter<? extends CompressedString>[]) new StringCacheTypeAdapter[] {
-                StringCacheTypeAdapterCompressedStringImpl.INSTANCE,
-                StringCacheTypeAdapterMappedCompressedStringImpl.INSTANCE
-        };
+            (StringCacheTypeAdapter<? extends CompressedString>[]) new StringCacheTypeAdapter[] {
+                    StringCacheTypeAdapterCompressedStringImpl.INSTANCE,
+                    StringCacheTypeAdapterMappedCompressedStringImpl.INSTANCE
+            };
 
     public void testStringPopulation() {
         final StringCache<String> cache =
-            new ConcurrentBoundedStringCache<>(StringCacheTypeAdapterStringImpl.INSTANCE, 10, 2);
+                new ConcurrentBoundedStringCache<>(StringCacheTypeAdapterStringImpl.INSTANCE, 10, 2);
         final String s1 = new String(new char[] {'a', 'b', 'c', 'd'});
         final String s2 = "abcd";
         assertSame(s1, cache.getCachedString(s1));
@@ -30,7 +30,7 @@ public class TestConcurrentBoundedStringCache extends TestCase {
 
     public void testByteBufferPopulation() {
         final StringCache<String> cache =
-            new ConcurrentBoundedStringCache<>(StringCacheTypeAdapterStringImpl.INSTANCE, 10, 2);
+                new ConcurrentBoundedStringCache<>(StringCacheTypeAdapterStringImpl.INSTANCE, 10, 2);
         final ByteBufferCharSequenceAdapterImpl adapter = new ByteBufferCharSequenceAdapterImpl();
 
         final String s1 = new String(new char[] {'a', 'b', 'c', 'd'});
@@ -50,7 +50,7 @@ public class TestConcurrentBoundedStringCache extends TestCase {
 
     public void testByteArrayPopulation() {
         final StringCache<String> cache =
-            new ConcurrentBoundedStringCache<>(StringCacheTypeAdapterStringImpl.INSTANCE, 10, 2);
+                new ConcurrentBoundedStringCache<>(StringCacheTypeAdapterStringImpl.INSTANCE, 10, 2);
         final ByteArrayCharSequenceAdapterImpl adapter = new ByteArrayCharSequenceAdapterImpl();
 
         final String s1 = new String(new char[] {'a', 'b', 'c', 'd'});
@@ -71,9 +71,8 @@ public class TestConcurrentBoundedStringCache extends TestCase {
     public void testStringPopulationCompressed() {
         for (StringCacheTypeAdapter<? extends CompressedString> typeAdapter : COMPRESSED_TYPE_ADAPTERS) {
             final StringCache<? extends CompressedString> cache =
-                new ConcurrentBoundedStringCache<>(typeAdapter, 10, 2);
-            final AbstractCompressedString s1 =
-                typeAdapter.create(new String(new char[] {'a', 'b', 'c', 'd'}));
+                    new ConcurrentBoundedStringCache<>(typeAdapter, 10, 2);
+            final AbstractCompressedString s1 = typeAdapter.create(new String(new char[] {'a', 'b', 'c', 'd'}));
             final AbstractCompressedString s2 = typeAdapter.create("abcd");
             assertSame(s1, cache.getCachedString(s1));
             assertSame(s1, cache.getCachedString(s2));
@@ -84,12 +83,10 @@ public class TestConcurrentBoundedStringCache extends TestCase {
     public void testByteBufferPopulationCompressed() {
         for (StringCacheTypeAdapter<? extends CompressedString> typeAdapter : COMPRESSED_TYPE_ADAPTERS) {
             final StringCache<? extends CompressedString> cache =
-                new ConcurrentBoundedStringCache<>(typeAdapter, 10, 2);
-            final ByteBufferCharSequenceAdapterImpl adapter =
-                new ByteBufferCharSequenceAdapterImpl();
+                    new ConcurrentBoundedStringCache<>(typeAdapter, 10, 2);
+            final ByteBufferCharSequenceAdapterImpl adapter = new ByteBufferCharSequenceAdapterImpl();
 
-            final AbstractCompressedString s1 =
-                typeAdapter.create(new String(new char[] {'a', 'b', 'c', 'd'}));
+            final AbstractCompressedString s1 = typeAdapter.create(new String(new char[] {'a', 'b', 'c', 'd'}));
             assertSame(s1, cache.getCachedString(s1));
             adapter.set(ByteBuffer.wrap(new byte[] {'a', 'b', 'c', 'd'}), 0, 4);
             assertTrue(CharSequenceUtils.contentEquals(adapter, s1));
@@ -108,11 +105,10 @@ public class TestConcurrentBoundedStringCache extends TestCase {
     public void testByteArrayPopulationCompressed() {
         for (StringCacheTypeAdapter<? extends CompressedString> typeAdapter : COMPRESSED_TYPE_ADAPTERS) {
             final StringCache<? extends CompressedString> cache =
-                new ConcurrentBoundedStringCache<>(typeAdapter, 10, 2);
+                    new ConcurrentBoundedStringCache<>(typeAdapter, 10, 2);
             final ByteArrayCharSequenceAdapterImpl adapter = new ByteArrayCharSequenceAdapterImpl();
 
-            final AbstractCompressedString s1 =
-                typeAdapter.create(new String(new char[] {'a', 'b', 'c', 'd'}));
+            final AbstractCompressedString s1 = typeAdapter.create(new String(new char[] {'a', 'b', 'c', 'd'}));
             assertSame(s1, cache.getCachedString(s1));
             adapter.set(new byte[] {'a', 'b', 'c', 'd'}, 0, 4);
             assertTrue(CharSequenceUtils.contentEquals(adapter, s1));

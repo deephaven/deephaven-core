@@ -356,9 +356,9 @@ public class TestArrayContainer extends TestContainerBase {
     @Test
     public void testIntersectsWithRange3() {
         Container container = new ArrayContainer()
-            .iset((short) 1)
-            .iset((short) 300)
-            .iset((short) 1024);
+                .iset((short) 1)
+                .iset((short) 300)
+                .iset((short) 1024);
         assertTrue(container.intersects(0, 300));
         assertTrue(container.intersects(1, 300));
         assertFalse(container.intersects(2, 300));
@@ -384,8 +384,8 @@ public class TestArrayContainer extends TestContainerBase {
     @Test
     public void testContainsRange2() {
         Container ac = new ArrayContainer()
-            .iset((short) 1).iset((short) 10)
-            .add(20, 100);
+                .iset((short) 1).iset((short) 10)
+                .add(20, 100);
         assertFalse(ac.contains(1, 21));
         assertFalse(ac.contains(1, 20));
         assertTrue(ac.contains(1, 2));
@@ -508,8 +508,8 @@ public class TestArrayContainer extends TestContainerBase {
         assertEquals(0, c.andNot(pre).getCardinality());
         assertEquals(21 - 3 + 1 - 2, ans.getCardinality());
         assertEquals(0,
-            ans.andNot(Container.rangeOfOnes(3, 10 + 1)).andNot(Container.rangeOfOnes(13, 21 + 1))
-                .getCardinality());
+                ans.andNot(Container.rangeOfOnes(3, 10 + 1)).andNot(Container.rangeOfOnes(13, 21 + 1))
+                        .getCardinality());
     }
 
     @Test
@@ -552,14 +552,12 @@ public class TestArrayContainer extends TestContainerBase {
         c = c.iadd(20, 26);
         assertEquals("array", c.getContainerName());
         final PositionHint hint = new PositionHint();
-        c = c.iset((short) 8, hint).iset((short) 9, hint).iset((short) 10, hint)
-            .iset((short) 11, hint).iset((short) 12, hint).iset((short) 13, hint)
-            .iset((short) 14, hint).iset((short) 15, hint).iset((short) 16, hint)
-            .iset((short) 17, hint).iset((short) 18, hint).iset((short) 19, hint)
-            .iset((short) 20, hint).iset((short) 21, hint).iset((short) 22, hint)
-            .iset((short) 23, hint).iset((short) 24, hint).iset((short) 25, hint)
-            .iset((short) 26, hint).iset((short) 27, hint).iset((short) 28, hint)
-            .iset((short) 29, hint).iset((short) 30, hint);
+        c = c.iset((short) 8, hint).iset((short) 9, hint).iset((short) 10, hint).iset((short) 11, hint)
+                .iset((short) 12, hint).iset((short) 13, hint).iset((short) 14, hint).iset((short) 15, hint)
+                .iset((short) 16, hint).iset((short) 17, hint).iset((short) 18, hint).iset((short) 19, hint)
+                .iset((short) 20, hint).iset((short) 21, hint).iset((short) 22, hint).iset((short) 23, hint)
+                .iset((short) 24, hint).iset((short) 25, hint).iset((short) 26, hint).iset((short) 27, hint)
+                .iset((short) 28, hint).iset((short) 29, hint).iset((short) 30, hint);
         assertEquals(23, c.getCardinality());
         assertTrue(c.contains(8, 23));
     }
@@ -571,10 +569,9 @@ public class TestArrayContainer extends TestContainerBase {
         c = c.iadd(20, 25);
         c = c.iadd(30, 35);
         final PositionHint hint = new PositionHint();
-        c = c.iunset((short) 10, hint).iunset((short) 12, hint).iunset((short) 14, hint)
-            .iunset((short) 20, hint).iunset((short) 21, hint).iunset((short) 22, hint)
-            .iunset((short) 23, hint).iunset((short) 24, hint).iunset((short) 34, hint)
-            .iset((short) 35, hint);
+        c = c.iunset((short) 10, hint).iunset((short) 12, hint).iunset((short) 14, hint).iunset((short) 20, hint)
+                .iunset((short) 21, hint).iunset((short) 22, hint).iunset((short) 23, hint).iunset((short) 24, hint)
+                .iunset((short) 34, hint).iset((short) 35, hint);
         assertEquals(7, c.getCardinality());
         assertTrue(c.contains(11, 12));
         assertTrue(c.contains(13, 14));

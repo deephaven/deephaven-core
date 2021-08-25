@@ -17,8 +17,7 @@ class RollupSmartKeyColumnDuplicationTransformer implements AggregationContextTr
 
     @Override
     public void resultColumnFixup(Map<String, ColumnSource<?>> resultColumns) {
-        final ColumnSource[] keySources =
-            Arrays.stream(names).map(resultColumns::get).toArray(ColumnSource[]::new);
+        final ColumnSource[] keySources = Arrays.stream(names).map(resultColumns::get).toArray(ColumnSource[]::new);
         resultColumns.put(RollupInfo.ROLLUP_COLUMN, new SmartKeySource(keySources));
     }
 }

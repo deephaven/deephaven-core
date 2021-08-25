@@ -6,7 +6,7 @@ import io.deephaven.db.v2.sources.AbstractColumnSource;
 import io.deephaven.db.v2.sources.ImmutableColumnSourceGetDefaults;
 
 public class ImmutableDateTimeArraySource extends AbstractColumnSource<DBDateTime>
-    implements ImmutableColumnSourceGetDefaults.ForObject<DBDateTime> {
+        implements ImmutableColumnSourceGetDefaults.ForObject<DBDateTime> {
     private final long[] data;
 
     public ImmutableDateTimeArraySource(long[] source) {

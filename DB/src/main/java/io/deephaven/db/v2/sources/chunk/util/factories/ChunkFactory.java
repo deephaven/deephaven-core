@@ -31,8 +31,7 @@ public interface ChunkFactory {
     <ATTR extends Any> ChunkChunk<ATTR> chunkChunkWrap(Chunk<ATTR>[] array);
 
     @NotNull
-    <ATTR extends Any> ChunkChunk<ATTR> chunkChunkWrap(Chunk<ATTR>[] array, int offset,
-        int capacity);
+    <ATTR extends Any> ChunkChunk<ATTR> chunkChunkWrap(Chunk<ATTR>[] array, int offset, int capacity);
 
     @NotNull
     DbArrayBase dbArrayWrap(Object array);
@@ -44,8 +43,7 @@ public interface ChunkFactory {
     <ATTR extends Any> ChunkPage<ATTR> pageWrap(long beginRow, Object array, long mask);
 
     @NotNull
-    <ATTR extends Any> ChunkPage<ATTR> pageWrap(long beginRow, Object array, int offset,
-        int capacity, long mask);
+    <ATTR extends Any> ChunkPage<ATTR> pageWrap(long beginRow, Object array, int offset, int capacity, long mask);
 
     @NotNull
     <ATTR extends Any> ResettableReadOnlyChunk<ATTR> makeResettableReadOnlyChunk();
@@ -60,12 +58,11 @@ public interface ChunkFactory {
     <ATTR extends Any> WritableChunkChunk<ATTR> makeWritableChunkChunk(int capacity);
 
     @NotNull
-    <ATTR extends Any> WritableChunk<ATTR> writableChunkWrap(Object array, int offset,
-        int capacity);
+    <ATTR extends Any> WritableChunk<ATTR> writableChunkWrap(Object array, int offset, int capacity);
 
     @NotNull
-    <ATTR extends Any> WritableChunkChunk<ATTR> writableChunkChunkWrap(WritableChunk<ATTR>[] array,
-        int offset, int capacity);
+    <ATTR extends Any> WritableChunkChunk<ATTR> writableChunkChunkWrap(WritableChunk<ATTR>[] array, int offset,
+            int capacity);
 
     @NotNull
     <ATTR extends Any> ResettableWritableChunk<ATTR> makeResettableWritableChunk();

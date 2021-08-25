@@ -11,8 +11,7 @@ import io.deephaven.base.pool.ThreadSafeFixedSizePool;
 import io.deephaven.io.log.LogBufferPool;
 import org.apache.log4j.Logger;
 
-public class LogBufferPoolImpl extends ThreadSafeFixedSizePool<ByteBuffer>
-    implements LogBufferPool {
+public class LogBufferPoolImpl extends ThreadSafeFixedSizePool<ByteBuffer> implements LogBufferPool {
 
     private final int bufferSize;
 

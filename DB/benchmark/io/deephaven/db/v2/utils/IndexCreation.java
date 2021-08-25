@@ -50,10 +50,9 @@ public class IndexCreation {
         int remainingCount = indexCount;
         int j = 0;
         for (int i = 0; i < rangeCount - 1; i++) {
-            indexRanges[2 * i] =
-                lastPos + 1 + random.nextInt(2 * avgElementsPerRange - 1) * sparsityFactor;
-            int step = 1 + Math.max(0,
-                Math.min(random.nextInt(2 * avgElementsPerRange - 1), remainingCount - rangeCount));
+            indexRanges[2 * i] = lastPos + 1 + random.nextInt(2 * avgElementsPerRange - 1) * sparsityFactor;
+            int step =
+                    1 + Math.max(0, Math.min(random.nextInt(2 * avgElementsPerRange - 1), remainingCount - rangeCount));
             lastPos = indexRanges[2 * i + 1] = indexRanges[2 * i] + step;
             remainingCount -= step;
             indexPoints[j++] = indexRanges[2 * i];

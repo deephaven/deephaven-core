@@ -28,8 +28,7 @@ public interface LogModule {
 
     @Provides
     static LogBuffer providesLogBuffer() {
-        return LogBufferGlobal.getInstance()
-            .orElseThrow(() -> new RuntimeException("No global LogBuffer found"));
+        return LogBufferGlobal.getInstance().orElseThrow(() -> new RuntimeException("No global LogBuffer found"));
     }
 
     @Provides
@@ -42,8 +41,8 @@ public interface LogModule {
     @ElementsIntoSet
     static Set<InitSink> providesLoggerSinkSetups() {
         return StreamSupport
-            .stream(ServiceLoader.load(InitSink.class).spliterator(), false)
-            .collect(Collectors.toSet());
+                .stream(ServiceLoader.load(InitSink.class).spliterator(), false)
+                .collect(Collectors.toSet());
     }
 
     @Provides
@@ -56,8 +55,7 @@ public interface LogModule {
     }
 
     @Provides
-    static StreamToPrintStreams providesStreamToReal(@Named("out") PrintStream out,
-        @Named("err") PrintStream err) {
+    static StreamToPrintStreams providesStreamToReal(@Named("out") PrintStream out, @Named("err") PrintStream err) {
         final boolean skipStdout = Boolean.getBoolean("stdout.skipReal");
         final boolean skipStderr = Boolean.getBoolean("stderr.skipReal");
         return new StreamToPrintStreams(skipStdout ? null : out, skipStderr ? null : err);

@@ -21,8 +21,7 @@ public class IndexableDataCharacter extends IndexableData<Character> {
     /**
      * Creates an IndexableDataCharacter instance.
      *
-     * Values in {@code data} equal to {@link io.deephaven.util.QueryConstants#NULL_CHAR} are
-     * treated as null.
+     * Values in {@code data} equal to {@link io.deephaven.util.QueryConstants#NULL_CHAR} are treated as null.
      *
      * @param data data
      * @param plotInfo plot information

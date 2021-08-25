@@ -11,11 +11,11 @@ import java.util.Set;
 /**
  * An intrusive set that uses an array for its backing storage.
  *
- * You can insert, remove, or check for existence in O(1) time. Clearing the set is O(n); as we need
- * to null out references.
+ * You can insert, remove, or check for existence in O(1) time. Clearing the set is O(n); as we need to null out
+ * references.
  *
- * If you attempt to perform an operation element which is not in this set, but is in another set
- * with the same adapter; then you are going to have a bad time. Tread carefully.
+ * If you attempt to perform an operation element which is not in this set, but is in another set with the same adapter;
+ * then you are going to have a bad time. Tread carefully.
  *
  * @param <T> the type of the element we are storing.
  */
@@ -79,7 +79,7 @@ public class IntrusiveArraySet<T> implements Set<T> {
     public <T1> T1[] toArray(@NotNull T1[] a) {
         // noinspection unchecked
         final T[] r = a.length >= size ? (T[]) a
-            : (T[]) java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), size);
+                : (T[]) java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), size);
 
         if (size >= 0) {
             System.arraycopy(storage, 0, r, 0, size);

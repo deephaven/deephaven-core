@@ -23,8 +23,8 @@ import static io.deephaven.db.tables.utils.DBTimeUtils.nanosToTime;
  */
 @SuppressWarnings("rawtypes")
 public class DbDateTimeSsmSourceWrapper extends AbstractColumnSource<DbArray>
-    implements ColumnSourceGetDefaults.ForObject<DbArray>,
-    MutableColumnSourceGetDefaults.ForObject<DbArray> {
+        implements ColumnSourceGetDefaults.ForObject<DbArray>,
+        MutableColumnSourceGetDefaults.ForObject<DbArray> {
     private final LongSsmBackedSource underlying;
 
     public DbDateTimeSsmSourceWrapper(@NotNull final LongSsmBackedSource underlying) {

@@ -14,9 +14,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.grpcWeb.transports.Transport.TransportOptions",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.grpcWeb.transports.Transport.TransportOptions",
+        namespace = JsPackage.GLOBAL)
 public interface TransportOptions {
     @JsFunction
     public interface OnChunkFn {

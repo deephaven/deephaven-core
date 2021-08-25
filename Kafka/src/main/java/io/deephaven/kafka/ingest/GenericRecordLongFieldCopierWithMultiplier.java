@@ -12,19 +12,18 @@ public class GenericRecordLongFieldCopierWithMultiplier implements FieldCopier {
     private final String fieldName;
     private final long multiplier;
 
-    public GenericRecordLongFieldCopierWithMultiplier(final String fieldName,
-        final long multiplier) {
+    public GenericRecordLongFieldCopierWithMultiplier(final String fieldName, final long multiplier) {
         this.fieldName = fieldName;
         this.multiplier = multiplier;
     }
 
     @Override
     public void copyField(
-        final ObjectChunk<Object, Attributes.Values> inputChunk,
-        final WritableChunk<Attributes.Values> publisherChunk,
-        final int sourceOffset,
-        final int destOffset,
-        final int length) {
+            final ObjectChunk<Object, Attributes.Values> inputChunk,
+            final WritableChunk<Attributes.Values> publisherChunk,
+            final int sourceOffset,
+            final int destOffset,
+            final int length) {
         final WritableLongChunk<Attributes.Values> output = publisherChunk.asWritableLongChunk();
         for (int ii = 0; ii < length; ++ii) {
             final GenericRecord genericRecord = (GenericRecord) inputChunk.get(ii + sourceOffset);

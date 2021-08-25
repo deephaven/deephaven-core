@@ -19,8 +19,8 @@ public class JpyInit {
     public static synchronized void init(Logger log, JpyConfigExt jpyConfig) {
         if (PyLibInitializer.isPyLibInitialized()) {
             log.warn().append("Skipping initialization of Jpy, already initialized").endl();
-            log.warn().append("Using Python Installation ")
-                .append(System.getProperty("jpy.pythonLib", "(unknown)")).endl();
+            log.warn().append("Using Python Installation ").append(System.getProperty("jpy.pythonLib", "(unknown)"))
+                    .endl();
             return;
         }
 
@@ -29,7 +29,6 @@ public class JpyInit {
         jpyConfig.initPython();
         jpyConfig.startPython();
         log.info().append("Started Python interpreter").endl();
-        log.info().append("Using Python Installation ")
-            .append(System.getProperty("jpy.pythonLib", "(unknown)")).endl();
+        log.info().append("Using Python Installation ").append(System.getProperty("jpy.pythonLib", "(unknown)")).endl();
     }
 }

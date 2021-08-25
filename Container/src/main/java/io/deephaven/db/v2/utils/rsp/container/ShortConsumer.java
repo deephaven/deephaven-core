@@ -1,8 +1,7 @@
 package io.deephaven.db.v2.utils.rsp.container;
 
 /**
- * A ShortConsumer receives the short values contained in a data structure. Each value is visited
- * once.
+ * A ShortConsumer receives the short values contained in a data structure. Each value is visited once.
  * <p>
  * Usage:
  *
@@ -19,8 +18,8 @@ package io.deephaven.db.v2.utils.rsp.container;
 
 public interface ShortConsumer {
     /**
-     * Provides a value to this consumer. A false return value indicates that the application
-     * providing values to this consumer should not invoke it again.
+     * Provides a value to this consumer. A false return value indicates that the application providing values to this
+     * consumer should not invoke it again.
      *
      * @param value the short value
      * @return false if don't want any more values after this one, true otherwise.

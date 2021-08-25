@@ -9,7 +9,7 @@ import org.immutables.value.Value.Parameter;
 public abstract class DbGenericArrayType<T, ComponentType> extends ArrayTypeBase<T, ComponentType> {
 
     public static <T, ComponentType> DbGenericArrayType<T, ComponentType> of(Class<T> clazz,
-        GenericType<ComponentType> genericType) {
+            GenericType<ComponentType> genericType) {
         return ImmutableDbGenericArrayType.of(clazz, genericType);
     }
 

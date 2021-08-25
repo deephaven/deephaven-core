@@ -52,8 +52,7 @@ public class CompressedRangeSetReaderTest {
 
         assertRoundTrip(RangeSet.ofRange(10, 19));
 
-        assertRoundTrip(
-            RangeSet.ofRange((long) Integer.MAX_VALUE + 10, (long) Integer.MAX_VALUE + 19));
+        assertRoundTrip(RangeSet.ofRange((long) Integer.MAX_VALUE + 10, (long) Integer.MAX_VALUE + 19));
     }
 
     @Test

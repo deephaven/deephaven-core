@@ -39,8 +39,7 @@ public class Ema extends AbstractMa implements Serializable {
                     emaState = 0;
                     break;
                 default:
-                    throw new UnsupportedOperationException(
-                        "Ema type is not yet supported: " + type);
+                    throw new UnsupportedOperationException("Ema type is not yet supported: " + type);
             }
 
             initialized = true;

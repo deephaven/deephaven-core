@@ -24,25 +24,23 @@ public class QueryLibraryTest extends TestCase {
 
     public void testImportClass() {
         assertFalse(QueryLibrary.getImportStatement().build()
-            .contains("import java.util.concurrent.ConcurrentLinkedDeque;"));
+                .contains("import java.util.concurrent.ConcurrentLinkedDeque;"));
         QueryLibrary.importClass(ConcurrentLinkedDeque.class);
         assertTrue(QueryLibrary.getImportStatement().build()
-            .contains("import java.util.concurrent.ConcurrentLinkedDeque;"));
+                .contains("import java.util.concurrent.ConcurrentLinkedDeque;"));
     }
 
     public void testPackageClass() {
-        assertFalse(
-            QueryLibrary.getImportStatement().build().contains("import java.util.concurrent.*;"));
+        assertFalse(QueryLibrary.getImportStatement().build().contains("import java.util.concurrent.*;"));
         QueryLibrary.importPackage(Package.getPackage("java.util.concurrent"));
-        assertTrue(
-            QueryLibrary.getImportStatement().build().contains("import java.util.concurrent.*;"));
+        assertTrue(QueryLibrary.getImportStatement().build().contains("import java.util.concurrent.*;"));
     }
 
     public void testImportStatic() {
         assertFalse(QueryLibrary.getImportStatement().build()
-            .contains("import static java.util.concurrent.ConcurrentHashMap.*;"));
+                .contains("import static java.util.concurrent.ConcurrentHashMap.*;"));
         QueryLibrary.importStatic(ConcurrentHashMap.class);
         assertTrue(QueryLibrary.getImportStatement().build()
-            .contains("import static java.util.concurrent.ConcurrentHashMap.*;"));
+                .contains("import static java.util.concurrent.ConcurrentHashMap.*;"));
     }
 }

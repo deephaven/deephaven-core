@@ -42,8 +42,7 @@ public interface StringCacheTypeAdapter<STRING_LIKE_TYPE extends CharSequence> {
     STRING_LIKE_TYPE create(@NotNull StringCompatible protoString);
 
     /**
-     * Compare key (Assumed to be a String *or* a StringCompatible) with value (created by this
-     * factory).
+     * Compare key (Assumed to be a String *or* a StringCompatible) with value (created by this factory).
      * 
      * @param key The key
      * @param value The value

@@ -41,6 +41,6 @@ class PropertyVisitorPrefixed implements PropertyVisitor {
     @Override
     public void visitProperties(String key, PropertySet properties) {
         new PropertyVisitorPrefixed(prefix + key + SEPARATOR, delegate)
-            .visitProperties(properties);
+                .visitProperties(properties);
     }
 }

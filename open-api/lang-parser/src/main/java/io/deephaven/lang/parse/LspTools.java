@@ -39,42 +39,37 @@ public class LspTools {
     }
 
     public static boolean lessThan(PositionOrBuilder p, PositionOrBuilder start) {
-        return p.getLine() == start.getLine() ? p.getCharacter() < start.getCharacter()
-            : p.getLine() < start.getLine();
+        return p.getLine() == start.getLine() ? p.getCharacter() < start.getCharacter() : p.getLine() < start.getLine();
     }
 
     public static boolean lessOrEqual(PositionOrBuilder p, PositionOrBuilder start) {
         return p.getLine() == start.getLine() ? p.getCharacter() <= start.getCharacter()
-            : p.getLine() < start.getLine();
+                : p.getLine() < start.getLine();
     }
 
     public static boolean greaterThan(PositionOrBuilder p, PositionOrBuilder end) {
-        return p.getLine() == end.getLine() ? p.getCharacter() > end.getCharacter()
-            : p.getLine() > end.getLine();
+        return p.getLine() == end.getLine() ? p.getCharacter() > end.getCharacter() : p.getLine() > end.getLine();
     }
 
     public static boolean greaterOrEqual(PositionOrBuilder p, PositionOrBuilder end) {
-        return p.getLine() == end.getLine() ? p.getCharacter() >= end.getCharacter()
-            : p.getLine() > end.getLine();
+        return p.getLine() == end.getLine() ? p.getCharacter() >= end.getCharacter() : p.getLine() > end.getLine();
     }
 
     public static int extend(Position.Builder p, PositionOrBuilder requested) {
         if (p.getLine() != requested.getLine()) {
-            throw new IllegalArgumentException("Can only extend on same-line; " + p + " and "
-                + requested + " are not on same line");
+            throw new IllegalArgumentException(
+                    "Can only extend on same-line; " + p + " and " + requested + " are not on same line");
         }
         p.setCharacter(requested.getCharacter()).build();
         return requested.getCharacter() - p.getCharacter();
     }
 
     public static Position plus(Position p, int line, int character) {
-        return p.toBuilder().setLine(p.getLine() + line).setCharacter(p.getCharacter() + character)
-            .build();
+        return p.toBuilder().setLine(p.getLine() + line).setCharacter(p.getCharacter() + character).build();
     }
 
     public static Position minus(Position p, int line, int character) {
-        return p.toBuilder().setLine(p.getLine() - line).setCharacter(p.getCharacter() - character)
-            .build();
+        return p.toBuilder().setLine(p.getLine() - line).setCharacter(p.getCharacter() - character).build();
     }
 
     public static Position copy(Position p) {
@@ -83,19 +78,19 @@ public class LspTools {
 
 
     public static boolean isInside(DocumentRangeOrBuilder range, PositionOrBuilder innerStart,
-        PositionOrBuilder innerEnd) {
+            PositionOrBuilder innerEnd) {
         return innerStart.getLine() >= range.getStart().getLine()
-            && innerStart.getCharacter() >= range.getStart().getCharacter()
-            && innerEnd.getLine() <= range.getEnd().getLine()
-            && innerEnd.getCharacter() <= range.getEnd().getCharacter();
+                && innerStart.getCharacter() >= range.getStart().getCharacter()
+                && innerEnd.getLine() <= range.getEnd().getLine()
+                && innerEnd.getCharacter() <= range.getEnd().getCharacter();
     }
 
     public static DocumentRange.Builder rangeFromSource(String source, int start, int length) {
         final DocumentRange.Builder range = DocumentRange.newBuilder();
         range.setStart(getPositionFromOffset(source, start));
         range.setEnd(getPositionFromOffset(
-            source,
-            start + length));
+                source,
+                start + length));
         return range;
     }
 

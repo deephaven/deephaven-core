@@ -70,8 +70,7 @@ public class PerfStats {
         final double stddev = stddev() * factor;
         final StringBuffer sb = new StringBuffer(pfx);
         final NumberFormat nf = NumberFormat.getInstance();
-        sb.append(String.format(" n=%s, avg=" + dFmt + " stddev=" + dFmt, nf.format(nsamples()),
-            avg, stddev));
+        sb.append(String.format(" n=%s, avg=" + dFmt + " stddev=" + dFmt, nf.format(nsamples()), avg, stddev));
         for (int p : ps) {
             final double pct = percentile(p) * factor;
             sb.append(String.format(", p[%d]=" + dFmt, p, pct));
@@ -80,9 +79,9 @@ public class PerfStats {
     }
 
     public static void comparePrint(
-        final PerfStats p1, final String n1,
-        final PerfStats p2, final String n2,
-        final String pfx) {
+            final PerfStats p1, final String n1,
+            final PerfStats p2, final String n2,
+            final String pfx) {
         final StringBuilder sb = new StringBuilder(pfx);
         sb.append(n1);
         sb.append("/");

@@ -22,7 +22,7 @@ public class LogInit {
 
     @Inject
     public LogInit(StandardStreamState standardStreamState, LogBuffer logBuffer, LogSink logSink,
-        Set<InitSink> sinkInits) {
+            Set<InitSink> sinkInits) {
         this.standardStreamState = standardStreamState;
         this.logBuffer = logBuffer;
         this.logSink = logSink;
@@ -43,13 +43,10 @@ public class LogInit {
 
     private void checkLogSinkIsSingleton() {
         if (log.getSink() != logSink) {
-            // If this contract is broken, we'll need to start attaching interceptors at
-            // LoggerFactory
-            // Logger creation time, or have some sort of mechanism for LoggerFactory to notify us
-            // about
+            // If this contract is broken, we'll need to start attaching interceptors at LoggerFactory
+            // Logger creation time, or have some sort of mechanism for LoggerFactory to notify us about
             // new log creations.
-            throw new RuntimeException(
-                String.format("Logger impl %s does not work with the current implementation.",
+            throw new RuntimeException(String.format("Logger impl %s does not work with the current implementation.",
                     log.getClass().getName()));
         }
     }

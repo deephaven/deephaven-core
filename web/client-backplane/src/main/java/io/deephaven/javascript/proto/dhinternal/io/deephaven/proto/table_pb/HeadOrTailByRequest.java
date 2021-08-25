@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.HeadOrTailByRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.HeadOrTailByRequest",
+        namespace = JsPackage.GLOBAL)
 public class HeadOrTailByRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -23,7 +23,7 @@ public class HeadOrTailByRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -58,20 +58,20 @@ public class HeadOrTailByRequest {
 
             @JsProperty
             void setTicket(
-                HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<HeadOrTailByRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -138,7 +138,7 @@ public class HeadOrTailByRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -173,20 +173,20 @@ public class HeadOrTailByRequest {
 
             @JsProperty
             void setTicket(
-                HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<HeadOrTailByRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -248,12 +248,12 @@ public class HeadOrTailByRequest {
     public static native HeadOrTailByRequest deserializeBinary(Uint8Array bytes);
 
     public static native HeadOrTailByRequest deserializeBinaryFromReader(
-        HeadOrTailByRequest message, Object reader);
+            HeadOrTailByRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(HeadOrTailByRequest message, Object writer);
 
     public static native HeadOrTailByRequest.ToObjectReturnType toObject(
-        boolean includeInstance, HeadOrTailByRequest msg);
+            boolean includeInstance, HeadOrTailByRequest msg);
 
     public native String addGroupByColumnSpecs(String value, double index);
 

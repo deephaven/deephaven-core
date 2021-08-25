@@ -15,8 +15,7 @@ public class StateException extends UncheckedDeephavenException {
         super(cause);
     }
 
-    public StateException(String message, Throwable cause, boolean enableSuppression,
-        boolean writableStackTrace) {
+    public StateException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 

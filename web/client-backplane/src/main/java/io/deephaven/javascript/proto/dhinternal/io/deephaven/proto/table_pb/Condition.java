@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.Condition",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.Condition",
+        namespace = JsPackage.GLOBAL)
 public class Condition {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -105,11 +105,11 @@ public class Condition {
 
                 @JsProperty
                 void setLiteral(
-                    Condition.ToObjectReturnType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
+                        Condition.ToObjectReturnType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
 
                 @JsProperty
                 void setReference(
-                    Condition.ToObjectReturnType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
+                        Condition.ToObjectReturnType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
             }
 
             @JsOverlay
@@ -339,8 +339,7 @@ public class Condition {
 
             @JsOverlay
             default void setOptionalReferencesList(Object[] optionalReferencesList) {
-                setOptionalReferencesList(
-                    Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
+                setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
             }
 
             @JsProperty
@@ -503,11 +502,11 @@ public class Condition {
 
                 @JsProperty
                 void setLiteral(
-                    Condition.ToObjectReturnType0.CompareFieldType.LhsFieldType.LiteralFieldType literal);
+                        Condition.ToObjectReturnType0.CompareFieldType.LhsFieldType.LiteralFieldType literal);
 
                 @JsProperty
                 void setReference(
-                    Condition.ToObjectReturnType0.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
+                        Condition.ToObjectReturnType0.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
             }
 
             @JsOverlay
@@ -737,8 +736,7 @@ public class Condition {
 
             @JsOverlay
             default void setOptionalReferencesList(Object[] optionalReferencesList) {
-                setOptionalReferencesList(
-                    Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
+                setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
             }
 
             @JsProperty
@@ -818,7 +816,7 @@ public class Condition {
     public static native void serializeBinaryToWriter(Condition message, Object writer);
 
     public static native Condition.ToObjectReturnType toObject(
-        boolean includeInstance, Condition msg);
+            boolean includeInstance, Condition msg);
 
     public native void clearAnd();
 

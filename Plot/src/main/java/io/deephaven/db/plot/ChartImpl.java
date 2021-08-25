@@ -34,7 +34,7 @@ public class ChartImpl implements Chart, PlotExceptionCause {
     private final BaseFigureImpl figure;
     @SuppressWarnings("unchecked")
     private final List<AxisImpl>[] axis =
-        new List[] {new ArrayList<Axis>(), new ArrayList<Axis>(), new ArrayList<Axis>()};
+            new List[] {new ArrayList<Axis>(), new ArrayList<Axis>(), new ArrayList<Axis>()};
     private final List<AxesImpl> axes = new ArrayList<>();
     private ChartType chartType;
     private Font titleFont;
@@ -58,8 +58,7 @@ public class ChartImpl implements Chart, PlotExceptionCause {
         this.figure = figure;
         this.row = row;
         this.column = column;
-        maxVisibleRowsCount =
-            Configuration.getInstance().getIntegerWithDefault(MAX_VISIBLE_ROWS_COUNT_PROP, 0);
+        maxVisibleRowsCount = Configuration.getInstance().getIntegerWithDefault(MAX_VISIBLE_ROWS_COUNT_PROP, 0);
     }
 
     /**
@@ -146,9 +145,7 @@ public class ChartImpl implements Chart, PlotExceptionCause {
     private void resize(int rowspan, int colspan) {
         if (rowspan < 1 || colspan < 1) {
             throw new PlotIllegalArgumentException(
-                "Row and column span must be at least one! rowspan=" + rowspan + ", colspan="
-                    + colspan,
-                this);
+                    "Row and column span must be at least one! rowspan=" + rowspan + ", colspan=" + colspan, this);
         }
         figure.resizePlot(row, column, rowspan, colspan);
         this.rowspan = rowspan;
@@ -168,9 +165,7 @@ public class ChartImpl implements Chart, PlotExceptionCause {
             this.chartType = chartType;
         } else if (this.chartType != chartType) {
             throw new PlotUnsupportedOperationException(
-                "Attempting to create inconsistent plot types: " + this.chartType + ", "
-                    + chartType,
-                this);
+                    "Attempting to create inconsistent plot types: " + this.chartType + ", " + chartType, this);
         }
     }
 
@@ -187,8 +182,7 @@ public class ChartImpl implements Chart, PlotExceptionCause {
 
         for (final AxesImpl aa : axes) {
             if (aa.name().equals(n)) {
-                throw new PlotRuntimeException(
-                    "Axis with this name already exists. name=" + aa.name(), this);
+                throw new PlotRuntimeException("Axis with this name already exists. name=" + aa.name(), this);
             }
         }
 
@@ -207,8 +201,8 @@ public class ChartImpl implements Chart, PlotExceptionCause {
                 continue;
             }
             if (d != -1 && d != dd) {
-                throw new PlotRuntimeException(
-                    "Inconsistent axis dimensions in chart: dim1=" + d + " dim2=" + dd, this);
+                throw new PlotRuntimeException("Inconsistent axis dimensions in chart: dim1=" + d + " dim2=" + dd,
+                        this);
             }
 
             d = dd;
@@ -345,8 +339,8 @@ public class ChartImpl implements Chart, PlotExceptionCause {
         final Set<TableHandle> result = new HashSet<>();
 
         for (AxesImpl axes : getAxes()) {
-            for (SeriesCollection.SeriesDescription seriesDescription : axes.dataSeries()
-                .getSeriesDescriptions().values()) {
+            for (SeriesCollection.SeriesDescription seriesDescription : axes.dataSeries().getSeriesDescriptions()
+                    .values()) {
                 result.addAll(seriesDescription.getSeries().getTableHandles());
             }
         }
@@ -362,15 +356,14 @@ public class ChartImpl implements Chart, PlotExceptionCause {
         final Set<SwappableTable> result = new HashSet<>();
 
         for (AxesImpl axes : getAxes()) {
-            for (SeriesCollection.SeriesDescription seriesDescription : axes.dataSeries()
-                .getSeriesDescriptions().values()) {
+            for (SeriesCollection.SeriesDescription seriesDescription : axes.dataSeries().getSeriesDescriptions()
+                    .values()) {
                 result.addAll(seriesDescription.getSeries().getSwappableTables());
             }
         }
 
         if (getChartTitle() instanceof DynamicChartTitle.ChartTitleSwappableTable) {
-            result.add(
-                ((DynamicChartTitle.ChartTitleSwappableTable) getChartTitle()).getSwappableTable());
+            result.add(((DynamicChartTitle.ChartTitleSwappableTable) getChartTitle()).getSwappableTable());
         }
 
         return result;
@@ -412,36 +405,32 @@ public class ChartImpl implements Chart, PlotExceptionCause {
     }
 
     @Override
-    public ChartImpl chartTitle(final String titleFormat, final Table t,
-        final String... titleColumns) {
+    public ChartImpl chartTitle(final String titleFormat, final Table t, final String... titleColumns) {
 
         ArgumentValidations.assertNotNull(t, "table", getPlotInfo());
         ArgumentValidations.assertNotNull(titleColumns, "titleColumns", getPlotInfo());
-        ArgumentValidations.assertGreaterThan0(titleColumns.length, "titleColumns size",
-            getPlotInfo());
+        ArgumentValidations.assertGreaterThan0(titleColumns.length, "titleColumns size", getPlotInfo());
 
-        IntStream.range(0, titleColumns.length).forEachOrdered(i -> ArgumentValidations
-            .assertNotNull(titleColumns[i], "titleColumn[" + i + "]", getPlotInfo()));
+        IntStream.range(0, titleColumns.length).forEachOrdered(
+                i -> ArgumentValidations.assertNotNull(titleColumns[i], "titleColumn[" + i + "]", getPlotInfo()));
 
         ArgumentValidations.assertColumnsInTable(t, getPlotInfo(), titleColumns);
 
         final TableHandle tableHandle = new TableHandle(t, titleColumns);
 
         // set dynamicTitle for table
-        this.chartTitle = new DynamicChartTitle.ChartTitleTable(titleFormat, tableHandle,
-            getPlotInfo(), maxVisibleRowsCount, titleColumns);
+        this.chartTitle = new DynamicChartTitle.ChartTitleTable(titleFormat, tableHandle, getPlotInfo(),
+                maxVisibleRowsCount, titleColumns);
 
         return this;
     }
 
     @Override
-    public ChartImpl chartTitle(final String titleFormat, final SelectableDataSet sds,
-        final String... titleColumns) {
+    public ChartImpl chartTitle(final String titleFormat, final SelectableDataSet sds, final String... titleColumns) {
 
         ArgumentValidations.assertNotNull(sds, "sds", getPlotInfo());
         ArgumentValidations.assertNotNull(titleColumns, "titleColumns", getPlotInfo());
-        ArgumentValidations.assertGreaterThan0(titleColumns.length, "titleColumns size",
-            getPlotInfo());
+        ArgumentValidations.assertGreaterThan0(titleColumns.length, "titleColumns size", getPlotInfo());
 
         for (int i = 0; i < titleColumns.length; i++) {
             final String titleColumn = titleColumns[i];
@@ -449,14 +438,13 @@ public class ChartImpl implements Chart, PlotExceptionCause {
         }
 
         final SwappableTable swappableTable = sds.getSwappableTable("ChartTitle", this,
-            (Function<Table, Table> & Serializable) table -> table, titleColumns);
+                (Function<Table, Table> & Serializable) table -> table, titleColumns);
 
-        ArgumentValidations.assertColumnsInTable(swappableTable.getTableDefinition(), getPlotInfo(),
-            titleColumns);
+        ArgumentValidations.assertColumnsInTable(swappableTable.getTableDefinition(), getPlotInfo(), titleColumns);
 
         // set dynamicTitle for Swappable table
-        this.chartTitle = new DynamicChartTitle.ChartTitleSwappableTable(titleFormat,
-            swappableTable, getPlotInfo(), maxVisibleRowsCount, titleColumns);
+        this.chartTitle = new DynamicChartTitle.ChartTitleSwappableTable(titleFormat, swappableTable, getPlotInfo(),
+                maxVisibleRowsCount, titleColumns);
         return this;
     }
 
@@ -466,8 +454,7 @@ public class ChartImpl implements Chart, PlotExceptionCause {
             chartTitle = new ChartTitle(getPlotInfo());
         }
 
-        // we're setting at both places since user can call chartTitle() and maxRowsInTitle() in any
-        // order.
+        // we're setting at both places since user can call chartTitle() and maxRowsInTitle() in any order.
         this.maxVisibleRowsCount = maxRowsCount;
         chartTitle.maxVisibleRowsCount = maxRowsCount;
         return this;
@@ -616,8 +603,7 @@ public class ChartImpl implements Chart, PlotExceptionCause {
         final int size = axes.size();
         if (id < 0 || id >= size) {
             throw new PlotIllegalArgumentException(
-                "Axes not in chart: index=" + id + ", required in range = [0," + (size - 1) + "]",
-                this);
+                    "Axes not in chart: index=" + id + ", required in range = [0," + (size - 1) + "]", this);
         }
         return axes.get(id);
     }

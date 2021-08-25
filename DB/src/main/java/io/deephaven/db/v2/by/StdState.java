@@ -55,9 +55,9 @@ class StdState implements PreviousStateProvider<StdState> {
     @Override
     public String toString() {
         return "Std{" +
-            "sum=" + sum +
-            ", sum2=" + sum2 +
-            ", nonNull=" + nonNullCount +
-            '}';
+                "sum=" + sum +
+                ", sum2=" + sum2 +
+                ", nonNull=" + nonNullCount +
+                '}';
     }
 }

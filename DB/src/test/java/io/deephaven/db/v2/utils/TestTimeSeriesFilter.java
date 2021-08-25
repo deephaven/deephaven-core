@@ -36,8 +36,7 @@ public class TestTimeSeriesFilter extends LiveTableTestCase {
         Table source = TableTools.newTable(TableTools.col("Timestamp", times));
         io.deephaven.db.tables.utils.TableTools.show(source);
 
-        UnitTestTimeSeriesFilter timeSeriesFilter =
-            new UnitTestTimeSeriesFilter(startTime, "Timestamp", "00:00:05");
+        UnitTestTimeSeriesFilter timeSeriesFilter = new UnitTestTimeSeriesFilter(startTime, "Timestamp", "00:00:05");
         Table filtered = source.where(timeSeriesFilter);
 
         io.deephaven.db.tables.utils.TableTools.show(filtered);
@@ -77,25 +76,23 @@ public class TestTimeSeriesFilter extends LiveTableTestCase {
         int size = 100;
         final Date startDate = format.parse("2015-03-23");
         Date endDate = format.parse("2015-03-24");
-        final QueryTable table = getTable(size, random,
-            columnInfo = initColumnInfos(new String[] {"Date", "C1"},
+        final QueryTable table = getTable(size, random, columnInfo = initColumnInfos(new String[] {"Date", "C1"},
                 new TstUtils.DateGenerator(startDate, endDate),
                 new TstUtils.IntGenerator(1, 100)));
 
         final UnitTestTimeSeriesFilter unitTestTimeSeriesFilter =
-            new UnitTestTimeSeriesFilter(startDate.getTime(), "Date", "01:00:00");
-        final ArrayList<WeakReference<UnitTestTimeSeriesFilter>> filtersToRefresh =
-            new ArrayList<>();
+                new UnitTestTimeSeriesFilter(startDate.getTime(), "Date", "01:00:00");
+        final ArrayList<WeakReference<UnitTestTimeSeriesFilter>> filtersToRefresh = new ArrayList<>();
 
         EvalNugget en[] = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
                         UnitTestTimeSeriesFilter unitTestTimeSeriesFilter1 =
-                            new UnitTestTimeSeriesFilter(unitTestTimeSeriesFilter);
+                                new UnitTestTimeSeriesFilter(unitTestTimeSeriesFilter);
                         filtersToRefresh.add(new WeakReference<>(unitTestTimeSeriesFilter1));
-                        return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(
-                            () -> table.update("Date=new DBDateTime(Date.getTime() * 1000000L)")
-                                .where(unitTestTimeSeriesFilter1));
+                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                                .computeLocked(() -> table.update("Date=new DBDateTime(Date.getTime() * 1000000L)")
+                                        .where(unitTestTimeSeriesFilter1));
                     }
                 },
         };
@@ -109,8 +106,7 @@ public class TestTimeSeriesFilter extends LiveTableTestCase {
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                     unitTestTimeSeriesFilter.incrementNow(3600 * 1000);
 
-                    final ArrayList<WeakReference<UnitTestTimeSeriesFilter>> collectedRefs =
-                        new ArrayList<>();
+                    final ArrayList<WeakReference<UnitTestTimeSeriesFilter>> collectedRefs = new ArrayList<>();
                     for (WeakReference<UnitTestTimeSeriesFilter> ref : filtersToRefresh) {
                         final UnitTestTimeSeriesFilter refreshFilter = ref.get();
                         if (refreshFilter == null) {

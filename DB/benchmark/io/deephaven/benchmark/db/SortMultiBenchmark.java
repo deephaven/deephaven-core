@@ -43,9 +43,9 @@ public class SortMultiBenchmark {
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
         final EnumStringColumnGenerator enumStringCol1 =
-            (EnumStringColumnGenerator) BenchmarkTools.stringCol("Enum1", 10000, 6, 6, 0xB00FB00F);
+                (EnumStringColumnGenerator) BenchmarkTools.stringCol("Enum1", 10000, 6, 6, 0xB00FB00F);
         final EnumStringColumnGenerator enumStringCol2 =
-            (EnumStringColumnGenerator) BenchmarkTools.stringCol("Enum2", 1000, 6, 6, 0xF00DF00D);
+                (EnumStringColumnGenerator) BenchmarkTools.stringCol("Enum2", 1000, 6, 6, 0xF00DF00D);
 
         final BenchmarkTableBuilder builder;
         final int actualSize = BenchmarkTools.sizeWithSparsity(tableSize, sparsity);
@@ -55,9 +55,9 @@ public class SortMultiBenchmark {
         switch (tableType) {
             case "Historical":
                 builder = BenchmarkTools.persistentTableBuilder("Carlos", actualSize)
-                    .addGroupingColumns("Enum1")
-                    .setPartitioningFormula("${autobalance_single}")
-                    .setPartitionCount(10);
+                        .addGroupingColumns("Enum1")
+                        .setPartitioningFormula("${autobalance_single}")
+                        .setPartitionCount(10);
                 break;
             case "Intraday":
                 builder = BenchmarkTools.persistentTableBuilder("Carlos", actualSize);
@@ -68,17 +68,16 @@ public class SortMultiBenchmark {
         }
 
         bmTable = builder
-            .setSeed(0xDEADBEEF)
-            .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF))
-            .addColumn(BenchmarkTools.numberCol("I1", int.class))
-            .addColumn(BenchmarkTools.numberCol("D1", double.class, -10e6, 10e6))
-            .addColumn(BenchmarkTools.numberCol("L1", long.class))
-            .addColumn(enumStringCol1)
-            .addColumn(enumStringCol2)
-            .build();
+                .setSeed(0xDEADBEEF)
+                .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF))
+                .addColumn(BenchmarkTools.numberCol("I1", int.class))
+                .addColumn(BenchmarkTools.numberCol("D1", double.class, -10e6, 10e6))
+                .addColumn(BenchmarkTools.numberCol("L1", long.class))
+                .addColumn(enumStringCol1)
+                .addColumn(enumStringCol2)
+                .build();
 
-        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()),
-            params.getWarmup().getCount());
+        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
     }
 
     @TearDown(Level.Trial)

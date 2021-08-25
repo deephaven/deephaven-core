@@ -43,13 +43,11 @@ public class ConditonalModelsTest extends BaseArrayTestCase {
         models = new Model[] {m1, m2};
         // noinspection unchecked
         predicates = new BiPredicate[] {
-                (BiPredicate<EquityFitDataOptionPrices, Boolean>) (d, s) -> d.getUnderlyingId() == 3
-                    && s,
+                (BiPredicate<EquityFitDataOptionPrices, Boolean>) (d, s) -> d.getUnderlyingId() == 3 && s,
                 (BiPredicate<EquityFitDataOptionPrices, Boolean>) (d, s) -> s
         };
         stateMap = new HashMap<>();
-        cm = new ConditionalModels<>(models, predicates, stateMap,
-            EquityFitDataOptionPrices::getUnderlyingId);
+        cm = new ConditionalModels<>(models, predicates, stateMap, EquityFitDataOptionPrices::getUnderlyingId);
     }
 
     public void testLock() {

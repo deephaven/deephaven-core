@@ -138,8 +138,7 @@ public class FilterValue {
     }
 
     public FilterCondition in(FilterValue[] terms) {
-        return makeIn(terms, Table_pb.MatchType.getREGULAR(),
-            Table_pb.CaseSensitivity.getMATCH_CASE());
+        return makeIn(terms, Table_pb.MatchType.getREGULAR(), Table_pb.CaseSensitivity.getMATCH_CASE());
     }
 
     private FilterCondition makeIn(FilterValue[] terms, double matchType, double casesensitivity) {
@@ -155,18 +154,15 @@ public class FilterValue {
     }
 
     public FilterCondition inIgnoreCase(FilterValue[] terms) {
-        return makeIn(terms, Table_pb.MatchType.getREGULAR(),
-            Table_pb.CaseSensitivity.getIGNORE_CASE());
+        return makeIn(terms, Table_pb.MatchType.getREGULAR(), Table_pb.CaseSensitivity.getIGNORE_CASE());
     }
 
     public FilterCondition notIn(FilterValue[] terms) {
-        return makeIn(terms, Table_pb.MatchType.getINVERTED(),
-            Table_pb.CaseSensitivity.getMATCH_CASE());
+        return makeIn(terms, Table_pb.MatchType.getINVERTED(), Table_pb.CaseSensitivity.getMATCH_CASE());
     }
 
     public FilterCondition notInIgnoreCase(FilterValue[] terms) {
-        return makeIn(terms, Table_pb.MatchType.getINVERTED(),
-            Table_pb.CaseSensitivity.getIGNORE_CASE());
+        return makeIn(terms, Table_pb.MatchType.getINVERTED(), Table_pb.CaseSensitivity.getIGNORE_CASE());
     }
 
     public FilterCondition contains(FilterValue term) {
@@ -237,8 +233,7 @@ public class FilterValue {
 
     @Override
     public String toString() {
-        // TODO (deephaven-core#723) implement a readable tostring rather than turning the pb object
-        // into a string
+        // TODO (deephaven-core#723) implement a readable tostring rather than turning the pb object into a string
         return descriptor.toString();
     }
 }

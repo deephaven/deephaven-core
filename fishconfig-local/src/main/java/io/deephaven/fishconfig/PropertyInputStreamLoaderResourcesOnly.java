@@ -5,8 +5,8 @@ import io.deephaven.configuration.PropertyInputStreamLoader;
 import java.io.InputStream;
 
 /**
- * A {@link PropertyInputStreamLoader} that loads the property input stream from resources only. Has
- * priority 0. Useful for unit testing.
+ * A {@link PropertyInputStreamLoader} that loads the property input stream from resources only. Has priority 0. Useful
+ * for unit testing.
  */
 public class PropertyInputStreamLoaderResourcesOnly implements PropertyInputStreamLoader {
 
@@ -21,7 +21,7 @@ public class PropertyInputStreamLoaderResourcesOnly implements PropertyInputStre
         final InputStream in = getClass().getResourceAsStream(resourcePath);
         if (in == null) {
             final String message = String.format("Unable to find prop file at resource path '%s'",
-                resourcePath);
+                    resourcePath);
             throw new ConfigurationException(message);
         }
         return in;

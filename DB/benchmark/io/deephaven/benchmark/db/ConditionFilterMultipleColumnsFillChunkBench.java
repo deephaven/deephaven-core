@@ -46,7 +46,7 @@ public class ConditionFilterMultipleColumnsFillChunkBench extends RedirectionBen
         final String tPartCol = "TPartCol";
         builder = BenchmarkTools.persistentTableBuilder("T", tableSize);
         builder.setSeed(0xDEADB00F)
-            .addColumn(BenchmarkTools.stringCol(tPartCol, 4, 5, 7, 0xFEEDBEEF));
+                .addColumn(BenchmarkTools.stringCol(tPartCol, 4, 5, 7, 0xFEEDBEEF));
         final String[] tCols = new String[2 + numberOfFilterColumns + numberOfAdditionalColumns];
         int nT1Cols = 0;
         tCols[nT1Cols++] = tPartCol;
@@ -73,13 +73,13 @@ public class ConditionFilterMultipleColumnsFillChunkBench extends RedirectionBen
         final Table inputTable = bmTable.getTable().coalesce();
         final long sizePerStep = Math.max(inputTable.size() / steps, 1);
         final IncrementalReleaseFilter incrementalReleaseFilter =
-            new IncrementalReleaseFilter(sizePerStep, sizePerStep);
+                new IncrementalReleaseFilter(sizePerStep, sizePerStep);
         final Table inputReleased = inputTable.where(incrementalReleaseFilter);
 
         final SelectFilter filter = ConditionFilter.createConditionFilter(filterExpression);
         final Table live = inputReleased.sort(sortCol).where(filter);
         return new QueryData(live, incrementalReleaseFilter, steps, new String[] {sortCol},
-            WritableLongChunk.makeWritableChunk(chunkCapacity));
+                WritableLongChunk.makeWritableChunk(chunkCapacity));
     }
 
     @TearDown(Level.Trial)

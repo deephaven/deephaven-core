@@ -26,8 +26,7 @@ public class ColumnIterator<TYPE> implements Iterator<TYPE> {
      * @param index index for the column source
      * @param columnSource column source
      */
-    public ColumnIterator(@NotNull final Index index,
-        @NotNull final ColumnSource<TYPE> columnSource) {
+    public ColumnIterator(@NotNull final Index index, @NotNull final ColumnSource<TYPE> columnSource) {
         this.columnSource = columnSource;
         indexIterator = index.iterator();
     }

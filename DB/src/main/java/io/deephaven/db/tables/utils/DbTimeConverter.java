@@ -23,8 +23,8 @@ public class DbTimeConverter extends JFrame implements ActionListener, FocusList
     private JTextField outputNanos;
     private JTextField outputMillis;
 
-    private Color defaultColors[] = {Color.decode("0xFF8A8A"), Color.decode("0xFFFFAA"),
-            Color.decode("0xC0FF97"), Color.decode("0xCACAFF")};
+    private Color defaultColors[] =
+            {Color.decode("0xFF8A8A"), Color.decode("0xFFFFAA"), Color.decode("0xC0FF97"), Color.decode("0xCACAFF")};
 
     public DbTimeConverter() {
         super("DbTime Converter 2011 Clippy Edition");
@@ -169,8 +169,7 @@ public class DbTimeConverter extends JFrame implements ActionListener, FocusList
                 if (time == null) {
                     output[i].setText("?????");
                 } else {
-                    output[i].setText(
-                        time.toString(DBTimeZone.values()[timezones[i].getSelectedIndex()]));
+                    output[i].setText(time.toString(DBTimeZone.values()[timezones[i].getSelectedIndex()]));
                 }
             } catch (Exception ex) {
                 // who cares

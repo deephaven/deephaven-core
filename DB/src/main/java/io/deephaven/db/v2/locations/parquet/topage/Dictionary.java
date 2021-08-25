@@ -8,8 +8,7 @@ import gnu.trove.map.hash.TObjectIntHashMap;
 
 import java.util.function.IntFunction;
 
-public class Dictionary<T, ATTR extends Attributes.Any>
-    implements StringSetImpl.ReversibleLookup<T> {
+public class Dictionary<T, ATTR extends Attributes.Any> implements StringSetImpl.ReversibleLookup<T> {
 
     private final ObjectChunk<T, ATTR> objects;
     private volatile TObjectIntMap<T> reverseMap = null;

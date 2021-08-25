@@ -5,11 +5,10 @@ import io.deephaven.db.v2.sources.LongArraySource;
 /**
  * A tracker for modified join hash table slots.
  *
- * After adding an entry, you get back a cookie, which must be passed in on future modification
- * operations for that slot.
+ * After adding an entry, you get back a cookie, which must be passed in on future modification operations for that
+ * slot.
  *
- * To process the entries after modifications are complete, call
- * {@link #forAllModifiedSlots(ModifiedSlotConsumer)}.
+ * To process the entries after modifications are complete, call {@link #forAllModifiedSlots(ModifiedSlotConsumer)}.
  */
 class NaturalJoinModifiedSlotTracker {
     private static final int CHUNK_SIZE = 4096;
@@ -17,15 +16,13 @@ class NaturalJoinModifiedSlotTracker {
     /** the original right values, parallel to modifiedSlots. */
     private final LongArraySource originalRightValues = new LongArraySource();
     /**
-     * the location that we must write to in modified slots; also if we have a pointer that falls
-     * outside the range [0, pointer); then we know it is invalid
+     * the location that we must write to in modified slots; also if we have a pointer that falls outside the range [0,
+     * pointer); then we know it is invalid
      */
     private long pointer;
     /** how many slots we have allocated */
     private long allocated;
-    /**
-     * Each time we clear, we add an offset to our cookies, this prevents us from reading old values
-     */
+    /** Each time we clear, we add an offset to our cookies, this prevents us from reading old values */
     private long cookieGeneration;
 
     private static final int FLAG_SHIFT = 16;
@@ -47,13 +44,12 @@ class NaturalJoinModifiedSlotTracker {
     }
 
     /**
-     * Is this cookie within our valid range (greater than or equal to our generation, but less than
-     * the pointer after adjustment?
+     * Is this cookie within our valid range (greater than or equal to our generation, but less than the pointer after
+     * adjustment?
      *
      * @param cookie the cookie to check for validity
      *
-     * @return true if the cookie is from the current generation, and references a valid slot in our
-     *         table
+     * @return true if the cookie is from the current generation, and references a valid slot in our table
      */
     private boolean isValidCookie(long cookie) {
         return cookie >= cookieGeneration && getPointerFromCookie(cookie) < pointer;
@@ -83,8 +79,8 @@ class NaturalJoinModifiedSlotTracker {
      * Add a slot in the main table.
      *
      * @param slot the slot to add.
-     * @param originalRightValue if we are the addition of the slot, what the right value was before
-     *        our modification (otherwise ignored)
+     * @param originalRightValue if we are the addition of the slot, what the right value was before our modification
+     *        (otherwise ignored)
      * @param flags the flags to or into our state
      *
      * @return the cookie for future access
@@ -105,13 +101,12 @@ class NaturalJoinModifiedSlotTracker {
      * Add a slot in the overflow table.
      *
      * @param overflow the slot to add (0...n in the overflow table).
-     * @param originalRightValue if we are the addition of the slot, what the right value was before
-     *        our modification (otherwise ignored)
+     * @param originalRightValue if we are the addition of the slot, what the right value was before our modification
+     *        (otherwise ignored)
      *
      * @return the cookie for future access
      */
-    long addOverflow(final long cookie, final long overflow, final long originalRightValue,
-        byte flags) {
+    long addOverflow(final long cookie, final long overflow, final long originalRightValue, byte flags) {
         final long slot = IncrementalChunkedNaturalJoinStateManager.overflowToSlot(overflow);
         if (originalRightValue < 0) {
             flags |= FLAG_RIGHT_ADD;
@@ -144,8 +139,8 @@ class NaturalJoinModifiedSlotTracker {
     /**
      * For each main and overflow value, call slotConsumer.
      *
-     * Main values are represented as values >= 0. Overflow values are represented as negative
-     * values according to {@link IncrementalChunkedNaturalJoinStateManager#overflowToSlot(long)}.
+     * Main values are represented as values >= 0. Overflow values are represented as negative values according to
+     * {@link IncrementalChunkedNaturalJoinStateManager#overflowToSlot(long)}.
      *
      * @param slotConsumer the consumer of our values
      */
@@ -164,8 +159,7 @@ class NaturalJoinModifiedSlotTracker {
      * @param oldTableLocation the old hash slot
      * @param newTableLocation the new hash slot
      */
-    void moveTableLocation(long cookie, @SuppressWarnings("unused") long oldTableLocation,
-        long newTableLocation) {
+    void moveTableLocation(long cookie, @SuppressWarnings("unused") long oldTableLocation, long newTableLocation) {
         if (isValidCookie(cookie)) {
             final long pointer = getPointerFromCookie(cookie);
             final long existingSlotAndFlag = modifiedSlots.getLong(pointer);
@@ -181,8 +175,7 @@ class NaturalJoinModifiedSlotTracker {
      * @param overflowLocation the old overflow location
      * @param tableLocation the new table location
      */
-    void promoteFromOverflow(long cookie, @SuppressWarnings("unused") long overflowLocation,
-        long tableLocation) {
+    void promoteFromOverflow(long cookie, @SuppressWarnings("unused") long overflowLocation, long tableLocation) {
         if (isValidCookie(cookie)) {
             final long pointer = getPointerFromCookie(cookie);
             final long existingSlotAndFlag = modifiedSlots.getLong(pointer);

@@ -16,11 +16,10 @@ public class JsBusinessCalendar {
         this.businessCalendarDescriptor = businessCalendarDescriptor;
         JsObject.freeze(this.businessCalendarDescriptor);
         timeZone = JsTimeZone.getTimeZone(businessCalendarDescriptor.getTimeZone());
-        businessPeriods = businessCalendarDescriptor.getBusinessPeriodsList()
-            .map((p0, p1, p2) -> new JsBusinessPeriod(p0));
+        businessPeriods =
+                businessCalendarDescriptor.getBusinessPeriodsList().map((p0, p1, p2) -> new JsBusinessPeriod(p0));
         JsObject.freeze(businessPeriods);
-        holidays =
-            businessCalendarDescriptor.getHolidaysList().map((p0, p1, p2) -> new JsHoliday(p0));
+        holidays = businessCalendarDescriptor.getHolidaysList().map((p0, p1, p2) -> new JsHoliday(p0));
         JsObject.freeze(holidays);
     }
 
@@ -37,7 +36,7 @@ public class JsBusinessCalendar {
     @JsProperty
     public String[] getBusinessDays() {
         return businessCalendarDescriptor.getBusinessDaysList()
-            .map((p0, p1, p2) -> JsDayOfWeek.values()[(int) (double) p0]);
+                .map((p0, p1, p2) -> JsDayOfWeek.values()[(int) (double) p0]);
     }
 
     @JsProperty

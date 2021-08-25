@@ -7,8 +7,8 @@ package io.deephaven.db.plot.axisformatters;
 import java.text.NumberFormat;
 
 /**
- * Format for axis tick labels. For time values, this would be how the dates are formatted. For
- * numerical values, this would be the number of significant digits, etc.
+ * Format for axis tick labels. For time values, this would be how the dates are formatted. For numerical values, this
+ * would be the number of significant digits, etc.
  */
 public interface AxisFormat {
 
@@ -22,8 +22,7 @@ public interface AxisFormat {
     /**
      * Gets the formatter for given pattern.
      * <p>
-     * Note that as time values are expressed as numbers, a number formatter is still suitable for
-     * dates.
+     * Note that as time values are expressed as numbers, a number formatter is still suitable for dates.
      * </p>
      *
      * @return formatter

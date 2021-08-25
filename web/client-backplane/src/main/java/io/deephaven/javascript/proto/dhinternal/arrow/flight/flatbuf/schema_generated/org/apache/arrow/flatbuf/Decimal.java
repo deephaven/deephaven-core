@@ -6,9 +6,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Decimal",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Decimal",
+        namespace = JsPackage.GLOBAL)
 public class Decimal {
     public static native void addBitWidth(Builder builder, double bitWidth);
 
@@ -17,7 +17,7 @@ public class Decimal {
     public static native void addScale(Builder builder, double scale);
 
     public static native double createDecimal(
-        Builder builder, double precision, double scale, double bitWidth);
+            Builder builder, double precision, double scale, double bitWidth);
 
     public static native double endDecimal(Builder builder);
 

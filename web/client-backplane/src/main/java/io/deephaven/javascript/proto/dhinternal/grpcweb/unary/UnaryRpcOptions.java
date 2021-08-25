@@ -12,9 +12,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.grpcWeb.unary.UnaryRpcOptions",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.grpcWeb.unary.UnaryRpcOptions",
+        namespace = JsPackage.GLOBAL)
 public interface UnaryRpcOptions<TRequest, TResponse> extends RpcOptions {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface GetMetadataJsPropertyMapTypeParameterUnionType {
@@ -122,7 +122,7 @@ public interface UnaryRpcOptions<TRequest, TResponse> extends RpcOptions {
 
     @JsOverlay
     default void setMetadata(
-        JsPropertyMap<UnaryRpcOptions.GetMetadataJsPropertyMapTypeParameterUnionType> metadata) {
+            JsPropertyMap<UnaryRpcOptions.GetMetadataJsPropertyMapTypeParameterUnionType> metadata) {
         setMetadata(Js.<UnaryRpcOptions.GetMetadataUnionType>uncheckedCast(metadata));
     }
 

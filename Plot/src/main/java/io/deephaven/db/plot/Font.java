@@ -123,8 +123,7 @@ public class Font implements Serializable {
     private final java.awt.Font font;
 
     /**
-     * Creates a new instance of the Font with the specified {@code family}, {@code style}, and
-     * {@code size}.
+     * Creates a new instance of the Font with the specified {@code family}, {@code style}, and {@code size}.
      *
      * @param family font family; if null, set to Arial
      * @param style font style; if null, set to {@link Font.FontStyle} PLAIN
@@ -140,8 +139,7 @@ public class Font implements Serializable {
     }
 
     /**
-     * Creates a new instance of the Font with the specified {@code family}, {@code style}, and
-     * {@code size}.
+     * Creates a new instance of the Font with the specified {@code family}, {@code style}, and {@code size}.
      *
      * @param family font family; if null, set to Arial
      * @param style font style; if null, set to {@link Font.FontStyle} PLAIN
@@ -194,8 +192,7 @@ public class Font implements Serializable {
      * @return array of available Font family names
      */
     public static String[] fontFamilyNames() {
-        return java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
-            .getAvailableFontFamilyNames();
+        return java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames();
     }
 
 

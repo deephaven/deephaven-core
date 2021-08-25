@@ -10,23 +10,20 @@ import java.lang.reflect.Array;
 import java.nio.IntBuffer;
 
 public class ToDbArrayPage<ATTR extends Attributes.Any, RESULT, ARRAY_TYPE extends DbArrayBase<?>>
-    extends ToPage.Wrap<ATTR, RESULT, ARRAY_TYPE[]> {
+        extends ToPage.Wrap<ATTR, RESULT, ARRAY_TYPE[]> {
 
     private final Class<ARRAY_TYPE> nativeType;
 
-    public static <ATTR extends Attributes.Any> ToPage<ATTR, ?> create(
-        @NotNull final Class<?> nativeType,
-        @NotNull final Class<?> componentType,
-        @NotNull final ToPage<ATTR, ?> toPage) {
+    public static <ATTR extends Attributes.Any> ToPage<ATTR, ?> create(@NotNull final Class<?> nativeType,
+            @NotNull final Class<?> componentType,
+            @NotNull final ToPage<ATTR, ?> toPage) {
         if (!DbArrayBase.class.isAssignableFrom(nativeType)) {
-            throw new IllegalArgumentException(
-                "Native type " + nativeType + " is not a DbArray type.");
+            throw new IllegalArgumentException("Native type " + nativeType + " is not a DbArray type.");
         }
 
         final Class<?> columnComponentType = toPage.getNativeComponentType();
         if (!componentType.isAssignableFrom(columnComponentType)) {
-            throw new IllegalArgumentException(
-                "The component type " + componentType.getCanonicalName() + " for the" +
+            throw new IllegalArgumentException("The component type " + componentType.getCanonicalName() + " for the" +
                     " array type " + nativeType.getCanonicalName() +
                     " is not compatible with the column's component type " + columnComponentType);
         }
@@ -35,8 +32,7 @@ public class ToDbArrayPage<ATTR extends Attributes.Any, RESULT, ARRAY_TYPE exten
         return new ToDbArrayPage(nativeType, toPage);
     }
 
-    private ToDbArrayPage(@NotNull final Class<ARRAY_TYPE> nativeType,
-        @NotNull final ToPage<ATTR, RESULT> toPage) {
+    private ToDbArrayPage(@NotNull final Class<ARRAY_TYPE> nativeType, @NotNull final ToPage<ATTR, RESULT> toPage) {
         super(toPage);
         this.nativeType = nativeType;
     }
@@ -59,8 +55,8 @@ public class ToDbArrayPage<ATTR extends Attributes.Any, RESULT, ARRAY_TYPE exten
         final DataWithOffsets dataWithOffsets = (DataWithOffsets) object;
 
         // noinspection unchecked
-        final ARRAY_TYPE dataWrapper = (ARRAY_TYPE) toPage
-            .makeDbArray(toPage.convertResult(dataWithOffsets.materializeResult));
+        final ARRAY_TYPE dataWrapper =
+                (ARRAY_TYPE) toPage.makeDbArray(toPage.convertResult(dataWithOffsets.materializeResult));
         final IntBuffer offsets = dataWithOffsets.offsets;
 
         // noinspection unchecked

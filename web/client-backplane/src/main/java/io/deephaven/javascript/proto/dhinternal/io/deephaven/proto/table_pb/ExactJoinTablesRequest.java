@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest",
+        namespace = JsPackage.GLOBAL)
 public class ExactJoinTablesRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -43,7 +43,7 @@ public class ExactJoinTablesRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static ExactJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -78,20 +78,20 @@ public class ExactJoinTablesRequest {
 
             @JsProperty
             void setTicket(
-                ExactJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    ExactJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<ExactJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ExactJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<ExactJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ExactJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -169,7 +169,7 @@ public class ExactJoinTablesRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static ExactJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -204,20 +204,20 @@ public class ExactJoinTablesRequest {
 
             @JsProperty
             void setTicket(
-                ExactJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    ExactJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<ExactJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ExactJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<ExactJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ExactJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -270,13 +270,12 @@ public class ExactJoinTablesRequest {
     public static native ExactJoinTablesRequest deserializeBinary(Uint8Array bytes);
 
     public static native ExactJoinTablesRequest deserializeBinaryFromReader(
-        ExactJoinTablesRequest message, Object reader);
+            ExactJoinTablesRequest message, Object reader);
 
-    public static native void serializeBinaryToWriter(ExactJoinTablesRequest message,
-        Object writer);
+    public static native void serializeBinaryToWriter(ExactJoinTablesRequest message, Object writer);
 
     public static native ExactJoinTablesRequest.ToObjectReturnType toObject(
-        boolean includeInstance, ExactJoinTablesRequest msg);
+            boolean includeInstance, ExactJoinTablesRequest msg);
 
     public native String addColumnsToAdd(String value, double index);
 

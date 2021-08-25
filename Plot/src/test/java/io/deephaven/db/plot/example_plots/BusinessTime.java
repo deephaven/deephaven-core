@@ -32,20 +32,19 @@ public class BusinessTime {
 
         Figure fig = FigureFactory.figure(2, 1);
         Figure cht = fig.newChart(0)
-            .chartTitle("Business");
-        Figure axs = cht.newAxes()
-            .xTransform(new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE")))
-            .xTicksVisible(false)
-            .xLabel("X")
-            .yLabel("Y")
-            .plot("Test", x, y);
+                .chartTitle("Business");
+        Figure axs = cht.newAxes().xTransform(new AxisTransformBusinessCalendar(Calendars.calendar("USNYSE")))
+                .xTicksVisible(false)
+                .xLabel("X")
+                .yLabel("Y")
+                .plot("Test", x, y);
 
         Figure cht2 = axs.newChart(1)
-            .chartTitle("NonBusiness");
+                .chartTitle("NonBusiness");
         Figure axs2 = cht2.newAxes()
-            .xLabel("X")
-            .yLabel("Y")
-            .plot("Test", x, y);
+                .xLabel("X")
+                .yLabel("Y")
+                .plot("Test", x, y);
 
 
         ExamplePlotUtils.display(axs2);

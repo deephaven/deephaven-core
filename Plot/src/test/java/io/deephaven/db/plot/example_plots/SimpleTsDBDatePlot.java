@@ -30,14 +30,13 @@ public class SimpleTsDBDatePlot {
 
         Figure fig = FigureFactory.figure();
         Figure cht = fig.newChart(0)
-            .chartTitle("Chart Title");
+                .chartTitle("Chart Title");
         Figure axs = cht.newAxes()
-            .xLabel("X")
-            .yLabel("Y")
-            .plot("Test1", x1, y1).pointLabelFormat("{0}: {1}, {2}")
-            .xToolTipPattern("HH:mm:SSSSSSSSS")
-            .plot("Test2", x2, y2)
-            .axis(0).axisLabelFont("Courier", "BOLD_ITALIC", 25);
+                .xLabel("X")
+                .yLabel("Y")
+                .plot("Test1", x1, y1).pointLabelFormat("{0}: {1}, {2}").xToolTipPattern("HH:mm:SSSSSSSSS")
+                .plot("Test2", x2, y2)
+                .axis(0).axisLabelFont("Courier", "BOLD_ITALIC", 25);
 
         ExamplePlotUtils.display(axs);
     }

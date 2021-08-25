@@ -12,9 +12,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest",
+        namespace = JsPackage.GLOBAL)
 public class RunChartDownsampleRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -24,7 +24,7 @@ public class RunChartDownsampleRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static RunChartDownsampleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -59,20 +59,20 @@ public class RunChartDownsampleRequest {
 
             @JsProperty
             void setTicket(
-                RunChartDownsampleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    RunChartDownsampleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<RunChartDownsampleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<RunChartDownsampleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<RunChartDownsampleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<RunChartDownsampleRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -160,8 +160,7 @@ public class RunChartDownsampleRequest {
         }
 
         @JsProperty
-        void setZoomRange(
-            RunChartDownsampleRequest.ToObjectReturnType.ZoomRangeFieldType zoomRange);
+        void setZoomRange(RunChartDownsampleRequest.ToObjectReturnType.ZoomRangeFieldType zoomRange);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -171,8 +170,7 @@ public class RunChartDownsampleRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface GetTicketUnionType {
                 @JsOverlay
-                static RunChartDownsampleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                static RunChartDownsampleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(Object o) {
                     return Js.cast(o);
                 }
 
@@ -207,20 +205,20 @@ public class RunChartDownsampleRequest {
 
             @JsProperty
             void setTicket(
-                RunChartDownsampleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    RunChartDownsampleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<RunChartDownsampleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<RunChartDownsampleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<RunChartDownsampleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<RunChartDownsampleRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -308,20 +306,19 @@ public class RunChartDownsampleRequest {
         }
 
         @JsProperty
-        void setZoomRange(
-            RunChartDownsampleRequest.ToObjectReturnType0.ZoomRangeFieldType zoomRange);
+        void setZoomRange(RunChartDownsampleRequest.ToObjectReturnType0.ZoomRangeFieldType zoomRange);
     }
 
     public static native RunChartDownsampleRequest deserializeBinary(Uint8Array bytes);
 
     public static native RunChartDownsampleRequest deserializeBinaryFromReader(
-        RunChartDownsampleRequest message, Object reader);
+            RunChartDownsampleRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(
-        RunChartDownsampleRequest message, Object writer);
+            RunChartDownsampleRequest message, Object writer);
 
     public static native RunChartDownsampleRequest.ToObjectReturnType toObject(
-        boolean includeInstance, RunChartDownsampleRequest msg);
+            boolean includeInstance, RunChartDownsampleRequest msg);
 
     public native String addYColumnNames(String value, double index);
 

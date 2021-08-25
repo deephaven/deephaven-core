@@ -17,14 +17,14 @@ public class SimpleXYStackedArea {
 
         Figure fig = FigureFactory.figure();
         Figure cht = fig.newChart(0)
-            .chartTitle("Chart Title");
+                .chartTitle("Chart Title");
         Figure axs = cht.newAxes()
-            .xColor("blue")
-            .yColor("red")
-            .xLabel("X")
-            .yLabel("Y").plotStyle("STACKED_AREA")
-            .plot("Test1", x1, y1).pointsVisible(true)
-            .plot("Test2", x1, y2).pointsVisible(true);
+                .xColor("blue")
+                .yColor("red")
+                .xLabel("X")
+                .yLabel("Y").plotStyle("STACKED_AREA")
+                .plot("Test1", x1, y1).pointsVisible(true)
+                .plot("Test2", x1, y2).pointsVisible(true);
 
         ExamplePlotUtils.display(axs);
     }

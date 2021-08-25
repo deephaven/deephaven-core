@@ -11,8 +11,7 @@ import io.deephaven.db.v2.locations.TableLocationState;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Intermediates between push-based subscription to a TableLocation and polling on LiveTable
- * refresh.
+ * Intermediates between push-based subscription to a TableLocation and polling on LiveTable refresh.
  */
 public class TableLocationUpdateSubscriptionBuffer implements TableLocation.Listener {
 
@@ -30,9 +29,9 @@ public class TableLocationUpdateSubscriptionBuffer implements TableLocation.List
     }
 
     /**
-     * Subscribe if needed, and return whether there was a pending update to the table location, or
-     * throw a pending exception. If a pending exception is thrown, this signals that the
-     * subscription is no longer valid and no subsequent pending updates will be returned.
+     * Subscribe if needed, and return whether there was a pending update to the table location, or throw a pending
+     * exception. If a pending exception is thrown, this signals that the subscription is no longer valid and no
+     * subsequent pending updates will be returned.
      *
      * @return Whether there was a pending update
      */
@@ -41,8 +40,8 @@ public class TableLocationUpdateSubscriptionBuffer implements TableLocation.List
             if (tableLocation.supportsSubscriptions()) {
                 tableLocation.subscribe(this);
             } else {
-                // NB: Locations that don't support subscriptions don't tick - this single call to
-                // refresh is sufficient.
+                // NB: Locations that don't support subscriptions don't tick - this single call to refresh is
+                // sufficient.
                 tableLocation.refresh();
                 handleUpdate();
             }
@@ -88,12 +87,10 @@ public class TableLocationUpdateSubscriptionBuffer implements TableLocation.List
         synchronized (updateLock) {
             if (observedNonNullSize) {
                 if (tableLocation.getSize() == TableLocationState.NULL_SIZE) {
-                    pendingException = new TableDataException("Location " + tableLocation
-                        + " is no longer available, data has been removed or replaced");
-                    // No need to bother unsubscribing - the consumer will either leak (and allow
-                    // asynchronous cleanup)
-                    // or unsubscribe all of its locations as a result of handling this exception
-                    // when it polls.
+                    pendingException = new TableDataException(
+                            "Location " + tableLocation + " is no longer available, data has been removed or replaced");
+                    // No need to bother unsubscribing - the consumer will either leak (and allow asynchronous cleanup)
+                    // or unsubscribe all of its locations as a result of handling this exception when it polls.
                 }
             } else if (tableLocation.getSize() != TableLocationState.NULL_SIZE) {
                 observedNonNullSize = true;

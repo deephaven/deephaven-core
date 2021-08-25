@@ -12,7 +12,7 @@ public class FailureListener extends InstrumentedShiftAwareListener {
 
     @Override
     public void onFailureInternal(Throwable originalException,
-        io.deephaven.db.v2.utils.UpdatePerformanceTracker.Entry sourceEntry) {
+            io.deephaven.db.v2.utils.UpdatePerformanceTracker.Entry sourceEntry) {
         originalException.printStackTrace();
         TestCase.fail(originalException.getMessage());
     }

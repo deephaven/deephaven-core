@@ -16,9 +16,8 @@ public class IndexUtilities {
         try (final Index.RangeIterator it = index.rangeIterator()) {
             while (it.hasNext()) {
                 it.next();
-                result.append(isFirst ? "" : ",").append(it.currentRangeStart()).append(
-                    it.currentRangeEnd() != it.currentRangeStart() ? "-" + it.currentRangeEnd()
-                        : "");
+                result.append(isFirst ? "" : ",").append(it.currentRangeStart())
+                        .append(it.currentRangeEnd() != it.currentRangeStart() ? "-" + it.currentRangeEnd() : "");
                 isFirst = false;
                 if (count++ > maxNodes) {
                     result.append("...");
@@ -31,7 +30,7 @@ public class IndexUtilities {
     }
 
     public static void fillKeyIndicesChunk(final ReadOnlyIndex index,
-        final WritableLongChunk<? extends Attributes.KeyIndices> chunkToFill) {
+            final WritableLongChunk<? extends Attributes.KeyIndices> chunkToFill) {
         chunkToFill.setSize(0); // so that we can actually add from the beginning.
         index.forEachLong((final long v) -> {
             chunkToFill.add(v);
@@ -40,7 +39,7 @@ public class IndexUtilities {
     }
 
     public static void fillKeyRangesChunk(final ReadOnlyIndex index,
-        final WritableLongChunk<Attributes.OrderedKeyRanges> chunkToFill) {
+            final WritableLongChunk<Attributes.OrderedKeyRanges> chunkToFill) {
         chunkToFill.setSize(0);
         index.forAllLongRanges((final long start, final long end) -> {
             chunkToFill.add(start);
@@ -109,8 +108,7 @@ public class IndexUtilities {
         while (it1.hasNext() && it2.hasNext()) {
             it1.next();
             it2.next();
-            if (it1.currentRangeStart() != it2.currentRangeStart()
-                || it1.currentRangeEnd() != it2.currentRangeEnd()) {
+            if (it1.currentRangeStart() != it2.currentRangeStart() || it1.currentRangeEnd() != it2.currentRangeEnd()) {
                 return false;
             }
         }
@@ -122,14 +120,13 @@ public class IndexUtilities {
             return false;
         }
         final Index otherIndex = (Index) other;
-        return index.size() == otherIndex.size()
-            && IndexUtilities.equalsDeepImpl(index, otherIndex);
+        return index.size() == otherIndex.size() && IndexUtilities.equalsDeepImpl(index, otherIndex);
     }
 
     public interface Comparator {
         /**
-         * Compare the underlying target to the provided value. Return -1, 0, or 1 if target is less
-         * than, equal, or greater than the provided value, respectively.
+         * Compare the underlying target to the provided value. Return -1, 0, or 1 if target is less than, equal, or
+         * greater than the provided value, respectively.
          *
          * @param value
          * @return -1 if target < value; 0 if value == target; +1 if value < target.
@@ -138,16 +135,14 @@ public class IndexUtilities {
     }
 
     /**
-     * Look for the biggest value of i that satisfies begin <= i <= end and
-     * comp.directionToTargetFrom(i) > 0, or some value that satisfies comp.directionToTargetFrom(i)
-     * == 0.
+     * Look for the biggest value of i that satisfies begin <= i <= end and comp.directionToTargetFrom(i) > 0, or some
+     * value that satisfies comp.directionToTargetFrom(i) == 0.
      *
      * @param begin The beginning of the range (inclusive)
      * @param end The end of the range (inclusive)
      * @param comp a Comparator.
-     * @return the last position i inside the provided range that satisfies
-     *         comp.directionToTargetFrom(i) > 0, or some position that satisfies
-     *         comp.directionToTargetFrom(i) == 0.
+     * @return the last position i inside the provided range that satisfies comp.directionToTargetFrom(i) > 0, or some
+     *         position that satisfies comp.directionToTargetFrom(i) == 0.
      */
     public static long rangeSearch(final long begin, final long end, final Comparator comp) {
         long i = begin;
@@ -181,25 +176,22 @@ public class IndexUtilities {
     }
 
     /**
-     * This is equivalent to `sourceIndex.invert(destIndex).forAllLongRanges(lrc)`, but requires
-     * O(1) space. Note that coalescing adjacent position-space runs enables callers to make minimal
-     * System.arraycopy calls.
+     * This is equivalent to `sourceIndex.invert(destIndex).forAllLongRanges(lrc)`, but requires O(1) space. Note that
+     * coalescing adjacent position-space runs enables callers to make minimal System.arraycopy calls.
      *
-     * @param sourceIndex index to find the destIndex keys in - ranges in the callback will be on
-     *        this index
+     * @param sourceIndex index to find the destIndex keys in - ranges in the callback will be on this index
      * @param destIndex index values to look for within sourceIndex
      * @param lrc consumer to handle each inverted range that is encountered
      */
     public static void forAllInvertedLongRanges(final Index sourceIndex, final Index destIndex,
-        final LongRangeConsumer lrc) {
+            final LongRangeConsumer lrc) {
         final MutableBoolean hasPending = new MutableBoolean();
         final MutableLong pendingStart = new MutableLong(Index.NULL_KEY);
         final MutableLong pendingEnd = new MutableLong(Index.NULL_KEY);
         final OrderedKeys.Iterator sourceProbe = sourceIndex.getOrderedKeysIterator();
         final MutableLong sourceOffset = new MutableLong();
         destIndex.forAllLongRanges((start, end) -> {
-            final long sourceStart =
-                sourceOffset.getValue() + sourceProbe.advanceAndGetPositionDistance(start);
+            final long sourceStart = sourceOffset.getValue() + sourceProbe.advanceAndGetPositionDistance(start);
             final long sourceEnd = sourceStart + sourceProbe.advanceAndGetPositionDistance(end);
             if (!hasPending.booleanValue()) {
                 pendingStart.setValue(sourceStart);

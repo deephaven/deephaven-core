@@ -8,14 +8,13 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 /**
- * Class for logger utilities for internal Logger usage. Not named LoggerUtil or LoggerUtils to
- * avoid confusion with those existing classes.
+ * Class for logger utilities for internal Logger usage. Not named LoggerUtil or LoggerUtils to avoid confusion with
+ * those existing classes.
  */
 class InternalLoggerUtil {
 
     /**
-     * Write the specified LogEntry to the specified stream flipping buffers, then call any
-     * interceptors.
+     * Write the specified LogEntry to the specified stream flipping buffers, then call any interceptors.
      * 
      * @param entry the entry to be written
      * @param outputStream the OutputStream to which the entry is written
@@ -23,7 +22,7 @@ class InternalLoggerUtil {
      * @throws IOException from the outputStream write operations
      */
     static void writeEntryToStream(final LogEntry entry, final OutputStream outputStream,
-        final LogSink.Interceptor[] interceptors) throws IOException {
+            final LogSink.Interceptor[] interceptors) throws IOException {
         for (int i = 0; i < entry.getBufferCount(); ++i) {
             final ByteBuffer b = entry.getBuffer(i);
             b.flip();

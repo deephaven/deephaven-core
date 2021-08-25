@@ -26,9 +26,8 @@ public interface FindRunsKernel extends Context {
     }
 
     /**
-     * Find runs of identical values in a sorted chunk. This is used as part of an overall sort,
-     * after the timsort (or other sorting) kernel to identify the runs that must be sorted
-     * according to secondary keys.
+     * Find runs of identical values in a sorted chunk. This is used as part of an overall sort, after the timsort (or
+     * other sorting) kernel to identify the runs that must be sorted according to secondary keys.
      *
      * Runs with only a single value are not included.
      *
@@ -37,7 +36,7 @@ public interface FindRunsKernel extends Context {
      * @param lengthsOut an output chunk, parallel to offsetsOut, with the lengths of found runs
      */
     void findRuns(Chunk sortedValues, WritableIntChunk<ChunkPositions> offsetsOut,
-        WritableIntChunk<ChunkLengths> lengthsOut);
+            WritableIntChunk<ChunkLengths> lengthsOut);
 
     /**
      * Find runs of identical values in a sorted chunk.
@@ -49,12 +48,11 @@ public interface FindRunsKernel extends Context {
      * @param lengthsOut an output chunk, parallel to offsetsOut, with the lengths of found runs
      */
     void findRunsSingles(Chunk sortedValues, WritableIntChunk<ChunkPositions> offsetsOut,
-        WritableIntChunk<ChunkLengths> lengthsOut);
+            WritableIntChunk<ChunkLengths> lengthsOut);
 
     /**
-     * Find runs of identical values in a sorted chunk. This is used as part of an overall sort,
-     * after the timsort (or other sorting) kernel to identify the runs that must be sorted
-     * according to secondary keys.
+     * Find runs of identical values in a sorted chunk. This is used as part of an overall sort, after the timsort (or
+     * other sorting) kernel to identify the runs that must be sorted according to secondary keys.
      *
      * @param sortedValues a chunk of sorted values
      * @param offsetsIn the offsets within the chunk to check for runs
@@ -62,10 +60,9 @@ public interface FindRunsKernel extends Context {
      * @param offsetsOut an output chunk, with offsets of starting locations that a run occurred
      * @param lengthsOut an output chunk, parallel to offsetsOut, with the lengths of found runs
      *
-     *        Note, that lengthsIn must contain values greater than 1, and lengthsOut additionally
-     *        only contain values greater than one
+     *        Note, that lengthsIn must contain values greater than 1, and lengthsOut additionally only contain values
+     *        greater than one
      */
-    void findRuns(Chunk sortedValues, IntChunk<ChunkPositions> offsetsIn,
-        IntChunk<ChunkLengths> lengthsIn, WritableIntChunk<ChunkPositions> offsetsOut,
-        WritableIntChunk<ChunkLengths> lengthsOut);
+    void findRuns(Chunk sortedValues, IntChunk<ChunkPositions> offsetsIn, IntChunk<ChunkLengths> lengthsIn,
+            WritableIntChunk<ChunkPositions> offsetsOut, WritableIntChunk<ChunkLengths> lengthsOut);
 }

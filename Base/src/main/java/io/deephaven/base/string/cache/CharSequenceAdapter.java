@@ -7,29 +7,25 @@ package io.deephaven.base.string.cache;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * This class provides base functionality for several implementations of CharSequenceAdapter.
- * Currently, there's one for ByteBuffers, another for byte arrays, one for sequences of chars, and
- * one for chains of Strings. If you have array-backed, writable ByteBuffers, it's probably best to
- * use the byte array implementation with the backing array, e.g. for ByteBuffer b,
- * ByteBufferCharSequenceAdapterImpl a, proto-String length l, use: a.set(b.array(), b.position() +
- * b.arrayOffset(), l);
+ * This class provides base functionality for several implementations of CharSequenceAdapter. Currently, there's one for
+ * ByteBuffers, another for byte arrays, one for sequences of chars, and one for chains of Strings. If you have
+ * array-backed, writable ByteBuffers, it's probably best to use the byte array implementation with the backing array,
+ * e.g. for ByteBuffer b, ByteBufferCharSequenceAdapterImpl a, proto-String length l, use: a.set(b.array(), b.position()
+ * + b.arrayOffset(), l);
  *
- * Note: trim() support hasn't been needed/implemented so far. Note: Only Latin-1 (ISO-8859-1)
- * characters are expected at this time. Bytes are converted to chars one-for-one with the result
- * masked by 0xFF.
+ * Note: trim() support hasn't been needed/implemented so far. Note: Only Latin-1 (ISO-8859-1) characters are expected
+ * at this time. Bytes are converted to chars one-for-one with the result masked by 0xFF.
  *
- * Implementations are not thread-safe. Pool them, create ThreadLocal instances, or (better)
- * instantiate them along natural concurrency boundaries. Implementations allow any proto-String
- * (that is, anything that can be expressed as a sequence of chars) to be used as a cache key (in
- * ConcurrentUnboundedStringCache instances) and a String creator.
+ * Implementations are not thread-safe. Pool them, create ThreadLocal instances, or (better) instantiate them along
+ * natural concurrency boundaries. Implementations allow any proto-String (that is, anything that can be expressed as a
+ * sequence of chars) to be used as a cache key (in ConcurrentUnboundedStringCache instances) and a String creator.
  *
  * Note Subclasses *must* support length(), and charAt(int index).
  *
- * Note The makeString() implementation *must* be consistent with length() and charAt(int index) -
- * that is, we require that makeString().contentEquals(this).
+ * Note The makeString() implementation *must* be consistent with length() and charAt(int index) - that is, we require
+ * that makeString().contentEquals(this).
  *
- * Note subSequence(int start, int end) is unsupported by default - no StringCache implementations
- * need it at this time.
+ * Note subSequence(int start, int end) is unsupported by default - no StringCache implementations need it at this time.
  */
 public abstract class CharSequenceAdapter implements StringCompatible {
 

@@ -25,8 +25,7 @@ public abstract class AbstractCalendar implements Calendar {
             return null;
         }
 
-        final LocalDate t =
-            DBTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().minusDays(days);
+        final LocalDate t = DBTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().minusDays(days);
 
         return DateStringUtils.format(t);
     }
@@ -53,8 +52,7 @@ public abstract class AbstractCalendar implements Calendar {
             return null;
         }
 
-        final LocalDate t =
-            DBTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().plusDays(days);
+        final LocalDate t = DBTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().plusDays(days);
 
         return DateStringUtils.format(t);
     }
@@ -110,10 +108,9 @@ public abstract class AbstractCalendar implements Calendar {
         return numberOfDays(start, end, false);
     }
 
-    public int numberOfDays(final DBDateTime start, final DBDateTime end,
-        final boolean endInclusive) {
+    public int numberOfDays(final DBDateTime start, final DBDateTime end, final boolean endInclusive) {
         return numberOfDays(start == null ? null : start.toDateString(timeZone()),
-            end == null ? null : end.toDateString(timeZone()), endInclusive);
+                end == null ? null : end.toDateString(timeZone()), endInclusive);
     }
 
     public int numberOfDays(final String start, final String end) {

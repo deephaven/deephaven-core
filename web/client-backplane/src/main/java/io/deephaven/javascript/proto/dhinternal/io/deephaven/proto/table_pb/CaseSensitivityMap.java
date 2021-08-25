@@ -8,9 +8,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.CaseSensitivityMap",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.CaseSensitivityMap",
+        namespace = JsPackage.GLOBAL)
 public interface CaseSensitivityMap {
     @JsOverlay
     static CaseSensitivityMap create() {

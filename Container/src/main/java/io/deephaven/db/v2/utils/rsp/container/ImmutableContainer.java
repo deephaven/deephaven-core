@@ -3,7 +3,7 @@ package io.deephaven.db.v2.utils.rsp.container;
 
 public abstract class ImmutableContainer extends Container {
     public static final boolean ENABLED =
-        !Boolean.getBoolean("io.deephaven.db.v2.utils.rsp.container.ImmutableContainer.DISABLED");
+            !Boolean.getBoolean("io.deephaven.db.v2.utils.rsp.container.ImmutableContainer.DISABLED");
 
     @Override
     public final Container deepCopy() {

@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest",
+        namespace = JsPackage.GLOBAL)
 public class EmptyTableRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -22,7 +22,7 @@ public class EmptyTableRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -57,20 +57,20 @@ public class EmptyTableRequest {
 
             @JsProperty
             void setTicket(
-                EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -100,7 +100,7 @@ public class EmptyTableRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -135,20 +135,20 @@ public class EmptyTableRequest {
 
             @JsProperty
             void setTicket(
-                EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -173,12 +173,12 @@ public class EmptyTableRequest {
     public static native EmptyTableRequest deserializeBinary(Uint8Array bytes);
 
     public static native EmptyTableRequest deserializeBinaryFromReader(
-        EmptyTableRequest message, Object reader);
+            EmptyTableRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(EmptyTableRequest message, Object writer);
 
     public static native EmptyTableRequest.ToObjectReturnType toObject(
-        boolean includeInstance, EmptyTableRequest msg);
+            boolean includeInstance, EmptyTableRequest msg);
 
     public native void clearResultId();
 

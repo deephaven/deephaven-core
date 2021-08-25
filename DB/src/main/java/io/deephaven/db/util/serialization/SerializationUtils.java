@@ -18,8 +18,7 @@ import java.util.Date;
  */
 public class SerializationUtils {
 
-    public interface Writer<ITEM_TYPE>
-        extends FunctionalInterfaces.ThrowingConsumer<ITEM_TYPE, IOException> {
+    public interface Writer<ITEM_TYPE> extends FunctionalInterfaces.ThrowingConsumer<ITEM_TYPE, IOException> {
     }
 
     /**
@@ -30,7 +29,7 @@ public class SerializationUtils {
      * @return A new serializing consumer
      */
     public static <ITEM_TYPE> Writer<ITEM_TYPE> getWriter(@NotNull final Class<ITEM_TYPE> itemClass,
-        @NotNull final ObjectOutput out) {
+            @NotNull final ObjectOutput out) {
         if (itemClass == Byte.class) {
             return k -> out.writeByte((Byte) k);
         }
@@ -74,8 +73,7 @@ public class SerializationUtils {
         return out::writeObject;
     }
 
-    public interface Reader<ITEM_TYPE>
-        extends FunctionalInterfaces.ThrowingSupplier<ITEM_TYPE, Exception> {
+    public interface Reader<ITEM_TYPE> extends FunctionalInterfaces.ThrowingSupplier<ITEM_TYPE, Exception> {
     }
 
     /**
@@ -87,7 +85,7 @@ public class SerializationUtils {
      */
     @SuppressWarnings("unchecked")
     public static <ITEM_TYPE> Reader<ITEM_TYPE> getReader(@NotNull final Class<ITEM_TYPE> itemClass,
-        @NotNull final ObjectInput in) {
+            @NotNull final ObjectInput in) {
         if (itemClass == Byte.class) {
             return () -> (ITEM_TYPE) Byte.valueOf(in.readByte());
         }
@@ -126,14 +124,12 @@ public class SerializationUtils {
             try {
                 constructor = itemClass.getConstructor();
             } catch (NoSuchMethodException e) {
-                throw new UnsupportedOperationException(
-                    "Can't deserialize keys of type " + itemClass
+                throw new UnsupportedOperationException("Can't deserialize keys of type " + itemClass
                         + ", could not get no-arg constructor for StreamingExternalizable type");
             }
             final TIntObjectMap<Reader> cachedReaders = new TIntObjectHashMap<>();
             return () -> {
-                final StreamingExternalizable key =
-                    (StreamingExternalizable) constructor.newInstance();
+                final StreamingExternalizable key = (StreamingExternalizable) constructor.newInstance();
                 key.readExternalStreaming(in, cachedReaders);
                 return (ITEM_TYPE) key;
             };
@@ -143,8 +139,7 @@ public class SerializationUtils {
             try {
                 constructor = itemClass.getConstructor();
             } catch (NoSuchMethodException e) {
-                throw new UnsupportedOperationException(
-                    "Can't deserialize keys of type " + itemClass
+                throw new UnsupportedOperationException("Can't deserialize keys of type " + itemClass
                         + ", could not get no-arg constructor for Externalizable type");
             }
             return () -> {

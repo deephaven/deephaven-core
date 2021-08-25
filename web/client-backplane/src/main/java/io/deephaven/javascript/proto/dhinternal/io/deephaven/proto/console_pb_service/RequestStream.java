@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb_service.RequestStream",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb_service.RequestStream",
+        namespace = JsPackage.GLOBAL)
 public interface RequestStream<T> {
     @JsFunction
     public interface OnHandlerFn {

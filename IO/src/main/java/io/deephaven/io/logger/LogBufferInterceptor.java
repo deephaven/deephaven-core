@@ -34,8 +34,7 @@ public class LogBufferInterceptor extends LogBuffer implements LogSink.Intercept
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    public void element(@NotNull final LogEntry e, @NotNull final LogOutput output)
-        throws IOException {
+    public void element(@NotNull final LogEntry e, @NotNull final LogOutput output) throws IOException {
         if (e.getLevel() instanceof LogLevel.MailLevel) {
             // We don't support MAILER log lines.
             return;
@@ -61,8 +60,7 @@ public class LogBufferInterceptor extends LogBuffer implements LogSink.Intercept
                 }
                 stream.close();
             } catch (IOException x) {
-                throw new IOException("Unexpected IOException while formatting LogBuffer Record",
-                    x);
+                throw new IOException("Unexpected IOException while formatting LogBuffer Record", x);
             }
             final ByteBuffer resultData = sink.getBuffer();
             resultData.flip();

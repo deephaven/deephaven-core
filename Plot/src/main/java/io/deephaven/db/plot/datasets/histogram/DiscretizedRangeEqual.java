@@ -21,8 +21,8 @@ public class DiscretizedRangeEqual implements DiscretizedRange, Serializable {
     private final double binWidth;
 
     /**
-     * Creates a DiscretizedRangeEqual instance with specified {@code min} and {@code max} with
-     * {@code nBins} equally sized bins.
+     * Creates a DiscretizedRangeEqual instance with specified {@code min} and {@code max} with {@code nBins} equally
+     * sized bins.
      *
      * @param min minimum of the total range
      * @param max maximum of the total range
@@ -51,7 +51,6 @@ public class DiscretizedRangeEqual implements DiscretizedRange, Serializable {
         }
 
         final long index = (long) ((value - min) / binWidth);
-        return value == max ? index - 1 : index; // if value is at max, it would be placed in an
-                                                 // extra bin
+        return value == max ? index - 1 : index; // if value is at max, it would be placed in an extra bin
     }
 }

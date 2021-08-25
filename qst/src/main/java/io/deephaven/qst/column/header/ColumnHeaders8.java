@@ -18,7 +18,7 @@ import static io.deephaven.qst.column.header.ColumnHeader.DEFAULT_BUILDER_INITIA
 @Immutable
 @SimpleStyle
 public abstract class ColumnHeaders8<T1, T2, T3, T4, T5, T6, T7, T8>
-    implements TableHeader.Buildable {
+        implements TableHeader.Buildable {
 
     @Parameter
     public abstract ColumnHeader<T8> header8();
@@ -27,17 +27,17 @@ public abstract class ColumnHeaders8<T1, T2, T3, T4, T5, T6, T7, T8>
     public abstract ColumnHeaders7<T1, T2, T3, T4, T5, T6, T7> others();
 
     public final <T9> ColumnHeaders9<T1, T2, T3, T4, T5, T6, T7, T8, T9> header(String name,
-        Class<T9> clazz) {
+            Class<T9> clazz) {
         return header(ColumnHeader.of(name, clazz));
     }
 
     public final <T9> ColumnHeaders9<T1, T2, T3, T4, T5, T6, T7, T8, T9> header(String name,
-        Type<T9> type) {
+            Type<T9> type) {
         return header(ColumnHeader.of(name, type));
     }
 
     public final <T9> ColumnHeaders9<T1, T2, T3, T4, T5, T6, T7, T8, T9> header(
-        ColumnHeader<T9> header) {
+            ColumnHeader<T9> header) {
         return ImmutableColumnHeaders9.of(header, this);
     }
 

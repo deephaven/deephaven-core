@@ -12,17 +12,13 @@ import io.deephaven.db.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.db.v2.utils.OrderedKeys;
 
 public interface SsaChecker {
-    default void checkSsa(SegmentedSortedArray ssa, ColumnSource<?> columnSource,
-        OrderedKeys orderedKeys) {
+    default void checkSsa(SegmentedSortedArray ssa, ColumnSource<?> columnSource, OrderedKeys orderedKeys) {
         final int size = orderedKeys.intSize();
         try (final ColumnSource.FillContext fillContext = columnSource.makeFillContext(size);
-            final WritableChunk<Values> valuesChunk =
-                columnSource.getChunkType().makeWritableChunk(size);
-            final WritableLongChunk<KeyIndices> keyChunk =
-                WritableLongChunk.makeWritableChunk(size);
-            final LongSortKernel sortKernel = LongSortKernel.makeContext(
-                columnSource.getChunkType(),
-                ssa.isReversed() ? SortingOrder.Descending : SortingOrder.Ascending, size, true)) {
+                final WritableChunk<Values> valuesChunk = columnSource.getChunkType().makeWritableChunk(size);
+                final WritableLongChunk<KeyIndices> keyChunk = WritableLongChunk.makeWritableChunk(size);
+                final LongSortKernel sortKernel = LongSortKernel.makeContext(columnSource.getChunkType(),
+                        ssa.isReversed() ? SortingOrder.Descending : SortingOrder.Ascending, size, true)) {
             columnSource.fillChunk(fillContext, valuesChunk, orderedKeys);
             orderedKeys.fillKeyIndicesChunk(WritableLongChunk.downcast(keyChunk));
             sortKernel.sort(keyChunk, valuesChunk);
@@ -31,7 +27,7 @@ public interface SsaChecker {
     }
 
     void checkSsa(SegmentedSortedArray ssa, Chunk<? extends Values> valueChunk,
-        LongChunk<? extends KeyIndices> tableIndexChunk);
+            LongChunk<? extends KeyIndices> tableIndexChunk);
 
     class SsaCheckException extends RuntimeException {
         SsaCheckException(String message) {

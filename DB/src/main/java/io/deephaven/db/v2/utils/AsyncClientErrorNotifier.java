@@ -9,8 +9,8 @@ import io.deephaven.db.tables.UpdateErrorReporter;
 import java.io.IOException;
 
 /**
- * When we get an error from a table in the listener tree, we want to send an appropriate command to
- * the clients indicating that something has gone wrong with the table.
+ * When we get an error from a table in the listener tree, we want to send an appropriate command to the clients
+ * indicating that something has gone wrong with the table.
  */
 public class AsyncClientErrorNotifier {
 

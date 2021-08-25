@@ -30,15 +30,13 @@ public interface DupExpandKernel {
     }
 
     /**
-     * Expands entries values from chunkToExpand in-place, using keyRunLengths to determine how many
-     * copies. The keyRunLengths chunk is parallel to the original chunkToExpand; it is never
-     * modified.
+     * Expands entries values from chunkToExpand in-place, using keyRunLengths to determine how many copies. The
+     * keyRunLengths chunk is parallel to the original chunkToExpand; it is never modified.
      *
      * @param expandedSize the sum of all entries in keyRunLengths
-     * @param chunkToExpand the values to expand in-place (this writable chunk must have capacity >=
-     *        expandedSize)
+     * @param chunkToExpand the values to expand in-place (this writable chunk must have capacity >= expandedSize)
      * @param keyRunLengths the key run-lengths parallel to chunkToExpand
      */
     void expandDuplicates(int expandedSize, WritableChunk<? extends Attributes.Any> chunkToExpand,
-        IntChunk<Attributes.ChunkLengths> keyRunLengths);
+            IntChunk<Attributes.ChunkLengths> keyRunLengths);
 }

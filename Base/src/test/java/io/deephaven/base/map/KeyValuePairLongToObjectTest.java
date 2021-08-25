@@ -21,12 +21,11 @@ public class KeyValuePairLongToObjectTest extends TestCase {
     }
 
 
-    private static class Reader
-        implements FastArray.ReadExternalFunction<KeyValuePairLongToObject<TrialClassA>> {
+    private static class Reader implements FastArray.ReadExternalFunction<KeyValuePairLongToObject<TrialClassA>> {
 
         @Override
         public void readExternal(ObjectInput in, KeyValuePairLongToObject<TrialClassA> item)
-            throws IOException, ClassNotFoundException {
+                throws IOException, ClassNotFoundException {
             byte nullByteA = in.readByte();
             // System.out.println("read nullByteA: " + nullByteA);
             if (nullByteA == 1) {
@@ -55,8 +54,7 @@ public class KeyValuePairLongToObjectTest extends TestCase {
                     oldValue.readExternal(in);
                     // System.out.println("read in value\n" + oldValue);
                 } else {
-                    throw new IllegalStateException(
-                        "did not recognize your nullByteC: " + nullByteC);
+                    throw new IllegalStateException("did not recognize your nullByteC: " + nullByteC);
                 }
 
 
@@ -66,12 +64,10 @@ public class KeyValuePairLongToObjectTest extends TestCase {
         }
     }
 
-    private static class Writer
-        implements FastArray.WriteExternalFunction<KeyValuePairLongToObject<TrialClassA>> {
+    private static class Writer implements FastArray.WriteExternalFunction<KeyValuePairLongToObject<TrialClassA>> {
 
         @Override
-        public void writeExternal(ObjectOutput out, KeyValuePairLongToObject<TrialClassA> item)
-            throws IOException {
+        public void writeExternal(ObjectOutput out, KeyValuePairLongToObject<TrialClassA> item) throws IOException {
             if (item == null) {
                 // System.out.println("write nullByteA = 1");
                 out.writeByte(1); // nullByteA
@@ -110,8 +106,7 @@ public class KeyValuePairLongToObjectTest extends TestCase {
         long long1 = 978234897L;
         TrialClassA value = new TrialClassA(double1, int1, long1);
 
-        KeyValuePairLongToObject<TrialClassA> kvp =
-            new KeyValuePairLongToObject<TrialClassA>(key, value);
+        KeyValuePairLongToObject<TrialClassA> kvp = new KeyValuePairLongToObject<TrialClassA>(key, value);
         // values in key
         assertEquals(key, kvp.getKey());
 
@@ -168,7 +163,7 @@ public class KeyValuePairLongToObjectTest extends TestCase {
     }
 
     public void checkExternalization(KeyValuePairLongToObject<TrialClassA> kvpInput,
-        KeyValuePairLongToObject<TrialClassA> kvpReceiver) throws Exception {
+            KeyValuePairLongToObject<TrialClassA> kvpReceiver) throws Exception {
         if (kvpInput == null) {
             fail("writing from a null kvpInput");
         }
@@ -196,25 +191,21 @@ public class KeyValuePairLongToObjectTest extends TestCase {
     }
 
     public void testExternalizationNullInputsNullReceiver() throws Exception {
-        KeyValuePairLongToObject<TrialClassA> kvpInput =
-            new KeyValuePairLongToObject<TrialClassA>();
-        KeyValuePairLongToObject<TrialClassA> kvpReceiver =
-            new KeyValuePairLongToObject<TrialClassA>();
+        KeyValuePairLongToObject<TrialClassA> kvpInput = new KeyValuePairLongToObject<TrialClassA>();
+        KeyValuePairLongToObject<TrialClassA> kvpReceiver = new KeyValuePairLongToObject<TrialClassA>();
         checkExternalization(kvpInput, kvpReceiver);
     }
 
     public void testExternalizationNullInputsValidReceiver() throws Exception {
         Random myRandom = new Random(89324L);
-        KeyValuePairLongToObject<TrialClassA> kvpInput =
-            new KeyValuePairLongToObject<TrialClassA>();
+        KeyValuePairLongToObject<TrialClassA> kvpInput = new KeyValuePairLongToObject<TrialClassA>();
         KeyValuePairLongToObject<TrialClassA> kvpReceiver = makeRandomKvp(myRandom);
         checkExternalization(kvpInput, kvpReceiver);
     }
 
     public void testExternalizationValidInputsNullReceiver() throws Exception {
         Random myRandom = new Random(89324L);
-        KeyValuePairLongToObject<TrialClassA> kvpReceiver =
-            new KeyValuePairLongToObject<TrialClassA>();
+        KeyValuePairLongToObject<TrialClassA> kvpReceiver = new KeyValuePairLongToObject<TrialClassA>();
         KeyValuePairLongToObject<TrialClassA> kvpInput = makeRandomKvp(myRandom);
         checkExternalization(kvpInput, kvpReceiver);
     }

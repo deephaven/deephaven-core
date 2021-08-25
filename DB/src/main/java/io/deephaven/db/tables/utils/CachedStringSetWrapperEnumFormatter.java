@@ -9,13 +9,12 @@ import io.deephaven.db.tables.StringSetWrapper;
 import gnu.trove.map.hash.TIntObjectHashMap;
 
 /**
- * This object extends the EnumFormatter class and affords the caching of string set results Be
- * warned this could create a large hash if the possible enum combinations get very large.
+ * This object extends the EnumFormatter class and affords the caching of string set results Be warned this could create
+ * a large hash if the possible enum combinations get very large.
  */
 public class CachedStringSetWrapperEnumFormatter extends EnumFormatter {
 
-    protected TIntObjectHashMap<StringSetWrapper> indexToStringSetWrapper =
-        new TIntObjectHashMap<>();
+    protected TIntObjectHashMap<StringSetWrapper> indexToStringSetWrapper = new TIntObjectHashMap<>();
 
     public CachedStringSetWrapperEnumFormatter(String[] enums) {
         super(enums);

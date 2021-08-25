@@ -9,8 +9,8 @@ import org.jpy.PyObject;
 import java.util.Objects;
 
 /**
- * A python filter kernel which is implemented by iterating over the input chunks and calling the
- * python function N times.
+ * A python filter kernel which is implemented by iterating over the input chunks and calling the python function N
+ * times.
  *
  * @see FilterKernelPythonChunkedFunction
  */
@@ -31,9 +31,9 @@ class FilterKernelPythonSingularFunction implements FilterKernel<FilterKernel.Co
 
     @Override
     public LongChunk<OrderedKeyIndices> filter(
-        Context context,
-        LongChunk<OrderedKeyIndices> indices,
-        Chunk... inputChunks) {
+            Context context,
+            LongChunk<OrderedKeyIndices> indices,
+            Chunk... inputChunks) {
         final int size = indices.size();
         final Class<?>[] paramTypes = ArgumentsSingular.buildParamTypes(inputChunks);
         context.resultChunk.setSize(0);

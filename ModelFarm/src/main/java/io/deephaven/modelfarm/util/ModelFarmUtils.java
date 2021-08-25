@@ -24,17 +24,16 @@ public class ModelFarmUtils {
      * @param colTypes required column types
      */
     public static void requireTable(final String tableName, final Table t, final String[] colNames,
-        final Class[] colTypes) {
+            final Class[] colTypes) {
         Require.eq(colNames.length, "colNames.length", colTypes.length, "colTypes.length");
 
         for (int i = 0; i < colNames.length; i++) {
             final String cn = colNames[i];
             final Class ct = colTypes[i];
-            Require.eqTrue(t.hasColumns(cn),
-                "Table is missing column.  tableName=" + tableName + " columnName=" + cn);
+            Require.eqTrue(t.hasColumns(cn), "Table is missing column.  tableName=" + tableName + " columnName=" + cn);
             final Class cta = t.getColumn(cn).getType();
-            Require.eqTrue(cta.equals(ct), "Table column is of the wrong type.  tableName="
-                + tableName + " columnName=" + cn + " typeRequired=" + ct + " typeActual=" + cta);
+            Require.eqTrue(cta.equals(ct), "Table column is of the wrong type.  tableName=" + tableName + " columnName="
+                    + cn + " typeRequired=" + ct + " typeActual=" + cta);
         }
     }
 

@@ -19,8 +19,7 @@ class TransformTablesFunction {
         this.isExplicit = false;
     }
 
-    public TransformTablesFunction(TableDefinition returnDefinition,
-        BiFunction<Object, Table, Table> function) {
+    public TransformTablesFunction(TableDefinition returnDefinition, BiFunction<Object, Table, Table> function) {
         this.returnDefinition = returnDefinition;
         this.function = Objects.requireNonNull(function);
         this.isExplicit = true;

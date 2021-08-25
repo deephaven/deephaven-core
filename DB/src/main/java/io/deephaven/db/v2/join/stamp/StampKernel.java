@@ -7,8 +7,7 @@ import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
 public interface StampKernel extends Context {
-    static StampKernel makeStampKernel(ChunkType type, SortingOrder order,
-        boolean disallowExactMatch) {
+    static StampKernel makeStampKernel(ChunkType type, SortingOrder order, boolean disallowExactMatch) {
         if (disallowExactMatch) {
             if (order == SortingOrder.Descending) {
                 return makeReverseStampKernelNoExact(type);
@@ -127,14 +126,14 @@ public interface StampKernel extends Context {
     /**
      * Stamps the left-hand-side values with the corresponding right hand side.
      *
-     * The rightKeyIndices are parallel to the stamp values in rightStamps; and used to compute a
-     * new chunk of redirections parallel to leftStamps.
+     * The rightKeyIndices are parallel to the stamp values in rightStamps; and used to compute a new chunk of
+     * redirections parallel to leftStamps.
      *
      * @param leftStamps the input lhs stamp values
      * @param rightStamps the input rhs stamp values
      * @param rightKeyIndices the input rhs stamp indices
      * @param leftRedirections the resulting redirections from the stamping operation
      */
-    void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps,
-        LongChunk<KeyIndices> rightKeyIndices, WritableLongChunk<KeyIndices> leftRedirections);
+    void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps, LongChunk<KeyIndices> rightKeyIndices,
+            WritableLongChunk<KeyIndices> leftRedirections);
 }

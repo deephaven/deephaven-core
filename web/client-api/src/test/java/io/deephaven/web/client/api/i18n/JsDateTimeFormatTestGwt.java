@@ -44,12 +44,10 @@ public class JsDateTimeFormatTestGwt extends GWTTestCase {
         nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSS zzzz", "2018-04-26T12:34:56.123 " + tz);
         assertEquals(123_000_000, nanos % 1_000_000_000);
         // SSSSSS
-        nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSS zzzz",
-            "2018-04-26T12:34:56.123456 " + tz);
+        nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSS zzzz", "2018-04-26T12:34:56.123456 " + tz);
         assertEquals(123_456_000, nanos % 1_000_000_000);
         // SSSSSSSSS
-        nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS zzzz",
-            "2018-04-26T12:34:56.123456789 " + tz);
+        nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS zzzz", "2018-04-26T12:34:56.123456789 " + tz);
         assertEquals(123_456_789, nanos % 1_000_000_000);
 
         // test with leading zeros
@@ -59,34 +57,26 @@ public class JsDateTimeFormatTestGwt extends GWTTestCase {
         nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSS zzzz", "2018-04-26T12:34:56.001 " + tz);
         assertEquals(1_000_000, nanos % 1_000_000_000);
 
-        nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSS zzzz",
-            "2018-04-26T12:34:56.001000 " + tz);
+        nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSS zzzz", "2018-04-26T12:34:56.001000 " + tz);
         assertEquals(1_000_000, nanos % 1_000_000_000);
-        nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSS zzzz",
-            "2018-04-26T12:34:56.001001 " + tz);
+        nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSS zzzz", "2018-04-26T12:34:56.001001 " + tz);
         assertEquals(1_001_000, nanos % 1_000_000_000);
-        nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSS zzzz",
-            "2018-04-26T12:34:56.100000 " + tz);
+        nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSS zzzz", "2018-04-26T12:34:56.100000 " + tz);
         assertEquals(100_000_000, nanos % 1_000_000_000);
 
-        nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS zzzz",
-            "2018-04-26T12:34:56.000000000 " + tz);
+        nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS zzzz", "2018-04-26T12:34:56.000000000 " + tz);
         assertEquals(0, nanos % 1_000_000_000);
-        nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS zzzz",
-            "2018-04-26T12:34:56.000000001 " + tz);
+        nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS zzzz", "2018-04-26T12:34:56.000000001 " + tz);
         assertEquals(1, nanos % 1_000_000_000);
-        nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS zzzz",
-            "2018-04-26T12:34:56.000000010 " + tz);
+        nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS zzzz", "2018-04-26T12:34:56.000000010 " + tz);
         assertEquals(10, nanos % 1_000_000_000);
-        nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS zzzz",
-            "2018-04-26T12:34:56.000001234 " + tz);
+        nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS zzzz", "2018-04-26T12:34:56.000001234 " + tz);
         assertEquals(1234, nanos % 1_000_000_000);
     }
 
     /**
-     * Helper which takes a string, parses the string, and then formats the long again. The input is
-     * checked to match the output of the final format call, and the intermediate value is returned
-     * for any subsequent checks.
+     * Helper which takes a string, parses the string, and then formats the long again. The input is checked to match
+     * the output of the final format call, and the intermediate value is returned for any subsequent checks.
      */
     private long assertRoundTrip(String formatString, String input) {
         JsDateTimeFormat format = JsDateTimeFormat.getFormat(formatString);

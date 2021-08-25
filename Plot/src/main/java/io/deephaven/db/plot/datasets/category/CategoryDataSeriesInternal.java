@@ -13,8 +13,8 @@ import io.deephaven.gui.shape.Shape;
 import java.util.Collection;
 
 /**
- * Dataset with discrete and numeric components. Discrete values must extend {@link Comparable} and
- * are called categories.
+ * Dataset with discrete and numeric components. Discrete values must extend {@link Comparable} and are called
+ * categories.
  */
 public interface CategoryDataSeriesInternal extends CategoryDataSeries, DataSeriesInternal {
 

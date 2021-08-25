@@ -12,9 +12,9 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.barrage.flatbuf.Barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.barrage.flatbuf.Barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata",
+        namespace = JsPackage.GLOBAL)
 public class BarrageUpdateMetadata {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface CreateAddedRowsIncludedVectorDataUnionType {
@@ -248,8 +248,7 @@ public class BarrageUpdateMetadata {
 
     public static native void addAddedRowsIncluded(Builder builder, double addedRowsIncludedOffset);
 
-    public static native void addEffectiveColumnSet(Builder builder,
-        double effectiveColumnSetOffset);
+    public static native void addEffectiveColumnSet(Builder builder, double effectiveColumnSetOffset);
 
     public static native void addEffectiveViewport(Builder builder, double effectiveViewportOffset);
 
@@ -271,34 +270,30 @@ public class BarrageUpdateMetadata {
 
     @Deprecated
     public static native double createAddedRowsIncludedVector(
-        Builder builder, BarrageUpdateMetadata.CreateAddedRowsIncludedVectorDataUnionType data);
+            Builder builder, BarrageUpdateMetadata.CreateAddedRowsIncludedVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createAddedRowsIncludedVector(Builder builder, Int8Array data) {
         return createAddedRowsIncludedVector(
-            builder,
-            Js.<BarrageUpdateMetadata.CreateAddedRowsIncludedVectorDataUnionType>uncheckedCast(
-                data));
+                builder,
+                Js.<BarrageUpdateMetadata.CreateAddedRowsIncludedVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
-    public static final double createAddedRowsIncludedVector(Builder builder,
-        JsArray<Double> data) {
+    public static final double createAddedRowsIncludedVector(Builder builder, JsArray<Double> data) {
         return createAddedRowsIncludedVector(
-            builder,
-            Js.<BarrageUpdateMetadata.CreateAddedRowsIncludedVectorDataUnionType>uncheckedCast(
-                data));
+                builder,
+                Js.<BarrageUpdateMetadata.CreateAddedRowsIncludedVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createAddedRowsIncludedVector(Builder builder, Uint8Array data) {
         return createAddedRowsIncludedVector(
-            builder,
-            Js.<BarrageUpdateMetadata.CreateAddedRowsIncludedVectorDataUnionType>uncheckedCast(
-                data));
+                builder,
+                Js.<BarrageUpdateMetadata.CreateAddedRowsIncludedVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
@@ -309,30 +304,27 @@ public class BarrageUpdateMetadata {
 
     @Deprecated
     public static native double createAddedRowsVector(
-        Builder builder, BarrageUpdateMetadata.CreateAddedRowsVectorDataUnionType data);
+            Builder builder, BarrageUpdateMetadata.CreateAddedRowsVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createAddedRowsVector(Builder builder, Int8Array data) {
         return createAddedRowsVector(
-            builder,
-            Js.<BarrageUpdateMetadata.CreateAddedRowsVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<BarrageUpdateMetadata.CreateAddedRowsVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createAddedRowsVector(Builder builder, JsArray<Double> data) {
         return createAddedRowsVector(
-            builder,
-            Js.<BarrageUpdateMetadata.CreateAddedRowsVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<BarrageUpdateMetadata.CreateAddedRowsVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createAddedRowsVector(Builder builder, Uint8Array data) {
         return createAddedRowsVector(
-            builder,
-            Js.<BarrageUpdateMetadata.CreateAddedRowsVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<BarrageUpdateMetadata.CreateAddedRowsVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
@@ -342,50 +334,46 @@ public class BarrageUpdateMetadata {
     }
 
     public static native double createBarrageUpdateMetadata(
-        Builder builder,
-        double numAddBatches,
-        double numModBatches,
-        Long firstSeq,
-        Long lastSeq,
-        boolean isSnapshot,
-        double effectiveViewportOffset,
-        double effectiveColumnSetOffset,
-        double addedRowsOffset,
-        double removedRowsOffset,
-        double shiftDataOffset,
-        double addedRowsIncludedOffset,
-        double nodesOffset);
+            Builder builder,
+            double numAddBatches,
+            double numModBatches,
+            Long firstSeq,
+            Long lastSeq,
+            boolean isSnapshot,
+            double effectiveViewportOffset,
+            double effectiveColumnSetOffset,
+            double addedRowsOffset,
+            double removedRowsOffset,
+            double shiftDataOffset,
+            double addedRowsIncludedOffset,
+            double nodesOffset);
 
     @Deprecated
     public static native double createEffectiveColumnSetVector(
-        Builder builder, BarrageUpdateMetadata.CreateEffectiveColumnSetVectorDataUnionType data);
+            Builder builder, BarrageUpdateMetadata.CreateEffectiveColumnSetVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createEffectiveColumnSetVector(Builder builder, Int8Array data) {
         return createEffectiveColumnSetVector(
-            builder,
-            Js.<BarrageUpdateMetadata.CreateEffectiveColumnSetVectorDataUnionType>uncheckedCast(
-                data));
+                builder,
+                Js.<BarrageUpdateMetadata.CreateEffectiveColumnSetVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
-    public static final double createEffectiveColumnSetVector(Builder builder,
-        JsArray<Double> data) {
+    public static final double createEffectiveColumnSetVector(Builder builder, JsArray<Double> data) {
         return createEffectiveColumnSetVector(
-            builder,
-            Js.<BarrageUpdateMetadata.CreateEffectiveColumnSetVectorDataUnionType>uncheckedCast(
-                data));
+                builder,
+                Js.<BarrageUpdateMetadata.CreateEffectiveColumnSetVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createEffectiveColumnSetVector(Builder builder, Uint8Array data) {
         return createEffectiveColumnSetVector(
-            builder,
-            Js.<BarrageUpdateMetadata.CreateEffectiveColumnSetVectorDataUnionType>uncheckedCast(
-                data));
+                builder,
+                Js.<BarrageUpdateMetadata.CreateEffectiveColumnSetVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
@@ -396,34 +384,30 @@ public class BarrageUpdateMetadata {
 
     @Deprecated
     public static native double createEffectiveViewportVector(
-        Builder builder, BarrageUpdateMetadata.CreateEffectiveViewportVectorDataUnionType data);
+            Builder builder, BarrageUpdateMetadata.CreateEffectiveViewportVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createEffectiveViewportVector(Builder builder, Int8Array data) {
         return createEffectiveViewportVector(
-            builder,
-            Js.<BarrageUpdateMetadata.CreateEffectiveViewportVectorDataUnionType>uncheckedCast(
-                data));
+                builder,
+                Js.<BarrageUpdateMetadata.CreateEffectiveViewportVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
-    public static final double createEffectiveViewportVector(Builder builder,
-        JsArray<Double> data) {
+    public static final double createEffectiveViewportVector(Builder builder, JsArray<Double> data) {
         return createEffectiveViewportVector(
-            builder,
-            Js.<BarrageUpdateMetadata.CreateEffectiveViewportVectorDataUnionType>uncheckedCast(
-                data));
+                builder,
+                Js.<BarrageUpdateMetadata.CreateEffectiveViewportVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createEffectiveViewportVector(Builder builder, Uint8Array data) {
         return createEffectiveViewportVector(
-            builder,
-            Js.<BarrageUpdateMetadata.CreateEffectiveViewportVectorDataUnionType>uncheckedCast(
-                data));
+                builder,
+                Js.<BarrageUpdateMetadata.CreateEffectiveViewportVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
@@ -441,30 +425,30 @@ public class BarrageUpdateMetadata {
 
     @Deprecated
     public static native double createRemovedRowsVector(
-        Builder builder, BarrageUpdateMetadata.CreateRemovedRowsVectorDataUnionType data);
+            Builder builder, BarrageUpdateMetadata.CreateRemovedRowsVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createRemovedRowsVector(Builder builder, Int8Array data) {
         return createRemovedRowsVector(
-            builder,
-            Js.<BarrageUpdateMetadata.CreateRemovedRowsVectorDataUnionType>uncheckedCast(data));
+                builder,
+                Js.<BarrageUpdateMetadata.CreateRemovedRowsVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createRemovedRowsVector(Builder builder, JsArray<Double> data) {
         return createRemovedRowsVector(
-            builder,
-            Js.<BarrageUpdateMetadata.CreateRemovedRowsVectorDataUnionType>uncheckedCast(data));
+                builder,
+                Js.<BarrageUpdateMetadata.CreateRemovedRowsVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createRemovedRowsVector(Builder builder, Uint8Array data) {
         return createRemovedRowsVector(
-            builder,
-            Js.<BarrageUpdateMetadata.CreateRemovedRowsVectorDataUnionType>uncheckedCast(data));
+                builder,
+                Js.<BarrageUpdateMetadata.CreateRemovedRowsVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
@@ -475,30 +459,27 @@ public class BarrageUpdateMetadata {
 
     @Deprecated
     public static native double createShiftDataVector(
-        Builder builder, BarrageUpdateMetadata.CreateShiftDataVectorDataUnionType data);
+            Builder builder, BarrageUpdateMetadata.CreateShiftDataVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createShiftDataVector(Builder builder, Int8Array data) {
         return createShiftDataVector(
-            builder,
-            Js.<BarrageUpdateMetadata.CreateShiftDataVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<BarrageUpdateMetadata.CreateShiftDataVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createShiftDataVector(Builder builder, JsArray<Double> data) {
         return createShiftDataVector(
-            builder,
-            Js.<BarrageUpdateMetadata.CreateShiftDataVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<BarrageUpdateMetadata.CreateShiftDataVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createShiftDataVector(Builder builder, Uint8Array data) {
         return createShiftDataVector(
-            builder,
-            Js.<BarrageUpdateMetadata.CreateShiftDataVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<BarrageUpdateMetadata.CreateShiftDataVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
@@ -510,15 +491,15 @@ public class BarrageUpdateMetadata {
     public static native double endBarrageUpdateMetadata(Builder builder);
 
     public static native BarrageUpdateMetadata getRootAsBarrageUpdateMetadata(
-        ByteBuffer bb, BarrageUpdateMetadata obj);
+            ByteBuffer bb, BarrageUpdateMetadata obj);
 
     public static native BarrageUpdateMetadata getRootAsBarrageUpdateMetadata(ByteBuffer bb);
 
     public static native BarrageUpdateMetadata getSizePrefixedRootAsBarrageUpdateMetadata(
-        ByteBuffer bb, BarrageUpdateMetadata obj);
+            ByteBuffer bb, BarrageUpdateMetadata obj);
 
     public static native BarrageUpdateMetadata getSizePrefixedRootAsBarrageUpdateMetadata(
-        ByteBuffer bb);
+            ByteBuffer bb);
 
     public static native void startAddedRowsIncludedVector(Builder builder, double numElems);
 

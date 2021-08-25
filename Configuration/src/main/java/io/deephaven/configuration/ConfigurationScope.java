@@ -35,8 +35,7 @@ class ConfigurationScope {
     }
 
     /**
-     * Create a scope with a set of subscopes. Collapse the subscopes to this scope if there is only
-     * one subscope.
+     * Create a scope with a set of subscopes. Collapse the subscopes to this scope if there is only one subscope.
      *
      * @param scopes The list of scopes to evaluate collectively.
      */
@@ -76,8 +75,8 @@ class ConfigurationScope {
     }
 
     /**
-     * Represent a ConfigurationScope as either the token and values it indicates, or a collection
-     * of subscopes. Useful when debugging.
+     * Represent a ConfigurationScope as either the token and values it indicates, or a collection of subscopes. Useful
+     * when debugging.
      *
      * @return The String representation of this scope.
      */
@@ -86,8 +85,7 @@ class ConfigurationScope {
         if (subScopes.isEmpty()) {
             return token + "=" + String.join("|", targetValues);
         } else {
-            return "[" + subScopes.stream().map(Objects::toString).collect(Collectors.joining(","))
-                + "]";
+            return "[" + subScopes.stream().map(Objects::toString).collect(Collectors.joining(",")) + "]";
         }
     }
 }

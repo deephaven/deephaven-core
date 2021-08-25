@@ -5,9 +5,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb_service.BidirectionalStream",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb_service.BidirectionalStream",
+        namespace = JsPackage.GLOBAL)
 public interface BidirectionalStream<ReqT, ResT> {
     void cancel();
 

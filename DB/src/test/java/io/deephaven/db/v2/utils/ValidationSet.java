@@ -87,9 +87,8 @@ public class ValidationSet {
     };
 
     public static final BiFunction<TLongSet, TLongSet, Boolean> overlapOp =
-        (h1, h2) -> !h1.forEach(v -> !h2.contains(v));
-    public static final BiFunction<TLongSet, TLongSet, Boolean> subsetOfOp =
-        (h1, h2) -> h1.forEach(h2::contains);
+            (h1, h2) -> !h1.forEach(v -> !h2.contains(v));
+    public static final BiFunction<TLongSet, TLongSet, Boolean> subsetOfOp = (h1, h2) -> h1.forEach(h2::contains);
 
     public static final Op subtractOp = new Op() {
         @Override

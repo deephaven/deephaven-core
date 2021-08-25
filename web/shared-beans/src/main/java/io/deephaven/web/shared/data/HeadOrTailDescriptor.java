@@ -33,8 +33,8 @@ public class HeadOrTailDescriptor implements Serializable {
     @Override
     public String toString() {
         return "HeadOrTailDescriptor{" +
-            "head=" + head +
-            ", rows=" + rows +
-            '}';
+                "head=" + head +
+                ", rows=" + rows +
+                '}';
     }
 }

@@ -26,8 +26,7 @@ public class RandomResetter {
             case Object:
                 return new RandomResetter(ArrayGenerator::randomObjects);
             default:
-                throw new UnsupportedOperationException(
-                    "Can't make RandomResetter for " + chunkType);
+                throw new UnsupportedOperationException("Can't make RandomResetter for " + chunkType);
         }
     }
 

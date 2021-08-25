@@ -11,11 +11,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * This class represents a container for all the various operations you might apply to a given table
- * (sort, filter, custom columns, select distinct, soon others).
+ * This class represents a container for all the various operations you might apply to a given table (sort, filter,
+ * custom columns, select distinct, soon others).
  *
- * Using this container allows us to add an optional new property without updating many methods
- * signatures.
+ * Using this container allows us to add an optional new property without updating many methods signatures.
  */
 public class TableConfig {
 
@@ -43,12 +42,12 @@ public class TableConfig {
     public TableConfig() {}
 
     public TableConfig(
-        List<Sort> sorts,
-        List<String> conditions,
-        List<FilterCondition> filters,
-        List<CustomColumnDescriptor> customColumns,
-        List<String> dropColumns,
-        List<String> viewColumns) {
+            List<Sort> sorts,
+            List<String> conditions,
+            List<FilterCondition> filters,
+            List<CustomColumnDescriptor> customColumns,
+            List<String> dropColumns,
+            List<String> viewColumns) {
         this.sorts.addAll(sorts);
         this.conditions.addAll(conditions);
         this.filters.addAll(filters);
@@ -143,20 +142,19 @@ public class TableConfig {
     @Override
     public String toString() {
         return "TableConfig{" +
-            "sorts=" + sorts +
-            ", filters=" + filters +
-            ", customColumns=" + customColumns +
-            ", selectDistinct=" + selectDistinct +
-            ", conditions=" + conditions +
-            ", dropColumns=" + dropColumns +
-            ", viewColumns=" + viewColumns +
-            ", isFlat=" + isFlat +
-            '}';
+                "sorts=" + sorts +
+                ", filters=" + filters +
+                ", customColumns=" + customColumns +
+                ", selectDistinct=" + selectDistinct +
+                ", conditions=" + conditions +
+                ", dropColumns=" + dropColumns +
+                ", viewColumns=" + viewColumns +
+                ", isFlat=" + isFlat +
+                '}';
     }
 
     public boolean isEmpty() {
-        return sorts.isEmpty() && conditions.isEmpty() && filters.isEmpty()
-            && customColumns.isEmpty();
+        return sorts.isEmpty() && conditions.isEmpty() && filters.isEmpty() && customColumns.isEmpty();
     }
 
     protected void setSorts(List<Sort> sorts) {
@@ -190,8 +188,7 @@ public class TableConfig {
     }
 
     public boolean isEmptyConfig() {
-        return sorts.isEmpty() && filters.isEmpty() && customColumns.isEmpty()
-            && selectDistinct.isEmpty();
+        return sorts.isEmpty() && filters.isEmpty() && customColumns.isEmpty() && selectDistinct.isEmpty();
     }
 
     public JsConfig toJs() {
@@ -202,8 +199,8 @@ public class TableConfig {
         config.viewColumns = viewColumns.toArray(new String[viewColumns.size()]);
         config.filters = filters.toArray(new FilterCondition[filters.size()]);
         config.customColumns = customColumns.stream()
-            .map(CustomColumnDescriptor::getExpression)
-            .toArray(String[]::new);
+                .map(CustomColumnDescriptor::getExpression)
+                .toArray(String[]::new);
         config.isFlat = isFlat;
         return config;
     }
@@ -212,44 +209,44 @@ public class TableConfig {
         StringBuilder result = new StringBuilder();
         if (!customColumns.isEmpty()) {
             result.append("customColumns: ")
-                .append(customColumns.stream()
-                    .map(CustomColumnDescriptor::getExpression)
-                    .collect(Collectors.joining(",")))
-                .append("\n");
+                    .append(customColumns.stream()
+                            .map(CustomColumnDescriptor::getExpression)
+                            .collect(Collectors.joining(",")))
+                    .append("\n");
         }
 
         if (!filters.isEmpty()) {
             result.append("filters: ")
-                .append(filters.stream()
-                    .map(FilterCondition::toString)
-                    .collect(Collectors.joining(",")))
-                .append("\n");
+                    .append(filters.stream()
+                            .map(FilterCondition::toString)
+                            .collect(Collectors.joining(",")))
+                    .append("\n");
         }
 
         if (!sorts.isEmpty()) {
             result.append("sorts: ")
-                .append(sorts.stream()
-                    .map(s -> s.getColumn().getName() + " " + s.getDirection())
-                    .collect(Collectors.joining(",")))
-                .append("\n");
+                    .append(sorts.stream()
+                            .map(s -> s.getColumn().getName() + " " + s.getDirection())
+                            .collect(Collectors.joining(",")))
+                    .append("\n");
         }
 
         if (!dropColumns.isEmpty()) {
             result.append("dropColumns: ")
-                .append(dropColumns.stream().collect(Collectors.joining(",")))
-                .append("\n");
+                    .append(dropColumns.stream().collect(Collectors.joining(",")))
+                    .append("\n");
         }
 
         if (!viewColumns.isEmpty()) {
             result.append("viewColumns: ")
-                .append(viewColumns.stream().collect(Collectors.joining(",")))
-                .append("\n");
+                    .append(viewColumns.stream().collect(Collectors.joining(",")))
+                    .append("\n");
         }
 
         if (!conditions.isEmpty()) {
             result.append("conditions: ")
-                .append(conditions.stream().collect(Collectors.joining(",")))
-                .append("\n");
+                    .append(conditions.stream().collect(Collectors.joining(",")))
+                    .append("\n");
         }
 
         if (isFlat) {

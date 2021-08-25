@@ -96,46 +96,46 @@ public final class JpyModule implements AutoCloseable {
         public PyObject newPyCopy(T values) {
             // PyObject val = jpy.array("<jpy-primitive-type>", existing-array)
             return module.call(
-                PyObject.class,
-                ARRAY_METHOD_NAME,
-                String.class, JpyArrayType.of(type),
-                type.getArrayType(), values);
+                    PyObject.class,
+                    ARRAY_METHOD_NAME,
+                    String.class, JpyArrayType.of(type),
+                    type.getArrayType(), values);
         }
 
         @Override
         public T newCopy(T values) {
             // primitive-type[] val = jpy.array("<jpy-primitive-type>", existing-array)
             return module.call(
-                type.getArrayType(),
-                ARRAY_METHOD_NAME,
-                String.class, JpyArrayType.of(type),
-                type.getArrayType(), values);
+                    type.getArrayType(),
+                    ARRAY_METHOD_NAME,
+                    String.class, JpyArrayType.of(type),
+                    type.getArrayType(), values);
         }
 
         @Override
         public PyObject newPyInstance(int len) {
             // PyObject val = jpy.array("<jpy-primitive-type>", length)
             return module.call(
-                PyObject.class,
-                ARRAY_METHOD_NAME,
-                String.class, JpyArrayType.of(type),
-                Integer.class, len);
+                    PyObject.class,
+                    ARRAY_METHOD_NAME,
+                    String.class, JpyArrayType.of(type),
+                    Integer.class, len);
         }
 
         @Override
         public T newInstance(int len) {
             // primitive-type[] val = jpy.array("<jpy-primitive-type>", length)
             return module.call(
-                type.getArrayType(),
-                ARRAY_METHOD_NAME,
-                String.class, JpyArrayType.of(type),
-                Integer.class, len);
+                    type.getArrayType(),
+                    ARRAY_METHOD_NAME,
+                    String.class, JpyArrayType.of(type),
+                    Integer.class, len);
         }
     }
 
     /**
-     * This maps a {@link PrimitiveArrayType} to the corresponding type that jpy expects for an
-     * appropriately typed array.
+     * This maps a {@link PrimitiveArrayType} to the corresponding type that jpy expects for an appropriately typed
+     * array.
      */
     private static class JpyArrayType implements Visitor {
 

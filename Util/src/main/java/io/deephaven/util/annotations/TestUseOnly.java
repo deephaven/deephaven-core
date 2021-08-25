@@ -6,8 +6,8 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that a particular method is for test purposes only and should not be used by client or
- * production code. It is subject to change/removal at any time.
+ * Indicates that a particular method is for test purposes only and should not be used by client or production code. It
+ * is subject to change/removal at any time.
  */
 @Target({ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.TYPE})
 @Inherited

@@ -27,16 +27,14 @@ public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T> {
 
     public static Factory FACTORY = new Factory() {
         @Override
-        public <T> Pool<T> create(int nSize, Function.Nullary<T> itemFactory,
-            Procedure.Unary<T> clearingProcedure) {
-            return new ThreadSafeLenientFixedSizePool<T>(
-                Require.geq(nSize, "nSize", MIN_SIZE, "MIN_SIZE"),
-                Require.neqNull(itemFactory, "itemFactory"), clearingProcedure);
+        public <T> Pool<T> create(int nSize, Function.Nullary<T> itemFactory, Procedure.Unary<T> clearingProcedure) {
+            return new ThreadSafeLenientFixedSizePool<T>(Require.geq(nSize, "nSize", MIN_SIZE, "MIN_SIZE"),
+                    Require.neqNull(itemFactory, "itemFactory"), clearingProcedure);
         }
     };
 
     private static <T> Function.Unary<T, ThreadSafeLenientFixedSizePool<T>> makeNullaryFactoryAdapter(
-        final Function.Nullary<T> factory) {
+            final Function.Nullary<T> factory) {
         return new Function.Unary<T, ThreadSafeLenientFixedSizePool<T>>() {
             @Override
             public T call(ThreadSafeLenientFixedSizePool<T> arg) {
@@ -53,31 +51,30 @@ public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T> {
     private final Counter extraFactoryCalls;
 
     public ThreadSafeLenientFixedSizePool(int size, Function.Nullary<T> factory,
-        Procedure.Unary<? super T> clearingProcedure) {
+            Procedure.Unary<? super T> clearingProcedure) {
         this(
-            Require.geq(size, "size", MIN_SIZE, "MIN_SIZE"),
-            makeNullaryFactoryAdapter(Require.neqNull(factory, "factory")),
-            clearingProcedure);
+                Require.geq(size, "size", MIN_SIZE, "MIN_SIZE"),
+                makeNullaryFactoryAdapter(Require.neqNull(factory, "factory")),
+                clearingProcedure);
     }
 
     public ThreadSafeLenientFixedSizePool(String name, int size, Function.Nullary<T> factory,
-        Procedure.Unary<? super T> clearingProcedure) {
+            Procedure.Unary<? super T> clearingProcedure) {
         this(
-            name,
-            Require.geq(size, "size", MIN_SIZE, "MIN_SIZE"),
-            makeNullaryFactoryAdapter(Require.neqNull(factory, "factory")),
-            clearingProcedure);
+                name,
+                Require.geq(size, "size", MIN_SIZE, "MIN_SIZE"),
+                makeNullaryFactoryAdapter(Require.neqNull(factory, "factory")),
+                clearingProcedure);
     }
 
-    public ThreadSafeLenientFixedSizePool(int size,
-        Function.Unary<T, ThreadSafeLenientFixedSizePool<T>> factory,
-        Procedure.Unary<? super T> clearingProcedure) {
+    public ThreadSafeLenientFixedSizePool(int size, Function.Unary<T, ThreadSafeLenientFixedSizePool<T>> factory,
+            Procedure.Unary<? super T> clearingProcedure) {
         this(null, size, factory, clearingProcedure);
     }
 
     public ThreadSafeLenientFixedSizePool(String name, int size,
-        Function.Unary<T, ThreadSafeLenientFixedSizePool<T>> factory,
-        Procedure.Unary<? super T> clearingProcedure) {
+            Function.Unary<T, ThreadSafeLenientFixedSizePool<T>> factory,
+            Procedure.Unary<? super T> clearingProcedure) {
         Require.geq(size, "size", MIN_SIZE, "MIN_SIZE");
         Require.neqNull(factory, "factory");
         this.factory = factory;
@@ -86,8 +83,7 @@ public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T> {
         for (int i = 0; i < size; ++i) {
             pool.enqueue(factory.call(this));
         }
-        extraFactoryCalls = name == null ? null
-            : Stats.makeItem(name, "extraFactoryCalls", Counter.FACTORY).getValue();
+        extraFactoryCalls = name == null ? null : Stats.makeItem(name, "extraFactoryCalls", Counter.FACTORY).getValue();
     }
 
     public T take() {

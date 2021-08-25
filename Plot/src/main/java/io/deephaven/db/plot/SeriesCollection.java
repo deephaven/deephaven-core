@@ -46,8 +46,7 @@ public class SeriesCollection implements Serializable, PlotExceptionCause {
         private final boolean isMultiSeries;
         private final SeriesInternal series;
 
-        private SeriesDescription(final SeriesType type, final boolean isMultiSeries,
-            final SeriesInternal series) {
+        private SeriesDescription(final SeriesType type, final boolean isMultiSeries, final SeriesInternal series) {
             this.type = type;
             this.isMultiSeries = isMultiSeries;
             this.series = series;
@@ -107,8 +106,7 @@ public class SeriesCollection implements Serializable, PlotExceptionCause {
     }
 
     /**
-     * Gets the descriptions of the series in the collection. The result is a map between series
-     * name and description.
+     * Gets the descriptions of the series in the collection. The result is a map between series name and description.
      *
      * @return descriptions of the series in the collection
      */
@@ -182,13 +180,10 @@ public class SeriesCollection implements Serializable, PlotExceptionCause {
      * @param isMultiSeries true for multi-series; false for standard mono-series.
      * @param series series
      */
-    public synchronized void add(final SeriesType type, final boolean isMultiSeries,
-        final SeriesInternal series) {
+    public synchronized void add(final SeriesType type, final boolean isMultiSeries, final SeriesInternal series) {
         if (seriesDescriptions.containsKey(series.name())) {
             throw new PlotUnsupportedOperationException(
-                "Series with the same name already exists in the collection.  name="
-                    + series.name(),
-                this);
+                    "Series with the same name already exists in the collection.  name=" + series.name(), this);
         }
 
         seriesDescriptions.put(series.name(), new SeriesDescription(type, isMultiSeries, series));

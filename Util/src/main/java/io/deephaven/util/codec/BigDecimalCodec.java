@@ -13,9 +13,8 @@ import java.util.Arrays;
 /**
  * BigDecimal encoder, with fixed and variable width support.
  *
- * We use 1's complement to store fixed precision values so that they may be ordered in binary
- * without decoding. There is no practical limit on the precision we can store this way but we limit
- * it to 1000 decimal digits for sanity.
+ * We use 1's complement to store fixed precision values so that they may be ordered in binary without decoding. There
+ * is no practical limit on the precision we can store this way but we limit it to 1000 decimal digits for sanity.
  *
  * Variable width values are stored raw as BigDecimal scale followed by the unscaled byte array.
  */
@@ -69,8 +68,7 @@ public class BigDecimalCodec implements ObjectCodec<BigDecimal> {
     public BigDecimalCodec(@Nullable String arguments) {
         // noinspection ConstantConditions
         try {
-            int _precision = 0, _scale = 0; // zero indicates unlimited precision/scale, variable
-                                            // width encoding
+            int _precision = 0, _scale = 0; // zero indicates unlimited precision/scale, variable width encoding
             boolean _strict = true;
             if (arguments != null && arguments.trim().length() > 0) {
                 final String[] tokens = arguments.split(",");
@@ -94,8 +92,8 @@ public class BigDecimalCodec implements ObjectCodec<BigDecimal> {
                             break;
                         default:
                             throw new IllegalArgumentException(
-                                "Unexpected rounding mode (legal values are \"allowRounding\" or \"noRounding\"): "
-                                    + mode);
+                                    "Unexpected rounding mode (legal values are \"allowRounding\" or \"noRounding\"): "
+                                            + mode);
                     }
                 }
             }
@@ -106,8 +104,7 @@ public class BigDecimalCodec implements ObjectCodec<BigDecimal> {
             this.scale = _scale;
             this.strict = _strict;
         } catch (Exception ex) {
-            throw new IllegalArgumentException(
-                "Error parsing codec argument(s): " + ex.getMessage(), ex);
+            throw new IllegalArgumentException("Error parsing codec argument(s): " + ex.getMessage(), ex);
         }
 
         init();
@@ -116,8 +113,7 @@ public class BigDecimalCodec implements ObjectCodec<BigDecimal> {
     private void init() {
 
         if (precision < 0 || precision > MAX_FIXED_PRECISION) {
-            throw new IllegalArgumentException(
-                "Precision out of legal range (0-" + MAX_FIXED_PRECISION + ")");
+            throw new IllegalArgumentException("Precision out of legal range (0-" + MAX_FIXED_PRECISION + ")");
         }
         if (scale < 0) {
             throw new IllegalArgumentException("Scale must be non-negative");
@@ -130,8 +126,7 @@ public class BigDecimalCodec implements ObjectCodec<BigDecimal> {
             encodedSize = (int) Math.ceil(Math.log(10) / Math.log(2) * precision / Byte.SIZE) + 1;
             zeroBytes = new byte[encodedSize];
             // there are two possible ways to represent zero in our schema,
-            // we choose all zeros ("positive zero") for zero and "negative zero" for null. This is
-            // arbitrary convention
+            // we choose all zeros ("positive zero") for zero and "negative zero" for null. This is arbitrary convention
             Arrays.fill(zeroBytes, (byte) 0);
             zeroBytes[0] = (byte) 1;
             nullBytes = new byte[encodedSize];
@@ -171,17 +166,14 @@ public class BigDecimalCodec implements ObjectCodec<BigDecimal> {
         // FIXED SIZE
 
         // round if necessary
-        // we need to make sure we adjust for both precision and scale since we are encoding with a
-        // fixed scale
+        // we need to make sure we adjust for both precision and scale since we are encoding with a fixed scale
         // (i.e. too high a scale requires reducing precision to "make room")
         if ((value.precision() > this.precision || value.scale() > scale)) {
             if (strict) {
-                throw new IllegalArgumentException(
-                    "Unable to encode value " + value.toString() + " with precision "
+                throw new IllegalArgumentException("Unable to encode value " + value.toString() + " with precision "
                         + precision + " scale " + scale);
             }
-            final int targetPrecision =
-                Math.min(precision, value.precision() - Math.max(0, value.scale() - scale));
+            final int targetPrecision = Math.min(precision, value.precision() - Math.max(0, value.scale() - scale));
             if (targetPrecision > 0) {
                 value = value.round(new MathContext(targetPrecision));
             } else {
@@ -193,16 +185,13 @@ public class BigDecimalCodec implements ObjectCodec<BigDecimal> {
         bytes[0] = value.signum() >= 0 ? (byte) 1 : (byte) 0; // set sign bit
 
         // we should not ever have to round here, that is taken care of above
-        // we store everything as an unscaled integer value (the smallest non-zero value we can
-        // store is "1")
+        // we store everything as an unscaled integer value (the smallest non-zero value we can store is "1")
         value = value.movePointRight(scale).setScale(0).abs();
 
         // copy unscaled bytes to proper size array
         final byte[] unscaledValue = value.unscaledValue().toByteArray();
-        if (unscaledValue.length >= bytes.length) { // unscaled value must be at most one less than
-                                                    // length of our buffer
-            throw new IllegalArgumentException(
-                "Value " + input.toString() + " is too large to encode with precision "
+        if (unscaledValue.length >= bytes.length) { // unscaled value must be at most one less than length of our buffer
+            throw new IllegalArgumentException("Value " + input.toString() + " is too large to encode with precision "
                     + precision + " and scale " + scale);
         }
 
@@ -213,8 +202,7 @@ public class BigDecimalCodec implements ObjectCodec<BigDecimal> {
                 bytes[bytes.length - unscaledValue.length + i] = (byte) ~((int) unscaledValue[i]);
             }
         } else {
-            System.arraycopy(unscaledValue, 0, bytes, bytes.length - unscaledValue.length,
-                unscaledValue.length);
+            System.arraycopy(unscaledValue, 0, bytes, bytes.length - unscaledValue.length, unscaledValue.length);
         }
 
         return bytes;

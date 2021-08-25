@@ -17,18 +17,17 @@ import java.time.DayOfWeek;
  * To comply with the ISO-8601 standard for Dates, Strings should be of the form "yyyy-MM-dd",
  *
  *
- * Methods on DBDateTime may not be precisely defined enough to return a DBDateTime, e.g nextDay().
- * In these cases, the method will return a String as discussed above.
+ * Methods on DBDateTime may not be precisely defined enough to return a DBDateTime, e.g nextDay(). In these cases, the
+ * method will return a String as discussed above.
  *
  *
- * To maintain consistency, each calendar has two fields: a name, and a time zone. A calendar with
- * the same schedule but a different time zone is considered a different calendar.
+ * To maintain consistency, each calendar has two fields: a name, and a time zone. A calendar with the same schedule but
+ * a different time zone is considered a different calendar.
  *
  *
- * Frequently, the default implementation for methods on DBDateTimes is to call the corresponding
- * method on a String with {@code DBDateTime.toDateString}. This can be slower than methods written
- * explicitly for DBDateTimes. If performance is an issue, consider overriding these methods with
- * other behavior.
+ * Frequently, the default implementation for methods on DBDateTimes is to call the corresponding method on a String
+ * with {@code DBDateTime.toDateString}. This can be slower than methods written explicitly for DBDateTimes. If
+ * performance is an issue, consider overriding these methods with other behavior.
  */
 public interface Calendar {
 
@@ -177,8 +176,7 @@ public interface Calendar {
      *
      * @param start start of a time range; if null, return {@code NULL_INT}
      * @param end end of a time range; if null, return {@code NULL_INT}
-     * @return the number days between {@code start} and {@code end}, inclusive and exclusive
-     *         respectively.
+     * @return the number days between {@code start} and {@code end}, inclusive and exclusive respectively.
      */
     int numberOfDays(final DBDateTime start, final DBDateTime end);
 
@@ -188,8 +186,8 @@ public interface Calendar {
      * @param start start of a time range; if null, return {@code NULL_INT}
      * @param end end of a time range; if null, return {@code NULL_INT}
      * @param endInclusive whether to treat the {@code end} inclusive or exclusively
-     * @return the number of days between {@code start} and {@code end}, inclusive and
-     *         {@code endInclusive} respectively.
+     * @return the number of days between {@code start} and {@code end}, inclusive and {@code endInclusive}
+     *         respectively.
      */
     int numberOfDays(final DBDateTime start, final DBDateTime end, final boolean endInclusive);
 
@@ -198,8 +196,7 @@ public interface Calendar {
      *
      * @param start start of a time range; if null, return {@code NULL_INT}
      * @param end end of a time range; if null, return {@code NULL_INT}
-     * @return the number of days between {@code start} and {@code end}, inclusive and exclusive
-     *         respectively.
+     * @return the number of days between {@code start} and {@code end}, inclusive and exclusive respectively.
      */
     int numberOfDays(final String start, final String end);
 
@@ -209,8 +206,8 @@ public interface Calendar {
      * @param start start of a time range; if null, return {@code NULL_INT}
      * @param end end of a time range; if null, return {@code NULL_INT}
      * @param endInclusive whether to treat the {@code end} inclusive or exclusively
-     * @return the number of days between {@code start} and {@code end}, inclusive and
-     *         {@code endInclusive} respectively.
+     * @return the number of days between {@code start} and {@code end}, inclusive and {@code endInclusive}
+     *         respectively.
      */
     int numberOfDays(final String start, final String end, final boolean endInclusive);
 

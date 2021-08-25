@@ -15,15 +15,15 @@ import org.jetbrains.annotations.NotNull;
  * Partial TableLocation implementation for use by TableDataService implementations.
  */
 public abstract class AbstractTableLocation
-    extends SubscriptionAggregator<TableLocation.Listener>
-    implements TableLocation {
+        extends SubscriptionAggregator<TableLocation.Listener>
+        implements TableLocation {
 
     private final ImmutableTableKey tableKey;
     private final ImmutableTableLocationKey tableLocationKey;
 
     private final TableLocationStateHolder state = new TableLocationStateHolder();
     private final KeyedObjectHashMap<CharSequence, ColumnLocation> columnLocations =
-        new KeyedObjectHashMap<>(StringUtils.charSequenceKey());
+            new KeyedObjectHashMap<>(StringUtils.charSequenceKey());
 
     /**
      * @param tableKey Table key for the table this location belongs to
@@ -31,12 +31,11 @@ public abstract class AbstractTableLocation
      * @param supportsSubscriptions Whether subscriptions are to be supported
      */
     protected AbstractTableLocation(@NotNull final TableKey tableKey,
-        @NotNull final TableLocationKey tableLocationKey,
-        final boolean supportsSubscriptions) {
+            @NotNull final TableLocationKey tableLocationKey,
+            final boolean supportsSubscriptions) {
         super(supportsSubscriptions);
         this.tableKey = Require.neqNull(tableKey, "tableKey").makeImmutable();
-        this.tableLocationKey =
-            Require.neqNull(tableLocationKey, "tableLocationKey").makeImmutable();
+        this.tableLocationKey = Require.neqNull(tableLocationKey, "tableLocationKey").makeImmutable();
     }
 
     @Override
@@ -94,8 +93,8 @@ public abstract class AbstractTableLocation
     /**
      * See TableLocationState for documentation of values.
      *
-     * @param index The new index. Ownership passes to this location; callers should
-     *        {@link ReadOnlyIndex#clone() clone} it if necessary.
+     * @param index The new index. Ownership passes to this location; callers should {@link ReadOnlyIndex#clone() clone}
+     *        it if necessary.
      * @param lastModifiedTimeMillis The new lastModificationTimeMillis
      */
     public final void handleUpdate(final ReadOnlyIndex index, final long lastModifiedTimeMillis) {
@@ -105,9 +104,8 @@ public abstract class AbstractTableLocation
     }
 
     /**
-     * Update all state fields from source's values, as in
-     * {@link #handleUpdate(ReadOnlyIndex, long)}. See {@link TableLocationState} for documentation
-     * of values.
+     * Update all state fields from source's values, as in {@link #handleUpdate(ReadOnlyIndex, long)}. See
+     * {@link TableLocationState} for documentation of values.
      *
      * @param source The source to copy state values from
      */

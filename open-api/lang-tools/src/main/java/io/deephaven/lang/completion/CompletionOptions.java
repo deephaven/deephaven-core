@@ -7,8 +7,8 @@ import java.util.Set;
 /**
  * Various context-sensitive options to use when generating completions.
  *
- * This includes information like "result will have quotes around it", or "result should have a
- * comma after it" or "result should have space before it".
+ * This includes information like "result will have quotes around it", or "result should have a comma after it" or
+ * "result should have space before it".
  */
 public class CompletionOptions {
 

@@ -23,8 +23,7 @@ public class KeyedTableListener {
     };
 
     public interface KeyUpdateListener {
-        void update(KeyedTableListener keyedTableListener, SmartKey key, long index,
-            KeyEvent event);
+        void update(KeyedTableListener keyedTableListener, SmartKey key, long index, KeyEvent event);
     }
 
     private final QueryTable table;
@@ -40,8 +39,7 @@ public class KeyedTableListener {
 
     // TODO: create an even more generic internals to handle multiple matches
     // TODO: Refactor with some sort of internal assistant object (unique versus generic)
-    // TODO: private HashMap<SmartKey, Index> keyToIndexObjectHashMap; // for storing multiple
-    // matches
+    // TODO: private HashMap<SmartKey, Index> keyToIndexObjectHashMap; // for storing multiple matches
 
     public KeyedTableListener(QueryTable table, String... keyColumnNames) {
         this.table = table;
@@ -70,8 +68,7 @@ public class KeyedTableListener {
         this.table.removeUpdateListener(tableListener);
     }
 
-    private void handleUpdateFromTable(final Index added, final Index removed,
-        final Index modified) {
+    private void handleUpdateFromTable(final Index added, final Index removed, final Index modified) {
         // Add all the new rows to the hashmap
         for (Index.Iterator iterator = added.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();

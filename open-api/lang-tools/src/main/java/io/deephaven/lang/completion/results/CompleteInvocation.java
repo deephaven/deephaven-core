@@ -14,8 +14,8 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * A class specifically for completing invocations; to be called with method results when the cursor
- * is somewhere that a method is valid.
+ * A class specifically for completing invocations; to be called with method results when the cursor is somewhere that a
+ * method is valid.
  *
  */
 public class CompleteInvocation extends CompletionBuilder {
@@ -27,8 +27,7 @@ public class CompleteInvocation extends CompletionBuilder {
         this.replacing = replacing;
     }
 
-    public void doCompletion(Collection<CompletionItem.Builder> results, CompletionRequest request,
-        Method method) {
+    public void doCompletion(Collection<CompletionItem.Builder> results, CompletionRequest request, Method method) {
         final int start = replacing.getStartIndex();
         final int length = replacing.getEndIndex() - start;
 
@@ -67,30 +66,27 @@ public class CompleteInvocation extends CompletionBuilder {
         }
         final String displayCompletion;
         if (method.getDeclaringClass().getSimpleName().endsWith("Primitives") &&
-            BytePrimitives.class.getPackage().equals(method.getDeclaringClass().getPackage())) {
+                BytePrimitives.class.getPackage().equals(method.getDeclaringClass().getPackage())) {
             // reduce massive duplication from same-named primitives methods.
-            // In the future, when we have better column/type inference, we should be able to delete
-            // this workaround
+            // In the future, when we have better column/type inference, we should be able to delete this workaround
             displayCompletion = "*Primitives." + method.getName() + "(";
         } else {
-            displayCompletion =
-                method.getDeclaringClass().getSimpleName() + "." + method.getName() + "(";
+            displayCompletion = method.getDeclaringClass().getSimpleName() + "." + method.getName() + "(";
         }
         res.append(method.getName()).append("(");
         CompletionItem.Builder result =
-            CompletionItem.newBuilder()
-                .setStart(start)
-                .setLength(length)
-                // let the user know where this method is coming from (include class name in display
-                // completion);
-                .setLabel(displayCompletion);
+                CompletionItem.newBuilder()
+                        .setStart(start)
+                        .setLength(length)
+                        // let the user know where this method is coming from (include class name in display
+                        // completion);
+                        .setLabel(displayCompletion);
         result.getTextEditBuilder()
-            .setText(res.toString())
-            .setRange(range);
+                .setText(res.toString())
+                .setRange(range);
         // in the future, we should enable adding
         // explicit import statements for static methods. For now, we're assuming all static methods
-        // already came from imports, but we'll want to handle this explicitly for more exotic cases
-        // in the future.
+        // already came from imports, but we'll want to handle this explicitly for more exotic cases in the future.
         results.add(result);
     }
 }

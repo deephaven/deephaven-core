@@ -28,9 +28,9 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf",
+        namespace = JsPackage.GLOBAL)
 public class Flatbuf {
     @JsFunction
     public interface UnionListToTypeAccessorFn {
@@ -472,132 +472,110 @@ public class Flatbuf {
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, Binary p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, Bool p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, Date p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, Decimal p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, Duration p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
-        default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0,
-            FixedSizeBinary p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+        default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, FixedSizeBinary p1) {
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, FixedSizeList p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, FloatingPoint p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, Int p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, Interval p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, LargeBinary p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, LargeList p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, LargeUtf8 p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, List p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, Map p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, Null p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(
-            double p0, Flatbuf.UnionListToTypeAccessorFn.P1UnionType p1);
+                double p0, Flatbuf.UnionListToTypeAccessorFn.P1UnionType p1);
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, Struct_ p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, Time p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, Timestamp p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, Union p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
         default Flatbuf.UnionListToTypeAccessorFn.UnionType onInvoke(double p0, Utf8 p1) {
-            return onInvoke(p0,
-                Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
+            return onInvoke(p0, Js.<Flatbuf.UnionListToTypeAccessorFn.P1UnionType>uncheckedCast(p1));
         }
     }
 
@@ -1337,8 +1315,7 @@ public class Flatbuf {
             return onInvoke(Js.<Flatbuf.UnionToTypeAccessorFn.P0UnionType>uncheckedCast(p0));
         }
 
-        Flatbuf.UnionToTypeAccessorFn.UnionType onInvoke(
-            Flatbuf.UnionToTypeAccessorFn.P0UnionType p0);
+        Flatbuf.UnionToTypeAccessorFn.UnionType onInvoke(Flatbuf.UnionToTypeAccessorFn.P0UnionType p0);
 
         @JsOverlay
         default Flatbuf.UnionToTypeAccessorFn.UnionType onInvoke(Struct_ p0) {
@@ -1585,8 +1562,8 @@ public class Flatbuf {
     }
 
     public static native Flatbuf.UnionListToTypeUnionType unionListToType(
-        int type, Flatbuf.UnionListToTypeAccessorFn accessor, double index);
+            int type, Flatbuf.UnionListToTypeAccessorFn accessor, double index);
 
     public static native Flatbuf.UnionToTypeUnionType unionToType(
-        int type, Flatbuf.UnionToTypeAccessorFn accessor);
+            int type, Flatbuf.UnionToTypeAccessorFn accessor);
 }

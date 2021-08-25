@@ -3,8 +3,8 @@ package io.deephaven.db.tables.utils;
 import io.deephaven.configuration.Configuration;
 
 /**
- * This class encapsulates the parameters that control whether a given item (nugget or entry
- * interval) is logged to one of our three performance logs.
+ * This class encapsulates the parameters that control whether a given item (nugget or entry interval) is logged to one
+ * of our three performance logs.
  */
 public class QueryPerformanceLogThreshold {
     private final long minimumDurationNanos;
@@ -13,8 +13,7 @@ public class QueryPerformanceLogThreshold {
      * Create a log threshold object for a particular kind of log update
      * <ul>
      * <li>"" is for instrumented QueryPerformanceLog/QueryOperationPerformanceLog nuggets</li>
-     * <li>"Uninstrumented" is for uninstrumented QueryPerformanceLog/QueryOperationPerformanceLog
-     * nuggets, and
+     * <li>"Uninstrumented" is for uninstrumented QueryPerformanceLog/QueryOperationPerformanceLog nuggets, and
      * <li>"Update" is for UpdatePerformanceLog entry intervals.</li>
      * </ul>
      *
@@ -23,18 +22,17 @@ public class QueryPerformanceLogThreshold {
      * @param defaultRepeatedReads default value for repeated read threshold
      * @param defaultInitialReads default value for initial read threshold
      */
-    private QueryPerformanceLogThreshold(String kind, long defaultDuration,
-        long defaultRepeatedReads, long defaultInitialReads) {
-        minimumDurationNanos = Configuration.getInstance().getLongWithDefault(
-            "QueryPerformance.minimum" + kind + "LogDurationNanos", defaultDuration);
+    private QueryPerformanceLogThreshold(String kind, long defaultDuration, long defaultRepeatedReads,
+            long defaultInitialReads) {
+        minimumDurationNanos = Configuration.getInstance()
+                .getLongWithDefault("QueryPerformance.minimum" + kind + "LogDurationNanos", defaultDuration);
     }
 
     /**
      * Create a log threshold object for a particular kind of log update
      * <ul>
      * <li>"" is for instrumented QueryPerformanceLog/QueryOperationPerformanceLog nuggets</li>
-     * <li>"Uninstrumented" is for uninstrumented QueryPerformanceLog/QueryOperationPerformanceLog
-     * nuggets, and
+     * <li>"Uninstrumented" is for uninstrumented QueryPerformanceLog/QueryOperationPerformanceLog nuggets, and
      * <li>"Update" is for UpdatePerformanceLog entry intervals.</li>
      * </ul>
      *
@@ -48,9 +46,8 @@ public class QueryPerformanceLogThreshold {
     }
 
     /**
-     * The minimum duration for an QueryPerformanceNugget to be logged based on its duration (or
-     * entry interval usage for the UpdatePerformanceLog). The value 0 logs everything. The value -1
-     * will not log anything based on duration.
+     * The minimum duration for an QueryPerformanceNugget to be logged based on its duration (or entry interval usage
+     * for the UpdatePerformanceLog). The value 0 logs everything. The value -1 will not log anything based on duration.
      */
     private long getMinimumDurationNanos() {
         return minimumDurationNanos;

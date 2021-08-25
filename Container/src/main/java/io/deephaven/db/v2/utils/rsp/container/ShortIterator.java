@@ -1,8 +1,8 @@
 /*
  * (c) the authors Licensed under the Apache License, Version 2.0.
  *
- * The code in this file is a heavily modified version of the original in the RoaringBitmap library;
- * please see https://roaringbitmap.org/
+ * The code in this file is a heavily modified version of the original in the RoaringBitmap library; please see
+ * https://roaringbitmap.org/
  *
  */
 

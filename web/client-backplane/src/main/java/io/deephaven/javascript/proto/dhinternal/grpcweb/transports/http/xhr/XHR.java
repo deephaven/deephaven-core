@@ -8,9 +8,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.grpcWeb.transports.http.xhr.XHR",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.grpcWeb.transports.http.xhr.XHR",
+        namespace = JsPackage.GLOBAL)
 public class XHR implements Transport {
     public double index;
     public XhrTransportInit init;

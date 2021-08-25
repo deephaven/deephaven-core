@@ -5,9 +5,9 @@ import io.deephaven.api.ColumnName;
 import java.io.Serializable;
 
 /**
- * An aggregation pair represents a {@link #input() input} and {@link #output() output} column for
- * some {@link Aggregation aggregations}. Aggregations that don't have a one-to-one input/output
- * mapping will not need an agg pair.
+ * An aggregation pair represents a {@link #input() input} and {@link #output() output} column for some
+ * {@link Aggregation aggregations}. Aggregations that don't have a one-to-one input/output mapping will not need an agg
+ * pair.
  */
 public interface Pair extends Serializable {
 
@@ -25,8 +25,8 @@ public interface Pair extends Serializable {
         final int ix = x.indexOf('=');
         if (ix < 0) {
             throw new IllegalArgumentException(String.format(
-                "Unable to parse agg pair '%s', expected form '<inAndOut>' or '<output>=<input>'",
-                x));
+                    "Unable to parse agg pair '%s', expected form '<inAndOut>' or '<output>=<input>'",
+                    x));
         }
         ColumnName output = ColumnName.parse(x.substring(0, ix));
         ColumnName input = ColumnName.parse(x.substring(ix + 1));

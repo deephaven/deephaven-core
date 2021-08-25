@@ -12,9 +12,9 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.barrage.flatbuf.Barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.barrage.flatbuf.Barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest",
+        namespace = JsPackage.GLOBAL)
 public class BarrageSubscriptionRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface CreateColumnsVectorDataUnionType {
@@ -133,7 +133,7 @@ public class BarrageSubscriptionRequest {
     public static native void addColumns(Builder builder, double columnsOffset);
 
     public static native void addSerializationOptions(
-        Builder builder, double serializationOptionsOffset);
+            Builder builder, double serializationOptionsOffset);
 
     public static native void addTicket(Builder builder, double ticketOffset);
 
@@ -143,30 +143,30 @@ public class BarrageSubscriptionRequest {
 
     @Deprecated
     public static native double createColumnsVector(
-        Builder builder, BarrageSubscriptionRequest.CreateColumnsVectorDataUnionType data);
+            Builder builder, BarrageSubscriptionRequest.CreateColumnsVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createColumnsVector(Builder builder, Int8Array data) {
         return createColumnsVector(
-            builder,
-            Js.<BarrageSubscriptionRequest.CreateColumnsVectorDataUnionType>uncheckedCast(data));
+                builder,
+                Js.<BarrageSubscriptionRequest.CreateColumnsVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createColumnsVector(Builder builder, JsArray<Double> data) {
         return createColumnsVector(
-            builder,
-            Js.<BarrageSubscriptionRequest.CreateColumnsVectorDataUnionType>uncheckedCast(data));
+                builder,
+                Js.<BarrageSubscriptionRequest.CreateColumnsVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createColumnsVector(Builder builder, Uint8Array data) {
         return createColumnsVector(
-            builder,
-            Js.<BarrageSubscriptionRequest.CreateColumnsVectorDataUnionType>uncheckedCast(data));
+                builder,
+                Js.<BarrageSubscriptionRequest.CreateColumnsVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
@@ -177,30 +177,30 @@ public class BarrageSubscriptionRequest {
 
     @Deprecated
     public static native double createTicketVector(
-        Builder builder, BarrageSubscriptionRequest.CreateTicketVectorDataUnionType data);
+            Builder builder, BarrageSubscriptionRequest.CreateTicketVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createTicketVector(Builder builder, Int8Array data) {
         return createTicketVector(
-            builder,
-            Js.<BarrageSubscriptionRequest.CreateTicketVectorDataUnionType>uncheckedCast(data));
+                builder,
+                Js.<BarrageSubscriptionRequest.CreateTicketVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createTicketVector(Builder builder, JsArray<Double> data) {
         return createTicketVector(
-            builder,
-            Js.<BarrageSubscriptionRequest.CreateTicketVectorDataUnionType>uncheckedCast(data));
+                builder,
+                Js.<BarrageSubscriptionRequest.CreateTicketVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createTicketVector(Builder builder, Uint8Array data) {
         return createTicketVector(
-            builder,
-            Js.<BarrageSubscriptionRequest.CreateTicketVectorDataUnionType>uncheckedCast(data));
+                builder,
+                Js.<BarrageSubscriptionRequest.CreateTicketVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
@@ -211,30 +211,30 @@ public class BarrageSubscriptionRequest {
 
     @Deprecated
     public static native double createViewportVector(
-        Builder builder, BarrageSubscriptionRequest.CreateViewportVectorDataUnionType data);
+            Builder builder, BarrageSubscriptionRequest.CreateViewportVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createViewportVector(Builder builder, Int8Array data) {
         return createViewportVector(
-            builder,
-            Js.<BarrageSubscriptionRequest.CreateViewportVectorDataUnionType>uncheckedCast(data));
+                builder,
+                Js.<BarrageSubscriptionRequest.CreateViewportVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createViewportVector(Builder builder, JsArray<Double> data) {
         return createViewportVector(
-            builder,
-            Js.<BarrageSubscriptionRequest.CreateViewportVectorDataUnionType>uncheckedCast(data));
+                builder,
+                Js.<BarrageSubscriptionRequest.CreateViewportVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createViewportVector(Builder builder, Uint8Array data) {
         return createViewportVector(
-            builder,
-            Js.<BarrageSubscriptionRequest.CreateViewportVectorDataUnionType>uncheckedCast(data));
+                builder,
+                Js.<BarrageSubscriptionRequest.CreateViewportVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
@@ -246,16 +246,16 @@ public class BarrageSubscriptionRequest {
     public static native double endBarrageSubscriptionRequest(Builder builder);
 
     public static native BarrageSubscriptionRequest getRootAsBarrageSubscriptionRequest(
-        ByteBuffer bb, BarrageSubscriptionRequest obj);
+            ByteBuffer bb, BarrageSubscriptionRequest obj);
 
     public static native BarrageSubscriptionRequest getRootAsBarrageSubscriptionRequest(
-        ByteBuffer bb);
+            ByteBuffer bb);
 
     public static native BarrageSubscriptionRequest getSizePrefixedRootAsBarrageSubscriptionRequest(
-        ByteBuffer bb, BarrageSubscriptionRequest obj);
+            ByteBuffer bb, BarrageSubscriptionRequest obj);
 
     public static native BarrageSubscriptionRequest getSizePrefixedRootAsBarrageSubscriptionRequest(
-        ByteBuffer bb);
+            ByteBuffer bb);
 
     public static native void startBarrageSubscriptionRequest(Builder builder);
 

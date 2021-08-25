@@ -13,9 +13,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.ComboAggregateRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.ComboAggregateRequest",
+        namespace = JsPackage.GLOBAL)
 public class ComboAggregateRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -68,7 +68,7 @@ public class ComboAggregateRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static ComboAggregateRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -103,20 +103,20 @@ public class ComboAggregateRequest {
 
             @JsProperty
             void setTicket(
-                ComboAggregateRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    ComboAggregateRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<ComboAggregateRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ComboAggregateRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<ComboAggregateRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ComboAggregateRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -162,15 +162,15 @@ public class ComboAggregateRequest {
 
         @JsOverlay
         default void setAggregatesList(
-            ComboAggregateRequest.ToObjectReturnType.AggregatesListFieldType[] aggregatesList) {
+                ComboAggregateRequest.ToObjectReturnType.AggregatesListFieldType[] aggregatesList) {
             setAggregatesList(
-                Js.<JsArray<ComboAggregateRequest.ToObjectReturnType.AggregatesListFieldType>>uncheckedCast(
-                    aggregatesList));
+                    Js.<JsArray<ComboAggregateRequest.ToObjectReturnType.AggregatesListFieldType>>uncheckedCast(
+                            aggregatesList));
         }
 
         @JsProperty
         void setAggregatesList(
-            JsArray<ComboAggregateRequest.ToObjectReturnType.AggregatesListFieldType> aggregatesList);
+                JsArray<ComboAggregateRequest.ToObjectReturnType.AggregatesListFieldType> aggregatesList);
 
         @JsProperty
         void setForceCombo(boolean forceCombo);
@@ -241,7 +241,7 @@ public class ComboAggregateRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static ComboAggregateRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -276,20 +276,20 @@ public class ComboAggregateRequest {
 
             @JsProperty
             void setTicket(
-                ComboAggregateRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    ComboAggregateRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<ComboAggregateRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ComboAggregateRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<ComboAggregateRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ComboAggregateRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -335,15 +335,15 @@ public class ComboAggregateRequest {
 
         @JsOverlay
         default void setAggregatesList(
-            ComboAggregateRequest.ToObjectReturnType0.AggregatesListFieldType[] aggregatesList) {
+                ComboAggregateRequest.ToObjectReturnType0.AggregatesListFieldType[] aggregatesList) {
             setAggregatesList(
-                Js.<JsArray<ComboAggregateRequest.ToObjectReturnType0.AggregatesListFieldType>>uncheckedCast(
-                    aggregatesList));
+                    Js.<JsArray<ComboAggregateRequest.ToObjectReturnType0.AggregatesListFieldType>>uncheckedCast(
+                            aggregatesList));
         }
 
         @JsProperty
         void setAggregatesList(
-            JsArray<ComboAggregateRequest.ToObjectReturnType0.AggregatesListFieldType> aggregatesList);
+                JsArray<ComboAggregateRequest.ToObjectReturnType0.AggregatesListFieldType> aggregatesList);
 
         @JsProperty
         void setForceCombo(boolean forceCombo);
@@ -368,12 +368,12 @@ public class ComboAggregateRequest {
     public static native ComboAggregateRequest deserializeBinary(Uint8Array bytes);
 
     public static native ComboAggregateRequest deserializeBinaryFromReader(
-        ComboAggregateRequest message, Object reader);
+            ComboAggregateRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(ComboAggregateRequest message, Object writer);
 
     public static native ComboAggregateRequest.ToObjectReturnType toObject(
-        boolean includeInstance, ComboAggregateRequest msg);
+            boolean includeInstance, ComboAggregateRequest msg);
 
     public native Aggregate addAggregates();
 

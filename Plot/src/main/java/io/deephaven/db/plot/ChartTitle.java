@@ -38,8 +38,7 @@ public class ChartTitle implements Serializable {
 
 
     ChartTitle(final PlotInfo plotInfo) {
-        this(plotInfo,
-            Configuration.getInstance().getIntegerWithDefault(MAX_VISIBLE_ROWS_COUNT_PROP, 3));
+        this(plotInfo, Configuration.getInstance().getIntegerWithDefault(MAX_VISIBLE_ROWS_COUNT_PROP, 3));
     }
 
     ChartTitle(final PlotInfo plotInfo, final int maxVisibleRowsCount) {

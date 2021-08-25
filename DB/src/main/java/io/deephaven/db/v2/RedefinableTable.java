@@ -19,8 +19,7 @@ import java.util.stream.Collectors;
  */
 public abstract class RedefinableTable extends UncoalescedTable {
 
-    protected RedefinableTable(@NotNull final TableDefinition definition,
-        @NotNull final String description) {
+    protected RedefinableTable(@NotNull final TableDefinition definition, @NotNull final String description) {
         super(definition, description);
     }
 
@@ -38,29 +37,28 @@ public abstract class RedefinableTable extends UncoalescedTable {
             List<String> usedColumnNames = selectColumn.initDef(allColumns);
             columnDependency.put(selectColumn.getName(), new HashSet<>(usedColumnNames));
             resultColumnsInternal.addAll(usedColumnNames.stream()
-                .filter(usedColumnName -> !resultColumnsExternal.containsKey(usedColumnName))
-                .map(definition::getColumn).collect(Collectors.toList()));
+                    .filter(usedColumnName -> !resultColumnsExternal.containsKey(usedColumnName))
+                    .map(definition::getColumn).collect(Collectors.toList()));
             final ColumnDefinition columnDef;
             if (selectColumn.isRetain()) {
                 columnDef = definition.getColumn(selectColumn.getName());
             } else {
                 simpleRetain = false;
                 // noinspection unchecked
-                columnDef = ColumnDefinition.fromGenericType(selectColumn.getName(),
-                    selectColumn.getReturnedType());
+                columnDef = ColumnDefinition.fromGenericType(selectColumn.getName(), selectColumn.getReturnedType());
             }
             resultColumnsExternal.put(selectColumn.getName(), columnDef);
             allColumns.put(selectColumn.getName(), columnDef);
         }
 
-        TableDefinition newDefExternal = new TableDefinition(resultColumnsExternal.values()
-            .toArray(new ColumnDefinition[resultColumnsExternal.size()]));
+        TableDefinition newDefExternal = new TableDefinition(
+                resultColumnsExternal.values().toArray(new ColumnDefinition[resultColumnsExternal.size()]));
         if (simpleRetain) {
             // NB: We use the *external* TableDefinition because it's ordered appropriately.
             return redefine(newDefExternal);
         }
-        TableDefinition newDefInternal = new TableDefinition(
-            resultColumnsInternal.toArray(new ColumnDefinition[resultColumnsInternal.size()]));
+        TableDefinition newDefInternal =
+                new TableDefinition(resultColumnsInternal.toArray(new ColumnDefinition[resultColumnsInternal.size()]));
         return redefine(newDefExternal, newDefInternal, columns, columnDependency);
     }
 
@@ -89,8 +87,8 @@ public abstract class RedefinableTable extends UncoalescedTable {
         final Set<String> existingColumns = new HashSet<>(definition.getColumnNames());
         if (!existingColumns.containsAll(columnNamesToDrop)) {
             columnNamesToDrop.removeAll(existingColumns);
-            throw new RuntimeException("Unknown columns: " + columnNamesToDrop.toString()
-                + ", available columns = " + getColumnSourceMap().keySet());
+            throw new RuntimeException("Unknown columns: " + columnNamesToDrop.toString() + ", available columns = "
+                    + getColumnSourceMap().keySet());
         }
 
         List<ColumnDefinition> resultColumns = new ArrayList<>();
@@ -111,16 +109,14 @@ public abstract class RedefinableTable extends UncoalescedTable {
         Map<String, String> pairLookup = new HashMap<>();
         for (MatchPair pair : pairs) {
             if (pair.leftColumn == null || pair.leftColumn.equals("")) {
-                throw new IllegalArgumentException(
-                    "Bad left column in rename pair \"" + pair.toString() + "\"");
+                throw new IllegalArgumentException("Bad left column in rename pair \"" + pair.toString() + "\"");
             }
             ColumnDefinition cDef = definition.getColumn(pair.rightColumn);
             if (cDef == null) {
                 throw new IllegalArgumentException("Column \"" + pair.rightColumn + "\" not found");
             }
             pairLookup.put(pair.rightColumn, pair.leftColumn);
-            columnDependency.put(pair.leftColumn,
-                new HashSet<>(Collections.singletonList(pair.rightColumn)));
+            columnDependency.put(pair.leftColumn, new HashSet<>(Collections.singletonList(pair.rightColumn)));
         }
 
         ColumnDefinition columnDefinitions[] = definition.getColumns();
@@ -137,33 +133,29 @@ public abstract class RedefinableTable extends UncoalescedTable {
                 viewColumns[ci] = new SourceColumn(cDef.getName(), newName);
             }
         }
-        return redefine(new TableDefinition(resultColumnsExternal), definition, viewColumns,
-            columnDependency);
+        return redefine(new TableDefinition(resultColumnsExternal), definition, viewColumns, columnDependency);
     }
 
     /**
      * Redefine this table with a subset of its current columns.
      * 
-     * @param newDefinition A TableDefinition with a subset of this RedefinableTable's
-     *        ColumnDefinitions.
+     * @param newDefinition A TableDefinition with a subset of this RedefinableTable's ColumnDefinitions.
      * @return
      */
     protected abstract Table redefine(TableDefinition newDefinition);
 
     /**
-     * Redefine this table with a subset of its current columns, with a potentially-differing
-     * definition to present to external interfaces and one or more select columns to apply.
+     * Redefine this table with a subset of its current columns, with a potentially-differing definition to present to
+     * external interfaces and one or more select columns to apply.
      *
      * @param newDefinitionExternal A TableDefinition that represents the results of
      *        redefine(newDefinitionInternal).view(viewColumns).
-     * @param newDefinitionInternal A TableDefinition with a subset of this RedefinableTable's
-     *        ColumnDefinitions.
-     * @param viewColumns A set of SelectColumns to apply in order to transform a table with
-     *        newDefinitionInternal to a table with newDefinitionExternal.
+     * @param newDefinitionInternal A TableDefinition with a subset of this RedefinableTable's ColumnDefinitions.
+     * @param viewColumns A set of SelectColumns to apply in order to transform a table with newDefinitionInternal to a
+     *        table with newDefinitionExternal.
      * @param columnDependency
      * @return
      */
-    protected abstract Table redefine(TableDefinition newDefinitionExternal,
-        TableDefinition newDefinitionInternal, SelectColumn[] viewColumns,
-        Map<String, Set<String>> columnDependency);
+    protected abstract Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
+            SelectColumn[] viewColumns, Map<String, Set<String>> columnDependency);
 }

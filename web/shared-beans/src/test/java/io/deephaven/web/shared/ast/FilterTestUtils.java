@@ -27,12 +27,10 @@ public class FilterTestUtils {
     // return node(FilterDescriptor.FilterOperation.NEQ, reference(columnName), literal(value));
     // }
     // public static FilterDescriptor in(String columnName, String... values) {
-    // return node(FilterDescriptor.FilterOperation.NOT_IN, concat(reference(columnName),
-    // literals(values)));
+    // return node(FilterDescriptor.FilterOperation.NOT_IN, concat(reference(columnName), literals(values)));
     // }
     // public static FilterDescriptor notIn(String columnName, String... values) {
-    // return node(FilterDescriptor.FilterOperation.IN, concat(reference(columnName),
-    // literals(values)));
+    // return node(FilterDescriptor.FilterOperation.IN, concat(reference(columnName), literals(values)));
     // }
 
     public static FilterDescriptor reference(String columnName) {
@@ -52,29 +50,24 @@ public class FilterTestUtils {
     }
 
     public static FilterDescriptor[] literals(String... stringValues) {
-        return Stream.of(stringValues).map(FilterTestUtils::literal)
-            .toArray(FilterDescriptor[]::new);
+        return Stream.of(stringValues).map(FilterTestUtils::literal).toArray(FilterDescriptor[]::new);
     }
 
 
     public static FilterDescriptor eq(String columnName, int value) {
-        return node(FilterDescriptor.FilterOperation.EQ, reference(columnName),
-            literal((double) value));
+        return node(FilterDescriptor.FilterOperation.EQ, reference(columnName), literal((double) value));
     }
 
     public static FilterDescriptor notEq(String columnName, int value) {
-        return node(FilterDescriptor.FilterOperation.NEQ, reference(columnName),
-            literal((double) value));
+        return node(FilterDescriptor.FilterOperation.NEQ, reference(columnName), literal((double) value));
     }
 
     public static FilterDescriptor in(String columnName, int... values) {
-        return node(FilterDescriptor.FilterOperation.IN,
-            concat(reference(columnName), literals(values)));
+        return node(FilterDescriptor.FilterOperation.IN, concat(reference(columnName), literals(values)));
     }
 
     public static FilterDescriptor notIn(String columnName, int... values) {
-        return node(FilterDescriptor.FilterOperation.NOT_IN,
-            concat(reference(columnName), literals(values)));
+        return node(FilterDescriptor.FilterOperation.NOT_IN, concat(reference(columnName), literals(values)));
     }
 
     public static FilterDescriptor literal(long longValue) {
@@ -102,32 +95,28 @@ public class FilterTestUtils {
     }
 
     public static FilterDescriptor[] literals(int... intValues) {
-        return IntStream.of(intValues).mapToObj(i -> literal((double) i))
-            .toArray(FilterDescriptor[]::new);
+        return IntStream.of(intValues).mapToObj(i -> literal((double) i)).toArray(FilterDescriptor[]::new);
     }
 
     public static FilterDescriptor[] literals(double... doubleValues) {
-        return DoubleStream.of(doubleValues).mapToObj(FilterTestUtils::literal)
-            .toArray(FilterDescriptor[]::new);
+        return DoubleStream.of(doubleValues).mapToObj(FilterTestUtils::literal).toArray(FilterDescriptor[]::new);
     }
 
     private static FilterDescriptor[] concat(FilterDescriptor first, FilterDescriptor... arr) {
         return Stream.concat(
-            Stream.of(first),
-            Arrays.stream(arr)).toArray(FilterDescriptor[]::new);
+                Stream.of(first),
+                Arrays.stream(arr)).toArray(FilterDescriptor[]::new);
     }
 
 
     public static FilterDescriptor invoke(String method, FilterDescriptor... filterDescriptors) {
-        FilterDescriptor descriptor =
-            node(FilterDescriptor.FilterOperation.INVOKE, filterDescriptors);
+        FilterDescriptor descriptor = node(FilterDescriptor.FilterOperation.INVOKE, filterDescriptors);
         descriptor.setValue(method);
 
         return descriptor;
     }
 
-    public static FilterDescriptor node(FilterDescriptor.FilterOperation op,
-        FilterDescriptor... filterDescriptors) {
+    public static FilterDescriptor node(FilterDescriptor.FilterOperation op, FilterDescriptor... filterDescriptors) {
         FilterDescriptor filterDescriptor = new FilterDescriptor();
         filterDescriptor.setOperation(op);
         filterDescriptor.setChildren(filterDescriptors);

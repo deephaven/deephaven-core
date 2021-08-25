@@ -38,8 +38,8 @@ public class PyProxyTest extends PythonTest {
     private static String readResource(String name) {
         try {
             return new String(
-                Files.readAllBytes(Paths.get(PyProxyTest.class.getResource(name).toURI())),
-                StandardCharsets.UTF_8);
+                    Files.readAllBytes(Paths.get(PyProxyTest.class.getResource(name).toURI())),
+                    StandardCharsets.UTF_8);
         } catch (IOException | URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -64,13 +64,13 @@ public class PyProxyTest extends PythonTest {
     public void withJavaCloseable() {
         final WithJavaCloseable anotherReference;
         try (final WithJavaCloseable pythonObj = getCreateModule()
-            .call("py_proxy_test", readResource("proxy_close_test.py"))
-            .call("SomeClass")
-            .createProxy(WithJavaCloseable.class)) {
+                .call("py_proxy_test", readResource("proxy_close_test.py"))
+                .call("SomeClass")
+                .createProxy(WithJavaCloseable.class)) {
 
             anotherReference = identityModule
-                .identity(PyObject.unwrapProxy(pythonObj))
-                .createProxy(WithJavaCloseable.class);
+                    .identity(PyObject.unwrapProxy(pythonObj))
+                    .createProxy(WithJavaCloseable.class);
 
             Assert.assertFalse(anotherReference.get_closed());
             Assert.assertEquals(pythonObj, anotherReference);
@@ -87,13 +87,13 @@ public class PyProxyTest extends PythonTest {
     public void withoutJavaCloseable() {
         final WithoutJavaCloseable anotherReference;
         final WithoutJavaCloseable pythonObj = getCreateModule()
-            .call("py_proxy_test", readResource("proxy_close_test.py"))
-            .call("SomeClass")
-            .createProxy(WithoutJavaCloseable.class);
+                .call("py_proxy_test", readResource("proxy_close_test.py"))
+                .call("SomeClass")
+                .createProxy(WithoutJavaCloseable.class);
 
         anotherReference = identityModule
-            .identity(PyObject.unwrapProxy(pythonObj))
-            .createProxy(WithoutJavaCloseable.class);
+                .identity(PyObject.unwrapProxy(pythonObj))
+                .createProxy(WithoutJavaCloseable.class);
 
         Assert.assertFalse(anotherReference.get_closed());
         Assert.assertEquals(pythonObj, anotherReference);
@@ -113,13 +113,13 @@ public class PyProxyTest extends PythonTest {
     public void afterTheFactJavaCloseable() {
         final AfterTheFactJavaCloseable anotherReference;
         final AfterTheFactJavaCloseable pythonObj = getCreateModule()
-            .call("py_proxy_test", readResource("proxy_close_test.py"))
-            .call("SomeClass")
-            .createProxy(AfterTheFactJavaCloseable.class);
+                .call("py_proxy_test", readResource("proxy_close_test.py"))
+                .call("SomeClass")
+                .createProxy(AfterTheFactJavaCloseable.class);
 
         anotherReference = identityModule
-            .identity(PyObject.unwrapProxy(pythonObj))
-            .createProxy(AfterTheFactJavaCloseable.class);
+                .identity(PyObject.unwrapProxy(pythonObj))
+                .createProxy(AfterTheFactJavaCloseable.class);
 
         Assert.assertFalse(anotherReference.get_closed());
         Assert.assertEquals(pythonObj, anotherReference);

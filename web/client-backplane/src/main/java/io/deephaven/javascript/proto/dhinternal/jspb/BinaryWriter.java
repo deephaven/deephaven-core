@@ -231,7 +231,7 @@ public class BinaryWriter {
     }
 
     public native void writeAny(
-        int fieldType, double field, BinaryWriter.WriteAnyValueUnionType value);
+            int fieldType, double field, BinaryWriter.WriteAnyValueUnionType value);
 
     @JsOverlay
     public final void writeAny(int fieldType, double field, boolean value) {
@@ -305,7 +305,7 @@ public class BinaryWriter {
     public native void writeFloat(double field);
 
     public native void writeGroup(
-        double field, Object value, BinaryWriter.WriteGroupWriteCallbackFn writeCallback);
+            double field, Object value, BinaryWriter.WriteGroupWriteCallbackFn writeCallback);
 
     public native void writeInt32(double field, double value);
 
@@ -540,14 +540,14 @@ public class BinaryWriter {
     public native void writeRepeatedBool(double field);
 
     public native void writeRepeatedBytes(
-        double field, JsArray<BinaryWriter.WriteRepeatedBytesValueArrayUnionType> value);
+            double field, JsArray<BinaryWriter.WriteRepeatedBytesValueArrayUnionType> value);
 
     @JsOverlay
     public final void writeRepeatedBytes(
-        double field, BinaryWriter.WriteRepeatedBytesValueArrayUnionType[] value) {
+            double field, BinaryWriter.WriteRepeatedBytesValueArrayUnionType[] value) {
         writeRepeatedBytes(
-            field,
-            Js.<JsArray<BinaryWriter.WriteRepeatedBytesValueArrayUnionType>>uncheckedCast(value));
+                field,
+                Js.<JsArray<BinaryWriter.WriteRepeatedBytesValueArrayUnionType>>uncheckedCast(value));
     }
 
     public native void writeRepeatedBytes(double field);
@@ -616,15 +616,15 @@ public class BinaryWriter {
     public native void writeRepeatedFloat(double field);
 
     public native void writeRepeatedGroup(
-        double field,
-        JsArray<Message> value,
-        BinaryWriter.WriteRepeatedGroupWriterCallbackFn writerCallback);
+            double field,
+            JsArray<Message> value,
+            BinaryWriter.WriteRepeatedGroupWriterCallbackFn writerCallback);
 
     @JsOverlay
     public final void writeRepeatedGroup(
-        double field,
-        Message[] value,
-        BinaryWriter.WriteRepeatedGroupWriterCallbackFn writerCallback) {
+            double field,
+            Message[] value,
+            BinaryWriter.WriteRepeatedGroupWriterCallbackFn writerCallback) {
         writeRepeatedGroup(field, Js.<JsArray<Message>>uncheckedCast(value), writerCallback);
     }
 
@@ -665,15 +665,15 @@ public class BinaryWriter {
     public native void writeRepeatedInt64String(double field);
 
     public native void writeRepeatedMessage(
-        double field,
-        JsArray<Message> value,
-        BinaryWriter.WriteRepeatedMessageWriterCallbackFn writerCallback);
+            double field,
+            JsArray<Message> value,
+            BinaryWriter.WriteRepeatedMessageWriterCallbackFn writerCallback);
 
     @JsOverlay
     public final void writeRepeatedMessage(
-        double field,
-        Message[] value,
-        BinaryWriter.WriteRepeatedMessageWriterCallbackFn writerCallback) {
+            double field,
+            Message[] value,
+            BinaryWriter.WriteRepeatedMessageWriterCallbackFn writerCallback) {
         writeRepeatedMessage(field, Js.<JsArray<Message>>uncheckedCast(value), writerCallback);
     }
 

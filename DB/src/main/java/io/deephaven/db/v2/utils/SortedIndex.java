@@ -39,8 +39,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
         private final Map<Object, Index> mapping;
         private final long creationTick;
 
-        private MappingInfo(Map<Object, Index> mapping, long creationTick,
-            TupleSource tupleSource) {
+        private MappingInfo(Map<Object, Index> mapping, long creationTick, TupleSource tupleSource) {
             this.mapping = mapping;
             this.creationTick = creationTick;
             this.tupleSource = tupleSource;
@@ -107,11 +106,10 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
     }
 
     /**
-     * The only used implementation of invert is in the TreeIndex, really the guts of it are in
-     * BspNodeIndex.
+     * The only used implementation of invert is in the TreeIndex, really the guts of it are in BspNodeIndex.
      *
-     * This version is inefficient as it simply performs O(keys) find operations; which is O(keys *
-     * lg size), because there is no memory about what you've already found.
+     * This version is inefficient as it simply performs O(keys) find operations; which is O(keys * lg size), because
+     * there is no memory about what you've already found.
      *
      * It serves as a reasonable reference for what the invert operation is "meant" to do.
      *
@@ -142,22 +140,20 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
     }
 
     private static Map<Object, Index> lookupMapping(
-        WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
-        WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings,
-        List<ColumnSource> columnSourceKey) {
-        final Map<Object, Index> immutableMapping =
-            lookupImmutableMapping(mappings, columnSourceKey);
+            WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
+            WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings,
+            List<ColumnSource> columnSourceKey) {
+        final Map<Object, Index> immutableMapping = lookupImmutableMapping(mappings, columnSourceKey);
         if (immutableMapping != null)
             return immutableMapping;
         return lookupEphemeralMapping(columnSourceKey, ephemeralMappings);
     }
 
     private static Map<Object, Index> lookupPrevMapping(
-        WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
-        WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralPrevMappings,
-        List<ColumnSource> columnSourceKey) {
-        final Map<Object, Index> immutableMapping =
-            lookupImmutableMapping(mappings, columnSourceKey);
+            WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
+            WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralPrevMappings,
+            List<ColumnSource> columnSourceKey) {
+        final Map<Object, Index> immutableMapping = lookupImmutableMapping(mappings, columnSourceKey);
         if (immutableMapping != null)
             return immutableMapping;
         return lookupEphemeralMapping(columnSourceKey, ephemeralPrevMappings);
@@ -168,8 +164,8 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
     }
 
     private static Map<Object, Index> lookupImmutableMapping(
-        WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
-        List<ColumnSource> columnSourceKey) {
+            WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
+            List<ColumnSource> columnSourceKey) {
         if (mappings == null) {
             return null;
         }
@@ -181,7 +177,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
     }
 
     private static Map<Object, Index> lookupEphemeralMapping(List<ColumnSource> columnSourceKey,
-        WeakHashMap<List<ColumnSource>, MappingInfo> groupingMap) {
+            WeakHashMap<List<ColumnSource>, MappingInfo> groupingMap) {
         if (groupingMap == null) {
             return null;
         }
@@ -227,8 +223,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
     /**
      * On an insertion operation, we clear all of our mappings so that they are not out-of-date.
      */
-    protected void updateGroupingOnInsert(final LongChunk<OrderedKeyIndices> keys, final int offset,
-        final int length) {
+    protected void updateGroupingOnInsert(final LongChunk<OrderedKeyIndices> keys, final int offset, final int length) {
         clearMappings();
     }
 
@@ -256,8 +251,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
     /**
      * On an insertion operation, we clear all of our mappings so that they are not out-of-date.
      */
-    protected void updateGroupingOnRemove(final LongChunk<OrderedKeyIndices> keys, final int offset,
-        final int length) {
+    protected void updateGroupingOnRemove(final LongChunk<OrderedKeyIndices> keys, final int offset, final int length) {
         clearMappings();
     }
 
@@ -270,15 +264,14 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
     }
 
     public static Map<Object, Index> getGrouping(
-        final Index thisIndex,
-        UnaryOperator<Index> indexOp,
-        WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
-        WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings,
-        TupleSource tupleSource) {
+            final Index thisIndex,
+            UnaryOperator<Index> indexOp,
+            WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
+            WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings,
+            TupleSource tupleSource) {
         // noinspection unchecked
         final List<ColumnSource> sourcesKey = tupleSource.getColumnSources();
-        final Map<Object, Index> lookupResult =
-            lookupMapping(mappings, ephemeralMappings, sourcesKey);
+        final Map<Object, Index> lookupResult = lookupMapping(mappings, ephemeralMappings, sourcesKey);
         if (lookupResult != null) {
             return lookupResult;
         }
@@ -287,8 +280,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
 
         BiConsumer<Object, Index> resultCollector = result::put;
 
-        collectGrouping(thisIndex, indexOp, mappings, ephemeralMappings, resultCollector,
-            tupleSource, sourcesKey);
+        collectGrouping(thisIndex, indexOp, mappings, ephemeralMappings, resultCollector, tupleSource, sourcesKey);
 
         return result;
     }
@@ -306,12 +298,10 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
 
         final BiConsumer<Object, Index> resultCollector = result::put;
 
-        collectGrouping(this, this::intersect, mappings, ephemeralMappings, resultCollector,
-            tupleSource, sourcesKey);
+        collectGrouping(this, this::intersect, mappings, ephemeralMappings, resultCollector, tupleSource, sourcesKey);
 
-        // TODO: We need to do something better than weakly-reachable List<ColumnSource>s here. Keys
-        // are probably cleaned up well before we want right now. Values only cleaned up on access.
-        // Both are sub-par.
+        // TODO: We need to do something better than weakly-reachable List<ColumnSource>s here. Keys are probably
+        // cleaned up well before we want right now. Values only cleaned up on access. Both are sub-par.
         if (areColumnsImmutable(sourcesKey)) {
             if (mappings == null) {
                 mappings = new WeakHashMap<>();
@@ -321,8 +311,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
             if (ephemeralMappings == null) {
                 ephemeralMappings = new WeakHashMap<>();
             }
-            ephemeralMappings.put(sourcesKey,
-                new MappingInfo(result, LogicalClock.DEFAULT.currentStep(), tupleSource));
+            ephemeralMappings.put(sourcesKey, new MappingInfo(result, LogicalClock.DEFAULT.currentStep(), tupleSource));
         }
 
         return result;
@@ -345,13 +334,13 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
     }
 
     private static void collectGrouping(
-        final Index thisIndex,
-        final UnaryOperator<Index> indexOp,
-        WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
-        WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings,
-        final BiConsumer<Object, Index> resultCollector,
-        final TupleSource tupleSource,
-        final List<ColumnSource> keyColumns) {
+            final Index thisIndex,
+            final UnaryOperator<Index> indexOp,
+            WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
+            WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings,
+            final BiConsumer<Object, Index> resultCollector,
+            final TupleSource tupleSource,
+            final List<ColumnSource> keyColumns) {
         if (keyColumns.isEmpty()) {
             resultCollector.accept(EmptyTuple.INSTANCE, thisIndex.clone());
         } else if (keyColumns.size() == 1 && keyColumns.get(0).getGroupToRange() != null) {
@@ -364,25 +353,23 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
                 }
             }
         } else {
-            final long columnsWithGrouping =
-                keyColumns.stream().filter(cs -> cs.getGroupToRange() != null).count();
+            final long columnsWithGrouping = keyColumns.stream().filter(cs -> cs.getGroupToRange() != null).count();
             final boolean canUseAllConstituents = columnsWithGrouping == keyColumns.size();
             final boolean canUseAnyConstituents = columnsWithGrouping > 0;
 
             if (canUseAllConstituents) {
                 // we can generate a grouping using just the pre-existing groupings
-                generateGrouping(indexOp, resultCollector, tupleSource, keyColumns, 0,
-                    new Object[keyColumns.size()], null);
+                generateGrouping(indexOp, resultCollector, tupleSource, keyColumns, 0, new Object[keyColumns.size()],
+                        null);
             } else if (canUseAnyConstituents) {
-                generatePartialGrouping(thisIndex, indexOp, mappings, ephemeralMappings,
-                    resultCollector, tupleSource, keyColumns);
+                generatePartialGrouping(thisIndex, indexOp, mappings, ephemeralMappings, resultCollector, tupleSource,
+                        keyColumns);
             } else {
                 final Map<Object, SequentialBuilder> resultBuilder = new LinkedHashMap<>();
                 for (final Index.Iterator iterator = thisIndex.iterator(); iterator.hasNext();) {
                     final long next = iterator.nextLong();
                     final Object key = tupleSource.createTuple(next);
-                    resultBuilder.computeIfAbsent(key, k -> Index.FACTORY.getSequentialBuilder())
-                        .appendKey(next);
+                    resultBuilder.computeIfAbsent(key, k -> Index.FACTORY.getSequentialBuilder()).appendKey(next);
                 }
                 resultBuilder.forEach((k, v) -> resultCollector.accept(k, v.getIndex()));
             }
@@ -390,48 +377,45 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
     }
 
     private static void generatePartialGrouping(
-        final Index thisIndex,
-        final UnaryOperator<Index> indexOp,
-        final WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
-        final WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings,
-        final BiConsumer<Object, Index> resultCollector, TupleSource tupleSource,
-        List<ColumnSource> keyColumns) {
+            final Index thisIndex,
+            final UnaryOperator<Index> indexOp,
+            final WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
+            final WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings,
+            final BiConsumer<Object, Index> resultCollector, TupleSource tupleSource, List<ColumnSource> keyColumns) {
         // we can generate the grouping partially from our constituents
-        final ColumnSource[] groupedKeyColumns = keyColumns.stream()
-            .filter(cs -> cs.getGroupToRange() != null).toArray(ColumnSource[]::new);
-        final ColumnSource[] notGroupedKeyColumns = keyColumns.stream()
-            .filter(cs -> cs.getGroupToRange() == null).toArray(ColumnSource[]::new);
+        final ColumnSource[] groupedKeyColumns =
+                keyColumns.stream().filter(cs -> cs.getGroupToRange() != null).toArray(ColumnSource[]::new);
+        final ColumnSource[] notGroupedKeyColumns =
+                keyColumns.stream().filter(cs -> cs.getGroupToRange() == null).toArray(ColumnSource[]::new);
 
-        final TupleSource groupedTupleSource =
-            TupleSourceFactory.makeTupleSource(groupedKeyColumns);
+        final TupleSource groupedTupleSource = TupleSourceFactory.makeTupleSource(groupedKeyColumns);
         final Map<Object, Index> groupedColumnsGrouping =
-            getGrouping(thisIndex, indexOp, mappings, ephemeralMappings, groupedTupleSource);
-        generatePartialGroupingSecondHalf(groupedKeyColumns, notGroupedKeyColumns,
-            groupedTupleSource, groupedColumnsGrouping,
-            resultCollector, tupleSource, keyColumns);
+                getGrouping(thisIndex, indexOp, mappings, ephemeralMappings, groupedTupleSource);
+        generatePartialGroupingSecondHalf(groupedKeyColumns, notGroupedKeyColumns, groupedTupleSource,
+                groupedColumnsGrouping,
+                resultCollector, tupleSource, keyColumns);
     }
 
-    private void generatePartialGrouping(BiConsumer<Object, Index> resultCollector,
-        TupleSource tupleSource, List<ColumnSource> keyColumns) {
+    private void generatePartialGrouping(BiConsumer<Object, Index> resultCollector, TupleSource tupleSource,
+            List<ColumnSource> keyColumns) {
         // we can generate the grouping partially from our constituents
-        final ColumnSource[] groupedKeyColumns = keyColumns.stream()
-            .filter(cs -> cs.getGroupToRange() != null).toArray(ColumnSource[]::new);
-        final ColumnSource[] notGroupedKeyColumns = keyColumns.stream()
-            .filter(cs -> cs.getGroupToRange() == null).toArray(ColumnSource[]::new);
+        final ColumnSource[] groupedKeyColumns =
+                keyColumns.stream().filter(cs -> cs.getGroupToRange() != null).toArray(ColumnSource[]::new);
+        final ColumnSource[] notGroupedKeyColumns =
+                keyColumns.stream().filter(cs -> cs.getGroupToRange() == null).toArray(ColumnSource[]::new);
 
-        final TupleSource groupedTupleSource =
-            TupleSourceFactory.makeTupleSource(groupedKeyColumns);
+        final TupleSource groupedTupleSource = TupleSourceFactory.makeTupleSource(groupedKeyColumns);
         final Map<Object, Index> groupedColumnsGrouping = getGrouping(groupedTupleSource);
-        generatePartialGroupingSecondHalf(groupedKeyColumns, notGroupedKeyColumns,
-            groupedTupleSource, groupedColumnsGrouping,
-            resultCollector, tupleSource, keyColumns);
+        generatePartialGroupingSecondHalf(groupedKeyColumns, notGroupedKeyColumns, groupedTupleSource,
+                groupedColumnsGrouping,
+                resultCollector, tupleSource, keyColumns);
     }
 
     private static void generatePartialGroupingSecondHalf(
-        final ColumnSource[] groupedKeyColumns, final ColumnSource[] notGroupedKeyColumns,
-        final TupleSource groupedTupleSource, final Map<Object, Index> groupedColumnsGrouping,
-        final BiConsumer<Object, Index> resultCollector, final TupleSource tupleSource,
-        final List<ColumnSource> keyColumns) {
+            final ColumnSource[] groupedKeyColumns, final ColumnSource[] notGroupedKeyColumns,
+            final TupleSource groupedTupleSource, final Map<Object, Index> groupedColumnsGrouping,
+            final BiConsumer<Object, Index> resultCollector, final TupleSource tupleSource,
+            final List<ColumnSource> keyColumns) {
         final Map<Object, SequentialBuilder> resultBuilder = new LinkedHashMap<>();
 
         final int[] groupedKeysIndices = new int[groupedKeyColumns.length];
@@ -454,7 +438,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
                 for (int ii = 0; ii < groupedKeysIndices.length; ++ii) {
                     // noinspection unchecked
                     partialKeyValues[groupedKeysIndices[ii]] =
-                        groupedTupleSource.exportElementReinterpreted(groupedTuple, ii);
+                            groupedTupleSource.exportElementReinterpreted(groupedTuple, ii);
                 }
             }
 
@@ -463,32 +447,29 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
                 final long next = iterator.nextLong();
 
                 for (int ii = 0; ii < notGroupedKeysIndices.length; ++ii) {
-                    partialKeyValues[notGroupedKeysIndices[ii]] =
-                        notGroupedKeyColumns[ii].get(next);
+                    partialKeyValues[notGroupedKeysIndices[ii]] = notGroupedKeyColumns[ii].get(next);
                 }
 
-                resultBuilder.computeIfAbsent(
-                    tupleSource.createTupleFromReinterpretedValues(partialKeyValues),
-                    k -> Index.FACTORY.getSequentialBuilder()).appendKey(next);
+                resultBuilder.computeIfAbsent(tupleSource.createTupleFromReinterpretedValues(partialKeyValues),
+                        k -> Index.FACTORY.getSequentialBuilder()).appendKey(next);
             }
         }
 
         resultBuilder.forEach((k, v) -> resultCollector.accept(k, v.getIndex()));
     }
 
-    private void generatePartialGroupingForKeySet(BiConsumer<Object, Index> resultCollector,
-        TupleSource tupleSource, List<ColumnSource> keyColumns, Set<Object> keys) {
+    private void generatePartialGroupingForKeySet(BiConsumer<Object, Index> resultCollector, TupleSource tupleSource,
+            List<ColumnSource> keyColumns, Set<Object> keys) {
         // we can generate the grouping partially from our constituents
-        final ColumnSource[] groupedKeyColumns = keyColumns.stream()
-            .filter(cs -> cs.getGroupToRange() != null).toArray(ColumnSource[]::new);
-        final ColumnSource[] notGroupedKeyColumns = keyColumns.stream()
-            .filter(cs -> cs.getGroupToRange() == null).toArray(ColumnSource[]::new);
+        final ColumnSource[] groupedKeyColumns =
+                keyColumns.stream().filter(cs -> cs.getGroupToRange() != null).toArray(ColumnSource[]::new);
+        final ColumnSource[] notGroupedKeyColumns =
+                keyColumns.stream().filter(cs -> cs.getGroupToRange() == null).toArray(ColumnSource[]::new);
 
         Require.gtZero(groupedKeyColumns.length, "groupedKeyColumns.length");
         Require.gtZero(notGroupedKeyColumns.length, "notGroupedKeyColumns.length");
 
-        final TupleSource groupedTupleSource =
-            TupleSourceFactory.makeTupleSource(groupedKeyColumns);
+        final TupleSource groupedTupleSource = TupleSourceFactory.makeTupleSource(groupedKeyColumns);
 
         final Map<Object, SequentialBuilder> resultBuilder = new LinkedHashMap<>();
 
@@ -506,23 +487,19 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
         final Set<Object> groupPruningSet = new HashSet<>();
         if (groupedKeysIndices.length == 1) {
             // noinspection unchecked
-            keys.forEach(x -> groupPruningSet
-                .add(tupleSource.exportElementReinterpreted(x, groupedKeysIndices[0])));
+            keys.forEach(x -> groupPruningSet.add(tupleSource.exportElementReinterpreted(x, groupedKeysIndices[0])));
         } else {
             final Object[] groupingKeyValues = new Object[groupedKeysIndices.length];
             keys.forEach(x -> {
                 for (int ii = 0; ii < groupingKeyValues.length; ++ii) {
                     // noinspection unchecked
-                    groupingKeyValues[ii] =
-                        tupleSource.exportElementReinterpreted(x, groupedKeysIndices[ii]);
+                    groupingKeyValues[ii] = tupleSource.exportElementReinterpreted(x, groupedKeysIndices[ii]);
                 }
-                groupPruningSet
-                    .add(groupedTupleSource.createTupleFromReinterpretedValues(groupingKeyValues));
+                groupPruningSet.add(groupedTupleSource.createTupleFromReinterpretedValues(groupingKeyValues));
             });
         }
 
-        final Map<Object, Index> groupedColumnsGrouping =
-            getGroupingForKeySet(groupPruningSet, groupedTupleSource);
+        final Map<Object, Index> groupedColumnsGrouping = getGroupingForKeySet(groupPruningSet, groupedTupleSource);
 
         final Object[] lookupKeyValues = new Object[keyColumns.size()];
 
@@ -538,7 +515,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
                 for (int ii = 0; ii < groupedKeysIndices.length; ++ii) {
                     // noinspection unchecked
                     lookupKeyValues[groupedKeysIndices[ii]] =
-                        groupedTupleSource.exportElementReinterpreted(entry.getKey(), ii);
+                            groupedTupleSource.exportElementReinterpreted(entry.getKey(), ii);
                 }
             }
 
@@ -555,7 +532,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
                 }
 
                 final SequentialBuilder indexForKey =
-                    resultBuilder.computeIfAbsent(key, k -> Index.FACTORY.getSequentialBuilder());
+                        resultBuilder.computeIfAbsent(key, k -> Index.FACTORY.getSequentialBuilder());
                 indexForKey.appendKey(next);
             }
         }
@@ -575,8 +552,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
     @Override
     public Index getSubIndexForKeySet(Set<Object> keys, TupleSource tupleSource) {
         final IndexBuilder indexBuilder = Index.FACTORY.getBuilder();
-        final BiConsumer<Object, Index> resultCollector =
-            (key, index) -> indexBuilder.addIndex(index);
+        final BiConsumer<Object, Index> resultCollector = (key, index) -> indexBuilder.addIndex(index);
 
         collectGroupingForKeySet(keys, tupleSource, resultCollector);
 
@@ -584,7 +560,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
     }
 
     private void collectGroupingForKeySet(Set<Object> keys, TupleSource tupleSource,
-        BiConsumer<Object, Index> resultCollector) {
+            BiConsumer<Object, Index> resultCollector) {
         // noinspection unchecked
         final List<ColumnSource> keyColumns = tupleSource.getColumnSources();
         if (keyColumns.isEmpty()) {
@@ -592,23 +568,21 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
         } else if (keyColumns.size() == 1 && keyColumns.get(0).getGroupToRange() != null) {
             @SuppressWarnings("unchecked")
             final Map<Object, Index> sourceGrouping = keyColumns.get(0).getGroupToRange();
-            sourceGrouping.entrySet().stream()
-                .filter(objectIndexEntry -> keys.contains(objectIndexEntry.getKey()))
-                .forEach(objectIndexEntry -> {
-                    final Index resultIndex = objectIndexEntry.getValue().intersect(this);
-                    if (resultIndex.size() > 0) {
-                        resultCollector.accept(objectIndexEntry.getKey(), resultIndex);
-                    }
-                });
+            sourceGrouping.entrySet().stream().filter(objectIndexEntry -> keys.contains(objectIndexEntry.getKey()))
+                    .forEach(objectIndexEntry -> {
+                        final Index resultIndex = objectIndexEntry.getValue().intersect(this);
+                        if (resultIndex.size() > 0) {
+                            resultCollector.accept(objectIndexEntry.getKey(), resultIndex);
+                        }
+                    });
         } else {
-            final long columnsWithGrouping =
-                keyColumns.stream().filter(cs -> cs.getGroupToRange() != null).count();
+            final long columnsWithGrouping = keyColumns.stream().filter(cs -> cs.getGroupToRange() != null).count();
             final boolean canUseAllConstituents = columnsWithGrouping == keyColumns.size();
             final boolean canUseAnyConstituents = columnsWithGrouping > 0;
 
             if (canUseAllConstituents) {
-                generateGrouping(resultCollector, tupleSource, keyColumns, 0,
-                    new Object[keyColumns.size()], null, keys);
+                generateGrouping(resultCollector, tupleSource, keyColumns, 0, new Object[keyColumns.size()], null,
+                        keys);
             } else if (canUseAnyConstituents) {
                 generatePartialGroupingForKeySet(resultCollector, tupleSource, keyColumns, keys);
             } else {
@@ -617,28 +591,25 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
                     final long next = iterator.nextLong();
                     final Object key = tupleSource.createTuple(next);
                     if (keys.contains(key)) {
-                        resultBuilder
-                            .computeIfAbsent(key, k -> Index.FACTORY.getSequentialBuilder())
-                            .appendKey(next);
+                        resultBuilder.computeIfAbsent(key, k -> Index.FACTORY.getSequentialBuilder()).appendKey(next);
                     }
                 }
-                for (Map.Entry<Object, SequentialBuilder> objectIndexBuilderEntry : resultBuilder
-                    .entrySet()) {
+                for (Map.Entry<Object, SequentialBuilder> objectIndexBuilderEntry : resultBuilder.entrySet()) {
                     resultCollector.accept(objectIndexBuilderEntry.getKey(),
-                        objectIndexBuilderEntry.getValue().getIndex());
+                            objectIndexBuilderEntry.getValue().getIndex());
                 }
             }
         }
     }
 
     private static void generateGrouping(
-        UnaryOperator<Index> indexOp,
-        BiConsumer<Object, Index> resultCollector,
-        TupleSource tupleSource,
-        List<ColumnSource> keyColumns,
-        int position,
-        Object[] partialValues,
-        Index partiallyIntersectedIndex) {
+            UnaryOperator<Index> indexOp,
+            BiConsumer<Object, Index> resultCollector,
+            TupleSource tupleSource,
+            List<ColumnSource> keyColumns,
+            int position,
+            Object[] partialValues,
+            Index partiallyIntersectedIndex) {
         for (Object objectEntry : keyColumns.get(position).getGroupToRange().entrySet()) {
             // noinspection unchecked
             final Map.Entry<Object, Index> entry = (Map.Entry<Object, Index>) objectEntry;
@@ -651,34 +622,31 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
             }
             if (subIndex.nonempty()) {
                 if (position == keyColumns.size() - 1) {
-                    // we're at the very last bit, so we should start shoving our tuples into the
-                    // result map
-                    resultCollector.accept(
-                        tupleSource.createTupleFromReinterpretedValues(partialValues), subIndex);
+                    // we're at the very last bit, so we should start shoving our tuples into the result map
+                    resultCollector.accept(tupleSource.createTupleFromReinterpretedValues(partialValues), subIndex);
                 } else {
-                    generateGrouping(indexOp, resultCollector, tupleSource, keyColumns,
-                        position + 1, partialValues, subIndex);
+                    generateGrouping(indexOp, resultCollector, tupleSource, keyColumns, position + 1, partialValues,
+                            subIndex);
                 }
             }
         }
     }
 
-    private void generateGrouping(BiConsumer<Object, Index> resultCollector,
-        TupleSource tupleSource, List<ColumnSource> keyColumns, int position,
-        Object[] partialValues, Index partiallyIntersectedIndex, Set<Object> keyRestriction) {
+    private void generateGrouping(BiConsumer<Object, Index> resultCollector, TupleSource tupleSource,
+            List<ColumnSource> keyColumns, int position, Object[] partialValues, Index partiallyIntersectedIndex,
+            Set<Object> keyRestriction) {
         final boolean finalPosition = position == keyColumns.size() - 1;
 
         final List<ColumnSource> subSources = keyColumns.subList(0, position + 1);
-        final TupleSource subTupleSource = TupleSourceFactory
-            .makeTupleSource(subSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY));
+        final TupleSource subTupleSource =
+                TupleSourceFactory.makeTupleSource(subSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY));
 
         final Set<Object> pruningSet;
         if (finalPosition) {
             pruningSet = keyRestriction;
         } else if (position == 0) {
             // noinspection unchecked
-            pruningSet =
-                keyRestriction.stream().map(x -> tupleSource.exportElementReinterpreted(x, 0))
+            pruningSet = keyRestriction.stream().map(x -> tupleSource.exportElementReinterpreted(x, 0))
                     .collect(Collectors.toCollection(HashSet::new));
         } else {
             pruningSet = new HashSet<>();
@@ -693,8 +661,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
         }
 
         // noinspection unchecked
-        final Map<Object, Index> groupToRange =
-            (Map<Object, Index>) keyColumns.get(position).getGroupToRange();
+        final Map<Object, Index> groupToRange = (Map<Object, Index>) keyColumns.get(position).getGroupToRange();
         final Object[] pruningKey = Arrays.copyOf(partialValues, position + 1);
         for (Map.Entry<Object, Index> entry : groupToRange.entrySet()) {
             pruningKey[position] = partialValues[position] = entry.getKey();
@@ -712,8 +679,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
 
                 tuple = null;
             } else {
-                if (!pruningSet
-                    .contains(subTupleSource.createTupleFromReinterpretedValues(pruningKey))) {
+                if (!pruningSet.contains(subTupleSource.createTupleFromReinterpretedValues(pruningKey))) {
                     continue;
                 }
 
@@ -729,12 +695,11 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
 
             if (subIndex.nonempty()) {
                 if (finalPosition) {
-                    // we're at the very last bit, so we should start shoving our smart keys into
-                    // the result map
+                    // we're at the very last bit, so we should start shoving our smart keys into the result map
                     resultCollector.accept(tuple, subIndex);
                 } else {
-                    generateGrouping(resultCollector, tupleSource, keyColumns, position + 1,
-                        partialValues, subIndex, keyRestriction);
+                    generateGrouping(resultCollector, tupleSource, keyColumns, position + 1, partialValues, subIndex,
+                            keyRestriction);
                 }
             }
         }
@@ -756,14 +721,11 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
             for (final Index.Iterator iterator = this.iterator(); iterator.hasNext();) {
                 final long next = iterator.nextLong();
                 final Object key = tupleSource.createPreviousTuple(next);
-                resultBuilder.computeIfAbsent(key, k -> Index.FACTORY.getSequentialBuilder())
-                    .appendKey(next);
+                resultBuilder.computeIfAbsent(key, k -> Index.FACTORY.getSequentialBuilder()).appendKey(next);
             }
             result = new LinkedHashMap<>();
-            for (Map.Entry<Object, SequentialBuilder> objectIndexBuilderEntry : resultBuilder
-                .entrySet()) {
-                result.put(objectIndexBuilderEntry.getKey(),
-                    objectIndexBuilderEntry.getValue().getIndex());
+            for (Map.Entry<Object, SequentialBuilder> objectIndexBuilderEntry : resultBuilder.entrySet()) {
+                result.put(objectIndexBuilderEntry.getKey(), objectIndexBuilderEntry.getValue().getIndex());
             }
         }
         if (areColumnsImmutable(sourcesKey)) {
@@ -776,7 +738,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
                 ephemeralPrevMappings = new WeakHashMap<>();
             }
             ephemeralPrevMappings.put(sourcesKey,
-                new MappingInfo(result, LogicalClock.DEFAULT.currentStep(), tupleSource));
+                    new MappingInfo(result, LogicalClock.DEFAULT.currentStep(), tupleSource));
         }
         return result;
     }
@@ -788,8 +750,7 @@ public abstract class SortedIndex extends OrderedKeysAsChunkImpl implements Inde
         }
         final List<ColumnSource> sourcesKey = Arrays.asList(keyColumns);
         final Map<Object, Index> groupingCandidate = lookupMapping(sourcesKey);
-        return groupingCandidate != null
-            || keyColumns.length == 1 && keyColumns[0].getGroupToRange() != null;
+        return groupingCandidate != null || keyColumns.length == 1 && keyColumns[0].getGroupToRange() != null;
     }
 
     private boolean areColumnsImmutable(List<ColumnSource> sourcesKey) {

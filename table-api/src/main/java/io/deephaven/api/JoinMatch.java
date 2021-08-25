@@ -6,10 +6,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * A join match represents one column from a {@link #left() left} table and one column from a
- * {@link #right() right} table. The exact semantics of the match depend on context. For example, a
- * natural-join has equal-to matches; where-not-in has not-equal-to matches; and as-of-join's last
- * match has less-than or less-than-or-equal-to matches.
+ * A join match represents one column from a {@link #left() left} table and one column from a {@link #right() right}
+ * table. The exact semantics of the match depend on context. For example, a natural-join has equal-to matches;
+ * where-not-in has not-equal-to matches; and as-of-join's last match has less-than or less-than-or-equal-to matches.
  *
  * @see TableOperations#join(Object, Collection, Collection, int)
  * @see TableOperations#naturalJoin(Object, Collection, Collection)
@@ -36,14 +35,14 @@ public interface JoinMatch extends Serializable {
         final int ix = x.indexOf('=');
         if (ix < 0 || ix + 1 == x.length()) {
             throw new IllegalArgumentException(String.format(
-                "Unable to parse match '%s', expected form '<left>==<right>' or `<left>=<right>`",
-                x));
+                    "Unable to parse match '%s', expected form '<left>==<right>' or `<left>=<right>`",
+                    x));
         }
         final int ix2 = x.charAt(ix + 1) == '=' ? ix + 1 : ix;
         if (ix2 + 1 == x.length()) {
             throw new IllegalArgumentException(String.format(
-                "Unable to parse match '%s', expected form '<left>==<right>' or `<left>=<right>`",
-                x));
+                    "Unable to parse match '%s', expected form '<left>==<right>' or `<left>=<right>`",
+                    x));
         }
         ColumnName left = ColumnName.parse(x.substring(0, ix));
         ColumnName right = ColumnName.parse(x.substring(ix2 + 1));

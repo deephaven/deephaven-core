@@ -20,44 +20,40 @@ import java.util.stream.Collectors;
 
 public class StringUtils implements Serializable {
 
-    private static final int STRING_CACHE_SIZE =
-        Configuration.getInstance().getInteger("StringUtils.cacheSize");
+    private static final int STRING_CACHE_SIZE = Configuration.getInstance().getInteger("StringUtils.cacheSize");
 
     // ------------------------------------------------------------------------------------------------------------------
-    // A thread-safe (but not very concurrent) StringCache for use in Deephaven code that desires
-    // actual caching
+    // A thread-safe (but not very concurrent) StringCache for use in Deephaven code that desires actual caching
     // ------------------------------------------------------------------------------------------------------------------
 
     public static final StringCache<String> STRING_CACHE =
-        C14nUtil.ENABLED
-            ? new OpenAddressedWeakUnboundedStringCache<>(StringCacheTypeAdapterStringImpl.INSTANCE,
-                C14nUtil.CACHE)
-            : STRING_CACHE_SIZE == 0 ? AlwaysCreateStringCache.STRING_INSTANCE
-                : new ConcurrentBoundedStringCache<>(StringCacheTypeAdapterStringImpl.INSTANCE,
-                    STRING_CACHE_SIZE, 2);
+            C14nUtil.ENABLED
+                    ? new OpenAddressedWeakUnboundedStringCache<>(StringCacheTypeAdapterStringImpl.INSTANCE,
+                            C14nUtil.CACHE)
+                    : STRING_CACHE_SIZE == 0 ? AlwaysCreateStringCache.STRING_INSTANCE
+                            : new ConcurrentBoundedStringCache<>(StringCacheTypeAdapterStringImpl.INSTANCE,
+                                    STRING_CACHE_SIZE, 2);
 
     // ------------------------------------------------------------------------------------------------------------------
-    // Optional use of CompressedStrings for Symbol or String data columns (excluding partitioning
-    // columns)
+    // Optional use of CompressedStrings for Symbol or String data columns (excluding partitioning columns)
     // ------------------------------------------------------------------------------------------------------------------
 
-    private static final boolean USE_COMPRESSED_STRINGS = Configuration.getInstance()
-        .getBooleanWithDefault("StringUtils.useCompressedStrings", false);
+    private static final boolean USE_COMPRESSED_STRINGS =
+            Configuration.getInstance().getBooleanWithDefault("StringUtils.useCompressedStrings", false);
 
     public static final StringCache<CompressedString> COMPRESSED_STRING_CACHE =
-        USE_COMPRESSED_STRINGS
-            ? C14nUtil.ENABLED
-                ? new OpenAddressedWeakUnboundedStringCache<>(
-                    StringCacheTypeAdapterCompressedStringImpl.INSTANCE, C14nUtil.CACHE)
-                : STRING_CACHE_SIZE == 0 ? AlwaysCreateStringCache.COMPRESSED_STRING_INSTANCE
-                    : new ConcurrentBoundedStringCache<>(
-                        StringCacheTypeAdapterCompressedStringImpl.INSTANCE, STRING_CACHE_SIZE, 2)
-            : null;
+            USE_COMPRESSED_STRINGS
+                    ? C14nUtil.ENABLED
+                            ? new OpenAddressedWeakUnboundedStringCache<>(
+                                    StringCacheTypeAdapterCompressedStringImpl.INSTANCE, C14nUtil.CACHE)
+                            : STRING_CACHE_SIZE == 0 ? AlwaysCreateStringCache.COMPRESSED_STRING_INSTANCE
+                                    : new ConcurrentBoundedStringCache<>(
+                                            StringCacheTypeAdapterCompressedStringImpl.INSTANCE, STRING_CACHE_SIZE, 2)
+                    : null;
 
     /**
-     * Re-write all non-partitioning String columns in the definition to use CompressedString data
-     * type. Note this should only be called when it's known that the source will only provide
-     * String data with single-byte encodings.
+     * Re-write all non-partitioning String columns in the definition to use CompressedString data type. Note this
+     * should only be called when it's known that the source will only provide String data with single-byte encodings.
      *
      * @param tableDefinition table definition
      * @return the new table definition
@@ -67,11 +63,11 @@ public class StringUtils implements Serializable {
             return tableDefinition;
         }
         final ColumnDefinition<?>[] resultColumns =
-            Arrays.copyOf(tableDefinition.getColumns(), tableDefinition.getColumns().length);
+                Arrays.copyOf(tableDefinition.getColumns(), tableDefinition.getColumns().length);
         for (int ci = 0; ci < resultColumns.length; ++ci) {
             final ColumnDefinition<?> column = resultColumns[ci];
             if (column.getDataType() == String.class
-                && column.getColumnType() != ColumnDefinition.COLUMNTYPE_PARTITIONING) {
+                    && column.getColumnType() != ColumnDefinition.COLUMNTYPE_PARTITIONING) {
                 resultColumns[ci] = column.withDataType(CompressedString.class);
             }
         }
@@ -84,8 +80,8 @@ public class StringUtils implements Serializable {
 
     public static Collection<String> splitToCollection(String string) {
         return string.trim().isEmpty() ? Collections.emptyList()
-            : Arrays.stream(string.split(",")).map(String::trim).filter(s -> !s.isEmpty())
-                .collect(Collectors.toList());
+                : Arrays.stream(string.split(",")).map(String::trim).filter(s -> !s.isEmpty())
+                        .collect(Collectors.toList());
     }
 
     /**
@@ -101,15 +97,14 @@ public class StringUtils implements Serializable {
     @NotNull
     @SuppressWarnings("unchecked")
     public static <STRING_LIKE_TYPE extends CharSequence> StringCache<STRING_LIKE_TYPE> getStringCache(
-        Class<STRING_LIKE_TYPE> dataType) {
+            Class<STRING_LIKE_TYPE> dataType) {
         if (String.class == dataType) {
             return (StringCache<STRING_LIKE_TYPE>) StringUtils.STRING_CACHE;
         } else if (CompressedString.class == dataType) {
             return (StringCache<STRING_LIKE_TYPE>) StringUtils.COMPRESSED_STRING_CACHE;
         } else {
             // Writing code has been updated to support arbitrary CharSequences without reverting to
-            // Externalizable/Serializable implementations. Reading code doesn't know what to do
-            // with other
+            // Externalizable/Serializable implementations. Reading code doesn't know what to do with other
             // CharSequence types, especially given that most are mutable.
             throw new IllegalArgumentException("Unsupported CharSequence type " + dataType);
         }
@@ -151,8 +146,7 @@ public class StringUtils implements Serializable {
      * 
      * @param <VALUE_TYPE>
      */
-    private static class NullSafeStringKey<VALUE_TYPE>
-        extends KeyedObjectKey.NullSafeBasic<String, VALUE_TYPE> {
+    private static class NullSafeStringKey<VALUE_TYPE> extends KeyedObjectKey.NullSafeBasic<String, VALUE_TYPE> {
 
         private static KeyedObjectKey.NullSafeBasic<String, ?> INSTANCE = new NullSafeStringKey<>();
 
@@ -190,10 +184,10 @@ public class StringUtils implements Serializable {
      * @param <VALUE_TYPE>
      */
     private static class StringKeyedObjectKey<VALUE_TYPE extends StringKeyedObject>
-        extends KeyedObjectKey.Basic<String, VALUE_TYPE> {
+            extends KeyedObjectKey.Basic<String, VALUE_TYPE> {
 
         private static KeyedObjectKey.Basic<String, ? extends StringKeyedObject> INSTANCE =
-            new StringKeyedObjectKey<>();
+                new StringKeyedObjectKey<>();
 
         @Override
         public String getKey(@NotNull final VALUE_TYPE value) {
@@ -219,10 +213,10 @@ public class StringUtils implements Serializable {
      * @param <VALUE_TYPE>
      */
     private static class NullSafeStringKeyedObjectKey<VALUE_TYPE extends StringKeyedObject>
-        extends KeyedObjectKey.NullSafeBasic<String, VALUE_TYPE> {
+            extends KeyedObjectKey.NullSafeBasic<String, VALUE_TYPE> {
 
         private static KeyedObjectKey.NullSafeBasic<String, ? extends StringKeyedObject> INSTANCE =
-            new NullSafeStringKeyedObjectKey<>();
+                new NullSafeStringKeyedObjectKey<>();
 
         @Override
         public String getKey(@NotNull final VALUE_TYPE value) {
@@ -248,13 +242,12 @@ public class StringUtils implements Serializable {
      * @param <VALUE_TYPE>
      */
     private static class CharSequenceKey<VALUE_TYPE extends StringKeyedObject>
-        implements KeyedObjectKey<CharSequence, VALUE_TYPE> {
+            implements KeyedObjectKey<CharSequence, VALUE_TYPE> {
 
         /**
          * Singleton CharSequenceKey instance.
          */
-        private static KeyedObjectKey<CharSequence, ? extends StringKeyedObject> INSTANCE =
-            new CharSequenceKey<>();
+        private static KeyedObjectKey<CharSequence, ? extends StringKeyedObject> INSTANCE = new CharSequenceKey<>();
 
 
         @Override
@@ -293,13 +286,13 @@ public class StringUtils implements Serializable {
      * @param <VALUE_TYPE>
      */
     private static class NullSafeCharSequenceKey<VALUE_TYPE extends StringKeyedObject>
-        implements KeyedObjectKey<CharSequence, VALUE_TYPE> {
+            implements KeyedObjectKey<CharSequence, VALUE_TYPE> {
 
         /**
          * Singleton CharSequenceKey instance.
          */
         private static KeyedObjectKey<CharSequence, ? extends StringKeyedObject> INSTANCE =
-            new NullSafeCharSequenceKey<>();
+                new NullSafeCharSequenceKey<>();
 
 
         @Override
@@ -334,8 +327,7 @@ public class StringUtils implements Serializable {
     }
 
     /**
-     * Extracts a message from a throwable. If the message is null or empty, returns toString
-     * instead.
+     * Extracts a message from a throwable. If the message is null or empty, returns toString instead.
      *
      * @param t the throwable
      * @return the message or the string
@@ -345,29 +337,28 @@ public class StringUtils implements Serializable {
     }
 
     /**
-     * Possibly replace an array element in one array with an array element in another array. The
-     * master strings are searched to see if they contain an element that starts with the
-     * startsWithValue. If so, and the strings to be replaced also contain an element which starts
-     * with startsWithValue, then that value is replaced with the master string array's value. If
-     * multiple values match, only the first value for each array is processed.
+     * Possibly replace an array element in one array with an array element in another array. The master strings are
+     * searched to see if they contain an element that starts with the startsWithValue. If so, and the strings to be
+     * replaced also contain an element which starts with startsWithValue, then that value is replaced with the master
+     * string array's value. If multiple values match, only the first value for each array is processed.
      *
      * @param masterStrings the string array containing the values to use
      * @param toReplaceStrings the string array in which to perform the substitution
      * @param startsWithValue the starts-with value to search for
      */
     public static void replaceArrayValue(final String[] masterStrings,
-        final String[] toReplaceStrings,
-        final String startsWithValue) {
+            final String[] toReplaceStrings,
+            final String startsWithValue) {
         Arrays.stream(masterStrings)
-            .filter(s -> s.startsWith(startsWithValue))
-            .findFirst()
-            .ifPresent(s -> {
-                for (int i = 0; i < toReplaceStrings.length; i++) {
-                    if (toReplaceStrings[i].startsWith(startsWithValue)) {
-                        toReplaceStrings[i] = s;
-                        return;
+                .filter(s -> s.startsWith(startsWithValue))
+                .findFirst()
+                .ifPresent(s -> {
+                    for (int i = 0; i < toReplaceStrings.length; i++) {
+                        if (toReplaceStrings[i].startsWith(startsWithValue)) {
+                            toReplaceStrings[i] = s;
+                            return;
+                        }
                     }
-                }
-            });
+                });
     }
 }

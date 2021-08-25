@@ -3,14 +3,13 @@ package io.deephaven.db.v2.sources.chunk;
 import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 
 /**
- * {@link WritableChunkChunk} that may have its backing storage reset to a slice of that belonging
- * to another {@link WritableChunkChunk} or a native array.
+ * {@link WritableChunkChunk} that may have its backing storage reset to a slice of that belonging to another
+ * {@link WritableChunkChunk} or a native array.
  */
 public interface ResettableWritableChunkChunk<ATTR extends Any> extends WritableChunkChunk<ATTR> {
 
     /**
-     * Reset the data and bounds of this chunk to a range or sub-range of the specified
-     * {@link WritableChunkChunk}.
+     * Reset the data and bounds of this chunk to a range or sub-range of the specified {@link WritableChunkChunk}.
      *
      * @param other The other {@link WritableChunkChunk}
      * @param offset The offset into other

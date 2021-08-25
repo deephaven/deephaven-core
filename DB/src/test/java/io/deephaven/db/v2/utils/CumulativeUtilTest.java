@@ -43,14 +43,12 @@ public class CumulativeUtilTest extends BaseArrayTestCase {
         String rollingSum = "RollingSum";
         Table t2 = CumulativeUtil.rollingSum(t, 5, rollingSum, "Row");
         assertColumnEquals(t2, rollingSum,
-            new double[] {QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE,
-                    QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE,
-                    QueryConstants.NULL_DOUBLE, 15, 20, 25, 30, 35});
+                new double[] {QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE,
+                        QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE, 15, 20, 25, 30, 35});
 
         t2 = CumulativeUtil.rollingSum(t, 3, rollingSum, "Row * 2");
-        assertColumnEquals(t2, rollingSum,
-            new double[] {QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE,
-                    QueryConstants.NULL_DOUBLE, 12, 18, 24, 30, 36, 42, 48});
+        assertColumnEquals(t2, rollingSum, new double[] {QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE,
+                QueryConstants.NULL_DOUBLE, 12, 18, 24, 30, 36, 42, 48});
     }
 
     private void assertColumnEquals(final Table t, final String column, final double[] values) {

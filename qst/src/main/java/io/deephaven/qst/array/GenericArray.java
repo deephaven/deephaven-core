@@ -60,14 +60,14 @@ public abstract class GenericArray<T> implements Array<T>, Iterable<T> {
     public final <O> GenericArray<O> cast(GenericType<O> type) {
         if (!componentType().equals(type)) {
             throw new IllegalArgumentException(
-                String.format("Can't cast GenericArray with type %s to %s", componentType(), type));
+                    String.format("Can't cast GenericArray with type %s to %s", componentType(), type));
         }
         // noinspection unchecked
         return (GenericArray<O>) this;
     }
 
     public abstract static class Builder<T>
-        implements ArrayBuilder<T, GenericArray<T>, Builder<T>> {
+            implements ArrayBuilder<T, GenericArray<T>, Builder<T>> {
 
         public abstract Builder<T> addValues(T item);
 

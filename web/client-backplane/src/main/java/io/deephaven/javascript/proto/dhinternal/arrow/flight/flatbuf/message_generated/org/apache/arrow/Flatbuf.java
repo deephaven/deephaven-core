@@ -10,9 +10,9 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Message_generated.org.apache.arrow.flatbuf",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Message_generated.org.apache.arrow.flatbuf",
+        namespace = JsPackage.GLOBAL)
 public class Flatbuf {
     @JsFunction
     public interface UnionListToMessageHeaderAccessorFn {
@@ -94,26 +94,25 @@ public class Flatbuf {
 
         @JsOverlay
         default Flatbuf.UnionListToMessageHeaderAccessorFn.UnionType onInvoke(
-            double p0, DictionaryBatch p1) {
+                double p0, DictionaryBatch p1) {
             return onInvoke(
-                p0, Js.<Flatbuf.UnionListToMessageHeaderAccessorFn.P1UnionType>uncheckedCast(p1));
+                    p0, Js.<Flatbuf.UnionListToMessageHeaderAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         Flatbuf.UnionListToMessageHeaderAccessorFn.UnionType onInvoke(
-            double p0, Flatbuf.UnionListToMessageHeaderAccessorFn.P1UnionType p1);
+                double p0, Flatbuf.UnionListToMessageHeaderAccessorFn.P1UnionType p1);
 
         @JsOverlay
         default Flatbuf.UnionListToMessageHeaderAccessorFn.UnionType onInvoke(
-            double p0, RecordBatch p1) {
+                double p0, RecordBatch p1) {
             return onInvoke(
-                p0, Js.<Flatbuf.UnionListToMessageHeaderAccessorFn.P1UnionType>uncheckedCast(p1));
+                    p0, Js.<Flatbuf.UnionListToMessageHeaderAccessorFn.P1UnionType>uncheckedCast(p1));
         }
 
         @JsOverlay
-        default Flatbuf.UnionListToMessageHeaderAccessorFn.UnionType onInvoke(double p0,
-            Schema p1) {
+        default Flatbuf.UnionListToMessageHeaderAccessorFn.UnionType onInvoke(double p0, Schema p1) {
             return onInvoke(
-                p0, Js.<Flatbuf.UnionListToMessageHeaderAccessorFn.P1UnionType>uncheckedCast(p1));
+                    p0, Js.<Flatbuf.UnionListToMessageHeaderAccessorFn.P1UnionType>uncheckedCast(p1));
         }
     }
 
@@ -235,23 +234,20 @@ public class Flatbuf {
 
         @JsOverlay
         default Flatbuf.UnionToMessageHeaderAccessorFn.UnionType onInvoke(DictionaryBatch p0) {
-            return onInvoke(
-                Js.<Flatbuf.UnionToMessageHeaderAccessorFn.P0UnionType>uncheckedCast(p0));
+            return onInvoke(Js.<Flatbuf.UnionToMessageHeaderAccessorFn.P0UnionType>uncheckedCast(p0));
         }
 
         Flatbuf.UnionToMessageHeaderAccessorFn.UnionType onInvoke(
-            Flatbuf.UnionToMessageHeaderAccessorFn.P0UnionType p0);
+                Flatbuf.UnionToMessageHeaderAccessorFn.P0UnionType p0);
 
         @JsOverlay
         default Flatbuf.UnionToMessageHeaderAccessorFn.UnionType onInvoke(RecordBatch p0) {
-            return onInvoke(
-                Js.<Flatbuf.UnionToMessageHeaderAccessorFn.P0UnionType>uncheckedCast(p0));
+            return onInvoke(Js.<Flatbuf.UnionToMessageHeaderAccessorFn.P0UnionType>uncheckedCast(p0));
         }
 
         @JsOverlay
         default Flatbuf.UnionToMessageHeaderAccessorFn.UnionType onInvoke(Schema p0) {
-            return onInvoke(
-                Js.<Flatbuf.UnionToMessageHeaderAccessorFn.P0UnionType>uncheckedCast(p0));
+            return onInvoke(Js.<Flatbuf.UnionToMessageHeaderAccessorFn.P0UnionType>uncheckedCast(p0));
         }
     }
 
@@ -294,8 +290,8 @@ public class Flatbuf {
     }
 
     public static native Flatbuf.UnionListToMessageHeaderUnionType unionListToMessageHeader(
-        int type, Flatbuf.UnionListToMessageHeaderAccessorFn accessor, double index);
+            int type, Flatbuf.UnionListToMessageHeaderAccessorFn accessor, double index);
 
     public static native Flatbuf.UnionToMessageHeaderUnionType unionToMessageHeader(
-        int type, Flatbuf.UnionToMessageHeaderAccessorFn accessor);
+            int type, Flatbuf.UnionToMessageHeaderAccessorFn accessor);
 }

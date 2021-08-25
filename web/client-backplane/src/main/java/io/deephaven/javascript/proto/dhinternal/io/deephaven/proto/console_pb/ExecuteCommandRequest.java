@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.ExecuteCommandRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.ExecuteCommandRequest",
+        namespace = JsPackage.GLOBAL)
 public class ExecuteCommandRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -22,7 +22,7 @@ public class ExecuteCommandRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static ExecuteCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -57,20 +57,20 @@ public class ExecuteCommandRequest {
 
             @JsProperty
             void setTicket(
-                ExecuteCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    ExecuteCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<ExecuteCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ExecuteCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<ExecuteCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ExecuteCommandRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -100,7 +100,7 @@ public class ExecuteCommandRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static ExecuteCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -135,20 +135,20 @@ public class ExecuteCommandRequest {
 
             @JsProperty
             void setTicket(
-                ExecuteCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    ExecuteCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<ExecuteCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ExecuteCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<ExecuteCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ExecuteCommandRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -173,12 +173,12 @@ public class ExecuteCommandRequest {
     public static native ExecuteCommandRequest deserializeBinary(Uint8Array bytes);
 
     public static native ExecuteCommandRequest deserializeBinaryFromReader(
-        ExecuteCommandRequest message, Object reader);
+            ExecuteCommandRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(ExecuteCommandRequest message, Object writer);
 
     public static native ExecuteCommandRequest.ToObjectReturnType toObject(
-        boolean includeInstance, ExecuteCommandRequest msg);
+            boolean includeInstance, ExecuteCommandRequest msg);
 
     public native void clearConsoleId();
 

@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A common interface for {@link ChunkerIdent}, {@link ChunkerInvoke}, {@link ChunkerNew} and
- * {@link ChunkerArray} which are the only ast nodes that can be "scope objects":
- * thing.field.callMethod()[0].moreMethod.new SomeClass().why.would().you.new Ever()
+ * A common interface for {@link ChunkerIdent}, {@link ChunkerInvoke}, {@link ChunkerNew} and {@link ChunkerArray} which
+ * are the only ast nodes that can be "scope objects": thing.field.callMethod()[0].moreMethod.new
+ * SomeClass().why.would().you.new Ever()
  */
 public interface IsScope extends Node {
 

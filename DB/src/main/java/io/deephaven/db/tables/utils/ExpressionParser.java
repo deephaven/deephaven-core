@@ -13,8 +13,8 @@ import java.util.Map;
 import java.util.LinkedHashMap;
 
 /**
- * A parser that will try a set of {@link ExpressionFactory}s and attempt to parse the expression
- * until one of them succeeds.
+ * A parser that will try a set of {@link ExpressionFactory}s and attempt to parse the expression until one of them
+ * succeeds.
  *
  * @param <TYPE> The expected type of the parsed expression
  */
@@ -22,25 +22,22 @@ public class ExpressionParser<TYPE> {
     private Map<Pattern, ExpressionFactory<TYPE>> expressions = new LinkedHashMap<>();
 
     /**
-     * Attempt to process the expression using the {@link #registerFactory(ExpressionFactory)
-     * configured} {@link ExpressionFactory factories}
+     * Attempt to process the expression using the {@link #registerFactory(ExpressionFactory) configured}
+     * {@link ExpressionFactory factories}
      *
      * @param expression the expression to parse
      * @return The result of the parsing
      *
-     * @throws ExpressionException if there is a problem parsing the expression, or no parsers
-     *         accepted the expression.
+     * @throws ExpressionException if there is a problem parsing the expression, or no parsers accepted the expression.
      */
     @NotNull
     public TYPE parse(String expression, Object... args) {
         Throwable creationException = null;
-        for (Map.Entry<Pattern, ExpressionFactory<TYPE>> patternExpressionFactoryEntry : expressions
-            .entrySet()) {
+        for (Map.Entry<Pattern, ExpressionFactory<TYPE>> patternExpressionFactoryEntry : expressions.entrySet()) {
             Matcher matcher = patternExpressionFactoryEntry.getKey().matcher(expression);
             if (matcher.matches()) {
                 try {
-                    return patternExpressionFactoryEntry.getValue().getExpression(expression,
-                        matcher, args);
+                    return patternExpressionFactoryEntry.getValue().getExpression(expression, matcher, args);
                 } catch (Throwable t) {
                     if (creationException == null) {
                         creationException = t;
@@ -49,11 +46,10 @@ public class ExpressionParser<TYPE> {
             }
         }
         if (creationException == null) {
-            throw new ExpressionException("Unable to parse expression: \"" + expression + "\"",
-                expression);
+            throw new ExpressionException("Unable to parse expression: \"" + expression + "\"", expression);
         } else {
-            throw new ExpressionException("Failed to get expression for all matched patterns",
-                creationException, expression);
+            throw new ExpressionException("Failed to get expression for all matched patterns", creationException,
+                    expression);
         }
     }
 

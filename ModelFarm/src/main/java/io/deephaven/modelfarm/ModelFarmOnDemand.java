@@ -19,8 +19,8 @@ import java.util.Queue;
 import java.util.Set;
 
 /**
- * A ModelFarm implementation for evaluating a model upon request, retrieving a snapshot of data for
- * all keys under a single {@link LiveTableMonitor} lock.
+ * A ModelFarm implementation for evaluating a model upon request, retrieving a snapshot of data for all keys under a
+ * single {@link LiveTableMonitor} lock.
  *
  * @param <KEYTYPE> The type of the keys (e.g. {@link io.deephaven.modelfarm.fitterfarm.FitScope}).
  * @param <DATATYPE> The type of the data (e.g.
@@ -29,13 +29,13 @@ import java.util.Set;
  *        {@link io.deephaven.modelfarm.fitterfarm.futures.FuturesFitDataManager}).
  */
 public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends RowDataManager<KEYTYPE, DATATYPE>>
-    extends ModelFarmBase<DATATYPE> {
+        extends ModelFarmBase<DATATYPE> {
 
-    private static final boolean LOG_PERF = Configuration.getInstance()
-        .getBooleanWithDefault("ModelFarm.logModelFarmOnDemandPerformance", false);
+    private static final boolean LOG_PERF =
+            Configuration.getInstance().getBooleanWithDefault("ModelFarm.logModelFarmOnDemandPerformance", false);
     private static final Logger log = ProcessEnvironment.getDefaultLog(ModelFarmOnDemand.class);
     private static final FunctionalInterfaces.ThrowingBiConsumer<QueryDataRetrievalOperation, NotificationStepSource, RuntimeException> DO_LOCKED_FUNCTION =
-        getDoLockedConsumer(GetDataLockType.LTM_READ_LOCK);
+            getDoLockedConsumer(GetDataLockType.LTM_READ_LOCK);
 
     private static class QueueAndCallback<DATATYPE> {
         private final Queue<DATATYPE> queue;
@@ -48,9 +48,9 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
     }
 
     /**
-     * A queue of queues. Each "inner queue" (the elements of the {@code execQueue} represents one
-     * on-demand pricing request. The {@link #execute()} method will drain each inner queue before
-     * removing that queue from the {@code execQueue}.
+     * A queue of queues. Each "inner queue" (the elements of the {@code execQueue} represents one on-demand pricing
+     * request. The {@link #execute()} method will drain each inner queue before removing that queue from the
+     * {@code execQueue}.
      *
      * Must always acquire lock on this object before using it.
      */
@@ -68,15 +68,13 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
     }
 
     /**
-     * Submit a request to {@link Model#exec execute} the {@link #model}. Can be called either with
-     * or without a LiveTableMonitor lock -- the decision of whether/how to acquire a lock is left
-     * to the {@link #DO_LOCKED_FUNCTION}. All keys represented by the data in the
-     * {@code dataManager} will be processed.
+     * Submit a request to {@link Model#exec execute} the {@link #model}. Can be called either with or without a
+     * LiveTableMonitor lock -- the decision of whether/how to acquire a lock is left to the
+     * {@link #DO_LOCKED_FUNCTION}. All keys represented by the data in the {@code dataManager} will be processed.
      *
-     * @param dataManager The {@code RowDataManager} that will provide data for the pricing
-     *        requests.
-     * @param callback A callback function to run after all keys have been processed. Can be
-     *        {@code null}, in which case it will be ignored.
+     * @param dataManager The {@code RowDataManager} that will provide data for the pricing requests.
+     * @param callback A callback function to run after all keys have been processed. Can be {@code null}, in which case
+     *        it will be ignored.
      */
     @SuppressWarnings("unused")
     public void requestUpdate(ROWDATAMANAGERTYPE dataManager, Runnable callback) {
@@ -84,35 +82,32 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
     }
 
     /**
-     * Submit a request to {@link Model#exec execute} the {@link #model}. Can be called either with
-     * or without a LiveTableMonitor lock -- the decision of whether/how to acquire a lock is left
-     * to the {@link #DO_LOCKED_FUNCTION}.
+     * Submit a request to {@link Model#exec execute} the {@link #model}. Can be called either with or without a
+     * LiveTableMonitor lock -- the decision of whether/how to acquire a lock is left to the
+     * {@link #DO_LOCKED_FUNCTION}.
      *
-     * @param dataManager The {@code RowDataManager} that will provide data for the pricing
-     *        requests.
-     * @param callback A callback function to run after all keys have been processed. Can be
-     *        {@code null}, in which case it will be ignored.
-     * @param keys They keys for which data should be passed to the model. If {@code keys == null},
-     *        then all keys represented by the data in the {@code dataManager} will be processed.
+     * @param dataManager The {@code RowDataManager} that will provide data for the pricing requests.
+     * @param callback A callback function to run after all keys have been processed. Can be {@code null}, in which case
+     *        it will be ignored.
+     * @param keys They keys for which data should be passed to the model. If {@code keys == null}, then all keys
+     *        represented by the data in the {@code dataManager} will be processed.
      */
     @SuppressWarnings("WeakerAccess")
-    public void requestUpdate(ROWDATAMANAGERTYPE dataManager, Runnable callback,
-        Set<KEYTYPE> keys) {
+    public void requestUpdate(ROWDATAMANAGERTYPE dataManager, Runnable callback, Set<KEYTYPE> keys) {
         if (keys != null && keys.isEmpty()) {
             return;
         }
 
         final DynamicTable dataManagerTable = dataManager.table();
 
-        final Queue<DATATYPE> dataToEval =
-            new ArrayDeque<>(keys != null ? keys.size() : dataManagerTable.intSize());
+        final Queue<DATATYPE> dataToEval = new ArrayDeque<>(keys != null ? keys.size() : dataManagerTable.intSize());
         // get data for all keys under the same lock
         DO_LOCKED_FUNCTION.accept((usePrev) -> {
             final Index index = dataManagerTable.getIndex();
 
             if (index.empty()) {
                 log.warn().append(ModelFarmOnDemand.class.getSimpleName() + ": ")
-                    .append("Table is empty. Nothing to price.").endl();
+                        .append("Table is empty. Nothing to price.").endl();
                 callback.run();
                 return;
             }
@@ -120,12 +115,10 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
             for (Index.Iterator iter = index.iterator(); iter.hasNext();) {
                 final long idx = iter.nextLong();
 
-                // if a `keys` set was provided, then only enqueue keys in the `dataManager` that
-                // are also in the set.
+                // if a `keys` set was provided, then only enqueue keys in the `dataManager` that are also in the set.
                 final boolean includeThisKey;
                 if (keys != null) {
-                    final KEYTYPE key =
-                        usePrev ? dataManager.uniqueIdPrev(idx) : dataManager.uniqueIdCurrent(idx);
+                    final KEYTYPE key = usePrev ? dataManager.uniqueIdPrev(idx) : dataManager.uniqueIdCurrent(idx);
                     includeThisKey = keys.contains(key);
                 } else {
                     includeThisKey = true;
@@ -147,8 +140,7 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
         }
 
         synchronized (execQueue) {
-            // Enqueue the `dataToEval` -- i.e. the queue of all keys to price as part of this
-            // request.
+            // Enqueue the `dataToEval` -- i.e. the queue of all keys to price as part of this request.
             execQueue.add(new QueueAndCallback<>(dataToEval, callback));
             execQueue.notifyAll();
         }
@@ -163,8 +155,7 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
         final long t0 = System.nanoTime();
 
         final DATATYPE data;
-        QueueAndCallback<DATATYPE> queueAndCallbackOneRequest; // A queue of all data pertaining to
-                                                               // one request
+        QueueAndCallback<DATATYPE> queueAndCallbackOneRequest; // A queue of all data pertaining to one request
         final boolean queueEmpty;
         synchronized (execQueue) {
 
@@ -177,8 +168,7 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
             data = queueAndCallbackOneRequest.queue.poll();
             Assert.neqNull(data, "data");
 
-            // If `data` was the data for the last key in this request, then remove this request
-            // from the `execQueue`:
+            // If `data` was the data for the last key in this request, then remove this request from the `execQueue`:
             queueEmpty = queueAndCallbackOneRequest.queue.isEmpty();
             if (queueEmpty) {
                 execQueue.remove();
@@ -193,14 +183,13 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
             model.exec(data);
             t2 = System.nanoTime();
         } else {
-            // should be impossible; data is only populated with
-            // io.deephaven.modelfarm.RowDataManager.newData
+            // should be impossible; data is only populated with io.deephaven.modelfarm.RowDataManager.newData
             throw new IllegalStateException("Data is null!");
         }
 
         if (LOG_PERF) {
-            log.warn("ModelFarmOnDemand.execute PERFORMANCE: all=" + (t2 - t0) / 1000 + " take="
-                + (t1 - t0) / 100 + " exec=" + (t2 - t1) / 1000);
+            log.warn("ModelFarmOnDemand.execute PERFORMANCE: all=" + (t2 - t0) / 1000 + " take=" + (t1 - t0) / 100
+                    + " exec=" + (t2 - t1) / 1000);
         }
 
         if (queueEmpty && queueAndCallbackOneRequest.callback != null) {

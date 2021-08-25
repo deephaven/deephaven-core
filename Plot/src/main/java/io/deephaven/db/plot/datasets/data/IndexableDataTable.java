@@ -9,8 +9,7 @@ import io.deephaven.db.plot.util.ArgumentValidations;
 import io.deephaven.db.plot.util.tables.ColumnHandlerFactory;
 
 /**
- * {@link IndexableData} dataset whose data is a column in a table and whose indices are the row
- * numbers of the column.
+ * {@link IndexableData} dataset whose data is a column in a table and whose indices are the row numbers of the column.
  */
 public class IndexableDataTable<T> extends LiveIndexableData<T> {
     private static final long serialVersionUID = 8328713615740315451L;
@@ -23,8 +22,7 @@ public class IndexableDataTable<T> extends LiveIndexableData<T> {
      * @param columnHandler data
      * @param plotInfo plot information
      */
-    public IndexableDataTable(final ColumnHandlerFactory.ColumnHandler columnHandler,
-        final PlotInfo plotInfo) {
+    public IndexableDataTable(final ColumnHandlerFactory.ColumnHandler columnHandler, final PlotInfo plotInfo) {
         super(plotInfo);
         ArgumentValidations.assertNotNull(columnHandler, "columnHandler", getPlotInfo());
         this.columnHandler = columnHandler;

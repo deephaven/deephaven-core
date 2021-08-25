@@ -77,12 +77,12 @@ public class RollupTableRequest implements Serializable {
     @Override
     public String toString() {
         return "RollupTableRequest{" +
-            "table=" + table +
-            ", resultHandle=" + resultHandle +
-            ", groupingColumns=" + Arrays.toString(groupingColumns) +
-            ", aggregations=" + Arrays.toString(aggregations) +
-            ", includeConstituents=" + includeConstituents +
-            ", includeOriginalColumns=" + includeOriginalColumns +
-            '}';
+                "table=" + table +
+                ", resultHandle=" + resultHandle +
+                ", groupingColumns=" + Arrays.toString(groupingColumns) +
+                ", aggregations=" + Arrays.toString(aggregations) +
+                ", includeConstituents=" + includeConstituents +
+                ", includeOriginalColumns=" + includeOriginalColumns +
+                '}';
     }
 }

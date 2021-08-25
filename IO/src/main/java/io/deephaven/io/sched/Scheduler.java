@@ -11,15 +11,13 @@ import java.util.*;
 import java.util.concurrent.Executor;
 
 /**
- * This class provides a singleton wrapper for scheduling invocations of multiple Job instances from
- * a single thread. Job are scheduled in accordance with an interest set on a java.nio.Channel,
- * deadline based time scheduling, and/or custom criteria defined by the Jobs' implementation of the
- * ready() method.
+ * This class provides a singleton wrapper for scheduling invocations of multiple Job instances from a single thread.
+ * Job are scheduled in accordance with an interest set on a java.nio.Channel, deadline based time scheduling, and/or
+ * custom criteria defined by the Jobs' implementation of the ready() method.
  *
- * Jobs are instantiated by the application and made known to the scheduler by one of the install()
- * methods. Once the job is installed, the scheduler will call exactly one of its invoke(),
- * timedOut() or cancelled() methods exactly once. After this, the scheduler forgets about the job
- * completely, unless the application installs it again.
+ * Jobs are instantiated by the application and made known to the scheduler by one of the install() methods. Once the
+ * job is installed, the scheduler will call exactly one of its invoke(), timedOut() or cancelled() methods exactly
+ * once. After this, the scheduler forgets about the job completely, unless the application installs it again.
  */
 public interface Scheduler {
 
@@ -48,24 +46,22 @@ public interface Scheduler {
     public void cancelJob(Job job);
 
     /**
-     * Wait for jobs to become ready, then invoke() them all. This method will form the core of the
-     * main loop of a scheduler-driven application. The method first waits until:
+     * Wait for jobs to become ready, then invoke() them all. This method will form the core of the main loop of a
+     * scheduler-driven application. The method first waits until:
      *
-     * -- the given timeout expires, -- the earliest job-specific timeout expires, or -- one or more
-     * jobs becomes ready
+     * -- the given timeout expires, -- the earliest job-specific timeout expires, or -- one or more jobs becomes ready
      *
-     * If jobs have become ready, then the entire ready set will be invoked. If any job throws an
-     * uncaught exception, the job's terminated() method will be called and the job deregistered.
-     * This does not abort the invocation of the remaining jobs. The return value is then the number
-     * of jobs that were invoked.
+     * If jobs have become ready, then the entire ready set will be invoked. If any job throws an uncaught exception,
+     * the job's terminated() method will be called and the job deregistered. This does not abort the invocation of the
+     * remaining jobs. The return value is then the number of jobs that were invoked.
      *
-     * If no jobs are ready and any job-specific timeouts expire, the associated jobs' timedOut()
-     * methods are called. The return value is the negative of the number of expired timeouts.
+     * If no jobs are ready and any job-specific timeouts expire, the associated jobs' timedOut() methods are called.
+     * The return value is the negative of the number of expired timeouts.
      *
      * If the time given by the timeout argument expires, then zero is returned.
      *
-     * Note that this method is not synchronized. The application must ensure that it is never
-     * called concurrently by more than one thread.
+     * Note that this method is not synchronized. The application must ensure that it is never called concurrently by
+     * more than one thread.
      *
      * @return true, if some job was dispatched
      */

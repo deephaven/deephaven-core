@@ -5,14 +5,14 @@ import io.deephaven.db.v2.ShiftAwareListener;
 /**
  * Calculate the size of the chunks needed to process an update.
  *
- * The assumption is that the operation processes removed, modified, and added values sequentially
- * (not concurrently); so the largest add/modified/removed index is all that is needed at one time.
- * The effective shifts size is also included in the required update size.
+ * The assumption is that the operation processes removed, modified, and added values sequentially (not concurrently);
+ * so the largest add/modified/removed index is all that is needed at one time. The effective shifts size is also
+ * included in the required update size.
  */
 public class UpdateSizeCalculator {
     /**
-     * Return the size of chunk needed to process this update (removed, modified, then added
-     * sequentially not concurrently).
+     * Return the size of chunk needed to process this update (removed, modified, then added sequentially not
+     * concurrently).
      *
      * @param upstream the update to process
      * @param chunkSize the maximum chunk size (a maximum for our size)
@@ -20,8 +20,8 @@ public class UpdateSizeCalculator {
      * @return an appropriate maximum chunk size for this update
      */
     public static int chunkSize(ShiftAwareListener.Update upstream, int chunkSize) {
-        final long updateSize = Math.max(Math.max(upstream.added.size(), upstream.removed.size()),
-            upstream.modified.size());
+        final long updateSize =
+                Math.max(Math.max(upstream.added.size(), upstream.removed.size()), upstream.modified.size());
         return chunkSize(updateSize, upstream.shifted, chunkSize);
     }
 
@@ -38,7 +38,6 @@ public class UpdateSizeCalculator {
         if (updateSize >= chunkSize) {
             return chunkSize;
         }
-        return (int) Math.min(chunkSize,
-            Math.max(updateSize, shifted.getEffectiveSizeClamped(chunkSize)));
+        return (int) Math.min(chunkSize, Math.max(updateSize, shifted.getEffectiveSizeClamped(chunkSize)));
     }
 }

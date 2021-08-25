@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.GetCompletionItemsRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.GetCompletionItemsRequest",
+        namespace = JsPackage.GLOBAL)
 public class GetCompletionItemsRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -21,8 +21,7 @@ public class GetCompletionItemsRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface GetTicketUnionType {
                 @JsOverlay
-                static GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                static GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType of(Object o) {
                     return Js.cast(o);
                 }
 
@@ -57,20 +56,20 @@ public class GetCompletionItemsRequest {
 
             @JsProperty
             void setTicket(
-                GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -152,8 +151,7 @@ public class GetCompletionItemsRequest {
         GetCompletionItemsRequest.ToObjectReturnType.TextDocumentFieldType getTextDocument();
 
         @JsProperty
-        void setConsoleId(
-            GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType consoleId);
+        void setConsoleId(GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType consoleId);
 
         @JsProperty
         void setContext(GetCompletionItemsRequest.ToObjectReturnType.ContextFieldType context);
@@ -163,7 +161,7 @@ public class GetCompletionItemsRequest {
 
         @JsProperty
         void setTextDocument(
-            GetCompletionItemsRequest.ToObjectReturnType.TextDocumentFieldType textDocument);
+                GetCompletionItemsRequest.ToObjectReturnType.TextDocumentFieldType textDocument);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -174,7 +172,7 @@ public class GetCompletionItemsRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -209,20 +207,20 @@ public class GetCompletionItemsRequest {
 
             @JsProperty
             void setTicket(
-                GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -304,8 +302,7 @@ public class GetCompletionItemsRequest {
         GetCompletionItemsRequest.ToObjectReturnType0.TextDocumentFieldType getTextDocument();
 
         @JsProperty
-        void setConsoleId(
-            GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType consoleId);
+        void setConsoleId(GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType consoleId);
 
         @JsProperty
         void setContext(GetCompletionItemsRequest.ToObjectReturnType0.ContextFieldType context);
@@ -315,19 +312,19 @@ public class GetCompletionItemsRequest {
 
         @JsProperty
         void setTextDocument(
-            GetCompletionItemsRequest.ToObjectReturnType0.TextDocumentFieldType textDocument);
+                GetCompletionItemsRequest.ToObjectReturnType0.TextDocumentFieldType textDocument);
     }
 
     public static native GetCompletionItemsRequest deserializeBinary(Uint8Array bytes);
 
     public static native GetCompletionItemsRequest deserializeBinaryFromReader(
-        GetCompletionItemsRequest message, Object reader);
+            GetCompletionItemsRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(
-        GetCompletionItemsRequest message, Object writer);
+            GetCompletionItemsRequest message, Object writer);
 
     public static native GetCompletionItemsRequest.ToObjectReturnType toObject(
-        boolean includeInstance, GetCompletionItemsRequest msg);
+            boolean includeInstance, GetCompletionItemsRequest msg);
 
     public native void clearConsoleId();
 

@@ -6,11 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Any AND nested within another AND or OR nested within another OR should be flattened into just a
- * single level.
+ * Any AND nested within another AND or OR nested within another OR should be flattened into just a single level.
  *
- * This should be run after NOTs are distributed (so that (A AND B AND !(C OR D)) is first
- * normalized to (A AND B AND (!C AND !D))).
+ * This should be run after NOTs are distributed (so that (A AND B AND !(C OR D)) is first normalized to (A AND B AND
+ * (!C AND !D))).
  */
 public class MergeNestedBinaryOperations extends ReplacingVisitor {
     public static FilterDescriptor execute(FilterDescriptor descriptor) {
@@ -27,8 +26,8 @@ public class MergeNestedBinaryOperations extends ReplacingVisitor {
             return super.onAnd(descriptor);
         }
 
-        FilterDescriptor replacement = new FilterDescriptor(descriptor.getOperation(), null, null,
-            topLevel.toArray(new FilterDescriptor[0]));
+        FilterDescriptor replacement =
+                new FilterDescriptor(descriptor.getOperation(), null, null, topLevel.toArray(new FilterDescriptor[0]));
 
         return super.onAnd(replacement);
     }
@@ -43,14 +42,14 @@ public class MergeNestedBinaryOperations extends ReplacingVisitor {
             return super.onOr(descriptor);
         }
 
-        FilterDescriptor replacement = new FilterDescriptor(descriptor.getOperation(), null, null,
-            topLevel.toArray(new FilterDescriptor[0]));
+        FilterDescriptor replacement =
+                new FilterDescriptor(descriptor.getOperation(), null, null, topLevel.toArray(new FilterDescriptor[0]));
 
         return super.onOr(replacement);
     }
 
     private void handleItem(List<FilterDescriptor> topLevel, FilterDescriptor descriptor,
-        FilterDescriptor.FilterOperation operation) {
+            FilterDescriptor.FilterOperation operation) {
         if (descriptor.getOperation() == operation) {
             for (FilterDescriptor child : descriptor.getChildren()) {
                 handleItem(topLevel, child, operation);

@@ -11,8 +11,8 @@ import org.apache.log4j.Level;
 
 // --------------------------------------------------------------------
 /**
- * The details of a message that should have been logged, when the message must be matched against a
- * regular expression. For use with {@link LoggingRecorder}.
+ * The details of a message that should have been logged, when the message must be matched against a regular expression.
+ * For use with {@link LoggingRecorder}.
  */
 public class CheckedMessageRegexp extends CheckedMessage {
 
@@ -26,8 +26,7 @@ public class CheckedMessageRegexp extends CheckedMessage {
     @Override
     public void checkMessage(String sRenderedMessage) {
         if (!m_pattern.matcher(sRenderedMessage).matches()) {
-            throw new ComparisonFailure("Could not match pattern.", m_pattern.toString(),
-                sRenderedMessage);
+            throw new ComparisonFailure("Could not match pattern.", m_pattern.toString(), sRenderedMessage);
         }
     }
 }

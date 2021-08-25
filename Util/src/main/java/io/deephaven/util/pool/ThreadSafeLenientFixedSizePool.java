@@ -34,7 +34,7 @@ public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T>, Poo
      * @return a Function taking a ThreadSafeLenientFixedSizePool(ignored) and returning T
      */
     private static <T> Function.Unary<T, ThreadSafeLenientFixedSizePool<T>> makeFactoryAdapter(
-        final Function.Nullary<T> callable) {
+            final Function.Nullary<T> callable) {
         return arg -> callable.call();
     }
 
@@ -46,23 +46,23 @@ public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T>, Poo
     private final Counter extraFactoryCalls;
 
     public ThreadSafeLenientFixedSizePool(String name,
-        int size,
-        Function.Nullary<T> initFactory,
-        Function.Nullary<T> overflowFactory,
-        Procedure.Unary<? super T> clearingProcedure) {
+            int size,
+            Function.Nullary<T> initFactory,
+            Function.Nullary<T> overflowFactory,
+            Procedure.Unary<? super T> clearingProcedure) {
         this(
-            name,
-            Require.geq(size, "size", MIN_SIZE, "MIN_SIZE"),
-            makeFactoryAdapter(Require.neqNull(initFactory, "initFactory")),
-            makeFactoryAdapter(Require.neqNull(overflowFactory, "overflowFactory")),
-            clearingProcedure);
+                name,
+                Require.geq(size, "size", MIN_SIZE, "MIN_SIZE"),
+                makeFactoryAdapter(Require.neqNull(initFactory, "initFactory")),
+                makeFactoryAdapter(Require.neqNull(overflowFactory, "overflowFactory")),
+                clearingProcedure);
     }
 
     public ThreadSafeLenientFixedSizePool(String name,
-        int size,
-        Function.Unary<T, ThreadSafeLenientFixedSizePool<T>> initFactory,
-        Function.Unary<T, ThreadSafeLenientFixedSizePool<T>> overflowFactory,
-        Procedure.Unary<? super T> clearingProcedure) {
+            int size,
+            Function.Unary<T, ThreadSafeLenientFixedSizePool<T>> initFactory,
+            Function.Unary<T, ThreadSafeLenientFixedSizePool<T>> overflowFactory,
+            Procedure.Unary<? super T> clearingProcedure) {
         Require.geq(size, "size", MIN_SIZE, "MIN_SIZE");
         Require.neqNull(initFactory, "initFactory");
         Require.neqNull(overflowFactory, "overflowFactory");
@@ -72,8 +72,7 @@ public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T>, Poo
         for (int i = 0; i < size; ++i) {
             pool.enqueue(initFactory.call(this));
         }
-        extraFactoryCalls = name == null ? null
-            : Stats.makeItem(name, "extraFactoryCalls", Counter.FACTORY).getValue();
+        extraFactoryCalls = name == null ? null : Stats.makeItem(name, "extraFactoryCalls", Counter.FACTORY).getValue();
     }
 
     public T take() {

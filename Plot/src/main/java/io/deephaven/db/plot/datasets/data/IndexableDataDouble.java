@@ -24,8 +24,7 @@ public class IndexableDataDouble extends IndexableData<Double> {
      * @param data data
      * @param mapNanToNull if true, Double.NaN values are mapped to null
      */
-    public IndexableDataDouble(IndexableNumericData data, boolean mapNanToNull,
-        final PlotInfo plotInfo) {
+    public IndexableDataDouble(IndexableNumericData data, boolean mapNanToNull, final PlotInfo plotInfo) {
         super(plotInfo);
         ArgumentValidations.assertNotNull(data, "data", getPlotInfo());
 
@@ -42,8 +41,7 @@ public class IndexableDataDouble extends IndexableData<Double> {
      * @param mapNanToNull if true, Double.NaN values are mapped to null
      * @param <T> type of the data in {@code values}
      */
-    public <T extends Number> IndexableDataDouble(T[] values, boolean mapNanToNull,
-        final PlotInfo plotInfo) {
+    public <T extends Number> IndexableDataDouble(T[] values, boolean mapNanToNull, final PlotInfo plotInfo) {
         this(new IndexableNumericDataArrayNumber<>(values, plotInfo), mapNanToNull, plotInfo);
     }
 

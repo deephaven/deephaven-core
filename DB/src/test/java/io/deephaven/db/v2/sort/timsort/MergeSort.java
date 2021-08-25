@@ -10,9 +10,9 @@ public class MergeSort {
     }
 
     public static void mergeSort(long[] src,
-        long[] dest,
-        int low, int high, int off,
-        ColumnComparatorFactory.IComparator c) {
+            long[] dest,
+            int low, int high, int off,
+            ColumnComparatorFactory.IComparator c) {
         int length = high - low;
 
         // Insertion sort on smallest arrays

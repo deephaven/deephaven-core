@@ -75,11 +75,11 @@ public class FastFloatArray implements Externalizable, Copyable<FastFloatArray> 
 
     public void removeThisIndex(int index) {
         if (index >= length) {
-            throw new IllegalArgumentException("you tried to remove this index: " + index
-                + " when the array is only this long: " + length);
+            throw new IllegalArgumentException(
+                    "you tried to remove this index: " + index + " when the array is only this long: " + length);
         } else if (index < 0) {
-            throw new IllegalArgumentException("you tried to remove this index: " + index
-                + " when we can only remove positive indices");
+            throw new IllegalArgumentException(
+                    "you tried to remove this index: " + index + " when we can only remove positive indices");
         } else {
             // move all the items ahead one index and reduce the length
             for (int i = index; i < length; i++) {
@@ -138,7 +138,7 @@ public class FastFloatArray implements Externalizable, Copyable<FastFloatArray> 
         msg.append(pre).append("<FastFloatArray>\n");
         for (int i = 0; i < array.length; i++) {
             msg.append(pre).append(extra).append("<index>").append(i).append("</index><length>")
-                .append(length).append("</length><entry>").append(array[i]).append("</entry>\n");
+                    .append(length).append("</length><entry>").append(array[i]).append("</entry>\n");
         }
         msg.append(pre).append("</FastFloatArray>\n");
         return msg.toString();

@@ -41,9 +41,8 @@ public class SortedIndexableMapWrapper<K, V> implements IndexableMap<K, V> {
         if (valueList != null) {
             return valueList;
         }
-        valueList = baseMap.entrySet().stream()
-            .sorted((e1, e2) -> comparator.compare(e1.getValue(), e2.getValue()))
-            .collect(Collectors.toCollection(ArrayList::new));
+        valueList = baseMap.entrySet().stream().sorted((e1, e2) -> comparator.compare(e1.getValue(), e2.getValue()))
+                .collect(Collectors.toCollection(ArrayList::new));
         return valueList;
     }
 
@@ -105,8 +104,7 @@ public class SortedIndexableMapWrapper<K, V> implements IndexableMap<K, V> {
     @NotNull
     @Override
     public synchronized Collection<V> values() {
-        return Collections.unmodifiableList(
-            getValuesList().stream().map(Entry::getValue).collect(Collectors.toList()));
+        return Collections.unmodifiableList(getValuesList().stream().map(Entry::getValue).collect(Collectors.toList()));
     }
 
     @NotNull
@@ -122,7 +120,7 @@ public class SortedIndexableMapWrapper<K, V> implements IndexableMap<K, V> {
             return false;
         }
         return comparator.equals(((SortedIndexableMapWrapper) o).comparator)
-            && baseMap.equals(((SortedIndexableMapWrapper) o).baseMap);
+                && baseMap.equals(((SortedIndexableMapWrapper) o).baseMap);
     }
 
     @Override
@@ -177,22 +175,19 @@ public class SortedIndexableMapWrapper<K, V> implements IndexableMap<K, V> {
     }
 
     @Override
-    public synchronized V computeIfPresent(K key,
-        BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+    public synchronized V computeIfPresent(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         clearList();
         return baseMap.computeIfPresent(key, remappingFunction);
     }
 
     @Override
-    public synchronized V compute(K key,
-        BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+    public synchronized V compute(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         clearList();
         return baseMap.compute(key, remappingFunction);
     }
 
     @Override
-    public synchronized V merge(K key, V value,
-        BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
+    public synchronized V merge(K key, V value, BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
         clearList();
         return baseMap.merge(key, value, remappingFunction);
     }

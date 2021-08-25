@@ -22,13 +22,13 @@ public class Map<K, V> {
     }
 
     public static native <TK, TV> Map<TK, TV> fromObject(
-        JsArray<JsArray<Object>> entries, Object valueCtor, Object valueFromObject);
+            JsArray<JsArray<Object>> entries, Object valueCtor, Object valueFromObject);
 
     @JsOverlay
     public static final <TK, TV> Map<TK, TV> fromObject(
-        Object[][] entries, Object valueCtor, Object valueFromObject) {
+            Object[][] entries, Object valueCtor, Object valueFromObject) {
         return fromObject(
-            Js.<JsArray<JsArray<Object>>>uncheckedCast(entries), valueCtor, valueFromObject);
+                Js.<JsArray<JsArray<Object>>>uncheckedCast(entries), valueCtor, valueFromObject);
     }
 
     public Map(JsArray<JsArray<Object>> arr, JsConstructorFn<? extends V> valueCtor) {}
@@ -45,8 +45,7 @@ public class Map<K, V> {
 
     public native Iterator<JsArray<Object>> entries();
 
-    public native void forEach(Map.ForEachCallbackFn<? super K, ? super V> callback,
-        Object thisArg);
+    public native void forEach(Map.ForEachCallbackFn<? super K, ? super V> callback, Object thisArg);
 
     public native void forEach(Map.ForEachCallbackFn<? super K, ? super V> callback);
 
@@ -67,8 +66,7 @@ public class Map<K, V> {
     public native JsArray<JsArray<Object>> toObject();
 
     public native <VO> JsArray<JsArray<Object>> toObject(
-        boolean includeInstance,
-        Map.ToObjectValueToObjectFn<? extends VO, ? super V> valueToObject);
+            boolean includeInstance, Map.ToObjectValueToObjectFn<? extends VO, ? super V> valueToObject);
 
     public native JsArray<JsArray<Object>> toObject(boolean includeInstance);
 }

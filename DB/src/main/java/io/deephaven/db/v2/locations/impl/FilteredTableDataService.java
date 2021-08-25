@@ -16,13 +16,11 @@ import java.util.WeakHashMap;
 import java.util.stream.Collectors;
 
 /**
- * {@link TableDataService} implementation with support to filter the provided
- * {@link TableLocation}s.
+ * {@link TableDataService} implementation with support to filter the provided {@link TableLocation}s.
  */
 public class FilteredTableDataService extends AbstractTableDataService {
 
-    private static final String IMPLEMENTATION_NAME =
-        FilteredTableDataService.class.getSimpleName();
+    private static final String IMPLEMENTATION_NAME = FilteredTableDataService.class.getSimpleName();
 
     private final TableDataService serviceToFilter;
     private final LocationKeyFilter locationKeyFilter;
@@ -44,7 +42,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
      * @param locationKeyFilter The filter function
      */
     public FilteredTableDataService(@NotNull final TableDataService serviceToFilter,
-        @NotNull final LocationKeyFilter locationKeyFilter) {
+            @NotNull final LocationKeyFilter locationKeyFilter) {
         super("Filtered-" + Require.neqNull(serviceToFilter, "serviceToFilter").getName());
         this.serviceToFilter = Require.neqNull(serviceToFilter, "serviceToFilter");
         this.locationKeyFilter = Require.neqNull(locationKeyFilter, "locationKeyFilter");
@@ -129,13 +127,12 @@ public class FilteredTableDataService extends AbstractTableDataService {
         @Override
         public @NotNull Collection<ImmutableTableLocationKey> getTableLocationKeys() {
             return inputProvider.getTableLocationKeys().stream().filter(locationKeyFilter::accept)
-                .collect(Collectors.toList());
+                    .collect(Collectors.toList());
         }
 
         @Override
         public boolean hasTableLocationKey(@NotNull final TableLocationKey tableLocationKey) {
-            return locationKeyFilter.accept(tableLocationKey)
-                && inputProvider.hasTableLocationKey(tableLocationKey);
+            return locationKeyFilter.accept(tableLocationKey) && inputProvider.hasTableLocationKey(tableLocationKey);
         }
 
         @Nullable
@@ -154,18 +151,17 @@ public class FilteredTableDataService extends AbstractTableDataService {
     }
 
     private class FilteringListener extends WeakReferenceWrapper<TableLocationProvider.Listener>
-        implements TableLocationProvider.Listener {
+            implements TableLocationProvider.Listener {
 
         private FilteringListener(@NotNull final TableLocationProvider.Listener outputListener) {
             super(outputListener);
         }
 
         @Override
-        public void handleTableLocationKey(
-            @NotNull final ImmutableTableLocationKey tableLocationKey) {
+        public void handleTableLocationKey(@NotNull final ImmutableTableLocationKey tableLocationKey) {
             final TableLocationProvider.Listener outputListener = getWrapped();
-            // We can't try to clean up null listeners here, the underlying implementation may not
-            // allow concurrent unsubscribe operations.
+            // We can't try to clean up null listeners here, the underlying implementation may not allow concurrent
+            // unsubscribe operations.
             if (outputListener != null && locationKeyFilter.accept(tableLocationKey)) {
                 outputListener.handleTableLocationKey(tableLocationKey);
             }
@@ -194,18 +190,18 @@ public class FilteredTableDataService extends AbstractTableDataService {
     @Override
     public String toString() {
         return getImplementationName() + '{' +
-            (getName() != null ? "name=" + getName() + ", " : "") +
-            "locationKeyFilter=" + locationKeyFilter +
-            ", serviceToFilter=" + serviceToFilter +
-            '}';
+                (getName() != null ? "name=" + getName() + ", " : "") +
+                "locationKeyFilter=" + locationKeyFilter +
+                ", serviceToFilter=" + serviceToFilter +
+                '}';
     }
 
     @Override
     public String describe() {
         return getImplementationName() + '{' +
-            (getName() != null ? "name=" + getName() + ", " : "") +
-            "locationKeyFilter=" + locationKeyFilter +
-            ", serviceToFilter=" + serviceToFilter.describe() +
-            '}';
+                (getName() != null ? "name=" + getName() + ", " : "") +
+                "locationKeyFilter=" + locationKeyFilter +
+                ", serviceToFilter=" + serviceToFilter.describe() +
+                '}';
     }
 }

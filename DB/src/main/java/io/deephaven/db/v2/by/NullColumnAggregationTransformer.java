@@ -18,8 +18,8 @@ public class NullColumnAggregationTransformer implements AggregationContextTrans
         final Map<String, ColumnSource<?>> savedColumns = new LinkedHashMap<>(resultColumns);
         resultColumns.clear();
         // noinspection unchecked
-        resultColumnTypes.forEach(
-            (key, value) -> resultColumns.put(key, NullValueColumnSource.getInstance(value, null)));
+        resultColumnTypes
+                .forEach((key, value) -> resultColumns.put(key, NullValueColumnSource.getInstance(value, null)));
         resultColumns.putAll(savedColumns);
     }
 }

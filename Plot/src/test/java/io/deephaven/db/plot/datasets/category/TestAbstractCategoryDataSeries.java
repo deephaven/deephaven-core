@@ -34,7 +34,7 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
 
         TestCat(AxesImpl axes) {
             super(axes, 1, name, new IndexableDataArray<>(categories, null),
-                new IndexableNumericDataArrayInt(values, null));
+                    new IndexableNumericDataArrayInt(values, null));
             assertEquals(name(), "test");
         }
     }
@@ -320,17 +320,13 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
         shapesMap.put(categories[0], "circle");
         shapesMap.put(categories[1], "square");
         data.pointShape(shapesMap);
-        assertEquals(NamedShape.valueOf(shapesMap.get(categories[0]).toUpperCase()),
-            data.getPointShape(categories[0]));
-        assertEquals(NamedShape.valueOf(shapesMap.get(categories[1]).toUpperCase()),
-            data.getPointShape(categories[1]));
+        assertEquals(NamedShape.valueOf(shapesMap.get(categories[0]).toUpperCase()), data.getPointShape(categories[0]));
+        assertEquals(NamedShape.valueOf(shapesMap.get(categories[1]).toUpperCase()), data.getPointShape(categories[1]));
         assertEquals(NamedShape.SQUARE, data.getPointShape(categories[2]));
 
         data.pointShape(shapesMap::get);
-        assertEquals(NamedShape.valueOf(shapesMap.get(categories[0]).toUpperCase()),
-            data.getPointShape(categories[0]));
-        assertEquals(NamedShape.valueOf(shapesMap.get(categories[1]).toUpperCase()),
-            data.getPointShape(categories[1]));
+        assertEquals(NamedShape.valueOf(shapesMap.get(categories[0]).toUpperCase()), data.getPointShape(categories[0]));
+        assertEquals(NamedShape.valueOf(shapesMap.get(categories[1]).toUpperCase()), data.getPointShape(categories[1]));
         assertEquals(NamedShape.SQUARE, data.getPointShape(categories[2]));
     }
 

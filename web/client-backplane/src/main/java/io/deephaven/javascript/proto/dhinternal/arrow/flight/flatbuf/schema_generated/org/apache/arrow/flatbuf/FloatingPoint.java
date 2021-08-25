@@ -6,9 +6,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.FloatingPoint",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.FloatingPoint",
+        namespace = JsPackage.GLOBAL)
 public class FloatingPoint {
     public static native void addPrecision(Builder builder, int precision);
 
@@ -21,7 +21,7 @@ public class FloatingPoint {
     public static native FloatingPoint getRootAsFloatingPoint(ByteBuffer bb);
 
     public static native FloatingPoint getSizePrefixedRootAsFloatingPoint(
-        ByteBuffer bb, FloatingPoint obj);
+            ByteBuffer bb, FloatingPoint obj);
 
     public static native FloatingPoint getSizePrefixedRootAsFloatingPoint(ByteBuffer bb);
 

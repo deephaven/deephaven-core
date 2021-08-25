@@ -74,10 +74,9 @@ public class FIFOSemaphore {
         int spins = 0;
         int resourcesAvailable;
         boolean peekNotMe = true;
-        while ((peekNotMe && (peekNotMe = (threads.peek() != me))) || // once we've peeked ourselves
-                                                                      // once, we don't need to do
-                                                                      // it again!
-            (resourcesAvailable = getAndDecreaseIfCan(toAcquire)) < toAcquire) {
+        while ((peekNotMe && (peekNotMe = (threads.peek() != me))) || // once we've peeked ourselves once, we don't need
+                                                                      // to do it again!
+                (resourcesAvailable = getAndDecreaseIfCan(toAcquire)) < toAcquire) {
             if ((++spins % spinsUntilPark) == 0) {
                 LockSupport.park(this);
 

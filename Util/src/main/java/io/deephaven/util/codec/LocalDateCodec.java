@@ -9,15 +9,15 @@ import java.time.Year;
 /**
  * LocalDate codec, with support for "full" and "compact" encodings.
  *
- * The full (default) encoding is a 5-byte packed integer format that can represent the full range
- * of dates that a LocalDate object can hold (years -999,999,999 to 999,999,999).
+ * The full (default) encoding is a 5-byte packed integer format that can represent the full range of dates that a
+ * LocalDate object can hold (years -999,999,999 to 999,999,999).
  *
- * The compact encoding is a 3-byte packed-integer. This format is constrained to represent dates in
- * the range 0000-01-01 to 9999-01-01. This encoding covers the range supported by many SQL
- * databases, so is often a good candidate for imported data sets.
+ * The compact encoding is a 3-byte packed-integer. This format is constrained to represent dates in the range
+ * 0000-01-01 to 9999-01-01. This encoding covers the range supported by many SQL databases, so is often a good
+ * candidate for imported data sets.
  *
- * Both encodings are "nullable", indicated by setting the most significant byte to 0xFF (this can
- * never represent a valid value in the ranges specified for each encoding).
+ * Both encodings are "nullable", indicated by setting the most significant byte to 0xFF (this can never represent a
+ * valid value in the ranges specified for each encoding).
  */
 public class LocalDateCodec implements ObjectCodec<LocalDate> {
 
@@ -42,8 +42,7 @@ public class LocalDateCodec implements ObjectCodec<LocalDate> {
             try {
                 domain = Domain.valueOf(domainStr);
             } catch (IllegalArgumentException ex) {
-                throw new IllegalArgumentException(
-                    "Unexpected value for LocalDate domain: " + domainStr);
+                throw new IllegalArgumentException("Unexpected value for LocalDate domain: " + domainStr);
             }
             if (tokens.length > 1) {
                 final String nullability = tokens[1].trim();
@@ -56,8 +55,8 @@ public class LocalDateCodec implements ObjectCodec<LocalDate> {
                         break;
                     default:
                         throw new IllegalArgumentException(
-                            "Unexpected value for nullability (legal values are \"nullable\" or \"notNull\"): "
-                                + nullability);
+                                "Unexpected value for nullability (legal values are \"nullable\" or \"notNull\"): "
+                                        + nullability);
                 }
             }
         } else {
@@ -113,19 +112,17 @@ public class LocalDateCodec implements ObjectCodec<LocalDate> {
             }
         } else {
             if (input.getYear() < minYear || input.getYear() > maxYear) {
-                throw new IllegalArgumentException(
-                    "Year out of legal range [" + minYear + "," + maxYear + "] for "
+                throw new IllegalArgumentException("Year out of legal range [" + minYear + "," + maxYear + "] for "
                         + domain.toString() + " encoder: " + input.getYear());
             }
             final byte[] encodedValue = new byte[encodedSize];
             switch (domain) {
                 case Compact: {
-                    // 5 bits for day of month, 4 for month, and 14 for the year (leading bit is for
-                    // null indicator)
+                    // 5 bits for day of month, 4 for month, and 14 for the year (leading bit is for null indicator)
                     // this totals 23 so we have one extra bit for the null indicator in 3 bytes
                     int packedValue = (input.getYear() << 4 + 5)
-                        | (input.getMonthValue() << 5)
-                        | (input.getDayOfMonth());
+                            | (input.getMonthValue() << 5)
+                            | (input.getDayOfMonth());
                     for (int i = encodedSize - 1; i >= 0; i--) {
                         encodedValue[i] = (byte) (packedValue & 0xFF);
                         packedValue >>= 8;
@@ -134,16 +131,14 @@ public class LocalDateCodec implements ObjectCodec<LocalDate> {
                     break;
                 case Full: {
                     // 5 bits for day of month, 4 for month, and 31 for the year
-                    // this uses every available bit, but since our legal year range is just
-                    // -999,999,999 to 999,999,999
+                    // this uses every available bit, but since our legal year range is just -999,999,999 to 999,999,999
                     // a leading 0xFF byte still represents an illegal value
-                    // we want to represent negative years, so we convert to a positive value to
-                    // avoid messing with the high bit
-                    final long year = (long) input.getYear() - minYear; // offset the year to avoid
-                                                                        // negative values
+                    // we want to represent negative years, so we convert to a positive value to avoid messing with the
+                    // high bit
+                    final long year = (long) input.getYear() - minYear; // offset the year to avoid negative values
                     long packedValue = (year << 4 + 5)
-                        | ((long) input.getMonthValue() << 5)
-                        | ((long) input.getDayOfMonth());
+                            | ((long) input.getMonthValue() << 5)
+                            | ((long) input.getDayOfMonth());
                     for (int i = encodedSize - 1; i >= 0; i--) {
                         encodedValue[i] = (byte) (packedValue & 0xFF);
                         packedValue >>= 8;

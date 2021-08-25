@@ -86,17 +86,15 @@ public abstract class Value {
         min = Long.MAX_VALUE;
     }
 
-    public void update(Item item, ItemUpdateListener listener, long logInterval, long now,
-        long appNow) {
+    public void update(Item item, ItemUpdateListener listener, long logInterval, long now, long appNow) {
         int topInterval = history.update(this, now);
         reset();
         if (History.INTERVALS[topInterval] >= logInterval) {
             for (int i = 0; i <= topInterval; ++i) {
-                if (History.INTERVALS[i] >= logInterval && history.getN(i, 1) > 0
-                    || alwaysUpdated) {
+                if (History.INTERVALS[i] >= logInterval && history.getN(i, 1) > 0 || alwaysUpdated) {
                     if (listener != null) {
                         listener.handleItemUpdated(item, now, appNow, i, History.INTERVALS[i],
-                            History.INTERVAL_NAMES[i]);
+                                History.INTERVAL_NAMES[i]);
                     }
                 }
             }

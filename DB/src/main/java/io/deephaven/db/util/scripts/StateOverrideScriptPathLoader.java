@@ -5,8 +5,7 @@ package io.deephaven.db.util.scripts;
  */
 public interface StateOverrideScriptPathLoader extends ScriptPathLoader {
     /**
-     * Sets a state that should be used for loading operations instead of the state the loader was
-     * created with.
+     * Sets a state that should be used for loading operations instead of the state the loader was created with.
      *
      * @param state the state to use for loading operations.
      */

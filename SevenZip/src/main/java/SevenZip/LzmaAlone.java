@@ -118,19 +118,19 @@ public class LzmaAlone {
 
     static void PrintHelp() {
         System.out.println(
-            "\nUsage:  LZMA <e|d> [<switches>...] inputFile outputFile\n" +
-                "  e: encode file\n" +
-                "  d: decode file\n" +
-                "  b: Benchmark\n" +
-                "<Switches>\n" +
-                // " -a{N}: set compression mode - [0, 1], default: 1 (max)\n" +
-                "  -d{N}:  set dictionary - [0,28], default: 23 (8MB)\n" +
-                "  -fb{N}: set number of fast bytes - [5, 273], default: 128\n" +
-                "  -lc{N}: set number of literal context bits - [0, 8], default: 3\n" +
-                "  -lp{N}: set number of literal pos bits - [0, 4], default: 0\n" +
-                "  -pb{N}: set number of pos bits - [0, 4], default: 2\n" +
-                "  -mf{MF_ID}: set Match Finder: [bt2, bt4], default: bt4\n" +
-                "  -eos:   write End Of Stream marker\n");
+                "\nUsage:  LZMA <e|d> [<switches>...] inputFile outputFile\n" +
+                        "  e: encode file\n" +
+                        "  d: decode file\n" +
+                        "  b: Benchmark\n" +
+                        "<Switches>\n" +
+                        // " -a{N}: set compression mode - [0, 1], default: 1 (max)\n" +
+                        "  -d{N}:  set dictionary - [0,28], default: 23 (8MB)\n" +
+                        "  -fb{N}: set number of fast bytes - [5, 273], default: 128\n" +
+                        "  -lc{N}: set number of literal context bits - [0, 8], default: 3\n" +
+                        "  -lp{N}: set number of literal pos bits - [0, 4], default: 0\n" +
+                        "  -pb{N}: set number of pos bits - [0, 4], default: 2\n" +
+                        "  -mf{MF_ID}: set Match Finder: [bt2, bt4], default: bt4\n" +
+                        "  -eos:   write End Of Stream marker\n");
     }
 
     public static void main(String[] args) throws Exception {
@@ -158,10 +158,9 @@ public class LzmaAlone {
             java.io.File inFile = new java.io.File(params.InFile);
             java.io.File outFile = new java.io.File(params.OutFile);
 
-            java.io.BufferedInputStream inStream =
-                new java.io.BufferedInputStream(new java.io.FileInputStream(inFile));
+            java.io.BufferedInputStream inStream = new java.io.BufferedInputStream(new java.io.FileInputStream(inFile));
             java.io.BufferedOutputStream outStream =
-                new java.io.BufferedOutputStream(new java.io.FileOutputStream(outFile));
+                    new java.io.BufferedOutputStream(new java.io.FileOutputStream(outFile));
 
             boolean eos = false;
             if (params.Eos)

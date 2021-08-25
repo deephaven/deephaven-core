@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.Flight_pb.SchemaResult",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.Flight_pb.SchemaResult",
+        namespace = JsPackage.GLOBAL)
 public class SchemaResult {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface GetSchemaUnionType {
@@ -164,26 +164,24 @@ public class SchemaResult {
 
         @JsOverlay
         default void setSchema(String schema) {
-            setSchema(
-                Js.<SchemaResult.ToObjectReturnType0.GetSchemaUnionType>uncheckedCast(schema));
+            setSchema(Js.<SchemaResult.ToObjectReturnType0.GetSchemaUnionType>uncheckedCast(schema));
         }
 
         @JsOverlay
         default void setSchema(Uint8Array schema) {
-            setSchema(
-                Js.<SchemaResult.ToObjectReturnType0.GetSchemaUnionType>uncheckedCast(schema));
+            setSchema(Js.<SchemaResult.ToObjectReturnType0.GetSchemaUnionType>uncheckedCast(schema));
         }
     }
 
     public static native SchemaResult deserializeBinary(Uint8Array bytes);
 
     public static native SchemaResult deserializeBinaryFromReader(
-        SchemaResult message, Object reader);
+            SchemaResult message, Object reader);
 
     public static native void serializeBinaryToWriter(SchemaResult message, Object writer);
 
     public static native SchemaResult.ToObjectReturnType toObject(
-        boolean includeInstance, SchemaResult msg);
+            boolean includeInstance, SchemaResult msg);
 
     public native SchemaResult.GetSchemaUnionType getSchema();
 

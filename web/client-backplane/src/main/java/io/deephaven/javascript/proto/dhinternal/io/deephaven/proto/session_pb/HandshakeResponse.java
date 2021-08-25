@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.session_pb.HandshakeResponse",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.session_pb.HandshakeResponse",
+        namespace = JsPackage.GLOBAL)
 public class HandshakeResponse {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface GetMetadataHeaderUnionType {
@@ -202,38 +202,38 @@ public class HandshakeResponse {
 
         @JsProperty
         void setMetadataHeader(
-            HandshakeResponse.ToObjectReturnType.GetMetadataHeaderUnionType metadataHeader);
+                HandshakeResponse.ToObjectReturnType.GetMetadataHeaderUnionType metadataHeader);
 
         @JsOverlay
         default void setMetadataHeader(String metadataHeader) {
             setMetadataHeader(
-                Js.<HandshakeResponse.ToObjectReturnType.GetMetadataHeaderUnionType>uncheckedCast(
-                    metadataHeader));
+                    Js.<HandshakeResponse.ToObjectReturnType.GetMetadataHeaderUnionType>uncheckedCast(
+                            metadataHeader));
         }
 
         @JsOverlay
         default void setMetadataHeader(Uint8Array metadataHeader) {
             setMetadataHeader(
-                Js.<HandshakeResponse.ToObjectReturnType.GetMetadataHeaderUnionType>uncheckedCast(
-                    metadataHeader));
+                    Js.<HandshakeResponse.ToObjectReturnType.GetMetadataHeaderUnionType>uncheckedCast(
+                            metadataHeader));
         }
 
         @JsProperty
         void setSessionToken(
-            HandshakeResponse.ToObjectReturnType.GetSessionTokenUnionType sessionToken);
+                HandshakeResponse.ToObjectReturnType.GetSessionTokenUnionType sessionToken);
 
         @JsOverlay
         default void setSessionToken(String sessionToken) {
             setSessionToken(
-                Js.<HandshakeResponse.ToObjectReturnType.GetSessionTokenUnionType>uncheckedCast(
-                    sessionToken));
+                    Js.<HandshakeResponse.ToObjectReturnType.GetSessionTokenUnionType>uncheckedCast(
+                            sessionToken));
         }
 
         @JsOverlay
         default void setSessionToken(Uint8Array sessionToken) {
             setSessionToken(
-                Js.<HandshakeResponse.ToObjectReturnType.GetSessionTokenUnionType>uncheckedCast(
-                    sessionToken));
+                    Js.<HandshakeResponse.ToObjectReturnType.GetSessionTokenUnionType>uncheckedCast(
+                            sessionToken));
         }
 
         @JsProperty
@@ -320,38 +320,38 @@ public class HandshakeResponse {
 
         @JsProperty
         void setMetadataHeader(
-            HandshakeResponse.ToObjectReturnType0.GetMetadataHeaderUnionType metadataHeader);
+                HandshakeResponse.ToObjectReturnType0.GetMetadataHeaderUnionType metadataHeader);
 
         @JsOverlay
         default void setMetadataHeader(String metadataHeader) {
             setMetadataHeader(
-                Js.<HandshakeResponse.ToObjectReturnType0.GetMetadataHeaderUnionType>uncheckedCast(
-                    metadataHeader));
+                    Js.<HandshakeResponse.ToObjectReturnType0.GetMetadataHeaderUnionType>uncheckedCast(
+                            metadataHeader));
         }
 
         @JsOverlay
         default void setMetadataHeader(Uint8Array metadataHeader) {
             setMetadataHeader(
-                Js.<HandshakeResponse.ToObjectReturnType0.GetMetadataHeaderUnionType>uncheckedCast(
-                    metadataHeader));
+                    Js.<HandshakeResponse.ToObjectReturnType0.GetMetadataHeaderUnionType>uncheckedCast(
+                            metadataHeader));
         }
 
         @JsProperty
         void setSessionToken(
-            HandshakeResponse.ToObjectReturnType0.GetSessionTokenUnionType sessionToken);
+                HandshakeResponse.ToObjectReturnType0.GetSessionTokenUnionType sessionToken);
 
         @JsOverlay
         default void setSessionToken(String sessionToken) {
             setSessionToken(
-                Js.<HandshakeResponse.ToObjectReturnType0.GetSessionTokenUnionType>uncheckedCast(
-                    sessionToken));
+                    Js.<HandshakeResponse.ToObjectReturnType0.GetSessionTokenUnionType>uncheckedCast(
+                            sessionToken));
         }
 
         @JsOverlay
         default void setSessionToken(Uint8Array sessionToken) {
             setSessionToken(
-                Js.<HandshakeResponse.ToObjectReturnType0.GetSessionTokenUnionType>uncheckedCast(
-                    sessionToken));
+                    Js.<HandshakeResponse.ToObjectReturnType0.GetSessionTokenUnionType>uncheckedCast(
+                            sessionToken));
         }
 
         @JsProperty
@@ -364,12 +364,12 @@ public class HandshakeResponse {
     public static native HandshakeResponse deserializeBinary(Uint8Array bytes);
 
     public static native HandshakeResponse deserializeBinaryFromReader(
-        HandshakeResponse message, Object reader);
+            HandshakeResponse message, Object reader);
 
     public static native void serializeBinaryToWriter(HandshakeResponse message, Object writer);
 
     public static native HandshakeResponse.ToObjectReturnType toObject(
-        boolean includeInstance, HandshakeResponse msg);
+            boolean includeInstance, HandshakeResponse msg);
 
     public native HandshakeResponse.GetMetadataHeaderUnionType getMetadataHeader();
 
@@ -393,14 +393,12 @@ public class HandshakeResponse {
 
     @JsOverlay
     public final void setMetadataHeader(String value) {
-        setMetadataHeader(
-            Js.<HandshakeResponse.SetMetadataHeaderValueUnionType>uncheckedCast(value));
+        setMetadataHeader(Js.<HandshakeResponse.SetMetadataHeaderValueUnionType>uncheckedCast(value));
     }
 
     @JsOverlay
     public final void setMetadataHeader(Uint8Array value) {
-        setMetadataHeader(
-            Js.<HandshakeResponse.SetMetadataHeaderValueUnionType>uncheckedCast(value));
+        setMetadataHeader(Js.<HandshakeResponse.SetMetadataHeaderValueUnionType>uncheckedCast(value));
     }
 
     public native void setSessionToken(HandshakeResponse.SetSessionTokenValueUnionType value);

@@ -25,8 +25,8 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
     private final DoubleArraySource weightedSum;
     private final DoubleArraySource resultColumn;
 
-    ChunkedWeightedAverageOperator(ChunkType chunkType,
-        DoubleWeightRecordingInternalOperator weightOperator, String name) {
+    ChunkedWeightedAverageOperator(ChunkType chunkType, DoubleWeightRecordingInternalOperator weightOperator,
+            String name) {
         this.chunkType = chunkType;
         this.weightOperator = weightOperator;
         this.resultName = name;
@@ -40,58 +40,56 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-        LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
-        IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-        WritableBooleanChunk<Values> stateModified) {
+            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final Context context = (Context) bucketedContext;
         final DoubleChunk<? extends Values> doubleValues = context.toDoubleCast.cast(values);
         final DoubleChunk<? extends Values> weightValues = weightOperator.getAddedWeights();
         Assert.neqNull(weightValues, "weightValues");
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
-            stateModified.set(ii, addChunk(doubleValues, weightValues, startPosition,
-                length.get(ii), destinations.get(startPosition)));
+            stateModified.set(ii, addChunk(doubleValues, weightValues, startPosition, length.get(ii),
+                    destinations.get(startPosition)));
         }
     }
 
     @Override
     public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-        LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
-        IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-        WritableBooleanChunk<Values> stateModified) {
+            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final Context context = (Context) bucketedContext;
         final DoubleChunk<? extends Values> doubleValues = context.prevToDoubleCast.cast(values);
         final DoubleChunk<? extends Values> weightValues = weightOperator.getRemovedWeights();
         Assert.neqNull(weightValues, "weightValues");
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
-            stateModified.set(ii, removeChunk(doubleValues, weightValues, startPosition,
-                length.get(ii), destinations.get(startPosition)));
+            stateModified.set(ii, removeChunk(doubleValues, weightValues, startPosition, length.get(ii),
+                    destinations.get(startPosition)));
         }
     }
 
     @Override
     public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> previousValues,
-        Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices,
-        IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions,
-        IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+            Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices,
+            IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final Context context = (Context) bucketedContext;
-        final DoubleChunk<? extends Values> prevDoubleValues =
-            context.prevToDoubleCast.cast(previousValues);
+        final DoubleChunk<? extends Values> prevDoubleValues = context.prevToDoubleCast.cast(previousValues);
         final DoubleChunk<? extends Values> prevWeightValues = weightOperator.getRemovedWeights();
         final DoubleChunk<? extends Values> newDoubleValues = context.toDoubleCast.cast(newValues);
         final DoubleChunk<? extends Values> newWeightValues = weightOperator.getAddedWeights();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
-            stateModified.set(ii, modifyChunk(prevDoubleValues, prevWeightValues, newDoubleValues,
-                newWeightValues, startPosition, length.get(ii), destinations.get(startPosition)));
+            stateModified.set(ii, modifyChunk(prevDoubleValues, prevWeightValues, newDoubleValues, newWeightValues,
+                    startPosition, length.get(ii), destinations.get(startPosition)));
         }
     }
 
     @Override
-    public boolean addChunk(SingletonContext singletonContext, int chunkSize,
-        Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices,
-        long destination) {
+    public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends KeyIndices> inputIndices, long destination) {
         final Context context = (Context) singletonContext;
         final DoubleChunk<? extends Values> doubleValues = context.toDoubleCast.cast(values);
         final DoubleChunk<? extends Values> weightValues = weightOperator.getAddedWeights();
@@ -99,9 +97,8 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public boolean removeChunk(SingletonContext singletonContext, int chunkSize,
-        Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices,
-        long destination) {
+    public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends KeyIndices> inputIndices, long destination) {
         final Context context = (Context) singletonContext;
         final DoubleChunk<? extends Values> doubleValues = context.prevToDoubleCast.cast(values);
         final DoubleChunk<? extends Values> weightValues = weightOperator.getRemovedWeights();
@@ -109,29 +106,27 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public boolean modifyChunk(SingletonContext singletonContext, int chunkSize,
-        Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues,
-        LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
+    public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> previousValues,
+            Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
         final Context context = (Context) singletonContext;
         final DoubleChunk<? extends Values> newDoubleValues = context.toDoubleCast.cast(newValues);
         final DoubleChunk<? extends Values> newWeightValues = weightOperator.getAddedWeights();
 
-        final DoubleChunk<? extends Values> prevDoubleValues =
-            context.prevToDoubleCast.cast(previousValues);
+        final DoubleChunk<? extends Values> prevDoubleValues = context.prevToDoubleCast.cast(previousValues);
         final DoubleChunk<? extends Values> prevWeightValues = weightOperator.getRemovedWeights();
 
         return modifyChunk(prevDoubleValues, prevWeightValues, newDoubleValues, newWeightValues, 0,
-            newDoubleValues.size(), destination);
+                newDoubleValues.size(), destination);
     }
 
     private static void sumChunks(DoubleChunk<? extends Values> doubleValues,
-        DoubleChunk<? extends Values> weightValues,
-        int start,
-        int length,
-        MutableInt nansOut,
-        MutableInt normalOut,
-        MutableDouble sumOfWeightsOut,
-        MutableDouble weightedSumOut) {
+            DoubleChunk<? extends Values> weightValues,
+            int start,
+            int length,
+            MutableInt nansOut,
+            MutableInt normalOut,
+            MutableDouble sumOfWeightsOut,
+            MutableDouble weightedSumOut) {
         long nans = 0;
         long normal = 0;
         double sumOfWeights = 0.0;
@@ -166,15 +161,14 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
         weightedSumOut.setValue(weightedSum);
     }
 
-    private boolean addChunk(DoubleChunk<? extends Values> doubleValues,
-        DoubleChunk<? extends Values> weightValues, int start, int length, long destination) {
+    private boolean addChunk(DoubleChunk<? extends Values> doubleValues, DoubleChunk<? extends Values> weightValues,
+            int start, int length, long destination) {
         final MutableInt nanOut = new MutableInt();
         final MutableInt normalOut = new MutableInt();
         final MutableDouble sumOfWeightsOut = new MutableDouble();
         final MutableDouble weightedSumOut = new MutableDouble();
 
-        sumChunks(doubleValues, weightValues, start, length, nanOut, normalOut, sumOfWeightsOut,
-            weightedSumOut);
+        sumChunks(doubleValues, weightValues, start, length, nanOut, normalOut, sumOfWeightsOut, weightedSumOut);
 
         final long newNans = nanOut.intValue();
         final long newNormal = normalOut.intValue();
@@ -206,10 +200,8 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
             final double existingSumOfWeights = sumOfWeights.getUnsafe(destination);
             final double existingWeightedSum = weightedSum.getUnsafe(destination);
 
-            final double totalWeightedSum =
-                NullSafeAddition.plusDouble(existingWeightedSum, newWeightedSum);
-            final double totalSumOfWeights =
-                NullSafeAddition.plusDouble(existingSumOfWeights, newSumOfWeights);
+            final double totalWeightedSum = NullSafeAddition.plusDouble(existingWeightedSum, newWeightedSum);
+            final double totalSumOfWeights = NullSafeAddition.plusDouble(existingSumOfWeights, newSumOfWeights);
 
             if (newNormal > 0) {
                 weightedSum.set(destination, totalWeightedSum);
@@ -243,15 +235,14 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
         return newNans;
     }
 
-    private boolean removeChunk(DoubleChunk<? extends Values> doubleValues,
-        DoubleChunk<? extends Values> weightValues, int start, int length, long destination) {
+    private boolean removeChunk(DoubleChunk<? extends Values> doubleValues, DoubleChunk<? extends Values> weightValues,
+            int start, int length, long destination) {
         final MutableInt nanOut = new MutableInt();
         final MutableInt normalOut = new MutableInt();
         final MutableDouble sumOfWeightsOut = new MutableDouble();
         final MutableDouble weightedSumOut = new MutableDouble();
 
-        sumChunks(doubleValues, weightValues, start, length, nanOut, normalOut, sumOfWeightsOut,
-            weightedSumOut);
+        sumChunks(doubleValues, weightValues, start, length, nanOut, normalOut, sumOfWeightsOut, weightedSumOut);
 
         final int newNans = nanOut.intValue();
         final int newNormal = normalOut.intValue();
@@ -315,24 +306,22 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
     }
 
     private boolean modifyChunk(DoubleChunk<? extends Values> prevDoubleValues,
-        DoubleChunk<? extends Values> prevWeightValues,
-        DoubleChunk<? extends Values> newDoubleValues,
-        DoubleChunk<? extends Values> newWeightValues, int start, int length, long destination) {
+            DoubleChunk<? extends Values> prevWeightValues, DoubleChunk<? extends Values> newDoubleValues,
+            DoubleChunk<? extends Values> newWeightValues, int start, int length, long destination) {
         final MutableInt nanOut = new MutableInt();
         final MutableInt normalOut = new MutableInt();
         final MutableDouble sumOfWeightsOut = new MutableDouble();
         final MutableDouble weightedSumOut = new MutableDouble();
 
-        sumChunks(prevDoubleValues, prevWeightValues, start, length, nanOut, normalOut,
-            sumOfWeightsOut, weightedSumOut);
+        sumChunks(prevDoubleValues, prevWeightValues, start, length, nanOut, normalOut, sumOfWeightsOut,
+                weightedSumOut);
 
         final int prevNans = nanOut.intValue();
         final int prevNormal = normalOut.intValue();
         final double prevSumOfWeights = sumOfWeightsOut.doubleValue();
         final double prevWeightedSum = weightedSumOut.doubleValue();
 
-        sumChunks(newDoubleValues, newWeightValues, start, length, nanOut, normalOut,
-            sumOfWeightsOut, weightedSumOut);
+        sumChunks(newDoubleValues, newWeightValues, start, length, nanOut, normalOut, sumOfWeightsOut, weightedSumOut);
 
         final int newNans = nanOut.intValue();
         final int newNormal = normalOut.intValue();
@@ -366,9 +355,9 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
             final double existingWeightedSum = weightedSum.getUnsafe(destination);
 
             final double totalWeightedSum =
-                NullSafeAddition.plusDouble(existingWeightedSum, newWeightedSum - prevWeightedSum);
-            final double totalSumOfWeights = NullSafeAddition.plusDouble(existingSumOfWeights,
-                newSumOfWeights - prevSumOfWeights);
+                    NullSafeAddition.plusDouble(existingWeightedSum, newWeightedSum - prevWeightedSum);
+            final double totalSumOfWeights =
+                    NullSafeAddition.plusDouble(existingSumOfWeights, newSumOfWeights - prevSumOfWeights);
 
             if (totalWeightedSum != existingWeightedSum) {
                 weightedSum.set(destination, totalWeightedSum);

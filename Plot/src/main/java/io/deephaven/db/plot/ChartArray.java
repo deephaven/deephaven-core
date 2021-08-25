@@ -85,8 +85,7 @@ public class ChartArray implements Serializable {
 
     void resize(final int width, final int height) {
         if (width < takenIndices[0].length || height < takenIndices.length) {
-            throw new PlotUnsupportedOperationException("Can not resize ChartArray to be smaller",
-                plotInfo);
+            throw new PlotUnsupportedOperationException("Can not resize ChartArray to be smaller", plotInfo);
         }
 
         final int[][] newArray = new int[height][width];
@@ -120,19 +119,17 @@ public class ChartArray implements Serializable {
         final int index = takenIndices[row][col];
         if (index < 0 || index > charts.size() - 1) {
             throw new PlotIllegalArgumentException(
-                "Can not remove chart at (" + row + ", " + col + ")- chart does not exist!",
-                plotInfo);
+                    "Can not remove chart at (" + row + ", " + col + ")- chart does not exist!", plotInfo);
         }
 
         final ChartImpl chart = charts.get(index);
         if (chart == null) {
             throw new PlotIllegalArgumentException(
-                "Can not remove chart at (" + row + ", " + col + ")- chart does not exist!",
-                plotInfo);
+                    "Can not remove chart at (" + row + ", " + col + ")- chart does not exist!", plotInfo);
         }
 
         markAllNoCheck(takenIndices, chart.row(), chart.row() + chart.rowSpan(), chart.column(),
-            chart.column() + chart.colSpan(), EMPTY_INDEX);
+                chart.column() + chart.colSpan(), EMPTY_INDEX);
     }
 
     void resizeChart(final int row, final int col, final int rowspan, final int colspan) {
@@ -141,8 +138,7 @@ public class ChartArray implements Serializable {
         markIndices(row, col, rowspan, colspan, index);
     }
 
-    private void markIndices(final int row, final int col, final int rowspan, final int colspan,
-        final int index) {
+    private void markIndices(final int row, final int col, final int rowspan, final int colspan, final int index) {
         // check first
         final int maxRow = row + rowspan;
         final int maxCol = col + colspan;
@@ -159,16 +155,16 @@ public class ChartArray implements Serializable {
         if (!(index < 0 || index > charts.size() - 1)) {
             final ChartImpl chart = charts.get(index);
             if (chart != null && (rowspan < chart.rowSpan() || colspan < chart.colSpan())) {
-                markAllNoCheck(takenIndices, chart.row(), chart.row() + chart.rowSpan(),
-                    chart.column(), chart.column() + chart.colSpan(), EMPTY_INDEX);
+                markAllNoCheck(takenIndices, chart.row(), chart.row() + chart.rowSpan(), chart.column(),
+                        chart.column() + chart.colSpan(), EMPTY_INDEX);
             }
         }
 
         markAllNoCheck(takenIndices, row, maxRow, col, maxCol, index);
     }
 
-    private static void markAllNoCheck(final int[][] matrix, final int rowMin, final int rowMax,
-        final int colMin, final int colMax, final int index) {
+    private static void markAllNoCheck(final int[][] matrix, final int rowMin, final int rowMax, final int colMin,
+            final int colMax, final int index) {
         for (int i = rowMin; i < rowMax; i++) {
             for (int j = colMin; j < colMax; j++) {
                 matrix[i][j] = index;
@@ -178,16 +174,14 @@ public class ChartArray implements Serializable {
 
     private void checkBounds(final int row, final int col) {
         if (row < 0 || col < 0) {
-            throw new PlotIllegalArgumentException(
-                "Chart indices must be >0. row:" + row + " col:" + col, plotInfo);
+            throw new PlotIllegalArgumentException("Chart indices must be >0. row:" + row + " col:" + col, plotInfo);
         }
 
         if (row >= takenIndices.length || col >= takenIndices[0].length) {
             throw new PlotIllegalArgumentException(
-                "Chart is not in grid. Trying to access chart at position [" + (row + 1) + "x"
-                    + (col + 1) + "], chart grid is [" + takenIndices.length + "x"
-                    + takenIndices[0].length + "]",
-                plotInfo);
+                    "Chart is not in grid. Trying to access chart at position [" + (row + 1) + "x" + (col + 1)
+                            + "], chart grid is [" + takenIndices.length + "x" + takenIndices[0].length + "]",
+                    plotInfo);
         }
     }
 

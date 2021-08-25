@@ -9,11 +9,10 @@ import java.util.Objects;
 /**
  * We still send plain strings to the server and receive plain strings from the client.
  *
- * This is here mostly to have a sane place to handle client introspection of custom column
- * definitions.
+ * This is here mostly to have a sane place to handle client introspection of custom column definitions.
  *
- * We should probably wire this into place for our internal guts, and convert to this form
- * immediately upon receiving input from user.
+ * We should probably wire this into place for our internal guts, and convert to this form immediately upon receiving
+ * input from user.
  *
  */
 public class CustomColumnDescriptor implements Serializable {
@@ -25,8 +24,7 @@ public class CustomColumnDescriptor implements Serializable {
     /**
      * Extracts the column name from a given column expression.
      *
-     * Based on the logic in io.deephaven.db.tables.select.SelectColumnFactory, the valid
-     * expressions take the form:
+     * Based on the logic in io.deephaven.db.tables.select.SelectColumnFactory, the valid expressions take the form:
      * 
      * <pre>
      *     <ColumnName>
@@ -35,20 +33,18 @@ public class CustomColumnDescriptor implements Serializable {
      *     last(<ColumnName>)
      * </pre>
      *
-     * So, we can safely extract a column name for this to have some semblance of identity semantics
-     * for custom column definitions.
+     * So, we can safely extract a column name for this to have some semblance of identity semantics for custom column
+     * definitions.
      *
      * Also, we are explicitly *NOT* supporting deprecated last() syntax, so it will be ignored.
      *
-     * @param expression A valid column expression. We perform no validation beyond an assertion on
-     *        the resulting name.
+     * @param expression A valid column expression. We perform no validation beyond an assertion on the resulting name.
      * @return A valid column name if the input column expression is itself valid.
      */
     private static String extractColumnName(String expression) {
         expression = expression.trim();
         String result = expression.split("=")[0].trim();
-        assert result.matches(VALID_ID_REGEX)
-            : "Invalid column name " + result + " extracted from " + expression;
+        assert result.matches(VALID_ID_REGEX) : "Invalid column name " + result + " extracted from " + expression;
         return result;
     }
 
@@ -79,7 +75,7 @@ public class CustomColumnDescriptor implements Serializable {
         final CustomColumnDescriptor that = (CustomColumnDescriptor) o;
 
         return Objects.equals(expression, that.expression) &&
-            Objects.equals(name, that.name);
+                Objects.equals(name, that.name);
     }
 
     @Override
@@ -87,8 +83,7 @@ public class CustomColumnDescriptor implements Serializable {
         return Objects.hash(expression, name);
     }
 
-    public static boolean isCompatible(List<CustomColumnDescriptor> was,
-        List<CustomColumnDescriptor> is) {
+    public static boolean isCompatible(List<CustomColumnDescriptor> was, List<CustomColumnDescriptor> is) {
         HashSet<String> existing = new HashSet<>();
         for (CustomColumnDescriptor col : was) {
             existing.add(col.getName());

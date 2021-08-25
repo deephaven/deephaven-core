@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.Flight_pb.FlightData",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.Flight_pb.FlightData",
+        namespace = JsPackage.GLOBAL)
 public class FlightData {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface GetAppMetadataUnionType {
@@ -190,7 +190,7 @@ public class FlightData {
             public interface GetCmdUnionType {
                 @JsOverlay
                 static FlightData.ToObjectReturnType.FlightDescriptorFieldType.GetCmdUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -230,21 +230,18 @@ public class FlightData {
             double getType();
 
             @JsProperty
-            void setCmd(
-                FlightData.ToObjectReturnType.FlightDescriptorFieldType.GetCmdUnionType cmd);
+            void setCmd(FlightData.ToObjectReturnType.FlightDescriptorFieldType.GetCmdUnionType cmd);
 
             @JsOverlay
             default void setCmd(String cmd) {
                 setCmd(
-                    Js.<FlightData.ToObjectReturnType.FlightDescriptorFieldType.GetCmdUnionType>uncheckedCast(
-                        cmd));
+                        Js.<FlightData.ToObjectReturnType.FlightDescriptorFieldType.GetCmdUnionType>uncheckedCast(cmd));
             }
 
             @JsOverlay
             default void setCmd(Uint8Array cmd) {
                 setCmd(
-                    Js.<FlightData.ToObjectReturnType.FlightDescriptorFieldType.GetCmdUnionType>uncheckedCast(
-                        cmd));
+                        Js.<FlightData.ToObjectReturnType.FlightDescriptorFieldType.GetCmdUnionType>uncheckedCast(cmd));
             }
 
             @JsProperty
@@ -366,15 +363,13 @@ public class FlightData {
         @JsOverlay
         default void setAppMetadata(String appMetadata) {
             setAppMetadata(
-                Js.<FlightData.ToObjectReturnType.GetAppMetadataUnionType>uncheckedCast(
-                    appMetadata));
+                    Js.<FlightData.ToObjectReturnType.GetAppMetadataUnionType>uncheckedCast(appMetadata));
         }
 
         @JsOverlay
         default void setAppMetadata(Uint8Array appMetadata) {
             setAppMetadata(
-                Js.<FlightData.ToObjectReturnType.GetAppMetadataUnionType>uncheckedCast(
-                    appMetadata));
+                    Js.<FlightData.ToObjectReturnType.GetAppMetadataUnionType>uncheckedCast(appMetadata));
         }
 
         @JsProperty
@@ -382,14 +377,12 @@ public class FlightData {
 
         @JsOverlay
         default void setDataBody(String dataBody) {
-            setDataBody(
-                Js.<FlightData.ToObjectReturnType.GetDataBodyUnionType>uncheckedCast(dataBody));
+            setDataBody(Js.<FlightData.ToObjectReturnType.GetDataBodyUnionType>uncheckedCast(dataBody));
         }
 
         @JsOverlay
         default void setDataBody(Uint8Array dataBody) {
-            setDataBody(
-                Js.<FlightData.ToObjectReturnType.GetDataBodyUnionType>uncheckedCast(dataBody));
+            setDataBody(Js.<FlightData.ToObjectReturnType.GetDataBodyUnionType>uncheckedCast(dataBody));
         }
 
         @JsProperty
@@ -398,18 +391,18 @@ public class FlightData {
         @JsOverlay
         default void setDataHeader(String dataHeader) {
             setDataHeader(
-                Js.<FlightData.ToObjectReturnType.GetDataHeaderUnionType>uncheckedCast(dataHeader));
+                    Js.<FlightData.ToObjectReturnType.GetDataHeaderUnionType>uncheckedCast(dataHeader));
         }
 
         @JsOverlay
         default void setDataHeader(Uint8Array dataHeader) {
             setDataHeader(
-                Js.<FlightData.ToObjectReturnType.GetDataHeaderUnionType>uncheckedCast(dataHeader));
+                    Js.<FlightData.ToObjectReturnType.GetDataHeaderUnionType>uncheckedCast(dataHeader));
         }
 
         @JsProperty
         void setFlightDescriptor(
-            FlightData.ToObjectReturnType.FlightDescriptorFieldType flightDescriptor);
+                FlightData.ToObjectReturnType.FlightDescriptorFieldType flightDescriptor);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -420,7 +413,7 @@ public class FlightData {
             public interface GetCmdUnionType {
                 @JsOverlay
                 static FlightData.ToObjectReturnType0.FlightDescriptorFieldType.GetCmdUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -460,21 +453,20 @@ public class FlightData {
             double getType();
 
             @JsProperty
-            void setCmd(
-                FlightData.ToObjectReturnType0.FlightDescriptorFieldType.GetCmdUnionType cmd);
+            void setCmd(FlightData.ToObjectReturnType0.FlightDescriptorFieldType.GetCmdUnionType cmd);
 
             @JsOverlay
             default void setCmd(String cmd) {
                 setCmd(
-                    Js.<FlightData.ToObjectReturnType0.FlightDescriptorFieldType.GetCmdUnionType>uncheckedCast(
-                        cmd));
+                        Js.<FlightData.ToObjectReturnType0.FlightDescriptorFieldType.GetCmdUnionType>uncheckedCast(
+                                cmd));
             }
 
             @JsOverlay
             default void setCmd(Uint8Array cmd) {
                 setCmd(
-                    Js.<FlightData.ToObjectReturnType0.FlightDescriptorFieldType.GetCmdUnionType>uncheckedCast(
-                        cmd));
+                        Js.<FlightData.ToObjectReturnType0.FlightDescriptorFieldType.GetCmdUnionType>uncheckedCast(
+                                cmd));
             }
 
             @JsProperty
@@ -596,15 +588,13 @@ public class FlightData {
         @JsOverlay
         default void setAppMetadata(String appMetadata) {
             setAppMetadata(
-                Js.<FlightData.ToObjectReturnType0.GetAppMetadataUnionType>uncheckedCast(
-                    appMetadata));
+                    Js.<FlightData.ToObjectReturnType0.GetAppMetadataUnionType>uncheckedCast(appMetadata));
         }
 
         @JsOverlay
         default void setAppMetadata(Uint8Array appMetadata) {
             setAppMetadata(
-                Js.<FlightData.ToObjectReturnType0.GetAppMetadataUnionType>uncheckedCast(
-                    appMetadata));
+                    Js.<FlightData.ToObjectReturnType0.GetAppMetadataUnionType>uncheckedCast(appMetadata));
         }
 
         @JsProperty
@@ -612,14 +602,12 @@ public class FlightData {
 
         @JsOverlay
         default void setDataBody(String dataBody) {
-            setDataBody(
-                Js.<FlightData.ToObjectReturnType0.GetDataBodyUnionType>uncheckedCast(dataBody));
+            setDataBody(Js.<FlightData.ToObjectReturnType0.GetDataBodyUnionType>uncheckedCast(dataBody));
         }
 
         @JsOverlay
         default void setDataBody(Uint8Array dataBody) {
-            setDataBody(
-                Js.<FlightData.ToObjectReturnType0.GetDataBodyUnionType>uncheckedCast(dataBody));
+            setDataBody(Js.<FlightData.ToObjectReturnType0.GetDataBodyUnionType>uncheckedCast(dataBody));
         }
 
         @JsProperty
@@ -628,20 +616,18 @@ public class FlightData {
         @JsOverlay
         default void setDataHeader(String dataHeader) {
             setDataHeader(
-                Js.<FlightData.ToObjectReturnType0.GetDataHeaderUnionType>uncheckedCast(
-                    dataHeader));
+                    Js.<FlightData.ToObjectReturnType0.GetDataHeaderUnionType>uncheckedCast(dataHeader));
         }
 
         @JsOverlay
         default void setDataHeader(Uint8Array dataHeader) {
             setDataHeader(
-                Js.<FlightData.ToObjectReturnType0.GetDataHeaderUnionType>uncheckedCast(
-                    dataHeader));
+                    Js.<FlightData.ToObjectReturnType0.GetDataHeaderUnionType>uncheckedCast(dataHeader));
         }
 
         @JsProperty
         void setFlightDescriptor(
-            FlightData.ToObjectReturnType0.FlightDescriptorFieldType flightDescriptor);
+                FlightData.ToObjectReturnType0.FlightDescriptorFieldType flightDescriptor);
     }
 
     public static native FlightData deserializeBinary(Uint8Array bytes);
@@ -651,7 +637,7 @@ public class FlightData {
     public static native void serializeBinaryToWriter(FlightData message, Object writer);
 
     public static native FlightData.ToObjectReturnType toObject(
-        boolean includeInstance, FlightData msg);
+            boolean includeInstance, FlightData msg);
 
     public native void clearFlightDescriptor();
 
