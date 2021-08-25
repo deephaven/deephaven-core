@@ -26,23 +26,26 @@ public class DbSubArray<T> extends DbArray.Indirect<T> {
         if (index < 0 || index >= positions.length) {
             return null;
         }
-        return innerArray.get(positions[LongSizedDataStructure.intSize("subarray array access", index)]);
+        return innerArray
+            .get(positions[LongSizedDataStructure.intSize("subarray array access", index)]);
     }
 
     @Override
     public DbArray<T> subArray(final long fromIndexInclusive, final long toIndexExclusive) {
-        return innerArray.subArrayByPositions(DbArrayBase.mapSelectedPositionRange(positions, fromIndexInclusive, toIndexExclusive));
+        return innerArray.subArrayByPositions(
+            DbArrayBase.mapSelectedPositionRange(positions, fromIndexInclusive, toIndexExclusive));
     }
 
     @Override
     public DbArray<T> subArrayByPositions(final long[] positions) {
-        return innerArray.subArrayByPositions(DbArrayBase.mapSelectedPositions(this.positions, positions));
+        return innerArray
+            .subArrayByPositions(DbArrayBase.mapSelectedPositions(this.positions, positions));
     }
 
     @Override
     public T[] toArray() {
-        //noinspection unchecked
-        final T[] result = (T[])Array.newInstance(getComponentType(), positions.length);
+        // noinspection unchecked
+        final T[] result = (T[]) Array.newInstance(getComponentType(), positions.length);
         for (int ii = 0; ii < positions.length; ++ii) {
             result[ii] = get(ii);
         }
@@ -64,7 +67,8 @@ public class DbSubArray<T> extends DbArray.Indirect<T> {
         if (index < 0 || index >= positions.length) {
             return null;
         }
-        return innerArray.getPrev(positions[LongSizedDataStructure.intSize("DbSubArray getPrev", index)]);
+        return innerArray
+            .getPrev(positions[LongSizedDataStructure.intSize("DbSubArray getPrev", index)]);
     }
 
     @Override

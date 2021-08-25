@@ -17,8 +17,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 
 /**
- * This class is an extension of QueryTable that overrides many methods from {@link Table} which are not valid to perform
- * on Hierarchical tables (treeTables() and rollups()).
+ * This class is an extension of QueryTable that overrides many methods from {@link Table} which are
+ * not valid to perform on Hierarchical tables (treeTables() and rollups()).
  */
 public class HierarchicalTable extends QueryTable {
     private final QueryTable rootTable;
@@ -46,16 +46,17 @@ public class HierarchicalTable extends QueryTable {
      * @return the source table
      */
     public Table getSourceTable() {
-        return (Table)getAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE);
+        return (Table) getAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE);
     }
 
     @Override
     public Table copy(boolean copyAttributes) {
-        return QueryPerformanceRecorder.withNugget("hierarchicalTable-copy()", sizeForInstrumentation(), () -> {
-            final HierarchicalTable result = createFrom((QueryTable)rootTable.copy(), info);
-            copyAttributes(result, a -> true);
-            return result;
-        });
+        return QueryPerformanceRecorder.withNugget("hierarchicalTable-copy()",
+            sizeForInstrumentation(), () -> {
+                final HierarchicalTable result = createFrom((QueryTable) rootTable.copy(), info);
+                copyAttributes(result, a -> true);
+                return result;
+            });
     }
 
     /**
@@ -69,28 +70,36 @@ public class HierarchicalTable extends QueryTable {
 
     @Override
     public Table formatColumns(String... columnFormats) {
-        final HierarchicalTableInfo hierarchicalTableInfo = (HierarchicalTableInfo) getAttribute(HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
+        final HierarchicalTableInfo hierarchicalTableInfo =
+            (HierarchicalTableInfo) getAttribute(HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
         final String[] originalColumnFormats = hierarchicalTableInfo.getColumnFormats();
 
         final String[] newColumnFormats;
-        if(originalColumnFormats != null && originalColumnFormats.length > 0) {
-            newColumnFormats = Arrays.copyOf(originalColumnFormats, originalColumnFormats.length + columnFormats.length);
-            System.arraycopy(columnFormats, 0, newColumnFormats, originalColumnFormats.length, columnFormats.length);
+        if (originalColumnFormats != null && originalColumnFormats.length > 0) {
+            newColumnFormats = Arrays.copyOf(originalColumnFormats,
+                originalColumnFormats.length + columnFormats.length);
+            System.arraycopy(columnFormats, 0, newColumnFormats, originalColumnFormats.length,
+                columnFormats.length);
         } else {
             newColumnFormats = columnFormats;
         }
 
-        // Note that we are not updating the root with the 'newColumnFormats' because the original set of formats
+        // Note that we are not updating the root with the 'newColumnFormats' because the original
+        // set of formats
         // are already there.
-        final Table updatedRoot = rootTable.updateView(SelectColumnFactory.getFormatExpressions(columnFormats));
-        final ReverseLookup maybeRll = (ReverseLookup)rootTable.getAttribute(REVERSE_LOOKUP_ATTRIBUTE);
+        final Table updatedRoot =
+            rootTable.updateView(SelectColumnFactory.getFormatExpressions(columnFormats));
+        final ReverseLookup maybeRll =
+            (ReverseLookup) rootTable.getAttribute(REVERSE_LOOKUP_ATTRIBUTE);
 
-        // Explicitly need to copy this in case we are a rollup, in which case the RLL needs to be at root level
-        if(maybeRll != null) {
+        // Explicitly need to copy this in case we are a rollup, in which case the RLL needs to be
+        // at root level
+        if (maybeRll != null) {
             updatedRoot.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, maybeRll);
         }
 
-        final HierarchicalTable result = createFrom((QueryTable)updatedRoot, hierarchicalTableInfo.withColumnFormats(newColumnFormats));
+        final HierarchicalTable result = createFrom((QueryTable) updatedRoot,
+            hierarchicalTableInfo.withColumnFormats(newColumnFormats));
         copyAttributes(result, a -> !Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE.equals(a));
 
         return result;
@@ -132,22 +141,26 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, AsOfMatchRule asOfMatchRule) {
+    public Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+        AsOfMatchRule asOfMatchRule) {
         return throwUnsupported("aj()");
     }
 
     @Override
-    public Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, AsOfMatchRule asOfMatchRule) {
+    public Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+        AsOfMatchRule asOfMatchRule) {
         return throwUnsupported("raj()");
     }
 
     @Override
-    public Table naturalJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    public Table naturalJoin(Table rightTable, MatchPair[] columnsToMatch,
+        MatchPair[] columnsToAdd) {
         return throwUnsupported("naturalJoin()");
     }
 
     @Override
-    public Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, int numRightBitsToReserve) {
+    public Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+        int numRightBitsToReserve) {
         return throwUnsupported("join()");
     }
 
@@ -197,7 +210,8 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table by(@SuppressWarnings("rawtypes") AggregationStateFactory aggregationStateFactory, SelectColumn... groupByColumns) {
+    public Table by(@SuppressWarnings("rawtypes") AggregationStateFactory aggregationStateFactory,
+        SelectColumn... groupByColumns) {
         return throwUnsupported("by()");
     }
 
@@ -212,7 +226,8 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table applyToAllBy(String formulaColumn, String columnParamName, SelectColumn... groupByColumns) {
+    public Table applyToAllBy(String formulaColumn, String columnParamName,
+        SelectColumn... groupByColumns) {
         return throwUnsupported("applyToAllBy()");
     }
 
@@ -252,7 +267,8 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table whereIn(GroupStrategy groupStrategy, Table rightTable, boolean inclusion, MatchPair... columnsToMatch) {
+    public Table whereIn(GroupStrategy groupStrategy, Table rightTable, boolean inclusion,
+        MatchPair... columnsToMatch) {
         return throwUnsupported("whereIn()");
     }
 
@@ -328,7 +344,8 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table snapshotIncremental(Table rightTable, boolean doInitialSnapshot, String... stampColumns) {
+    public Table snapshotIncremental(Table rightTable, boolean doInitialSnapshot,
+        String... stampColumns) {
         return throwUnsupported("snapshotIncremental()");
     }
 
@@ -343,36 +360,42 @@ public class HierarchicalTable extends QueryTable {
     }
 
     private <T> T throwUnsupported(String opName) {
-        throw new UnsupportedOperationException("Operation " + opName + " may not be performed on hierarchical tables. Instead, apply it to table before treeTable() or rollup()");
+        throw new UnsupportedOperationException("Operation " + opName
+            + " may not be performed on hierarchical tables. Instead, apply it to table before treeTable() or rollup()");
     }
 
     /**
-     * Create a HierarchicalTable from the specified root (top level) table and {@link HierarchicalTableInfo info}
-     * that describes the hierarchy type.
+     * Create a HierarchicalTable from the specified root (top level) table and
+     * {@link HierarchicalTableInfo info} that describes the hierarchy type.
      *
      * @param rootTable the root table of the hierarchy
      * @param info the info that describes the hierarchy type
      *
      * @return A new Hierarchical table. The table itself is a view of the root of the hierarchy.
      */
-    static @NotNull HierarchicalTable createFrom(@NotNull QueryTable rootTable, @NotNull HierarchicalTableInfo info) {
+    static @NotNull HierarchicalTable createFrom(@NotNull QueryTable rootTable,
+        @NotNull HierarchicalTableInfo info) {
         final Mutable<HierarchicalTable> resultHolder = new MutableObject<>();
 
-        // Create a copy of the root byExternal table as a HierarchicalTable, and wire it up for listeners.
-        final ShiftAwareSwapListener swapListener = rootTable.createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
-        rootTable.initializeWithSnapshot("-hierarchicalTable", swapListener, (usePrev, beforeClockValue) -> {
-            final HierarchicalTable table = new HierarchicalTable(rootTable, info);
-            rootTable.copyAttributes(table, a -> true);
+        // Create a copy of the root byExternal table as a HierarchicalTable, and wire it up for
+        // listeners.
+        final ShiftAwareSwapListener swapListener =
+            rootTable.createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
+        rootTable.initializeWithSnapshot("-hierarchicalTable", swapListener,
+            (usePrev, beforeClockValue) -> {
+                final HierarchicalTable table = new HierarchicalTable(rootTable, info);
+                rootTable.copyAttributes(table, a -> true);
 
-            if(swapListener != null) {
-                final ShiftAwareListenerImpl listener = new ShiftAwareListenerImpl("hierarchicalTable()", rootTable, table);
-                swapListener.setListenerAndResult(listener, table);
-                table.addParentReference(swapListener);
-            }
+                if (swapListener != null) {
+                    final ShiftAwareListenerImpl listener =
+                        new ShiftAwareListenerImpl("hierarchicalTable()", rootTable, table);
+                    swapListener.setListenerAndResult(listener, table);
+                    table.addParentReference(swapListener);
+                }
 
-            resultHolder.setValue(table);
-            return true;
-        });
+                resultHolder.setValue(table);
+                return true;
+            });
 
         return resultHolder.getValue();
     }

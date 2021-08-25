@@ -42,15 +42,23 @@ public final class HashMapLockFreeK1V1 extends HashMapK1V1 {
     }
 
     @Override
-    public final long get(long key) { return getImpl(keysAndValues, key); }
+    public final long get(long key) {
+        return getImpl(keysAndValues, key);
+    }
 
     @Override
-    public final long remove(long key) { return removeImpl(keysAndValues, key); }
+    public final long remove(long key) {
+        return removeImpl(keysAndValues, key);
+    }
 
-    public final int capacity() { return capacityImpl(keysAndValues); }
+    public final int capacity() {
+        return capacityImpl(keysAndValues);
+    }
 
     @Override
-    public final void clear() { clearImpl(keysAndValues); }
+    public final void clear() {
+        clearImpl(keysAndValues);
+    }
 
     public final void resetToNull() {
         resetToNullImpl();
@@ -78,5 +86,7 @@ public final class HashMapLockFreeK1V1 extends HashMapK1V1 {
     }
 
     @Override
-    public final TLongLongIterator iterator() { return iteratorImpl(keysAndValues); }
+    public final TLongLongIterator iterator() {
+        return iteratorImpl(keysAndValues);
+    }
 }

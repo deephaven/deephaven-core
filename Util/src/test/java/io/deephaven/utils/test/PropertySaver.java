@@ -6,14 +6,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Simple utility class for use in unit tests that need to adjust properties, and then put them back.  Meant to be used
- * in a try { } finally { } block; because java has no good RAII.
+ * Simple utility class for use in unit tests that need to adjust properties, and then put them
+ * back. Meant to be used in a try { } finally { } block; because java has no good RAII.
  */
 public class PropertySaver {
     private final Map<String, String> savedProperties = new HashMap<>();
 
-    public PropertySaver() {
-    }
+    public PropertySaver() {}
 
     public PropertySaver setAll(Map<String, String> values) {
         values.forEach(this::setProperty);
@@ -32,7 +31,8 @@ public class PropertySaver {
 
     public void remove(String property) {
         if (Configuration.getInstance().hasProperty(property)) {
-            savedProperties.put(property, Configuration.getInstance().getProperties().remove(property).toString());
+            savedProperties.put(property,
+                Configuration.getInstance().getProperties().remove(property).toString());
         }
     }
 

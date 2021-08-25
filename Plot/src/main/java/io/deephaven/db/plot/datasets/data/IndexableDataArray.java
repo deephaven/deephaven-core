@@ -17,8 +17,7 @@ public class IndexableDataArray<T> extends IndexableData<T> {
     /**
      * Creates an IndexableDataArray instance.
      *
-     * @throws io.deephaven.base.verify.RequirementFailure
-     *                                  {@code data} must not be null
+     * @throws io.deephaven.base.verify.RequirementFailure {@code data} must not be null
      * @param data data
      * @param plotInfo plot information
      */

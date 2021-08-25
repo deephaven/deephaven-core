@@ -40,8 +40,7 @@ public class StringsLoggerImpl<E extends LogEntry> implements Logger {
                     outputData.append(e.getThrowable());
                 }
                 flushOutput(e, outputData);
-            }
-            finally {
+            } finally {
                 e.written(outputData);
                 entries.give(e);
             }
@@ -49,15 +48,14 @@ public class StringsLoggerImpl<E extends LogEntry> implements Logger {
 
         private void flushOutput(E e, LogOutput outputData) {
             stream.reset();
-            if ( outputData.getBufferCount() == 1 && outputData.getBuffer(0).hasArray() ) {
+            if (outputData.getBufferCount() == 1 && outputData.getBuffer(0).hasArray()) {
                 ByteBuffer b = outputData.getBuffer(0);
                 b.flip();
                 byte[] ba = b.array();
                 synchronized (stream) {
                     stream.write(ba, 0, b.limit());
                 }
-            }
-            else {
+            } else {
                 synchronized (stream) {
                     for (int i = 0; i < outputData.getBufferCount(); ++i) {
                         ByteBuffer b = outputData.getBuffer(i);
@@ -87,11 +85,12 @@ public class StringsLoggerImpl<E extends LogEntry> implements Logger {
         }
     };
 
-    //---------------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------------
 
     private LogLevel loggingLevel;
 
-    public StringsLoggerImpl(Function.Nullary<E> entryFactory, int entryPoolSize, LogOutput outputBuffer, LogLevel loggingLevel) {
+    public StringsLoggerImpl(Function.Nullary<E> entryFactory, int entryPoolSize,
+        LogOutput outputBuffer, LogLevel loggingLevel) {
         this.loggingLevel = loggingLevel;
         this.entries = new ThreadSafeLenientFixedSizePool<E>(entryPoolSize, entryFactory, null);
         this.outputBuffer = outputBuffer;
@@ -118,12 +117,14 @@ public class StringsLoggerImpl<E extends LogEntry> implements Logger {
 
     @Override
     public LogEntry getEntry(LogLevel level) {
-        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000) : LogEntry.NULL;
+        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000)
+            : LogEntry.NULL;
     }
 
     @Override
     public LogEntry getEntry(LogLevel level, Throwable t) {
-        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000, t) : LogEntry.NULL;
+        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000, t)
+            : LogEntry.NULL;
     }
 
     @Override

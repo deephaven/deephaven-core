@@ -25,9 +25,12 @@ public class DbArraySlice<T> extends DbArray.Indirect<T> {
     private final long innerArrayValidFromInclusive;
     private final long innerArrayValidToExclusive;
 
-    private DbArraySlice(@NotNull final DbArray<T> innerArray, final long offsetIndex, final long length, final long innerArrayValidFromInclusive, final long innerArrayValidToExclusive) {
+    private DbArraySlice(@NotNull final DbArray<T> innerArray, final long offsetIndex,
+        final long length, final long innerArrayValidFromInclusive,
+        final long innerArrayValidToExclusive) {
         Assert.geqZero(length, "length");
-        Assert.leq(innerArrayValidFromInclusive, "innerArrayValidFromInclusive", innerArrayValidToExclusive, "innerArrayValidToExclusive");
+        Assert.leq(innerArrayValidFromInclusive, "innerArrayValidFromInclusive",
+            innerArrayValidToExclusive, "innerArrayValidToExclusive");
         this.innerArray = innerArray;
         this.offsetIndex = offsetIndex;
         this.length = length;
@@ -35,15 +38,17 @@ public class DbArraySlice<T> extends DbArray.Indirect<T> {
         this.innerArrayValidToExclusive = innerArrayValidToExclusive;
     }
 
-    public DbArraySlice(@NotNull final DbArray<T> innerArray, final long offsetIndex, final long length) {
+    public DbArraySlice(@NotNull final DbArray<T> innerArray, final long offsetIndex,
+        final long length) {
         this(innerArray, offsetIndex, length,
-                clampLong(0, innerArray.size(), offsetIndex),
-                clampLong(0, innerArray.size(), offsetIndex + length));
+            clampLong(0, innerArray.size(), offsetIndex),
+            clampLong(0, innerArray.size(), offsetIndex + length));
     }
 
     @Override
     public T get(final long index) {
-        return innerArray.get(clampIndex(innerArrayValidFromInclusive, innerArrayValidToExclusive, index + offsetIndex));
+        return innerArray.get(clampIndex(innerArrayValidFromInclusive, innerArrayValidToExclusive,
+            index + offsetIndex));
     }
 
     @Override
@@ -52,22 +57,29 @@ public class DbArraySlice<T> extends DbArray.Indirect<T> {
         final long newLength = toIndexExclusive - fromIndexInclusive;
         final long newOffsetIndex = offsetIndex + fromIndexInclusive;
         return new DbArraySlice<>(innerArray, newOffsetIndex, newLength,
-                clampLong(innerArrayValidFromInclusive, innerArrayValidToExclusive, newOffsetIndex),
-                clampLong(innerArrayValidFromInclusive, innerArrayValidToExclusive, newOffsetIndex + newLength));
+            clampLong(innerArrayValidFromInclusive, innerArrayValidToExclusive, newOffsetIndex),
+            clampLong(innerArrayValidFromInclusive, innerArrayValidToExclusive,
+                newOffsetIndex + newLength));
     }
 
     @Override
     public DbArray<T> subArrayByPositions(final long[] positions) {
-        return innerArray.subArrayByPositions(Arrays.stream(positions).map(p -> clampIndex(innerArrayValidFromInclusive, innerArrayValidToExclusive, p + offsetIndex)).toArray());
+        return innerArray.subArrayByPositions(
+            Arrays.stream(positions).map(p -> clampIndex(innerArrayValidFromInclusive,
+                innerArrayValidToExclusive, p + offsetIndex)).toArray());
     }
 
     @Override
     public T[] toArray() {
-        if (innerArray instanceof DbArrayDirect && offsetIndex >= innerArrayValidFromInclusive && offsetIndex + length <= innerArrayValidToExclusive) {
-            return Arrays.copyOfRange(innerArray.toArray(), LongSizedDataStructure.intSize("toArray", offsetIndex), LongSizedDataStructure.intSize("toArray", offsetIndex + length));
+        if (innerArray instanceof DbArrayDirect && offsetIndex >= innerArrayValidFromInclusive
+            && offsetIndex + length <= innerArrayValidToExclusive) {
+            return Arrays.copyOfRange(innerArray.toArray(),
+                LongSizedDataStructure.intSize("toArray", offsetIndex),
+                LongSizedDataStructure.intSize("toArray", offsetIndex + length));
         }
-        //noinspection unchecked
-        final T[] result = (T[])Array.newInstance(getComponentType(), LongSizedDataStructure.intSize("toArray", length));
+        // noinspection unchecked
+        final T[] result = (T[]) Array.newInstance(getComponentType(),
+            LongSizedDataStructure.intSize("toArray", length));
         for (int ii = 0; ii < length; ++ii) {
             result[ii] = get(ii);
         }

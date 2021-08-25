@@ -21,18 +21,20 @@ public class DBDateTimeFormatter {
     public DBDateTimeFormatter(String pattern) {
         this.pattern = pattern;
 
-        //Do this here so we fail fast if there's a problem with the format string
+        // Do this here so we fail fast if there's a problem with the format string
         getFormatter(DBTimeZone.TZ_DEFAULT);
     }
 
-    public DBDateTimeFormatter(final boolean isISO, final boolean hasDate, final boolean hasTime, final int subsecondDigits, final boolean hasTZ) {
+    public DBDateTimeFormatter(final boolean isISO, final boolean hasDate, final boolean hasTime,
+        final int subsecondDigits, final boolean hasTZ) {
         this((hasDate ? "yyyy-MM-dd" : "") + (!hasDate || !hasTime ? "" : isISO ? "'T'" : " ") +
-                (hasTime ? "HH:mm:ss" : "") + (hasTime && subsecondDigits > 0 ? "." : "") +
-                (hasTime ? StringUtils.repeat("S", subsecondDigits) : "") + (hasTZ ? " %t" : ""));
+            (hasTime ? "HH:mm:ss" : "") + (hasTime && subsecondDigits > 0 ? "." : "") +
+            (hasTime ? StringUtils.repeat("S", subsecondDigits) : "") + (hasTZ ? " %t" : ""));
     }
 
     private DateTimeFormatter getFormatter(DBTimeZone tz) {
-        return formatCache.computeIfAbsent(tz, newTz -> DateTimeFormatter.ofPattern(pattern.replaceAll("%t", '\''+tz.toString().substring(3)+'\'')));
+        return formatCache.computeIfAbsent(tz, newTz -> DateTimeFormatter
+            .ofPattern(pattern.replaceAll("%t", '\'' + tz.toString().substring(3) + '\'')));
     }
 
     public String format(DBDateTime dateTime, DBTimeZone tz) {

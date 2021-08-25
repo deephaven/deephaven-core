@@ -11,7 +11,7 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.grpcWeb.transports.http.xhr",
     namespace = JsPackage.GLOBAL)
 public class Xhr {
-  public static native TransportFactory XhrTransport(XhrTransportInit init);
+    public static native TransportFactory XhrTransport(XhrTransportInit init);
 
-  public static native Uint8Array stringToArrayBuffer(String str);
+    public static native Uint8Array stringToArrayBuffer(String str);
 }

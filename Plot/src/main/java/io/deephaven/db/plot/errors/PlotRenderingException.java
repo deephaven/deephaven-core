@@ -14,6 +14,7 @@ public class PlotRenderingException extends RuntimeException {
     }
 
     public PlotRenderingException(final Throwable cause, final PlotInfo plotInfo) {
-        super("" + (plotInfo == null || plotInfo.toString() == null ? "" : "Plot Information: " + plotInfo), cause);
+        super("" + (plotInfo == null || plotInfo.toString() == null ? ""
+            : "Plot Information: " + plotInfo), cause);
     }
 }

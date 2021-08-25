@@ -9,13 +9,12 @@ import io.deephaven.base.Copyable;
 import java.io.Externalizable;
 
 public class KeyValuePairLongToObject<V extends Externalizable & Copyable<V>>
-        implements Comparable<KeyValuePairLongToObject<V>>, Copyable<KeyValuePairLongToObject<V>> {
+    implements Comparable<KeyValuePairLongToObject<V>>, Copyable<KeyValuePairLongToObject<V>> {
 
     private long key;
     private V value;
 
-    public KeyValuePairLongToObject() {
-    }
+    public KeyValuePairLongToObject() {}
 
     public KeyValuePairLongToObject(long key, V value) {
         if (value == null) {
@@ -43,13 +42,17 @@ public class KeyValuePairLongToObject<V extends Externalizable & Copyable<V>>
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof KeyValuePairLongToObject)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof KeyValuePairLongToObject))
+            return false;
 
         KeyValuePairLongToObject that = (KeyValuePairLongToObject) o;
 
-        if (key != that.key) return false;
-        if (value != null ? !value.equals(that.value) : that.value != null) return false;
+        if (key != that.key)
+            return false;
+        if (value != null ? !value.equals(that.value) : that.value != null)
+            return false;
 
         return true;
     }

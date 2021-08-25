@@ -28,36 +28,45 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ResourceResolution {
-    private Set<String> resourceList = null;            // Duplicates are not allowed
+    private Set<String> resourceList = null; // Duplicates are not allowed
     private final static String DEFAULT_SPLIT_REGEX = "[ ;]+";
 
     // To normalize file paths for wildcard searches
     private final static Pattern normalizePattern = Pattern.compile("([\\\\/]+)");
 
     /**
-     * An instance of this class should be created to contain the required parameters to use for the resource search
+     * An instance of this class should be created to contain the required parameters to use for the
+     * resource search
      *
-     * @param configuration         configuration to be used for resource resolution
-     * @param delimiterRegex        regular expression to be used to delimit the resources; if it is null or has a length of 0 then
-     *                              the default (semicolon or space) will be used
-     * @param delimitedResourceList list of resources to find, delimited by delimiterRegex. These resources can include
-     *                              files and directories. There can be many of these.
+     * @param configuration configuration to be used for resource resolution
+     * @param delimiterRegex regular expression to be used to delimit the resources; if it is null
+     *        or has a length of 0 then the default (semicolon or space) will be used
+     * @param delimitedResourceList list of resources to find, delimited by delimiterRegex. These
+     *        resources can include files and directories. There can be many of these.
      */
-    public ResourceResolution(@NotNull final Configuration configuration, final String delimiterRegex, @NotNull final String... delimitedResourceList) {
-        final Pattern delimiterPattern = Pattern.compile(delimiterRegex == null || delimiterRegex.isEmpty() ? DEFAULT_SPLIT_REGEX : delimiterRegex);
+    public ResourceResolution(@NotNull final Configuration configuration,
+        final String delimiterRegex, @NotNull final String... delimitedResourceList) {
+        final Pattern delimiterPattern =
+            Pattern.compile(delimiterRegex == null || delimiterRegex.isEmpty() ? DEFAULT_SPLIT_REGEX
+                : delimiterRegex);
         resourceList = Arrays.stream(delimitedResourceList)
-                .filter(l -> l != null && !l.isEmpty())
-                .flatMap(l -> Arrays.stream(delimiterPattern.split(l)))
-                .filter(r -> !r.isEmpty())
-                .map(r -> {
-                    String subs = r.contains("<devroot>") ? r.replace("<devroot>", configuration.getDevRootPath()) : r;
-                    subs = subs.contains("<workspace>") ? subs.replace("<workspace>", configuration.getWorkspacePath()) : subs;
-                    return subs;
-                })
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+            .filter(l -> l != null && !l.isEmpty())
+            .flatMap(l -> Arrays.stream(delimiterPattern.split(l)))
+            .filter(r -> !r.isEmpty())
+            .map(r -> {
+                String subs =
+                    r.contains("<devroot>") ? r.replace("<devroot>", configuration.getDevRootPath())
+                        : r;
+                subs = subs.contains("<workspace>")
+                    ? subs.replace("<workspace>", configuration.getWorkspacePath())
+                    : subs;
+                return subs;
+            })
+            .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    private void processJarFile(@NotNull final Path path, @NotNull final String suffix, @NotNull final BiConsumer<URL, String> consumer) throws IOException {
+    private void processJarFile(@NotNull final Path path, @NotNull final String suffix,
+        @NotNull final BiConsumer<URL, String> consumer) throws IOException {
         /*
          * Wrap all this in a try block, as we don't want to fail if there's a matching filename
          * that's not a jar. Is there a better way to handle this?
@@ -83,12 +92,14 @@ public class ResourceResolution {
 
     /**
      * Find all resources associated with a list of resources
+     * 
      * @param suffix filename suffix to be searched for
      * @param consumer operation to perform on each found resource (URL, file name pair)
-     * @throws IOException in the event of issues opening files or malformed URLs; this should not occur unless
-     *                     files are being modified as we walk the directories
+     * @throws IOException in the event of issues opening files or malformed URLs; this should not
+     *         occur unless files are being modified as we walk the directories
      */
-    public void findResources(@NotNull final String suffix, @NotNull final BiConsumer<URL, String> consumer) throws IOException {
+    public void findResources(@NotNull final String suffix,
+        @NotNull final BiConsumer<URL, String> consumer) throws IOException {
         if (resourceList.isEmpty()) {
             return;
         }
@@ -101,17 +112,23 @@ public class ResourceResolution {
                 final DirectoryScanner scanner = new DirectoryScanner();
 
                 /*
-                 * Wildcards work best if we normalize the path sent in, removing extra slashes/backslashes and making everything
-                 * use one separator based on the OS separator. We have to take into account full paths and relative paths
-                 * on both Linux and Windows.
+                 * Wildcards work best if we normalize the path sent in, removing extra
+                 * slashes/backslashes and making everything use one separator based on the OS
+                 * separator. We have to take into account full paths and relative paths on both
+                 * Linux and Windows.
                  */
                 final String normalizedResourcePath = normalize(resourcePath);
                 final String rootPath = getRoot(normalizedResourcePath);
                 scanner.setBasedir(rootPath);
 
-                // If this resource's normalized search path starts with rootPath, then it was a fully-specified path, so pull
-                // that part off the path to determine the wildcard include list. Otherwise it was relative, and that becomes the include array.
-                final String[] wildcardIncludeAry = new String[] {  normalizedResourcePath.startsWith(rootPath) ? normalizedResourcePath.substring(rootPath.length()) : normalizedResourcePath };
+                // If this resource's normalized search path starts with rootPath, then it was a
+                // fully-specified path, so pull
+                // that part off the path to determine the wildcard include list. Otherwise it was
+                // relative, and that becomes the include array.
+                final String[] wildcardIncludeAry =
+                    new String[] {normalizedResourcePath.startsWith(rootPath)
+                        ? normalizedResourcePath.substring(rootPath.length())
+                        : normalizedResourcePath};
                 scanner.setIncludes(wildcardIncludeAry);
 
                 scanner.setCaseSensitive(true);
@@ -121,7 +138,8 @@ public class ResourceResolution {
                 if (files.length > 0) {
                     traversedPaths++;
 
-                    // The returned file array will be the relative path from the root, so add that root back and process the file
+                    // The returned file array will be the relative path from the root, so add that
+                    // root back and process the file
                     for (final String file : files) {
                         // The returned filename doesn't include the root, so add it
                         final String fullFilename = rootPath + File.separator + file;
@@ -131,11 +149,13 @@ public class ResourceResolution {
                 }
             } else {
                 traversedPaths++;
-                try (final Stream<Path> pathStream = Files.walk(Paths.get(resourcePath), FileVisitOption.FOLLOW_LINKS)) {
-                    // Walk this file (or all files in this directory and subdirectories) and look for <.suffix> and .jar files.
+                try (final Stream<Path> pathStream =
+                    Files.walk(Paths.get(resourcePath), FileVisitOption.FOLLOW_LINKS)) {
+                    // Walk this file (or all files in this directory and subdirectories) and look
+                    // for <.suffix> and .jar files.
                     pathStream
-                            .filter(p -> Files.isRegularFile(p))
-                            .forEach(p -> processFile(p.getFileName().toString(), p, suffix, consumer));
+                        .filter(p -> Files.isRegularFile(p))
+                        .forEach(p -> processFile(p.getFileName().toString(), p, suffix, consumer));
                 } catch (UncheckedIOException e) {
                     throw e.getCause();
                 }
@@ -147,7 +167,9 @@ public class ResourceResolution {
     }
 
     /**
-     * Find the filesystem root for this search path. For example, it may be /, C:\, or something passed by the user.
+     * Find the filesystem root for this search path. For example, it may be /, C:\, or something
+     * passed by the user.
+     * 
      * @param searchPath the already-normalized search path
      * @return the root for searchPath
      */
@@ -156,15 +178,17 @@ public class ResourceResolution {
         File dir = new File(searchPath).getAbsoluteFile();
         final String fullNameWithDir = dir.getPath();
 
-        // If we were passed an absolute path then the fully-qualified name will match the created File's name. In that case
-        // the root needs to be the filesystem/disk root, so look up the path until it's found. If this is a UNC path
+        // If we were passed an absolute path then the fully-qualified name will match the created
+        // File's name. In that case
+        // the root needs to be the filesystem/disk root, so look up the path until it's found. If
+        // this is a UNC path
         // we need to stop traversing when we reach the share level.
         if (new File(searchPath).isAbsolute()) {
             if (searchPath.startsWith("\\\\")) {
                 File parent = dir;
                 while ((parent != null)
-                        && (parent.getParentFile() != null)
-                        && (parent.getParentFile().getParentFile()) != null) {
+                    && (parent.getParentFile() != null)
+                    && (parent.getParentFile().getParentFile()) != null) {
                     dir = parent;
                     parent = dir.getParentFile();
                 }
@@ -179,21 +203,25 @@ public class ResourceResolution {
                 return dir.getAbsolutePath();
             }
         } else {
-            // Any trailing separators foil the endsWith call below. The string is supposed to be normalized, so just find File.separator.
-            while(searchPath.endsWith(File.separator)) {
+            // Any trailing separators foil the endsWith call below. The string is supposed to be
+            // normalized, so just find File.separator.
+            while (searchPath.endsWith(File.separator)) {
                 searchPath = searchPath.substring(0, searchPath.length() - 1);
             }
 
-            // If it's a relative path, the root will be the part before the passed-in searchPath. as that's before the wildcards could start
+            // If it's a relative path, the root will be the part before the passed-in searchPath.
+            // as that's before the wildcards could start
             if (!fullNameWithDir.endsWith(searchPath)) {
-                throw new IllegalArgumentException("Can't resolve relative path " + searchPath + " to full directory name " + fullNameWithDir);
+                throw new IllegalArgumentException("Can't resolve relative path " + searchPath
+                    + " to full directory name " + fullNameWithDir);
             } else {
                 return fullNameWithDir.substring(0, fullNameWithDir.length() - searchPath.length());
             }
         }
     }
 
-    private void processFile(final String fileName, final Path path, @NotNull final String suffix, @NotNull final BiConsumer<URL, String> consumer) {
+    private void processFile(final String fileName, final Path path, @NotNull final String suffix,
+        @NotNull final BiConsumer<URL, String> consumer) {
         try {
             if (fileName.endsWith(suffix)) {
                 consumer.accept(path.toUri().toURL(), fileName);
@@ -206,14 +234,16 @@ public class ResourceResolution {
     }
 
     /**
-     * Replace multiple sequential file separators (either Windows or Unix) with single instances of the system file separator.
-     * Make sure UNC paths are preserved by leaving two leading file sparator characters in place
+     * Replace multiple sequential file separators (either Windows or Unix) with single instances of
+     * the system file separator. Make sure UNC paths are preserved by leaving two leading file
+     * sparator characters in place
      *
      * @param resourcePath the path to normalize
      * @return the normalized path
      */
     protected String normalize(final String resourcePath) {
         return ((File.separator.equals("\\") && resourcePath.startsWith("\\\\")) ? "\\" : "")
-                +  normalizePattern.matcher(resourcePath).replaceAll(Matcher.quoteReplacement(File.separator));
+            + normalizePattern.matcher(resourcePath)
+                .replaceAll(Matcher.quoteReplacement(File.separator));
     }
 }

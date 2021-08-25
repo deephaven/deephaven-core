@@ -8,7 +8,8 @@ public class TreeTableConstants {
     public static final String RE_TREE_KEY = "__RE_TREED__";
 
 
-    // This is the key into the sources map of the synthetic column that identifies which tables own what rows.
+    // This is the key into the sources map of the synthetic column that identifies which tables own
+    // what rows.
     public static final String TABLE_KEY_COLUMN = "__TABLE_KEY__";
     public static final String CHILD_PRESENCE_COLUMN = "__CHILD_PRESENCE__";
 

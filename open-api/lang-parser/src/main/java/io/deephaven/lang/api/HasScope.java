@@ -8,6 +8,7 @@ import java.util.List;
  */
 public interface HasScope extends Node {
     void setScope(List<IsScope> scope);
+
     List<IsScope> getScope();
 
     @Override
@@ -17,9 +18,9 @@ public interface HasScope extends Node {
         }
         final List<IsScope> curScope = getScope();
         IsScope prevScope = null;
-        Node target = curScope.isEmpty() ? this : curScope.get(curScope.size()-1);
+        Node target = curScope.isEmpty() ? this : curScope.get(curScope.size() - 1);
         curScope.addAll(0, scope);
-        for (int i = scope.size(); i-->0;) {
+        for (int i = scope.size(); i-- > 0;) {
             final IsScope item = scope.get(i);
             insertChild(item, 0);
             if (target != this) {

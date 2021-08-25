@@ -9,7 +9,8 @@ import groovy.lang.Closure;
 /**
  * Wraps a {@link SerializableClosure} with the API of a function.
  */
-public class ClosureFunction<T,R> extends SerializableClosure<R> implements SerializableFunction<T,R> {
+public class ClosureFunction<T, R> extends SerializableClosure<R>
+    implements SerializableFunction<T, R> {
 
     private static final long serialVersionUID = 3693316124178311688L;
 

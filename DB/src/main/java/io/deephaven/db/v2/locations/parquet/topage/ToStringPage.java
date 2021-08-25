@@ -12,25 +12,26 @@ public class ToStringPage<ATTR extends Attributes.Any> implements ToPage<ATTR, S
 
     static final ToStringPage INSTANCE = new ToStringPage();
 
-    public static <ATTR extends Attributes.Any>
-    ToPage<ATTR, String[]> create(final Class<?> nativeType, final org.apache.parquet.column.Dictionary dictionary) {
+    public static <ATTR extends Attributes.Any> ToPage<ATTR, String[]> create(
+        final Class<?> nativeType, final org.apache.parquet.column.Dictionary dictionary) {
         if (nativeType == null || String.class.equals(nativeType)) {
-            //noinspection unchecked
+            // noinspection unchecked
             return dictionary == null
-                    ? INSTANCE
-                    : new ToPageWithDictionary<>(
-                            String.class,
-                            new Dictionary<>(
-                                    dictionaryKey -> dictionary.decodeToBinary(dictionaryKey).toStringUsingUTF8(),
-                                    dictionary.getMaxId() + 1),
-                            INSTANCE::convertResult);
+                ? INSTANCE
+                : new ToPageWithDictionary<>(
+                    String.class,
+                    new Dictionary<>(
+                        dictionaryKey -> dictionary.decodeToBinary(dictionaryKey)
+                            .toStringUsingUTF8(),
+                        dictionary.getMaxId() + 1),
+                    INSTANCE::convertResult);
         }
 
-        throw new IllegalArgumentException("The native type for a String column is " + nativeType.getCanonicalName());
+        throw new IllegalArgumentException(
+            "The native type for a String column is " + nativeType.getCanonicalName());
     }
 
-    private ToStringPage() {
-    }
+    private ToStringPage() {}
 
     @Override
     @NotNull

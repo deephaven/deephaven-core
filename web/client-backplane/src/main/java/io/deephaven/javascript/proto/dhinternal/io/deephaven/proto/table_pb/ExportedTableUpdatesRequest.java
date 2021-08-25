@@ -9,19 +9,19 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdatesRequest",
     namespace = JsPackage.GLOBAL)
 public class ExportedTableUpdatesRequest {
-  public static native ExportedTableUpdatesRequest deserializeBinary(Uint8Array bytes);
+    public static native ExportedTableUpdatesRequest deserializeBinary(Uint8Array bytes);
 
-  public static native ExportedTableUpdatesRequest deserializeBinaryFromReader(
-      ExportedTableUpdatesRequest message, Object reader);
+    public static native ExportedTableUpdatesRequest deserializeBinaryFromReader(
+        ExportedTableUpdatesRequest message, Object reader);
 
-  public static native void serializeBinaryToWriter(
-      ExportedTableUpdatesRequest message, Object writer);
+    public static native void serializeBinaryToWriter(
+        ExportedTableUpdatesRequest message, Object writer);
 
-  public static native Object toObject(boolean includeInstance, ExportedTableUpdatesRequest msg);
+    public static native Object toObject(boolean includeInstance, ExportedTableUpdatesRequest msg);
 
-  public native Uint8Array serializeBinary();
+    public native Uint8Array serializeBinary();
 
-  public native Object toObject();
+    public native Object toObject();
 
-  public native Object toObject(boolean includeInstance);
+    public native Object toObject(boolean includeInstance);
 }

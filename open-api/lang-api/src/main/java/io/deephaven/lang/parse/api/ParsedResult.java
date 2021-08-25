@@ -6,8 +6,8 @@ import java.util.Map;
 /**
  * Represents a parsed document.
  *
- * For now, we will be re-parsing the entire string document every time,
- * but in the future, we would like to be able to update only ranges of changed code.
+ * For now, we will be re-parsing the entire string document every time, but in the future, we would
+ * like to be able to update only ranges of changed code.
  */
 public interface ParsedResult<DocType, AssignType, NodeType> {
 

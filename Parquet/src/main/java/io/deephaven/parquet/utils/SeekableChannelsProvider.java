@@ -15,7 +15,8 @@ public interface SeekableChannelsProvider {
 
     SeekableByteChannel getReadChannel(@NotNull Path path) throws IOException;
 
-    default SeekableByteChannel getWriteChannel(@NotNull final String path, final boolean append) throws IOException {
+    default SeekableByteChannel getWriteChannel(@NotNull final String path, final boolean append)
+        throws IOException {
         return getWriteChannel(Paths.get(path), append);
     }
 

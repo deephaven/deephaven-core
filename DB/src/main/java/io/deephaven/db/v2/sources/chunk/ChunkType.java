@@ -10,19 +10,14 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.IntFunction;
 
 public enum ChunkType implements ChunkFactory {
-    Boolean(new BooleanChunkFactory()),
-    Char(new CharChunkFactory()),
-    Byte(new ByteChunkFactory()),
-    Short(new ShortChunkFactory()),
-    Int(new IntChunkFactory()),
-    Long(new LongChunkFactory()),
-    Float(new FloatChunkFactory()),
-    Double(new DoubleChunkFactory()),
-    Object(new ObjectChunkFactory());
+    Boolean(new BooleanChunkFactory()), Char(new CharChunkFactory()), Byte(
+        new ByteChunkFactory()), Short(new ShortChunkFactory()), Int(new IntChunkFactory()), Long(
+            new LongChunkFactory()), Float(new FloatChunkFactory()), Double(
+                new DoubleChunkFactory()), Object(new ObjectChunkFactory());
 
     private static final SimpleTypeMap<ChunkType> fromElementTypeMap = SimpleTypeMap.create(
-            ChunkType.Boolean, ChunkType.Char, ChunkType.Byte, ChunkType.Short, ChunkType.Int,
-            ChunkType.Long, ChunkType.Float, ChunkType.Double, ChunkType.Object);
+        ChunkType.Boolean, ChunkType.Char, ChunkType.Byte, ChunkType.Short, ChunkType.Int,
+        ChunkType.Long, ChunkType.Float, ChunkType.Double, ChunkType.Object);
 
     public static ChunkType fromElementType(Class elementType) {
         return fromElementTypeMap.get(elementType);
@@ -79,19 +74,22 @@ public enum ChunkType implements ChunkFactory {
 
     @NotNull
     @Override
-    public final <ATTR extends Any> ChunkChunk<ATTR> chunkChunkWrap(Chunk<ATTR>[] array, int offset, int capacity) {
+    public final <ATTR extends Any> ChunkChunk<ATTR> chunkChunkWrap(Chunk<ATTR>[] array, int offset,
+        int capacity) {
         return factory.chunkChunkWrap(array, offset, capacity);
     }
 
     @NotNull
     @Override
-    public final <ATTR extends Any> ChunkPage<ATTR> pageWrap(long beginRow, Object array, long mask) {
+    public final <ATTR extends Any> ChunkPage<ATTR> pageWrap(long beginRow, Object array,
+        long mask) {
         return factory.pageWrap(beginRow, array, mask);
     }
 
     @NotNull
     @Override
-    public final <ATTR extends Any> ChunkPage<ATTR> pageWrap(long beginRow, Object array, int offset, int capacity, long mask) {
+    public final <ATTR extends Any> ChunkPage<ATTR> pageWrap(long beginRow, Object array,
+        int offset, int capacity, long mask) {
         return factory.pageWrap(beginRow, array, offset, capacity, mask);
     }
 
@@ -133,13 +131,15 @@ public enum ChunkType implements ChunkFactory {
 
     @NotNull
     @Override
-    public final <ATTR extends Any> WritableChunk<ATTR> writableChunkWrap(Object array, int offset, int capacity) {
+    public final <ATTR extends Any> WritableChunk<ATTR> writableChunkWrap(Object array, int offset,
+        int capacity) {
         return factory.writableChunkWrap(array, offset, capacity);
     }
 
     @NotNull
     @Override
-    public final <ATTR extends Any> WritableChunkChunk<ATTR> writableChunkChunkWrap(WritableChunk<ATTR>[] array, int offset, int capacity) {
+    public final <ATTR extends Any> WritableChunkChunk<ATTR> writableChunkChunkWrap(
+        WritableChunk<ATTR>[] array, int offset, int capacity) {
         return factory.writableChunkChunkWrap(array, offset, capacity);
     }
 

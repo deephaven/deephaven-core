@@ -27,12 +27,14 @@ public class DbArrayColumnWrapper<T> extends DbArray.Indirect<T> {
     private final long startPadding;
     private final long endPadding;
 
-    public DbArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final Index index) {
+    public DbArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource,
+        @NotNull final Index index) {
         this(columnSource, index, 0, 0);
     }
 
-    public DbArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource, @NotNull final Index index,
-                                final long startPadding, final long endPadding) {
+    public DbArrayColumnWrapper(@NotNull final ColumnSource<T> columnSource,
+        @NotNull final Index index,
+        final long startPadding, final long endPadding) {
         Assert.neqNull(index, "index");
         this.columnSource = columnSource;
         this.index = index;
@@ -42,9 +44,9 @@ public class DbArrayColumnWrapper<T> extends DbArray.Indirect<T> {
 
     @Override
     public T get(long i) {
-        i-= startPadding;
+        i -= startPadding;
 
-        if (i<0 || i>index.size()-1) {
+        if (i < 0 || i > index.size() - 1) {
             return null;
         }
 
@@ -53,19 +55,23 @@ public class DbArrayColumnWrapper<T> extends DbArray.Indirect<T> {
 
     @Override
     public DbArray<T> subArray(long fromIndexInclusive, long toIndexExclusive) {
-        fromIndexInclusive -=startPadding;
-        toIndexExclusive -=startPadding;
+        fromIndexInclusive -= startPadding;
+        toIndexExclusive -= startPadding;
 
         final long realFrom = ClampUtil.clampLong(0, index.size(), fromIndexInclusive);
         final long realTo = ClampUtil.clampLong(0, index.size(), toIndexExclusive);
 
-        long newStartPadding= toIndexExclusive <0 ? toIndexExclusive - fromIndexInclusive : Math.max(0, -fromIndexInclusive);
-        long newEndPadding= fromIndexInclusive >= index.size() ? toIndexExclusive - fromIndexInclusive : (int) Math.max(0, toIndexExclusive - index.size());
+        long newStartPadding = toIndexExclusive < 0 ? toIndexExclusive - fromIndexInclusive
+            : Math.max(0, -fromIndexInclusive);
+        long newEndPadding =
+            fromIndexInclusive >= index.size() ? toIndexExclusive - fromIndexInclusive
+                : (int) Math.max(0, toIndexExclusive - index.size());
 
-        return new DbArrayColumnWrapper<>(columnSource, index.subindexByPos(realFrom, realTo), newStartPadding, newEndPadding);
+        return new DbArrayColumnWrapper<>(columnSource, index.subindexByPos(realFrom, realTo),
+            newStartPadding, newEndPadding);
     }
 
-    public DbArray<T> subArrayByPositions(long [] positions) {
+    public DbArray<T> subArrayByPositions(long[] positions) {
         IndexBuilder builder = Index.FACTORY.getRandomBuilder();
 
         for (long position : positions) {
@@ -85,14 +91,15 @@ public class DbArrayColumnWrapper<T> extends DbArray.Indirect<T> {
     }
 
     public T[] toArray(boolean shouldBeNullIfOutofBounds, long maxSize) {
-        if (shouldBeNullIfOutofBounds && (startPadding>0 || endPadding>0)){
+        if (shouldBeNullIfOutofBounds && (startPadding > 0 || endPadding > 0)) {
             return null;
         }
 
-        final long sz = Math.min(size(),maxSize);
+        final long sz = Math.min(size(), maxSize);
 
         @SuppressWarnings("unchecked")
-        final T result[] = (T[])Array.newInstance(TypeUtils.getBoxedType(columnSource.getType()), LongSizedDataStructure.intSize("toArray", sz));
+        final T result[] = (T[]) Array.newInstance(TypeUtils.getBoxedType(columnSource.getType()),
+            LongSizedDataStructure.intSize("toArray", sz));
         for (int i = 0; i < sz; i++) {
             result[i] = get(i);
         }
@@ -115,14 +122,15 @@ public class DbArrayColumnWrapper<T> extends DbArray.Indirect<T> {
         if (DbArrayBase.class.isAssignableFrom(getComponentType())) {
             // recursion!
             final long size = size();
-            //noinspection unchecked
-            final T[] array = (T[]) Array.newInstance(getComponentType(), LongSizedDataStructure.intSize("toArray", size));
+            // noinspection unchecked
+            final T[] array = (T[]) Array.newInstance(getComponentType(),
+                LongSizedDataStructure.intSize("toArray", size));
             for (int ii = 0; ii < size; ++ii) {
                 final T arrayBase = get(ii);
                 if (arrayBase == null) {
                     array[ii] = null;
                 } else {
-                    //noinspection unchecked
+                    // noinspection unchecked
                     array[ii] = (T) ((DbArrayBase<?>) arrayBase).getDirect();
                 }
             }
@@ -134,9 +142,9 @@ public class DbArrayColumnWrapper<T> extends DbArray.Indirect<T> {
 
     @Override
     public T getPrev(long i) {
-        i-= startPadding;
+        i -= startPadding;
 
-        if (i<0 || i>index.size()-1) {
+        if (i < 0 || i > index.size() - 1) {
             return null;
         }
 

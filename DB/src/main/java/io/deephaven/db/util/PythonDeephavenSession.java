@@ -35,16 +35,16 @@ import static io.deephaven.db.util.PythonScopeJpyImpl.CallableWrapper;
 /**
  * A ScriptSession that uses a JPy cpython interpreter internally.
  *
- * This is used for persistent queries or the DB console; Python code running remotely uses WorkerPythonEnvironment
- * for it's supporting structures.
+ * This is used for persistent queries or the DB console; Python code running remotely uses
+ * WorkerPythonEnvironment for it's supporting structures.
  */
 public class PythonDeephavenSession extends AbstractScriptSession implements ScriptSession {
     private static final Logger log = LoggerFactory.getLogger(PythonDeephavenSession.class);
 
     private static final String DEFAULT_SCRIPT_PATH = Configuration.getInstance()
-            .getProperty("PythonDeephavenSession.defaultScriptPath")
-            .replace("<devroot>", Configuration.getInstance().getDevRootPath())
-            .replace("<workspace>", Configuration.getInstance().getWorkspacePath());
+        .getProperty("PythonDeephavenSession.defaultScriptPath")
+        .replace("<devroot>", Configuration.getInstance().getDevRootPath())
+        .replace("<workspace>", Configuration.getInstance().getWorkspacePath());
 
     public static String SCRIPT_TYPE = "Python";
 
@@ -69,7 +69,8 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
      * @param isDefaultScriptSession true if this is in the default context of a worker jvm
      * @throws IOException if an IO error occurs running initialization scripts
      */
-    public PythonDeephavenSession(boolean runInitScripts, boolean isDefaultScriptSession) throws IOException {
+    public PythonDeephavenSession(boolean runInitScripts, boolean isDefaultScriptSession)
+        throws IOException {
         super(isDefaultScriptSession);
 
         JpyInit.init(log);
@@ -87,7 +88,8 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
          * And now the user-defined initialization scripts, if any.
          */
         if (runInitScripts) {
-            String[] scripts = Configuration.getInstance().getProperty("PythonDeephavenSession.initScripts").split(",");
+            String[] scripts = Configuration.getInstance()
+                .getProperty("PythonDeephavenSession.initScripts").split(",");
 
             for (String script : scripts) {
                 runScript(script);
@@ -123,8 +125,9 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     /**
-     * Finds the specified script; and runs it as a file, or if it is a stream writes it to a temporary file in order
-     * to run it.
+     * Finds the specified script; and runs it as a file, or if it is a stream writes it to a
+     * temporary file in order to run it.
+     * 
      * @param script the script's name
      * @throws IOException if an error occurs reading or writing the script
      */
@@ -151,7 +154,8 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     public Object getVariable(String name) throws QueryScope.MissingVariableException {
         return scope
             .getValue(name)
-            .orElseThrow(() -> new QueryScope.MissingVariableException("No global variable for: " + name));
+            .orElseThrow(
+                () -> new QueryScope.MissingVariableException("No global variable for: " + name));
     }
 
     @Override
@@ -169,7 +173,8 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
                 evaluator.evalScript(command);
             });
         } catch (InterruptedException e) {
-            throw new QueryCancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted" , e);
+            throw new QueryCancellationException(
+                e.getMessage() != null ? e.getMessage() : "Query interrupted", e);
         }
     }
 
@@ -203,30 +208,30 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     @Override
-    public String scriptType() { return SCRIPT_TYPE; }
-
-    @Override
-    public void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader, ScriptPathLoaderState scriptLoaderState) {
+    public String scriptType() {
+        return SCRIPT_TYPE;
     }
 
     @Override
-    public void onApplicationInitializationEnd() {
-    }
+    public void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader,
+        ScriptPathLoaderState scriptLoaderState) {}
 
     @Override
-    public void setScriptPathLoader(Supplier<ScriptPathLoader> scriptPathLoader, boolean caching) {
-    }
+    public void onApplicationInitializationEnd() {}
 
     @Override
-    public void clearScriptPathLoader() {
-    }
+    public void setScriptPathLoader(Supplier<ScriptPathLoader> scriptPathLoader, boolean caching) {}
+
+    @Override
+    public void clearScriptPathLoader() {}
 
     @Override
     public boolean setUseOriginalScriptLoaderState(boolean useOriginal) {
         return true;
     }
 
-    //TODO core#41 move this logic into the python console instance or scope like this - can go further and move isWidget too
+    // TODO core#41 move this logic into the python console instance or scope like this - can go
+    // further and move isWidget too
     @Override
     public Object unwrapObject(Object object) {
         if (object instanceof PyObject) {
@@ -242,6 +247,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     private static final String GET_WIDGET_ATTRIBUTE = "getWidget";
+
     private static boolean isWidget(PyObject value) {
         if ((value != null && value.hasAttribute(GET_WIDGET_ATTRIBUTE))) {
             try (final PyObject widget = value.callMethod(GET_WIDGET_ATTRIBUTE)) {
@@ -251,6 +257,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
 
         return false;
     }
+
     private static LiveWidget getWidget(PyObject pyObject) {
         boolean isWidget = pyObject.hasAttribute(GET_WIDGET_ATTRIBUTE);
         if (isWidget) {
@@ -265,6 +272,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     private static final String GET_TABLE_ATTRIBUTE = "get_dh_table";
+
     private static boolean isTable(PyObject value) {
         if ((value != null && value.hasAttribute(GET_TABLE_ATTRIBUTE))) {
             try (final PyObject widget = value.callMethod(GET_TABLE_ATTRIBUTE)) {
@@ -274,6 +282,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
 
         return false;
     }
+
     private static Table getTable(PyObject pyObject) {
         if (pyObject.hasAttribute(GET_TABLE_ATTRIBUTE)) {
             try (final PyObject widget = pyObject.callMethod(GET_TABLE_ATTRIBUTE)) {

@@ -14,14 +14,15 @@ import static io.deephaven.db.v2.utils.IndexUtilities.Comparator;
 
 public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
     private RspArray.SpanCursorForward p;
-    // Iterator pointing to the next value to deliver in the current RB Container if there is one, null otherwise.
+    // Iterator pointing to the next value to deliver in the current RB Container if there is one,
+    // null otherwise.
     private SearchRangeIterator ri;
     // To hold the container on which ri is based.
     private SpanView riView;
     // Current start and end values.
     private long start;
-    private long end;  // inclusive.
-    private boolean nextValid;  // True if there is an additional range after the current one.
+    private long end; // inclusive.
+    private boolean nextValid; // True if there is an additional range after the current one.
 
     public RspRangeIterator(final RspArray.SpanCursorForward p) {
         start = 0;
@@ -47,12 +48,14 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
     }
 
     /**
-     * There is a lot of complexity here because we may need to merge adjacent ranges belonging to different,
-     * consecutive blocks.
+     * There is a lot of complexity here because we may need to merge adjacent ranges belonging to
+     * different, consecutive blocks.
      */
     private void nextInterval() {
-        // if hasPrev is true, we have accumulated in [start, end] a range that we can't deliver yet,
-        // as end corresponds exactly with the last element in a block interval, which may need to be merged
+        // if hasPrev is true, we have accumulated in [start, end] a range that we can't deliver
+        // yet,
+        // as end corresponds exactly with the last element in a block interval, which may need to
+        // be merged
         // with the next range.
         boolean hasPrev = false;
         long spanInfo = p.spanInfo();
@@ -114,7 +117,8 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
                     nextValid = true;
                     return;
                 }
-                // This span can't be a full block span: it would have been merged with the previous one.
+                // This span can't be a full block span: it would have been merged with the previous
+                // one.
                 // Therefore at this point we know p.span() is an RB Container.
                 hasPrev = true;
                 s = p.span();
@@ -127,8 +131,9 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
                 riView.init(p.arr(), p.arrIdx(), spanInfo, s);
                 ri = riView.getContainer().getShortRangeIterator(0);
             }
-            // ri.hasNext() has to be true by construction; this container can't be empty or it wouldn't be present.
-            ri.hasNext();  // we call it for its potential side effects.
+            // ri.hasNext() has to be true by construction; this container can't be empty or it
+            // wouldn't be present.
+            ri.hasNext(); // we call it for its potential side effects.
             ri.next();
         }
     }
@@ -143,7 +148,8 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
         if (isSingletonSpan(s) || RspArray.getFullBlockSpanLen(spanInfo, s) > 0) {
             return spanKey;
         }
-        try (SpanView res = workDataPerThread.get().borrowSpanView(p.arr(), p.arrIdx(), spanInfo, s)) {
+        try (SpanView res =
+            workDataPerThread.get().borrowSpanView(p.arr(), p.arrIdx(), spanInfo, s)) {
             return spanKey | (long) res.getContainer().first();
         }
     }
@@ -166,6 +172,7 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
 
     /**
      * At call, start() <= v <= end()
+     * 
      * @param v Next call to start will return this value.
      */
     public void postpone(final long v) {
@@ -173,10 +180,9 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
     }
 
     /**
-     * This method should be called:
-     * * After the iterator is created and before calling any other methods;
-     *   it returns false, calling any other methods results in undefined behavior.
-     * * Right after a call to next, similar to above.
+     * This method should be called: * After the iterator is created and before calling any other
+     * methods; it returns false, calling any other methods results in undefined behavior. * Right
+     * after a call to next, similar to above.
      *
      * @return true if a call to next leads to a valid range to be read from start() and end().
      */
@@ -205,17 +211,17 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
     }
 
     /**
-     * Advance the current iterator position while the current range end is less than key.
-     * This results in either (a) true, leaving a current range whose start value is greater or equal than key,
-     * or (b) false, leaving an exhausted, invalid iterator.
+     * Advance the current iterator position while the current range end is less than key. This
+     * results in either (a) true, leaving a current range whose start value is greater or equal
+     * than key, or (b) false, leaving an exhausted, invalid iterator.
      *
      * Note if the iterator is not exhausted, true is returned and the satisfying range is left as
-     * the iterator's current range: no need to call next to get to it.
-     * Also note the iterator may not move if at call entry the current range already satisfies (a).
+     * the iterator's current range: no need to call next to get to it. Also note the iterator may
+     * not move if at call entry the current range already satisfies (a).
      *
-     * If this method returns false, it implies the iterator has been exhausted, the current range is invalid,
-     * and subsequent calls to hasNext will return false;  there is no guarantee as to where the start
-     * and end positions are left in this case.
+     * If this method returns false, it implies the iterator has been exhausted, the current range
+     * is invalid, and subsequent calls to hasNext will return false; there is no guarantee as to
+     * where the start and end positions are left in this case.
      *
      * @param key a key to search forward from the current iterator position
      * @return true if case (a), false if case (b).
@@ -280,8 +286,8 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
 
     /**
      * Advance the current iterator (start) position to the rightmost (last) value v that maintains
-     * comp.directionToTargetFrom(v) >= 0.  I.e, either hasNext() returns false after this call, or the next value
-     * in the iterator nv would be such that comp.directionToTargetFrom(nv) < 0.
+     * comp.directionToTargetFrom(v) >= 0. I.e, either hasNext() returns false after this call, or
+     * the next value in the iterator nv would be such that comp.directionToTargetFrom(nv) < 0.
      *
      * Note this method should be called only after calling hasNext() and next() at least once, eg,
      * from a valid current position in a non-empty and also non-exhausted iterator.
@@ -335,7 +341,8 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
             }
         }
         final long spanKey = p.spanKey();
-        final ContainerUtil.TargetComparator rcomp = (int v) -> comp.directionToTargetFrom(spanKey | v);
+        final ContainerUtil.TargetComparator rcomp =
+            (int v) -> comp.directionToTargetFrom(spanKey | v);
         final boolean found = ri.search(rcomp);
         if (found) {
             nextInterval();
@@ -357,16 +364,17 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
     }
 
     /**
-     * Create a RangeIterator that is a view into this iterator;
-     * the returned rangeIterator has current start() - startOffset as it initial start value
-     * (note the iterator needs to have a valid current position at the time of the call).
-     * The returned RangeIterator includes all the ranges until the end parameter (exclusive),
-     * and as it advances it will make the underlying iterator advance.
-     * Once the RangeIterator is exhausted, the underlying iterator will have a current value
-     * that is one after the last range returned by the range iterator (not this may have
-     * been truncated to a partial, still valid, range).
+     * Create a RangeIterator that is a view into this iterator; the returned rangeIterator has
+     * current start() - startOffset as it initial start value (note the iterator needs to have a
+     * valid current position at the time of the call). The returned RangeIterator includes all the
+     * ranges until the end parameter (exclusive), and as it advances it will make the underlying
+     * iterator advance. Once the RangeIterator is exhausted, the underlying iterator will have a
+     * current value that is one after the last range returned by the range iterator (not this may
+     * have been truncated to a partial, still valid, range).
+     * 
      * @param startOffset The resulting range iterator returns ranges offset with this value.
-     * @param rangesEnd boundary (exclusive) on the underlying iterator ranges for the ranges returned.
+     * @param rangesEnd boundary (exclusive) on the underlying iterator ranges for the ranges
+     *        returned.
      * @return
      */
     public RangeIteratorView rangeIteratorView(final long startOffset, final long rangesEnd) {
@@ -378,13 +386,15 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
         private final long offset;
         private final long rangesEnd;
         private int start;
-        private int end;        // Note RangeIterator uses exclusive ends.
+        private int end; // Note RangeIterator uses exclusive ends.
         private int nextStart;
-        private int nextEnd;    // Note RangeIterator uses exclusive ends.
+        private int nextEnd; // Note RangeIterator uses exclusive ends.
         private boolean nextValid;
         private boolean noMore;
         private boolean itFinished;
-        public RangeIteratorView(final RspRangeIterator it, final long offset, final long rangesEnd) {
+
+        public RangeIteratorView(final RspRangeIterator it, final long offset,
+            final long rangesEnd) {
             this.it = it;
             this.offset = offset;
             this.rangesEnd = rangesEnd;
@@ -396,10 +406,12 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
             itFinished = false;
             computeNext();
         }
+
         private void setTerminated() {
             it = null;
             nextValid = false;
         }
+
         private void computeNext() {
             if (noMore || it.start() >= rangesEnd) {
                 setTerminated();
@@ -422,32 +434,40 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
             itFinished = true;
             noMore = true;
         }
+
         @Override
         public boolean hasNext() {
             return nextValid;
         }
+
         @Override
         public int start() {
             return start;
         }
+
         @Override
         public int end() {
             return end;
         }
+
         @Override
         public void next() {
             start = nextStart;
             end = nextEnd;
             computeNext();
         }
+
         @Override
         public boolean advance(int v) {
-            throw new UnsupportedOperationException("advance is not supported on RangeIteratorView");
+            throw new UnsupportedOperationException(
+                "advance is not supported on RangeIteratorView");
         }
+
         @Override
         public boolean search(final ContainerUtil.TargetComparator comp) {
             throw new UnsupportedOperationException("search is not supported on RangeIteratorView");
         }
+
         public boolean underlyingIterFinished() {
             return itFinished;
         }

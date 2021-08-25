@@ -14,4 +14,5 @@ import org.immutables.value.Value.Style.ImplementationVisibility;
     // Make generated public, leave underscored as package private
     visibility = ImplementationVisibility.PUBLIC,
     defaults = @Value.Immutable(copy = false, builder = false))
-@interface Wrapped {}
+@interface Wrapped {
+}

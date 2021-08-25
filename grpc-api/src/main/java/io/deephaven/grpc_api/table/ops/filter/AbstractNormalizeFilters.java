@@ -21,12 +21,14 @@ public abstract class AbstractNormalizeFilters implements FilterVisitor<Conditio
     }
 
     @Override
-    public Condition onComparison(CompareCondition.CompareOperation operation, CaseSensitivity caseSensitivity, Value lhs, Value rhs) {
+    public Condition onComparison(CompareCondition.CompareOperation operation,
+        CaseSensitivity caseSensitivity, Value lhs, Value rhs) {
         return NormalizeFilterUtil.doComparison(operation, caseSensitivity, lhs, rhs);
     }
 
     @Override
-    public Condition onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType) {
+    public Condition onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity,
+        MatchType matchType) {
         return NormalizeFilterUtil.doIn(target, candidatesList, caseSensitivity, matchType);
     }
 
@@ -41,12 +43,14 @@ public abstract class AbstractNormalizeFilters implements FilterVisitor<Conditio
     }
 
     @Override
-    public Condition onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity, MatchType matchType) {
+    public Condition onContains(Reference reference, String searchString,
+        CaseSensitivity caseSensitivity, MatchType matchType) {
         return NormalizeFilterUtil.doContains(reference, searchString, caseSensitivity, matchType);
     }
 
     @Override
-    public Condition onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity, MatchType matchType) {
+    public Condition onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity,
+        MatchType matchType) {
         return NormalizeFilterUtil.doMatches(reference, regex, caseSensitivity, matchType);
     }
 

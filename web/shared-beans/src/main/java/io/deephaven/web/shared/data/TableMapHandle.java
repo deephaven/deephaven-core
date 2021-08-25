@@ -5,8 +5,8 @@ import java.io.Serializable;
 public class TableMapHandle implements Serializable {
     private int serverId;
 
-    public TableMapHandle() {
-    }
+    public TableMapHandle() {}
+
     public TableMapHandle(int serverId) {
         setServerId(serverId);
     }
@@ -21,8 +21,10 @@ public class TableMapHandle implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         final TableMapHandle that = (TableMapHandle) o;
 

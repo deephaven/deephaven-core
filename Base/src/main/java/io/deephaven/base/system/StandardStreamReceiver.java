@@ -4,7 +4,8 @@ import java.io.OutputStream;
 import java.util.Optional;
 
 /**
- * Allows classes to register interest in receiving application level calls to {@link System#out} and {@link System#err}.
+ * Allows classes to register interest in receiving application level calls to {@link System#out}
+ * and {@link System#err}.
  */
 public interface StandardStreamReceiver {
 

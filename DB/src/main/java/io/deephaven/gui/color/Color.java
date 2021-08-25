@@ -10,8 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * A color.
- * TODO (deephaven/deephaven-core/issues/175): Move this to a new module and package
+ * A color. TODO (deephaven/deephaven-core/issues/175): Move this to a new module and package
  */
 @SuppressWarnings("WeakerAccess")
 public class Color implements Paint, Serializable {
@@ -28,10 +27,9 @@ public class Color implements Paint, Serializable {
      *
      * Colors are specified by name or hex value.
      *
-     * Hex values are parsed as follows:
-     * first two digits set the Red component of the color;
-     * second two digits set the Green component; third two the Blue.
-     * Hex values must have a "#" in front, e.g. "#001122"
+     * Hex values are parsed as follows: first two digits set the Red component of the color; second
+     * two digits set the Green component; third two the Blue. Hex values must have a "#" in front,
+     * e.g. "#001122"
      *
      * For available names, see {@link Color} and {@link #colorNames}.
      *
@@ -39,12 +37,12 @@ public class Color implements Paint, Serializable {
      * @throws IllegalArgumentException {@code color} may not be null
      */
     public Color(@SuppressWarnings("ConstantConditions") final String color) {
-        if(color == null) {
+        if (color == null) {
             throw new IllegalArgumentException("Color can not be null");
         }
 
         if (color.contains("#")) {
-            //doesn't look like this supports rgba, just rgb
+            // doesn't look like this supports rgba, just rgb
             this.color = java.awt.Color.decode(color);
         } else {
             try {
@@ -56,12 +54,11 @@ public class Color implements Paint, Serializable {
     }
 
     /**
-     * Creates a Color with the specified red, green,
-     * and blue values in the range (0 - 255).
-     * Alpha is defaulted to 255.
+     * Creates a Color with the specified red, green, and blue values in the range (0 - 255). Alpha
+     * is defaulted to 255.
      *
-     * @throws IllegalArgumentException if {@code r}, {@code g}
-     *        or {@code b} values are outside of the range 0 to 255, inclusive
+     * @throws IllegalArgumentException if {@code r}, {@code g} or {@code b} values are outside of
+     *         the range 0 to 255, inclusive
      * @param r the red component
      * @param g the green component
      * @param b the blue component
@@ -71,11 +68,11 @@ public class Color implements Paint, Serializable {
     }
 
     /**
-     * Creates a Color with the specified red, green, blue,
-     * and alpha values in the range (0 - 255).  The lower the alpha, the more transparent the color.
+     * Creates a Color with the specified red, green, blue, and alpha values in the range (0 - 255).
+     * The lower the alpha, the more transparent the color.
      *
-     * @throws IllegalArgumentException if {@code r}, {@code g}
-     *        {@code b}, or {@code a} values are outside of the range 0 to 255, inclusive
+     * @throws IllegalArgumentException if {@code r}, {@code g} {@code b}, or {@code a} values are
+     *         outside of the range 0 to 255, inclusive
      * @param r the red component
      * @param g the green component
      * @param b the blue component
@@ -86,10 +83,9 @@ public class Color implements Paint, Serializable {
     }
 
     /**
-     * Creates a Color with the specified combined {@code rgb} value
-     * consisting of the red component in bits 16-23, the green component
-     * in bits 8-15, and the blue component in bits 0-7.
-     * Alpha is defaulted to 255.
+     * Creates a Color with the specified combined {@code rgb} value consisting of the red component
+     * in bits 16-23, the green component in bits 8-15, and the blue component in bits 0-7. Alpha is
+     * defaulted to 255.
      *
      * @param rgb the combined RGB components
      */
@@ -98,25 +94,24 @@ public class Color implements Paint, Serializable {
     }
 
     /**
-     * Creates a Color with the specified combined {@code rgba} value
-     * consisting of the alpha component in bits 24-31, the red component in bits 16-23,
-     * the green component in bits 8-15, and the blue component in bits 0-7.
-     * If {@code hasAlpha} is false, alpha is defaulted to 255.
+     * Creates a Color with the specified combined {@code rgba} value consisting of the alpha
+     * component in bits 24-31, the red component in bits 16-23, the green component in bits 8-15,
+     * and the blue component in bits 0-7. If {@code hasAlpha} is false, alpha is defaulted to 255.
      *
      * @param rgba the combined rbga components
-     * @param hasAlpha if true, {@code rgba} is parsed with an alpha component. Otherwise, alpha defaults to 255
+     * @param hasAlpha if true, {@code rgba} is parsed with an alpha component. Otherwise, alpha
+     *        defaults to 255
      */
     public Color(final int rgba, final boolean hasAlpha) {
         color = new java.awt.Color(rgba, hasAlpha);
     }
 
     /**
-     * Creates a Color with the specified red, green,
-     * and blue values in the range (0.0 - 1.0).
-     * Alpha is defaulted to 1.0.  The lower the alpha, the more transparent the color.
+     * Creates a Color with the specified red, green, and blue values in the range (0.0 - 1.0).
+     * Alpha is defaulted to 1.0. The lower the alpha, the more transparent the color.
      *
-     * @throws IllegalArgumentException if {@code r}, {@code g}
-     *        or {@code b} values are outside of the range 0.0 to 1.0, inclusive
+     * @throws IllegalArgumentException if {@code r}, {@code g} or {@code b} values are outside of
+     *         the range 0.0 to 1.0, inclusive
      * @param r the red component
      * @param g the green component
      * @param b the blue component
@@ -126,11 +121,11 @@ public class Color implements Paint, Serializable {
     }
 
     /**
-     * Creates a Color with the specified red, green, blue,
-     * and alpha values in the range (0.0 - 1.0).  The lower the alpha, the more transparent the color.
+     * Creates a Color with the specified red, green, blue, and alpha values in the range (0.0 -
+     * 1.0). The lower the alpha, the more transparent the color.
      *
-     * @throws IllegalArgumentException if {@code r}, {@code g},
-     *        {@code b}, {@code a} values are outside of the range 0.0 to 1.0, inclusive
+     * @throws IllegalArgumentException if {@code r}, {@code g}, {@code b}, {@code a} values are
+     *         outside of the range 0.0 to 1.0, inclusive
      * @param r the red component
      * @param g the green component
      * @param b the blue component
@@ -146,7 +141,8 @@ public class Color implements Paint, Serializable {
 
     @Override
     public String toString() {
-        return "Color{" + color.getRed() + "," + color.getGreen() + "," + color.getBlue() + "," + color.getAlpha() + "}";
+        return "Color{" + color.getRed() + "," + color.getGreen() + "," + color.getBlue() + ","
+            + color.getAlpha() + "}";
     }
 
 
@@ -157,10 +153,9 @@ public class Color implements Paint, Serializable {
      *
      * Colors are specified by name or hex value.
      *
-     * Hex values are parsed as follows:
-     * first two digits set the Red component of the color;
-     * second two digits set the Green component; third two the Blue.
-     * Hex values must have a "#" in front, e.g. "#001122"
+     * Hex values are parsed as follows: first two digits set the Red component of the color; second
+     * two digits set the Green component; third two the Blue. Hex values must have a "#" in front,
+     * e.g. "#001122"
      *
      * For available names, see {@link Color} and {@link #colorNames}
      *
@@ -168,100 +163,116 @@ public class Color implements Paint, Serializable {
      * @param color color; may be hex representation or case-insensitive color name
      * @return Color instance represented by the {@code color} String
      */
-    public static Color color(final String color) { return new Color(color); }
+    public static Color color(final String color) {
+        return new Color(color);
+    }
 
     /**
      * Creates a Color with the specified red, green, blue, and alpha values.
      *
-     * @throws IllegalArgumentException if {@code r}, {@code g}
-     *        or {@code b} values are outside of the range 0 to 255, inclusive
+     * @throws IllegalArgumentException if {@code r}, {@code g} or {@code b} values are outside of
+     *         the range 0 to 255, inclusive
      * @param r the red component in the range (0 - 255).
      * @param g the green component in the range (0 - 255).
      * @param b the blue component in the range (0 - 255).
-     * @return Color with the specified RGB values.  Alpha is defaulted to 255.
+     * @return Color with the specified RGB values. Alpha is defaulted to 255.
      */
-    public static Color colorRGB(final int r, final int g, final int b) { return new Color(r,g,b);}
+    public static Color colorRGB(final int r, final int g, final int b) {
+        return new Color(r, g, b);
+    }
 
     /**
      * Creates a Color with the specified red, green, blue, and alpha values.
      *
-     * @throws IllegalArgumentException if {@code r}, {@code g}
-     *        or {@code b} values are outside of the range 0 to 255, inclusive
+     * @throws IllegalArgumentException if {@code r}, {@code g} or {@code b} values are outside of
+     *         the range 0 to 255, inclusive
      * @param r the red component in the range (0 - 255).
      * @param g the green component in the range (0 - 255).
      * @param b the blue component in the range (0 - 255).
      * @param a the alpha component in the range (0 - 255).
      * @return Color with the specified RGBA values
      */
-    public static Color colorRGB(final int r, final int g, final int b, final int a) { return new Color(r,g,b,a);}
+    public static Color colorRGB(final int r, final int g, final int b, final int a) {
+        return new Color(r, g, b, a);
+    }
 
     /**
      * Creates a Color with the specified red, green, blue, and alpha values.
      *
-     * @param rgb the combined rbga components consisting of the alpha component in bits 24-31, the red component in bits 16-23,
-     *        the green component in bits 8-15, and the blue component in bits 0-7. Alpha is defaulted to 255.
+     * @param rgb the combined rbga components consisting of the alpha component in bits 24-31, the
+     *        red component in bits 16-23, the green component in bits 8-15, and the blue component
+     *        in bits 0-7. Alpha is defaulted to 255.
      * @return Color with the specified RGB value
      */
-    public static Color colorRGB(final int rgb) { return new Color(rgb);}
+    public static Color colorRGB(final int rgb) {
+        return new Color(rgb);
+    }
 
     /**
      * Creates a Color with the specified red, green, blue, and alpha values.
      *
-     * @param rgba the combined rbga components consisting of the alpha component in bits 24-31, the red component in bits 16-23,
-     *        the green component in bits 8-15, and the blue component in bits 0-7.
-     *        If {@code hasAlpha} is false, alpha is set to 255.
-     * @param hasAlpha if true, {@code rgba} is parsed with an alpha component. Otherwise, alpha defaults to 255
+     * @param rgba the combined rbga components consisting of the alpha component in bits 24-31, the
+     *        red component in bits 16-23, the green component in bits 8-15, and the blue component
+     *        in bits 0-7. If {@code hasAlpha} is false, alpha is set to 255.
+     * @param hasAlpha if true, {@code rgba} is parsed with an alpha component. Otherwise, alpha
+     *        defaults to 255
      * @return Color with the specified RGBA value
      */
-    public static Color colorRGB(final int rgba, final boolean hasAlpha) { return new Color(rgba,hasAlpha);}
+    public static Color colorRGB(final int rgba, final boolean hasAlpha) {
+        return new Color(rgba, hasAlpha);
+    }
 
     /**
      * Creates a Color with the specified red, green, blue, and alpha values.
      *
-     * @throws IllegalArgumentException if {@code r}, {@code g}
-     *        or {@code b} values are outside of the range 0.0 to 1.0, inclusive
+     * @throws IllegalArgumentException if {@code r}, {@code g} or {@code b} values are outside of
+     *         the range 0.0 to 1.0, inclusive
      * @param r the red component in the range (0.0 - 1.0).
      * @param g the green component in the range (0.0 - 1.0).
      * @param b the blue component in the range (0.0 - 1.0).
-     * @return Color with the specified RGB values.  Alpha is defaulted to 1.0.
+     * @return Color with the specified RGB values. Alpha is defaulted to 1.0.
      */
-    public static Color colorRGB(final float r, final float g, final float b) { return new Color(r,g,b);}
+    public static Color colorRGB(final float r, final float g, final float b) {
+        return new Color(r, g, b);
+    }
 
     /**
      * Creates a Color with the specified red, green, blue, and alpha values.
      *
-     * @throws IllegalArgumentException if {@code r}, {@code g},
-     *        {@code b}, {@code a} values are outside of the range 0.0 to 1.0, inclusive
+     * @throws IllegalArgumentException if {@code r}, {@code g}, {@code b}, {@code a} values are
+     *         outside of the range 0.0 to 1.0, inclusive
      * @param r the red component in the range (0.0 - 1.0).
      * @param g the green component in the range (0.0 - 1.0).
      * @param b the blue component in the range (0.0 - 1.0).
-     * @param a the alpha component in the range (0.0-1.0).  The lower the alpha, the more transparent the color.
+     * @param a the alpha component in the range (0.0-1.0). The lower the alpha, the more
+     *        transparent the color.
      * @return Color with the specified RGBA values
      */
-    public static Color colorRGB(final float r, final float g, final float b, final float a) { return new Color(r,g,b,a);}
+    public static Color colorRGB(final float r, final float g, final float b, final float a) {
+        return new Color(r, g, b, a);
+    }
 
     /**
-     * Creates a Color with the specified hue, saturation,
-     * lightness, and alpha.  The lower the alpha, the more transparent the color.
+     * Creates a Color with the specified hue, saturation, lightness, and alpha. The lower the
+     * alpha, the more transparent the color.
      *
-     * @throws IllegalArgumentException if {@code s} or {@code l} values are outside
-     *                                          of the range 0.0 to 100.0, inclusive
+     * @throws IllegalArgumentException if {@code s} or {@code l} values are outside of the range
+     *         0.0 to 100.0, inclusive
      * @param h the hue component, as a degree on the color wheel
      * @param s the saturation component, as a percentage
      * @param l the lightness component, as a percentage
-     * @return Color with the specified HSL values.  Alpha is defaulted to 1.0.
+     * @return Color with the specified HSL values. Alpha is defaulted to 1.0.
      */
     public static Color colorHSL(final float h, final float s, final float l) {
         return hslToColor(h, s, l);
     }
 
     /**
-     * Creates a Color with the specified hue, saturation,
-     * lightness, and alpha.  The lower the alpha, the more transparent the color.
+     * Creates a Color with the specified hue, saturation, lightness, and alpha. The lower the
+     * alpha, the more transparent the color.
      *
-     * @throws IllegalArgumentException if {@code s} or {@code l} values are outside
-     *                                          of the range 0.0 to 100.0, inclusive
-     *                                  or if {@code a} is outside of the range 0.0 to 1.0, inclusive
+     * @throws IllegalArgumentException if {@code s} or {@code l} values are outside of the range
+     *         0.0 to 100.0, inclusive or if {@code a} is outside of the range 0.0 to 1.0, inclusive
      * @param h the hue component, as a degree on the color wheel
      * @param s the saturation component, as a percentage
      * @param l the lightness component, as a percentage
@@ -292,50 +303,45 @@ public class Color implements Paint, Serializable {
 
 
     /**
-     *  Convert HSL values to a RGB Color with a default alpha value of 1.
+     * Convert HSL values to a RGB Color with a default alpha value of 1.
      *
-     *  @param h Hue is specified as degrees in the range 0 - 360.
-     *  @param s Saturation is specified as a percentage in the range 1 - 100.
-     *  @param l Lumanance is specified as a percentage in the range 1 - 100.
+     * @param h Hue is specified as degrees in the range 0 - 360.
+     * @param s Saturation is specified as a percentage in the range 1 - 100.
+     * @param l Lumanance is specified as a percentage in the range 1 - 100.
      *
-     *  @return the RGB Color object
+     * @return the RGB Color object
      */
-    private static Color hslToColor(float h, float s, float l)
-    {
+    private static Color hslToColor(float h, float s, float l) {
         return hslToColor(h, s, l, 1.0f);
     }
 
     /**
-     *  Convert HSL values to a RGB Color.
+     * Convert HSL values to a RGB Color.
      *
-     *  @param h Hue is specified as degrees in the range 0 - 360.
-     *  @param s Saturation is specified as a percentage in the range 1 - 100.
-     *  @param l Lumanance is specified as a percentage in the range 1 - 100.
-     *  @param alpha  the alpha value between 0 - 1
+     * @param h Hue is specified as degrees in the range 0 - 360.
+     * @param s Saturation is specified as a percentage in the range 1 - 100.
+     * @param l Lumanance is specified as a percentage in the range 1 - 100.
+     * @param alpha the alpha value between 0 - 1
      *
-     *  @return the RGB Color object
+     * @return the RGB Color object
      */
-    private static Color hslToColor(float h, float s, float l, float alpha)
-    {
-        if (s <0.0f || s > 100.0f)
-        {
+    private static Color hslToColor(float h, float s, float l, float alpha) {
+        if (s < 0.0f || s > 100.0f) {
             String message = "Color parameter outside of expected range - Saturation";
-            throw new IllegalArgumentException( message );
+            throw new IllegalArgumentException(message);
         }
 
-        if (l <0.0f || l > 100.0f)
-        {
+        if (l < 0.0f || l > 100.0f) {
             String message = "Color parameter outside of expected range - Luminance";
-            throw new IllegalArgumentException( message );
+            throw new IllegalArgumentException(message);
         }
 
-        if (alpha <0.0f || alpha > 1.0f)
-        {
+        if (alpha < 0.0f || alpha > 1.0f) {
             String message = "Color parameter outside of expected range - Alpha";
-            throw new IllegalArgumentException( message );
+            throw new IllegalArgumentException(message);
         }
 
-        //  Formula needs all values between 0 - 1.
+        // Formula needs all values between 0 - 1.
 
         h = h % 360.0f;
         h /= 360f;
@@ -362,25 +368,23 @@ public class Color implements Paint, Serializable {
         return new Color(r, g, b, alpha);
     }
 
-    private static float hueToRBG(float p, float q, float h)
-    {
-        if (h < 0) h += 1;
+    private static float hueToRBG(float p, float q, float h) {
+        if (h < 0)
+            h += 1;
 
-        if (h > 1 ) h -= 1;
+        if (h > 1)
+            h -= 1;
 
-        if (6 * h < 1)
-        {
+        if (6 * h < 1) {
             return p + ((q - p) * 6 * h);
         }
 
-        if (2 * h < 1 )
-        {
-            return  q;
+        if (2 * h < 1) {
+            return q;
         }
 
-        if (3 * h < 2)
-        {
-            return p + ( (q - p) * 6 * ((2.0f / 3.0f) - h) );
+        if (3 * h < 2) {
+            return p + ((q - p) * 6 * ((2.0f / 3.0f) - h));
         }
 
         return p;
@@ -390,7 +394,7 @@ public class Color implements Paint, Serializable {
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof Color && ((Color)obj).color.equals(this.color);
+        return obj instanceof Color && ((Color) obj).color.equals(this.color);
     }
 
     @Override
@@ -553,138 +557,138 @@ public class Color implements Paint, Serializable {
 
 
 
-    //Legacy non-html-standard colors.  Duplicates removed.  Conflicts resolved with a DB_ prefix.
-    public static Color VIVID_RED = Color.colorRGB(231,  47,  39);
-    public static Color VIVID_YELLOWRED = Color.colorRGB(238,  113,  25);
-    public static Color VIVID_YELLOW = Color.colorRGB(255,  200,  8);
-    public static Color VIVID_GREENYELLOW = Color.colorRGB(170,  198,  27);
-    public static Color VIVID_GREEN = Color.colorRGB(19,  166,  50);
-    public static Color VIVID_BLUEGREEN = Color.colorRGB(4,  148,  87);
-    public static Color VIVID_BLUE = Color.colorRGB(1,  134,  141);
-    public static Color VIVID_PURPLEBLUE = Color.colorRGB(3,  86,  155);
-    public static Color VIVID_PURPLE = Color.colorRGB(46,  20,  141);
-    public static Color VIVID_REDPURPLE = Color.colorRGB(204,  63,  92);
-    public static Color STRONG_RED = Color.colorRGB(207,  46,  49);
-    public static Color STRONG_YELLOWRED = Color.colorRGB(226,  132,  45);
-    public static Color STRONG_YELLOW = Color.colorRGB(227,  189,  28);
-    public static Color STRONG_GREENYELLOW = Color.colorRGB(162,  179,  36);
-    public static Color STRONG_GREEN = Color.colorRGB(18,  154,  47);
-    public static Color STRONG_BLUEGREEN = Color.colorRGB(6,  134,  84);
-    public static Color STRONG_BLUE = Color.colorRGB(3,  130,  122);
-    public static Color STRONG_PURPLEBLUE = Color.colorRGB(6,  113,  148);
-    public static Color STRONG_PURPLE = Color.colorRGB(92,  104,  163);
-    public static Color STRONG_REDPURPLE = Color.colorRGB(175,  92,  87);
-    public static Color BRIGHT_RED = Color.colorRGB(231,  108,  86);
-    public static Color BRIGHT_YELLOWRED = Color.colorRGB(241,  176,  102);
-    public static Color BRIGHT_YELLOW = Color.colorRGB(255,  228,  15);
-    public static Color BRIGHT_GREENYELLOW = Color.colorRGB(169,  199,  35);
-    public static Color BRIGHT_GREEN = Color.colorRGB(88,  171,  45);
-    public static Color BRIGHT_BLUEGREEN = Color.colorRGB(43,  151,  89);
-    public static Color BRIGHT_BLUE = Color.colorRGB(0,  147,  159);
-    public static Color BRIGHT_PURPLEBLUE = Color.colorRGB(59,  130,  157);
-    public static Color BRIGHT_PURPLE = Color.colorRGB(178,  137,  166);
-    public static Color BRIGHT_REDPURPLE = Color.colorRGB(209,  100,  109);
-    public static Color PALE_RED = Color.colorRGB(233,  163,  144);
-    public static Color PALE_YELLOWRED = Color.colorRGB(242,  178,  103);
-    public static Color PALE_YELLOW = Color.colorRGB(255,  236,  79);
-    public static Color PALE_GREENYELLOW = Color.colorRGB(219,  220,  93);
-    public static Color PALE_GREEN = Color.colorRGB(155,  196,  113);
-    public static Color PALE_BLUEGREEN = Color.colorRGB(146,  198,  131);
-    public static Color PALE_BLUE = Color.colorRGB(126,  188,  209);
-    public static Color PALE_PURPLEBLUE = Color.colorRGB(147,  184,  213);
-    public static Color PALE_PURPLE = Color.colorRGB(197,  188,  213);
-    public static Color PALE_REDPURPLE = Color.colorRGB(218,  176,  176);
-    public static Color VERYPALE_RED = Color.colorRGB(236,  217,  202);
-    public static Color VERYPALE_YELLOWRED = Color.colorRGB(245,  223,  181);
-    public static Color VERYPALE_YELLOW = Color.colorRGB(249,  239,  189);
-    public static Color VERYPALE_GREENYELLOW = Color.colorRGB(228,  235,  191);
-    public static Color VERYPALE_GREEN = Color.colorRGB(221,  232,  207);
-    public static Color VERYPALE_BLUEGREEN = Color.colorRGB(209,  234,  211);
-    public static Color VERYPALE_BLUE = Color.colorRGB(194,  222,  242);
-    public static Color VERYPALE_PURPLEBLUE = Color.colorRGB(203,  215,  232);
-    public static Color VERYPALE_PURPLE = Color.colorRGB(224,  218,  230);
-    public static Color VERYPALE_REDPURPLE = Color.colorRGB(235,  219,  224);
-    public static Color LIGHTGRAYISH_RED = Color.colorRGB(213,  182,  166);
-    public static Color LIGHTGRAYISH_YELLOWRED = Color.colorRGB(218,  196,  148);
-    public static Color LIGHTGRAYISH_YELLOW = Color.colorRGB(233,  227,  143);
-    public static Color LIGHTGRAYISH_GREENYELLOW = Color.colorRGB(209,  213,  165);
-    public static Color LIGHTGRAYISH_GREEN = Color.colorRGB(179,  202,  157);
-    public static Color LIGHTGRAYISH_BLUEGREEN = Color.colorRGB(166,  201,  163);
-    public static Color LIGHTGRAYISH_BLUE = Color.colorRGB(127,  175,  166);
-    public static Color LIGHTGRAYISH_PURPLEBLUE = Color.colorRGB(165,  184,  199);
-    public static Color LIGHTGRAYISH_PURPLE = Color.colorRGB(184,  190,  189);
-    public static Color LIGHTGRAYISH_REDPURPLE = Color.colorRGB(206,  185,  179);
-    public static Color LIGHT_RED = Color.colorRGB(211,  142,  110);
-    public static Color LIGHT_YELLOWRED = Color.colorRGB(215,  145,  96);
-    public static Color LIGHT_YELLOW = Color.colorRGB(255,  203,  88);
-    public static Color LIGHT_GREENYELLOW = Color.colorRGB(195,  202,  101);
-    public static Color LIGHT_GREEN = Color.colorRGB(141,  188,  90);
-    public static Color LIGHT_BLUEGREEN = Color.colorRGB(140,  195,  110);
-    public static Color LIGHT_BLUE = Color.colorRGB(117,  173,  169);
-    public static Color LIGHT_PURPLEBLUE = Color.colorRGB(138,  166,  187);
-    public static Color LIGHT_PURPLE = Color.colorRGB(170,  165,  199);
-    public static Color LIGHT_REDPURPLE = Color.colorRGB(205,  154,  149);
-    public static Color GRAYISH_RED = Color.colorRGB(171,  131,  115);
-    public static Color GRAYISH_YELLOWRED = Color.colorRGB(158,  128,  110);
-    public static Color GRAYISH_YELLOW = Color.colorRGB(148,  133,  105);
-    public static Color GRAYISH_GREENYELLOW = Color.colorRGB(144,  135,  96);
-    public static Color GRAYISH_GREEN = Color.colorRGB(143,  162,  121);
-    public static Color GRAYISH_BLUEGREEN = Color.colorRGB(122,  165,  123);
-    public static Color GRAYISH_BLUE = Color.colorRGB(130,  154,  145);
-    public static Color GRAYISH_PURPLEBLUE = Color.colorRGB(133,  154,  153);
-    public static Color GRAYISH_PURPLE = Color.colorRGB(151,  150,  139);
-    public static Color GRAYISH_REDPURPLE = Color.colorRGB(160,  147,  131);
-    public static Color DULL_RED = Color.colorRGB(162,  88,  61);
-    public static Color DULL_YELLOWRED = Color.colorRGB(167,  100,  67);
-    public static Color DULL_YELLOW = Color.colorRGB(139,  117,  65);
-    public static Color DULL_GREENYELLOW = Color.colorRGB(109,  116,  73);
-    public static Color DULL_GREEN = Color.colorRGB(88,  126,  61);
-    public static Color DULL_BLUEGREEN = Color.colorRGB(39,  122,  62);
-    public static Color DULL_BLUE = Color.colorRGB(24,  89,  63);
-    public static Color DULL_PURPLEBLUE = Color.colorRGB(53,  109,  98);
-    public static Color DULL_PURPLE = Color.colorRGB(44,  77,  143);
-    public static Color DULL_REDPURPLE = Color.colorRGB(115,  71,  79);
-    public static Color DEEP_RED = Color.colorRGB(172,  36,  48);
-    public static Color DEEP_YELLOWRED = Color.colorRGB(169,  87,  49);
-    public static Color DEEP_YELLOW = Color.colorRGB(156,  137,  37);
-    public static Color DEEP_GREENYELLOW = Color.colorRGB(91,  132,  47);
-    public static Color DEEP_GREEN = Color.colorRGB(20,  114,  48);
-    public static Color DEEP_BLUEGREEN = Color.colorRGB(23,  106,  43);
-    public static Color DEEP_BLUE = Color.colorRGB(20,  88,  60);
-    public static Color DEEP_PURPLEBLUE = Color.colorRGB(8,  87,  107);
-    public static Color DEEP_PURPLE = Color.colorRGB(58,  55,  119);
-    public static Color DEEP_REDPURPLE = Color.colorRGB(111,  61,  56);
-    public static Color DARK_RED = Color.colorRGB(116,  47,  50);
-    public static Color DARK_YELLOWRED = Color.colorRGB(115,  63,  44);
-    public static Color DARK_YELLOW = Color.colorRGB(103,  91,  44);
-    public static Color DARK_GREENYELLOW = Color.colorRGB(54,  88,  48);
-    public static Color DARK_GREEN = Color.colorRGB(30,  98,  50);
-    public static Color DARK_BLUEGREEN = Color.colorRGB(27,  86,  49);
-    public static Color DARK_BLUE = Color.colorRGB(18,  83,  65);
-    public static Color DARK_PURPLEBLUE = Color.colorRGB(16,  76,  84);
-    public static Color DARK_PURPLE = Color.colorRGB(40,  57,  103);
-    public static Color DARK_REDPURPLE = Color.colorRGB(88,  60,  50);
-    public static Color DARKGRAYISH_RED = Color.colorRGB(79,  46,  43);
-    public static Color DARKGRAYISH_YELLOWRED = Color.colorRGB(85,  55,  43);
-    public static Color DARKGRAYISH_YELLOW = Color.colorRGB(75,  63,  45);
-    public static Color DARKGRAYISH_GREENYELLOW = Color.colorRGB(44,  60,  49);
-    public static Color DARKGRAYISH_GREEN = Color.colorRGB(34,  62,  51);
-    public static Color DARKGRAYISH_BLUEGREEN = Color.colorRGB(31,  56,  45);
-    public static Color DARKGRAYISH_BLUE = Color.colorRGB(29,  60,  47);
-    public static Color DARKGRAYISH_PURPLEBLUE = Color.colorRGB(25,  62,  63);
-    public static Color DARKGRAYISH_PURPLE = Color.colorRGB(34,  54,  68);
-    public static Color DARKGRAYISH_REDPURPLE = Color.colorRGB(53,  52,  48);
-    public static Color GRAY1 = Color.colorRGB(28,  28,  28);
-    public static Color GRAY2 = Color.colorRGB(56,  56,  56);
-    public static Color GRAY3 = Color.colorRGB(84,  84,  84);
-    public static Color GRAY4 = Color.colorRGB(112,  112,  112);
-    public static Color GRAY5 = Color.colorRGB(140,  140,  140);
-    public static Color GRAY6 = Color.colorRGB(168,  168,  168);
-    public static Color GRAY7 = Color.colorRGB(196,  196,  196);
-    public static Color GRAY8 = Color.colorRGB(224,  224,  224);
-    public static Color DB_PINK = Color.colorRGB(255,  175,  175);
-    public static Color DB_ORANGE = Color.colorRGB(255,  200,  0);
-    public static Color DB_GREEN = Color.colorRGB(0,  255,  0);
+    // Legacy non-html-standard colors. Duplicates removed. Conflicts resolved with a DB_ prefix.
+    public static Color VIVID_RED = Color.colorRGB(231, 47, 39);
+    public static Color VIVID_YELLOWRED = Color.colorRGB(238, 113, 25);
+    public static Color VIVID_YELLOW = Color.colorRGB(255, 200, 8);
+    public static Color VIVID_GREENYELLOW = Color.colorRGB(170, 198, 27);
+    public static Color VIVID_GREEN = Color.colorRGB(19, 166, 50);
+    public static Color VIVID_BLUEGREEN = Color.colorRGB(4, 148, 87);
+    public static Color VIVID_BLUE = Color.colorRGB(1, 134, 141);
+    public static Color VIVID_PURPLEBLUE = Color.colorRGB(3, 86, 155);
+    public static Color VIVID_PURPLE = Color.colorRGB(46, 20, 141);
+    public static Color VIVID_REDPURPLE = Color.colorRGB(204, 63, 92);
+    public static Color STRONG_RED = Color.colorRGB(207, 46, 49);
+    public static Color STRONG_YELLOWRED = Color.colorRGB(226, 132, 45);
+    public static Color STRONG_YELLOW = Color.colorRGB(227, 189, 28);
+    public static Color STRONG_GREENYELLOW = Color.colorRGB(162, 179, 36);
+    public static Color STRONG_GREEN = Color.colorRGB(18, 154, 47);
+    public static Color STRONG_BLUEGREEN = Color.colorRGB(6, 134, 84);
+    public static Color STRONG_BLUE = Color.colorRGB(3, 130, 122);
+    public static Color STRONG_PURPLEBLUE = Color.colorRGB(6, 113, 148);
+    public static Color STRONG_PURPLE = Color.colorRGB(92, 104, 163);
+    public static Color STRONG_REDPURPLE = Color.colorRGB(175, 92, 87);
+    public static Color BRIGHT_RED = Color.colorRGB(231, 108, 86);
+    public static Color BRIGHT_YELLOWRED = Color.colorRGB(241, 176, 102);
+    public static Color BRIGHT_YELLOW = Color.colorRGB(255, 228, 15);
+    public static Color BRIGHT_GREENYELLOW = Color.colorRGB(169, 199, 35);
+    public static Color BRIGHT_GREEN = Color.colorRGB(88, 171, 45);
+    public static Color BRIGHT_BLUEGREEN = Color.colorRGB(43, 151, 89);
+    public static Color BRIGHT_BLUE = Color.colorRGB(0, 147, 159);
+    public static Color BRIGHT_PURPLEBLUE = Color.colorRGB(59, 130, 157);
+    public static Color BRIGHT_PURPLE = Color.colorRGB(178, 137, 166);
+    public static Color BRIGHT_REDPURPLE = Color.colorRGB(209, 100, 109);
+    public static Color PALE_RED = Color.colorRGB(233, 163, 144);
+    public static Color PALE_YELLOWRED = Color.colorRGB(242, 178, 103);
+    public static Color PALE_YELLOW = Color.colorRGB(255, 236, 79);
+    public static Color PALE_GREENYELLOW = Color.colorRGB(219, 220, 93);
+    public static Color PALE_GREEN = Color.colorRGB(155, 196, 113);
+    public static Color PALE_BLUEGREEN = Color.colorRGB(146, 198, 131);
+    public static Color PALE_BLUE = Color.colorRGB(126, 188, 209);
+    public static Color PALE_PURPLEBLUE = Color.colorRGB(147, 184, 213);
+    public static Color PALE_PURPLE = Color.colorRGB(197, 188, 213);
+    public static Color PALE_REDPURPLE = Color.colorRGB(218, 176, 176);
+    public static Color VERYPALE_RED = Color.colorRGB(236, 217, 202);
+    public static Color VERYPALE_YELLOWRED = Color.colorRGB(245, 223, 181);
+    public static Color VERYPALE_YELLOW = Color.colorRGB(249, 239, 189);
+    public static Color VERYPALE_GREENYELLOW = Color.colorRGB(228, 235, 191);
+    public static Color VERYPALE_GREEN = Color.colorRGB(221, 232, 207);
+    public static Color VERYPALE_BLUEGREEN = Color.colorRGB(209, 234, 211);
+    public static Color VERYPALE_BLUE = Color.colorRGB(194, 222, 242);
+    public static Color VERYPALE_PURPLEBLUE = Color.colorRGB(203, 215, 232);
+    public static Color VERYPALE_PURPLE = Color.colorRGB(224, 218, 230);
+    public static Color VERYPALE_REDPURPLE = Color.colorRGB(235, 219, 224);
+    public static Color LIGHTGRAYISH_RED = Color.colorRGB(213, 182, 166);
+    public static Color LIGHTGRAYISH_YELLOWRED = Color.colorRGB(218, 196, 148);
+    public static Color LIGHTGRAYISH_YELLOW = Color.colorRGB(233, 227, 143);
+    public static Color LIGHTGRAYISH_GREENYELLOW = Color.colorRGB(209, 213, 165);
+    public static Color LIGHTGRAYISH_GREEN = Color.colorRGB(179, 202, 157);
+    public static Color LIGHTGRAYISH_BLUEGREEN = Color.colorRGB(166, 201, 163);
+    public static Color LIGHTGRAYISH_BLUE = Color.colorRGB(127, 175, 166);
+    public static Color LIGHTGRAYISH_PURPLEBLUE = Color.colorRGB(165, 184, 199);
+    public static Color LIGHTGRAYISH_PURPLE = Color.colorRGB(184, 190, 189);
+    public static Color LIGHTGRAYISH_REDPURPLE = Color.colorRGB(206, 185, 179);
+    public static Color LIGHT_RED = Color.colorRGB(211, 142, 110);
+    public static Color LIGHT_YELLOWRED = Color.colorRGB(215, 145, 96);
+    public static Color LIGHT_YELLOW = Color.colorRGB(255, 203, 88);
+    public static Color LIGHT_GREENYELLOW = Color.colorRGB(195, 202, 101);
+    public static Color LIGHT_GREEN = Color.colorRGB(141, 188, 90);
+    public static Color LIGHT_BLUEGREEN = Color.colorRGB(140, 195, 110);
+    public static Color LIGHT_BLUE = Color.colorRGB(117, 173, 169);
+    public static Color LIGHT_PURPLEBLUE = Color.colorRGB(138, 166, 187);
+    public static Color LIGHT_PURPLE = Color.colorRGB(170, 165, 199);
+    public static Color LIGHT_REDPURPLE = Color.colorRGB(205, 154, 149);
+    public static Color GRAYISH_RED = Color.colorRGB(171, 131, 115);
+    public static Color GRAYISH_YELLOWRED = Color.colorRGB(158, 128, 110);
+    public static Color GRAYISH_YELLOW = Color.colorRGB(148, 133, 105);
+    public static Color GRAYISH_GREENYELLOW = Color.colorRGB(144, 135, 96);
+    public static Color GRAYISH_GREEN = Color.colorRGB(143, 162, 121);
+    public static Color GRAYISH_BLUEGREEN = Color.colorRGB(122, 165, 123);
+    public static Color GRAYISH_BLUE = Color.colorRGB(130, 154, 145);
+    public static Color GRAYISH_PURPLEBLUE = Color.colorRGB(133, 154, 153);
+    public static Color GRAYISH_PURPLE = Color.colorRGB(151, 150, 139);
+    public static Color GRAYISH_REDPURPLE = Color.colorRGB(160, 147, 131);
+    public static Color DULL_RED = Color.colorRGB(162, 88, 61);
+    public static Color DULL_YELLOWRED = Color.colorRGB(167, 100, 67);
+    public static Color DULL_YELLOW = Color.colorRGB(139, 117, 65);
+    public static Color DULL_GREENYELLOW = Color.colorRGB(109, 116, 73);
+    public static Color DULL_GREEN = Color.colorRGB(88, 126, 61);
+    public static Color DULL_BLUEGREEN = Color.colorRGB(39, 122, 62);
+    public static Color DULL_BLUE = Color.colorRGB(24, 89, 63);
+    public static Color DULL_PURPLEBLUE = Color.colorRGB(53, 109, 98);
+    public static Color DULL_PURPLE = Color.colorRGB(44, 77, 143);
+    public static Color DULL_REDPURPLE = Color.colorRGB(115, 71, 79);
+    public static Color DEEP_RED = Color.colorRGB(172, 36, 48);
+    public static Color DEEP_YELLOWRED = Color.colorRGB(169, 87, 49);
+    public static Color DEEP_YELLOW = Color.colorRGB(156, 137, 37);
+    public static Color DEEP_GREENYELLOW = Color.colorRGB(91, 132, 47);
+    public static Color DEEP_GREEN = Color.colorRGB(20, 114, 48);
+    public static Color DEEP_BLUEGREEN = Color.colorRGB(23, 106, 43);
+    public static Color DEEP_BLUE = Color.colorRGB(20, 88, 60);
+    public static Color DEEP_PURPLEBLUE = Color.colorRGB(8, 87, 107);
+    public static Color DEEP_PURPLE = Color.colorRGB(58, 55, 119);
+    public static Color DEEP_REDPURPLE = Color.colorRGB(111, 61, 56);
+    public static Color DARK_RED = Color.colorRGB(116, 47, 50);
+    public static Color DARK_YELLOWRED = Color.colorRGB(115, 63, 44);
+    public static Color DARK_YELLOW = Color.colorRGB(103, 91, 44);
+    public static Color DARK_GREENYELLOW = Color.colorRGB(54, 88, 48);
+    public static Color DARK_GREEN = Color.colorRGB(30, 98, 50);
+    public static Color DARK_BLUEGREEN = Color.colorRGB(27, 86, 49);
+    public static Color DARK_BLUE = Color.colorRGB(18, 83, 65);
+    public static Color DARK_PURPLEBLUE = Color.colorRGB(16, 76, 84);
+    public static Color DARK_PURPLE = Color.colorRGB(40, 57, 103);
+    public static Color DARK_REDPURPLE = Color.colorRGB(88, 60, 50);
+    public static Color DARKGRAYISH_RED = Color.colorRGB(79, 46, 43);
+    public static Color DARKGRAYISH_YELLOWRED = Color.colorRGB(85, 55, 43);
+    public static Color DARKGRAYISH_YELLOW = Color.colorRGB(75, 63, 45);
+    public static Color DARKGRAYISH_GREENYELLOW = Color.colorRGB(44, 60, 49);
+    public static Color DARKGRAYISH_GREEN = Color.colorRGB(34, 62, 51);
+    public static Color DARKGRAYISH_BLUEGREEN = Color.colorRGB(31, 56, 45);
+    public static Color DARKGRAYISH_BLUE = Color.colorRGB(29, 60, 47);
+    public static Color DARKGRAYISH_PURPLEBLUE = Color.colorRGB(25, 62, 63);
+    public static Color DARKGRAYISH_PURPLE = Color.colorRGB(34, 54, 68);
+    public static Color DARKGRAYISH_REDPURPLE = Color.colorRGB(53, 52, 48);
+    public static Color GRAY1 = Color.colorRGB(28, 28, 28);
+    public static Color GRAY2 = Color.colorRGB(56, 56, 56);
+    public static Color GRAY3 = Color.colorRGB(84, 84, 84);
+    public static Color GRAY4 = Color.colorRGB(112, 112, 112);
+    public static Color GRAY5 = Color.colorRGB(140, 140, 140);
+    public static Color GRAY6 = Color.colorRGB(168, 168, 168);
+    public static Color GRAY7 = Color.colorRGB(196, 196, 196);
+    public static Color GRAY8 = Color.colorRGB(224, 224, 224);
+    public static Color DB_PINK = Color.colorRGB(255, 175, 175);
+    public static Color DB_ORANGE = Color.colorRGB(255, 200, 0);
+    public static Color DB_GREEN = Color.colorRGB(0, 255, 0);
     public static Color NO_FORMATTING = Color.colorRGB(0, 0, 0);
 
     private static final Map<String, Color> stringToColorMap = new HashMap<>();
@@ -973,7 +977,7 @@ public class Color implements Paint, Serializable {
     }
 
     public static Color valueOf(final String color) {
-        if(color == null) {
+        if (color == null) {
             throw new IllegalArgumentException("Color may not be null");
         }
 

@@ -24,7 +24,7 @@ public class PythonConsoleSessionModule {
         try {
             return new PythonDeephavenSession(true, true);
         } catch (IOException e) {
-            //can't happen since we pass false
+            // can't happen since we pass false
             throw new UncheckedIOException(e);
         }
     }

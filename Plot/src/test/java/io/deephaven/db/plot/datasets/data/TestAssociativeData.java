@@ -19,10 +19,13 @@ public class TestAssociativeData extends BaseArrayTestCase {
     private final String[] cats = {"A", "B"};
     private final int[] values = {1, 2};
     private final Integer x = values[0];
-    private final Table t = TableTools.newTable(TableTools.col("Cat", cats), TableTools.intCol("Values", values));
-    private final TableHandle tableHandle = new TableHandle( t, "Cat", "Values");
-    private final AssociativeDataTable<String, Integer, Integer> associativeDataTable = new AssociativeDataTable<>(tableHandle, "Cat", "Values", String.class, Integer.class, null);
-    private final AssociativeDataHashMap<String, Integer> dataHashMap = new AssociativeDataHashMap<>(null);
+    private final Table t =
+        TableTools.newTable(TableTools.col("Cat", cats), TableTools.intCol("Values", values));
+    private final TableHandle tableHandle = new TableHandle(t, "Cat", "Values");
+    private final AssociativeDataTable<String, Integer, Integer> associativeDataTable =
+        new AssociativeDataTable<>(tableHandle, "Cat", "Values", String.class, Integer.class, null);
+    private final AssociativeDataHashMap<String, Integer> dataHashMap =
+        new AssociativeDataHashMap<>(null);
 
     @Override
     public void setUp() throws Exception {
@@ -30,7 +33,7 @@ public class TestAssociativeData extends BaseArrayTestCase {
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
         LiveTableMonitor.DEFAULT.resetForUnitTests(false);
 
-        //prime the listeners
+        // prime the listeners
         associativeDataTable.get(null);
     }
 
@@ -60,23 +63,26 @@ public class TestAssociativeData extends BaseArrayTestCase {
 
     public void testAssociativeDataTable() {
         try {
-            new AssociativeDataTable<String, Integer, Integer>(null, "Cat", "Values", String.class, Integer.class, null);
+            new AssociativeDataTable<String, Integer, Integer>(null, "Cat", "Values", String.class,
+                Integer.class, null);
             TestCase.fail("Expected an exception");
-        } catch(PlotIllegalArgumentException e) {
+        } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
 
         try {
-            new AssociativeDataTable<String, Integer, Integer>(tableHandle, null, "Values", String.class, Integer.class, null);
+            new AssociativeDataTable<String, Integer, Integer>(tableHandle, null, "Values",
+                String.class, Integer.class, null);
             TestCase.fail("Expected an exception");
-        } catch(PlotIllegalArgumentException e) {
+        } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
 
         try {
-            new AssociativeDataTable<String, Integer, Integer>(tableHandle, "Cat", null, String.class, Integer.class, null);
+            new AssociativeDataTable<String, Integer, Integer>(tableHandle, "Cat", null,
+                String.class, Integer.class, null);
             TestCase.fail("Expected an exception");
-        } catch(PlotIllegalArgumentException e) {
+        } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
 
@@ -86,7 +92,7 @@ public class TestAssociativeData extends BaseArrayTestCase {
         try {
             associativeDataTable.put("C", 234);
             TestCase.fail("Expected an exception");
-        } catch(UnsupportedOperationException e) {
+        } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("Modifying"));
         }
 
@@ -95,7 +101,7 @@ public class TestAssociativeData extends BaseArrayTestCase {
         try {
             associativeDataTable.putAll(moreValues);
             TestCase.fail("Expected an exception");
-        } catch(UnsupportedOperationException e) {
+        } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("Modifying"));
         }
     }
@@ -104,7 +110,8 @@ public class TestAssociativeData extends BaseArrayTestCase {
         final int def = 2;
         final Map<String, Integer> moreData = new HashMap<>();
         moreData.put("A", 5);
-        final AssociativeDataWithDefault<String, Integer> dataWithDefault = new AssociativeDataWithDefault<>(null);
+        final AssociativeDataWithDefault<String, Integer> dataWithDefault =
+            new AssociativeDataWithDefault<>(null);
 
         assertNull(dataWithDefault.getDefault());
         dataWithDefault.setDefault(def);

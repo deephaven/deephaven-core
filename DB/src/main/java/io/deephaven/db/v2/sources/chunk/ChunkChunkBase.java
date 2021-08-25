@@ -8,8 +8,8 @@ import io.deephaven.db.v2.utils.ChunkUtils;
  */
 public abstract class ChunkChunkBase<ATTR extends Any> implements ChunkChunk<ATTR> {
     /**
-     * The Chunk-of-Chunk's storage is the sub-range of the underlying array defined by [offset, offset + capacity).
-     * It is illegal to access the underlying array outside of this range.
+     * The Chunk-of-Chunk's storage is the sub-range of the underlying array defined by [offset,
+     * offset + capacity). It is illegal to access the underlying array outside of this range.
      */
     int offset;
     int capacity;

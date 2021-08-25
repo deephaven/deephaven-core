@@ -10,5 +10,5 @@ import java.util.function.Function;
 /**
  * A serializable function.
  */
-public interface SerializableFunction<T,R> extends Function<T,R>, Serializable {
+public interface SerializableFunction<T, R> extends Function<T, R>, Serializable {
 }

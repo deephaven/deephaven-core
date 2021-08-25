@@ -15,7 +15,8 @@ public abstract class AbstractGeneratedTable extends AbstractBenchmarkTable {
     private final long nRows;
     private final TableDefinition definition;
 
-    public AbstractGeneratedTable(@NotNull String name, long nRows, long rngSeed, @NotNull List<ColumnGenerator> generators) {
+    public AbstractGeneratedTable(@NotNull String name, long nRows, long rngSeed,
+        @NotNull List<ColumnGenerator> generators) {
         super(name, rngSeed, generators);
         this.nRows = nRows;
         List<ColumnDefinition> definitions = getGeneratorMap()
@@ -28,8 +29,9 @@ public abstract class AbstractGeneratedTable extends AbstractBenchmarkTable {
     }
 
     protected Table generateTable() {
-            return SparseSelect.sparseSelect(TableTools.emptyTable(nRows).updateView(
-                    getGeneratorMap().entrySet().stream().map(ent -> ent.getValue().getUpdateString(ent.getKey())).toArray(String[]::new)));
+        return SparseSelect.sparseSelect(TableTools.emptyTable(nRows).updateView(
+            getGeneratorMap().entrySet().stream()
+                .map(ent -> ent.getValue().getUpdateString(ent.getKey())).toArray(String[]::new)));
     }
 
     @Override

@@ -6,6 +6,7 @@ public class AppendOnlyAssertionFailure extends TableAssertionFailure {
     }
 
     AppendOnlyAssertionFailure(String description) {
-        super("Update to table violates append-only assertion! (Table description: " + description + ")");
+        super("Update to table violates append-only assertion! (Table description: " + description
+            + ")");
     }
 }

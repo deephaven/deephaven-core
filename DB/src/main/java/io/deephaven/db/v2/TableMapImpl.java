@@ -21,7 +21,8 @@ public abstract class TableMapImpl extends LivenessArtifact implements TableMap,
     private final WeakReferenceManager<KeyListener> keyListeners = new WeakReferenceManager<>(true);
 
     @ReferentialIntegrity
-    private final Collection<Object> parents = new KeyedObjectHashSet<>(IdentityKeyedObjectKey.getInstance());
+    private final Collection<Object> parents =
+        new KeyedObjectHashSet<>(IdentityKeyedObjectKey.getInstance());
     private boolean refreshing;
 
     @Override
@@ -64,9 +65,12 @@ public abstract class TableMapImpl extends LivenessArtifact implements TableMap,
     }
 
     /**
-     * Returns true if there are any {@link io.deephaven.db.v2.TableMap.Listener} for table additions.
+     * Returns true if there are any {@link io.deephaven.db.v2.TableMap.Listener} for table
+     * additions.
      *
-     * <p>Note that this function returns false if there are only KeyListeners.</p>
+     * <p>
+     * Note that this function returns false if there are only KeyListeners.
+     * </p>
      *
      * @return true if there are any Listeners.
      */

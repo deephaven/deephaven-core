@@ -23,10 +23,11 @@ import static io.deephaven.db.plot.util.NullCategory.INSTANCE;
 /**
  * A dataset for categorical data which maps a category to it's numerical value.
  * <p>
- * The number of categories and the number of values must be the same.
- * Does not support repeat categories.
+ * The number of categories and the number of values must be the same. Does not support repeat
+ * categories.
  */
-public class CategoryErrorBarDataSeriesMap extends AbstractMapBasedCategoryDataSeries implements CategoryErrorBarDataSeriesInternal {
+public class CategoryErrorBarDataSeriesMap extends AbstractMapBasedCategoryDataSeries
+    implements CategoryErrorBarDataSeriesInternal {
 
     private static final long serialVersionUID = 3326261675883932559L;
     private final Map<Comparable, ObjectIntTuple> data = new LinkedHashMap<>();
@@ -39,48 +40,50 @@ public class CategoryErrorBarDataSeriesMap extends AbstractMapBasedCategoryDataS
     /**
      * Creates an instance of CategoryDataSeriesMap, which maps a category to it's numerical value.
      * <p>
-     * The number of categories and the number of values must be the same.
-     * Does not support null or repeat categories.
+     * The number of categories and the number of values must be the same. Does not support null or
+     * repeat categories.
      *
-     * @param axes       {@link AxesImpl} on which this dataset is being plotted
-     * @param id         data series id
-     * @param name       series name
+     * @param axes {@link AxesImpl} on which this dataset is being plotted
+     * @param id data series id
+     * @param name series name
      * @param categories categorical data
-     * @param y          numerical data
-     * @param yLow       low error bar data
-     * @param yHigh      high error bar data
-     * @param <T>        type of the categorical data
-     * @throws IllegalArgumentException      {@code categories} and {@code values} must not be null
-     *                                       {@code categories} and {@code values} must have equal sizes
+     * @param y numerical data
+     * @param yLow low error bar data
+     * @param yHigh high error bar data
+     * @param <T> type of the categorical data
+     * @throws IllegalArgumentException {@code categories} and {@code values} must not be null
+     *         {@code categories} and {@code values} must have equal sizes
      * @throws UnsupportedOperationException {@code categories} must not contain null values
-     *                                       {@code categories} must not contain repeat values
+     *         {@code categories} must not contain repeat values
      */
     public <T extends Comparable> CategoryErrorBarDataSeriesMap(final AxesImpl axes,
-                                                                final int id,
-                                                                final Comparable name,
-                                                                final IndexableData<T> categories,
-                                                                final IndexableNumericData y,
-                                                                final IndexableNumericData yLow,
-                                                                final IndexableNumericData yHigh) {
+        final int id,
+        final Comparable name,
+        final IndexableData<T> categories,
+        final IndexableNumericData y,
+        final IndexableNumericData yLow,
+        final IndexableNumericData yHigh) {
         this(axes, id, name, categories, y, yLow, yHigh, null);
     }
 
     public <T extends Comparable> CategoryErrorBarDataSeriesMap(final AxesImpl axes,
-                                                                final int id,
-                                                                final Comparable name,
-                                                                final IndexableData<T> categories,
-                                                                final IndexableNumericData y,
-                                                                final IndexableNumericData yLow,
-                                                                final IndexableNumericData yHigh,
-                                                                final AbstractCategoryDataSeries series) {
+        final int id,
+        final Comparable name,
+        final IndexableData<T> categories,
+        final IndexableNumericData y,
+        final IndexableNumericData yLow,
+        final IndexableNumericData yHigh,
+        final AbstractCategoryDataSeries series) {
         super(axes, id, name, series);
 
         if (categories == null || y == null || yLow == null || yHigh == null) {
             throw new PlotIllegalArgumentException("Null input array", this);
         }
 
-        if (categories.size() != y.size() || y.size() != yLow.size() || yLow.size() != yHigh.size()) {
-            throw new PlotIllegalArgumentException("Categories and values lengths do not match", this);
+        if (categories.size() != y.size() || y.size() != yLow.size()
+            || yLow.size() != yHigh.size()) {
+            throw new PlotIllegalArgumentException("Categories and values lengths do not match",
+                this);
         }
 
         for (int i = 0; i < categories.size(); i++) {
@@ -88,7 +91,10 @@ public class CategoryErrorBarDataSeriesMap extends AbstractMapBasedCategoryDataS
             category = category == null ? INSTANCE : category;
 
             if (data.containsKey(category)) {
-                throw new PlotUnsupportedOperationException("Category value repeated multiple times in dataset: series=" + name + "category=" + categories.get(i), this);
+                throw new PlotUnsupportedOperationException(
+                    "Category value repeated multiple times in dataset: series=" + name
+                        + "category=" + categories.get(i),
+                    this);
             }
 
             setValueIndexed(category, y.get(i), data, i);
@@ -101,9 +107,10 @@ public class CategoryErrorBarDataSeriesMap extends AbstractMapBasedCategoryDataS
      * Creates a copy of a series using a different Axes.
      *
      * @param series series to copy.
-     * @param axes   new axes to use.
+     * @param axes new axes to use.
      */
-    private CategoryErrorBarDataSeriesMap(final CategoryErrorBarDataSeriesMap series, final AxesImpl axes) {
+    private CategoryErrorBarDataSeriesMap(final CategoryErrorBarDataSeriesMap series,
+        final AxesImpl axes) {
         super(series, axes);
         this.data.putAll(series.data);
         this.dataToYStart.putAll(series.dataToYStart);
@@ -131,7 +138,7 @@ public class CategoryErrorBarDataSeriesMap extends AbstractMapBasedCategoryDataS
     @Override
     public Number getValue(final Comparable category) {
         final ObjectIntTuple catItem = data.get(category == null ? INSTANCE : category);
-        return catItem == null ? null : (Number)catItem.getFirstElement();
+        return catItem == null ? null : (Number) catItem.getFirstElement();
     }
 
     @Override
@@ -150,7 +157,8 @@ public class CategoryErrorBarDataSeriesMap extends AbstractMapBasedCategoryDataS
         return dataToYEnd.get(category);
     }
 
-    private void setValueIndexed(final Comparable category, final Number value, final Map<Comparable, ObjectIntTuple> data, int index) {
+    private void setValueIndexed(final Comparable category, final Number value,
+        final Map<Comparable, ObjectIntTuple> data, int index) {
         if (value == null) {
             data.remove(category);
         } else {
@@ -161,7 +169,8 @@ public class CategoryErrorBarDataSeriesMap extends AbstractMapBasedCategoryDataS
         yMax = PlotUtils.maxIgnoreNaN(yMax, value == null ? Double.NaN : value.doubleValue());
     }
 
-    private void setValue(final Comparable category, final Number value, final Map<Comparable, Number> data) {
+    private void setValue(final Comparable category, final Number value,
+        final Map<Comparable, Number> data) {
         if (value == null) {
             data.remove(category);
         } else {

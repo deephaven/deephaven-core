@@ -21,16 +21,15 @@ public class CatStackedBar {
 
         Figure fig = FigureFactory.figure();
         Figure cht = fig.newChart(0)
-                .chartTitle("Chart Title");
+            .chartTitle("Chart Title");
         Figure axs = cht.newAxes()
-                .xLabel("X")
-                .yLabel("Y")
-                .plotStyle(PlotStyle.STACKED_BAR)
-                .catPlot("Test1", x1, y1).gradientVisible(true)
-                .catPlot("Test2", x2, y2)
-                .catPlot("Test3", x3, y3).group(2)
-                .yTicks(new double[]{1,5})
-                ;
+            .xLabel("X")
+            .yLabel("Y")
+            .plotStyle(PlotStyle.STACKED_BAR)
+            .catPlot("Test1", x1, y1).gradientVisible(true)
+            .catPlot("Test2", x2, y2)
+            .catPlot("Test3", x3, y3).group(2)
+            .yTicks(new double[] {1, 5});
 
         ExamplePlotUtils.display(axs);
     }

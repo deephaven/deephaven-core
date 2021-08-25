@@ -14,193 +14,189 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest",
     namespace = JsPackage.GLOBAL)
 public class EmptyTableRequest {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultIdFieldType {
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetTicketUnionType {
-        @JsOverlay
-        static EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-            Object o) {
-          return Js.cast(o);
+    public interface ToObjectReturnType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ResultIdFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface GetTicketUnionType {
+                @JsOverlay
+                static EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
+                    Object o) {
+                    return Js.cast(o);
+                }
+
+                @JsOverlay
+                default String asString() {
+                    return Js.asString(this);
+                }
+
+                @JsOverlay
+                default Uint8Array asUint8Array() {
+                    return Js.cast(this);
+                }
+
+                @JsOverlay
+                default boolean isString() {
+                    return (Object) this instanceof String;
+                }
+
+                @JsOverlay
+                default boolean isUint8Array() {
+                    return (Object) this instanceof Uint8Array;
+                }
+            }
+
+            @JsOverlay
+            static EmptyTableRequest.ToObjectReturnType.ResultIdFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType getTicket();
+
+            @JsProperty
+            void setTicket(
+                EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+
+            @JsOverlay
+            default void setTicket(String ticket) {
+                setTicket(
+                    Js.<EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
+
+            @JsOverlay
+            default void setTicket(Uint8Array ticket) {
+                setTicket(
+                    Js.<EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
         }
 
         @JsOverlay
-        default String asString() {
-          return Js.asString(this);
+        static EmptyTableRequest.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
         }
 
-        @JsOverlay
-        default Uint8Array asUint8Array() {
-          return Js.cast(this);
-        }
+        @JsProperty
+        EmptyTableRequest.ToObjectReturnType.ResultIdFieldType getResultId();
 
-        @JsOverlay
-        default boolean isString() {
-          return (Object) this instanceof String;
-        }
+        @JsProperty
+        String getSize();
 
-        @JsOverlay
-        default boolean isUint8Array() {
-          return (Object) this instanceof Uint8Array;
-        }
-      }
+        @JsProperty
+        void setResultId(EmptyTableRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
-      @JsOverlay
-      static EmptyTableRequest.ToObjectReturnType.ResultIdFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType getTicket();
-
-      @JsProperty
-      void setTicket(
-          EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
-
-      @JsOverlay
-      default void setTicket(String ticket) {
-        setTicket(
-            Js
-                .<EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
-
-      @JsOverlay
-      default void setTicket(Uint8Array ticket) {
-        setTicket(
-            Js
-                .<EmptyTableRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
+        @JsProperty
+        void setSize(String size);
     }
 
-    @JsOverlay
-    static EmptyTableRequest.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
-
-    @JsProperty
-    EmptyTableRequest.ToObjectReturnType.ResultIdFieldType getResultId();
-
-    @JsProperty
-    String getSize();
-
-    @JsProperty
-    void setResultId(EmptyTableRequest.ToObjectReturnType.ResultIdFieldType resultId);
-
-    @JsProperty
-    void setSize(String size);
-  }
-
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultIdFieldType {
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetTicketUnionType {
-        @JsOverlay
-        static EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-            Object o) {
-          return Js.cast(o);
+    public interface ToObjectReturnType0 {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ResultIdFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface GetTicketUnionType {
+                @JsOverlay
+                static EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
+                    Object o) {
+                    return Js.cast(o);
+                }
+
+                @JsOverlay
+                default String asString() {
+                    return Js.asString(this);
+                }
+
+                @JsOverlay
+                default Uint8Array asUint8Array() {
+                    return Js.cast(this);
+                }
+
+                @JsOverlay
+                default boolean isString() {
+                    return (Object) this instanceof String;
+                }
+
+                @JsOverlay
+                default boolean isUint8Array() {
+                    return (Object) this instanceof Uint8Array;
+                }
+            }
+
+            @JsOverlay
+            static EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType getTicket();
+
+            @JsProperty
+            void setTicket(
+                EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+
+            @JsOverlay
+            default void setTicket(String ticket) {
+                setTicket(
+                    Js.<EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
+
+            @JsOverlay
+            default void setTicket(Uint8Array ticket) {
+                setTicket(
+                    Js.<EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
         }
 
         @JsOverlay
-        default String asString() {
-          return Js.asString(this);
+        static EmptyTableRequest.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
         }
 
-        @JsOverlay
-        default Uint8Array asUint8Array() {
-          return Js.cast(this);
-        }
+        @JsProperty
+        EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
 
-        @JsOverlay
-        default boolean isString() {
-          return (Object) this instanceof String;
-        }
+        @JsProperty
+        String getSize();
 
-        @JsOverlay
-        default boolean isUint8Array() {
-          return (Object) this instanceof Uint8Array;
-        }
-      }
+        @JsProperty
+        void setResultId(EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType resultId);
 
-      @JsOverlay
-      static EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType getTicket();
-
-      @JsProperty
-      void setTicket(
-          EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
-
-      @JsOverlay
-      default void setTicket(String ticket) {
-        setTicket(
-            Js
-                .<EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
-
-      @JsOverlay
-      default void setTicket(Uint8Array ticket) {
-        setTicket(
-            Js
-                .<EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
+        @JsProperty
+        void setSize(String size);
     }
 
-    @JsOverlay
-    static EmptyTableRequest.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
+    public static native EmptyTableRequest deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
+    public static native EmptyTableRequest deserializeBinaryFromReader(
+        EmptyTableRequest message, Object reader);
 
-    @JsProperty
-    String getSize();
+    public static native void serializeBinaryToWriter(EmptyTableRequest message, Object writer);
 
-    @JsProperty
-    void setResultId(EmptyTableRequest.ToObjectReturnType0.ResultIdFieldType resultId);
+    public static native EmptyTableRequest.ToObjectReturnType toObject(
+        boolean includeInstance, EmptyTableRequest msg);
 
-    @JsProperty
-    void setSize(String size);
-  }
+    public native void clearResultId();
 
-  public static native EmptyTableRequest deserializeBinary(Uint8Array bytes);
+    public native Ticket getResultId();
 
-  public static native EmptyTableRequest deserializeBinaryFromReader(
-      EmptyTableRequest message, Object reader);
+    public native String getSize();
 
-  public static native void serializeBinaryToWriter(EmptyTableRequest message, Object writer);
+    public native boolean hasResultId();
 
-  public static native EmptyTableRequest.ToObjectReturnType toObject(
-      boolean includeInstance, EmptyTableRequest msg);
+    public native Uint8Array serializeBinary();
 
-  public native void clearResultId();
+    public native void setResultId();
 
-  public native Ticket getResultId();
+    public native void setResultId(Ticket value);
 
-  public native String getSize();
+    public native void setSize(String value);
 
-  public native boolean hasResultId();
+    public native EmptyTableRequest.ToObjectReturnType0 toObject();
 
-  public native Uint8Array serializeBinary();
-
-  public native void setResultId();
-
-  public native void setResultId(Ticket value);
-
-  public native void setSize(String value);
-
-  public native EmptyTableRequest.ToObjectReturnType0 toObject();
-
-  public native EmptyTableRequest.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native EmptyTableRequest.ToObjectReturnType0 toObject(boolean includeInstance);
 }

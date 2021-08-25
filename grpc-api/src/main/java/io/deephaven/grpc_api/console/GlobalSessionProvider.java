@@ -10,8 +10,7 @@ public class GlobalSessionProvider {
     private volatile ScriptSession globalSession;
 
     @Inject
-    public GlobalSessionProvider() {
-    }
+    public GlobalSessionProvider() {}
 
     public ScriptSession getGlobalSession() {
         return globalSession;

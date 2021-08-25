@@ -28,7 +28,8 @@ public class ChunkUnboxer {
          */
         Chunk<? extends Values> unbox(ObjectChunk<?, ? extends Values> boxedPrimitives);
 
-        void unboxTo(ObjectChunk<?, ? extends Values> boxedPrimitives, WritableChunk<? extends Values> primitives, int sourceOffset, int destOffset);
+        void unboxTo(ObjectChunk<?, ? extends Values> boxedPrimitives,
+            WritableChunk<? extends Values> primitives, int sourceOffset, int destOffset);
     }
 
     public static UnboxerKernel getUnboxer(ChunkType type, int capacity) {

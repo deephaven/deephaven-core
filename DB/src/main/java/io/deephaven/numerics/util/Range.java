@@ -27,8 +27,8 @@ public class Range implements Serializable {
     /**
      * Create a new range.
      *
-     * @param min     minimum value for the range
-     * @param max     maximum value for the range
+     * @param min minimum value for the range
+     * @param max maximum value for the range
      * @param minOpen true if the minimum is an open interval; false for a closed interval.
      * @param maxOpen true if the maximum is an open interval; false for a closed interval.
      */

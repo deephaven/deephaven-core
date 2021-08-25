@@ -22,11 +22,15 @@ public class SnapshotStateTest extends QueryTableTestBase {
     private static Table getRawNyMunis() throws IOException {
         QueryLibrary.importStatic(TreeSnapshotQueryTest.StaticHolder.class);
 
-        final BaseTable base = (BaseTable)TableTools.readCsv(TreeSnapshotQueryTest.class.getResourceAsStream("nymunis.csv"));
+        final BaseTable base = (BaseTable) TableTools
+            .readCsv(TreeSnapshotQueryTest.class.getResourceAsStream("nymunis.csv"));
         base.setRefreshing(true);
-        return base.update("Path=(List<String>)removeEmpty(County_Name, City_Name, Town_Name, Village_Name)")
-                .update("Direct = Path.size() == 1 ? null : new ArrayList(Path.subList(0, Path.size() - 1))")
-                .lastBy("Path");
+        return base
+            .update(
+                "Path=(List<String>)removeEmpty(County_Name, City_Name, Town_Name, Village_Name)")
+            .update(
+                "Direct = Path.size() == 1 ? null : new ArrayList(Path.subList(0, Path.size() - 1))")
+            .lastBy("Path");
     }
 
     private static Table makeNyMunisTreeTableFrom(Table t) {
@@ -39,7 +43,7 @@ public class SnapshotStateTest extends QueryTableTestBase {
 
     @Test
     public void testBounds() throws IOException {
-        final HierarchicalTable treeTable = (HierarchicalTable)makeNyMunisTreeTable();
+        final HierarchicalTable treeTable = (HierarchicalTable) makeNyMunisTreeTable();
         final Map<Object, TableDetails> details = new HashMap<>();
 
         final int columnCount = treeTable.getColumnSourceMap().size();
@@ -110,7 +114,7 @@ public class SnapshotStateTest extends QueryTableTestBase {
 
         // start midway, extend way 2x past the end
         state = new SnapshotState(treeTable, "Path");
-        state.beginSnapshot(details, new BitSet(0), 8,40 );
+        state.beginSnapshot(details, new BitSet(0), 8, 40);
         assertEquals(9, state.actualViewportSize);
         assertEquals(17, state.totalRowCount);
         assertEquals(columnCount, state.getDataMatrix().length);
@@ -133,7 +137,8 @@ public class SnapshotStateTest extends QueryTableTestBase {
         assertEquals(0, state.tableKeyColumn.length);
     }
 
-    private void addTable(Map<Object, TableDetails> details, String key, String parentKey, int size) {
+    private void addTable(Map<Object, TableDetails> details, String key, String parentKey,
+        int size) {
         final TableDetails d = new TableDetails(key, new HashSet<>());
         d.setTable(TableTools.emptyTable(size));
         details.put(key, d);

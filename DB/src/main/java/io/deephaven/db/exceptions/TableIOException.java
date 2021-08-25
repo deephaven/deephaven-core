@@ -9,20 +9,23 @@ public class TableIOException extends UncheckedTableException {
         super(reason, cause);
     }
 
-    public TableIOException(@NotNull String namespace, @NotNull String tableName, @Nullable String reason) {
+    public TableIOException(@NotNull String namespace, @NotNull String tableName,
+        @Nullable String reason) {
         super(makeDescription(namespace, tableName, reason));
     }
 
-    public TableIOException(@NotNull String namespace, @NotNull String tableName, @Nullable String reason, Throwable cause) {
+    public TableIOException(@NotNull String namespace, @NotNull String tableName,
+        @Nullable String reason, Throwable cause) {
         super(makeDescription(namespace, tableName, reason), cause);
     }
 
-    private static String makeDescription(@NotNull String namespace, @NotNull String tableName, @Nullable String reason) {
+    private static String makeDescription(@NotNull String namespace, @NotNull String tableName,
+        @Nullable String reason) {
         final StringBuilder sb = new StringBuilder();
 
         sb.append("Error while accessing ").append(namespace).append('.').append(tableName);
 
-        if(!StringUtils.isNullOrEmpty(reason)) {
+        if (!StringUtils.isNullOrEmpty(reason)) {
             sb.append(": ").append(reason);
         }
 

@@ -14,374 +14,364 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.console_pb.GetCompletionItemsRequest",
     namespace = JsPackage.GLOBAL)
 public class GetCompletionItemsRequest {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ConsoleIdFieldType {
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetTicketUnionType {
-        @JsOverlay
-        static GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType
-            of(Object o) {
-          return Js.cast(o);
+    public interface ToObjectReturnType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ConsoleIdFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface GetTicketUnionType {
+                @JsOverlay
+                static GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType of(
+                    Object o) {
+                    return Js.cast(o);
+                }
+
+                @JsOverlay
+                default String asString() {
+                    return Js.asString(this);
+                }
+
+                @JsOverlay
+                default Uint8Array asUint8Array() {
+                    return Js.cast(this);
+                }
+
+                @JsOverlay
+                default boolean isString() {
+                    return (Object) this instanceof String;
+                }
+
+                @JsOverlay
+                default boolean isUint8Array() {
+                    return (Object) this instanceof Uint8Array;
+                }
+            }
+
+            @JsOverlay
+            static GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType getTicket();
+
+            @JsProperty
+            void setTicket(
+                GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
+
+            @JsOverlay
+            default void setTicket(String ticket) {
+                setTicket(
+                    Js.<GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
+
+            @JsOverlay
+            default void setTicket(Uint8Array ticket) {
+                setTicket(
+                    Js.<GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ContextFieldType {
+            @JsOverlay
+            static GetCompletionItemsRequest.ToObjectReturnType.ContextFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            String getTriggerCharacter();
+
+            @JsProperty
+            double getTriggerKind();
+
+            @JsProperty
+            void setTriggerCharacter(String triggerCharacter);
+
+            @JsProperty
+            void setTriggerKind(double triggerKind);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface PositionFieldType {
+            @JsOverlay
+            static GetCompletionItemsRequest.ToObjectReturnType.PositionFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCharacter();
+
+            @JsProperty
+            double getLine();
+
+            @JsProperty
+            void setCharacter(double character);
+
+            @JsProperty
+            void setLine(double line);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface TextDocumentFieldType {
+            @JsOverlay
+            static GetCompletionItemsRequest.ToObjectReturnType.TextDocumentFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            String getUri();
+
+            @JsProperty
+            double getVersion();
+
+            @JsProperty
+            void setUri(String uri);
+
+            @JsProperty
+            void setVersion(double version);
         }
 
         @JsOverlay
-        default String asString() {
-          return Js.asString(this);
+        static GetCompletionItemsRequest.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
         }
 
-        @JsOverlay
-        default Uint8Array asUint8Array() {
-          return Js.cast(this);
-        }
+        @JsProperty
+        GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType getConsoleId();
 
-        @JsOverlay
-        default boolean isString() {
-          return (Object) this instanceof String;
-        }
+        @JsProperty
+        GetCompletionItemsRequest.ToObjectReturnType.ContextFieldType getContext();
 
-        @JsOverlay
-        default boolean isUint8Array() {
-          return (Object) this instanceof Uint8Array;
-        }
-      }
+        @JsProperty
+        GetCompletionItemsRequest.ToObjectReturnType.PositionFieldType getPosition();
 
-      @JsOverlay
-      static GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
+        @JsProperty
+        GetCompletionItemsRequest.ToObjectReturnType.TextDocumentFieldType getTextDocument();
 
-      @JsProperty
-      GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType
-          getTicket();
+        @JsProperty
+        void setConsoleId(
+            GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType consoleId);
 
-      @JsProperty
-      void setTicket(
-          GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType
-              ticket);
+        @JsProperty
+        void setContext(GetCompletionItemsRequest.ToObjectReturnType.ContextFieldType context);
 
-      @JsOverlay
-      default void setTicket(String ticket) {
-        setTicket(
-            Js
-                .<GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType
-                        .GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
+        @JsProperty
+        void setPosition(GetCompletionItemsRequest.ToObjectReturnType.PositionFieldType position);
 
-      @JsOverlay
-      default void setTicket(Uint8Array ticket) {
-        setTicket(
-            Js
-                .<GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType
-                        .GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
-    }
-
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ContextFieldType {
-      @JsOverlay
-      static GetCompletionItemsRequest.ToObjectReturnType.ContextFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      String getTriggerCharacter();
-
-      @JsProperty
-      double getTriggerKind();
-
-      @JsProperty
-      void setTriggerCharacter(String triggerCharacter);
-
-      @JsProperty
-      void setTriggerKind(double triggerKind);
-    }
-
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface PositionFieldType {
-      @JsOverlay
-      static GetCompletionItemsRequest.ToObjectReturnType.PositionFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      double getCharacter();
-
-      @JsProperty
-      double getLine();
-
-      @JsProperty
-      void setCharacter(double character);
-
-      @JsProperty
-      void setLine(double line);
-    }
-
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface TextDocumentFieldType {
-      @JsOverlay
-      static GetCompletionItemsRequest.ToObjectReturnType.TextDocumentFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      String getUri();
-
-      @JsProperty
-      double getVersion();
-
-      @JsProperty
-      void setUri(String uri);
-
-      @JsProperty
-      void setVersion(double version);
-    }
-
-    @JsOverlay
-    static GetCompletionItemsRequest.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
-
-    @JsProperty
-    GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType getConsoleId();
-
-    @JsProperty
-    GetCompletionItemsRequest.ToObjectReturnType.ContextFieldType getContext();
-
-    @JsProperty
-    GetCompletionItemsRequest.ToObjectReturnType.PositionFieldType getPosition();
-
-    @JsProperty
-    GetCompletionItemsRequest.ToObjectReturnType.TextDocumentFieldType getTextDocument();
-
-    @JsProperty
-    void setConsoleId(GetCompletionItemsRequest.ToObjectReturnType.ConsoleIdFieldType consoleId);
-
-    @JsProperty
-    void setContext(GetCompletionItemsRequest.ToObjectReturnType.ContextFieldType context);
-
-    @JsProperty
-    void setPosition(GetCompletionItemsRequest.ToObjectReturnType.PositionFieldType position);
-
-    @JsProperty
-    void setTextDocument(
-        GetCompletionItemsRequest.ToObjectReturnType.TextDocumentFieldType textDocument);
-  }
-
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ConsoleIdFieldType {
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetTicketUnionType {
-        @JsOverlay
-        static GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType
-            of(Object o) {
-          return Js.cast(o);
-        }
-
-        @JsOverlay
-        default String asString() {
-          return Js.asString(this);
-        }
-
-        @JsOverlay
-        default Uint8Array asUint8Array() {
-          return Js.cast(this);
-        }
-
-        @JsOverlay
-        default boolean isString() {
-          return (Object) this instanceof String;
-        }
-
-        @JsOverlay
-        default boolean isUint8Array() {
-          return (Object) this instanceof Uint8Array;
-        }
-      }
-
-      @JsOverlay
-      static GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType
-          getTicket();
-
-      @JsProperty
-      void setTicket(
-          GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType
-              ticket);
-
-      @JsOverlay
-      default void setTicket(String ticket) {
-        setTicket(
-            Js
-                .<GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType
-                        .GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
-
-      @JsOverlay
-      default void setTicket(Uint8Array ticket) {
-        setTicket(
-            Js
-                .<GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType
-                        .GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
+        @JsProperty
+        void setTextDocument(
+            GetCompletionItemsRequest.ToObjectReturnType.TextDocumentFieldType textDocument);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ContextFieldType {
-      @JsOverlay
-      static GetCompletionItemsRequest.ToObjectReturnType0.ContextFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
+    public interface ToObjectReturnType0 {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ConsoleIdFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface GetTicketUnionType {
+                @JsOverlay
+                static GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType of(
+                    Object o) {
+                    return Js.cast(o);
+                }
 
-      @JsProperty
-      String getTriggerCharacter();
+                @JsOverlay
+                default String asString() {
+                    return Js.asString(this);
+                }
 
-      @JsProperty
-      double getTriggerKind();
+                @JsOverlay
+                default Uint8Array asUint8Array() {
+                    return Js.cast(this);
+                }
 
-      @JsProperty
-      void setTriggerCharacter(String triggerCharacter);
+                @JsOverlay
+                default boolean isString() {
+                    return (Object) this instanceof String;
+                }
 
-      @JsProperty
-      void setTriggerKind(double triggerKind);
+                @JsOverlay
+                default boolean isUint8Array() {
+                    return (Object) this instanceof Uint8Array;
+                }
+            }
+
+            @JsOverlay
+            static GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType getTicket();
+
+            @JsProperty
+            void setTicket(
+                GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
+
+            @JsOverlay
+            default void setTicket(String ticket) {
+                setTicket(
+                    Js.<GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
+
+            @JsOverlay
+            default void setTicket(Uint8Array ticket) {
+                setTicket(
+                    Js.<GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ContextFieldType {
+            @JsOverlay
+            static GetCompletionItemsRequest.ToObjectReturnType0.ContextFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            String getTriggerCharacter();
+
+            @JsProperty
+            double getTriggerKind();
+
+            @JsProperty
+            void setTriggerCharacter(String triggerCharacter);
+
+            @JsProperty
+            void setTriggerKind(double triggerKind);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface PositionFieldType {
+            @JsOverlay
+            static GetCompletionItemsRequest.ToObjectReturnType0.PositionFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCharacter();
+
+            @JsProperty
+            double getLine();
+
+            @JsProperty
+            void setCharacter(double character);
+
+            @JsProperty
+            void setLine(double line);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface TextDocumentFieldType {
+            @JsOverlay
+            static GetCompletionItemsRequest.ToObjectReturnType0.TextDocumentFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            String getUri();
+
+            @JsProperty
+            double getVersion();
+
+            @JsProperty
+            void setUri(String uri);
+
+            @JsProperty
+            void setVersion(double version);
+        }
+
+        @JsOverlay
+        static GetCompletionItemsRequest.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType getConsoleId();
+
+        @JsProperty
+        GetCompletionItemsRequest.ToObjectReturnType0.ContextFieldType getContext();
+
+        @JsProperty
+        GetCompletionItemsRequest.ToObjectReturnType0.PositionFieldType getPosition();
+
+        @JsProperty
+        GetCompletionItemsRequest.ToObjectReturnType0.TextDocumentFieldType getTextDocument();
+
+        @JsProperty
+        void setConsoleId(
+            GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType consoleId);
+
+        @JsProperty
+        void setContext(GetCompletionItemsRequest.ToObjectReturnType0.ContextFieldType context);
+
+        @JsProperty
+        void setPosition(GetCompletionItemsRequest.ToObjectReturnType0.PositionFieldType position);
+
+        @JsProperty
+        void setTextDocument(
+            GetCompletionItemsRequest.ToObjectReturnType0.TextDocumentFieldType textDocument);
     }
 
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface PositionFieldType {
-      @JsOverlay
-      static GetCompletionItemsRequest.ToObjectReturnType0.PositionFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
+    public static native GetCompletionItemsRequest deserializeBinary(Uint8Array bytes);
 
-      @JsProperty
-      double getCharacter();
+    public static native GetCompletionItemsRequest deserializeBinaryFromReader(
+        GetCompletionItemsRequest message, Object reader);
 
-      @JsProperty
-      double getLine();
+    public static native void serializeBinaryToWriter(
+        GetCompletionItemsRequest message, Object writer);
 
-      @JsProperty
-      void setCharacter(double character);
+    public static native GetCompletionItemsRequest.ToObjectReturnType toObject(
+        boolean includeInstance, GetCompletionItemsRequest msg);
 
-      @JsProperty
-      void setLine(double line);
-    }
+    public native void clearConsoleId();
 
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface TextDocumentFieldType {
-      @JsOverlay
-      static GetCompletionItemsRequest.ToObjectReturnType0.TextDocumentFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
+    public native void clearContext();
 
-      @JsProperty
-      String getUri();
+    public native void clearPosition();
 
-      @JsProperty
-      double getVersion();
+    public native void clearTextDocument();
 
-      @JsProperty
-      void setUri(String uri);
+    public native Ticket getConsoleId();
 
-      @JsProperty
-      void setVersion(double version);
-    }
+    public native CompletionContext getContext();
 
-    @JsOverlay
-    static GetCompletionItemsRequest.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
+    public native Position getPosition();
 
-    @JsProperty
-    GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType getConsoleId();
+    public native VersionedTextDocumentIdentifier getTextDocument();
 
-    @JsProperty
-    GetCompletionItemsRequest.ToObjectReturnType0.ContextFieldType getContext();
+    public native boolean hasConsoleId();
 
-    @JsProperty
-    GetCompletionItemsRequest.ToObjectReturnType0.PositionFieldType getPosition();
+    public native boolean hasContext();
 
-    @JsProperty
-    GetCompletionItemsRequest.ToObjectReturnType0.TextDocumentFieldType getTextDocument();
+    public native boolean hasPosition();
 
-    @JsProperty
-    void setConsoleId(GetCompletionItemsRequest.ToObjectReturnType0.ConsoleIdFieldType consoleId);
+    public native boolean hasTextDocument();
 
-    @JsProperty
-    void setContext(GetCompletionItemsRequest.ToObjectReturnType0.ContextFieldType context);
+    public native Uint8Array serializeBinary();
 
-    @JsProperty
-    void setPosition(GetCompletionItemsRequest.ToObjectReturnType0.PositionFieldType position);
+    public native void setConsoleId();
 
-    @JsProperty
-    void setTextDocument(
-        GetCompletionItemsRequest.ToObjectReturnType0.TextDocumentFieldType textDocument);
-  }
+    public native void setConsoleId(Ticket value);
 
-  public static native GetCompletionItemsRequest deserializeBinary(Uint8Array bytes);
+    public native void setContext();
 
-  public static native GetCompletionItemsRequest deserializeBinaryFromReader(
-      GetCompletionItemsRequest message, Object reader);
+    public native void setContext(CompletionContext value);
 
-  public static native void serializeBinaryToWriter(
-      GetCompletionItemsRequest message, Object writer);
+    public native void setPosition();
 
-  public static native GetCompletionItemsRequest.ToObjectReturnType toObject(
-      boolean includeInstance, GetCompletionItemsRequest msg);
+    public native void setPosition(Position value);
 
-  public native void clearConsoleId();
+    public native void setTextDocument();
 
-  public native void clearContext();
+    public native void setTextDocument(VersionedTextDocumentIdentifier value);
 
-  public native void clearPosition();
+    public native GetCompletionItemsRequest.ToObjectReturnType0 toObject();
 
-  public native void clearTextDocument();
-
-  public native Ticket getConsoleId();
-
-  public native CompletionContext getContext();
-
-  public native Position getPosition();
-
-  public native VersionedTextDocumentIdentifier getTextDocument();
-
-  public native boolean hasConsoleId();
-
-  public native boolean hasContext();
-
-  public native boolean hasPosition();
-
-  public native boolean hasTextDocument();
-
-  public native Uint8Array serializeBinary();
-
-  public native void setConsoleId();
-
-  public native void setConsoleId(Ticket value);
-
-  public native void setContext();
-
-  public native void setContext(CompletionContext value);
-
-  public native void setPosition();
-
-  public native void setPosition(Position value);
-
-  public native void setTextDocument();
-
-  public native void setTextDocument(VersionedTextDocumentIdentifier value);
-
-  public native GetCompletionItemsRequest.ToObjectReturnType0 toObject();
-
-  public native GetCompletionItemsRequest.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native GetCompletionItemsRequest.ToObjectReturnType0 toObject(boolean includeInstance);
 }

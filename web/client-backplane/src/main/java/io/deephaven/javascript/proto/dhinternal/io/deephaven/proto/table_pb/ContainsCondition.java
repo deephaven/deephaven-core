@@ -13,133 +13,133 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.table_pb.ContainsCondition",
     namespace = JsPackage.GLOBAL)
 public class ContainsCondition {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ReferenceFieldType {
-      @JsOverlay
-      static ContainsCondition.ToObjectReturnType.ReferenceFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
+    public interface ToObjectReturnType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ReferenceFieldType {
+            @JsOverlay
+            static ContainsCondition.ToObjectReturnType.ReferenceFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
 
-      @JsProperty
-      String getColumnName();
+            @JsProperty
+            String getColumnName();
 
-      @JsProperty
-      void setColumnName(String columnName);
+            @JsProperty
+            void setColumnName(String columnName);
+        }
+
+        @JsOverlay
+        static ContainsCondition.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        double getCaseSensitivity();
+
+        @JsProperty
+        double getMatchType();
+
+        @JsProperty
+        ContainsCondition.ToObjectReturnType.ReferenceFieldType getReference();
+
+        @JsProperty
+        String getSearchString();
+
+        @JsProperty
+        void setCaseSensitivity(double caseSensitivity);
+
+        @JsProperty
+        void setMatchType(double matchType);
+
+        @JsProperty
+        void setReference(ContainsCondition.ToObjectReturnType.ReferenceFieldType reference);
+
+        @JsProperty
+        void setSearchString(String searchString);
     }
 
-    @JsOverlay
-    static ContainsCondition.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
-
-    @JsProperty
-    double getCaseSensitivity();
-
-    @JsProperty
-    double getMatchType();
-
-    @JsProperty
-    ContainsCondition.ToObjectReturnType.ReferenceFieldType getReference();
-
-    @JsProperty
-    String getSearchString();
-
-    @JsProperty
-    void setCaseSensitivity(double caseSensitivity);
-
-    @JsProperty
-    void setMatchType(double matchType);
-
-    @JsProperty
-    void setReference(ContainsCondition.ToObjectReturnType.ReferenceFieldType reference);
-
-    @JsProperty
-    void setSearchString(String searchString);
-  }
-
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ReferenceFieldType {
-      @JsOverlay
-      static ContainsCondition.ToObjectReturnType0.ReferenceFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
+    public interface ToObjectReturnType0 {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ReferenceFieldType {
+            @JsOverlay
+            static ContainsCondition.ToObjectReturnType0.ReferenceFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
 
-      @JsProperty
-      String getColumnName();
+            @JsProperty
+            String getColumnName();
 
-      @JsProperty
-      void setColumnName(String columnName);
+            @JsProperty
+            void setColumnName(String columnName);
+        }
+
+        @JsOverlay
+        static ContainsCondition.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        double getCaseSensitivity();
+
+        @JsProperty
+        double getMatchType();
+
+        @JsProperty
+        ContainsCondition.ToObjectReturnType0.ReferenceFieldType getReference();
+
+        @JsProperty
+        String getSearchString();
+
+        @JsProperty
+        void setCaseSensitivity(double caseSensitivity);
+
+        @JsProperty
+        void setMatchType(double matchType);
+
+        @JsProperty
+        void setReference(ContainsCondition.ToObjectReturnType0.ReferenceFieldType reference);
+
+        @JsProperty
+        void setSearchString(String searchString);
     }
 
-    @JsOverlay
-    static ContainsCondition.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
+    public static native ContainsCondition deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    double getCaseSensitivity();
+    public static native ContainsCondition deserializeBinaryFromReader(
+        ContainsCondition message, Object reader);
 
-    @JsProperty
-    double getMatchType();
+    public static native void serializeBinaryToWriter(ContainsCondition message, Object writer);
 
-    @JsProperty
-    ContainsCondition.ToObjectReturnType0.ReferenceFieldType getReference();
+    public static native ContainsCondition.ToObjectReturnType toObject(
+        boolean includeInstance, ContainsCondition msg);
 
-    @JsProperty
-    String getSearchString();
+    public native void clearReference();
 
-    @JsProperty
-    void setCaseSensitivity(double caseSensitivity);
+    public native double getCaseSensitivity();
 
-    @JsProperty
-    void setMatchType(double matchType);
+    public native double getMatchType();
 
-    @JsProperty
-    void setReference(ContainsCondition.ToObjectReturnType0.ReferenceFieldType reference);
+    public native Reference getReference();
 
-    @JsProperty
-    void setSearchString(String searchString);
-  }
+    public native String getSearchString();
 
-  public static native ContainsCondition deserializeBinary(Uint8Array bytes);
+    public native boolean hasReference();
 
-  public static native ContainsCondition deserializeBinaryFromReader(
-      ContainsCondition message, Object reader);
+    public native Uint8Array serializeBinary();
 
-  public static native void serializeBinaryToWriter(ContainsCondition message, Object writer);
+    public native void setCaseSensitivity(double value);
 
-  public static native ContainsCondition.ToObjectReturnType toObject(
-      boolean includeInstance, ContainsCondition msg);
+    public native void setMatchType(double value);
 
-  public native void clearReference();
+    public native void setReference();
 
-  public native double getCaseSensitivity();
+    public native void setReference(Reference value);
 
-  public native double getMatchType();
+    public native void setSearchString(String value);
 
-  public native Reference getReference();
+    public native ContainsCondition.ToObjectReturnType0 toObject();
 
-  public native String getSearchString();
-
-  public native boolean hasReference();
-
-  public native Uint8Array serializeBinary();
-
-  public native void setCaseSensitivity(double value);
-
-  public native void setMatchType(double value);
-
-  public native void setReference();
-
-  public native void setReference(Reference value);
-
-  public native void setSearchString(String value);
-
-  public native ContainsCondition.ToObjectReturnType0 toObject();
-
-  public native ContainsCondition.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native ContainsCondition.ToObjectReturnType0 toObject(boolean includeInstance);
 }

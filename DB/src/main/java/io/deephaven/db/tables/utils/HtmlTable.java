@@ -28,7 +28,7 @@ public class HtmlTable {
         out.append("</tr>\n");
 
         final Collection<? extends ColumnSource> columnSources = source.getColumnSources();
-        for (final Index.Iterator ii = source.getIndex().iterator(); ii.hasNext(); ) {
+        for (final Index.Iterator ii = source.getIndex().iterator(); ii.hasNext();) {
             out.append("<tr>");
             final long key = ii.nextLong();
             for (ColumnSource columnSource : columnSources) {
@@ -37,7 +37,7 @@ public class HtmlTable {
                 if (value instanceof String) {
                     out.append(StringEscapeUtils.escapeCsv((String) value));
                 } else if (value instanceof DBDateTime) {
-                    out.append(((DBDateTime)value).toString(DBTimeZone.TZ_NY));
+                    out.append(((DBDateTime) value).toString(DBTimeZone.TZ_NY));
                 } else {
                     out.append(TableTools.nullToNullString(value));
                 }

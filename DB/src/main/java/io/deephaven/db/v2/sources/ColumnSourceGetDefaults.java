@@ -6,8 +6,8 @@ import static io.deephaven.db.tables.utils.DBTimeUtils.nanosToTime;
 import static io.deephaven.util.type.TypeUtils.box;
 
 /**
- * Defaulted interfaces for various base {@link ColumnSource} types, in order to avoid having defaults at higher levels
- * in the class hierarchy.
+ * Defaulted interfaces for various base {@link ColumnSource} types, in order to avoid having
+ * defaults at higher levels in the class hierarchy.
  */
 public final class ColumnSourceGetDefaults {
 

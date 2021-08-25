@@ -14,5 +14,6 @@ import java.io.IOException;
  */
 public interface Encodeable {
     public void encode(DataOutput out) throws IOException;
+
     public void decode(DataInput in) throws IOException;
 }

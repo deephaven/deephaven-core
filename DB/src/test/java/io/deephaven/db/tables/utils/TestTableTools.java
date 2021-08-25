@@ -50,9 +50,11 @@ import org.junit.experimental.categories.Category;
 @Category(OutOfBandTest.class)
 public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
-    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance().getBooleanForClassWithDefault(TestTableTools.class, "CompilerTools.logEnabled", false);
+    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
+        .getBooleanForClassWithDefault(TestTableTools.class, "CompilerTools.logEnabled", false);
 
-    private final static String TEST_ROOT = Configuration.getInstance().getWorkspacePath() + "TestTableTools";
+    private final static String TEST_ROOT =
+        Configuration.getInstance().getWorkspacePath() + "TestTableTools";
     private final static File TEST_ROOT_FILE = new File(TEST_ROOT);
 
     private UpdateErrorReporter oldReporter;
@@ -82,24 +84,29 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         oldReporter = AsyncClientErrorNotifier.setReporter(this);
 
-        //noinspection ResultOfMethodCallIgnored
+        // noinspection ResultOfMethodCallIgnored
         TEST_ROOT_FILE.mkdirs();
 
-        table1 = testRefreshingTable(TstUtils.i(2, 3, 6, 7, 8, 10, 12, 15, 16), TstUtils.c("StringKeys", "key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2", "key2"),
-                TstUtils.c("GroupedInts", 1, 1, 2, 2, 2, 3, 3, 3, 3));
+        table1 = testRefreshingTable(TstUtils.i(2, 3, 6, 7, 8, 10, 12, 15, 16),
+            TstUtils.c("StringKeys", "key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2",
+                "key2"),
+            TstUtils.c("GroupedInts", 1, 1, 2, 2, 2, 3, 3, 3, 3));
         table2 = testRefreshingTable(TstUtils.i(1, 3, 5, 10, 20, 30, 31, 32, 33),
-                TstUtils.c("StringKeys1", "key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2", "key2"),
-                TstUtils.c("GroupedInts1", 1, 1, 2, 2, 2, 3, 3, 3, 3));
+            TstUtils.c("StringKeys1", "key1", "key1", "key1", "key1", "key2", "key2", "key2",
+                "key2", "key2"),
+            TstUtils.c("GroupedInts1", 1, 1, 2, 2, 2, 3, 3, 3, 3));
         table3 = new InMemoryTable(
-                new String[]{"StringKeys", "GroupedInts", "Doubles", "DBDateTime"},
-                new Object[]{
-                        new String[]{"key11", "key11", "key21", "key21", "key22"},
-                        new int[]{1, 2, 2, NULL_INT, 3},
-                        new double[]{2.342, 0.0932, Double.NaN, NULL_DOUBLE, 3},
-                        new DBDateTime[] { new DBDateTime(100), new DBDateTime(10000), null,
-                                new DBDateTime(100000), new DBDateTime(1000000)}
-                });
-        emptyTable = testRefreshingTable(TstUtils.c("StringKeys", (Object) CollectionUtil.ZERO_LENGTH_STRING_ARRAY), TstUtils.c("GroupedInts", (Object)CollectionUtil.ZERO_LENGTH_BYTE_ARRAY));
+            new String[] {"StringKeys", "GroupedInts", "Doubles", "DBDateTime"},
+            new Object[] {
+                    new String[] {"key11", "key11", "key21", "key21", "key22"},
+                    new int[] {1, 2, 2, NULL_INT, 3},
+                    new double[] {2.342, 0.0932, Double.NaN, NULL_DOUBLE, 3},
+                    new DBDateTime[] {new DBDateTime(100), new DBDateTime(10000), null,
+                            new DBDateTime(100000), new DBDateTime(1000000)}
+            });
+        emptyTable = testRefreshingTable(
+            TstUtils.c("StringKeys", (Object) CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+            TstUtils.c("GroupedInts", (Object) CollectionUtil.ZERO_LENGTH_BYTE_ARRAY));
 
     }
 
@@ -135,7 +142,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     @Override
     public void reportUpdateError(Throwable t) throws IOException {
-        System.err.println("Received error notification: " + new ExceptionDetails(t).getFullStackTrace());
+        System.err
+            .println("Received error notification: " + new ExceptionDetails(t).getFullStackTrace());
         TestCase.fail(t.getMessage());
     }
 
@@ -143,17 +151,18 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     public void testTableDividendsCSV() {
 
         final String fileDividends = "Sym,Type,Price,SecurityId\n" +
-                "GOOG, Dividend, 0.25, 200\n" +
-                "T, Dividend, 0.15, 300\n" +
-                " Z, Dividend, 0.18, 500";
+            "GOOG, Dividend, 0.25, 200\n" +
+            "T, Dividend, 0.15, 300\n" +
+            " Z, Dividend, 0.18, 500";
         try {
-            DynamicTable tableDividends = readCsv(new ByteArrayInputStream(fileDividends.getBytes()));
+            DynamicTable tableDividends =
+                readCsv(new ByteArrayInputStream(fileDividends.getBytes()));
             assertEquals(3, tableDividends.size());
             assertEquals(4, tableDividends.getMeta().size());
             assertTrue(0.15 == tableDividends.getColumn(2).getDouble(1));
             assertTrue(300 == tableDividends.getColumn(3).getInt(1));
             assertTrue(tableDividends.getColumn(0).get(2).toString().equals("Z"));
-        } catch ( IOException e ) {
+        } catch (IOException e) {
             throw new RuntimeException("Failed to execute readCSV test. ", e);
         }
     }
@@ -161,18 +170,19 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     @Test
     public void testTableDividendsCSVNoTrim() {
         final String fileDividends = "Sym,Type,Price,SecurityId\n" +
-                "GOOG, Dividend, 0.25, 200\n" +
-                "T, Dividend, 0.15, 300\n" +
-                " Z, Dividend, 0.18, 500";
+            "GOOG, Dividend, 0.25, 200\n" +
+            "T, Dividend, 0.15, 300\n" +
+            " Z, Dividend, 0.18, 500";
         try {
-            Table tableDividends = io.deephaven.db.tables.utils.CsvHelpers.readCsv(new ByteArrayInputStream(fileDividends.getBytes()), "DEFAULT");
+            Table tableDividends = io.deephaven.db.tables.utils.CsvHelpers
+                .readCsv(new ByteArrayInputStream(fileDividends.getBytes()), "DEFAULT");
             assertEquals(3, tableDividends.size());
             assertEquals(4, tableDividends.getMeta().size());
             assertTrue(0.15 == tableDividends.getColumn(2).getDouble(1));
-            //300 becomes a double here because parseDouble doesn't mind leading spaces
+            // 300 becomes a double here because parseDouble doesn't mind leading spaces
             assertTrue(300 == tableDividends.getColumn(3).getDouble(1));
             assertTrue(tableDividends.getColumn(0).get(2).toString().equals(" Z"));
-        } catch ( IOException e ) {
+        } catch (IOException e) {
             throw new RuntimeException("Failed to execute readCSV test. ", e);
         }
     }
@@ -180,13 +190,13 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     @Test
     public void testCompressedCSV() throws IOException {
         final String contents = "A,B,C,D\n"
-                + "\"Hello World\",3.0,5,700\n"
-                + "\"Goodbye Cruel World\",3.1,1000000,800\n"
-                + "\"Hello World Again!\",4.0,20000000000,900\n";
+            + "\"Hello World\",3.0,5,700\n"
+            + "\"Goodbye Cruel World\",3.1,1000000,800\n"
+            + "\"Hello World Again!\",4.0,20000000000,900\n";
         final byte[] contentBytes = contents.getBytes(StandardCharsets.UTF_8);
         final byte[] contentTarBytes;
         try (final ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
-             final TarArchiveOutputStream tarOut = new TarArchiveOutputStream(bytesOut)) {
+            final TarArchiveOutputStream tarOut = new TarArchiveOutputStream(bytesOut)) {
             final TarArchiveEntry tarEntry = new TarArchiveEntry("test.csv");
             tarEntry.setSize(contentBytes.length);
             tarOut.putArchiveEntry(tarEntry);
@@ -207,11 +217,12 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     @Test
     public void testUncompressedCSVFromPath() throws IOException {
         String contents = "A,B,C,D\n"
-                + "\"Hello World\",3.0,5,700\n"
-                + "\"Goodbye Cruel World\",3.1,1000000,800\n"
-                + "\"Hello World Again!\",4.0,20000000000,900\n";
+            + "\"Hello World\",3.0,5,700\n"
+            + "\"Goodbye Cruel World\",3.1,1000000,800\n"
+            + "\"Hello World Again!\",4.0,20000000000,900\n";
 
-        // Although this seems arbitrary, we want to make sure our file is large enough to possibly be a tar
+        // Although this seems arbitrary, we want to make sure our file is large enough to possibly
+        // be a tar
         while (contents.length() < TarConstants.DEFAULT_RCDSIZE) {
             contents += contents;
         }
@@ -265,30 +276,34 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             TableTools.merge(table1, table2);
             TestCase.fail("Expected exception");
         } catch (UnsupportedOperationException e) {
-            //Expected
+            // Expected
         }
         try {
             TableTools.merge(table2, table1);
             TestCase.fail("Expected exception");
         } catch (UnsupportedOperationException e) {
-            //Expected
+            // Expected
         }
         try {
             TableTools.merge(table2, emptyTable);
         } catch (UnsupportedOperationException mismatchException) {
-            TestCase.assertEquals("Column mismatch for table 1, missing columns: [GroupedInts1, StringKeys1], additional columns: [GroupedInts, StringKeys]", mismatchException.getMessage());
+            TestCase.assertEquals(
+                "Column mismatch for table 1, missing columns: [GroupedInts1, StringKeys1], additional columns: [GroupedInts, StringKeys]",
+                mismatchException.getMessage());
         }
 
         try {
             TableTools.merge(table2, table2.updateView("S2=StringKeys1"));
         } catch (UnsupportedOperationException mismatchException) {
-            TestCase.assertEquals("Column mismatch for table 1, additional columns: [S2]", mismatchException.getMessage());
+            TestCase.assertEquals("Column mismatch for table 1, additional columns: [S2]",
+                mismatchException.getMessage());
         }
 
         try {
             TableTools.merge(table2, table2.dropColumns("StringKeys1"));
         } catch (UnsupportedOperationException mismatchException) {
-            TestCase.assertEquals("Column mismatch for table 1, missing columns: [StringKeys1]", mismatchException.getMessage());
+            TestCase.assertEquals("Column mismatch for table 1, missing columns: [StringKeys1]",
+                mismatchException.getMessage());
         }
     }
 
@@ -308,9 +323,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         // Note that now we still have isUnionedTable(t_3_4_filtered) == true...
 
         Table t_all = TableTools.merge( // This will still include Col=`C`!!!
-                t_1_2_filtered,
-                t_3_4_filtered
-        );
+            t_1_2_filtered,
+            t_3_4_filtered);
 
         TableTools.show(t_1_2);
         TableTools.show(t_3_4);
@@ -319,7 +333,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         TableTools.show(t_all);
 
         assertEquals(t_all.size(), 3);
-        assertTrue(Arrays.equals((Object[])t_all.getColumn("Col").getDirect(), new String[]{"A", "B", "D"}));
+        assertTrue(Arrays.equals((Object[]) t_all.getColumn("Col").getDirect(),
+            new String[] {"A", "B", "D"}));
     }
 
     @Test
@@ -327,17 +342,23 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         String allSeparators = ",|\tzZ- €9@";
         System.out.println("Char Set: " + Charset.defaultCharset().displayName());
 
-        for(char separator : allSeparators.toCharArray()) {
+        for (char separator : allSeparators.toCharArray()) {
             ByteArrayOutputStream ba = new ByteArrayOutputStream();
 
             PrintWriter out = new PrintWriter(ba);
 
-            out.printf("colA%scolB%scolC%scolD%scolE%scolF%scolG%n", separator, separator, separator, separator, separator, separator);
-            out.printf("\"mark1%smark2\"%s1%s1%s1%s%s(null)%strue%n", separator, separator, separator, separator, separator, separator, separator);
-            out.printf("etti%s3%s6%s2%s%s(null)%sFALSE%n", separator, separator, separator, separator, separator, separator);
-            out.printf("(null)%s(null)%s(null)%s(null)%s%s(null)%s(null)%n", separator, separator, separator, separator, separator, separator);
-            out.printf("%s%s%s%s%s(null)%s%n", separator, separator, separator, separator, separator, separator);
-            out.printf("test%s3%s7.0%stest%s%s(null)%sTRUE%n", separator, separator, separator, separator, separator, separator);
+            out.printf("colA%scolB%scolC%scolD%scolE%scolF%scolG%n", separator, separator,
+                separator, separator, separator, separator);
+            out.printf("\"mark1%smark2\"%s1%s1%s1%s%s(null)%strue%n", separator, separator,
+                separator, separator, separator, separator, separator);
+            out.printf("etti%s3%s6%s2%s%s(null)%sFALSE%n", separator, separator, separator,
+                separator, separator, separator);
+            out.printf("(null)%s(null)%s(null)%s(null)%s%s(null)%s(null)%n", separator, separator,
+                separator, separator, separator, separator);
+            out.printf("%s%s%s%s%s(null)%s%n", separator, separator, separator, separator,
+                separator, separator);
+            out.printf("test%s3%s7.0%stest%s%s(null)%sTRUE%n", separator, separator, separator,
+                separator, separator, separator);
 
             out.flush();
             out.close();
@@ -380,7 +401,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
             assertEquals(null, table.getColumn("colA").get(2));
             assertEquals(QueryConstants.NULL_INT, table.getColumn("colB").getInt(2));
-            assertEquals(QueryConstants.NULL_DOUBLE, table.getColumn("colC").getDouble(2), 0.0000001);
+            assertEquals(QueryConstants.NULL_DOUBLE, table.getColumn("colC").getDouble(2),
+                0.0000001);
             assertEquals(null, table.getColumn("colD").get(2));
             assertEquals(null, table.getColumn("colE").get(2));
             assertEquals(null, table.getColumn("colF").get(2));
@@ -392,18 +414,19 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     public void testWriteCsv() throws Exception {
         String filePath = TEST_ROOT + File.separator + "tmp.csv";
         Table tableToTest = table3;
-        String[] colNames = {"StringKeys", "GroupedInts",  "Doubles", "DBDateTime"};
+        String[] colNames = {"StringKeys", "GroupedInts", "Doubles", "DBDateTime"};
         long numCols = colNames.length;
         long numRows = tableToTest.size();
 
         String allSeparators = ",|\tzZ- €9@";
-        for(char separator : allSeparators.toCharArray()) {
+        for (char separator : allSeparators.toCharArray()) {
             String separatorStr = String.valueOf(separator);
 
             // Ignore separators in double quotes using this regex
             String splitterPattern = Pattern.quote(separatorStr) + "(?=([^\"]*\"[^\"]*\")*[^\"]*$)";
 
-            TableTools.writeCsv(tableToTest, filePath, false, DBTimeZone.TZ_DEFAULT, false, separator, colNames);
+            TableTools.writeCsv(tableToTest, filePath, false, DBTimeZone.TZ_DEFAULT, false,
+                separator, colNames);
             File csvFile = new File(filePath);
             Scanner csvReader = new Scanner(csvFile);
 
@@ -421,9 +444,10 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
                 // Use separatorCsvEscape and compare the values
                 for (int j = 0; j < numCols; j++) {
-                    String valFromTable = tableToTest.getColumn(colNames[j]).get(i) == null ?
-                            TableTools.nullToNullString(tableToTest.getColumn(colNames[j]).get(i)) :
-                            CsvHelpers.separatorCsvEscape(tableToTest.getColumn(colNames[j]).get(i).toString(), separatorStr);
+                    String valFromTable = tableToTest.getColumn(colNames[j]).get(i) == null
+                        ? TableTools.nullToNullString(tableToTest.getColumn(colNames[j]).get(i))
+                        : CsvHelpers.separatorCsvEscape(
+                            tableToTest.getColumn(colNames[j]).get(i).toString(), separatorStr);
 
                     assertEquals(valFromTable, csvLine[j]);
                 }
@@ -437,82 +461,131 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     @Test
     public void testDiff() {
-        assertEquals("Column x different from the expected set, first difference at row 1 encountered 2 expected null\n",
-                TableTools.diff(TableTools.newTable(intCol("x", 1, 2, 3)), TableTools.newTable(intCol("x", 1, NULL_INT, NULL_INT)), 10));
-        assertEquals("Column x different from the expected set, first difference at row 1 encountered null expected 2\n",
-                TableTools.diff(TableTools.newTable(intCol("x", 1, NULL_INT, NULL_INT)), TableTools.newTable(intCol("x", 1, 2, 3)), 10));
+        assertEquals(
+            "Column x different from the expected set, first difference at row 1 encountered 2 expected null\n",
+            TableTools.diff(TableTools.newTable(intCol("x", 1, 2, 3)),
+                TableTools.newTable(intCol("x", 1, NULL_INT, NULL_INT)), 10));
+        assertEquals(
+            "Column x different from the expected set, first difference at row 1 encountered null expected 2\n",
+            TableTools.diff(TableTools.newTable(intCol("x", 1, NULL_INT, NULL_INT)),
+                TableTools.newTable(intCol("x", 1, 2, 3)), 10));
 
-        assertEquals("", TableTools.diff(TableTools.newTable(col("x", 1, 2, 3)), TableTools.newTable(col("x", 1, 2, 3)), 10));
-        assertEquals("Column x different from the expected set, first difference at row 1 encountered 2.0 expected null\n",
-                TableTools.diff(TableTools.newTable(col("x", 1.0, 2.0, 3.0)), TableTools.newTable(col("x", 1.0, null, null)), 10));
-        assertEquals("Column x different from the expected set, first difference at row 1 encountered null expected 2.0\n",
-                TableTools.diff(TableTools.newTable(col("x", 1.0, null, null)), TableTools.newTable(col("x", 1.0, 2.0, 3.0)), 10));
-        assertEquals("Column x different from the expected set, first difference at row 1 encountered 2.0E-12 expected null\n",
-                TableTools.diff(TableTools.newTable(col("x", 0.000000000001, 0.000000000002, 0.000000000003)),
-                        TableTools.newTable(col("x", 0.000000000001, null, null)), 10));
-        assertEquals("Column x different from the expected set, first difference at row 1 encountered 2.0E-12 expected null\n",
-                TableTools.diff(TableTools.newTable(col("x", 0.000000000001, 0.000000000002, 0.000000000003)),
-                        TableTools.newTable(col("x", 0.000000000002, null, null)), 10, EnumSet.of(TableDiff.DiffItems.DoublesExact)));
-        assertEquals("Column x different from the expected set, first difference at row 0 encountered 1.0E-12 expected 2.0E-12 (difference = 1.0E-12)\n",
-                TableTools.diff(TableTools.newTable(col("x", 0.000000000001, 0.000000000002, 0.000000000003)),
-                        TableTools.newTable(col("x", 0.000000000002, null, null)), 10));
+        assertEquals("", TableTools.diff(TableTools.newTable(col("x", 1, 2, 3)),
+            TableTools.newTable(col("x", 1, 2, 3)), 10));
+        assertEquals(
+            "Column x different from the expected set, first difference at row 1 encountered 2.0 expected null\n",
+            TableTools.diff(TableTools.newTable(col("x", 1.0, 2.0, 3.0)),
+                TableTools.newTable(col("x", 1.0, null, null)), 10));
+        assertEquals(
+            "Column x different from the expected set, first difference at row 1 encountered null expected 2.0\n",
+            TableTools.diff(TableTools.newTable(col("x", 1.0, null, null)),
+                TableTools.newTable(col("x", 1.0, 2.0, 3.0)), 10));
+        assertEquals(
+            "Column x different from the expected set, first difference at row 1 encountered 2.0E-12 expected null\n",
+            TableTools.diff(
+                TableTools.newTable(col("x", 0.000000000001, 0.000000000002, 0.000000000003)),
+                TableTools.newTable(col("x", 0.000000000001, null, null)), 10));
+        assertEquals(
+            "Column x different from the expected set, first difference at row 1 encountered 2.0E-12 expected null\n",
+            TableTools.diff(
+                TableTools.newTable(col("x", 0.000000000001, 0.000000000002, 0.000000000003)),
+                TableTools.newTable(col("x", 0.000000000002, null, null)), 10,
+                EnumSet.of(TableDiff.DiffItems.DoublesExact)));
+        assertEquals(
+            "Column x different from the expected set, first difference at row 0 encountered 1.0E-12 expected 2.0E-12 (difference = 1.0E-12)\n",
+            TableTools.diff(
+                TableTools.newTable(col("x", 0.000000000001, 0.000000000002, 0.000000000003)),
+                TableTools.newTable(col("x", 0.000000000002, null, null)), 10));
 
-        assertEquals("Column x different from the expected set, first difference at row 1 encountered null expected 2.0\n",
-                TableTools.diff(TableTools.newTable(floatCol("x", 1.0f, NULL_FLOAT, NULL_FLOAT)), TableTools.newTable(floatCol("x", 1.0f, 2.0f, 3.0f)), 10));
-        assertEquals("", TableTools.diff(TableTools.newTable(floatCol("x", 1, 2, 3)), TableTools.newTable(floatCol("x", 1.0f, 2.0f, 3.0f)), 10));
-        assertEquals("Column x different from the expected set, first difference at row 1 encountered 2.0 expected null\n",
-                TableTools.diff(TableTools.newTable(floatCol("x", 1.0f, 2.0f, 3.0f)), TableTools.newTable(floatCol("x", 1.0f, NULL_FLOAT, NULL_FLOAT)), 10));
-        assertEquals("Column x different from the expected set, first difference at row 1 encountered null expected 2.0\n",
-                TableTools.diff(TableTools.newTable(floatCol("x", 1.0f, NULL_FLOAT, NULL_FLOAT)), TableTools.newTable(floatCol("x", 1.0f, 2.0f, 3.0f)), 10));
-        assertEquals("Column x different from the expected set, first difference at row 1 encountered 2.0E-12 expected null\n",
-                TableTools.diff(TableTools.newTable(floatCol("x", 0.000000000001f, 0.000000000002f, 0.000000000003f)),
-                        TableTools.newTable(floatCol("x", 0.000000000001f, NULL_FLOAT, NULL_FLOAT)), 10));
-        assertEquals("Column x different from the expected set, first difference at row 1 encountered 2.0E-12 expected null\n",
-                TableTools.diff(TableTools.newTable(floatCol("x", 0.000000000001f, 0.000000000002f, 0.000000000003f)),
-                        TableTools.newTable(floatCol("x", 0.000000000002f, NULL_FLOAT, NULL_FLOAT)), 10, EnumSet.of(TableDiff.DiffItems.DoublesExact)));
-        assertEquals("Column x different from the expected set, first difference at row 0 encountered 1.0E-12 expected 2.0E-12 (difference = 1.0E-12)\n",
-                TableTools.diff(TableTools.newTable(floatCol("x", 0.000000000001f, 0.000000000002f, 0.000000000003f)),
-                        TableTools.newTable(floatCol("x", 0.000000000002f, NULL_FLOAT, NULL_FLOAT)), 10));
+        assertEquals(
+            "Column x different from the expected set, first difference at row 1 encountered null expected 2.0\n",
+            TableTools.diff(TableTools.newTable(floatCol("x", 1.0f, NULL_FLOAT, NULL_FLOAT)),
+                TableTools.newTable(floatCol("x", 1.0f, 2.0f, 3.0f)), 10));
+        assertEquals("", TableTools.diff(TableTools.newTable(floatCol("x", 1, 2, 3)),
+            TableTools.newTable(floatCol("x", 1.0f, 2.0f, 3.0f)), 10));
+        assertEquals(
+            "Column x different from the expected set, first difference at row 1 encountered 2.0 expected null\n",
+            TableTools.diff(TableTools.newTable(floatCol("x", 1.0f, 2.0f, 3.0f)),
+                TableTools.newTable(floatCol("x", 1.0f, NULL_FLOAT, NULL_FLOAT)), 10));
+        assertEquals(
+            "Column x different from the expected set, first difference at row 1 encountered null expected 2.0\n",
+            TableTools.diff(TableTools.newTable(floatCol("x", 1.0f, NULL_FLOAT, NULL_FLOAT)),
+                TableTools.newTable(floatCol("x", 1.0f, 2.0f, 3.0f)), 10));
+        assertEquals(
+            "Column x different from the expected set, first difference at row 1 encountered 2.0E-12 expected null\n",
+            TableTools.diff(
+                TableTools
+                    .newTable(floatCol("x", 0.000000000001f, 0.000000000002f, 0.000000000003f)),
+                TableTools.newTable(floatCol("x", 0.000000000001f, NULL_FLOAT, NULL_FLOAT)), 10));
+        assertEquals(
+            "Column x different from the expected set, first difference at row 1 encountered 2.0E-12 expected null\n",
+            TableTools.diff(
+                TableTools
+                    .newTable(floatCol("x", 0.000000000001f, 0.000000000002f, 0.000000000003f)),
+                TableTools.newTable(floatCol("x", 0.000000000002f, NULL_FLOAT, NULL_FLOAT)), 10,
+                EnumSet.of(TableDiff.DiffItems.DoublesExact)));
+        assertEquals(
+            "Column x different from the expected set, first difference at row 0 encountered 1.0E-12 expected 2.0E-12 (difference = 1.0E-12)\n",
+            TableTools.diff(
+                TableTools
+                    .newTable(floatCol("x", 0.000000000001f, 0.000000000002f, 0.000000000003f)),
+                TableTools.newTable(floatCol("x", 0.000000000002f, NULL_FLOAT, NULL_FLOAT)), 10));
     }
 
     @Test
     public void testRoundDecimalColumns() {
         Table table = newTable(
-                col("String", "c", "e", "g"),
-                col("Int", 2, 4, 6),
-                col("Double", 1.2, 2.6, Double.NaN),
-                col("Float", 1.2f, 2.6f, Float.NaN)
-        );
+            col("String", "c", "e", "g"),
+            col("Int", 2, 4, 6),
+            col("Double", 1.2, 2.6, Double.NaN),
+            col("Float", 1.2f, 2.6f, Float.NaN));
 
 
         // Test whether we're rounding all columns properly
         Table roundedColumns = TableTools.roundDecimalColumns(table);
-        assertTrue(Arrays.equals((String[]) roundedColumns.getColumn("String").getDirect(), (String[]) table.getColumn("String").getDirect()));
-        assertTrue(Arrays.equals((int[]) roundedColumns.getColumn("Int").getDirect(), (int[]) table.getColumn("Int").getDirect()));
-        assertEquals(Math.round( (double) table.getColumn("Double").get(0)), roundedColumns.getColumn("Double").get(0));
-        assertEquals(Math.round( (double) table.getColumn("Double").get(1)), roundedColumns.getColumn("Double").get(1));
-        assertEquals(Math.round( (double) table.getColumn("Double").get(2)), roundedColumns.getColumn("Double").get(2));
+        assertTrue(Arrays.equals((String[]) roundedColumns.getColumn("String").getDirect(),
+            (String[]) table.getColumn("String").getDirect()));
+        assertTrue(Arrays.equals((int[]) roundedColumns.getColumn("Int").getDirect(),
+            (int[]) table.getColumn("Int").getDirect()));
+        assertEquals(Math.round((double) table.getColumn("Double").get(0)),
+            roundedColumns.getColumn("Double").get(0));
+        assertEquals(Math.round((double) table.getColumn("Double").get(1)),
+            roundedColumns.getColumn("Double").get(1));
+        assertEquals(Math.round((double) table.getColumn("Double").get(2)),
+            roundedColumns.getColumn("Double").get(2));
         // Cast these cause the DB rounds floats to longs
-        assertEquals( (long) Math.round( (float) table.getColumn("Float").get(0)), roundedColumns.getColumn("Float").get(0));
-        assertEquals( (long) Math.round( (float) table.getColumn("Float").get(1)), roundedColumns.getColumn("Float").get(1));
-        assertEquals( (long) Math.round( (float) table.getColumn("Float").get(2)), roundedColumns.getColumn("Float").get(2));
+        assertEquals((long) Math.round((float) table.getColumn("Float").get(0)),
+            roundedColumns.getColumn("Float").get(0));
+        assertEquals((long) Math.round((float) table.getColumn("Float").get(1)),
+            roundedColumns.getColumn("Float").get(1));
+        assertEquals((long) Math.round((float) table.getColumn("Float").get(2)),
+            roundedColumns.getColumn("Float").get(2));
 
-        // Test whether it works when we specify the columns, by comparing to the validated results from before
+        // Test whether it works when we specify the columns, by comparing to the validated results
+        // from before
         Table specificRoundedColums = TableTools.roundDecimalColumns(table, "Double", "Float");
-        assertTrue(Arrays.equals((String[]) roundedColumns.getColumn("String").getDirect(), (String[]) specificRoundedColums.getColumn("String").getDirect()));
-        assertTrue(Arrays.equals((int[]) roundedColumns.getColumn("Int").getDirect(), (int[]) specificRoundedColums.getColumn("Int").getDirect()));
-        assertTrue(Arrays.equals((long[]) roundedColumns.getColumn("Double").getDirect(), (long[]) specificRoundedColums.getColumn("Double").getDirect()));
-        assertTrue(Arrays.equals((long[]) roundedColumns.getColumn("Float").getDirect(), (long[]) specificRoundedColums.getColumn("Float").getDirect()));
+        assertTrue(Arrays.equals((String[]) roundedColumns.getColumn("String").getDirect(),
+            (String[]) specificRoundedColums.getColumn("String").getDirect()));
+        assertTrue(Arrays.equals((int[]) roundedColumns.getColumn("Int").getDirect(),
+            (int[]) specificRoundedColums.getColumn("Int").getDirect()));
+        assertTrue(Arrays.equals((long[]) roundedColumns.getColumn("Double").getDirect(),
+            (long[]) specificRoundedColums.getColumn("Double").getDirect()));
+        assertTrue(Arrays.equals((long[]) roundedColumns.getColumn("Float").getDirect(),
+            (long[]) specificRoundedColums.getColumn("Float").getDirect()));
 
         // Test whether it works properly when we specify what NOT to round
         Table onlyOneRoundedColumn = TableTools.roundDecimalColumnsExcept(table, "Float");
-        assertTrue(Arrays.equals((String[]) roundedColumns.getColumn("String").getDirect(), (String[]) onlyOneRoundedColumn.getColumn("String").getDirect()));
-        assertTrue(Arrays.equals((int[]) table.getColumn("Int").getDirect(), (int[]) onlyOneRoundedColumn.getColumn("Int").getDirect()));
-        assertTrue(Arrays.equals((long[]) roundedColumns.getColumn("Double").getDirect(), (long[]) onlyOneRoundedColumn.getColumn("Double").getDirect()));
-        assertTrue(Arrays.equals((float[]) table.getColumn("Float").getDirect(), (float[]) onlyOneRoundedColumn.getColumn("Float").getDirect()));
+        assertTrue(Arrays.equals((String[]) roundedColumns.getColumn("String").getDirect(),
+            (String[]) onlyOneRoundedColumn.getColumn("String").getDirect()));
+        assertTrue(Arrays.equals((int[]) table.getColumn("Int").getDirect(),
+            (int[]) onlyOneRoundedColumn.getColumn("Int").getDirect()));
+        assertTrue(Arrays.equals((long[]) roundedColumns.getColumn("Double").getDirect(),
+            (long[]) onlyOneRoundedColumn.getColumn("Double").getDirect()));
+        assertTrue(Arrays.equals((float[]) table.getColumn("Float").getDirect(),
+            (float[]) onlyOneRoundedColumn.getColumn("Float").getDirect()));
 
 
-        try{  // Make sure we complain if you try to round the unroundable
+        try { // Make sure we complain if you try to round the unroundable
             TableTools.roundDecimalColumns(table, "String");
             fail("Expected exception: trying to round a String column");
         } catch (Exception ignored) {
@@ -523,13 +596,15 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     public void testDateTimeColumnHolder() throws Exception {
 
         // create two columns with the same data
-        final DBDateTime[] data = new DBDateTime[] { new DBDateTime(100), new DBDateTime(100), null };
-        final long[] longData = new long[] { data[0] == null ? io.deephaven.util.QueryConstants.NULL_LONG : data[0].getNanos(),
+        final DBDateTime[] data = new DBDateTime[] {new DBDateTime(100), new DBDateTime(100), null};
+        final long[] longData = new long[] {
+                data[0] == null ? io.deephaven.util.QueryConstants.NULL_LONG : data[0].getNanos(),
                 data[1] == null ? io.deephaven.util.QueryConstants.NULL_LONG : data[1].getNanos(),
-                data[2] == null ? QueryConstants.NULL_LONG : data[2].getNanos() };
+                data[2] == null ? QueryConstants.NULL_LONG : data[2].getNanos()};
 
         final ColumnHolder dateTimeCol = c("DateTimeColumn", data);
-        final ColumnHolder dateTimeCol2 = ColumnHolder.getDateTimeColumnHolder("DateTimeColumn2", false, longData);
+        final ColumnHolder dateTimeCol2 =
+            ColumnHolder.getDateTimeColumnHolder("DateTimeColumn2", false, longData);
 
         final Table table = TableTools.newTable(dateTimeCol, dateTimeCol2);
 
@@ -569,17 +644,20 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     public void testMerge2() {
         Random random = new Random(0);
         int size = random.nextInt(10);
-        final QueryTable table1 = TstUtils.testRefreshingTable(TstUtils.getRandomIndex(0, size, random),
+        final QueryTable table1 =
+            TstUtils.testRefreshingTable(TstUtils.getRandomIndex(0, size, random),
                 TstUtils.getRandomStringCol("Sym", size, random),
                 TstUtils.getRandomIntCol("intCol", size, random),
                 TstUtils.getRandomDoubleCol("doubleCol", size, random));
         size = random.nextInt(10);
-        final QueryTable table2 = TstUtils.testRefreshingTable(TstUtils.getRandomIndex(0, size, random),
+        final QueryTable table2 =
+            TstUtils.testRefreshingTable(TstUtils.getRandomIndex(0, size, random),
                 TstUtils.getRandomStringCol("Sym", size, random),
                 TstUtils.getRandomIntCol("intCol", size, random),
                 TstUtils.getRandomDoubleCol("doubleCol", size, random));
         size = random.nextInt(10);
-        final QueryTable table3 = TstUtils.testRefreshingTable(TstUtils.getRandomIndex(0, size, random),
+        final QueryTable table3 =
+            TstUtils.testRefreshingTable(TstUtils.getRandomIndex(0, size, random),
                 TstUtils.getRandomStringCol("Sym", size, random),
                 TstUtils.getRandomIntCol("intCol", size, random),
                 TstUtils.getRandomDoubleCol("doubleCol", size, random));
@@ -595,52 +673,77 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     public void testMergeIterative() {
         Random random = new Random(0);
         int size = 3;
-        final QueryTable table1 = TstUtils.testRefreshingTable(TstUtils.getRandomIndex(0, size, random),
+        final QueryTable table1 =
+            TstUtils.testRefreshingTable(TstUtils.getRandomIndex(0, size, random),
                 TstUtils.getRandomStringCol("Sym", size, random),
                 TstUtils.getRandomIntCol("intCol", size, random),
                 TstUtils.getRandomDoubleCol("doubleCol", size, random));
         size = 3;
-        final QueryTable table2 = TstUtils.testRefreshingTable(TstUtils.getRandomIndex(0, size, random),
+        final QueryTable table2 =
+            TstUtils.testRefreshingTable(TstUtils.getRandomIndex(0, size, random),
                 TstUtils.getRandomStringCol("Sym", size, random),
                 TstUtils.getRandomIntCol("intCol", size, random),
                 TstUtils.getRandomDoubleCol("doubleCol", size, random));
         size = 3;
-        final QueryTable table3 = TstUtils.testRefreshingTable(TstUtils.getRandomIndex(0, size, random),
+        final QueryTable table3 =
+            TstUtils.testRefreshingTable(TstUtils.getRandomIndex(0, size, random),
                 TstUtils.getRandomStringCol("Sym", size, random),
                 TstUtils.getRandomIntCol("intCol", size, random),
                 TstUtils.getRandomDoubleCol("doubleCol", size, random));
         size = 50;
         final QueryTable staticTable = TstUtils.testTable(TstUtils.getRandomIndex(0, size, random),
-                TstUtils.getRandomStringCol("Sym", size, random),
-                TstUtils.getRandomIntCol("intCol", size, random),
-                TstUtils.getRandomDoubleCol("doubleCol", size, random));
+            TstUtils.getRandomStringCol("Sym", size, random),
+            TstUtils.getRandomIntCol("intCol", size, random),
+            TstUtils.getRandomDoubleCol("doubleCol", size, random));
 
-        EvalNugget en[] = new EvalNugget[]{
-                new EvalNugget("Single Table Merge"){protected Table e() {return TableTools.merge(table1);}},
-                new EvalNuggetSet("Merge No Sort"){protected Table e() {return TableTools.merge(
-                        table1.updateView("lk=k"), staticTable.updateView("lk=k+100000000L"),
-                        table2.updateView("lk=k+200000000L"), table3.updateView("lk=k+300000000L"));}
+        EvalNugget en[] = new EvalNugget[] {
+                new EvalNugget("Single Table Merge") {
+                    protected Table e() {
+                        return TableTools.merge(table1);
+                    }
                 },
-                new EvalNuggetSet("Merge Plus Sort"){protected Table e() {return TableTools.merge(
-                        table1.updateView("lk=k"), staticTable.updateView("lk=k+100000000L"),
-                        table2.updateView("lk=k+200000000L"), table3.updateView("lk=k+300000000L")).sort("lk");}
+                new EvalNuggetSet("Merge No Sort") {
+                    protected Table e() {
+                        return TableTools.merge(
+                            table1.updateView("lk=k"), staticTable.updateView("lk=k+100000000L"),
+                            table2.updateView("lk=k+200000000L"),
+                            table3.updateView("lk=k+300000000L"));
+                    }
                 },
-                new EvalNuggetSet("Double Merge Plus Sort"){protected Table e() {return TableTools.merge(
-                        table1.updateView("lk=k"), staticTable.updateView("lk=k+100000000L"),
-                        table2.updateView("lk=k+200000000L"), table3.updateView("lk=k+300000000L"),
-                        table3.updateView("lk=k+400000000L")).sort("lk");}
+                new EvalNuggetSet("Merge Plus Sort") {
+                    protected Table e() {
+                        return TableTools.merge(
+                            table1.updateView("lk=k"), staticTable.updateView("lk=k+100000000L"),
+                            table2.updateView("lk=k+200000000L"),
+                            table3.updateView("lk=k+300000000L")).sort("lk");
+                    }
                 },
-                new EvalNuggetSet("Triple Double Merge Plus Sort"){protected Table e() {return TableTools.merge(
-                        table1.updateView("lk=k"), table1.updateView("lk=k+100000000L"),
-                        staticTable.updateView("lk=k+200000000L"), staticTable.updateView("lk=k+300000000L"),
-                        table2.updateView("lk=k+400000000L"), table2.updateView("lk=k+500000000L"),
-                        table3.updateView("lk=k+600000000L"), table3.updateView("lk=k+700000000L")
-                ).sort("lk");}
+                new EvalNuggetSet("Double Merge Plus Sort") {
+                    protected Table e() {
+                        return TableTools.merge(
+                            table1.updateView("lk=k"), staticTable.updateView("lk=k+100000000L"),
+                            table2.updateView("lk=k+200000000L"),
+                            table3.updateView("lk=k+300000000L"),
+                            table3.updateView("lk=k+400000000L")).sort("lk");
+                    }
                 },
-                EvalNugget.from(() -> TableTools.merge(TableTools.emptyTable(10), table1.dropColumns("Sym", "intCol", "doubleCol")).update("A=1"))
+                new EvalNuggetSet("Triple Double Merge Plus Sort") {
+                    protected Table e() {
+                        return TableTools.merge(
+                            table1.updateView("lk=k"), table1.updateView("lk=k+100000000L"),
+                            staticTable.updateView("lk=k+200000000L"),
+                            staticTable.updateView("lk=k+300000000L"),
+                            table2.updateView("lk=k+400000000L"),
+                            table2.updateView("lk=k+500000000L"),
+                            table3.updateView("lk=k+600000000L"),
+                            table3.updateView("lk=k+700000000L")).sort("lk");
+                    }
+                },
+                EvalNugget.from(() -> TableTools.merge(TableTools.emptyTable(10),
+                    table1.dropColumns("Sym", "intCol", "doubleCol")).update("A=1"))
         };
 
-        for (int i = 0; i < 20;i++) {
+        for (int i = 0; i < 20; i++) {
             System.out.println("Step = " + i);
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> addRows(random, table1));
             TstUtils.validate(en);
@@ -667,45 +770,72 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         Random random = new Random(0);
 
         TstUtils.ColumnInfo[] info1;
-        final QueryTable table1 = getTable(random.nextInt(20), random, info1 = initColumnInfos(new String[]{"Sym", "intCol", "doubleCol"},
+        final QueryTable table1 = getTable(random.nextInt(20), random,
+            info1 = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
                 new StringGenerator(),
                 new IntGenerator(10, 100),
                 new DoubleGenerator(0, 100)));
 
         ColumnInfo[] info2;
-        final QueryTable table2 = getTable(random.nextInt(10), random, info2 = initColumnInfos(new String[]{"Sym", "intCol", "doubleCol"},
+        final QueryTable table2 = getTable(random.nextInt(10), random,
+            info2 = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
                 new StringGenerator(),
                 new IntGenerator(10, 100),
                 new DoubleGenerator(0, 100)));
 
         ColumnInfo[] info3;
         final int size = random.nextInt(40);
-        final QueryTable table3 = getTable(size, random, info3 = initColumnInfos(new String[]{"Sym", "intCol", "doubleCol"},
+        final QueryTable table3 = getTable(size, random,
+            info3 = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
                 new StringGenerator(),
                 new IntGenerator(10, 100),
                 new DoubleGenerator(0, 100)));
 
-        EvalNugget en[] = new EvalNugget[]{
-                new EvalNugget("Single table merge"){protected Table e() {return TableTools.merge(table1);}},
-                new EvalNuggetSet("Merge 3"){protected Table e() {return TableTools.merge(table1.updateView("lk=k"),
-                        table2.updateView("lk=k+100000000L"), table3.updateView("lk=k+200000000L"));}
-                },
-                new EvalNuggetSet("Merge Plus Sort"){protected Table e() {return TableTools.merge(table1.updateView("lk=k"),
-                        table2.updateView("lk=k+100000000L"), table3.updateView("lk=k+200000000L")).sort("lk");}
-                },
-                new EvalNuggetSet("Double Merge 3"){protected Table e() {return TableTools.merge(table1.updateView("lk=k"),
-                        table2.updateView("lk=k+100000000L"), table3.updateView("lk=k+200000000L"), table1.updateView("lk=k+300000000L"), table2.updateView("lk=k+400000000L"), table3.updateView("lk=k+500000000L"));}
-                },
-                new EvalNuggetSet("Merge With Views"){
+        EvalNugget en[] = new EvalNugget[] {
+                new EvalNugget("Single table merge") {
                     protected Table e() {
-                        //noinspection ConstantConditions
-                        return TableTools.merge(TableTools.merge(table1.updateView("lk=k"), table2.updateView("lk=k+100000000L")).view("Sym", "intCol", "lk"), table3.updateView("lk=k+200000000L").view("Sym", "intCol", "lk"));
+                        return TableTools.merge(table1);
                     }
                 },
-        }; //TODO add a new comparison tool that matches rows by key and allows for random order
+                new EvalNuggetSet("Merge 3") {
+                    protected Table e() {
+                        return TableTools.merge(table1.updateView("lk=k"),
+                            table2.updateView("lk=k+100000000L"),
+                            table3.updateView("lk=k+200000000L"));
+                    }
+                },
+                new EvalNuggetSet("Merge Plus Sort") {
+                    protected Table e() {
+                        return TableTools.merge(table1.updateView("lk=k"),
+                            table2.updateView("lk=k+100000000L"),
+                            table3.updateView("lk=k+200000000L")).sort("lk");
+                    }
+                },
+                new EvalNuggetSet("Double Merge 3") {
+                    protected Table e() {
+                        return TableTools.merge(table1.updateView("lk=k"),
+                            table2.updateView("lk=k+100000000L"),
+                            table3.updateView("lk=k+200000000L"),
+                            table1.updateView("lk=k+300000000L"),
+                            table2.updateView("lk=k+400000000L"),
+                            table3.updateView("lk=k+500000000L"));
+                    }
+                },
+                new EvalNuggetSet("Merge With Views") {
+                    protected Table e() {
+                        // noinspection ConstantConditions
+                        return TableTools.merge(
+                            TableTools
+                                .merge(table1.updateView("lk=k"),
+                                    table2.updateView("lk=k+100000000L"))
+                                .view("Sym", "intCol", "lk"),
+                            table3.updateView("lk=k+200000000L").view("Sym", "intCol", "lk"));
+                    }
+                },
+        }; // TODO add a new comparison tool that matches rows by key and allows for random order
 
         try {
-            for (int i = 0; i < 100;i++) {
+            for (int i = 0; i < 100; i++) {
                 System.out.println("Step = " + i);
 
                 // Each table has a 50/50 chance of getting modified on this step
@@ -714,21 +844,24 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                 boolean mod3 = random.nextBoolean();
 
                 if (mod1) {
-                    LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(size, random, table1, info1));
+                    LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates
+                        .generateTableUpdates(size, random, table1, info1));
                 } else {
                     clock.startUpdateCycle();
                     clock.completeUpdateCycle();
                 }
 
                 if (mod2) {
-                    LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(size, random, table2, info2));
+                    LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates
+                        .generateTableUpdates(size, random, table2, info2));
                 } else {
                     clock.startUpdateCycle();
                     clock.completeUpdateCycle();
                 }
 
                 if (mod3) {
-                    LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(size, random, table3, info3));
+                    LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates
+                        .generateTableUpdates(size, random, table3, info3));
                 } else {
                     clock.startUpdateCycle();
                     clock.completeUpdateCycle();
@@ -747,8 +880,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     public void testMergeRecursive() {
         Table result = null;
 
-        for (int ii = 0; ii < 250; ++ii)
-        {
+        for (int ii = 0; ii < 250; ++ii) {
             System.out.println("Testing merge " + ii);
 
             if (result == null)
@@ -766,7 +898,10 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     // This test does a merge, followed by a view, then another merge.
     @Test
     public void testMergeRecursive2() {
-        Table merge1 = TableTools.merge(table1, table2.renameColumns("GroupedInts=GroupedInts1", "StringKeys=StringKeys1")).view("StringKeys");
+        Table merge1 = TableTools
+            .merge(table1,
+                table2.renameColumns("GroupedInts=GroupedInts1", "StringKeys=StringKeys1"))
+            .view("StringKeys");
         Table merge2 = TableTools.merge(merge1, table1.view("StringKeys"));
 
         Assert.assertEquals(table1.size() * 2 + table2.size(), merge2.size());
@@ -774,10 +909,13 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         tableRangesAreEqual(table1.view("StringKeys"), merge1, 0, 0, table1.size());
         tableRangesAreEqual(table1.view("StringKeys"), merge2, 0, 0, table1.size());
 
-        tableRangesAreEqual(table2.view("StringKeys=StringKeys1"), merge1, 0, table1.size(), table2.size());
-        tableRangesAreEqual(table2.view("StringKeys=StringKeys1"), merge2, 0, table1.size(), table2.size());
+        tableRangesAreEqual(table2.view("StringKeys=StringKeys1"), merge1, 0, table1.size(),
+            table2.size());
+        tableRangesAreEqual(table2.view("StringKeys=StringKeys1"), merge2, 0, table1.size(),
+            table2.size());
 
-        tableRangesAreEqual(table1.view("StringKeys"), merge2, 0, table1.size() + table2.size(), table1.size());
+        tableRangesAreEqual(table1.view("StringKeys"), merge2, 0, table1.size() + table2.size(),
+            table1.size());
     }
 
     @Test
@@ -791,7 +929,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             if (result == null)
                 result = table1;
             else
-                result = TableTools.merge(result, table1).updateView("GroupedInts=GroupedInts+1").updateView("GroupedInts=GroupedInts-1");
+                result = TableTools.merge(result, table1).updateView("GroupedInts=GroupedInts+1")
+                    .updateView("GroupedInts=GroupedInts-1");
 
             Assert.assertEquals(table1.size() * (ii + 1), result.size());
         }
@@ -803,8 +942,9 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     @Test
     public void testMergeWithNestedShift() {
-        // Test that an outer shift properly shifts index when inner shifts are also propagated to the index.
-        final QueryTable table = testRefreshingTable(i(1), c("Sentinel" , 1));
+        // Test that an outer shift properly shifts index when inner shifts are also propagated to
+        // the index.
+        final QueryTable table = testRefreshingTable(i(1), c("Sentinel", 1));
         // must be uncollapsable s.t. inner table shifts at the same time as outer table
         final Table m2 = TableTools.merge(table, table).updateView("Sentinel=Sentinel+1");
         final Table result = TableTools.merge(table, m2);
@@ -826,10 +966,11 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     @Test
     public void testMergeWithShiftBoundary() {
-        // Test that an outer shift properly shifts index when inner shifts are also propagated to the index.
+        // Test that an outer shift properly shifts index when inner shifts are also propagated to
+        // the index.
         final int ONE_MILLION = 1024 * 1024;
         final QueryTable table = testRefreshingTable(i(ONE_MILLION - 1), c("Sentinel", 1));
-        final QueryTable table2 = testRefreshingTable(i(0), c("Sentinel" , 2));
+        final QueryTable table2 = testRefreshingTable(i(0), c("Sentinel", 2));
         final Table result = TableTools.merge(table, table2);
 
         TableTools.showWithIndex(result);
@@ -853,10 +994,12 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     @Test
     public void testMergeShiftsEmptyTable() {
-        // Test that an outer shift properly shifts index when inner shifts are also propagated to the index.
-        final QueryTable table = testRefreshingTable(i(1), c("Sentinel" , 1));
+        // Test that an outer shift properly shifts index when inner shifts are also propagated to
+        // the index.
+        final QueryTable table = testRefreshingTable(i(1), c("Sentinel", 1));
         final QueryTable emptyTable = testRefreshingTable(i(), TstUtils.<Integer>c("Sentinel"));
-        final Table m2 = TableTools.merge(table, emptyTable, emptyTable).updateView("Sentinel=Sentinel+1");
+        final Table m2 =
+            TableTools.merge(table, emptyTable, emptyTable).updateView("Sentinel=Sentinel+1");
 
         final EvalNugget[] ev = new EvalNugget[] {
                 EvalNugget.from(() -> table),
@@ -891,11 +1034,14 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     @Test
     public void testMergeShiftBoundary() {
         // DH-11032
-        // Test that when our inner table has a shift that is begins beyond the last key for our subtable (because
-        // it has been filtered and the reserved address space is less than the address space of the full unfiltered
-        // table) we do not remove elements that should not be removed.  This is distilled from a broken fuzzer test.
-        final QueryTable table1 = testRefreshingTable(i(10000, 65538), c("Sentinel" , 1, 2));
-        final QueryTable table2 = testRefreshingTable(i(2), c("Sentinel" , 3));
+        // Test that when our inner table has a shift that is begins beyond the last key for our
+        // subtable (because
+        // it has been filtered and the reserved address space is less than the address space of the
+        // full unfiltered
+        // table) we do not remove elements that should not be removed. This is distilled from a
+        // broken fuzzer test.
+        final QueryTable table1 = testRefreshingTable(i(10000, 65538), c("Sentinel", 1, 2));
+        final QueryTable table2 = testRefreshingTable(i(2), c("Sentinel", 3));
         final Table table1Filtered = table1.where("Sentinel == 1");
         final Table m2 = TableTools.merge(table1Filtered, table2);
 
@@ -926,15 +1072,20 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     @Test
     public void testMergeDeepShifts() {
-        // Test that an outer shift properly shifts index when inner shifts are also propagated to the index.
-        final QueryTable table = testRefreshingTable(i(1), c("Sentinel" , 1));
+        // Test that an outer shift properly shifts index when inner shifts are also propagated to
+        // the index.
+        final QueryTable table = testRefreshingTable(i(1), c("Sentinel", 1));
         final QueryTable emptyTable = testRefreshingTable(i(), TstUtils.<Integer>c("Sentinel"));
-        final Table m2 = TableTools.merge(table, emptyTable, emptyTable, emptyTable, emptyTable, emptyTable).updateView("Sentinel=Sentinel+1");
+        final Table m2 =
+            TableTools.merge(table, emptyTable, emptyTable, emptyTable, emptyTable, emptyTable)
+                .updateView("Sentinel=Sentinel+1");
 
         final EvalNugget[] ev = new EvalNugget[] {
                 EvalNugget.from(() -> table),
                 EvalNugget.from(() -> TableTools.merge(table, emptyTable, table, emptyTable)),
-                EvalNugget.from(() -> TableTools.merge(table, emptyTable, emptyTable, emptyTable, emptyTable, emptyTable).updateView("Sentinel=Sentinel+1")),
+                EvalNugget.from(() -> TableTools
+                    .merge(table, emptyTable, emptyTable, emptyTable, emptyTable, emptyTable)
+                    .updateView("Sentinel=Sentinel+1")),
                 EvalNugget.from(() -> TableTools.merge(m2, m2)),
         };
 
@@ -969,13 +1120,15 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         size = random.nextInt(10);
         final Index newIndex = TstUtils.getRandomIndex(table1.getIndex().lastKey(), size, random);
         TstUtils.addToTable(table1, newIndex, TstUtils.getRandomStringCol("Sym", size, random),
-                TstUtils.getRandomIntCol("intCol", size, random),
-                TstUtils.getRandomDoubleCol("doubleCol", size, random));
+            TstUtils.getRandomIntCol("intCol", size, random),
+            TstUtils.getRandomDoubleCol("doubleCol", size, random));
         table1.notifyListeners(newIndex, TstUtils.i(), TstUtils.i());
     }
 
     static void tableRangesAreEqual(Table table1, Table table2, long from1, long from2, long size) {
-        Assert.assertEquals("", io.deephaven.db.tables.utils.TableTools.diff(table1.tail(table1.size() - from1).head(size),
+        Assert.assertEquals("",
+            io.deephaven.db.tables.utils.TableTools.diff(
+                table1.tail(table1.size() - from1).head(size),
                 table2.tail(table2.size() - from2).head(size), 10));
     }
 
@@ -986,18 +1139,21 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         tableRangesAreEqual(table1, result, 0, 0, table1.size());
         result = TableTools.merge(TableTools.newTable(table1.getDefinition()), table1);
         tableRangesAreEqual(table1, result, 0, 0, table1.size());
-        result = TableTools.merge(TableTools.newTable(table1.getDefinition()), emptyLikeTable1, emptyLikeTable1);
+        result = TableTools.merge(TableTools.newTable(table1.getDefinition()), emptyLikeTable1,
+            emptyLikeTable1);
         TestCase.assertEquals(0, result.size());
     }
 
     @Test
     public void testMergeSorted() throws IOException {
-        Table table1 = testTable(i(1, 3, 5, 6, 7), c("Key", "a", "c", "d", "e", "f")).updateView("Sentinel=k");
-        Table table2 = testTable(i(2, 4, 8, 9), c("Key", "b", "c", "g", "h")).updateView("Sentinel=k");
+        Table table1 =
+            testTable(i(1, 3, 5, 6, 7), c("Key", "a", "c", "d", "e", "f")).updateView("Sentinel=k");
+        Table table2 =
+            testTable(i(2, 4, 8, 9), c("Key", "b", "c", "g", "h")).updateView("Sentinel=k");
         Table merged = TableTools.mergeSorted("Key", table1, table2);
         io.deephaven.db.tables.utils.TableTools.showWithIndex(merged);
 
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         Table standardWay = TableTools.merge(table1, table2).sort("Key");
 
         String diff = io.deephaven.db.tables.utils.TableTools.diff(merged, standardWay, 10);
@@ -1007,15 +1163,15 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     @Test
     public void testMergeSorted2() throws IOException {
         Random random = new Random(42);
-        List<Table> tables= new ArrayList<>();
+        List<Table> tables = new ArrayList<>();
 
         int size = 50;
 
         for (int ii = 0; ii < 10; ++ii) {
-            final QueryTable table = getTable(false, size, random, initColumnInfos(new String[]{"Key", "doubleCol"},
+            final QueryTable table = getTable(false, size, random,
+                initColumnInfos(new String[] {"Key", "doubleCol"},
                     new SortedIntGenerator(0, 100),
-                    new DoubleGenerator(0, 100)
-            ));
+                    new DoubleGenerator(0, 100)));
             tables.add(table.update("TableI=" + ii));
         }
 
@@ -1030,7 +1186,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     @Test
     public void testMergeGetChunk() {
-        final QueryTable table = testRefreshingTable(i(1), c("Sentinel" , 1));
+        final QueryTable table = testRefreshingTable(i(1), c("Sentinel", 1));
         final Table m2 = TableTools.merge(table, table).updateView("Sentinel=Sentinel+1");
         final QueryTable result = (QueryTable) TableTools.merge(table, m2);
 
@@ -1047,15 +1203,15 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             final ColumnSource<Integer> origCol = table.getColumnSource("Sentinel");
             final ColumnSource.GetContext origContext = origCol.makeGetContext(numElements);
             final IntChunk<? extends Attributes.Values> origContent = usePrev
-                    ? origCol.getPrevChunk(origContext, origIndex).asIntChunk()
-                    : origCol.getChunk(origContext, origIndex).asIntChunk();
+                ? origCol.getPrevChunk(origContext, origIndex).asIntChunk()
+                : origCol.getChunk(origContext, origIndex).asIntChunk();
 
             // noinspection unchecked
             final ColumnSource<Integer> resCol = result.getColumnSource("Sentinel");
             final ColumnSource.GetContext resContext = resCol.makeGetContext(numElements * 3);
             final IntChunk<? extends Attributes.Values> resContent = usePrev
-                    ? resCol.getPrevChunk(resContext, resIndex).asIntChunk()
-                    : resCol.getChunk(resContext, resIndex).asIntChunk();
+                ? resCol.getPrevChunk(resContext, resIndex).asIntChunk()
+                : resCol.getChunk(resContext, resIndex).asIntChunk();
 
             Assert.assertEquals(numElements, origContent.size());
             Assert.assertEquals(3 * numElements, resContent.size());
@@ -1070,13 +1226,15 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         result.listenForUpdates(new InstrumentedShiftAwareListener("") {
             @Override
             public void onUpdate(final Update upstream) {
-                Assert.assertTrue(table.getIndex().intSize() > table.getIndex().getPrevIndex().intSize());
+                Assert.assertTrue(
+                    table.getIndex().intSize() > table.getIndex().getPrevIndex().intSize());
                 validate.accept(false);
                 validate.accept(true);
             }
 
             @Override
-            protected void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {}
+            protected void onFailureInternal(Throwable originalException,
+                UpdatePerformanceTracker.Entry sourceEntry) {}
         });
 
         for (int ii = 1; ii < 100; ++ii) {
@@ -1089,9 +1247,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     }
 
     @Test
-    public
-    void testMergeGetChunkEmpty() {
-        final QueryTable table = testRefreshingTable(i(1), c("Sentinel" , 1));
+    public void testMergeGetChunkEmpty() {
+        final QueryTable table = testRefreshingTable(i(1), c("Sentinel", 1));
         final Table m2 = TableTools.merge(table, table).updateView("Sentinel=Sentinel+1");
         final QueryTable result = (QueryTable) TableTools.merge(table, m2);
 
@@ -1103,15 +1260,15 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             final ColumnSource<Integer> origCol = table.getColumnSource("Sentinel");
             final ColumnSource.GetContext origContext = origCol.makeGetContext(numElements);
             final IntChunk<? extends Attributes.Values> origContent = usePrev
-                    ? origCol.getPrevChunk(origContext, index).asIntChunk()
-                    : origCol.getChunk(origContext, index).asIntChunk();
+                ? origCol.getPrevChunk(origContext, index).asIntChunk()
+                : origCol.getChunk(origContext, index).asIntChunk();
 
             // noinspection unchecked
             final ColumnSource<Integer> resCol = result.getColumnSource("Sentinel");
             final ColumnSource.GetContext resContext = resCol.makeGetContext(numElements * 3);
             final IntChunk<? extends Attributes.Values> resContent = usePrev
-                    ? resCol.getPrevChunk(resContext, index).asIntChunk()
-                    : resCol.getChunk(resContext, index).asIntChunk();
+                ? resCol.getPrevChunk(resContext, index).asIntChunk()
+                : resCol.getChunk(resContext, index).asIntChunk();
 
             Assert.assertEquals(0, origContent.size());
             Assert.assertEquals(0, resContent.size());
@@ -1147,9 +1304,11 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     @Test
     public void testMergeIndexShiftingPerformance() {
-        final QueryTable testRefreshingTable = TstUtils.testRefreshingTable(i(0), intCol("IntCol", 0), charCol("CharCol", 'a'));
+        final QueryTable testRefreshingTable =
+            TstUtils.testRefreshingTable(i(0), intCol("IntCol", 0), charCol("CharCol", 'a'));
 
-        final Table joined = testRefreshingTable.view("CharCol").join(testRefreshingTable,"CharCol","IntCol");
+        final Table joined =
+            testRefreshingTable.view("CharCol").join(testRefreshingTable, "CharCol", "IntCol");
         final TableMap map = joined.byExternal("IntCol");
         final Table merged = map.merge();
 
@@ -1163,15 +1322,16 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final Index addIndex = Index.FACTORY.getIndexByRange(firstNextIdx, lastNextIdx);
 
-                final int [] addInts = new int[stepSize];
-                final char [] addChars = new char[stepSize];
+                final int[] addInts = new int[stepSize];
+                final char[] addChars = new char[stepSize];
 
                 for (int ii = 0; ii < stepSize; ++ii) {
                     addInts[ii] = firstNextIdx + ii;
                     addChars[ii] = (char) ('a' + ((firstNextIdx + ii) % 26));
                 }
 
-                addToTable(testRefreshingTable, addIndex, intCol("IntCol", addInts), charCol("CharCol", addChars));
+                addToTable(testRefreshingTable, addIndex, intCol("IntCol", addInts),
+                    charCol("CharCol", addChars));
                 testRefreshingTable.notifyListeners(addIndex, i(), i());
             });
 
@@ -1179,9 +1339,11 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             final long stepDuration = end - stepStart;
             final long duration = end - start;
             stepStart = end;
-            System.out.println("Step=" + step + ", duration=" + duration + "ms, stepDuration=" + stepDuration + "ms");
+            System.out.println("Step=" + step + ", duration=" + duration + "ms, stepDuration="
+                + stepDuration + "ms");
             if (duration > 30_000) {
-                TestCase.fail("This test is expected to take around 5 seconds on a Mac with the new shift behavior, something is not right.");
+                TestCase.fail(
+                    "This test is expected to take around 5 seconds on a Mac with the new shift behavior, something is not right.");
             }
         }
 

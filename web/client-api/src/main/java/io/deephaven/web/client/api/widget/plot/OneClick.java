@@ -56,16 +56,17 @@ public class OneClick {
     public Object getColumns() {
         JsPropertyMap<Object>[] fakeColumns = new JsPropertyMap[oneClick.getColumnsList().length];
         for (int i = 0; i < fakeColumns.length; i++) {
-            fakeColumns[i] = JsPropertyMap.of("name", oneClick.getColumnsList().getAt(i), "type", oneClick.getColumnsList().getAt(i));
+            fakeColumns[i] = JsPropertyMap.of("name", oneClick.getColumnsList().getAt(i), "type",
+                oneClick.getColumnsList().getAt(i));
         }
         return fakeColumns;
     }
 
-//    @JsMethod
-//    public Promise<JsArray<Any>> getValuesForColumn(String columnName) {
-//        // selectDistinct and snapshot the column into an array
-//        return null;
-//    }
+    // @JsMethod
+    // public Promise<JsArray<Any>> getValuesForColumn(String columnName) {
+    // // selectDistinct and snapshot the column into an array
+    // return null;
+    // }
 
     @JsMethod
     public void setValueForColumn(String columnName, Any value) {
@@ -100,7 +101,7 @@ public class OneClick {
         if (oneClick.getColumnsList().length == 1) {
             Object key = values.get(oneClick.getColumnsList().getAt(0));
             if (key != null) {
-                return new Object[]{ key };
+                return new Object[] {key};
             } else {
                 return null;
             }
@@ -115,16 +116,17 @@ public class OneClick {
         }
 
         if (allValuesSet()) {
-            return new Object[] { key };
+            return new Object[] {key};
         }
 
-        // Some of the values aren't set, need to iterate through all the table map keys and select the ones that match
+        // Some of the values aren't set, need to iterate through all the table map keys and select
+        // the ones that match
         return Arrays.stream(JsArray.from(tableMap.getKeys())).filter(tableKey -> {
             if (!(tableKey instanceof String[])) {
                 return false;
             }
 
-            String[] strKey = (String[])tableKey;
+            String[] strKey = (String[]) tableKey;
             if (strKey.length != key.length) {
                 return false;
             }
@@ -144,19 +146,21 @@ public class OneClick {
         } else if (keys.length == 1) {
             return tableMap.getTable(keys[0]);
         } else {
-            Promise<JsTable>[] promises = Arrays.stream(keys).map(key -> tableMap.getTable(key)).toArray(Promise[]::new);
+            Promise<JsTable>[] promises =
+                Arrays.stream(keys).map(key -> tableMap.getTable(key)).toArray(Promise[]::new);
             return JsPromise.all(promises)
-                    .then(resolved -> {
-                        JsTable[] tables = Arrays.stream(resolved).filter(table -> table != null).toArray(JsTable[]::new);
-                        if (tables.length > 1) {
-                            return tables[0].getConnection().mergeTables(tables, tableMap);
-                        } else if (tables.length == 1) {
-                            return Promise.resolve(tables[0]);
-                        } else {
-                            // No keys matched, just hand back a null table
-                            return Promise.resolve((JsTable) null);
-                        }
-                    });
+                .then(resolved -> {
+                    JsTable[] tables = Arrays.stream(resolved).filter(table -> table != null)
+                        .toArray(JsTable[]::new);
+                    if (tables.length > 1) {
+                        return tables[0].getConnection().mergeTables(tables, tableMap);
+                    } else if (tables.length == 1) {
+                        return Promise.resolve(tables[0]);
+                    } else {
+                        // No keys matched, just hand back a null table
+                        return Promise.resolve((JsTable) null);
+                    }
+                });
         }
     }
 

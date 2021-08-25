@@ -13,7 +13,8 @@ import io.deephaven.db.tables.Table;
 
 import org.jetbrains.annotations.NotNull;
 
-public class XYErrorBarDataSeriesSwappableTableArray extends XYErrorBarDataSeriesArray implements TableSnapshotSeries {
+public class XYErrorBarDataSeriesSwappableTableArray extends XYErrorBarDataSeriesArray
+    implements TableSnapshotSeries {
 
     private final SwappableTable swappableTable;
     private final String x;
@@ -24,8 +25,26 @@ public class XYErrorBarDataSeriesSwappableTableArray extends XYErrorBarDataSerie
     private final String yHigh;
     private Table localTable;
 
-    public XYErrorBarDataSeriesSwappableTableArray(final AxesImpl axes, final int id, final Comparable name, @NotNull final SwappableTable swappableTable, final String x, final String xLow, final String xHigh, final String y, final String yLow, final String yHigh, final boolean drawXError, final boolean drawYError) {
-        super(axes, id, name, new IndexableNumericDataSwappableTable(swappableTable, x, new PlotInfo(axes, name)), xLow == null ? null : new IndexableNumericDataSwappableTable(swappableTable, xLow, new PlotInfo(axes, name)), xHigh == null ? null : new IndexableNumericDataSwappableTable(swappableTable, xHigh, new PlotInfo(axes, name)), new IndexableNumericDataSwappableTable(swappableTable, y, new PlotInfo(axes, name)), yLow == null ? null : new IndexableNumericDataSwappableTable(swappableTable, yLow, new PlotInfo(axes, name)), yHigh == null ? null : new IndexableNumericDataSwappableTable(swappableTable, yHigh, new PlotInfo(axes, name)), drawXError, drawYError);
+    public XYErrorBarDataSeriesSwappableTableArray(final AxesImpl axes, final int id,
+        final Comparable name, @NotNull final SwappableTable swappableTable, final String x,
+        final String xLow, final String xHigh, final String y, final String yLow,
+        final String yHigh, final boolean drawXError, final boolean drawYError) {
+        super(axes, id, name,
+            new IndexableNumericDataSwappableTable(swappableTable, x, new PlotInfo(axes, name)),
+            xLow == null ? null
+                : new IndexableNumericDataSwappableTable(swappableTable, xLow,
+                    new PlotInfo(axes, name)),
+            xHigh == null ? null
+                : new IndexableNumericDataSwappableTable(swappableTable, xHigh,
+                    new PlotInfo(axes, name)),
+            new IndexableNumericDataSwappableTable(swappableTable, y, new PlotInfo(axes, name)),
+            yLow == null ? null
+                : new IndexableNumericDataSwappableTable(swappableTable, yLow,
+                    new PlotInfo(axes, name)),
+            yHigh == null ? null
+                : new IndexableNumericDataSwappableTable(swappableTable, yHigh,
+                    new PlotInfo(axes, name)),
+            drawXError, drawYError);
 
         this.swappableTable = swappableTable;
         this.x = x;
@@ -36,7 +55,8 @@ public class XYErrorBarDataSeriesSwappableTableArray extends XYErrorBarDataSerie
         this.yHigh = yHigh;
     }
 
-    private XYErrorBarDataSeriesSwappableTableArray(final XYErrorBarDataSeriesSwappableTableArray series, final AxesImpl axes) {
+    private XYErrorBarDataSeriesSwappableTableArray(
+        final XYErrorBarDataSeriesSwappableTableArray series, final AxesImpl axes) {
         super(series, axes);
         this.swappableTable = series.swappableTable;
         this.x = series.x;

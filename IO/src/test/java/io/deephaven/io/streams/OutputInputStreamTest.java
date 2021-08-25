@@ -55,7 +55,8 @@ public class OutputInputStreamTest extends TestCase {
     private OutputStream getOutputStream(int i, ByteBuffer buffer) {
         switch (i) {
             case 0:
-                return new ByteBufferOutputStream(ByteBuffer.allocate(1), new SmallByteSink(buffer));
+                return new ByteBufferOutputStream(ByteBuffer.allocate(1),
+                    new SmallByteSink(buffer));
 
             default:
                 fail("No such output stream");
@@ -89,7 +90,8 @@ public class OutputInputStreamTest extends TestCase {
     private ByteBufferOutputStream getByteBufferOutputStream(int i, ByteBuffer buffer) {
         switch (i) {
             case 0:
-                return new ByteBufferOutputStream(ByteBuffer.allocate(1), new SmallByteSink(buffer));
+                return new ByteBufferOutputStream(ByteBuffer.allocate(1),
+                    new SmallByteSink(buffer));
 
             default:
                 fail("No such output stream");
@@ -130,7 +132,8 @@ public class OutputInputStreamTest extends TestCase {
 
                 buffer.clear();
                 buffer.limit(0);
-                testWriteReadByteInterleave(getOutputStream(out, buffer), getInputStream(in, buffer));
+                testWriteReadByteInterleave(getOutputStream(out, buffer),
+                    getInputStream(in, buffer));
 
                 buffer.clear();
                 buffer.limit(0);
@@ -145,19 +148,23 @@ public class OutputInputStreamTest extends TestCase {
             for (int out = 0; out < outs; ++out) {
                 buffer.clear();
                 buffer.limit(0);
-                testWriteByteBuffer(getByteBufferOutputStream(out, buffer), getByteBufferInputStream(in, buffer));
+                testWriteByteBuffer(getByteBufferOutputStream(out, buffer),
+                    getByteBufferInputStream(in, buffer));
 
                 buffer.clear();
                 buffer.limit(0);
-                testAppendBytesCharSequence(getByteBufferOutputStream(out, buffer), getByteBufferInputStream(in, buffer));
+                testAppendBytesCharSequence(getByteBufferOutputStream(out, buffer),
+                    getByteBufferInputStream(in, buffer));
 
                 buffer.clear();
                 buffer.limit(0);
-                testAppendCharsCharSequence(getByteBufferOutputStream(out, buffer), getByteBufferInputStream(in, buffer));
+                testAppendCharsCharSequence(getByteBufferOutputStream(out, buffer),
+                    getByteBufferInputStream(in, buffer));
 
                 buffer.clear();
                 buffer.limit(0);
-                testWriteUTF(getByteBufferOutputStream(out, buffer), getByteBufferInputStream(in, buffer));
+                testWriteUTF(getByteBufferOutputStream(out, buffer),
+                    getByteBufferInputStream(in, buffer));
             }
         }
     }
@@ -187,12 +194,12 @@ public class OutputInputStreamTest extends TestCase {
         }
 
         // can't test -1
-//        try {
-//            assertEquals(-1, is.read());
-//            is.close();
-//        } catch (IOException e) {
-//            fail(e.getMessage());
-//        }
+        // try {
+        // assertEquals(-1, is.read());
+        // is.close();
+        // } catch (IOException e) {
+        // fail(e.getMessage());
+        // }
     }
 
     public void testWriteReadByteInterleave(OutputStream os, InputStream is) {
@@ -217,14 +224,14 @@ public class OutputInputStreamTest extends TestCase {
     public void testWriteBytes(OutputStream os, InputStream is) {
         byte[] bytes = new byte[1025];
         for (int i = 0; i < bytes.length; ++i) {
-            bytes[i] = (byte)(i * i);
+            bytes[i] = (byte) (i * i);
         }
 
         try {
             os.write(bytes, 1, 1024);
             os.flush();
             for (int i = 1; i < bytes.length; ++i) {
-                assertEquals(bytes[i], (byte)is.read());
+                assertEquals(bytes[i], (byte) is.read());
             }
             os.close();
             is.close();
@@ -234,31 +241,31 @@ public class OutputInputStreamTest extends TestCase {
     }
 
     public void testWriteByteBuffer(ByteBufferOutputStream os, InputStream is) {
-            ByteBuffer byteBuffer = ByteBuffer.allocateDirect(1024);
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(1024);
+        for (int i = 0; i < 1024; ++i) {
+            byteBuffer.put((byte) (i * i));
+        }
+
+        try {
+            byteBuffer.flip();
+            os.write(byteBuffer);
+            os.flush();
+            byteBuffer.flip();
+
             for (int i = 0; i < 1024; ++i) {
-                byteBuffer.put((byte)(i * i));
+                assertEquals(byteBuffer.get(), (byte) is.read());
             }
-
-            try {
-                byteBuffer.flip();
-                os.write(byteBuffer);
-                os.flush();
-                byteBuffer.flip();
-
-                for (int i = 0; i < 1024; ++i) {
-                    assertEquals(byteBuffer.get(), (byte)is.read());
-                }
-                os.close();
-                is.close();
-            } catch (IOException e) {
-                fail(e.getMessage());
-            }
+            os.close();
+            is.close();
+        } catch (IOException e) {
+            fail(e.getMessage());
+        }
     }
 
     public void testAppendBytesCharSequence(ByteBufferOutputStream os, InputStream is) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 1024; ++i) {
-            char c = (char)((int)'a' + (i * i) % 26);
+            char c = (char) ((int) 'a' + (i * i) % 26);
             sb.append(c);
         }
 
@@ -266,7 +273,7 @@ public class OutputInputStreamTest extends TestCase {
             os.appendBytes(sb.toString());
             os.flush();
             for (int i = 0; i < 1024; ++i) {
-                assertEquals((byte)sb.charAt(i), (byte)is.read());
+                assertEquals((byte) sb.charAt(i), (byte) is.read());
             }
             os.close();
             is.close();
@@ -278,7 +285,7 @@ public class OutputInputStreamTest extends TestCase {
     public void testAppendCharsCharSequence(ByteBufferOutputStream os, InputStream is) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 1024; ++i) {
-            char c = (char)((int)'a' + (i * i) % 26);
+            char c = (char) ((int) 'a' + (i * i) % 26);
             sb.append(c);
         }
 
@@ -286,7 +293,7 @@ public class OutputInputStreamTest extends TestCase {
             os.appendChars(sb.toString());
             os.flush();
             for (int i = 0; i < 1024; ++i) {
-                assertEquals(sb.charAt(i), (char)((is.read() << 8) | is.read()));
+                assertEquals(sb.charAt(i), (char) ((is.read() << 8) | is.read()));
             }
             os.close();
             is.close();
@@ -298,7 +305,7 @@ public class OutputInputStreamTest extends TestCase {
     public void testWriteUTF(ByteBufferOutputStream os, DataInput is) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 1024; ++i) {
-            char c = (char)((int)'a' + (i * i) % 26);
+            char c = (char) ((int) 'a' + (i * i) % 26);
             sb.append(c);
         }
 

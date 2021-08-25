@@ -9,7 +9,8 @@ import io.deephaven.db.plot.datasets.category.CategoryDataSeriesInternal;
 /**
  * An {@link CategoryDataSeriesInternal} with error bars.
  */
-public interface CategoryErrorBarDataSeriesInternal extends CategoryErrorBarDataSeries, CategoryDataSeriesInternal {
+public interface CategoryErrorBarDataSeriesInternal
+    extends CategoryErrorBarDataSeries, CategoryDataSeriesInternal {
     @Override
     default boolean drawYError() {
         return true;

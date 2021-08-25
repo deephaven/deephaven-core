@@ -65,12 +65,12 @@ public class TestByExternal extends QueryTableTestBase {
             // get all the keys from the original table
             final HashSet<Object> keys = new HashSet<>();
 
-            for (final Index.Iterator it = originalTable.getIndex().iterator(); it.hasNext(); ) {
+            for (final Index.Iterator it = originalTable.getIndex().iterator(); it.hasNext();) {
                 final long next = it.nextLong();
                 if (groupByColumnSources.length == 1) {
                     keys.add(groupByColumnSources[0].get(next));
                 } else {
-                    final Object [] key = new Object[groupByColumnSources.length];
+                    final Object[] key = new Object[groupByColumnSources.length];
                     for (int ii = 0; ii < key.length; ++ii) {
                         key[ii] = groupByColumnSources[ii].get(next);
                     }
@@ -87,7 +87,8 @@ public class TestByExternal extends QueryTableTestBase {
                 } else {
                     final MatchFilter[] filters = new MatchFilter[groupByColumnSources.length];
                     for (int ii = 0; ii < groupByColumns.length; ++ii) {
-                        filters[ii] = new MatchFilter(groupByColumns[ii], ((SmartKey)key).values_[ii]);
+                        filters[ii] =
+                            new MatchFilter(groupByColumns[ii], ((SmartKey) key).values_[ii]);
                     }
                     whereTable = originalTable.where(filters);
                 }
@@ -95,9 +96,11 @@ public class TestByExternal extends QueryTableTestBase {
                 if (tableFromMap == null) {
                     System.out.println("Missing key: " + key);
                 } else {
-                    System.out.println("Checking key: " + key + ", size: " + tableFromMap.size() + " vs. " + whereTable.size());
+                    System.out.println("Checking key: " + key + ", size: " + tableFromMap.size()
+                        + " vs. " + whereTable.size());
                 }
-                final String diff = diff(tableFromMap, whereTable, 10, EnumSet.of(TableDiff.DiffItems.DoublesExact));
+                final String diff = diff(tableFromMap, whereTable, 10,
+                    EnumSet.of(TableDiff.DiffItems.DoublesExact));
                 Assert.assertEquals(msg, "", diff);
             }
         }
@@ -114,14 +117,18 @@ public class TestByExternal extends QueryTableTestBase {
         final int size = 50;
 
         final TstUtils.ColumnInfo[] columnInfo = new TstUtils.ColumnInfo[3];
-        columnInfo[0] = new TstUtils.ColumnInfo<>(new TstUtils.SetGenerator<>("a", "b", "c", "d", "e"), "Sym", TstUtils.ColumnInfo.ColAttributes.Immutable);
-        columnInfo[1] = new TstUtils.ColumnInfo<>(new TstUtils.IntGenerator(10, 20), "intCol", TstUtils.ColumnInfo.ColAttributes.Immutable);
-        columnInfo[2] = new TstUtils.ColumnInfo<>(new TstUtils.SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
+        columnInfo[0] =
+            new TstUtils.ColumnInfo<>(new TstUtils.SetGenerator<>("a", "b", "c", "d", "e"), "Sym",
+                TstUtils.ColumnInfo.ColAttributes.Immutable);
+        columnInfo[1] = new TstUtils.ColumnInfo<>(new TstUtils.IntGenerator(10, 20), "intCol",
+            TstUtils.ColumnInfo.ColAttributes.Immutable);
+        columnInfo[2] =
+            new TstUtils.ColumnInfo<>(new TstUtils.SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
 
         final QueryTable queryTable = getTable(size, random, columnInfo);
-        final EvalNuggetInterface[] en = new EvalNuggetInterface[]{
-//                new TableMapNugget(queryTable, "Sym"),
-//                new TableMapNugget(queryTable, "Sym", "intCol"),
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                // new TableMapNugget(queryTable, "Sym"),
+                // new TableMapNugget(queryTable, "Sym", "intCol"),
                 new TableMapNugget(queryTable, "Sym", "intCol", "doubleCol")
         };
 
@@ -133,7 +140,8 @@ public class TestByExternal extends QueryTableTestBase {
 
     public void testErrorPropagation() {
         try (final ErrorExpectation ee = new ErrorExpectation()) {
-            final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6));
+            final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6),
+                col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6));
 
             final TableMap byKey = table.byExternal("Key");
 
@@ -174,7 +182,8 @@ public class TestByExternal extends QueryTableTestBase {
     }
 
     public void testNewKeysAfterResultReleased() {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6));
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), col("Key", "A", "B", "A"),
+            intCol("Int", 2, 4, 6));
 
         final LivenessScope subTablesScope = new LivenessScope();
 
@@ -186,7 +195,8 @@ public class TestByExternal extends QueryTableTestBase {
 
             try (final SafeCloseable ignored2 = LivenessScopeStack.open()) {
                 byKey = table.byExternal("Key");
-                try (final SafeCloseable ignored3 = LivenessScopeStack.open(subTablesScope, false)) {
+                try (
+                    final SafeCloseable ignored3 = LivenessScopeStack.open(subTablesScope, false)) {
                     tableA = byKey.get("A");
                     tableB = byKey.get("B");
                 }
@@ -204,7 +214,10 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableB, table.where("Key=`B`"), 10));
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // Added row, wants to make new state
+                TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // Added row,
+                                                                                      // wants to
+                                                                                      // make new
+                                                                                      // state
                 table.notifyListeners(i(9), i(), i());
             });
 
@@ -213,7 +226,14 @@ public class TestByExternal extends QueryTableTestBase {
             assertNull(byKey.get("C"));
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11)); // Modified row, wants to move from existent state to nonexistent state
+                TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11)); // Modified
+                                                                                      // row, wants
+                                                                                      // to move
+                                                                                      // from
+                                                                                      // existent
+                                                                                      // state to
+                                                                                      // nonexistent
+                                                                                      // state
                 table.notifyListeners(i(), i(), i(8));
             });
 
@@ -222,7 +242,11 @@ public class TestByExternal extends QueryTableTestBase {
             assertNull(byKey.get("C"));
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 12)); // Modified row, staying in nonexistent state
+                TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 12)); // Modified
+                                                                                      // row,
+                                                                                      // staying in
+                                                                                      // nonexistent
+                                                                                      // state
                 table.notifyListeners(i(), i(), i(8));
             });
 
@@ -231,7 +255,14 @@ public class TestByExternal extends QueryTableTestBase {
             assertNull(byKey.get("C"));
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 13)); // Modified row, wants to move from nonexistent state to existent state
+                TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 13)); // Modified
+                                                                                      // row, wants
+                                                                                      // to move
+                                                                                      // from
+                                                                                      // nonexistent
+                                                                                      // state to
+                                                                                      // existent
+                                                                                      // state
                 table.notifyListeners(i(), i(), i(8));
             });
 
@@ -240,7 +271,11 @@ public class TestByExternal extends QueryTableTestBase {
             assertNull(byKey.get("C"));
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 14)); // Modified row, staying in existent state
+                TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 14)); // Modified
+                                                                                      // row,
+                                                                                      // staying in
+                                                                                      // existent
+                                                                                      // state
                 table.notifyListeners(i(), i(), i(8));
             });
 
@@ -269,7 +304,8 @@ public class TestByExternal extends QueryTableTestBase {
     }
 
     public void testNewKeysBeforeResultReleased() {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6));
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), col("Key", "A", "B", "A"),
+            intCol("Int", 2, 4, 6));
 
         try (final SafeCloseable ignored1 = LivenessScopeStack.open()) {
 
@@ -291,7 +327,9 @@ public class TestByExternal extends QueryTableTestBase {
             assertNull(byKey.get("C"));
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // Added row, makes new state
+                TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // Added row,
+                                                                                      // makes new
+                                                                                      // state
                 table.notifyListeners(i(9), i(), i());
             });
 
@@ -301,7 +339,13 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableC, table.where("Key=`C`"), 10));
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11)); // Modified row, wants to move from original state to new state
+                TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11)); // Modified
+                                                                                      // row, wants
+                                                                                      // to move
+                                                                                      // from
+                                                                                      // original
+                                                                                      // state to
+                                                                                      // new state
                 table.notifyListeners(i(), i(), i(8));
             });
 
@@ -310,7 +354,10 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableC, table.where("Key=`C`"), 10));
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 12)); // Modified row, staying in new state
+                TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 12)); // Modified
+                                                                                      // row,
+                                                                                      // staying in
+                                                                                      // new state
                 table.notifyListeners(i(), i(), i(8));
             });
 
@@ -319,7 +366,13 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableC, table.where("Key=`C`"), 10));
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 13)); // Modified row, wants to move from new state to original state
+                TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 13)); // Modified
+                                                                                      // row, wants
+                                                                                      // to move
+                                                                                      // from new
+                                                                                      // state to
+                                                                                      // original
+                                                                                      // state
                 table.notifyListeners(i(), i(), i(8));
             });
 
@@ -328,7 +381,11 @@ public class TestByExternal extends QueryTableTestBase {
             assertEquals("", TableTools.diff(tableC, table.where("Key=`C`"), 10));
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 14)); // Modified row, staying in original state
+                TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 14)); // Modified
+                                                                                      // row,
+                                                                                      // staying in
+                                                                                      // original
+                                                                                      // state
                 table.notifyListeners(i(), i(), i(8));
             });
 
@@ -361,7 +418,8 @@ public class TestByExternal extends QueryTableTestBase {
 
         @SuppressWarnings("unused")
         public <T> T sleepValue(long duration, T retVal) {
-            System.out.println((System.currentTimeMillis() - start) / 1000.0  + ": Reading: " + retVal);
+            System.out
+                .println((System.currentTimeMillis() - start) / 1000.0 + ": Reading: " + retVal);
             try {
                 Thread.sleep(duration);
             } catch (InterruptedException ignored) {
@@ -374,12 +432,14 @@ public class TestByExternal extends QueryTableTestBase {
         setExpectError(false);
         final ExecutorService pool = Executors.newFixedThreadPool(1);
 
-        final QueryTable rawTable = TstUtils.testRefreshingTable(i(2, 4, 6), col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6), intCol("I2", 1, 2, 3));
+        final QueryTable rawTable = TstUtils.testRefreshingTable(i(2, 4, 6),
+            col("Key", "A", "B", "A"), intCol("Int", 2, 4, 6), intCol("I2", 1, 2, 3));
 
         QueryScope.addParam("sleepHelper", new SleepHelper());
 
         // make it slow to read key
-        final Table table = rawTable.updateView("Key = sleepHelper.sleepValue(0, Key)", "K2=1", "Int=sleepHelper.sleepValue(250, Int)");
+        final Table table = rawTable.updateView("Key = sleepHelper.sleepValue(0, Key)", "K2=1",
+            "Int=sleepHelper.sleepValue(250, Int)");
 
         final SingletonLivenessManager mapManager;
 
@@ -401,7 +461,8 @@ public class TestByExternal extends QueryTableTestBase {
         final MutableObject<Future<?>> mutableFuture = new MutableObject<>();
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(rawTable, i(10, 11, 12), col("Key", "C", "D", "E"), intCol("Int", 8, 9, 10), intCol("I2", 6, 7, 8));
+            TstUtils.addToTable(rawTable, i(10, 11, 12), col("Key", "C", "D", "E"),
+                intCol("Int", 8, 9, 10), intCol("I2", 6, 7, 8));
             rawTable.notifyListeners(i(10, 11, 12), i(), i());
 
             mutableFuture.setValue(pool.submit(() -> {
@@ -419,7 +480,7 @@ public class TestByExternal extends QueryTableTestBase {
 
         try {
             mutableFuture.getValue().get();
-        } catch (InterruptedException|ExecutionException e) {
+        } catch (InterruptedException | ExecutionException e) {
             TestCase.fail(e.getMessage());
         }
 
@@ -431,18 +492,18 @@ public class TestByExternal extends QueryTableTestBase {
         final TableMap map = table.byExternal("USym");
         map.populateKeys("SPY");
         System.out.println(Arrays.toString(map.getKeySet()));
-        assertEquals(map.getKeySet(), new String[]{"AAPL", "SPY"});
-        assertFalse(((TableMapImpl)map).isRefreshing());
+        assertEquals(map.getKeySet(), new String[] {"AAPL", "SPY"});
+        assertFalse(((TableMapImpl) map).isRefreshing());
     }
 
     public void testPopulateKeysRefreshing() {
         final Table table = emptyTable(1).update("USym=`AAPL`", "Value=1");
-        ((BaseTable)table).setRefreshing(true);
+        ((BaseTable) table).setRefreshing(true);
         final TableMap map = table.byExternal("USym");
         map.populateKeys("SPY");
         System.out.println(Arrays.toString(map.getKeySet()));
-        assertEquals(map.getKeySet(), new String[]{"AAPL", "SPY"});
-        assertTrue(((TableMapImpl)map).isRefreshing());
+        assertEquals(map.getKeySet(), new String[] {"AAPL", "SPY"});
+        assertTrue(((TableMapImpl) map).isRefreshing());
     }
 
     public void testByExternalWithShifts() {
@@ -457,17 +518,27 @@ public class TestByExternal extends QueryTableTestBase {
         final int size = 10;
 
         final TstUtils.ColumnInfo[] columnInfo = new TstUtils.ColumnInfo[3];
-        columnInfo[0] = new TstUtils.ColumnInfo<>(new TstUtils.SetGenerator<>("a", "b", "c", "d", "e"), "Sym", TstUtils.ColumnInfo.ColAttributes.Immutable);
-        columnInfo[1] = new TstUtils.ColumnInfo<>(new TstUtils.IntGenerator(10, 20), "intCol", TstUtils.ColumnInfo.ColAttributes.Immutable);
-        columnInfo[2] = new TstUtils.ColumnInfo<>(new TstUtils.SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
+        columnInfo[0] =
+            new TstUtils.ColumnInfo<>(new TstUtils.SetGenerator<>("a", "b", "c", "d", "e"), "Sym",
+                TstUtils.ColumnInfo.ColAttributes.Immutable);
+        columnInfo[1] = new TstUtils.ColumnInfo<>(new TstUtils.IntGenerator(10, 20), "intCol",
+            TstUtils.ColumnInfo.ColAttributes.Immutable);
+        columnInfo[2] =
+            new TstUtils.ColumnInfo<>(new TstUtils.SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
 
         final QueryTable queryTable = getTable(size, random, columnInfo);
-        final Table simpleTable = TableTools.newTable(TableTools.col("Sym", "a"), TableTools.intCol("intCol", 30), TableTools.doubleCol("doubleCol", 40.1)).updateView("K=-2L");
+        final Table simpleTable =
+            TableTools.newTable(TableTools.col("Sym", "a"), TableTools.intCol("intCol", 30),
+                TableTools.doubleCol("doubleCol", 40.1)).updateView("K=-2L");
         final Table source = TableTools.merge(simpleTable, queryTable.updateView("K=k")).flatten();
 
-        final EvalNuggetInterface[] en = new EvalNuggetInterface[]{
-                EvalNugget.Sorted.from(() -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> source.byExternal("Sym").merge()), "Sym"),
-                EvalNugget.Sorted.from(() -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> source.where("Sym=`a`").byExternal("Sym").merge()), "Sym"),
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                EvalNugget.Sorted.from(() -> LiveTableMonitor.DEFAULT.sharedLock()
+                    .computeLocked(() -> source.byExternal("Sym").merge()), "Sym"),
+                EvalNugget.Sorted.from(
+                    () -> LiveTableMonitor.DEFAULT.sharedLock()
+                        .computeLocked(() -> source.where("Sym=`a`").byExternal("Sym").merge()),
+                    "Sym"),
         };
 
         final int steps = 50;

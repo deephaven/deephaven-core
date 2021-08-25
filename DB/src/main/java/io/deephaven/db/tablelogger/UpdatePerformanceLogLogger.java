@@ -15,7 +15,7 @@ import static io.deephaven.db.v2.utils.UpdatePerformanceTracker.IntervalLevelDet
 import static io.deephaven.db.v2.utils.UpdatePerformanceTracker.Entry;
 
 public class UpdatePerformanceLogLogger
-        extends TableLoggerImpl2<UpdatePerformanceLogLogger.ISetter> {
+    extends TableLoggerImpl2<UpdatePerformanceLogLogger.ISetter> {
 
     private static final String TABLE_NAME = "UpdatePerformanceLog";
 
@@ -27,7 +27,8 @@ public class UpdatePerformanceLogLogger
     }
 
     interface ISetter extends WritableRowContainer {
-        void log(Row.Flags flags, IntervalLevelDetails intervalLevelDetails, Entry performanceEntry) throws IOException;
+        void log(Row.Flags flags, IntervalLevelDetails intervalLevelDetails, Entry performanceEntry)
+            throws IOException;
     }
 
     public static String getDefaultTableName() {
@@ -74,15 +75,18 @@ public class UpdatePerformanceLogLogger
             EntryIntervalRemoved = row.getSetter("EntryIntervalRemoved", long.class);
             EntryIntervalModified = row.getSetter("EntryIntervalModified", long.class);
             EntryIntervalShifted = row.getSetter("EntryIntervalShifted", long.class);
-            EntryIntervalInvocationCount = row.getSetter("EntryIntervalInvocationCount", long.class);
+            EntryIntervalInvocationCount =
+                row.getSetter("EntryIntervalInvocationCount", long.class);
             TotalMemoryFree = row.getSetter("TotalMemoryFree", long.class);
             TotalMemoryUsed = row.getSetter("TotalMemoryUsed", long.class);
             EntryIntervalAllocatedBytes = row.getSetter("EntryIntervalAllocatedBytes", long.class);
-            EntryIntervalPoolAllocatedBytes = row.getSetter("EntryIntervalPoolAllocatedBytes", long.class);
+            EntryIntervalPoolAllocatedBytes =
+                row.getSetter("EntryIntervalPoolAllocatedBytes", long.class);
         }
 
         @Override
-        public void log(final Row.Flags flags, final IntervalLevelDetails intervalLevelDetails, final Entry performanceEntry) throws IOException {
+        public void log(final Row.Flags flags, final IntervalLevelDetails intervalLevelDetails,
+            final Entry performanceEntry) throws IOException {
             setRowFlags(flags);
             this.ProcessUniqueId.set(processUniqueId);
             this.EntryId.setInt(performanceEntry.getId());
@@ -90,8 +94,10 @@ public class UpdatePerformanceLogLogger
             this.OperationNumber.setInt(performanceEntry.getOperationNumber());
             this.EntryDescription.set(performanceEntry.getDescription());
             this.EntryCallerLine.set(performanceEntry.getCallerLine());
-            this.IntervalStartTime.set(DBTimeUtils.millisToTime(intervalLevelDetails.getIntervalStartTimeMillis()));
-            this.IntervalEndTime.set(DBTimeUtils.millisToTime(intervalLevelDetails.getIntervalEndTimeMillis()));
+            this.IntervalStartTime
+                .set(DBTimeUtils.millisToTime(intervalLevelDetails.getIntervalStartTimeMillis()));
+            this.IntervalEndTime
+                .set(DBTimeUtils.millisToTime(intervalLevelDetails.getIntervalEndTimeMillis()));
             this.IntervalDurationNanos.setLong(intervalLevelDetails.getIntervalDurationNanos());
             this.EntryIntervalUsage.setLong(performanceEntry.getIntervalUsageNanos());
             this.EntryIntervalCpuNanos.setLong(performanceEntry.getIntervalCpuNanos());
@@ -100,11 +106,13 @@ public class UpdatePerformanceLogLogger
             this.EntryIntervalRemoved.setLong(performanceEntry.getIntervalRemoved());
             this.EntryIntervalModified.setLong(performanceEntry.getIntervalModified());
             this.EntryIntervalShifted.setLong(performanceEntry.getIntervalShifted());
-            this.EntryIntervalInvocationCount.setLong(performanceEntry.getIntervalInvocationCount());
+            this.EntryIntervalInvocationCount
+                .setLong(performanceEntry.getIntervalInvocationCount());
             this.TotalMemoryFree.setLong(performanceEntry.getTotalFreeMemory());
             this.TotalMemoryUsed.setLong(performanceEntry.getTotalUsedMemory());
             this.EntryIntervalAllocatedBytes.setLong(performanceEntry.getIntervalAllocatedBytes());
-            this.EntryIntervalPoolAllocatedBytes.setLong(performanceEntry.getIntervalPoolAllocatedBytes());
+            this.EntryIntervalPoolAllocatedBytes
+                .setLong(performanceEntry.getIntervalPoolAllocatedBytes());
         }
     }
 
@@ -118,32 +126,32 @@ public class UpdatePerformanceLogLogger
 
     static {
         final ColumnsSpecHelper cols = new ColumnsSpecHelper()
-                .add("ProcessUniqueId", String.class)
-                .add("EntryId", int.class)
-                .add("EvaluationNumber", int.class)
-                .add("OperationNumber", int.class)
-                .add("EntryDescription", String.class)
-                .add("EntryCallerLine", String.class)
+            .add("ProcessUniqueId", String.class)
+            .add("EntryId", int.class)
+            .add("EvaluationNumber", int.class)
+            .add("OperationNumber", int.class)
+            .add("EntryDescription", String.class)
+            .add("EntryCallerLine", String.class)
 
-                .add("IntervalStartTime", DBDateTime.class)
-                .add("IntervalEndTime", DBDateTime.class)
+            .add("IntervalStartTime", DBDateTime.class)
+            .add("IntervalEndTime", DBDateTime.class)
 
-                .add("IntervalDurationNanos", long.class)
-                .add("EntryIntervalUsage", long.class)
-                .add("EntryIntervalCpuNanos", long.class)
-                .add("EntryIntervalUserCpuNanos", long.class)
-                .add("EntryIntervalAdded", long.class)
-                .add("EntryIntervalRemoved", long.class)
-                .add("EntryIntervalModified", long.class)
-                .add("EntryIntervalShifted", long.class)
+            .add("IntervalDurationNanos", long.class)
+            .add("EntryIntervalUsage", long.class)
+            .add("EntryIntervalCpuNanos", long.class)
+            .add("EntryIntervalUserCpuNanos", long.class)
+            .add("EntryIntervalAdded", long.class)
+            .add("EntryIntervalRemoved", long.class)
+            .add("EntryIntervalModified", long.class)
+            .add("EntryIntervalShifted", long.class)
 
-                .add("EntryIntervalInvocationCount", long.class)
-                .add("TotalMemoryFree", long.class)
-                .add("TotalMemoryUsed", long.class)
-                .add("EntryIntervalAllocatedBytes", long.class)
-                .add("EntryIntervalPoolAllocatedBytes", long.class)
+            .add("EntryIntervalInvocationCount", long.class)
+            .add("TotalMemoryFree", long.class)
+            .add("TotalMemoryUsed", long.class)
+            .add("EntryIntervalAllocatedBytes", long.class)
+            .add("EntryIntervalPoolAllocatedBytes", long.class)
 
-                ;
+        ;
 
         columnNames = cols.getColumnNames();
         columnDbTypes = cols.getDbTypes();
@@ -156,14 +164,14 @@ public class UpdatePerformanceLogLogger
     }
 
     public void log(
-            final IntervalLevelDetails intervalLevelDetails, final Entry performanceEntry
-    ) throws IOException {
+        final IntervalLevelDetails intervalLevelDetails, final Entry performanceEntry)
+        throws IOException {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS, intervalLevelDetails, performanceEntry);
     }
 
     public void log(
-            final Row.Flags flags, final IntervalLevelDetails intervalLevelDetails, final Entry performanceEntry
-    ) throws IOException {
+        final Row.Flags flags, final IntervalLevelDetails intervalLevelDetails,
+        final Entry performanceEntry) throws IOException {
         verifyCondition(isInitialized(), "init() must be called before calling log()");
         verifyCondition(!isClosed, "cannot call log() after the logger is closed");
         verifyCondition(!isShuttingDown, "cannot call log() while the logger is shutting down");
@@ -177,7 +185,8 @@ public class UpdatePerformanceLogLogger
         flush(setter);
     }
 
-    private static final TableDefinition TABLE_DEFINITION = TableDefinition.tableDefinition(columnDbTypes, columnNames);
+    private static final TableDefinition TABLE_DEFINITION =
+        TableDefinition.tableDefinition(columnDbTypes, columnNames);
 
     public static TableDefinition getTableDefinition() {
         return TABLE_DEFINITION;

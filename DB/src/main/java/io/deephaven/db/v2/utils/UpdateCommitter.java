@@ -3,6 +3,7 @@
  */
 
 package io.deephaven.db.v2.utils;
+
 import io.deephaven.db.tables.live.LiveTableMonitor;
 
 import java.lang.ref.WeakReference;

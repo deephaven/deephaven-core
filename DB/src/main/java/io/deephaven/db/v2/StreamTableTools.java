@@ -32,80 +32,96 @@ public class StreamTableTools {
                 throw new IllegalArgumentException("Input is not a stream table!");
             }
 
-            final BaseTable baseStreamTable = (BaseTable)streamTable.coalesce();
+            final BaseTable baseStreamTable = (BaseTable) streamTable.coalesce();
 
-            final ShiftAwareSwapListener swapListener = baseStreamTable.createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
+            final ShiftAwareSwapListener swapListener =
+                baseStreamTable.createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
             // stream tables must tick
             Assert.neqNull(swapListener, "swapListener");
 
             final Mutable<QueryTable> resultHolder = new MutableObject<>();
 
-            ConstructSnapshot.callDataSnapshotFunction("streamToAppendOnlyTable", swapListener.makeSnapshotControl(), (boolean usePrev, long beforeClockValue) -> {
-                final Map<String, ArrayBackedColumnSource> columns = new LinkedHashMap<>();
-                final Map<String, ? extends ColumnSource> columnSourceMap = streamTable.getColumnSourceMap();
-                final int columnCount = columnSourceMap.size();
-                final ColumnSource[] sourceColumns = new ColumnSource[columnCount];
-                final WritableSource[] destColumns = new WritableSource[columnCount];
-                int colIdx = 0;
-                for (Map.Entry<String, ? extends ColumnSource> nameColumnSourceEntry : columnSourceMap.entrySet()) {
-                    final ColumnSource<?> existingColumn = nameColumnSourceEntry.getValue();
-                    final ArrayBackedColumnSource<?> newColumn = ArrayBackedColumnSource.getMemoryColumnSource(0, existingColumn.getType(), existingColumn.getComponentType());
-                    columns.put(nameColumnSourceEntry.getKey(), newColumn);
-                    // for the source columns, we would like to read primitives instead of objects in cases where it is possible
-                    sourceColumns[colIdx] = ReinterpretUtilities.maybeConvertToPrimitive(existingColumn);
-                    // for the destination sources, we know they are array backed sources that will actually store primitives and we can fill efficiently
-                    destColumns[colIdx++] = (WritableSource) ReinterpretUtilities.maybeConvertToPrimitive(newColumn);
-                }
-
-
-                final Index index;
-                if (usePrev) {
-                    try (final Index useIndex = baseStreamTable.getIndex().getPrevIndex()) {
-                        index = Index.FACTORY.getFlatIndex(useIndex.size());
-                        ChunkUtils.copyData(sourceColumns, useIndex, destColumns, index, usePrev);
+            ConstructSnapshot.callDataSnapshotFunction("streamToAppendOnlyTable",
+                swapListener.makeSnapshotControl(), (boolean usePrev, long beforeClockValue) -> {
+                    final Map<String, ArrayBackedColumnSource> columns = new LinkedHashMap<>();
+                    final Map<String, ? extends ColumnSource> columnSourceMap =
+                        streamTable.getColumnSourceMap();
+                    final int columnCount = columnSourceMap.size();
+                    final ColumnSource[] sourceColumns = new ColumnSource[columnCount];
+                    final WritableSource[] destColumns = new WritableSource[columnCount];
+                    int colIdx = 0;
+                    for (Map.Entry<String, ? extends ColumnSource> nameColumnSourceEntry : columnSourceMap
+                        .entrySet()) {
+                        final ColumnSource<?> existingColumn = nameColumnSourceEntry.getValue();
+                        final ArrayBackedColumnSource<?> newColumn =
+                            ArrayBackedColumnSource.getMemoryColumnSource(0,
+                                existingColumn.getType(), existingColumn.getComponentType());
+                        columns.put(nameColumnSourceEntry.getKey(), newColumn);
+                        // for the source columns, we would like to read primitives instead of
+                        // objects in cases where it is possible
+                        sourceColumns[colIdx] =
+                            ReinterpretUtilities.maybeConvertToPrimitive(existingColumn);
+                        // for the destination sources, we know they are array backed sources that
+                        // will actually store primitives and we can fill efficiently
+                        destColumns[colIdx++] = (WritableSource) ReinterpretUtilities
+                            .maybeConvertToPrimitive(newColumn);
                     }
-                } else {
-                    index = Index.FACTORY.getFlatIndex(baseStreamTable.getIndex().size());
-                    ChunkUtils.copyData(sourceColumns, baseStreamTable.getIndex(), destColumns, index, usePrev);
-                }
 
-                final QueryTable result = new QueryTable(index, columns);
-                result.setRefreshing(true);
-                result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
-                result.setFlat();
-                result.addParentReference(swapListener);
-                resultHolder.setValue(result);
 
-                swapListener.setListenerAndResult(new BaseTable.ShiftAwareListenerImpl("streamToAppendOnly", (DynamicTable) streamTable, result) {
-                    @Override
-                    public void onUpdate(Update upstream) {
-                        if (upstream.modified.nonempty() || upstream.shifted.nonempty()) {
-                            throw new IllegalArgumentException("Stream tables should not modify or shift!");
+                    final Index index;
+                    if (usePrev) {
+                        try (final Index useIndex = baseStreamTable.getIndex().getPrevIndex()) {
+                            index = Index.FACTORY.getFlatIndex(useIndex.size());
+                            ChunkUtils.copyData(sourceColumns, useIndex, destColumns, index,
+                                usePrev);
                         }
-                        final long newRows = upstream.added.size();
-                        if (newRows == 0) {
-                            return;
-                        }
-                        final long currentSize = index.size();
-                        columns.values().forEach(c -> c.ensureCapacity(currentSize + newRows));
-
-                        final Index newRange = Index.CURRENT_FACTORY.getIndexByRange(currentSize, currentSize + newRows - 1);
-
-                        ChunkUtils.copyData(sourceColumns, upstream.added, destColumns, newRange, false);
-                        index.insertRange(currentSize, currentSize + newRows - 1);
-
-                        final Update downstream = new Update();
-                        downstream.added = newRange;
-                        downstream.modified = Index.CURRENT_FACTORY.getEmptyIndex();
-                        downstream.removed = Index.CURRENT_FACTORY.getEmptyIndex();
-                        downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-                        downstream.shifted = IndexShiftData.EMPTY;
-                        result.notifyListeners(downstream);
+                    } else {
+                        index = Index.FACTORY.getFlatIndex(baseStreamTable.getIndex().size());
+                        ChunkUtils.copyData(sourceColumns, baseStreamTable.getIndex(), destColumns,
+                            index, usePrev);
                     }
-                }, result);
 
-                return true;
-            });
+                    final QueryTable result = new QueryTable(index, columns);
+                    result.setRefreshing(true);
+                    result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+                    result.setFlat();
+                    result.addParentReference(swapListener);
+                    resultHolder.setValue(result);
+
+                    swapListener.setListenerAndResult(new BaseTable.ShiftAwareListenerImpl(
+                        "streamToAppendOnly", (DynamicTable) streamTable, result) {
+                        @Override
+                        public void onUpdate(Update upstream) {
+                            if (upstream.modified.nonempty() || upstream.shifted.nonempty()) {
+                                throw new IllegalArgumentException(
+                                    "Stream tables should not modify or shift!");
+                            }
+                            final long newRows = upstream.added.size();
+                            if (newRows == 0) {
+                                return;
+                            }
+                            final long currentSize = index.size();
+                            columns.values().forEach(c -> c.ensureCapacity(currentSize + newRows));
+
+                            final Index newRange = Index.CURRENT_FACTORY
+                                .getIndexByRange(currentSize, currentSize + newRows - 1);
+
+                            ChunkUtils.copyData(sourceColumns, upstream.added, destColumns,
+                                newRange, false);
+                            index.insertRange(currentSize, currentSize + newRows - 1);
+
+                            final Update downstream = new Update();
+                            downstream.added = newRange;
+                            downstream.modified = Index.CURRENT_FACTORY.getEmptyIndex();
+                            downstream.removed = Index.CURRENT_FACTORY.getEmptyIndex();
+                            downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+                            downstream.shifted = IndexShiftData.EMPTY;
+                            result.notifyListeners(downstream);
+                        }
+                    }, result);
+
+                    return true;
+                });
 
             return resultHolder.getValue();
         });

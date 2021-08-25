@@ -20,7 +20,7 @@ public class ModelFileGenerator {
 
     private String getPath() {
         return Configuration.getInstance().getProperty("devroot") +
-                "/DB/src/test/java/" + classType.getCanonicalName().replace('.', '/') + ".java";
+            "/DB/src/test/java/" + classType.getCanonicalName().replace('.', '/') + ".java";
     }
 
     public void generateFile(final String rawClassDef) throws FileNotFoundException {
@@ -34,14 +34,15 @@ public class ModelFileGenerator {
         final String processedClassDef = processClassDef(rawClassDef);
         final byte[] encoded = Files.readAllBytes(Paths.get(getPath()));
         final String currentVersion = new String(encoded);
-        TestCase.assertEquals("Code generation results have changed - if you are comfortable with the change, run generateFile above to update the reference implementation",
-                currentVersion, processedClassDef);
+        TestCase.assertEquals(
+            "Code generation results have changed - if you are comfortable with the change, run generateFile above to update the reference implementation",
+            currentVersion, processedClassDef);
     }
 
     private String processClassDef(final String rawClassDef) {
         return "package io.deephaven.db.v2.select;\n" +
-                rawClassDef.replace("$CLASSNAME$", classType.getSimpleName())
-                        .replace("import static io.deephaven.numerics.suanshu.SuanShuIntegration.*;", "");
+            rawClassDef.replace("$CLASSNAME$", classType.getSimpleName())
+                .replace("import static io.deephaven.numerics.suanshu.SuanShuIntegration.*;", "");
 
     }
 }

@@ -5,8 +5,8 @@ import io.deephaven.configuration.PropertyInputStreamLoader;
 import java.io.InputStream;
 
 /**
- * A {@link PropertyInputStreamLoader} that loads the property input stream from resources only.
- * Has priority 0. Useful for unit testing.
+ * A {@link PropertyInputStreamLoader} that loads the property input stream from resources only. Has
+ * priority 0. Useful for unit testing.
  */
 public class PropertyInputStreamLoaderResourcesOnly implements PropertyInputStreamLoader {
 

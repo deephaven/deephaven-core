@@ -89,12 +89,19 @@ public interface PrimitiveArrayType<T> extends ArrayType<T> {
 
     interface Visitor {
         void visit(Booleans booleans);
+
         void visit(Bytes bytes);
+
         void visit(Chars chars);
+
         void visit(Shorts shorts);
+
         void visit(Ints ints);
+
         void visit(Longs longs);
+
         void visit(Floats floats);
+
         void visit(Doubles doubles);
     }
 

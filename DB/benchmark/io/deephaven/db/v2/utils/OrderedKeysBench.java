@@ -18,7 +18,7 @@ import java.util.zip.CRC32;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 1, time = 12)
 @Measurement(iterations = 3, time = 12)
-@Fork(value=1)
+@Fork(value = 1)
 public class OrderedKeysBench {
     private Index ix = null;
     private static final int chunkSz = 1024;
@@ -33,12 +33,19 @@ public class OrderedKeysBench {
         rangesChunk = WritableLongChunk.makeWritableChunk(chunkSz);
         final Index.RandomBuilder ib = Index.FACTORY.getRandomBuilder();
         final TestValues.Builder tb = new TestValues.Builder() {
-            @Override public void add(final long v) { ib.addKey(v); }
-            @Override public void done() { ix = ib.getIndex(); }
+            @Override
+            public void add(final long v) {
+                ib.addKey(v);
+            }
+
+            @Override
+            public void done() {
+                ix = ib.getIndex();
+            }
         };
-        TestValues.setup(tb, 16*1024*1024, TestValues.asymmetric);
+        TestValues.setup(tb, 16 * 1024 * 1024, TestValues.asymmetric);
         final WritableLongChunk<OrderedKeyIndices> fixedCostChunk =
-                WritableLongChunk.makeWritableChunk(fixedCostChunkSz);
+            WritableLongChunk.makeWritableChunk(fixedCostChunkSz);
         final Random r = new Random(1);
         long last = 0;
         for (int i = 0; i < fixedCostChunkSz; ++i) {
@@ -50,7 +57,7 @@ public class OrderedKeysBench {
 
     static void updateCrc32(final CRC32 crc32, final long v) {
         for (int bi = 0; bi < 8; ++bi) {
-            final int b = (int) ((0x00000000000000FFL) & (v >> 8*bi));
+            final int b = (int) ((0x00000000000000FFL) & (v >> 8 * bi));
             crc32.update(b);
         }
     }
@@ -59,14 +66,14 @@ public class OrderedKeysBench {
     long fixedCost() {
         final MutableLong accum = new MutableLong(0);
         fixedCostOk.forEachLong((final long v) -> {
-            accum.setValue(accum.longValue()^v);
+            accum.setValue(accum.longValue() ^ v);
             return true;
         });
         indicesChunk.setSize(chunkSz);
         fixedCostOk.fillKeyIndicesChunk(indicesChunk);
         final int sz = indicesChunk.size();
         for (int i = 0; i < sz; ++i) {
-            accum.setValue(accum.longValue()^indicesChunk.get(i));
+            accum.setValue(accum.longValue() ^ indicesChunk.get(i));
         }
         return accum.getValue();
     }
@@ -163,7 +170,7 @@ public class OrderedKeysBench {
         final CRC32 crc32 = new CRC32();
         final OrderedKeys.Iterator okit = ix.getOrderedKeysIterator();
         while (okit.hasMore()) {
-            final OrderedKeys oks = okit.getNextOrderedKeysWithLength(chunkSz/2);
+            final OrderedKeys oks = okit.getNextOrderedKeysWithLength(chunkSz / 2);
             rangesChunk.setSize(chunkSz);
             oks.fillKeyRangesChunk(rangesChunk);
             final int sz = rangesChunk.size();
@@ -184,7 +191,7 @@ public class OrderedKeysBench {
         final CRC32 crc32 = new CRC32();
         final OrderedKeys.Iterator okit = ix.getOrderedKeysIterator();
         while (okit.hasMore()) {
-            final OrderedKeys oks = okit.getNextOrderedKeysWithLength(chunkSz/2);
+            final OrderedKeys oks = okit.getNextOrderedKeysWithLength(chunkSz / 2);
             oks.forAllLongRanges((final long s, final long e) -> {
                 for (long v = s; v <= e; ++v) {
                     updateCrc32(crc32, v);

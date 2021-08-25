@@ -19,37 +19,48 @@ import static io.deephaven.db.v2.sources.chunk.Attributes.*;
 
 class ChunkedAjUtilities {
     static void bothIncrementalLeftSsaShift(IndexShiftData shiftData, SegmentedSortedArray leftSsa,
-                                            Index restampRemovals, QueryTable table,
-                                            int nodeSize, ColumnSource<?> stampSource) {
+        Index restampRemovals, QueryTable table,
+        int nodeSize, ColumnSource<?> stampSource) {
         final ChunkType stampChunkType = stampSource.getChunkType();
-        final SortingOrder sortOrder = leftSsa.isReversed() ? SortingOrder.Descending : SortingOrder.Ascending;
+        final SortingOrder sortOrder =
+            leftSsa.isReversed() ? SortingOrder.Descending : SortingOrder.Ascending;
 
         try (final Index fullPrevIndex = table.getIndex().getPrevIndex();
-             final Index previousToShift = fullPrevIndex.minus(restampRemovals);
-             final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext = new SizedSafeCloseable<>(stampSource::makeFillContext);
-             final SizedSafeCloseable<LongSortKernel<Values, KeyIndices>> shiftSortContext = new SizedSafeCloseable<>(size -> LongSortKernel.makeContext(stampChunkType, sortOrder, size, true));
-             final SizedLongChunk<KeyIndices> stampKeys = new SizedLongChunk<>();
-             final SizedChunk<Values> stampValues = new SizedChunk<>(stampChunkType)) {
+            final Index previousToShift = fullPrevIndex.minus(restampRemovals);
+            final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
+                new SizedSafeCloseable<>(stampSource::makeFillContext);
+            final SizedSafeCloseable<LongSortKernel<Values, KeyIndices>> shiftSortContext =
+                new SizedSafeCloseable<>(
+                    size -> LongSortKernel.makeContext(stampChunkType, sortOrder, size, true));
+            final SizedLongChunk<KeyIndices> stampKeys = new SizedLongChunk<>();
+            final SizedChunk<Values> stampValues = new SizedChunk<>(stampChunkType)) {
             final IndexShiftData.Iterator sit = shiftData.applyIterator();
             while (sit.hasNext()) {
                 sit.next();
-                final Index indexToShift = previousToShift.subindexByKey(sit.beginRange(), sit.endRange());
+                final Index indexToShift =
+                    previousToShift.subindexByKey(sit.beginRange(), sit.endRange());
                 if (indexToShift.empty()) {
                     indexToShift.close();
                     continue;
                 }
 
-                applyOneShift(leftSsa, nodeSize, stampSource, shiftFillContext, shiftSortContext, stampKeys, stampValues, sit, indexToShift);
+                applyOneShift(leftSsa, nodeSize, stampSource, shiftFillContext, shiftSortContext,
+                    stampKeys, stampValues, sit, indexToShift);
                 indexToShift.close();
             }
         }
     }
 
-    static void applyOneShift(SegmentedSortedArray leftSsa, int nodeSize, ColumnSource<?> stampSource, SizedSafeCloseable<ChunkSource.FillContext> shiftFillContext, SizedSafeCloseable<LongSortKernel<Values, KeyIndices>> shiftSortContext, SizedLongChunk<KeyIndices> stampKeys, SizedChunk<Values> stampValues, IndexShiftData.Iterator sit, Index indexToShift) {
+    static void applyOneShift(SegmentedSortedArray leftSsa, int nodeSize,
+        ColumnSource<?> stampSource, SizedSafeCloseable<ChunkSource.FillContext> shiftFillContext,
+        SizedSafeCloseable<LongSortKernel<Values, KeyIndices>> shiftSortContext,
+        SizedLongChunk<KeyIndices> stampKeys, SizedChunk<Values> stampValues,
+        IndexShiftData.Iterator sit, Index indexToShift) {
         if (sit.polarityReversed()) {
             final int shiftSize = indexToShift.intSize();
 
-            stampSource.fillPrevChunk(shiftFillContext.ensureCapacity(shiftSize), stampValues.ensureCapacity(shiftSize), indexToShift);
+            stampSource.fillPrevChunk(shiftFillContext.ensureCapacity(shiftSize),
+                stampValues.ensureCapacity(shiftSize), indexToShift);
             indexToShift.fillKeyIndicesChunk(stampKeys.ensureCapacity(shiftSize));
 
             shiftSortContext.ensureCapacity(shiftSize).sort(stampKeys.get(), stampValues.get());

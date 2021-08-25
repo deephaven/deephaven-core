@@ -13,8 +13,8 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * This class defines a rollup.  It defines both the grouping columns, their order, and
- * all aggregations to be performed on other columns.
+ * This class defines a rollup. It defines both the grouping columns, their order, and all
+ * aggregations to be performed on other columns.
  */
 public class RollupDefinition implements Serializable {
     private static final long serialVersionUID = 2L;
@@ -42,10 +42,13 @@ public class RollupDefinition implements Serializable {
      * @param aggregations the aggregations to perform and which columns to perform them on
      * @param includeConstituents if constituent rows should be included
      * @param includeOriginalColumns if original columns should be included
-     * @param includeDescriptions if the rollup should automatically add column descriptions for the chosen aggs
+     * @param includeDescriptions if the rollup should automatically add column descriptions for the
+     *        chosen aggs
      */
-    public RollupDefinition(List<String> groupingColumns, Map<AggType, Set<String>> aggregations, boolean includeConstituents, boolean includeOriginalColumns, boolean includeDescriptions) {
-        this(groupingColumns, aggregations, includeConstituents, includeOriginalColumns, includeDescriptions,  "");
+    public RollupDefinition(List<String> groupingColumns, Map<AggType, Set<String>> aggregations,
+        boolean includeConstituents, boolean includeOriginalColumns, boolean includeDescriptions) {
+        this(groupingColumns, aggregations, includeConstituents, includeOriginalColumns,
+            includeDescriptions, "");
     }
 
     /**
@@ -55,13 +58,17 @@ public class RollupDefinition implements Serializable {
      * @param aggregations the aggregations to perform and which columns to perform them on
      * @param includeConstituents if constituent rows should be included
      * @param includeOriginalColumns if original columns should be included
-     * @param includeDescriptions if the rollup should automatically add column descriptions for the chosen aggs
+     * @param includeDescriptions if the rollup should automatically add column descriptions for the
+     *        chosen aggs
      * @param name an optional name.
      */
-    public RollupDefinition(List<String> groupingColumns, Map<AggType, Set<String>> aggregations, boolean includeConstituents, boolean includeOriginalColumns, boolean includeDescriptions, String name) {
+    public RollupDefinition(List<String> groupingColumns, Map<AggType, Set<String>> aggregations,
+        boolean includeConstituents, boolean includeOriginalColumns, boolean includeDescriptions,
+        String name) {
         this.groupingColumns = new ArrayList<>(groupingColumns);
         this.aggregations = new LinkedHashMap<>();
-        aggregations.forEach((agg, cols) -> this.aggregations.computeIfAbsent(agg, a -> new LinkedHashSet<>()).addAll(cols));
+        aggregations.forEach((agg, cols) -> this.aggregations
+            .computeIfAbsent(agg, a -> new LinkedHashSet<>()).addAll(cols));
         this.includeConstituents = includeConstituents;
         this.includeOriginalColumns = includeOriginalColumns;
         this.includeDescriptions = includeDescriptions;
@@ -70,12 +77,14 @@ public class RollupDefinition implements Serializable {
 
     /**
      * Create a shallow copy of the specified RollupDefinition
+     * 
      * @param other the definition to copy
      */
     public RollupDefinition(RollupDefinition other) {
         this.groupingColumns = new ArrayList<>(other.groupingColumns);
         this.aggregations = new LinkedHashMap<>();
-        other.aggregations.forEach((agg, cols) -> this.aggregations.computeIfAbsent(agg, a -> new LinkedHashSet<>()).addAll(cols));
+        other.aggregations.forEach((agg, cols) -> this.aggregations
+            .computeIfAbsent(agg, a -> new LinkedHashSet<>()).addAll(cols));
         this.includeConstituents = other.includeConstituents;
         this.includeOriginalColumns = other.includeOriginalColumns;
         this.includeDescriptions = other.includeDescriptions;
@@ -119,7 +128,8 @@ public class RollupDefinition implements Serializable {
     }
 
     /**
-     * Check if this definition produces a rollup that includes column descriptions for each aggregation.
+     * Check if this definition produces a rollup that includes column descriptions for each
+     * aggregation.
      *
      * @return true if column descriptions are included.
      */
@@ -134,27 +144,27 @@ public class RollupDefinition implements Serializable {
      */
     public Element toXml() {
         final Element info = new Element(NODE_NAME)
-                .setAttribute(ATTR_CONSTITUENTS, Boolean.toString(includeConstituents))
-                .setAttribute(ATTR_INCLUDE_OTHER, Boolean.toString(includeOriginalColumns))
-                .setAttribute(ATTR_INCLUDE_DESCRIPTIONS, Boolean.toString(includeDescriptions));
+            .setAttribute(ATTR_CONSTITUENTS, Boolean.toString(includeConstituents))
+            .setAttribute(ATTR_INCLUDE_OTHER, Boolean.toString(includeOriginalColumns))
+            .setAttribute(ATTR_INCLUDE_DESCRIPTIONS, Boolean.toString(includeDescriptions));
 
-        if(!StringUtils.isNullOrEmpty(name)) {
+        if (!StringUtils.isNullOrEmpty(name)) {
             info.setAttribute(ATTR_NAME, name);
         }
 
-        for(final String name : groupingColumns) {
+        for (final String name : groupingColumns) {
             final Element groupByElem = new Element(GROUP_BY_NODE);
             groupByElem.setAttribute(ATTR_NAME, name);
             info.addContent(groupByElem);
         }
 
-        for(final Map.Entry<AggType, Set<String>> item : aggregations.entrySet()) {
+        for (final Map.Entry<AggType, Set<String>> item : aggregations.entrySet()) {
             final Element opElem = new Element(OPS_NODE);
             opElem.setAttribute(ATTR_NAME, item.getKey().toString());
 
             item.getValue().stream()
-                    .map(col -> new Element(COLUMN_NODE).setAttribute(ATTR_NAME, col))
-                    .forEach(opElem::addContent);
+                .map(col -> new Element(COLUMN_NODE).setAttribute(ATTR_NAME, col))
+                .forEach(opElem::addContent);
 
             info.addContent(opElem);
         }
@@ -193,8 +203,9 @@ public class RollupDefinition implements Serializable {
      */
     public Table applyTo(Table table) {
         final Map<String, String> maybeDescriptions = includeDescriptions ? new HashMap<>() : null;
-        Table result = table.rollup(createComboAggregateFactory(maybeDescriptions), includeConstituents, groupingColumns);
-        if(maybeDescriptions != null) {
+        Table result = table.rollup(createComboAggregateFactory(maybeDescriptions),
+            includeConstituents, groupingColumns);
+        if (maybeDescriptions != null) {
             result = result.withColumnDescription(maybeDescriptions);
         }
 
@@ -202,37 +213,42 @@ public class RollupDefinition implements Serializable {
     }
 
     /**
-     * Create the ComboAggregateFactory for this rollup.  Generate column descriptions if required.
+     * Create the ComboAggregateFactory for this rollup. Generate column descriptions if required.
      *
      * @param descriptions if non-null this method will generate column descriptions
      * @return the ComboAggFactory
      */
-    private ComboAggregateFactory createComboAggregateFactory(final Map<String, String> descriptions) {
+    private ComboAggregateFactory createComboAggregateFactory(
+        final Map<String, String> descriptions) {
         final TObjectIntHashMap<String> aggsByColumn = new TObjectIntHashMap<>();
-        final List<ComboAggregateFactory.ComboBy> combos = new ArrayList<>(getAggregations().size());
+        final List<ComboAggregateFactory.ComboBy> combos =
+            new ArrayList<>(getAggregations().size());
 
-        // Take two passes through the list.  The first pass is to decide if we need to append suffixes.
+        // Take two passes through the list. The first pass is to decide if we need to append
+        // suffixes.
         // The second pass actually creates the aggs.
-        for(final Map.Entry<AggType, Set<String>> item : getAggregations().entrySet()) {
-            if(item.getKey() != AggType.Count) {
+        for (final Map.Entry<AggType, Set<String>> item : getAggregations().entrySet()) {
+            if (item.getKey() != AggType.Count) {
                 item.getValue().forEach(c -> aggsByColumn.adjustOrPutValue(c, 1, 1));
             }
         }
 
-        for(final Map.Entry<AggType, Set<String>> item : getAggregations().entrySet()) {
-            if(item.getKey() == AggType.Count) {
-                combos.add(ComboAggregateFactory.AggCount(item.getValue().stream().findFirst().orElse("Rollup_Count")));
+        for (final Map.Entry<AggType, Set<String>> item : getAggregations().entrySet()) {
+            if (item.getKey() == AggType.Count) {
+                combos.add(ComboAggregateFactory
+                    .AggCount(item.getValue().stream().findFirst().orElse("Rollup_Count")));
             } else {
                 final String[] matchPairs = item.getValue()
-                        .stream()
-                        .map(col -> {
-                            final String aggColName = createAggColName(col, aggsByColumn, item.getKey());
-                            if(descriptions != null) {
-                                descriptions.put(aggColName, col + " aggregated with " + item.getKey());
-                            }
+                    .stream()
+                    .map(col -> {
+                        final String aggColName =
+                            createAggColName(col, aggsByColumn, item.getKey());
+                        if (descriptions != null) {
+                            descriptions.put(aggColName, col + " aggregated with " + item.getKey());
+                        }
 
-                            return aggColName + "=" + col;
-                        }).toArray(String[]::new);
+                        return aggColName + "=" + col;
+                    }).toArray(String[]::new);
                 combos.add(ComboAggregateFactory.Agg(item.getKey(), matchPairs));
             }
         }
@@ -240,8 +256,11 @@ public class RollupDefinition implements Serializable {
         return ComboAggregateFactory.AggCombo(combos.toArray(new ComboAggregateFactory.ComboBy[0]));
     }
 
-    private String createAggColName(String col, TObjectIntHashMap<String> aggsByColumn, AggType agg) {
-        return (aggsByColumn.get(col) > 1 && agg != AggType.Sum) || groupingColumns.contains(col) ? col + "_" + agg : col;
+    private String createAggColName(String col, TObjectIntHashMap<String> aggsByColumn,
+        AggType agg) {
+        return (aggsByColumn.get(col) > 1 && agg != AggType.Sum) || groupingColumns.contains(col)
+            ? col + "_" + agg
+            : col;
     }
 
     /**
@@ -250,16 +269,17 @@ public class RollupDefinition implements Serializable {
      * @param rollupElement the element
      * @return a RollupDefinition
      */
-    public static RollupDefinition fromXml(Element rollupElement) throws UncheckedDeephavenException {
+    public static RollupDefinition fromXml(Element rollupElement)
+        throws UncheckedDeephavenException {
         final List<String> groupingColumns = new ArrayList<>();
-        for(final Element groupByElem : rollupElement.getChildren(GROUP_BY_NODE)) {
+        for (final Element groupByElem : rollupElement.getChildren(GROUP_BY_NODE)) {
             groupingColumns.add(groupByElem.getAttributeValue(ATTR_NAME));
         }
 
         final Map<AggType, Set<String>> aggs = new LinkedHashMap<>();
-        for(final Element opsElem : rollupElement.getChildren(OPS_NODE)) {
+        for (final Element opsElem : rollupElement.getChildren(OPS_NODE)) {
             final String name = opsElem.getAttributeValue(ATTR_NAME);
-            if(StringUtils.isNullOrEmpty(name)) {
+            if (StringUtils.isNullOrEmpty(name)) {
                 throw new UncheckedDeephavenException("Rollup element missing attribute name");
             }
 
@@ -271,10 +291,11 @@ public class RollupDefinition implements Serializable {
             }
             final Set<String> colsForAgg = aggs.computeIfAbsent(agg, a -> new LinkedHashSet<>());
 
-            for(final Element colEl : opsElem.getChildren(COLUMN_NODE)) {
+            for (final Element colEl : opsElem.getChildren(COLUMN_NODE)) {
                 final String colName = colEl.getAttributeValue(ATTR_NAME);
-                if(StringUtils.isNullOrEmpty(colName)) {
-                    throw new UncheckedDeephavenException("Rollup aggregation column element missing name");
+                if (StringUtils.isNullOrEmpty(colName)) {
+                    throw new UncheckedDeephavenException(
+                        "Rollup aggregation column element missing name");
                 }
 
                 colsForAgg.add(colName);
@@ -282,43 +303,47 @@ public class RollupDefinition implements Serializable {
         }
 
         return new RollupDefinition(groupingColumns, aggs,
-                Boolean.parseBoolean(rollupElement.getAttributeValue(ATTR_CONSTITUENTS)),
-                Boolean.parseBoolean(rollupElement.getAttributeValue(ATTR_INCLUDE_OTHER)),
-                Boolean.parseBoolean(rollupElement.getAttributeValue(ATTR_INCLUDE_DESCRIPTIONS)),
-                rollupElement.getAttributeValue(ATTR_NAME));
+            Boolean.parseBoolean(rollupElement.getAttributeValue(ATTR_CONSTITUENTS)),
+            Boolean.parseBoolean(rollupElement.getAttributeValue(ATTR_INCLUDE_OTHER)),
+            Boolean.parseBoolean(rollupElement.getAttributeValue(ATTR_INCLUDE_DESCRIPTIONS)),
+            rollupElement.getAttributeValue(ATTR_NAME));
     }
 
     /**
-     * Check equality with another definition.  The name is not included in the equality check.
+     * Check equality with another definition. The name is not included in the equality check.
+     * 
      * @param o the other object
      * @return true if the two definitions describe the same rollup
      */
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         RollupDefinition that = (RollupDefinition) o;
         return includeConstituents == that.includeConstituents &&
-                includeOriginalColumns == that.includeOriginalColumns &&
-                includeDescriptions == that.includeDescriptions &&
-                Objects.equals(groupingColumns, that.groupingColumns) &&
-                Objects.equals(aggregations, that.aggregations);
+            includeOriginalColumns == that.includeOriginalColumns &&
+            includeDescriptions == that.includeDescriptions &&
+            Objects.equals(groupingColumns, that.groupingColumns) &&
+            Objects.equals(aggregations, that.aggregations);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(groupingColumns, aggregations, includeConstituents, includeOriginalColumns);
+        return Objects.hash(groupingColumns, aggregations, includeConstituents,
+            includeOriginalColumns);
     }
 
     public static Builder builder() {
         return new Builder();
     }
 
-    //region Builder for PreDefine
+    // region Builder for PreDefine
 
     /**
-     * A Builder class to define rollups and attach them to tables as predefined rollups.
-     * Instances may be retained to hold references to pre-created rollups.
+     * A Builder class to define rollups and attach them to tables as predefined rollups. Instances
+     * may be retained to hold references to pre-created rollups.
      */
     public static class Builder {
         @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
@@ -371,7 +396,7 @@ public class RollupDefinition implements Serializable {
          * @return this builder
          */
         public Builder agg(AggType type, String... columns) {
-            if(columns == null || columns.length == 0) {
+            if (columns == null || columns.length == 0) {
                 aggregations.remove(type);
                 return this;
             }
@@ -387,14 +412,15 @@ public class RollupDefinition implements Serializable {
          * @return this builder
          */
         public Builder agg(AggType type, Collection<String> columns) {
-            if(columns == null || columns.isEmpty()) {
+            if (columns == null || columns.isEmpty()) {
                 aggregations.remove(type);
                 return this;
             }
 
-            if(type == AggType.Count) {
-                if(columns.size() > 1) {
-                    throw new IllegalArgumentException("The Count aggregation must have one, and only one column");
+            if (type == AggType.Count) {
+                if (columns.size() > 1) {
+                    throw new IllegalArgumentException(
+                        "The Count aggregation must have one, and only one column");
                 }
             }
 
@@ -403,8 +429,7 @@ public class RollupDefinition implements Serializable {
         }
 
         /**
-         * Set if the result table should include constituents.
-         * NOTE: This is currently unsupported.
+         * Set if the result table should include constituents. NOTE: This is currently unsupported.
          *
          * @param include if constituent rows should be included
          * @return this builder
@@ -415,8 +440,8 @@ public class RollupDefinition implements Serializable {
         }
 
         /**
-         * Set if the result table should include original columns.
-         * NOTE: This is currently unsupported.
+         * Set if the result table should include original columns. NOTE: This is currently
+         * unsupported.
          *
          * @param include if original columns should be included
          * @return this builder
@@ -444,19 +469,20 @@ public class RollupDefinition implements Serializable {
          * @throws UncheckedDeephavenException if the definition is not complete.
          */
         public RollupDefinition build() throws UncheckedDeephavenException {
-            if(StringUtils.isNullOrEmpty(name)) {
+            if (StringUtils.isNullOrEmpty(name)) {
                 throw new UncheckedDeephavenException("Name not defined for rollup");
             }
 
-            if(groupingColumns == null || groupingColumns.isEmpty()) {
+            if (groupingColumns == null || groupingColumns.isEmpty()) {
                 throw new UncheckedDeephavenException("No grouping columns defined");
             }
 
-            if(aggregations.isEmpty()) {
+            if (aggregations.isEmpty()) {
                 throw new UncheckedDeephavenException("No aggregations defined");
             }
 
-            return new RollupDefinition(groupingColumns, aggregations, includeConstituents, includeOriginalColumns, includeDescriptions, name);
+            return new RollupDefinition(groupingColumns, aggregations, includeConstituents,
+                includeOriginalColumns, includeDescriptions, name);
         }
 
         /**
@@ -472,26 +498,28 @@ public class RollupDefinition implements Serializable {
 
         /**
          * Create the rollup definition and attach it to the specified table as a predefined rollup.
-         * Additionally,  create and hold a reference to the rollup table if requested.
+         * Additionally, create and hold a reference to the rollup table if requested.
          *
          * @param attachTo the table to attach to
          * @return this builder
          * @throws UncheckedDeephavenException
          */
-        public Builder buildAndAttach(Table attachTo, boolean preCreate) throws UncheckedDeephavenException {
+        public Builder buildAndAttach(Table attachTo, boolean preCreate)
+            throws UncheckedDeephavenException {
             final RollupDefinition def = build();
 
-            if(preCreate) {
-                if(rollupCache == null) {
+            if (preCreate) {
+                if (rollupCache == null) {
                     rollupCache = new HashSet<>();
                 }
 
                 rollupCache.add(def.applyTo(attachTo));
             }
 
-            //noinspection unchecked
-            List<RollupDefinition> definitionMap = (List<RollupDefinition>)attachTo.getAttribute(Table.PREDEFINED_ROLLUP_ATTRIBUTE);
-            if(definitionMap == null) {
+            // noinspection unchecked
+            List<RollupDefinition> definitionMap =
+                (List<RollupDefinition>) attachTo.getAttribute(Table.PREDEFINED_ROLLUP_ATTRIBUTE);
+            if (definitionMap == null) {
                 definitionMap = new ArrayList<>();
                 attachTo.setAttribute(Table.PREDEFINED_ROLLUP_ATTRIBUTE, definitionMap);
             }
@@ -500,5 +528,5 @@ public class RollupDefinition implements Serializable {
             return this;
         }
     }
-    //endregion
+    // endregion
 }

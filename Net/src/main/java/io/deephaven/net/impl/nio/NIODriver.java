@@ -39,31 +39,34 @@ public class NIODriver implements Runnable {
     public static int NUM_INITIAL_THREADS;
     public static int HARD_MAX_THREADS;
 
-    private static final boolean useFastNIODriver = Configuration.getInstance().getBoolean("NIO.driver.useFast");
+    private static final boolean useFastNIODriver =
+        Configuration.getInstance().getBoolean("NIO.driver.useFast");
 
     /**
      * Let another thread take over the leadership.
      */
     private static void handoff() {
         Thread me = Thread.currentThread();
-        synchronized ( lock ) {
-            if ( leader != me ) {
+        synchronized (lock) {
+            if (leader != me) {
                 LogCrashDump.logCrashDump(log);
-                CommBase.signalFatalError("NIODriver: WTF? in handoff(), but not the leader?", new Throwable());
+                CommBase.signalFatalError("NIODriver: WTF? in handoff(), but not the leader?",
+                    new Throwable());
             }
 
-            if ( log.isDebugEnabled() ) {
-                log.debug().append("Thread ").append(me.getName()).append(" is giving up leadership").endl();
+            if (log.isDebugEnabled()) {
+                log.debug().append("Thread ").append(me.getName())
+                    .append(" is giving up leadership").endl();
             }
 
             leader = null;
 
-            if ( stopped || available.get() != 0 ) {
+            if (stopped || available.get() != 0) {
                 lock.notify();
-            }
-            else {
+            } else {
                 // no joy, have to add another thread
-                log.warn().append("Thread ").append(me.getName()).append(" is handing off with no threads available: ").append(summary()).endl();
+                log.warn().append("Thread ").append(me.getName())
+                    .append(" is handing off with no threads available: ").append(summary()).endl();
                 addThread();
             }
         }
@@ -85,7 +88,8 @@ public class NIODriver implements Runnable {
         if (useFastNIODriver) {
             return driver.summary();
         } else {
-            return "(available: "+ available +", created: "+created+", destroyed: "+destroyed+")";
+            return "(available: " + available + ", created: " + created + ", destroyed: "
+                + destroyed + ")";
         }
     }
 
@@ -110,20 +114,23 @@ public class NIODriver implements Runnable {
             if (!initialized) {
                 NIODriver.log = log;
                 WORK_TIMEOUT = Configuration.getInstance().getInteger("NIO.driver.workTimeout");
-                NUM_INITIAL_THREADS = Configuration.getInstance().getInteger("NIO.driver.initialThreadCount");
-                HARD_MAX_THREADS = Configuration.getInstance().getInteger("NIO.driver.maxThreadCount");
+                NUM_INITIAL_THREADS =
+                    Configuration.getInstance().getInteger("NIO.driver.initialThreadCount");
+                HARD_MAX_THREADS =
+                    Configuration.getInstance().getInteger("NIO.driver.maxThreadCount");
                 if (useFastNIODriver) {
-                    driver = FastNIODriver.createDrivers("Static", log, NUM_INITIAL_THREADS, HARD_MAX_THREADS, WORK_TIMEOUT, 1000, true);
+                    driver = FastNIODriver.createDrivers("Static", log, NUM_INITIAL_THREADS,
+                        HARD_MAX_THREADS, WORK_TIMEOUT, 1000, true);
                     sched = driver.getScheduler();
                 } else {
                     try {
-                        sched = new YASchedulerImpl(NioUtil.reduceSelectorGarbage(Selector.open()), log);
-                    }
-                    catch ( IOException x ) {
+                        sched = new YASchedulerImpl(NioUtil.reduceSelectorGarbage(Selector.open()),
+                            log);
+                    } catch (IOException x) {
                         sched = null;
                         CommBase.signalFatalError("NIODriver.init: can't create scheduler", x);
                     }
-                    for ( int i = 0; i < NUM_INITIAL_THREADS; ++i ) {
+                    for (int i = 0; i < NUM_INITIAL_THREADS; ++i) {
                         addThread();
                     }
                 }
@@ -134,13 +141,15 @@ public class NIODriver implements Runnable {
     }
 
     /**
-     * Shut down, and wait for all threads to terminate.  This method is really just for testing; it's
-     * a bad idea to do this in production because waiting for threads to terminate is prone to deadlocks.
-     * If desired, though, it can be called from an AbstractService shutdown hook installed in init().
+     * Shut down, and wait for all threads to terminate. This method is really just for testing;
+     * it's a bad idea to do this in production because waiting for threads to terminate is prone to
+     * deadlocks. If desired, though, it can be called from an AbstractService shutdown hook
+     * installed in init().
      */
     public static boolean shutdown(long maxWait) {
         synchronized (lock) {
-            if (!initialized) return true;
+            if (!initialized)
+                return true;
 
             if (useFastNIODriver) {
                 if (driver.shutdown(maxWait)) {
@@ -155,16 +164,18 @@ public class NIODriver implements Runnable {
                 stopped = true;
                 lock.notifyAll();
                 // force the scheduler to wake up
-                sched.installJob(new TimedJob() { public void timedOut() {} }, 0);
-                while ( created != destroyed ) {
+                sched.installJob(new TimedJob() {
+                    public void timedOut() {}
+                }, 0);
+                while (created != destroyed) {
                     try {
-                        log.info().append("NIODriver.shutdown: waiting for threads to terminate: ").append(summary()).endl();
+                        log.info().append("NIODriver.shutdown: waiting for threads to terminate: ")
+                            .append(summary()).endl();
                         lock.wait(Math.max(remain, 0));
-                    }
-                    catch ( InterruptedException x ) {
+                    } catch (InterruptedException x) {
                         // ignore
                     }
-                    if ( (remain = deadline - System.currentTimeMillis()) < 0 ) {
+                    if ((remain = deadline - System.currentTimeMillis()) < 0) {
                         return false;
                     }
                 }
@@ -199,58 +210,63 @@ public class NIODriver implements Runnable {
      *
      * NOTE: caller must hold the lock!
      *
-     * NOTE: We increment the "waiting" variable *before* we start the new thread, and then make sure
-     * to correct it in the first iteration of the thread loop.  This prevents a race in which we
-     * handoff() method creates too many threads, because it keeps getting called before the first
-     * thread it creates can get started.
+     * NOTE: We increment the "waiting" variable *before* we start the new thread, and then make
+     * sure to correct it in the first iteration of the thread loop. This prevents a race in which
+     * we handoff() method creates too many threads, because it keeps getting called before the
+     * first thread it creates can get started.
      */
     private static void addThread() {
-        if ( created == HARD_MAX_THREADS ) {
-            log.fatal().append("NIODriver: exceeded maximum thread pool limit: ").append(summary()).endl();
+        if (created == HARD_MAX_THREADS) {
+            log.fatal().append("NIODriver: exceeded maximum thread pool limit: ").append(summary())
+                .endl();
             LogCrashDump.logCrashDump(log);
-            CommBase.signalFatalError("NIODriver: exceeded maximum thread pool limit: "+summary(), new Throwable());
+            CommBase.signalFatalError("NIODriver: exceeded maximum thread pool limit: " + summary(),
+                new Throwable());
         }
         Thread thread = new Thread(new NIODriver());
         thread.setDaemon(true);
-        thread.setName("NIODriver-"+created);
+        thread.setName("NIODriver-" + created);
         created++;
         available.incrementAndGet();
-        log.info().append("Thread ").append(thread.getName()).append(" is starting: ").append(summary()).endl();
+        log.info().append("Thread ").append(thread.getName()).append(" is starting: ")
+            .append(summary()).endl();
         thread.start();
     }
 
     /**
-     * the threads' run method just does an endless loop, trying to become the leader whenever it can
+     * the threads' run method just does an endless loop, trying to become the leader whenever it
+     * can
      */
     public void run() {
         Thread me = Thread.currentThread();
         STOP: {
-            while ( true ) {
-                synchronized( lock ) {
-                    while ( leader != me ) {
-                        if ( stopped ) {
+            while (true) {
+                synchronized (lock) {
+                    while (leader != me) {
+                        if (stopped) {
                             destroyed++;
-                            log.info().append("Thread ").append(me.getName()).append(" is terminating: ").append(summary()).endl();
+                            log.info().append("Thread ").append(me.getName())
+                                .append(" is terminating: ").append(summary()).endl();
                             lock.notifyAll();
                             break STOP;
-                        }
-                        else if ( leader == null ) {
-                            if ( log.isDebugEnabled() ) {
-                                log.debug().append("Thread ").append(me.getName()).append(" is assuming leadership").endl();
+                        } else if (leader == null) {
+                            if (log.isDebugEnabled()) {
+                                log.debug().append("Thread ").append(me.getName())
+                                    .append(" is assuming leadership").endl();
                             }
                             leader = me;
-                        }
-                        else {
+                        } else {
                             try {
-                                if ( log.isDebugEnabled() ) {
-                                    log.debug().append("Thread ").append(me.getName()).append(" is waiting ").append(summary()).endl();
+                                if (log.isDebugEnabled()) {
+                                    log.debug().append("Thread ").append(me.getName())
+                                        .append(" is waiting ").append(summary()).endl();
                                 }
                                 lock.wait();
-                                if ( log.isDebugEnabled() ) {
-                                    log.debug().append("Thread ").append(me.getName()).append(" has awoken ").append(summary()).endl();
+                                if (log.isDebugEnabled()) {
+                                    log.debug().append("Thread ").append(me.getName())
+                                        .append(" has awoken ").append(summary()).endl();
                                 }
-                            }
-                            catch ( InterruptedException x ) {
+                            } catch (InterruptedException x) {
                                 // ignore
                             }
                         }
@@ -260,11 +276,12 @@ public class NIODriver implements Runnable {
                     available.decrementAndGet();
                     sched.work(WORK_TIMEOUT, handoffProc);
                     available.incrementAndGet();
-                }
-                catch ( Throwable x ) {
-                    synchronized( lock ) {
+                } catch (Throwable x) {
+                    synchronized (lock) {
                         destroyed++;
-                        log.fatal(x).append("Thread ").append(me.getName()).append(" is terminating on a fatal exception: ").append(summary()).endl();
+                        log.fatal(x).append("Thread ").append(me.getName())
+                            .append(" is terminating on a fatal exception: ").append(summary())
+                            .endl();
                         lock.notifyAll();
                     }
 
@@ -284,6 +301,7 @@ public class NIODriver implements Runnable {
             return available.get();
         }
     }
+
     public static int junit_getCreated() {
         if (useFastNIODriver) {
             return driver.junit_getCreated();
@@ -291,6 +309,7 @@ public class NIODriver implements Runnable {
             return created;
         }
     }
+
     public static int junit_getDestroyed() {
         if (useFastNIODriver) {
             return driver.junit_getDestroyed();
@@ -299,6 +318,6 @@ public class NIODriver implements Runnable {
         }
     }
 
-    //################################################################
+    // ################################################################
 
 }

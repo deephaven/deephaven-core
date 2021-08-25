@@ -20,19 +20,20 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
     Class getType();
 
     /**
-     * Get the array component type, or the type itself.
-     * For basic types, this is just the type.  For example, if you have a column of java.lang.String, this also returns
-     * java.lang.String.  For array types (java Arrays), or DbArray (which would be returned by getType), you get the
-     * type that is contained within the array.  For example, if a single row in this column contains a DbDoubleArray,
-     * getComponentType returns double.
+     * Get the array component type, or the type itself. For basic types, this is just the type. For
+     * example, if you have a column of java.lang.String, this also returns java.lang.String. For
+     * array types (java Arrays), or DbArray (which would be returned by getType), you get the type
+     * that is contained within the array. For example, if a single row in this column contains a
+     * DbDoubleArray, getComponentType returns double.
      *
      * @return if type is an array, the type of object within the array. Otherwise type itself.
      */
     Class getComponentType();
 
     /**
-     * Get the contents of this data column in array form.  Note that this will return an array of the appropriate
-     * primitive type for columns of non-Boolean primitive types.
+     * Get the contents of this data column in array form. Note that this will return an array of
+     * the appropriate primitive type for columns of non-Boolean primitive types.
+     * 
      * @return An appropriately-typed array containing the full contents of this data column
      */
     default Object getDirect() {
@@ -40,14 +41,17 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
     }
 
     /**
-     * Get the contents of a range of this data column in array form. See {@link #getDirect()} for an explanation
-     * of return types. Note that it's required that {@code endIndexExclusive - startIndexInclusive < Integer.MAX_VALUE}.
+     * Get the contents of a range of this data column in array form. See {@link #getDirect()} for
+     * an explanation of return types. Note that it's required that
+     * {@code endIndexExclusive - startIndexInclusive < Integer.MAX_VALUE}.
+     * 
      * @param startIndexInclusive The first position in the data column to include, inclusive
      * @param endIndexExclusive One more than the last position in the data column to include
-     * @return An appropriately-typed array containing the contents of the specified range of this data column
+     * @return An appropriately-typed array containing the contents of the specified range of this
+     *         data column
      */
     default Object getDirect(final long startIndexInclusive, final long endIndexExclusive) {
-        //noinspection unchecked
+        // noinspection unchecked
         final Class<TYPE> type = getType();
         if (type == byte.class || type == Byte.class) {
             return getBytes(startIndexInclusive, endIndexExclusive);
@@ -74,7 +78,7 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
     }
 
     default Object getDirect(final long... indexes) {
-        //noinspection unchecked
+        // noinspection unchecked
         final Class<TYPE> type = getType();
         if (type == byte.class || type == Byte.class) {
             return getBytes(indexes);
@@ -101,7 +105,7 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
     }
 
     default Object getDirect(final int... indexes) {
-        //noinspection unchecked
+        // noinspection unchecked
         final Class<TYPE> type = getType();
         if (type == byte.class || type == Byte.class) {
             return getBytes(indexes);
@@ -129,14 +133,16 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
 
     /**
      * Returns the value in the column at the row designated by the index
+     * 
      * @param index - the index of the row for which the data is being retrieved
      * @return the value in the column at the row designated by the index
      */
     TYPE get(long index);
 
     /**
-     * Return the column's values for the specified row range.  Note that this will be a boxed array, for data columns
-     * of primitive types.
+     * Return the column's values for the specified row range. Note that this will be a boxed array,
+     * for data columns of primitive types.
+     * 
      * @param startIndexInclusive The first position in the data column to include, inclusive
      * @param endIndexExclusive One more than the last position in the data column to include
      * @return Return the column's values for the specified row range
@@ -144,109 +150,144 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
     TYPE[] get(long startIndexInclusive, long endIndexExclusive);
 
     /**
-     * Return the column's values for the specified rows.  Note that this will be a boxed array, for data columns
-     * of primitive types.
+     * Return the column's values for the specified rows. Note that this will be a boxed array, for
+     * data columns of primitive types.
+     * 
      * @param indexes The row indexes to fetch
      * @return Return the column's values for the specified rows
      */
     TYPE[] get(long... indexes);
 
     /**
-     * Return the column's values for the specified rows.  Note that this will be a boxed array, for data columns
-     * of primitive types.
+     * Return the column's values for the specified rows. Note that this will be a boxed array, for
+     * data columns of primitive types.
+     * 
      * @param indexes The row indexes to fetch
      * @return Return the column's values for the specified rows
      */
     TYPE[] get(int... indexes);
 
     Boolean getBoolean(long index);
+
     Boolean[] getBooleans(long startIndexInclusive, long endIndexExclusive);
+
     Boolean[] getBooleans(long... indexes);
+
     Boolean[] getBooleans(int... indexes);
 
     byte getByte(long index);
+
     byte[] getBytes(long startIndexInclusive, long endIndexExclusive);
+
     byte[] getBytes(long... indexes);
+
     byte[] getBytes(int... indexes);
 
     char getChar(long index);
+
     char[] getChars(long startIndexInclusive, long endIndexExclusive);
+
     char[] getChars(long... indexes);
+
     char[] getChars(int... indexes);
 
     double getDouble(long index);
+
     double[] getDoubles(long startIndexInclusive, long endIndexExclusive);
+
     double[] getDoubles(long... indexes);
+
     double[] getDoubles(int... indexes);
 
     float getFloat(long index);
+
     float[] getFloats(long startIndexInclusive, long endIndexExclusive);
+
     float[] getFloats(long... indexes);
+
     float[] getFloats(int... indexes);
 
     int getInt(long index);
+
     int[] getInts(long startIndexInclusive, long endIndexExclusive);
+
     int[] getInts(long... indexes);
+
     int[] getInts(int... indexes);
 
     long getLong(long index);
+
     long[] getLongs(long startIndexInclusive, long endIndexExclusive);
+
     long[] getLongs(long... indexes);
+
     long[] getLongs(int... indexes);
 
     short getShort(long index);
+
     short[] getShorts(long startIndexInclusive, long endIndexExclusive);
+
     short[] getShorts(long... indexes);
+
     short[] getShorts(int... indexes);
 
     default void setDirect(long startIndex, Object array) {
-        //noinspection unchecked
+        // noinspection unchecked
         final Class<TYPE> type = getType();
         if (type == byte.class || type == Byte.class) {
-            setBytes(startIndex, (byte[])array);
+            setBytes(startIndex, (byte[]) array);
         } else if (type == char.class || type == Character.class) {
-            setChars(startIndex, (char[])array);
+            setChars(startIndex, (char[]) array);
         } else if (type == double.class || type == Double.class) {
-            setDoubles(startIndex, (double[])array);
+            setDoubles(startIndex, (double[]) array);
         } else if (type == float.class || type == Float.class) {
-            setFloats(startIndex, (float[])array);
+            setFloats(startIndex, (float[]) array);
         } else if (type == int.class || type == Integer.class) {
-            setInts(startIndex, (int[])array);
+            setInts(startIndex, (int[]) array);
         } else if (type == long.class || type == Long.class) {
-            setLongs(startIndex, (long[])array);
+            setLongs(startIndex, (long[]) array);
         } else if (type == short.class || type == Short.class) {
-            setShorts(startIndex, (short[])array);
+            setShorts(startIndex, (short[]) array);
         } else {
-            //noinspection unchecked
-            setArray(startIndex, (TYPE[])array);
+            // noinspection unchecked
+            setArray(startIndex, (TYPE[]) array);
         }
     }
 
     void set(long index, TYPE value);
+
     @SuppressWarnings("unchecked")
     void setArray(long startIndex, TYPE... values);
 
     void setBoolean(long index, Boolean value);
+
     void setBooleans(long startIndex, Boolean... values);
 
     void setByte(long index, byte value);
+
     void setBytes(long startIndex, byte... values);
 
     void setChar(long index, char value);
+
     void setChars(long startIndex, char... values);
 
     void setDouble(long index, double value);
+
     void setDoubles(long startIndex, double... values);
 
     void setFloat(long index, float value);
+
     void setFloats(long startIndex, float... values);
 
     void setInt(long index, int value);
+
     void setInts(long startIndex, int... values);
 
     void setLong(long index, long value);
+
     void setLongs(long startIndex, long... values);
 
     void setShort(long index, short value);
+
     void setShorts(long startIndex, short... values);
 }

@@ -14,90 +14,91 @@ import jsinterop.base.Js;
     name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.KeyValue",
     namespace = JsPackage.GLOBAL)
 public class KeyValue {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface KeyUnionType {
-    @JsOverlay
-    static KeyValue.KeyUnionType of(Object o) {
-      return Js.cast(o);
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface KeyUnionType {
+        @JsOverlay
+        static KeyValue.KeyUnionType of(Object o) {
+            return Js.cast(o);
+        }
+
+        @JsOverlay
+        default String asString() {
+            return Js.asString(this);
+        }
+
+        @JsOverlay
+        default Uint8Array asUint8Array() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default boolean isString() {
+            return (Object) this instanceof String;
+        }
+
+        @JsOverlay
+        default boolean isUint8Array() {
+            return (Object) this instanceof Uint8Array;
+        }
     }
 
-    @JsOverlay
-    default String asString() {
-      return Js.asString(this);
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ValueUnionType {
+        @JsOverlay
+        static KeyValue.ValueUnionType of(Object o) {
+            return Js.cast(o);
+        }
+
+        @JsOverlay
+        default String asString() {
+            return Js.asString(this);
+        }
+
+        @JsOverlay
+        default Uint8Array asUint8Array() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default boolean isString() {
+            return (Object) this instanceof String;
+        }
+
+        @JsOverlay
+        default boolean isUint8Array() {
+            return (Object) this instanceof Uint8Array;
+        }
     }
 
-    @JsOverlay
-    default Uint8Array asUint8Array() {
-      return Js.cast(this);
-    }
+    public static native void addKey(Builder builder, double keyOffset);
 
-    @JsOverlay
-    default boolean isString() {
-      return (Object) this instanceof String;
-    }
+    public static native void addValue(Builder builder, double valueOffset);
 
-    @JsOverlay
-    default boolean isUint8Array() {
-      return (Object) this instanceof Uint8Array;
-    }
-  }
+    public static native double createKeyValue(Builder builder, double keyOffset,
+        double valueOffset);
 
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ValueUnionType {
-    @JsOverlay
-    static KeyValue.ValueUnionType of(Object o) {
-      return Js.cast(o);
-    }
+    public static native double endKeyValue(Builder builder);
 
-    @JsOverlay
-    default String asString() {
-      return Js.asString(this);
-    }
+    public static native KeyValue getRootAsKeyValue(ByteBuffer bb, KeyValue obj);
 
-    @JsOverlay
-    default Uint8Array asUint8Array() {
-      return Js.cast(this);
-    }
+    public static native KeyValue getRootAsKeyValue(ByteBuffer bb);
 
-    @JsOverlay
-    default boolean isString() {
-      return (Object) this instanceof String;
-    }
+    public static native KeyValue getSizePrefixedRootAsKeyValue(ByteBuffer bb, KeyValue obj);
 
-    @JsOverlay
-    default boolean isUint8Array() {
-      return (Object) this instanceof Uint8Array;
-    }
-  }
+    public static native KeyValue getSizePrefixedRootAsKeyValue(ByteBuffer bb);
 
-  public static native void addKey(Builder builder, double keyOffset);
+    public static native void startKeyValue(Builder builder);
 
-  public static native void addValue(Builder builder, double valueOffset);
+    public ByteBuffer bb;
+    public double bb_pos;
 
-  public static native double createKeyValue(Builder builder, double keyOffset, double valueOffset);
+    public native KeyValue __init(double i, ByteBuffer bb);
 
-  public static native double endKeyValue(Builder builder);
+    public native KeyValue.KeyUnionType key();
 
-  public static native KeyValue getRootAsKeyValue(ByteBuffer bb, KeyValue obj);
+    public native KeyValue.KeyUnionType key(Encoding optionalEncoding);
 
-  public static native KeyValue getRootAsKeyValue(ByteBuffer bb);
+    public native KeyValue.ValueUnionType value();
 
-  public static native KeyValue getSizePrefixedRootAsKeyValue(ByteBuffer bb, KeyValue obj);
-
-  public static native KeyValue getSizePrefixedRootAsKeyValue(ByteBuffer bb);
-
-  public static native void startKeyValue(Builder builder);
-
-  public ByteBuffer bb;
-  public double bb_pos;
-
-  public native KeyValue __init(double i, ByteBuffer bb);
-
-  public native KeyValue.KeyUnionType key();
-
-  public native KeyValue.KeyUnionType key(Encoding optionalEncoding);
-
-  public native KeyValue.ValueUnionType value();
-
-  public native KeyValue.ValueUnionType value(Encoding optionalEncoding);
+    public native KeyValue.ValueUnionType value(Encoding optionalEncoding);
 }

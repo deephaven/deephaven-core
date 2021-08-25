@@ -19,7 +19,7 @@ public class AdaptiveBuilder extends AbstractTreeIndexImplRandomBuilder {
 
     @Override
     protected void setupInnerBuilderEmpty() {
-        builder = new MixedBuilder(2* SortedRanges.MAX_CAPACITY);
+        builder = new MixedBuilder(2 * SortedRanges.MAX_CAPACITY);
     }
 
     @Override

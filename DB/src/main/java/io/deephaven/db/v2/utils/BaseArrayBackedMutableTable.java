@@ -25,10 +25,11 @@ import java.util.function.Consumer;
 
 abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
-    private static final Object[] BOOLEAN_ENUM_ARRAY = new Object[]{true, false, null};
+    private static final Object[] BOOLEAN_ENUM_ARRAY = new Object[] {true, false, null};
 
     protected final InputTableDefinition inputTableDefinition;
-    private final List<PendingChange> pendingChanges = Collections.synchronizedList(new ArrayList<>());
+    private final List<PendingChange> pendingChanges =
+        Collections.synchronizedList(new ArrayList<>());
     private final AtomicLong nextSequence = new AtomicLong(0);
     private final AtomicLong processedSequence = new AtomicLong(0);
     private final Map<String, Object[]> enumValues;
@@ -39,7 +40,9 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     long nextRow = 0;
     private long pendingProcessed = NULL_NOTIFICATION_STEP;
 
-    public BaseArrayBackedMutableTable(Index index, Map<String, ? extends ColumnSource> nameToColumnSource, Map<String, Object[]> enumValues, ProcessPendingUpdater processPendingUpdater) {
+    public BaseArrayBackedMutableTable(Index index,
+        Map<String, ? extends ColumnSource> nameToColumnSource, Map<String, Object[]> enumValues,
+        ProcessPendingUpdater processPendingUpdater) {
         super(index, nameToColumnSource, processPendingUpdater);
         this.enumValues = enumValues;
         this.inputTableDefinition = new InputTableDefinition();
@@ -49,10 +52,12 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         processPendingUpdater.setThis(this);
     }
 
-    protected static Map<String, ? extends ArrayBackedColumnSource<?>> makeColumnSourceMap(TableDefinition definition) {
+    protected static Map<String, ? extends ArrayBackedColumnSource<?>> makeColumnSourceMap(
+        TableDefinition definition) {
         final Map<String, ArrayBackedColumnSource<?>> resultMap = new LinkedHashMap<>();
         for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
-            resultMap.put(columnDefinition.getName(), ArrayBackedColumnSource.getMemoryColumnSource(0, columnDefinition.getDataType()));
+            resultMap.put(columnDefinition.getName(),
+                ArrayBackedColumnSource.getMemoryColumnSource(0, columnDefinition.getDataType()));
         }
         return resultMap;
     }
@@ -74,7 +79,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             public void modifyIndex(long key) {
                 throw new UnsupportedOperationException();
             }
-        }, (e) -> {});
+        }, (e) -> {
+        });
         result.getIndex().insert(builder.getIndex());
         result.getIndex().initializePreviousValue();
         LiveTableMonitor.DEFAULT.addTable(result);
@@ -88,11 +94,14 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     /**
      * For unit test use only. Specify the function to invoke after enqueuing a pending change.
      *
-     * @param onPendingChange The function to invoke after enqueuing a pending change, or null to restore the default behavior
+     * @param onPendingChange The function to invoke after enqueuing a pending change, or null to
+     *        restore the default behavior
      */
     @TestUseOnly
     void setOnPendingChange(final Runnable onPendingChange) {
-        this.onPendingChange = onPendingChange == null ? () -> LiveTableMonitor.DEFAULT.requestRefresh(this) : onPendingChange;
+        this.onPendingChange =
+            onPendingChange == null ? () -> LiveTableMonitor.DEFAULT.requestRefresh(this)
+                : onPendingChange;
     }
 
     private void processPending(IndexChangeRecorder indexChangeRecorder) {
@@ -101,7 +110,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                 if (pendingChange.delete) {
                     processPendingDelete(pendingChange.table, indexChangeRecorder);
                 } else {
-                    processPendingTable(pendingChange.table, pendingChange.allowEdits, indexChangeRecorder, (e) -> pendingChange.error = e);
+                    processPendingTable(pendingChange.table, pendingChange.allowEdits,
+                        indexChangeRecorder, (e) -> pendingChange.error = e);
                 }
                 pendingProcessed = pendingChange.sequence;
             }
@@ -119,9 +129,11 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
     }
 
-    protected abstract void processPendingTable(Table table, boolean allowEdits, IndexChangeRecorder indexChangeRecorder, Consumer<String> errorNotifier);
+    protected abstract void processPendingTable(Table table, boolean allowEdits,
+        IndexChangeRecorder indexChangeRecorder, Consumer<String> errorNotifier);
 
-    protected abstract void processPendingDelete(Table table, IndexChangeRecorder indexChangeRecorder);
+    protected abstract void processPendingDelete(Table table,
+        IndexChangeRecorder indexChangeRecorder);
 
     protected abstract String getDefaultDescription();
 
@@ -184,23 +196,26 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
         private void add(Table newData, boolean allowEdits, InputTableStatusListener listener) {
             final PendingChange pendingChange = enqueueAddition(newData, allowEdits);
-            CompletableFuture.runAsync(() -> waitForSequence(pendingChange.sequence)).thenAccept((v) -> {
-                if (pendingChange.error == null) {
-                    listener.onSuccess();
-                } else {
-                    listener.onError(new IllegalArgumentException(pendingChange.error));
-                }
-            }).exceptionally(ex -> {
-                listener.onError(ex);
-                return null;
-            });
+            CompletableFuture.runAsync(() -> waitForSequence(pendingChange.sequence))
+                .thenAccept((v) -> {
+                    if (pendingChange.error == null) {
+                        listener.onSuccess();
+                    } else {
+                        listener.onError(new IllegalArgumentException(pendingChange.error));
+                    }
+                }).exceptionally(ex -> {
+                    listener.onError(ex);
+                    return null;
+                });
         }
 
         private PendingChange enqueueAddition(Table newData, boolean allowEdits) {
             validateDefinition(newData.getDefinition());
-            // we want to get a clean copy of the table; that can not change out from under us or result in long reads
+            // we want to get a clean copy of the table; that can not change out from under us or
+            // result in long reads
             // during our LTM refresh
-            final PendingChange pendingChange = new PendingChange(doSnap(newData), false, allowEdits);
+            final PendingChange pendingChange =
+                new PendingChange(doSnap(newData), false, allowEdits);
             pendingChanges.add(pendingChange);
             onPendingChange.run();
             return pendingChange;
@@ -223,7 +238,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         @Override
         public void delete(Table table, Index index) {
             validateDelete(table.getDefinition());
-            final PendingChange pendingChange = new PendingChange(doSnap(table, index), true, false);
+            final PendingChange pendingChange =
+                new PendingChange(doSnap(table, index), true, false);
             pendingChanges.add(pendingChange);
             onPendingChange.run();
             waitForSequence(pendingChange.sequence);
@@ -236,7 +252,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
         void waitForSequence(long sequence) {
             if (LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
-                // We're holding the lock. currentTable had better be a DynamicTable. Wait on its LTM condition
+                // We're holding the lock. currentTable had better be a DynamicTable. Wait on its
+                // LTM condition
                 // in order to allow updates.
                 while (processedSequence.longValue() < sequence) {
                     try {
@@ -258,26 +275,33 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
 
         @Override
-        public void setRows(@NotNull Table defaultValues, int[] rowArray, Map<String, Object>[] valueArray, InputTableStatusListener listener) {
+        public void setRows(@NotNull Table defaultValues, int[] rowArray,
+            Map<String, Object>[] valueArray, InputTableStatusListener listener) {
             Assert.neqNull(defaultValues, "defaultValues");
             if (defaultValues.isLive()) {
                 LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
             }
 
             final List<ColumnDefinition> columnDefinitions = getTableDefinition().getColumnList();
-            final Map<String, ArrayBackedColumnSource> sources = buildSourcesMap(valueArray.length, columnDefinitions);
-            final String[] kabmtColumns = getTableDefinition().getColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            final ArrayBackedColumnSource[] sourcesByPosition = Arrays.stream(kabmtColumns).map(sources::get).toArray(ArrayBackedColumnSource[]::new);
+            final Map<String, ArrayBackedColumnSource> sources =
+                buildSourcesMap(valueArray.length, columnDefinitions);
+            final String[] kabmtColumns = getTableDefinition().getColumnNames()
+                .toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            final ArrayBackedColumnSource[] sourcesByPosition = Arrays.stream(kabmtColumns)
+                .map(sources::get).toArray(ArrayBackedColumnSource[]::new);
 
             final Set<String> missingColumns = new HashSet<>(getTableDefinition().getColumnNames());
 
-            for (final Map.Entry<String, ? extends ColumnSource> entry : defaultValues.getColumnSourceMap().entrySet()) {
+            for (final Map.Entry<String, ? extends ColumnSource> entry : defaultValues
+                .getColumnSourceMap().entrySet()) {
                 final String colName = entry.getKey();
                 if (!sources.containsKey(colName)) {
                     continue;
                 }
-                final ColumnSource cs = Require.neqNull(entry.getValue(), "defaultValue column source: " + colName);
-                final ArrayBackedColumnSource dest = Require.neqNull(sources.get(colName), "destination column source: " + colName);
+                final ColumnSource cs =
+                    Require.neqNull(entry.getValue(), "defaultValue column source: " + colName);
+                final ArrayBackedColumnSource dest =
+                    Require.neqNull(sources.get(colName), "destination column source: " + colName);
 
                 final Index defaultValuesIndex = defaultValues.getIndex();
                 for (int rr = 0; rr < rowArray.length; ++rr) {
@@ -296,39 +320,47 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                     if (passedInValues.containsKey(colName)) {
                         sourcesByPosition[cc].set(ii, passedInValues.get(colName));
                     } else if (missingColumns.contains(colName)) {
-                        throw new IllegalArgumentException("No value specified for " + colName + " row " + ii);
+                        throw new IllegalArgumentException(
+                            "No value specified for " + colName + " row " + ii);
                     }
                 }
             }
 
-            final QueryTable newData = new QueryTable(getTableDefinition(), Index.FACTORY.getFlatIndex(valueArray.length), sources);
+            final QueryTable newData = new QueryTable(getTableDefinition(),
+                Index.FACTORY.getFlatIndex(valueArray.length), sources);
             add(newData, true, listener);
         }
 
         @Override
-        public void addRows(Map<String, Object>[] valueArray, boolean allowEdits, InputTableStatusListener listener) {
+        public void addRows(Map<String, Object>[] valueArray, boolean allowEdits,
+            InputTableStatusListener listener) {
             final List<ColumnDefinition> columnDefinitions = getTableDefinition().getColumnList();
-            final Map<String, ArrayBackedColumnSource> sources = buildSourcesMap(valueArray.length, columnDefinitions);
+            final Map<String, ArrayBackedColumnSource> sources =
+                buildSourcesMap(valueArray.length, columnDefinitions);
 
             for (int rowNumber = 0; rowNumber < valueArray.length; rowNumber++) {
                 final Map<String, Object> values = valueArray[rowNumber];
                 for (final ColumnDefinition columnDefinition : columnDefinitions) {
-                    //noinspection unchecked
-                    sources.get(columnDefinition.getName()).set(rowNumber, values.get(columnDefinition.getName()));
+                    // noinspection unchecked
+                    sources.get(columnDefinition.getName()).set(rowNumber,
+                        values.get(columnDefinition.getName()));
                 }
 
             }
 
-            final QueryTable newData = new QueryTable(getTableDefinition(), Index.FACTORY.getFlatIndex(valueArray.length), sources);
+            final QueryTable newData = new QueryTable(getTableDefinition(),
+                Index.FACTORY.getFlatIndex(valueArray.length), sources);
 
             add(newData, allowEdits, listener);
         }
 
         @NotNull
-        private Map<String, ArrayBackedColumnSource> buildSourcesMap(int capacity, List<ColumnDefinition> columnDefinitions) {
+        private Map<String, ArrayBackedColumnSource> buildSourcesMap(int capacity,
+            List<ColumnDefinition> columnDefinitions) {
             final Map<String, ArrayBackedColumnSource> sources = new LinkedHashMap<>();
             for (final ColumnDefinition columnDefinition : columnDefinitions) {
-                final ArrayBackedColumnSource memoryColumnSource = ArrayBackedColumnSource.getMemoryColumnSource(capacity, columnDefinition.getDataType());
+                final ArrayBackedColumnSource memoryColumnSource = ArrayBackedColumnSource
+                    .getMemoryColumnSource(capacity, columnDefinition.getDataType());
                 memoryColumnSource.ensureCapacity(capacity);
                 sources.put(columnDefinition.getName(), memoryColumnSource);
             }
@@ -350,7 +382,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
         @Override
         public boolean canEdit() {
-            // TODO: Should we be more restrictive, or provide a mechanism for determining which users can edit this
+            // TODO: Should we be more restrictive, or provide a mechanism for determining which
+            // users can edit this
             // table beyond "they have a handle to it"?
             return true;
         }

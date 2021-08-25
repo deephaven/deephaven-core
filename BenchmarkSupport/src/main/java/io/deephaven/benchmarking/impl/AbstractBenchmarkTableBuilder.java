@@ -10,16 +10,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The basic implementation of {@link BenchmarkTableBuilder}.  It allows users to specify table type and add columns, while specifying their RNG properties.
+ * The basic implementation of {@link BenchmarkTableBuilder}. It allows users to specify table type
+ * and add columns, while specifying their RNG properties.
  */
-public abstract class AbstractBenchmarkTableBuilder<SELF extends BenchmarkTableBuilder> implements BenchmarkTableBuilder {
+public abstract class AbstractBenchmarkTableBuilder<SELF extends BenchmarkTableBuilder>
+    implements BenchmarkTableBuilder {
     protected final String name;
-    protected final KeyedObjectHash<String, ColumnGenerator> columns = new KeyedObjectHash<>(new ColumnGeneratorKey());
+    protected final KeyedObjectHash<String, ColumnGenerator> columns =
+        new KeyedObjectHash<>(new ColumnGeneratorKey());
     protected long rngSeed = 0;
     final long size;
 
     public AbstractBenchmarkTableBuilder(String name, int size) {
-        if(name == null || name.isEmpty()) {
+        if (name == null || name.isEmpty()) {
             throw new IllegalStateException("This TableBuilder must have a name.");
         }
         this.name = name;
@@ -39,7 +42,7 @@ public abstract class AbstractBenchmarkTableBuilder<SELF extends BenchmarkTableB
 
     @Override
     public SELF addColumn(ColumnGenerator generator) {
-        if(!columns.add(generator)) {
+        if (!columns.add(generator)) {
             throw new IllegalArgumentException("Column " + generator.getName() + " already exists");
         }
 
@@ -47,7 +50,8 @@ public abstract class AbstractBenchmarkTableBuilder<SELF extends BenchmarkTableB
     }
 
 
-    private static final class ColumnGeneratorKey extends KeyedObjectKey.Basic<String, ColumnGenerator> {
+    private static final class ColumnGeneratorKey
+        extends KeyedObjectKey.Basic<String, ColumnGenerator> {
         @Override
         public String getKey(ColumnGenerator columnGenerator) {
             return columnGenerator.getName();

@@ -28,10 +28,10 @@ public class TestCategoryDataSeriesSwappableTableMap extends BaseArrayTestCase {
         }
 
         Table t = TableTools.newTable(TableTools.col("x", dataX),
-                TableTools.doubleCol("y", dataY));
+            TableTools.doubleCol("y", dataY));
         t = t.updateView("Cat = `A`");
 
-        //todo test oneClick
+        // todo test oneClick
     }
 
     public void testLiveTable() {
@@ -45,10 +45,10 @@ public class TestCategoryDataSeriesSwappableTableMap extends BaseArrayTestCase {
         }
 
         Table t = TableTools.newTable(TableTools.col("x", dataX),
-                TableTools.doubleCol("y", dataY));
+            TableTools.doubleCol("y", dataY));
         t = t.updateView("Cat = `A`");
 
-        //todo test oneClick
+        // todo test oneClick
     }
 
     public void testCopy() {
@@ -62,9 +62,9 @@ public class TestCategoryDataSeriesSwappableTableMap extends BaseArrayTestCase {
         }
 
         Table t = TableTools.newTable(TableTools.col("x", dataX),
-                TableTools.doubleCol("y", dataY));
+            TableTools.doubleCol("y", dataY));
         t = t.updateView("Cat = `A`");
 
-        //todo test oneClick
+        // todo test oneClick
     }
 }

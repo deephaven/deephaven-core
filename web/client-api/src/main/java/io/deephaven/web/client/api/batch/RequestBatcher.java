@@ -29,8 +29,8 @@ import java.util.List;
 /**
  * A bucket for queuing up requests on Tables to be sent all at once.
  *
- * Currently scoped to a single table, but we should be able to refactor
- * this to handle multiple tables at once (by pushing table/handles into method signatures)
+ * Currently scoped to a single table, but we should be able to refactor this to handle multiple
+ * tables at once (by pushing table/handles into method signatures)
  *
  * TODO fix core#80
  */
@@ -64,7 +64,8 @@ public class RequestBatcher {
         createOps();
         final ClientTableState state = builder.getOp().getState();
         return new Promise<>(((resolve, reject) -> {
-            state.onRunning(ignored->resolve.onInvoke(table), reject::onInvoke, () -> reject.onInvoke("Table failed, or was closed"));
+            state.onRunning(ignored -> resolve.onInvoke(table), reject::onInvoke,
+                () -> reject.onInvoke("Table failed, or was closed"));
         }));
     }
 
@@ -84,10 +85,12 @@ public class RequestBatcher {
     private void doCreateOps() {
         BatchOp op = builder.getOp();
         ClientTableState appendTo = table.state();
-        assert appendTo.getBinding(table).isActive() : "Table state " + appendTo +" did not have " + table + " actively bound to it";
+        assert appendTo.getBinding(table).isActive()
+            : "Table state " + appendTo + " did not have " + table + " actively bound to it";
         rollbackTo = appendTo.getActiveBinding(table);
 
-        while (!appendTo.isCompatible(op.getSorts(), op.getFilters(), op.getCustomColumns(), op.isFlat())) {
+        while (!appendTo.isCompatible(op.getSorts(), op.getFilters(), op.getCustomColumns(),
+            op.isFlat())) {
             final ClientTableState nextTry = appendTo.getPrevious();
             assert nextTry != null : "Root state " + appendTo + " is not blank!";
             orphans.add(appendTo);
@@ -106,7 +109,8 @@ public class RequestBatcher {
             // but we'll still keep it around to process as an active state
             builder.doNextOp(op);
         } else {
-            // Create new states.  If we are adding both filters and sorts, we'll want an intermediate table
+            // Create new states. If we are adding both filters and sorts, we'll want an
+            // intermediate table
             final BatchOp newOp = maybeInsertInterimTable(op, appendTo);
 
             // Insert the final operation
@@ -116,14 +120,16 @@ public class RequestBatcher {
 
     private ClientTableState insertOp(BatchOp op, ClientTableState sourceState) {
 
-        assert table.state() == sourceState : "You must update your table's currentState before calling insertOp";
+        assert table.state() == sourceState
+            : "You must update your table's currentState before calling insertOp";
         final TableTicket handle = sourceState.getHandle();
         final ClientTableState newTail = connection.newState(sourceState, op);
         table.setState(newTail);
         table.setRollback(rollbackTo);
         op.setState(newTail);
         op.setHandles(handle, newTail.getHandle());
-        // add the intermediate state to the request, causes next call to getOp() to return a new builder
+        // add the intermediate state to the request, causes next call to getOp() to return a new
+        // builder
         builder.doNextOp(op);
 
         return newTail;
@@ -132,13 +138,14 @@ public class RequestBatcher {
     private MappedIterable<ClientTableState> allStates() {
         return builder.getOps().mapped(BatchOp::getState).filterNonNull();
     }
+
     private MappedIterable<JsTable> allInterestedTables() {
         IdentityHashMap<JsTable, JsTable> tables = new IdentityHashMap<>();
         if (!table.isAlive()) {
             tables.put(table, table);
         }
         for (ClientTableState state : allStates()) {
-            state.getBoundTables().forEach(table-> {
+            state.getBoundTables().forEach(table -> {
                 if (!tables.containsKey(table)) {
                     // now, lets make sure this client still cares about the given state...
                     // (a table may be holding a paused binding to this state)
@@ -155,8 +162,10 @@ public class RequestBatcher {
         op.setAppendTo(appendTo);
         boolean filterChanged = !appendTo.getFilters().equals(op.getFilters());
         if (filterChanged) {
-            // whenever filters have changed, we will create one exported table w/ filters and any custom columns.
-            // if there are _also_ sorts that have changed, then we'll want to add those on afterwards.
+            // whenever filters have changed, we will create one exported table w/ filters and any
+            // custom columns.
+            // if there are _also_ sorts that have changed, then we'll want to add those on
+            // afterwards.
             final List<Sort> appendToSort = appendTo.getSorts();
             final List<Sort> desiredSorts = op.getSorts();
             boolean sortChanged = !appendToSort.equals(desiredSorts);
@@ -180,10 +189,12 @@ public class RequestBatcher {
     }
 
     public Promise<Void> sendRequest() {
-        return new Promise<>((resolve, reject)->{
+        return new Promise<>((resolve, reject) -> {
 
-            // calling buildRequest will change the state of each table, so we first check what the state was
-            // of each table before we do that, in case we are actually not making a call to the server
+            // calling buildRequest will change the state of each table, so we first check what the
+            // state was
+            // of each table before we do that, in case we are actually not making a call to the
+            // server
             ClientTableState prevState = table.lastVisibleState();
 
             final BatchTableRequest request = buildRequest();
@@ -195,18 +206,23 @@ public class RequestBatcher {
             onSend.clear();
             sent = true;
             if (request.getOpsList().length == 0) {
-                // Since this is an empty request, there are no "interested" tables as we normally would define them,
+                // Since this is an empty request, there are no "interested" tables as we normally
+                // would define them,
                 // so we can only operate on the root table object
-                // No server call needed - we need to examine the "before" state and fire events based on that.
-                // This is like tableLoop below, except no failure is possible, since we already have the results
+                // No server call needed - we need to examine the "before" state and fire events
+                // based on that.
+                // This is like tableLoop below, except no failure is possible, since we already
+                // have the results
                 if (table.isAlive()) {
                     final ClientTableState active = table.state();
                     assert active.isRunning() : active;
                     boolean sortChanged = !prevState.getSorts().equals(active.getSorts());
                     boolean filterChanged = !prevState.getFilters().equals(active.getFilters());
-                    boolean customColumnChanged = !prevState.getCustomColumns().equals(active.getCustomColumns());
+                    boolean customColumnChanged =
+                        !prevState.getCustomColumns().equals(active.getCustomColumns());
                     table.fireEvent(HasEventHandling.EVENT_REQUEST_SUCCEEDED);
-                    // TODO think more about the order of events, and what kinds of things one might bind to each
+                    // TODO think more about the order of events, and what kinds of things one might
+                    // bind to each
                     if (sortChanged) {
                         table.fireEvent(JsTable.EVENT_SORTCHANGED);
                     }
@@ -220,7 +236,8 @@ public class RequestBatcher {
 
                 orphans.forEach(ClientTableState::cleanup);
                 resolve.onInvoke((Void) null);
-                // if there's no outgoing operation, user may have removed an operation and wants to return to where they left off
+                // if there's no outgoing operation, user may have removed an operation and wants to
+                // return to where they left off
                 table.maybeReviveSubscription();
                 finished = true;
                 return;
@@ -234,11 +251,13 @@ public class RequestBatcher {
             JsLog.debug("Sending request", LazyString.of(request), request, " based on ", this);
 
 
-            ResponseStreamWrapper<ExportedTableCreationResponse> batchStream = ResponseStreamWrapper.of(connection.tableServiceClient().batch(request, connection.metadata()));
+            ResponseStreamWrapper<ExportedTableCreationResponse> batchStream = ResponseStreamWrapper
+                .of(connection.tableServiceClient().batch(request, connection.metadata()));
             batchStream.onData(response -> {
                 TableReference resultid = response.getResultId();
                 if (!resultid.hasTicket()) {
-                    // thanks for telling us, but we don't at this time have a nice way to indicate this
+                    // thanks for telling us, but we don't at this time have a nice way to indicate
+                    // this
                     return;
                 }
                 Ticket ticket = resultid.getTicket();
@@ -246,22 +265,25 @@ public class RequestBatcher {
                     String fail = response.getErrorInfo();
 
                     // any table which has that state active should fire a failed event
-                    ClientTableState state = allStates().filter(cts -> cts.getHandle().makeTicket().getTicket_asB64().equals(ticket.getTicket_asB64())).first();
+                    ClientTableState state = allStates().filter(cts -> cts.getHandle().makeTicket()
+                        .getTicket_asB64().equals(ticket.getTicket_asB64())).first();
                     state.getHandle().setState(TableTicket.State.FAILED);
                     for (JsTable table : allInterestedTables().filter(t -> t.state() == state)) {
                         // fire the failed event
                         failTable(table, fail);
                     }
 
-                    // mark state as failed (his has to happen after table is marked as failed, it will trigger rollback
+                    // mark state as failed (his has to happen after table is marked as failed, it
+                    // will trigger rollback
                     state.setResolution(ClientTableState.ResolutionState.FAILED, fail);
 
                     return;
                 }
 
                 // any table which has that state active should fire a failed event
-                ClientTableState state = allStates().filter(cts -> cts.getHandle().makeTicket().getTicket_asB64().equals(ticket.getTicket_asB64())).first();
-//                state.getHandle().setState(TableTicket.State.EXPORTED);
+                ClientTableState state = allStates().filter(cts -> cts.getHandle().makeTicket()
+                    .getTicket_asB64().equals(ticket.getTicket_asB64())).first();
+                // state.getHandle().setState(TableTicket.State.EXPORTED);
                 for (JsTable table : allInterestedTables().filter(t -> t.state() == state)) {
                     // check what state it was in previously to use for firing an event
                     ClientTableState lastVisibleState = table.lastVisibleState();
@@ -273,10 +295,13 @@ public class RequestBatcher {
 
                     // fire any events that are necessary
                     boolean sortChanged = !lastVisibleState.getSorts().equals(state.getSorts());
-                    boolean filterChanged = !lastVisibleState.getFilters().equals(state.getFilters());
-                    boolean customColumnChanged = !lastVisibleState.getCustomColumns().equals(state.getCustomColumns());
+                    boolean filterChanged =
+                        !lastVisibleState.getFilters().equals(state.getFilters());
+                    boolean customColumnChanged =
+                        !lastVisibleState.getCustomColumns().equals(state.getCustomColumns());
                     table.fireEvent(HasEventHandling.EVENT_REQUEST_SUCCEEDED);
-                    // TODO think more about the order of events, and what kinds of things one might bind to each
+                    // TODO think more about the order of events, and what kinds of things one might
+                    // bind to each
                     if (sortChanged) {
                         table.fireEvent(JsTable.EVENT_SORTCHANGED);
                     }
@@ -312,13 +337,14 @@ public class RequestBatcher {
         }
 
         event.setDetail(JsPropertyMap.of(
-                "errorMessage", failureMessage,
-                "configuration", best.toJs()
-        ));
+            "errorMessage", failureMessage,
+            "configuration", best.toJs()));
         try {
             t.rollback();
         } catch (Exception e) {
-            JsLog.warn("An exception occurred trying to rollback the table. This means that there will be no ticking data until the table configuration is applied again in a way that makes sense. See IDS-5199 for more detail.", e);
+            JsLog.warn(
+                "An exception occurred trying to rollback the table. This means that there will be no ticking data until the table configuration is applied again in a way that makes sense. See IDS-5199 for more detail.",
+                e);
         }
         t.fireEvent(HasEventHandling.EVENT_REQUEST_FAILED, event);
     }
@@ -339,6 +365,7 @@ public class RequestBatcher {
     public void setSort(Sort[] newSort) {
         builder.setSort(Arrays.asList(newSort));
     }
+
     public void sort(List<Sort> newSort) {
         builder.setSort(newSort);
     }
@@ -347,6 +374,7 @@ public class RequestBatcher {
     public void setFilter(FilterCondition[] newFilter) {
         builder.setFilter(Arrays.asList(newFilter));
     }
+
     public void filter(List<FilterCondition> newFilter) {
         builder.setFilter(newFilter);
     }
@@ -355,6 +383,7 @@ public class RequestBatcher {
     public void setCustomColumns(String[] newColumns) {
         builder.setCustomColumns(CustomColumnDescriptor.from(newColumns));
     }
+
     public void customColumns(List<CustomColumnDescriptor> newColumns) {
         builder.setCustomColumns(newColumns);
     }
@@ -395,7 +424,8 @@ public class RequestBatcher {
         customColumns(other.getCustomColumns());
         sort(other.getSorts());
         filter(other.getFilters());
-        // selectDistinct ignored as it's not really treated as a standard table operation right now.
+        // selectDistinct ignored as it's not really treated as a standard table operation right
+        // now.
         setFlat(other.isFlat());
     }
 }

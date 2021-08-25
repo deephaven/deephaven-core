@@ -1,5 +1,5 @@
 /*
- *  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ * * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
 package io.deephaven.db.plot;
@@ -38,7 +38,8 @@ public class ChartTitle implements Serializable {
 
 
     ChartTitle(final PlotInfo plotInfo) {
-        this(plotInfo, Configuration.getInstance().getIntegerWithDefault(MAX_VISIBLE_ROWS_COUNT_PROP, 3));
+        this(plotInfo,
+            Configuration.getInstance().getIntegerWithDefault(MAX_VISIBLE_ROWS_COUNT_PROP, 3));
     }
 
     ChartTitle(final PlotInfo plotInfo, final int maxVisibleRowsCount) {

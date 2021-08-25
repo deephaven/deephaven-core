@@ -5,13 +5,16 @@ package io.deephaven.db.tables.select;
  */
 @SuppressWarnings("WeakerAccess")
 public final class SelectFactoryConstants {
-    /** The beginning of a complete expression.  Matches the beginning and initial whitespace */
+    /** The beginning of a complete expression. Matches the beginning and initial whitespace */
     public static final String START_PTRN = "\\A\\s*";
 
-    /** The end of a complete expression.  Matches any trailing spaces and the end of the input*/
+    /** The end of a complete expression. Matches any trailing spaces and the end of the input */
     public static final String END_PTRN = "\\s*\\Z";
 
-    /** Matches a variable starting with a letter, _ or $ followed by any number of letters, numbers, _ or $ */
+    /**
+     * Matches a variable starting with a letter, _ or $ followed by any number of letters, numbers,
+     * _ or $
+     */
     public static final String ID_PTRN = "[a-zA-Z_$][a-zA-Z0-9_$]*";
 
     /** An integer, including the initial minus sign */
@@ -29,13 +32,17 @@ public final class SelectFactoryConstants {
     /** A case insensitive boolean literal */
     public static final String BOOL_PTRN = "[tT][rR][uU][eE]" + "|" + "[fF][aA][lL][sS][eE]";
 
-    /** Any {@link #INT_PTRN int}, {@link #FLT_PTRN float}, {@link #BOOL_PTRN boolean}, or {@link #STR_PTRN string} as defined above */
-    public static final String LITERAL_PTRN = "(?:"+INT_PTRN+")|(?:"+FLT_PTRN+")|(?:"+BOOL_PTRN+")|(?:"+STR_PTRN+")|(?:"+DATETIME_PTRN+")";
+    /**
+     * Any {@link #INT_PTRN int}, {@link #FLT_PTRN float}, {@link #BOOL_PTRN boolean}, or
+     * {@link #STR_PTRN string} as defined above
+     */
+    public static final String LITERAL_PTRN = "(?:" + INT_PTRN + ")|(?:" + FLT_PTRN + ")|(?:"
+        + BOOL_PTRN + ")|(?:" + STR_PTRN + ")|(?:" + DATETIME_PTRN + ")";
 
     /** Case insensitive 'icase' expression */
     public static final String ICASE = "[iI][cC][aA][sS][eE]";
 
-    /** Case insensitive 'not' expression*/
+    /** Case insensitive 'not' expression */
     public static final String NOT = "[nN][oO][tT]";
 
     /** Case insensitive 'in' expression */
@@ -44,10 +51,10 @@ public final class SelectFactoryConstants {
     /** Case insensitive 'includes' expression */
     public static final String INCLUDES = "[iI][nN][cC][lL][uU][dD][eE][sS]";
 
-    /** Case insensitive 'any' expression*/
+    /** Case insensitive 'any' expression */
     public static final String ANY = "[aA][nN][yY]";
 
-    /** Case insensitive 'all' expression*/
+    /** Case insensitive 'all' expression */
     public static final String ALL = "[aA][lL][lL]";
 
     /** Any non line terminating expression */

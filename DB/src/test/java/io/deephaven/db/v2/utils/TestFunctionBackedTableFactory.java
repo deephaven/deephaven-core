@@ -21,20 +21,25 @@ public class TestFunctionBackedTableFactory extends LiveTableTestCase {
         Random random = new Random(0);
         TstUtils.ColumnInfo columnInfo[];
         int size = 50;
-        final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(new String[]{"Sym", "intCol", "doubleCol"},
-                new TstUtils.SetGenerator<>("a", "b","c","d", "e"),
+        final QueryTable queryTable = getTable(size, random,
+            columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
+                new TstUtils.SetGenerator<>("a", "b", "c", "d", "e"),
                 new TstUtils.IntGenerator(10, 100),
                 new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
 
-        final Table functionBacked = FunctionGeneratedTableFactory.create(() -> queryTable, queryTable);
+        final Table functionBacked =
+            FunctionGeneratedTableFactory.create(() -> queryTable, queryTable);
 
-        final String diff = diff(functionBacked, queryTable, 10, EnumSet.of(TableDiff.DiffItems.DoublesExact));
+        final String diff =
+            diff(functionBacked, queryTable, 10, EnumSet.of(TableDiff.DiffItems.DoublesExact));
         Assert.assertEquals("", diff);
 
         EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new QueryTableTest.TableComparator(functionBacked, queryTable),
-                // Note: disable update validation since the function backed table's prev values will always be incorrect
-                EvalNugget.from(() -> LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> functionBacked.update("Mult=intCol * doubleCol"))),
+                // Note: disable update validation since the function backed table's prev values
+                // will always be incorrect
+                EvalNugget.from(() -> LiveTableMonitor.DEFAULT.exclusiveLock()
+                    .computeLocked(() -> functionBacked.update("Mult=intCol * doubleCol"))),
         };
 
         for (int i = 0; i < 75; i++) {

@@ -21,19 +21,20 @@ public final class ClassUtil {
     public static void dumpFinals(final Logger log, final String prefix, final Object p) {
         final Class c = p.getClass();
         Field[] fields = c.getDeclaredFields();
-        final int desiredMods = (Modifier.PUBLIC|Modifier.FINAL);
+        final int desiredMods = (Modifier.PUBLIC | Modifier.FINAL);
         for (Field f : fields) {
-            if ( (f.getModifiers() & desiredMods) == 0 ) continue;
+            if ((f.getModifiers() & desiredMods) == 0)
+                continue;
             try {
                 final String tName = f.getType().getName();
                 final String name = f.getName();
                 final Object value = f.get(p);
-                log.info(  prefix
-                         + tName
-                         + " " + name
-                         + " = " + value.toString());
+                log.info(prefix
+                    + tName
+                    + " " + name
+                    + " = " + value.toString());
+            } catch (Exception ignored) {
             }
-            catch (Exception ignored) {}
         }
     }
 

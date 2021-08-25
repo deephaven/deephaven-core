@@ -133,7 +133,8 @@ class ArgumentsSingular {
 
         @Override
         public <T> void visit(ObjectChunk<T, ATTR> chunk) {
-            // this is LESS THAN IDEAL - it would be much better if ObjectChunk would be able to return
+            // this is LESS THAN IDEAL - it would be much better if ObjectChunk would be able to
+            // return
             // the item type
             out = Object.class;
         }

@@ -18,14 +18,23 @@ interface NoopModule extends AutoCloseable {
     }
 
     void noop(int object);
+
     void noop(Integer object);
+
     void noop(String object);
+
     void noop(SomeJavaClass object);
+
     void noop(int[] object);
+
     void noop(Integer[] object);
+
     void noop(String[] object);
+
     void noop(SomeJavaClass[] object);
+
     void noop(Object genericObject);
+
     void noop(PyObject pyObject);
 
     @Override

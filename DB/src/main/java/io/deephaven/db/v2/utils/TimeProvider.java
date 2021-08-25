@@ -8,7 +8,7 @@ import io.deephaven.db.tables.utils.DBDateTime;
 
 /**
  * Interface for providing the current time.
-*/
+ */
 public interface TimeProvider {
     DBDateTime currentTime();
 }

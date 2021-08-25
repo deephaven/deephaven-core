@@ -15,7 +15,8 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     @JsMethod(namespace = JsPackage.GLOBAL)
     private static native String atob(String encodedData);
 
-    private static AuthTokenPromiseSupplier getAuthTokenPromiseSupplier(IdeConnectionOptions options) {
+    private static AuthTokenPromiseSupplier getAuthTokenPromiseSupplier(
+        IdeConnectionOptions options) {
         ConnectToken token = null;
         if (options != null && options.authToken != null) {
             token = new ConnectToken();
@@ -34,7 +35,8 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     }
 
     /**
-     * Direct connection to an already-running worker instance, without first authenticating to a client.
+     * Direct connection to an already-running worker instance, without first authenticating to a
+     * client.
      */
     @JsConstructor
     public IdeConnection(String serverUrl, @JsOptional IdeConnectionOptions options) {
@@ -57,11 +59,12 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
 
     @Override
     public Promise<IdeConnection> running() {
-        // This assumes that once the connection has been initialized and left a usable state, it cannot be used again
+        // This assumes that once the connection has been initialized and left a usable state, it
+        // cannot be used again
         if (!connection.isAvailable() || connection.get().isUsable()) {
             return Promise.resolve(this);
         } else {
-            return (Promise)Promise.reject("Cannot connect, session is dead.");
+            return (Promise) Promise.reject("Cannot connect, session is dead.");
         }
     }
 
@@ -70,7 +73,8 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         super.disconnected();
 
         if (connection.isAvailable()) {
-            // Currently no way for an IdeConnect to recover, so make sure it doesn't try and reconnect
+            // Currently no way for an IdeConnect to recover, so make sure it doesn't try and
+            // reconnect
             connection.get().forceClose();
         }
     }

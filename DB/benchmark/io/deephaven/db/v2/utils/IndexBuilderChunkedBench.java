@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 10, time = 1)
-@Fork(value=1)
+@Fork(value = 1)
 public class IndexBuilderChunkedBench {
     private Index ix = null;
     private static final int chunkSz = 1024;
@@ -66,8 +66,14 @@ public class IndexBuilderChunkedBench {
         final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
         b.appendKeys(new PrimitiveIterator.OfLong() {
             long v = 1;
-            @Override public boolean hasNext() { return v < maxOddValue; }
-            @Override public long nextLong() {
+
+            @Override
+            public boolean hasNext() {
+                return v < maxOddValue;
+            }
+
+            @Override
+            public long nextLong() {
                 final long r = v;
                 v += 2;
                 return r;
@@ -113,10 +119,26 @@ public class IndexBuilderChunkedBench {
         final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
         b.appendRanges(new LongRangeIterator() {
             long v = -3;
-            @Override public boolean hasNext() { return v < maxOddValue; }
-            @Override public void next() { v += 4; }
-            @Override public long start() { return v; }
-            @Override public long end() { return v + 2; }
+
+            @Override
+            public boolean hasNext() {
+                return v < maxOddValue;
+            }
+
+            @Override
+            public void next() {
+                v += 4;
+            }
+
+            @Override
+            public long start() {
+                return v;
+            }
+
+            @Override
+            public long end() {
+                return v + 2;
+            }
         });
         final Index ix = b.getIndex();
         bh.consume(ix);

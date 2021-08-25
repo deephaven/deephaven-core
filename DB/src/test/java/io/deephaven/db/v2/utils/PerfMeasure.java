@@ -14,43 +14,54 @@ public class PerfMeasure {
     interface TimeReader {
         long getNanos();
     }
+
     private static TimeReader systemNanoTimeReader = new TimeReader() {
-        @Override public long getNanos() {
+        @Override
+        public long getNanos() {
             return System.nanoTime();
         }
     };
     private static TimeReader threadMXBeanTimeReader = new TimeReader() {
-        @Override public long getNanos() {
+        @Override
+        public long getNanos() {
             return tmb.getThreadCpuTime(Thread.currentThread().getId());
         }
     };
+
     interface UsedMemoryReader {
         long getUsedBytesAfterGC();
     }
+
     private static UsedMemoryReader runtimeUsedMemoryReader = new UsedMemoryReader() {
-        @Override public long getUsedBytesAfterGC() {
+        @Override
+        public long getUsedBytesAfterGC() {
             final Runtime rt = Runtime.getRuntime();
             rt.gc();
             return rt.totalMemory() - rt.freeMemory();
         }
     };
     private static UsedMemoryReader nullUsedMemoryReader = new UsedMemoryReader() {
-        @Override public long getUsedBytesAfterGC() {
+        @Override
+        public long getUsedBytesAfterGC() {
             return 0;
         }
     };
+
     interface AllocatedMemoryReader {
         long getAllocatedBytes();
     }
+
     private static AllocatedMemoryReader threadMXBeanMemoryReader = new AllocatedMemoryReader() {
-        @Override public long getAllocatedBytes() {
+        @Override
+        public long getAllocatedBytes() {
             final Runtime rt = Runtime.getRuntime();
             rt.gc();
             return amb.getThreadAllocatedBytes(Thread.currentThread().getId());
         }
     };
     private static AllocatedMemoryReader nullAllocatedMemoryReader = new AllocatedMemoryReader() {
-        @Override public long getAllocatedBytes() {
+        @Override
+        public long getAllocatedBytes() {
             return 0;
         }
     };
@@ -61,7 +72,8 @@ public class PerfMeasure {
 
     static {
         String s = "Used allocated memory readings using ";
-        java.lang.management.ThreadMXBean t = java.lang.management.ManagementFactory.getThreadMXBean();
+        java.lang.management.ThreadMXBean t =
+            java.lang.management.ManagementFactory.getThreadMXBean();
         if (t instanceof com.sun.management.ThreadMXBean) {
             amb = (com.sun.management.ThreadMXBean) t;
             amb.setThreadAllocatedMemoryEnabled(true);

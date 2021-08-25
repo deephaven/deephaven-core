@@ -41,17 +41,17 @@ public class TestLiveness extends TestCase {
     @SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
     @Test
     public void testRecursion() {
-        //noinspection AutoBoxing
+        // noinspection AutoBoxing
         final Table input = TstUtils.testRefreshingTable(
-                TstUtils.i(2, 3, 6, 7, 8, 10, 12, 15, 16),
-                TstUtils.c("GroupedInts", 1, 1, 2, 2, 2, 3, 3, 3, 3)
-        );
+            TstUtils.i(2, 3, 6, 7, 8, 10, 12, 15, 16),
+            TstUtils.c("GroupedInts", 1, 1, 2, 2, 2, 3, 3, 3, 3));
         Table result = null;
         for (int ii = 0; ii < 4096; ++ii) {
             if (result == null) {
                 result = input;
             } else {
-                result = TableTools.merge(result, input).updateView("GroupedInts=GroupedInts+1").updateView("GroupedInts=GroupedInts-1");
+                result = TableTools.merge(result, input).updateView("GroupedInts=GroupedInts+1")
+                    .updateView("GroupedInts=GroupedInts-1");
             }
         }
     }

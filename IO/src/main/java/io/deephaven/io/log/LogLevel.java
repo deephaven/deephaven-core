@@ -38,15 +38,24 @@ public class LogLevel {
     public static final LogLevel TRACE = new LogLevel(5000, "TRACE");
 
     public static LogLevel valueOf(String s) {
-        if ( s.equals("FATAL") ) return FATAL;
-        if ( s.equals("EMAIL") ) return EMAIL;
-        if ( s.equals("STDERR") ) return STDERR;
-        if ( s.equals("ERROR") ) return ERROR;
-        if ( s.equals("WARN") ) return WARN;
-        if ( s.equals("STDOUT") ) return STDOUT;
-        if ( s.equals("INFO") ) return INFO;
-        if ( s.equals("DEBUG") ) return DEBUG;
-        if ( s.equals("TRACE") ) return TRACE;
+        if (s.equals("FATAL"))
+            return FATAL;
+        if (s.equals("EMAIL"))
+            return EMAIL;
+        if (s.equals("STDERR"))
+            return STDERR;
+        if (s.equals("ERROR"))
+            return ERROR;
+        if (s.equals("WARN"))
+            return WARN;
+        if (s.equals("STDOUT"))
+            return STDOUT;
+        if (s.equals("INFO"))
+            return INFO;
+        if (s.equals("DEBUG"))
+            return DEBUG;
+        if (s.equals("TRACE"))
+            return TRACE;
         throw new IllegalArgumentException(s);
     }
 

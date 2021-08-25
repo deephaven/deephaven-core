@@ -24,18 +24,20 @@ public abstract class UpdateOrSelectGrpcImpl extends GrpcTableOperation<SelectOr
     private final RealTableOperation realTableOperation;
 
     protected UpdateOrSelectGrpcImpl(
-            final Function<BatchTableRequest.Operation, SelectOrUpdateRequest> getRequest,
-            final RealTableOperation realTableOperation) {
+        final Function<BatchTableRequest.Operation, SelectOrUpdateRequest> getRequest,
+        final RealTableOperation realTableOperation) {
         super(getRequest, SelectOrUpdateRequest::getResultId, SelectOrUpdateRequest::getSourceId);
         this.realTableOperation = realTableOperation;
     }
 
     @Override
-    public Table create(final SelectOrUpdateRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final SelectOrUpdateRequest request,
+        final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();
-        final String[] columnSpecs = request.getColumnSpecsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] columnSpecs =
+            request.getColumnSpecsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
         final SelectColumn[] expressions = SelectColumnFactory.getExpressions(columnSpecs);
         ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, parent);
 

@@ -137,7 +137,7 @@ public class DbFileImpl implements DbFile, Externalizable {
         }
     }
 
-    ////////////// Utility functions for dealing with files.  //////////////
+    ////////////// Utility functions for dealing with files. //////////////
 
 
     /**
@@ -158,7 +158,7 @@ public class DbFileImpl implements DbFile, Externalizable {
      * Writes a byte array to a file.
      *
      * @param bytes bytes to write out.
-     * @param file  file to write to.
+     * @param file file to write to.
      * @throws IOException problem writing the file.
      */
     static void writeBytes(final byte[] bytes, final java.io.File file) throws IOException {

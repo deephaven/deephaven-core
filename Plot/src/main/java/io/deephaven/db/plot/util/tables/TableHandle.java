@@ -21,9 +21,10 @@ public class TableHandle implements Serializable {
     private final Set<String> columns;
 
     public TableHandle(@NotNull final Table table,
-                       @NotNull final String... columns) {
+        @NotNull final String... columns) {
         this.table = table;
-        this.columns = new TreeSet<>(Arrays.asList(Arrays.stream(columns).filter(Objects::nonNull).toArray(String[]::new)));
+        this.columns = new TreeSet<>(
+            Arrays.asList(Arrays.stream(columns).filter(Objects::nonNull).toArray(String[]::new)));
     }
 
     public void addColumn(final String column) {
@@ -43,11 +44,12 @@ public class TableHandle implements Serializable {
     }
 
     /**
-     * Get the {@link TableDefinition} of the table that will be handed off to actual plotting methods.  This method
-     * is important because in some cases (ie when ACls are applied to source tables) computations must be deferred
-     * until after ACL application so that they are applied correctly.  In this case,  the table produced by
-     * {@link #getTable()} may be the raw source table,  not the final table.  This method is used to get the final
-     * result table definition no matter what the preconditions are.
+     * Get the {@link TableDefinition} of the table that will be handed off to actual plotting
+     * methods. This method is important because in some cases (ie when ACls are applied to source
+     * tables) computations must be deferred until after ACL application so that they are applied
+     * correctly. In this case, the table produced by {@link #getTable()} may be the raw source
+     * table, not the final table. This method is used to get the final result table definition no
+     * matter what the preconditions are.
      *
      * @return The {@link TableDefinition} of the plotted table.
      */
@@ -61,8 +63,10 @@ public class TableHandle implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         TableHandle that = (TableHandle) o;
 

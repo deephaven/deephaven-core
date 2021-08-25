@@ -18,7 +18,7 @@ import java.util.Arrays;
 public class ShapeUtils implements Serializable {
     private static final long serialVersionUID = -5894187331477897336L;
 
-    private ShapeUtils(){}
+    private ShapeUtils() {}
 
     /**
      * Scales a shape by multiplying x and y coordinates by {@code factor}.
@@ -30,9 +30,9 @@ public class ShapeUtils implements Serializable {
     public static java.awt.Shape resize(final java.awt.Shape s, final double factor) {
         Require.neqNull(s, "shape");
 
-        if(s instanceof RectangularShape) {
+        if (s instanceof RectangularShape) {
             return resizeRectangle((RectangularShape) s, factor);
-        } else if(s instanceof Polygon) {
+        } else if (s instanceof Polygon) {
             return resizePolygon((Polygon) s, factor);
         }
 
@@ -43,7 +43,7 @@ public class ShapeUtils implements Serializable {
         double[] xPoints = new double[p.npoints];
         double[] yPoints = new double[p.npoints];
 
-        for(int i = 0; i < p.npoints; i++) {
+        for (int i = 0; i < p.npoints; i++) {
             xPoints[i] = (double) p.xpoints[i];
             xPoints[i] *= factor;
 
@@ -54,7 +54,7 @@ public class ShapeUtils implements Serializable {
         Path2D path = new Path2D.Double();
 
         path.moveTo(xPoints[0], yPoints[0]);
-        for(int i = 1; i < p.npoints; ++i) {
+        for (int i = 1; i < p.npoints; ++i) {
             path.lineTo(xPoints[i], yPoints[i]);
         }
         path.closePath();
@@ -84,9 +84,9 @@ public class ShapeUtils implements Serializable {
     public static java.awt.Shape rotate(final java.awt.Shape s, final double angle) {
         Require.neqNull(s, "shape");
 
-        if(s instanceof RectangularShape) {
+        if (s instanceof RectangularShape) {
             return rotateRectangle((RectangularShape) s, angle);
-        } else if(s instanceof Polygon) {
+        } else if (s instanceof Polygon) {
             return rotatePolygon((Polygon) s, angle);
         }
 
@@ -94,7 +94,7 @@ public class ShapeUtils implements Serializable {
     }
 
     private static java.awt.Shape rotateRectangle(RectangularShape s, double angle) {
-        //labeled starting in ULC going clockwise
+        // labeled starting in ULC going clockwise
         double[] xPoints = {s.getX(), s.getX() + s.getWidth(), s.getX() + s.getWidth(), s.getX()};
         double[] yPoints = {s.getY(), s.getY() + s.getHeight(), s.getY() + s.getHeight(), s.getY()};
 
@@ -104,14 +104,16 @@ public class ShapeUtils implements Serializable {
         for (int i = 0; i < 4; i++) {
             double cos = Math.cos(angle);
             double sin = Math.sin(angle);
-            newXPoints[i] = s.getCenterX() + ((xPoints[i] - s.getCenterX()) * cos) - ((xPoints[i] - s.getCenterY()) * sin);
-            newYPoints[i] = s.getCenterY() + ((yPoints[i] - s.getCenterY()) * cos) - ((yPoints[i] - s.getCenterX()) * sin);
+            newXPoints[i] = s.getCenterX() + ((xPoints[i] - s.getCenterX()) * cos)
+                - ((xPoints[i] - s.getCenterY()) * sin);
+            newYPoints[i] = s.getCenterY() + ((yPoints[i] - s.getCenterY()) * cos)
+                - ((yPoints[i] - s.getCenterX()) * sin);
         }
 
         Path2D path = new Path2D.Double();
 
         path.moveTo(xPoints[0], yPoints[0]);
-        for(int i = 1; i < 4; ++i) {
+        for (int i = 1; i < 4; ++i) {
             path.lineTo(newXPoints[i], newYPoints[i]);
         }
         path.closePath();
@@ -129,14 +131,16 @@ public class ShapeUtils implements Serializable {
         for (int i = 0; i < p.npoints; i++) {
             double cos = Math.cos(angle);
             double sin = Math.sin(angle);
-            xPoints[i] = center[0] + ((p.xpoints[i] - center[0]) * cos) - ((p.ypoints[i] - center[1]) * sin);
-            yPoints[i] = center[1] + ((p.ypoints[i] - center[1]) * cos) - ((p.xpoints[i] - center[0]) * sin);
+            xPoints[i] =
+                center[0] + ((p.xpoints[i] - center[0]) * cos) - ((p.ypoints[i] - center[1]) * sin);
+            yPoints[i] =
+                center[1] + ((p.ypoints[i] - center[1]) * cos) - ((p.xpoints[i] - center[0]) * sin);
         }
 
         Path2D path = new Path2D.Double();
 
         path.moveTo(xPoints[0], yPoints[0]);
-        for(int i = 1; i < p.npoints; ++i) {
+        for (int i = 1; i < p.npoints; ++i) {
             path.lineTo(xPoints[i], yPoints[i]);
         }
         path.closePath();

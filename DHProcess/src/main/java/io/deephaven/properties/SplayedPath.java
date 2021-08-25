@@ -21,14 +21,15 @@ import java.util.stream.Stream;
 /**
  * A splayed path is a {@link PropertySet} where the fully resolved file paths represent property
  * keys and the corresponding contents of each file represents the property value. It is meant to
- * represent a standardized interface for property keys and values that can be read or written
- * to from a variety of tools. It is straightforward in the sense that there is no order-dependent
+ * represent a standardized interface for property keys and values that can be read or written to
+ * from a variety of tools. It is straightforward in the sense that there is no order-dependent
  * parsing logic.
  */
 public class SplayedPath {
 
     private static final char FS_SEPARATOR = '/';
-    private static final Pattern SEPARATOR_PATTERN = Pattern.compile(Character.toString(SEPARATOR), Pattern.LITERAL);
+    private static final Pattern SEPARATOR_PATTERN =
+        Pattern.compile(Character.toString(SEPARATOR), Pattern.LITERAL);
     private static final String VALUE_NAME = "__value";
     private static final Path VALUE_PATH = Paths.get(VALUE_NAME);
 
@@ -44,10 +45,12 @@ public class SplayedPath {
      * around this, we can append a specific filename to the filesystem paths as such:
      * {@code <path>/file/encoding/__value} and {@code <path>/file/encoding/pkg/__value}.
      *
-     * <p>If writing/reading unrestricted properties (such as system properties), a value based
+     * <p>
+     * If writing/reading unrestricted properties (such as system properties), a value based
      * approach should be taken.
      *
-     * <p>If writing/reading restricted properties (ie, if we place a no-prefix restriction on
+     * <p>
+     * If writing/reading restricted properties (ie, if we place a no-prefix restriction on
      * application properties), a non-value based approach can be taken.
      */
     private final boolean isValueBased;
@@ -74,7 +77,8 @@ public class SplayedPath {
 
     private void check() throws IOException {
         if (!exists()) {
-            throw new IOException(String.format("Path does not exist, or is not a directory: '%s'", path));
+            throw new IOException(
+                String.format("Path does not exist, or is not a directory: '%s'", path));
         }
     }
 
@@ -92,17 +96,15 @@ public class SplayedPath {
      * A {@link PropertyVisitor} writer to the splayed path. The visitor may throw
      * {@link UncheckedIOException}s.
      *
-     * <p>Prefer {@link #write(PropertySet)} if applicable.
+     * <p>
+     * Prefer {@link #write(PropertySet)} if applicable.
      *
      * @return the visitor
      * @throws IOException
      */
     /*
-    public PropertyVisitor asUnsafeWriter() throws IOException {
-        check();
-        return writer;
-    }
-    */
+     * public PropertyVisitor asUnsafeWriter() throws IOException { check(); return writer; }
+     */
 
     /**
      * This visitor is used only *after* {@link #check()} has been invoked.
@@ -161,20 +163,14 @@ public class SplayedPath {
      * A {@link PropertySet} reader of the splayed path. The property set may throw a
      * {@link UncheckedIOException}s.
      *
-     * <p>Prefer {@link #readTo(PropertyVisitor)} if applicable.
+     * <p>
+     * Prefer {@link #readTo(PropertyVisitor)} if applicable.
      *
      * @return the property set
      */
     /*
-    public PropertySet asUnsafePropertySet() {
-        return visitor -> {
-            try {
-                readTo(visitor);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        };
-    }
+     * public PropertySet asUnsafePropertySet() { return visitor -> { try { readTo(visitor); } catch
+     * (IOException e) { throw new UncheckedIOException(e); } }; }
      */
 
     // --------------------------------------------------------------------------------------------
@@ -184,9 +180,8 @@ public class SplayedPath {
     }
 
     private String toString(byte[] bytes) {
-        return trim ?
-            new String(bytes, StandardCharsets.UTF_8).trim() :
-            new String(bytes, StandardCharsets.UTF_8);
+        return trim ? new String(bytes, StandardCharsets.UTF_8).trim()
+            : new String(bytes, StandardCharsets.UTF_8);
     }
 
     private String pathToString(Path key) {
@@ -210,8 +205,6 @@ public class SplayedPath {
         for (String part : SEPARATOR_PATTERN.split(key)) {
             next = next.resolve(part);
         }
-        return isValueBased ?
-            next.resolve(VALUE_NAME) :
-            next;
+        return isValueBased ? next.resolve(VALUE_NAME) : next;
     }
 }

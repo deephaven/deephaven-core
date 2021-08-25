@@ -14,11 +14,15 @@ public class Predicate {
         public boolean call(int arg);
 
         public static final Int ALWAYS_TRUE = new Int() {
-            public boolean call(final int arg) { return true; }
+            public boolean call(final int arg) {
+                return true;
+            }
         };
 
         public static final Int ALWAYS_FALSE = new Int() {
-            public boolean call(final int arg) { return false; }
+            public boolean call(final int arg) {
+                return false;
+            }
         };
     }
 

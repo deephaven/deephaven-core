@@ -7,10 +7,10 @@ import io.deephaven.db.v2.sources.chunk.*;
 
 public class ChunkAdapter<T> {
     public static <T> ChunkAdapter<T> create(Class type, final WritableChunkSink baseline,
-                                             final WritableChunkSink delta) {
-        //noinspection unchecked
-        return type == Boolean.class ? (ChunkAdapter<T>) new BooleanChunkAdapter(baseline, delta) :
-                new ChunkAdapter<>(baseline, delta);
+        final WritableChunkSink delta) {
+        // noinspection unchecked
+        return type == Boolean.class ? (ChunkAdapter<T>) new BooleanChunkAdapter(baseline, delta)
+            : new ChunkAdapter<>(baseline, delta);
     }
 
     /**
@@ -18,8 +18,8 @@ public class ChunkAdapter<T> {
      */
     private final WritableChunkSink baseline;
     /**
-     * A copy of DeltaAwareColumnSource.delta, kept here for convenience, and updated when the corresponding delta
-     * changes.
+     * A copy of DeltaAwareColumnSource.delta, kept here for convenience, and updated when the
+     * corresponding delta changes.
      */
     private WritableChunkSink delta;
     /**
@@ -31,7 +31,8 @@ public class ChunkAdapter<T> {
      */
     private ChunkSource.FillContext deltaContext;
     /**
-     * A context suitable for getting filling the delta from a context. Updated when the corresponding delta changes.
+     * A context suitable for getting filling the delta from a context. Updated when the
+     * corresponding delta changes.
      */
     private WritableChunkSink.FillFromContext deltaFillFromContext;
     /**

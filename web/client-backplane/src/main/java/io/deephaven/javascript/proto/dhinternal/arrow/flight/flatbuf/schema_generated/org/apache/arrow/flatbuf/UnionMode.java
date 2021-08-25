@@ -8,6 +8,6 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.UnionMode",
     namespace = JsPackage.GLOBAL)
 public class UnionMode {
-  public static int Dense,
-  Sparse;
+    public static int Dense,
+        Sparse;
 }

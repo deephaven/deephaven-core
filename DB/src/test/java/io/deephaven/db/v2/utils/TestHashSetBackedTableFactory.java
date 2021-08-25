@@ -50,10 +50,11 @@ public class TestHashSetBackedTableFactory extends LiveTableTestCase {
         final TstUtils.StringGenerator generator = new TstUtils.StringGenerator();
         final Random random = new Random();
 
-        final EvalNuggetInterface[] en = new EvalNuggetInterface[]{
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     public Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> result.update("Arg0=Arg.substring(0, 1)"));
+                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                            .computeLocked(() -> result.update("Arg0=Arg.substring(0, 1)"));
                     }
                 },
                 new UpdateValidatorNugget(result),
@@ -95,21 +96,22 @@ public class TestHashSetBackedTableFactory extends LiveTableTestCase {
 
         assertTrue(result instanceof QueryTable);
 
-        final QueryTable queryTable = (QueryTable)result;
+        final QueryTable queryTable = (QueryTable) result;
 
         final Map<String, ColumnSource> map = queryTable.getColumnSourceMap();
 
-        //noinspection unchecked
-        final ColumnSource<String> [] columnSources = (ColumnSource<String>[])new ColumnSource[map.size()];
+        // noinspection unchecked
+        final ColumnSource<String>[] columnSources =
+            (ColumnSource<String>[]) new ColumnSource[map.size()];
         int ii = 0;
         for (ColumnSource cs : map.values()) {
-            //noinspection unchecked
+            // noinspection unchecked
             columnSources[ii++] = cs;
         }
 
-        for (final Index.Iterator it = queryTable.getIndex().iterator(); it.hasNext(); ) {
+        for (final Index.Iterator it = queryTable.getIndex().iterator(); it.hasNext();) {
             final long idx = it.nextLong();
-            final String [] values = new String[columnSources.length];
+            final String[] values = new String[columnSources.length];
             for (ii = 0; ii < columnSources.length; ++ii) {
                 values[ii] = columnSources[ii].get(idx);
             }

@@ -27,15 +27,15 @@ public abstract class OrderedKeysAsChunkImpl implements OrderedKeys {
     private int sizeForRangesChunk() {
         final long runsUpperBound = runsUpperBound();
         if (runsUpperBound <= 1024) {
-            return 2*(int) runsUpperBound;
+            return 2 * (int) runsUpperBound;
         }
         final long rangesCount = rangesCountUpperBound();
-        return 2*(int) rangesCount;
+        return 2 * (int) rangesCount;
     }
 
     private void makeKeyRangesChunk(final int size) {
         final WritableLongChunk<OrderedKeyRanges> chunk =
-                WritableLongChunk.makeWritableChunk(size);
+            WritableLongChunk.makeWritableChunk(size);
         keyRangesChunk = chunk;
     }
 
@@ -90,9 +90,11 @@ public abstract class OrderedKeysAsChunkImpl implements OrderedKeys {
     }
 
     abstract public long lastKey();
+
     abstract public long rangesCountUpperBound();
 
-    @Override public void close() {
+    @Override
+    public void close() {
         closeOrderedKeysAsChunkImpl();
     }
 

@@ -23,7 +23,7 @@ import static io.deephaven.benchmarking.BenchmarkTools.sizeWithSparsity;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Warmup(iterations = 1, time = 1)
 @Measurement(iterations = 1, time = 1)
-@Timeout(time=3)
+@Timeout(time = 3)
 @Fork(1)
 public class UpdateBenchmark {
     private String[] updateClause;
@@ -53,16 +53,16 @@ public class UpdateBenchmark {
     @Param({"Historical", "Intraday"})
     private String tableType;
 
-    @Param({"100"}) //, "10000", "1000000"})
+    @Param({"100"}) // , "10000", "1000000"})
     private int tableSize;
 
-    @Param({"100", "90", "50", "20"}) //, "10", "5", "1"})
+    @Param({"100", "90", "50", "20"}) // , "10", "5", "1"})
     private int sparsity;
 
     @Param({"true", "false"})
     private boolean sort;
 
-    @Param({"trivial", "simple"}) //,"complex"})
+    @Param({"trivial", "simple"}) // ,"complex"})
     private String complexity;
 
     private String oneColumnUpdate() {
@@ -192,18 +192,21 @@ public class UpdateBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        final EnumStringColumnGenerator enumStringyCol = (EnumStringColumnGenerator) BenchmarkTools.stringCol("Thingy", 30, 6, 6, 0xB00FB00F);
+        final EnumStringColumnGenerator enumStringyCol =
+            (EnumStringColumnGenerator) BenchmarkTools.stringCol("Thingy", 30, 6, 6, 0xB00FB00F);
 
         final BenchmarkTableBuilder builder;
         switch (tableType) {
             case "Historical":
-                builder = BenchmarkTools.persistentTableBuilder("Carlos", sizeWithSparsity(tableSize, sparsity))
-                        .addGroupingColumns("Thingy")
-                        .setPartitioningFormula("${autobalance_single}")
-                        .setPartitionCount(10);
+                builder = BenchmarkTools
+                    .persistentTableBuilder("Carlos", sizeWithSparsity(tableSize, sparsity))
+                    .addGroupingColumns("Thingy")
+                    .setPartitioningFormula("${autobalance_single}")
+                    .setPartitionCount(10);
                 break;
             case "Intraday":
-                builder = BenchmarkTools.persistentTableBuilder("Carlos", sizeWithSparsity(tableSize, sparsity));
+                builder = BenchmarkTools.persistentTableBuilder("Carlos",
+                    sizeWithSparsity(tableSize, sparsity));
                 break;
 
             default:
@@ -264,16 +267,18 @@ public class UpdateBenchmark {
         }
 
         bmTable = builder
-                .addColumn(BenchmarkTools.stringCol("C4", 4, 5, 7, 0xFEEDBEEF))
-                .addColumn(enumStringyCol)
-                .build();
+            .addColumn(BenchmarkTools.stringCol("C4", 4, 5, 7, 0xFEEDBEEF))
+            .addColumn(enumStringyCol)
+            .build();
 
-        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
+        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()),
+            params.getWarmup().getCount());
 
         final List<String> uniqueThingyVals = Arrays.asList(enumStringyCol.getEnumVals());
         final String updateString;
 
-        // filterString (where clause) is unused in the current version of this benchmark, but is included
+        // filterString (where clause) is unused in the current version of this benchmark, but is
+        // included
         // as a model in case it's needed in other benchmarks copied from this class.
         filterString = "";
 
@@ -283,7 +288,7 @@ public class UpdateBenchmark {
                 break;
             case "OneColumnSelected":
                 updateString = oneColumnUpdate();
-                columnList = new String[]{"C2"};
+                columnList = new String[] {"C2"};
                 break;
             case "TwoColumn":
                 updateString = twoColumnUpdate();
@@ -314,7 +319,7 @@ public class UpdateBenchmark {
     @Setup(Level.Iteration)
     public void setupIteration() {
         state.init();
-        setupTable = applySparsity(bmTable.getTable(),tableSize,sparsity,0);
+        setupTable = applySparsity(bmTable.getTable(), tableSize, sparsity, 0);
         if (columnList != null) {
             setupTable = setupTable.select(columnList);
         }

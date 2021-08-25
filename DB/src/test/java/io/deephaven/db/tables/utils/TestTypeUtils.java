@@ -13,48 +13,83 @@ import static io.deephaven.util.type.TypeUtils.*;
 public class TestTypeUtils extends TestCase {
 
     public void testGetBoxedType() {
-        Require.equals(getBoxedType(boolean.class), "getBoxedType(boolean.class)", Boolean.class, "Boolean.class");
-        Require.equals(getBoxedType(byte.class), "getBoxedType(byte.class)", Byte.class, "Byte.class");
-        Require.equals(getBoxedType(short.class), "getBoxedType(short.class)", Short.class, "Short.class");
-        Require.equals(getBoxedType(char.class), "getBoxedType(char.class)", Character.class, "Character.class");
-        Require.equals(getBoxedType(int.class), "getBoxedType(int.class)", Integer.class, "Integer.class");
-        Require.equals(getBoxedType(long.class), "getBoxedType(long.class)", Long.class, "Long.class");
-        Require.equals(getBoxedType(float.class), "getBoxedType(float.class)", Float.class, "Float.class");
-        Require.equals(getBoxedType(double.class), "getBoxedType(double.class)", Double.class, "Double.class");
+        Require.equals(getBoxedType(boolean.class), "getBoxedType(boolean.class)", Boolean.class,
+            "Boolean.class");
+        Require.equals(getBoxedType(byte.class), "getBoxedType(byte.class)", Byte.class,
+            "Byte.class");
+        Require.equals(getBoxedType(short.class), "getBoxedType(short.class)", Short.class,
+            "Short.class");
+        Require.equals(getBoxedType(char.class), "getBoxedType(char.class)", Character.class,
+            "Character.class");
+        Require.equals(getBoxedType(int.class), "getBoxedType(int.class)", Integer.class,
+            "Integer.class");
+        Require.equals(getBoxedType(long.class), "getBoxedType(long.class)", Long.class,
+            "Long.class");
+        Require.equals(getBoxedType(float.class), "getBoxedType(float.class)", Float.class,
+            "Float.class");
+        Require.equals(getBoxedType(double.class), "getBoxedType(double.class)", Double.class,
+            "Double.class");
 
-        Require.equals(getBoxedType(Boolean.class), "getBoxedType(Boolean.class)", Boolean.class, "Boolean.class");
-        Require.equals(getBoxedType(Byte.class), "getBoxedType(Byte.class)", Byte.class, "Byte.class");
-        Require.equals(getBoxedType(Short.class), "getBoxedType(Short.class)", Short.class, "Short.class");
-        Require.equals(getBoxedType(Character.class), "getBoxedType(Character.class)", Character.class, "Character.class");
-        Require.equals(getBoxedType(Integer.class), "getBoxedType(Integer.class)", Integer.class, "Integer.class");
-        Require.equals(getBoxedType(Long.class), "getBoxedType(Long.class)", Long.class, "Long.class");
-        Require.equals(getBoxedType(Float.class), "getBoxedType(Float.class)", Float.class, "Float.class");
-        Require.equals(getBoxedType(Double.class), "getBoxedType(Double.class)", Double.class, "Double.class");
+        Require.equals(getBoxedType(Boolean.class), "getBoxedType(Boolean.class)", Boolean.class,
+            "Boolean.class");
+        Require.equals(getBoxedType(Byte.class), "getBoxedType(Byte.class)", Byte.class,
+            "Byte.class");
+        Require.equals(getBoxedType(Short.class), "getBoxedType(Short.class)", Short.class,
+            "Short.class");
+        Require.equals(getBoxedType(Character.class), "getBoxedType(Character.class)",
+            Character.class, "Character.class");
+        Require.equals(getBoxedType(Integer.class), "getBoxedType(Integer.class)", Integer.class,
+            "Integer.class");
+        Require.equals(getBoxedType(Long.class), "getBoxedType(Long.class)", Long.class,
+            "Long.class");
+        Require.equals(getBoxedType(Float.class), "getBoxedType(Float.class)", Float.class,
+            "Float.class");
+        Require.equals(getBoxedType(Double.class), "getBoxedType(Double.class)", Double.class,
+            "Double.class");
 
 
-        Require.equals(getBoxedType(Object.class), "getBoxedType(Object.class)", Object.class, "Object.class");
-        Require.equals(getBoxedType(CharSequence.class), "getBoxedType(CharSequence.class)", CharSequence.class, "CharSequence.class");
-        Require.equals(getBoxedType(String.class), "getBoxedType(String.class)", String.class, "String.class");
+        Require.equals(getBoxedType(Object.class), "getBoxedType(Object.class)", Object.class,
+            "Object.class");
+        Require.equals(getBoxedType(CharSequence.class), "getBoxedType(CharSequence.class)",
+            CharSequence.class, "CharSequence.class");
+        Require.equals(getBoxedType(String.class), "getBoxedType(String.class)", String.class,
+            "String.class");
     }
 
     public void testGetUnboxedType() {
-        Require.equals(getUnboxedType(Boolean.class), "getUnboxedType(Boolean.class)", boolean.class, "boolean.class");
-        Require.equals(getUnboxedType(Byte.class), "getUnboxedType(Byte.class)", byte.class, "byte.class");
-        Require.equals(getUnboxedType(Short.class), "getUnboxedType(Short.class)", short.class, "short.class");
-        Require.equals(getUnboxedType(Character.class), "getUnboxedType(Character.class)", char.class, "char.class");
-        Require.equals(getUnboxedType(Integer.class), "getUnboxedType(Integer.class)", int.class, "int.class");
-        Require.equals(getUnboxedType(Long.class), "getUnboxedType(Long.class)", long.class, "long.class");
-        Require.equals(getUnboxedType(Float.class), "getUnboxedType(Float.class)", float.class, "float.class");
-        Require.equals(getUnboxedType(Double.class), "getUnboxedType(Double.class)", double.class, "double.class");
+        Require.equals(getUnboxedType(Boolean.class), "getUnboxedType(Boolean.class)",
+            boolean.class, "boolean.class");
+        Require.equals(getUnboxedType(Byte.class), "getUnboxedType(Byte.class)", byte.class,
+            "byte.class");
+        Require.equals(getUnboxedType(Short.class), "getUnboxedType(Short.class)", short.class,
+            "short.class");
+        Require.equals(getUnboxedType(Character.class), "getUnboxedType(Character.class)",
+            char.class, "char.class");
+        Require.equals(getUnboxedType(Integer.class), "getUnboxedType(Integer.class)", int.class,
+            "int.class");
+        Require.equals(getUnboxedType(Long.class), "getUnboxedType(Long.class)", long.class,
+            "long.class");
+        Require.equals(getUnboxedType(Float.class), "getUnboxedType(Float.class)", float.class,
+            "float.class");
+        Require.equals(getUnboxedType(Double.class), "getUnboxedType(Double.class)", double.class,
+            "double.class");
 
-        Require.equals(getUnboxedType(boolean.class), "getUnboxedType(boolean.class)", boolean.class, "boolean.class");
-        Require.equals(getUnboxedType(byte.class), "getUnboxedType(byte.class)", byte.class, "byte.class");
-        Require.equals(getUnboxedType(short.class), "getUnboxedType(short.class)", short.class, "short.class");
-        Require.equals(getUnboxedType(char.class), "getUnboxedType(char.class)", char.class, "char.class");
-        Require.equals(getUnboxedType(int.class), "getUnboxedType(int.class)", int.class, "int.class");
-        Require.equals(getUnboxedType(long.class), "getUnboxedType(long.class)", long.class, "long.class");
-        Require.equals(getUnboxedType(float.class), "getUnboxedType(float.class)", float.class, "float.class");
-        Require.equals(getUnboxedType(double.class), "getUnboxedType(double.class)", double.class, "double.class");
+        Require.equals(getUnboxedType(boolean.class), "getUnboxedType(boolean.class)",
+            boolean.class, "boolean.class");
+        Require.equals(getUnboxedType(byte.class), "getUnboxedType(byte.class)", byte.class,
+            "byte.class");
+        Require.equals(getUnboxedType(short.class), "getUnboxedType(short.class)", short.class,
+            "short.class");
+        Require.equals(getUnboxedType(char.class), "getUnboxedType(char.class)", char.class,
+            "char.class");
+        Require.equals(getUnboxedType(int.class), "getUnboxedType(int.class)", int.class,
+            "int.class");
+        Require.equals(getUnboxedType(long.class), "getUnboxedType(long.class)", long.class,
+            "long.class");
+        Require.equals(getUnboxedType(float.class), "getUnboxedType(float.class)", float.class,
+            "float.class");
+        Require.equals(getUnboxedType(double.class), "getUnboxedType(double.class)", double.class,
+            "double.class");
 
 
         Require.eqNull(getUnboxedType(Object.class), "getUnboxedType(Object.class)");
@@ -117,9 +152,10 @@ public class TestTypeUtils extends TestCase {
 
         // Ensure primitive types and boxed types have the same ordering
         Require.requirement(
-                Arrays.equals(PRIMITIVE_TYPES.toArray(), BOXED_TYPES.stream().map(io.deephaven.util.type.TypeUtils::getUnboxedType).toArray()),
-                "Arrays.equals(PRIMITIVE_TYPES.toArray(), BOXED_TYPES.stream().map(TypeUtils::getUnboxedType).toArray())"
-        );
+            Arrays.equals(PRIMITIVE_TYPES.toArray(),
+                BOXED_TYPES.stream().map(io.deephaven.util.type.TypeUtils::getUnboxedType)
+                    .toArray()),
+            "Arrays.equals(PRIMITIVE_TYPES.toArray(), BOXED_TYPES.stream().map(TypeUtils::getUnboxedType).toArray())");
     }
 
     public void testIsType() {
@@ -158,7 +194,9 @@ public class TestTypeUtils extends TestCase {
     }
 
     public void testObjectToString() throws IOException {
-        assertNull(io.deephaven.util.type.TypeUtils.objectToString(null)); //null input
-        assertEquals("STRING", io.deephaven.util.type.TypeUtils.objectToString("STRING")); //non null input
+        assertNull(io.deephaven.util.type.TypeUtils.objectToString(null)); // null input
+        assertEquals("STRING", io.deephaven.util.type.TypeUtils.objectToString("STRING")); // non
+                                                                                           // null
+                                                                                           // input
     }
 }

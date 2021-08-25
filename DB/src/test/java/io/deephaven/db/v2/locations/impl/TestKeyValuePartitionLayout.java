@@ -26,7 +26,8 @@ public class TestKeyValuePartitionLayout {
 
     @Before
     public void setUp() throws IOException {
-        dataDirectory = Files.createTempDirectory(Paths.get(""), "TestChunkedRegionedOperations-").toFile();
+        dataDirectory =
+            Files.createTempDirectory(Paths.get(""), "TestChunkedRegionedOperations-").toFile();
         dataDirectory.deleteOnExit();
     }
 
@@ -42,9 +43,13 @@ public class TestKeyValuePartitionLayout {
         Files.write(file1.toPath(), "Hello world!".getBytes());
         Files.write(file2.toPath(), "Goodbye cruel world!".getBytes());
 
-        final RecordingLocationKeyFinder<FileTableLocationKey> recorder = new RecordingLocationKeyFinder<>();
-        new KeyValuePartitionLayout<>(dataDirectory, path -> true, (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 0).findKeys(recorder);
-        final List<FileTableLocationKey> results = recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
+        final RecordingLocationKeyFinder<FileTableLocationKey> recorder =
+            new RecordingLocationKeyFinder<>();
+        new KeyValuePartitionLayout<>(dataDirectory, path -> true,
+            (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 0)
+                .findKeys(recorder);
+        final List<FileTableLocationKey> results =
+            recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
 
         TestCase.assertEquals(2, results.size());
 
@@ -64,9 +69,13 @@ public class TestKeyValuePartitionLayout {
         Files.write(file1.toPath(), "Hello world!".getBytes());
         Files.write(file2.toPath(), "Goodbye cruel world!".getBytes());
 
-        final RecordingLocationKeyFinder<FileTableLocationKey> recorder = new RecordingLocationKeyFinder<>();
-        new KeyValuePartitionLayout<>(dataDirectory, path -> true, (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 1).findKeys(recorder);
-        final List<FileTableLocationKey> results = recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
+        final RecordingLocationKeyFinder<FileTableLocationKey> recorder =
+            new RecordingLocationKeyFinder<>();
+        new KeyValuePartitionLayout<>(dataDirectory, path -> true,
+            (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 1)
+                .findKeys(recorder);
+        final List<FileTableLocationKey> results =
+            recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
 
         TestCase.assertEquals(2, results.size());
 
@@ -82,9 +91,12 @@ public class TestKeyValuePartitionLayout {
 
     @Test
     public void testThreeLevels() throws IOException {
-        final File file1 = new File(dataDirectory, "Country=US" + File.separator + "State=New York" + File.separator + "City=New York" + File.separator + "file1");
-        final File file2 = new File(dataDirectory, "Country=France" + File.separator + "State=Grand Est" + File.separator + "City=Reims" + File.separator + "file2");
-        final File file3 = new File(dataDirectory, "Country=France" + File.separator + "State=Grand Est" + File.separator + "City=Strasbourg" + File.separator + "file3");
+        final File file1 = new File(dataDirectory, "Country=US" + File.separator + "State=New York"
+            + File.separator + "City=New York" + File.separator + "file1");
+        final File file2 = new File(dataDirectory, "Country=France" + File.separator
+            + "State=Grand Est" + File.separator + "City=Reims" + File.separator + "file2");
+        final File file3 = new File(dataDirectory, "Country=France" + File.separator
+            + "State=Grand Est" + File.separator + "City=Strasbourg" + File.separator + "file3");
         file1.getParentFile().mkdirs();
         file2.getParentFile().mkdirs();
         file3.getParentFile().mkdirs();
@@ -92,9 +104,13 @@ public class TestKeyValuePartitionLayout {
         Files.write(file2.toPath(), "Goodbye cruel world!".getBytes());
         Files.write(file3.toPath(), "Oui!".getBytes());
 
-        final RecordingLocationKeyFinder<FileTableLocationKey> recorder = new RecordingLocationKeyFinder<>();
-        new KeyValuePartitionLayout<>(dataDirectory, path -> true, (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 3).findKeys(recorder);
-        final List<FileTableLocationKey> results = recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
+        final RecordingLocationKeyFinder<FileTableLocationKey> recorder =
+            new RecordingLocationKeyFinder<>();
+        new KeyValuePartitionLayout<>(dataDirectory, path -> true,
+            (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 3)
+                .findKeys(recorder);
+        final List<FileTableLocationKey> results =
+            recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
 
         TestCase.assertEquals(3, results.size());
 
@@ -121,9 +137,12 @@ public class TestKeyValuePartitionLayout {
 
     @Test
     public void testTypesAndNameLegalization() throws IOException {
-        final File file1 = new File(dataDirectory, "A=2" + File.separator + "B 1=3.14" + File.separator + " C=true" + File.separator + "file1");
-        final File file2 = new File(dataDirectory, "A=1" + File.separator + "B 1=7.0" + File.separator + " C=false" + File.separator + "file2");
-        final File file3 = new File(dataDirectory, "A=1" + File.separator + "B 1=100" + File.separator + " C=false" + File.separator + "file3");
+        final File file1 = new File(dataDirectory, "A=2" + File.separator + "B 1=3.14"
+            + File.separator + " C=true" + File.separator + "file1");
+        final File file2 = new File(dataDirectory, "A=1" + File.separator + "B 1=7.0"
+            + File.separator + " C=false" + File.separator + "file2");
+        final File file3 = new File(dataDirectory, "A=1" + File.separator + "B 1=100"
+            + File.separator + " C=false" + File.separator + "file3");
         file1.getParentFile().mkdirs();
         file2.getParentFile().mkdirs();
         file3.getParentFile().mkdirs();
@@ -131,9 +150,13 @@ public class TestKeyValuePartitionLayout {
         Files.write(file2.toPath(), "Goodbye cruel world!".getBytes());
         Files.write(file3.toPath(), "Oui!".getBytes());
 
-        final RecordingLocationKeyFinder<FileTableLocationKey> recorder = new RecordingLocationKeyFinder<>();
-        new KeyValuePartitionLayout<>(dataDirectory, path -> true, (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 3).findKeys(recorder);
-        final List<FileTableLocationKey> results = recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
+        final RecordingLocationKeyFinder<FileTableLocationKey> recorder =
+            new RecordingLocationKeyFinder<>();
+        new KeyValuePartitionLayout<>(dataDirectory, path -> true,
+            (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 3)
+                .findKeys(recorder);
+        final List<FileTableLocationKey> results =
+            recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
 
         TestCase.assertEquals(3, results.size());
 
@@ -160,9 +183,15 @@ public class TestKeyValuePartitionLayout {
 
     @Test
     public void testMaxDepthEmpty() throws IOException {
-        final File file1 = new File(dataDirectory, "Country=US" + File.separator + "State=New York" + File.separator + "City=New York" + File.separator + "Dummy=Nowhere" + File.separator + "file1");
-        final File file2 = new File(dataDirectory, "Country=France" + File.separator + "State=Grand Est" + File.separator + "City=Reims" + File.separator + "Dummy=Nowhere" + File.separator + "file2");
-        final File file3 = new File(dataDirectory, "Country=France" + File.separator + "State=Grand Est" + File.separator + "City=Strasbourg" + File.separator + "Dummy=Nowhere" + File.separator + "file3");
+        final File file1 = new File(dataDirectory,
+            "Country=US" + File.separator + "State=New York" + File.separator + "City=New York"
+                + File.separator + "Dummy=Nowhere" + File.separator + "file1");
+        final File file2 = new File(dataDirectory,
+            "Country=France" + File.separator + "State=Grand Est" + File.separator + "City=Reims"
+                + File.separator + "Dummy=Nowhere" + File.separator + "file2");
+        final File file3 = new File(dataDirectory,
+            "Country=France" + File.separator + "State=Grand Est" + File.separator
+                + "City=Strasbourg" + File.separator + "Dummy=Nowhere" + File.separator + "file3");
         file1.getParentFile().mkdirs();
         file2.getParentFile().mkdirs();
         file3.getParentFile().mkdirs();
@@ -170,19 +199,28 @@ public class TestKeyValuePartitionLayout {
         Files.write(file2.toPath(), "Goodbye cruel world!".getBytes());
         Files.write(file3.toPath(), "Oui!".getBytes());
 
-        final RecordingLocationKeyFinder<FileTableLocationKey> recorder = new RecordingLocationKeyFinder<>();
-        new KeyValuePartitionLayout<>(dataDirectory, path -> true, (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 3).findKeys(recorder);
-        final List<FileTableLocationKey> results = recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
+        final RecordingLocationKeyFinder<FileTableLocationKey> recorder =
+            new RecordingLocationKeyFinder<>();
+        new KeyValuePartitionLayout<>(dataDirectory, path -> true,
+            (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 3)
+                .findKeys(recorder);
+        final List<FileTableLocationKey> results =
+            recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
 
         TestCase.assertTrue(results.isEmpty());
     }
 
     @Test
     public void testMaxDepth() throws IOException {
-        final File file1 = new File(dataDirectory, "Country=US" + File.separator + "State=New York" + File.separator + "City=New York" + File.separator + "file1");
-        final File file2 = new File(dataDirectory, "Country=France" + File.separator + "State=Grand Est" + File.separator + "City=Reims" + File.separator + "file2");
-        final File file3 = new File(dataDirectory, "Country=France" + File.separator + "State=Grand Est" + File.separator + "City=Strasbourg" + File.separator + "file3");
-        final File file4 = new File(dataDirectory, "Country=France" + File.separator + "State=Grand Est" + File.separator + "City=Strasbourg" + File.separator + "Dummy=Nowhere" + File.separator + "file4");
+        final File file1 = new File(dataDirectory, "Country=US" + File.separator + "State=New York"
+            + File.separator + "City=New York" + File.separator + "file1");
+        final File file2 = new File(dataDirectory, "Country=France" + File.separator
+            + "State=Grand Est" + File.separator + "City=Reims" + File.separator + "file2");
+        final File file3 = new File(dataDirectory, "Country=France" + File.separator
+            + "State=Grand Est" + File.separator + "City=Strasbourg" + File.separator + "file3");
+        final File file4 = new File(dataDirectory,
+            "Country=France" + File.separator + "State=Grand Est" + File.separator
+                + "City=Strasbourg" + File.separator + "Dummy=Nowhere" + File.separator + "file4");
         file1.getParentFile().mkdirs();
         file2.getParentFile().mkdirs();
         file3.getParentFile().mkdirs();
@@ -192,9 +230,13 @@ public class TestKeyValuePartitionLayout {
         Files.write(file3.toPath(), "Oui!".getBytes());
         Files.write(file4.toPath(), "Non!".getBytes());
 
-        final RecordingLocationKeyFinder<FileTableLocationKey> recorder = new RecordingLocationKeyFinder<>();
-        new KeyValuePartitionLayout<>(dataDirectory, path -> true, (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 3).findKeys(recorder);
-        final List<FileTableLocationKey> results = recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
+        final RecordingLocationKeyFinder<FileTableLocationKey> recorder =
+            new RecordingLocationKeyFinder<>();
+        new KeyValuePartitionLayout<>(dataDirectory, path -> true,
+            (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 3)
+                .findKeys(recorder);
+        final List<FileTableLocationKey> results =
+            recorder.getRecordedKeys().stream().sorted().collect(Collectors.toList());
 
         TestCase.assertEquals(3, results.size());
 
@@ -205,9 +247,12 @@ public class TestKeyValuePartitionLayout {
 
     @Test
     public void testMismatch() throws IOException {
-        final File file1 = new File(dataDirectory, "Country=US" + File.separator + "State=New York" + File.separator + "City=New York" + File.separator + "file1");
-        final File file2 = new File(dataDirectory, "Country=France" + File.separator + "Region=Grand Est" + File.separator + "City=Reims" + File.separator + "file2");
-        final File file3 = new File(dataDirectory, "Country=France" + File.separator + "Region=Grand Est" + File.separator + "City=Strasbourg" + File.separator + "file3");
+        final File file1 = new File(dataDirectory, "Country=US" + File.separator + "State=New York"
+            + File.separator + "City=New York" + File.separator + "file1");
+        final File file2 = new File(dataDirectory, "Country=France" + File.separator
+            + "Region=Grand Est" + File.separator + "City=Reims" + File.separator + "file2");
+        final File file3 = new File(dataDirectory, "Country=France" + File.separator
+            + "Region=Grand Est" + File.separator + "City=Strasbourg" + File.separator + "file3");
         file1.getParentFile().mkdirs();
         file2.getParentFile().mkdirs();
         file3.getParentFile().mkdirs();
@@ -216,7 +261,10 @@ public class TestKeyValuePartitionLayout {
         Files.write(file3.toPath(), "Oui!".getBytes());
 
         try {
-            new KeyValuePartitionLayout<>(dataDirectory, path -> true, (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 3).findKeys(ftlk -> {});
+            new KeyValuePartitionLayout<>(dataDirectory, path -> true,
+                (path, partitions) -> new FileTableLocationKey(path.toFile(), 0, partitions), 3)
+                    .findKeys(ftlk -> {
+                    });
             TestCase.fail("Expected exception");
         } catch (TableDataException expected) {
         }

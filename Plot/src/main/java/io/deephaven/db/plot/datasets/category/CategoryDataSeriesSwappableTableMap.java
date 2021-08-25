@@ -15,7 +15,9 @@ import java.util.Collection;
 /**
  * A dataset for {@link SwappableTable} based categorical data.
  */
-public class CategoryDataSeriesSwappableTableMap extends AbstractSwappableTableBasedCategoryDataSeries implements CategorySwappableTableDataSeriesInternal, TableSnapshotSeries {
+public class CategoryDataSeriesSwappableTableMap
+    extends AbstractSwappableTableBasedCategoryDataSeries
+    implements CategorySwappableTableDataSeriesInternal, TableSnapshotSeries {
     private static final long serialVersionUID = 2L;
 
     private transient Table localTable;
@@ -29,29 +31,32 @@ public class CategoryDataSeriesSwappableTableMap extends AbstractSwappableTableB
     /**
      * Creates a CategoryDataSeriesSwappableTableMap instance.
      *
-     * @param axes           axes on which this data series will be plotted
-     * @param id             data series id
-     * @param name           series name
+     * @param axes axes on which this data series will be plotted
+     * @param id data series id
+     * @param name series name
      * @param swappableTable table data. Table may be swapped out
-     * @param categories     discrete data column in {@code swappableTable}
-     * @param values         continuous data column in {@code swappableTable}
-     * @param <T>            type of the categorical data
-     * @throws io.deephaven.db.plot.errors.PlotIllegalArgumentException {@code chart}, {@code swappableTable},
-     *                                                                      {@code categories}, and {@code values} may not be null.
-     * @throws RuntimeException                                             {@code categories} column must be {@link Comparable}
-     *                                                                      {@code values} column must be numeric
+     * @param categories discrete data column in {@code swappableTable}
+     * @param values continuous data column in {@code swappableTable}
+     * @param <T> type of the categorical data
+     * @throws io.deephaven.db.plot.errors.PlotIllegalArgumentException {@code chart},
+     *         {@code swappableTable}, {@code categories}, and {@code values} may not be null.
+     * @throws RuntimeException {@code categories} column must be {@link Comparable} {@code values}
+     *         column must be numeric
      */
     public <T extends Comparable> CategoryDataSeriesSwappableTableMap(final AxesImpl axes,
-                                                                      final int id,
-                                                                      final Comparable<?> name,
-                                                                      final SwappableTable swappableTable,
-                                                                      final String categories,
-                                                                      final String values) {
+        final int id,
+        final Comparable<?> name,
+        final SwappableTable swappableTable,
+        final String categories,
+        final String values) {
         super(axes, id, name);
         ArgumentValidations.assertNotNull(axes, "axes", getPlotInfo());
         ArgumentValidations.assertNotNull(swappableTable, "swappableTable", getPlotInfo());
-        ArgumentValidations.assertInstance(swappableTable.getTableDefinition(), categories, Comparable.class, "Invalid data type in category column: column=" + categories, getPlotInfo());
-        ArgumentValidations.assertIsNumericOrTime(swappableTable.getTableDefinition(), values, "Invalid data type in data column: column=" + values, getPlotInfo());
+        ArgumentValidations.assertInstance(swappableTable.getTableDefinition(), categories,
+            Comparable.class, "Invalid data type in category column: column=" + categories,
+            getPlotInfo());
+        ArgumentValidations.assertIsNumericOrTime(swappableTable.getTableDefinition(), values,
+            "Invalid data type in data column: column=" + values, getPlotInfo());
 
         this.swappableTable = swappableTable;
         this.categoryCol = categories;
@@ -63,9 +68,10 @@ public class CategoryDataSeriesSwappableTableMap extends AbstractSwappableTableB
      * Creates a copy of a series using a different Axes.
      *
      * @param series series to copy.
-     * @param axes   new axes to use.
+     * @param axes new axes to use.
      */
-    private CategoryDataSeriesSwappableTableMap(final CategoryDataSeriesSwappableTableMap series, final AxesImpl axes) {
+    private CategoryDataSeriesSwappableTableMap(final CategoryDataSeriesSwappableTableMap series,
+        final AxesImpl axes) {
         super(series, axes);
 
         this.swappableTable = series.swappableTable;
@@ -79,7 +85,7 @@ public class CategoryDataSeriesSwappableTableMap extends AbstractSwappableTableB
         return new CategoryDataSeriesSwappableTableMap(this, axes);
     }
 
-    //////////////////////////  external  //////////////////////////
+    ////////////////////////// external //////////////////////////
 
 
     @Override

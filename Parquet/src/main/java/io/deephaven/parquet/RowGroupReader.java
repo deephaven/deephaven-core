@@ -10,6 +10,7 @@ import java.util.List;
 public interface RowGroupReader {
     /**
      * Returns the accessor to a given Column Chunk
+     * 
      * @param path the full column path
      * @return the accessor to a given Column Chunk
      */

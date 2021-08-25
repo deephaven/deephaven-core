@@ -12,22 +12,24 @@ public class TestConstructSnapshot extends LiveTableTestCase {
         final ConstructSnapshot.SnapshotControl control = new ConstructSnapshot.SnapshotControl() {
             @Override
             public Boolean usePreviousValues(long beforeClockValue) {
-                //noinspection AutoBoxing
+                // noinspection AutoBoxing
                 return LogicalClock.getState(beforeClockValue) == LogicalClock.State.Updating;
             }
 
             @Override
-            public boolean snapshotConsistent(final long currentClockValue, final boolean usingPreviousValues) {
+            public boolean snapshotConsistent(final long currentClockValue,
+                final boolean usingPreviousValues) {
                 return true;
             }
         };
-        Runnable snapshot_test = () -> ConstructSnapshot.callDataSnapshotFunction("snapshot test", control, (usePrev, beforeClock) -> {
-            SleepUtil.sleep(1000);
-            if (ConstructSnapshot.concurrentAttemptInconsistent()) {
-                changed.increment();
-            }
-            return true;
-        });
+        Runnable snapshot_test = () -> ConstructSnapshot.callDataSnapshotFunction("snapshot test",
+            control, (usePrev, beforeClock) -> {
+                SleepUtil.sleep(1000);
+                if (ConstructSnapshot.concurrentAttemptInconsistent()) {
+                    changed.increment();
+                }
+                return true;
+            });
 
         changed.setValue(0);
         final Thread t = new Thread(snapshot_test);

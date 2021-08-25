@@ -14,8 +14,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 /**
  * {@link IndexableData} dataset with {@link DBDateTime} values.
  *
- * Dataset values equal to {@link io.deephaven.util.QueryConstants#NULL_LONG}
- * are treated as null.
+ * Dataset values equal to {@link io.deephaven.util.QueryConstants#NULL_LONG} are treated as null.
  */
 public class IndexableDataDBDateTime extends IndexableData<DBDateTime> {
     private static final long serialVersionUID = 8122162323328323447L;
@@ -25,8 +24,8 @@ public class IndexableDataDBDateTime extends IndexableData<DBDateTime> {
     /**
      * Creates an IndexableDataDBDateTime instance.
      *
-     * Values in {@code data} equal to {@link io.deephaven.util.QueryConstants#NULL_LONG}
-     * are treated as null.
+     * Values in {@code data} equal to {@link io.deephaven.util.QueryConstants#NULL_LONG} are
+     * treated as null.
      *
      * @param data data
      * @param plotInfo plot information
@@ -45,13 +44,13 @@ public class IndexableDataDBDateTime extends IndexableData<DBDateTime> {
     @Override
     public DBDateTime get(int index) {
         final long dataValue = data[index];
-        if(dataValue == NULL_LONG) {
+        if (dataValue == NULL_LONG) {
             return null;
         }
 
         DBDateTime cachedVal = dbDateTimeMap.get(dataValue);
 
-        if(cachedVal == null) {
+        if (cachedVal == null) {
             cachedVal = new DBDateTime(dataValue);
             dbDateTimeMap.put(dataValue, cachedVal);
         }

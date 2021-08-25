@@ -47,35 +47,39 @@ public class BarrageSchemaUtil {
     // per flight specification: 0xFFFFFFFF value is the first 4 bytes of a valid IPC message
     private static final int IPC_CONTINUATION_TOKEN = -1;
 
-    public static final ArrowType.FixedSizeBinary LOCAL_DATE_TYPE = new ArrowType.FixedSizeBinary(6);// year is 4 bytes, month is 1 byte, day is 1 byte
-    public static final ArrowType.FixedSizeBinary LOCAL_TIME_TYPE = new ArrowType.FixedSizeBinary(7);// hour, minute, second are each one byte, nano is 4 bytes
+    public static final ArrowType.FixedSizeBinary LOCAL_DATE_TYPE =
+        new ArrowType.FixedSizeBinary(6);// year is 4 bytes, month is 1 byte, day is 1 byte
+    public static final ArrowType.FixedSizeBinary LOCAL_TIME_TYPE =
+        new ArrowType.FixedSizeBinary(7);// hour, minute, second are each one byte, nano is 4 bytes
 
     private static final int ATTR_STRING_LEN_CUTOFF = 1024;
 
     /**
-     * These are the types that get special encoding but are otherwise not primitives.
-     * TODO (core#58): add custom barrage serialization/deserialization support
+     * These are the types that get special encoding but are otherwise not primitives. TODO
+     * (core#58): add custom barrage serialization/deserialization support
      */
-    private static final Set<Class<?>> supportedTypes = new HashSet<>(Collections2.<Class<?>>asImmutableList(
+    private static final Set<Class<?>> supportedTypes =
+        new HashSet<>(Collections2.<Class<?>>asImmutableList(
             BigDecimal.class,
             BigInteger.class,
             String.class,
             DBDateTime.class,
-            Boolean.class
-    ));
+            Boolean.class));
 
     public static ByteString schemaBytesFromTable(final Table table) {
         return schemaBytesFromTable(table.getDefinition(), table.getAttributes());
     }
 
     public static ByteString schemaBytesFromTable(final TableDefinition table,
-                                                  final Map<String, Object> attributes) {
-        // note that flight expects the Schema to be wrapped in a Message prefixed by a 4-byte identifier
+        final Map<String, Object> attributes) {
+        // note that flight expects the Schema to be wrapped in a Message prefixed by a 4-byte
+        // identifier
         // (to detect end-of-stream in some cases) followed by the size of the flatbuffer message
 
         final FlatBufferBuilder builder = new FlatBufferBuilder();
         final int schemaOffset = BarrageSchemaUtil.makeSchemaPayload(builder, table, attributes);
-        builder.finish(BarrageStreamGenerator.wrapInMessage(builder, schemaOffset, org.apache.arrow.flatbuf.MessageHeader.Schema));
+        builder.finish(BarrageStreamGenerator.wrapInMessage(builder, schemaOffset,
+            org.apache.arrow.flatbuf.MessageHeader.Schema));
 
         final ByteBuffer msg = builder.dataBuffer();
 
@@ -101,19 +105,23 @@ public class BarrageSchemaUtil {
     }
 
     public static int makeSchemaPayload(final FlatBufferBuilder builder,
-                                        final TableDefinition table,
-                                        final Map<String, Object> attributes) {
+        final TableDefinition table,
+        final Map<String, Object> attributes) {
         final Map<String, Map<String, String>> fieldExtraMetadata = new HashMap<>();
         final Function<String, Map<String, String>> getExtraMetadata =
-                (colName) -> fieldExtraMetadata.computeIfAbsent(colName, k -> new HashMap<>());
+            (colName) -> fieldExtraMetadata.computeIfAbsent(colName, k -> new HashMap<>());
 
-        //noinspection unchecked
-        final Map<String, String> descriptions = Optional.ofNullable((Map<String, String>) attributes.get(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE)).orElse(Collections.emptyMap());
-        final MutableInputTable inputTable = (MutableInputTable) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
+        // noinspection unchecked
+        final Map<String, String> descriptions = Optional
+            .ofNullable((Map<String, String>) attributes.get(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE))
+            .orElse(Collections.emptyMap());
+        final MutableInputTable inputTable =
+            (MutableInputTable) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
 
         // find format columns
         final Set<String> formatColumns = new HashSet<>();
-        table.getColumnNames().stream().filter(ColumnFormattingValues::isFormattingColumn).forEach(formatColumns::add);
+        table.getColumnNames().stream().filter(ColumnFormattingValues::isFormattingColumn)
+            .forEach(formatColumns::add);
 
         // create metadata on the schema for table attributes
         final Map<String, String> schemaMetadata = new HashMap<>();
@@ -123,26 +131,32 @@ public class BarrageSchemaUtil {
             final String key = entry.getKey();
             final Object val = entry.getValue();
             if (val instanceof Byte || val instanceof Short || val instanceof Integer ||
-                    val instanceof Long || val instanceof Float || val instanceof Double  ||
-                    val instanceof Character || val instanceof Boolean ||
-                    (val instanceof String && ((String)val).length() < ATTR_STRING_LEN_CUTOFF)) {
+                val instanceof Long || val instanceof Float || val instanceof Double ||
+                val instanceof Character || val instanceof Boolean ||
+                (val instanceof String && ((String) val).length() < ATTR_STRING_LEN_CUTOFF)) {
                 putMetadata(schemaMetadata, "attribute." + key, val.toString());
             }
         }
 
         // copy rollup details
         if (attributes.containsKey(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE)) {
-            final HierarchicalTableInfo hierarchicalTableInfo = (HierarchicalTableInfo) attributes.remove(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
-            final String hierarchicalSourceKeyPrefix = "attribute." + Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE + ".";
-            putMetadata(schemaMetadata, hierarchicalSourceKeyPrefix + "hierarchicalColumnName", hierarchicalTableInfo.getHierarchicalColumnName());
+            final HierarchicalTableInfo hierarchicalTableInfo =
+                (HierarchicalTableInfo) attributes.remove(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
+            final String hierarchicalSourceKeyPrefix =
+                "attribute." + Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE + ".";
+            putMetadata(schemaMetadata, hierarchicalSourceKeyPrefix + "hierarchicalColumnName",
+                hierarchicalTableInfo.getHierarchicalColumnName());
             if (hierarchicalTableInfo instanceof RollupInfo) {
                 final RollupInfo rollupInfo = (RollupInfo) hierarchicalTableInfo;
-                putMetadata(schemaMetadata, hierarchicalSourceKeyPrefix + "byColumns", String.join(",", rollupInfo.byColumnNames));
-                putMetadata(schemaMetadata, hierarchicalSourceKeyPrefix + "leafType", rollupInfo.getLeafType().name());
+                putMetadata(schemaMetadata, hierarchicalSourceKeyPrefix + "byColumns",
+                    String.join(",", rollupInfo.byColumnNames));
+                putMetadata(schemaMetadata, hierarchicalSourceKeyPrefix + "leafType",
+                    rollupInfo.getLeafType().name());
 
                 // mark columns to indicate their sources
                 for (final MatchPair matchPair : rollupInfo.getMatchPairs()) {
-                    putMetadata(getExtraMetadata.apply(matchPair.left()), "rollup.sourceColumn", matchPair.right());
+                    putMetadata(getExtraMetadata.apply(matchPair.left()), "rollup.sourceColumn",
+                        matchPair.right());
                 }
             }
         }
@@ -154,41 +168,52 @@ public class BarrageSchemaUtil {
 
             // wire up style and format column references
             if (formatColumns.contains(colName + ColumnFormattingValues.TABLE_FORMAT_NAME)) {
-                putMetadata(extraMetadata, "styleColumn", colName + ColumnFormattingValues.TABLE_FORMAT_NAME);
-            } else if (formatColumns.contains(colName + ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME)) {
-                putMetadata(extraMetadata, "numberFormatColumn", colName + ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME);
-            } else if (formatColumns.contains(colName + ColumnFormattingValues.TABLE_DATE_FORMAT_NAME)) {
-                putMetadata(extraMetadata, "dateFormatColumn", colName + ColumnFormattingValues.TABLE_DATE_FORMAT_NAME);
+                putMetadata(extraMetadata, "styleColumn",
+                    colName + ColumnFormattingValues.TABLE_FORMAT_NAME);
+            } else if (formatColumns
+                .contains(colName + ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME)) {
+                putMetadata(extraMetadata, "numberFormatColumn",
+                    colName + ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME);
+            } else if (formatColumns
+                .contains(colName + ColumnFormattingValues.TABLE_DATE_FORMAT_NAME)) {
+                putMetadata(extraMetadata, "dateFormatColumn",
+                    colName + ColumnFormattingValues.TABLE_DATE_FORMAT_NAME);
             }
 
-            fields.put(colName, arrowFieldFor(colName, column, descriptions.get(colName), inputTable, extraMetadata));
+            fields.put(colName, arrowFieldFor(colName, column, descriptions.get(colName),
+                inputTable, extraMetadata));
         }
 
         return new Schema(new ArrayList<>(fields.values()), schemaMetadata).getSchema(builder);
     }
 
-    private static void putMetadata(final Map<String, String> metadata, final String key, final String value) {
+    private static void putMetadata(final Map<String, String> metadata, final String key,
+        final String value) {
         metadata.put("deephaven:" + key, value);
     }
 
-    public static TableDefinition schemaToTableDefinition(final org.apache.arrow.flatbuf.Schema schema) {
-        return schemaToTableDefinition(schema.fieldsLength(), i -> schema.fields(i).name(), i -> visitor -> {
-            final org.apache.arrow.flatbuf.Field field = schema.fields(i);
-            for (int j = 0; j < field.customMetadataLength(); j++) {
-                final KeyValue keyValue = field.customMetadata(j);
-                visitor.accept(keyValue.key(), keyValue.value());
-            }
-        });
+    public static TableDefinition schemaToTableDefinition(
+        final org.apache.arrow.flatbuf.Schema schema) {
+        return schemaToTableDefinition(schema.fieldsLength(), i -> schema.fields(i).name(),
+            i -> visitor -> {
+                final org.apache.arrow.flatbuf.Field field = schema.fields(i);
+                for (int j = 0; j < field.customMetadataLength(); j++) {
+                    final KeyValue keyValue = field.customMetadata(j);
+                    visitor.accept(keyValue.key(), keyValue.value());
+                }
+            });
     }
 
     public static TableDefinition schemaToTableDefinition(final Schema schema) {
-        return schemaToTableDefinition(schema.getFields().size(), i -> schema.getFields().get(i).getName(), i -> visitor -> {
-            schema.getFields().get(i).getMetadata().forEach(visitor);
-        });
+        return schemaToTableDefinition(schema.getFields().size(),
+            i -> schema.getFields().get(i).getName(), i -> visitor -> {
+                schema.getFields().get(i).getMetadata().forEach(visitor);
+            });
     }
 
-    private static TableDefinition schemaToTableDefinition(final int numColumns, final IntFunction<String> getName,
-                                                           final IntFunction<Consumer<BiConsumer<String, String>>> visitMetadata) {
+    private static TableDefinition schemaToTableDefinition(final int numColumns,
+        final IntFunction<String> getName,
+        final IntFunction<Consumer<BiConsumer<String, String>>> visitMetadata) {
         final ColumnDefinition<?>[] columns = new ColumnDefinition[numColumns];
 
         for (int i = 0; i < numColumns; ++i) {
@@ -201,27 +226,33 @@ public class BarrageSchemaUtil {
                     try {
                         type.setValue(ClassUtil.lookupClass(value));
                     } catch (final ClassNotFoundException e) {
-                        throw new UncheckedDeephavenException("Could not load class from schema", e);
+                        throw new UncheckedDeephavenException("Could not load class from schema",
+                            e);
                     }
                 } else if (key.equals("deephaven:componentType")) {
                     try {
                         componentType.setValue(ClassUtil.lookupClass(value));
                     } catch (final ClassNotFoundException e) {
-                        throw new UncheckedDeephavenException("Could not load class from schema", e);
+                        throw new UncheckedDeephavenException("Could not load class from schema",
+                            e);
                     }
                 }
             });
 
             if (type.getValue() == null) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Schema did not include `deephaven:type` metadata");
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "Schema did not include `deephaven:type` metadata");
             }
-            columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
+            columns[i] =
+                ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
         }
 
         return new TableDefinition(columns);
     }
 
-    private static Field arrowFieldFor(final String name, final ColumnDefinition<?> column, final String description, final MutableInputTable inputTable, final Map<String, String> extraMetadata) {
+    private static Field arrowFieldFor(final String name, final ColumnDefinition<?> column,
+        final String description, final MutableInputTable inputTable,
+        final Map<String, String> extraMetadata) {
         List<Field> children = Collections.emptyList();
 
         // is hidden?
@@ -237,32 +268,42 @@ public class BarrageSchemaUtil {
         }
 
         // only one of these will be true, if any are true the column will not be visible
-        putMetadata(metadata, "isStyle", name.endsWith(ColumnFormattingValues.TABLE_FORMAT_NAME) + "");
-        putMetadata(metadata, "isRowStyle", name.equals(ColumnFormattingValues.ROW_FORMAT_NAME + ColumnFormattingValues.TABLE_FORMAT_NAME) + "");
-        putMetadata(metadata, "isDateFormat", name.endsWith(ColumnFormattingValues.TABLE_DATE_FORMAT_NAME) + "");
-        putMetadata(metadata, "isNumberFormat", name.endsWith(ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME) + "");
+        putMetadata(metadata, "isStyle",
+            name.endsWith(ColumnFormattingValues.TABLE_FORMAT_NAME) + "");
+        putMetadata(metadata, "isRowStyle",
+            name.equals(
+                ColumnFormattingValues.ROW_FORMAT_NAME + ColumnFormattingValues.TABLE_FORMAT_NAME)
+                + "");
+        putMetadata(metadata, "isDateFormat",
+            name.endsWith(ColumnFormattingValues.TABLE_DATE_FORMAT_NAME) + "");
+        putMetadata(metadata, "isNumberFormat",
+            name.endsWith(ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME) + "");
         putMetadata(metadata, "isRollupColumn", name.equals(RollupInfo.ROLLUP_COLUMN) + "");
 
         if (description != null) {
             putMetadata(metadata, "description", description);
         }
         if (inputTable != null) {
-            putMetadata(metadata, "inputtable.isKey", Arrays.asList(inputTable.getKeyNames()).contains(name) + "");
+            putMetadata(metadata, "inputtable.isKey",
+                Arrays.asList(inputTable.getKeyNames()).contains(name) + "");
         }
 
         final FieldType fieldType = arrowFieldTypeFor(type, componentType, metadata);
         if (fieldType.getType().isComplex()) {
             if (type.isArray()) {
-                children = Collections.singletonList(new Field("", arrowFieldTypeFor(componentType, null, metadata), Collections.emptyList()));
+                children = Collections.singletonList(new Field("",
+                    arrowFieldTypeFor(componentType, null, metadata), Collections.emptyList()));
             } else {
-                throw new UnsupportedOperationException("Arrow Complex Type Not Supported: " + fieldType.getType());
+                throw new UnsupportedOperationException(
+                    "Arrow Complex Type Not Supported: " + fieldType.getType());
             }
         }
 
         return new Field(name, fieldType, children);
     }
 
-    private static FieldType arrowFieldTypeFor(final Class<?> type, final Class<?> componentType, final Map<String, String> metadata) {
+    private static FieldType arrowFieldTypeFor(final Class<?> type, final Class<?> componentType,
+        final Map<String, String> metadata) {
         return new FieldType(true, arrowTypeFor(type, componentType), null, metadata);
     }
 
@@ -296,7 +337,7 @@ public class BarrageSchemaUtil {
                     return LOCAL_TIME_TYPE;
                 }
                 if (type == BigDecimal.class
-                        || type == BigInteger.class) {
+                    || type == BigInteger.class) {
                     return Types.MinorType.VARBINARY.getType();
                 }
                 if (type == DBDateTime.class) {
@@ -304,8 +345,9 @@ public class BarrageSchemaUtil {
                 }
 
                 // everything gets converted to a string
-                return Types.MinorType.VARCHAR.getType(); //aka Utf8
+                return Types.MinorType.VARCHAR.getType(); // aka Utf8
         }
-        throw new IllegalStateException("No ArrowType for type: " + type + " w/chunkType: " + chunkType);
+        throw new IllegalStateException(
+            "No ArrowType for type: " + type + " w/chunkType: " + chunkType);
     }
 }

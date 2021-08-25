@@ -9,11 +9,11 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.io.deephaven.proto.console_pb_service.BidirectionalStream",
     namespace = JsPackage.GLOBAL)
 public interface BidirectionalStream<ReqT, ResT> {
-  void cancel();
+    void cancel();
 
-  void end();
+    void end();
 
-  BidirectionalStream on(String type, Function handler);
+    BidirectionalStream on(String type, Function handler);
 
-  BidirectionalStream write(ReqT message);
+    BidirectionalStream write(ReqT message);
 }

@@ -13,7 +13,8 @@ import java.io.Serializable;
 
 @AbstractColumnSource.IsSerializable(value = true)
 public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
-        implements WritableSource<T>, WritableChunkSink<Attributes.Values>, ShiftData.ShiftCallback, Serializable {
+    implements WritableSource<T>, WritableChunkSink<Attributes.Values>, ShiftData.ShiftCallback,
+    Serializable {
 
     protected transient long changeTime;
     protected boolean isTrackingPrevValues;
@@ -27,18 +28,19 @@ public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
     }
 
     @Override
-    public final void startTrackingPrevValues() { isTrackingPrevValues = true; }
+    public final void startTrackingPrevValues() {
+        isTrackingPrevValues = true;
+    }
 
     @Override
-    public void shift(long start, long end, long offset) {
-    }
+    public void shift(long start, long end, long offset) {}
 
     public static <T> SingleValueColumnSource getSingleValueColumnSource(Class<T> type) {
         if (type == Byte.class || type == byte.class) {
             return new ByteSingleValueSource();
-        } else if (type == Character.class || type == char.class ) {
+        } else if (type == Character.class || type == char.class) {
             return new CharacterSingleValueSource();
-        } else if (type ==Double.class || type == double.class) {
+        } else if (type == Double.class || type == double.class) {
             return new DoubleSingleValueSource();
         } else if (type == Float.class || type == float.class) {
             return new FloatSingleValueSource();
@@ -58,35 +60,35 @@ public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
         return false;
     }
 
-    public void set(char value){
+    public void set(char value) {
         throw new UnsupportedOperationException();
     }
 
-    public void set(byte value){
+    public void set(byte value) {
         throw new UnsupportedOperationException();
     }
 
-    public void set(double value){
+    public void set(double value) {
         throw new UnsupportedOperationException();
     }
 
-    public void set(float value){
+    public void set(float value) {
         throw new UnsupportedOperationException();
     }
 
-    public void set(short value){
+    public void set(short value) {
         throw new UnsupportedOperationException();
     }
 
-    public void set(long value){
+    public void set(long value) {
         throw new UnsupportedOperationException();
     }
 
-    public void set(int value){
+    public void set(int value) {
         throw new UnsupportedOperationException();
     }
 
-    public void set(T value){
+    public void set(T value) {
         throw new UnsupportedOperationException();
     }
 

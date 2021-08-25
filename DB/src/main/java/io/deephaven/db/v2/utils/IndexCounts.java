@@ -130,26 +130,25 @@ public final class IndexCounts {
         rspIndexCardinality.sample(rb.getCardinality());
         rspCount.sample(1);
         rb.sampleMetrics(
-                rspParallelArraysSizeUsed,
-                rspParallelArraysSizeUnused,
-                rspArrayContainersBytesAllocated,
-                rspArrayContainersBytesUnused,
-                rspArrayContainersCardinality,
-                rspArrayContainersCount,
-                rspBitmapContainersBytesAllocated,
-                rspBitmapContainersBytesUnused,
-                rspBitmapContainersCardinality,
-                rspBitmapContainersCount,
-                rspRunContainersBytesAllocated,
-                rspRunContainersBytesUnused,
-                rspRunContainersCardinality,
-                rspRunContainersCount,
-                rspRunContainersRunsCount,
-                rspSingleRangeContainersCount,
-                rspSingleRangeContainerCardinality,
-                rspSingletonContainersCount,
-                rspTwoValuesContainerCount
-        );
+            rspParallelArraysSizeUsed,
+            rspParallelArraysSizeUnused,
+            rspArrayContainersBytesAllocated,
+            rspArrayContainersBytesUnused,
+            rspArrayContainersCardinality,
+            rspArrayContainersCount,
+            rspBitmapContainersBytesAllocated,
+            rspBitmapContainersBytesUnused,
+            rspBitmapContainersCardinality,
+            rspBitmapContainersCount,
+            rspRunContainersBytesAllocated,
+            rspRunContainersBytesUnused,
+            rspRunContainersCardinality,
+            rspRunContainersCount,
+            rspRunContainersRunsCount,
+            rspSingleRangeContainersCount,
+            rspSingleRangeContainerCardinality,
+            rspSingletonContainersCount,
+            rspTwoValuesContainerCount);
     }
 
     public void sampleSingleRange(final SingleRange sr) {

@@ -8,7 +8,7 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Precision",
     namespace = JsPackage.GLOBAL)
 public class Precision {
-  public static int DOUBLE,
-  HALF,
-  SINGLE;
+    public static int DOUBLE,
+        HALF,
+        SINGLE;
 }

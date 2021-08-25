@@ -11,16 +11,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * An instance of this object is sent to our parser,
- * so that as it runs into invalid syntax, it can report useful errors,
- * and allow handler code to inspect the jjtree parser when it occurs.
+ * An instance of this object is sent to our parser, so that as it runs into invalid syntax, it can
+ * report useful errors, and allow handler code to inspect the jjtree parser when it occurs.
  *
  */
 public class Messenger {
 
     private List<Diagnostic> diagnostics = new ArrayList<>();
 
-    public void report(int code, Chunker ast){
+    public void report(int code, Chunker ast) {
         Token curToken = ast.token;
         final int pos = ast.token_source.getCurrentTokenAbsolutePosition();
         final SimpleCharStream stream = ast.token_source.stream();

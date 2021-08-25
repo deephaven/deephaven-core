@@ -3,10 +3,8 @@ package io.deephaven.web.shared.data;
 import java.io.Serializable;
 
 /**
- * A table definition constructed when using the fetch command;
- * also includes the table id and size, which are not normally
- * part of a table definition (as they will change when the
- * table evolves)
+ * A table definition constructed when using the fetch command; also includes the table id and size,
+ * which are not normally part of a table definition (as they will change when the table evolves)
  */
 public class InitialTableDefinition implements Serializable {
 

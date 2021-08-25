@@ -27,5 +27,6 @@ public interface ListenerBase extends LivenessNode {
      * @param sourceEntry performance tracking
      * @return exception notification
      */
-    NotificationQueue.Notification getErrorNotification(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry);
+    NotificationQueue.Notification getErrorNotification(Throwable originalException,
+        UpdatePerformanceTracker.Entry sourceEntry);
 }

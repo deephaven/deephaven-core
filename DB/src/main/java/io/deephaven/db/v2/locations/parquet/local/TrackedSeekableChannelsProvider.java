@@ -14,7 +14,8 @@ import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
- * {@link SeekableChannelsProvider} implementation that is constrained by a Deephaven {@link TrackedFileHandleFactory}.
+ * {@link SeekableChannelsProvider} implementation that is constrained by a Deephaven
+ * {@link TrackedFileHandleFactory}.
  */
 public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider {
 
@@ -24,7 +25,8 @@ public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider
         if (instance == null) {
             synchronized (TrackedSeekableChannelsProvider.class) {
                 if (instance == null) {
-                    return instance = new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance());
+                    return instance =
+                        new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance());
                 }
             }
         }
@@ -33,24 +35,33 @@ public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider
 
     private final TrackedFileHandleFactory fileHandleFactory;
 
-    public TrackedSeekableChannelsProvider(@NotNull final TrackedFileHandleFactory fileHandleFactory) {
+    public TrackedSeekableChannelsProvider(
+        @NotNull final TrackedFileHandleFactory fileHandleFactory) {
         this.fileHandleFactory = fileHandleFactory;
     }
 
     @Override
     public final SeekableByteChannel getReadChannel(@NotNull final Path path) throws IOException {
-        return new TrackedSeekableByteChannel(fileHandleFactory.readOnlyHandleCreator, path.toFile());
+        return new TrackedSeekableByteChannel(fileHandleFactory.readOnlyHandleCreator,
+            path.toFile());
     }
 
     @Override
-    public final SeekableByteChannel getWriteChannel(@NotNull final Path filePath, final boolean append) throws IOException {
-        // NB: I'm not sure this is actually the intended behavior; the "truncate-once" is per-handle, not per file.
-        return new TrackedSeekableByteChannel(append ? fileHandleFactory.writeAppendCreateHandleCreator : new TruncateOnceFileCreator(fileHandleFactory), filePath.toFile());
+    public final SeekableByteChannel getWriteChannel(@NotNull final Path filePath,
+        final boolean append) throws IOException {
+        // NB: I'm not sure this is actually the intended behavior; the "truncate-once" is
+        // per-handle, not per file.
+        return new TrackedSeekableByteChannel(
+            append ? fileHandleFactory.writeAppendCreateHandleCreator
+                : new TruncateOnceFileCreator(fileHandleFactory),
+            filePath.toFile());
     }
 
-    private static final class TruncateOnceFileCreator implements FileHandleFactory.FileToHandleFunction {
+    private static final class TruncateOnceFileCreator
+        implements FileHandleFactory.FileToHandleFunction {
 
-        private static final AtomicIntegerFieldUpdater<TruncateOnceFileCreator> FIRST_TIME_UPDATER = AtomicIntegerFieldUpdater.newUpdater(TruncateOnceFileCreator.class, "firstTime");
+        private static final AtomicIntegerFieldUpdater<TruncateOnceFileCreator> FIRST_TIME_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(TruncateOnceFileCreator.class, "firstTime");
         private static final int FIRST_TIME_TRUE = 1;
         private static final int FIRST_TIME_FALSE = 0;
 

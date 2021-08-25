@@ -13,15 +13,20 @@ public class TestFunctionConsistencyMonitor {
     @Test
     public void testCurrentDateNy() {
         DBTimeUtils.currentDateNyOverride = "Aardvark";
-        TestCase.assertEquals("Aardvark", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
+        TestCase.assertEquals("Aardvark",
+            CompositeTableDataServiceConsistencyMonitor.currentDateNy());
 
-        try (final SafeCloseable ignored = CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
-            TestCase.assertEquals("Aardvark", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
+        try (final SafeCloseable ignored =
+            CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
+            TestCase.assertEquals("Aardvark",
+                CompositeTableDataServiceConsistencyMonitor.currentDateNy());
             DBTimeUtils.currentDateNyOverride = "Armadillo";
-            TestCase.assertEquals("Aardvark", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
+            TestCase.assertEquals("Aardvark",
+                CompositeTableDataServiceConsistencyMonitor.currentDateNy());
         }
 
-        TestCase.assertEquals("Armadillo", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
+        TestCase.assertEquals("Armadillo",
+            CompositeTableDataServiceConsistencyMonitor.currentDateNy());
 
         DBTimeUtils.currentDateNyOverride = null;
     }
@@ -30,25 +35,32 @@ public class TestFunctionConsistencyMonitor {
     @Test
     public void testMidStreamRegistration() {
         DBTimeUtils.currentDateNyOverride = "Aardvark";
-        TestCase.assertEquals("Aardvark", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
+        TestCase.assertEquals("Aardvark",
+            CompositeTableDataServiceConsistencyMonitor.currentDateNy());
 
         final AtomicInteger atomicInteger = new AtomicInteger(7);
         final FunctionConsistencyMonitor.ConsistentSupplier<Integer> consistentInteger;
 
-        try (final SafeCloseable ignored = CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
-            TestCase.assertEquals("Aardvark", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
+        try (final SafeCloseable ignored =
+            CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
+            TestCase.assertEquals("Aardvark",
+                CompositeTableDataServiceConsistencyMonitor.currentDateNy());
             DBTimeUtils.currentDateNyOverride = "Armadillo";
-            TestCase.assertEquals("Aardvark", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
+            TestCase.assertEquals("Aardvark",
+                CompositeTableDataServiceConsistencyMonitor.currentDateNy());
 
-            consistentInteger = new CompositeTableDataServiceConsistencyMonitor.ConsistentSupplier<>(atomicInteger::getAndIncrement);
-            TestCase.assertEquals((Integer)7, consistentInteger.get());
-            TestCase.assertEquals((Integer)7, consistentInteger.get());
-            TestCase.assertEquals((Integer)7, consistentInteger.get());
+            consistentInteger =
+                new CompositeTableDataServiceConsistencyMonitor.ConsistentSupplier<>(
+                    atomicInteger::getAndIncrement);
+            TestCase.assertEquals((Integer) 7, consistentInteger.get());
+            TestCase.assertEquals((Integer) 7, consistentInteger.get());
+            TestCase.assertEquals((Integer) 7, consistentInteger.get());
         }
 
-        TestCase.assertEquals((Integer)8, consistentInteger.get());
+        TestCase.assertEquals((Integer) 8, consistentInteger.get());
 
-        TestCase.assertEquals("Armadillo", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
+        TestCase.assertEquals("Armadillo",
+            CompositeTableDataServiceConsistencyMonitor.currentDateNy());
 
         DBTimeUtils.currentDateNyOverride = null;
     }
@@ -56,21 +68,26 @@ public class TestFunctionConsistencyMonitor {
     @Test
     public void testCurrentDateNyWithThreads() throws InterruptedException {
         DBTimeUtils.currentDateNyOverride = "Bobcat";
-        TestCase.assertEquals("Bobcat", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
+        TestCase.assertEquals("Bobcat",
+            CompositeTableDataServiceConsistencyMonitor.currentDateNy());
 
 
         final MutableObject<String> mutableString = new MutableObject<>();
 
         Thread t;
-        try (final SafeCloseable ignored = CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
-            TestCase.assertEquals("Bobcat", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
+        try (final SafeCloseable ignored =
+            CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
+            TestCase.assertEquals("Bobcat",
+                CompositeTableDataServiceConsistencyMonitor.currentDateNy());
 
             t = new Thread(() -> {
                 synchronized (mutableString) {
                     // do nothing
                 }
-                try (final SafeCloseable ignored2 = CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
-                    mutableString.setValue(CompositeTableDataServiceConsistencyMonitor.currentDateNy());
+                try (final SafeCloseable ignored2 =
+                    CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
+                    mutableString
+                        .setValue(CompositeTableDataServiceConsistencyMonitor.currentDateNy());
                 }
             });
             synchronized (mutableString) {
@@ -78,7 +95,8 @@ public class TestFunctionConsistencyMonitor {
                 DBTimeUtils.currentDateNyOverride = "Bear";
             }
 
-            TestCase.assertEquals("Bobcat", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
+            TestCase.assertEquals("Bobcat",
+                CompositeTableDataServiceConsistencyMonitor.currentDateNy());
         }
 
         t.join(1000);
@@ -91,15 +109,19 @@ public class TestFunctionConsistencyMonitor {
         final MutableBoolean mutableBoolean = new MutableBoolean(false);
         final MutableBoolean gotValueOnce = new MutableBoolean(false);
 
-        try (final SafeCloseable ignored = CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
-            TestCase.assertEquals("Bear", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
+        try (final SafeCloseable ignored =
+            CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
+            TestCase.assertEquals("Bear",
+                CompositeTableDataServiceConsistencyMonitor.currentDateNy());
 
             t = new Thread(() -> {
-                try (final SafeCloseable ignored2 = CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
+                try (final SafeCloseable ignored2 =
+                    CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
                     synchronized (mutableString) {
                         // do nothing
                     }
-                    mutableString.setValue(CompositeTableDataServiceConsistencyMonitor.currentDateNy());
+                    mutableString
+                        .setValue(CompositeTableDataServiceConsistencyMonitor.currentDateNy());
                     synchronized (gotValueOnce) {
                         gotValueOnce.setTrue();
                         gotValueOnce.notifyAll();
@@ -115,7 +137,8 @@ public class TestFunctionConsistencyMonitor {
                         }
                     }
                     mutableString3.setValue(DBTimeUtils.currentDateNy());
-                    mutableString2.setValue(CompositeTableDataServiceConsistencyMonitor.currentDateNy());
+                    mutableString2
+                        .setValue(CompositeTableDataServiceConsistencyMonitor.currentDateNy());
                 }
             });
             synchronized (mutableString) {
@@ -123,10 +146,12 @@ public class TestFunctionConsistencyMonitor {
                 DBTimeUtils.currentDateNyOverride = "Butterfly";
             }
 
-            TestCase.assertEquals("Bear", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
+            TestCase.assertEquals("Bear",
+                CompositeTableDataServiceConsistencyMonitor.currentDateNy());
         }
 
-        try (final SafeCloseable ignored = CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
+        try (final SafeCloseable ignored =
+            CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
             while (true) {
                 synchronized (gotValueOnce) {
                     if (gotValueOnce.booleanValue()) {
@@ -140,7 +165,8 @@ public class TestFunctionConsistencyMonitor {
                 mutableBoolean.setTrue();
                 mutableBoolean.notifyAll();
             }
-            TestCase.assertEquals("Buffalo", CompositeTableDataServiceConsistencyMonitor.consistentDateNy());
+            TestCase.assertEquals("Buffalo",
+                CompositeTableDataServiceConsistencyMonitor.consistentDateNy());
         }
 
         t.join(1000);

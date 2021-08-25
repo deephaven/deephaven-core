@@ -11,6 +11,7 @@ public class Viewport implements Serializable {
     public Viewport() {
         this(new RangeSet(), new BitSet());
     }
+
     public Viewport(RangeSet rows, BitSet columns) {
         this.rows = rows;
         this.columns = columns;
@@ -60,9 +61,9 @@ public class Viewport implements Serializable {
     @Override
     public String toString() {
         return "Viewport{" +
-                "rows=" + rows +
-                ", columns=" + columns +
-                '}';
+            "rows=" + rows +
+            ", columns=" + columns +
+            '}';
     }
 
     public boolean isEmpty() {

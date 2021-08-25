@@ -6,8 +6,7 @@ public class ShiftedRange implements Serializable {
     private Range range;
     private long delta;
 
-    public ShiftedRange() {
-    }
+    public ShiftedRange() {}
 
     public ShiftedRange(Range range, long delta) {
         setRange(range);

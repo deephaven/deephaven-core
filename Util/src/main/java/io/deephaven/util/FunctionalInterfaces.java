@@ -14,9 +14,10 @@ public class FunctionalInterfaces {
     }
 
     /**
-     * Represents an operation that accepts a single input argument and returns no result, throwing an exception.
+     * Represents an operation that accepts a single input argument and returns no result, throwing
+     * an exception.
      *
-     * @param <T>             the type of the input to the operation
+     * @param <T> the type of the input to the operation
      * @param <ExceptionType> the type of the exception that can be thrown
      */
     @FunctionalInterface
@@ -27,7 +28,7 @@ public class FunctionalInterfaces {
     /**
      * Represents an operation that accepts no input and returns a result, throwing an exception.
      *
-     * @param <T>             the type of the output of the operation
+     * @param <T> the type of the output of the operation
      * @param <ExceptionType> the type of the exception that can be thrown
      */
     @FunctionalInterface
@@ -36,7 +37,8 @@ public class FunctionalInterfaces {
     }
 
     /**
-     * Represents an operation that accepts no input and returns a boolean result, throwing an exception.
+     * Represents an operation that accepts no input and returns a boolean result, throwing an
+     * exception.
      *
      * @param <ExceptionType> the type of the exception that can be thrown
      */
@@ -47,6 +49,7 @@ public class FunctionalInterfaces {
 
     /**
      * Represents a function that accepts three arguments and produces a result.
+     * 
      * @param <T> the type of the first argument to the function
      * @param <U> the type of the second argument to the function
      * @param <V> the type of the third argument to the function

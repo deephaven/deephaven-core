@@ -11,14 +11,16 @@ import org.jetbrains.annotations.NotNull;
 @SuppressWarnings("unused")
 public class DefaultProcessEnvironment extends BaseProcessEnvironment {
 
-    private DefaultProcessEnvironment(@NotNull final String mainClassName, @NotNull final Logger log) {
+    private DefaultProcessEnvironment(@NotNull final String mainClassName,
+        @NotNull final Logger log) {
         super(new ShutdownManagerImpl(), new DefaultFatalErrorReporter(), mainClassName, log);
     }
 
     @Override
     public void onStartup() {
         log.info().append(mainClassName).append(": starting up").endl();
-        shutdownManager.registerTask(ShutdownManager.OrderingCategory.LAST, new LoggerShutdownTask());
+        shutdownManager.registerTask(ShutdownManager.OrderingCategory.LAST,
+            new LoggerShutdownTask());
         shutdownManager.addShutdownHookToRuntime();
     }
 
@@ -31,7 +33,8 @@ public class DefaultProcessEnvironment extends BaseProcessEnvironment {
     static class Factory implements ProcessEnvironment.Factory {
 
         @Override
-        public ProcessEnvironment make(@NotNull final Configuration configuration, @NotNull final String mainClassName, @NotNull final Logger log) {
+        public ProcessEnvironment make(@NotNull final Configuration configuration,
+            @NotNull final String mainClassName, @NotNull final Logger log) {
             return new DefaultProcessEnvironment(mainClassName, log);
         }
     }

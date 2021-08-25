@@ -28,7 +28,9 @@ public class StatsMemoryCollector {
     private static final long NANOS = 1000000000;
     private static final long MICROS = 1000000;
     private static final long MILLIS = 1000;
-    private static final DirectMemoryStats DIRECT_MEMORY_STATS = AccessController.doPrivileged((PrivilegedAction<DirectMemoryStats>) JdkInternalsLoader.getInstance()::getDirectMemoryStats);
+    private static final DirectMemoryStats DIRECT_MEMORY_STATS =
+        AccessController.doPrivileged((PrivilegedAction<DirectMemoryStats>) JdkInternalsLoader
+            .getInstance()::getDirectMemoryStats);
 
     private final MemoryMXBean memoryBean;
     private final Consumer<String> alertFunction;
@@ -36,10 +38,14 @@ public class StatsMemoryCollector {
 
     private static final Logger log = Logger.getLogger(StatsMemoryCollector.class);
 
-    /* This used to use the ServerStatus.getJvmUptime(), which is really only interesting because it is the first time
-     * that the ServerStatus had an opportunity to call System.currentTimeMillis().  Because the StatsDriver is
-     * generally created, we'll just make our own uptime calcuation. */
+    /*
+     * This used to use the ServerStatus.getJvmUptime(), which is really only interesting because it
+     * is the first time that the ServerStatus had an opportunity to call
+     * System.currentTimeMillis(). Because the StatsDriver is generally created, we'll just make our
+     * own uptime calcuation.
+     */
     private static final long statsStartupTime = System.currentTimeMillis();
+
     private static long getStatsUptime() {
         return System.currentTimeMillis() - statsStartupTime;
     }
@@ -54,16 +60,28 @@ public class StatsMemoryCollector {
         public PoolState(long seconds, MemoryPoolMXBean bean) {
             this.seconds = seconds;
             this.bean = bean;
-            this.used = Stats.makeItem("Memory-Pool", bean.getName()+"-Used", State.FACTORY).getValue();
-            this.committed = Stats.makeItem("Memory-Pool", bean.getName()+"-Committed", State.FACTORY).getValue();
-            this.max = Stats.makeItem("Memory-Pool", bean.getName()+"-Max", State.FACTORY).getValue();
+            this.used =
+                Stats.makeItem("Memory-Pool", bean.getName() + "-Used", State.FACTORY).getValue();
+            this.committed = Stats
+                .makeItem("Memory-Pool", bean.getName() + "-Committed", State.FACTORY).getValue();
+            this.max =
+                Stats.makeItem("Memory-Pool", bean.getName() + "-Max", State.FACTORY).getValue();
         }
 
-        public static KeyedObjectKey<String, PoolState> keyDef = new KeyedObjectKey<String, PoolState>() {
-            public String getKey(PoolState v) { return v.bean.getName(); }
-            public int hashKey(String k) { return k.hashCode(); }
-            public boolean equalKey(String k, PoolState v) { return k.equals(v.bean.getName()); }
-        };
+        public static KeyedObjectKey<String, PoolState> keyDef =
+            new KeyedObjectKey<String, PoolState>() {
+                public String getKey(PoolState v) {
+                    return v.bean.getName();
+                }
+
+                public int hashKey(String k) {
+                    return k.hashCode();
+                }
+
+                public boolean equalKey(String k, PoolState v) {
+                    return k.equals(v.bean.getName());
+                }
+            };
 
         public void update() {
             MemoryUsage u = bean.getUsage();
@@ -72,7 +90,9 @@ public class StatsMemoryCollector {
             committed.sample(u.getCommitted());
         }
     }
-    private final KeyedObjectHash<String, PoolState> pools = new KeyedObjectHash<String, PoolState>(PoolState.keyDef);
+
+    private final KeyedObjectHash<String, PoolState> pools =
+        new KeyedObjectHash<String, PoolState>(PoolState.keyDef);
 
     private static class CollectorState {
         private final long seconds;
@@ -86,47 +106,69 @@ public class StatsMemoryCollector {
         private long lastCMSOccurrence = 0;
         private long lastCMSOccurrenceMailSent = 0;
 
-        public CollectorState(long seconds, GarbageCollectorMXBean bean, Consumer<String> alertFunction, BooleanSupplier enableCmsAlerts) {
+        public CollectorState(long seconds, GarbageCollectorMXBean bean,
+            Consumer<String> alertFunction, BooleanSupplier enableCmsAlerts) {
             this.seconds = seconds;
             this.bean = bean;
             this.alertFunction = alertFunction;
             this.enableCmsAlerts = enableCmsAlerts;
-            this.count = Stats.makeItem("Memory-GC", bean.getName()+"-Count", Counter.FACTORY).getValue();
-            this.time = Stats.makeItem("Memory-GC", bean.getName()+"-Time", Counter.FACTORY).getValue();
+            this.count =
+                Stats.makeItem("Memory-GC", bean.getName() + "-Count", Counter.FACTORY).getValue();
+            this.time =
+                Stats.makeItem("Memory-GC", bean.getName() + "-Time", Counter.FACTORY).getValue();
         }
 
-        public static KeyedObjectKey<String, CollectorState> keyDef = new KeyedObjectKey<String, CollectorState>() {
-            public String getKey(CollectorState v) { return v.bean.getName(); }
-            public int hashKey(String k) { return k.hashCode(); }
-            public boolean equalKey(String k, CollectorState v) { return k.equals(v.bean.getName()); }
-        };
+        public static KeyedObjectKey<String, CollectorState> keyDef =
+            new KeyedObjectKey<String, CollectorState>() {
+                public String getKey(CollectorState v) {
+                    return v.bean.getName();
+                }
+
+                public int hashKey(String k) {
+                    return k.hashCode();
+                }
+
+                public boolean equalKey(String k, CollectorState v) {
+                    return k.equals(v.bean.getName());
+                }
+            };
 
         public void update() {
             long c = bean.getCollectionCount();
             long t = bean.getCollectionTime();
-            if ( lastCount != -1 ) {
+            if (lastCount != -1) {
                 count.sample(c - lastCount);
 
-                long timeSample=(t - lastTime) / seconds;
+                long timeSample = (t - lastTime) / seconds;
 
                 time.sample(timeSample);
 
                 if ("ConcurrentMarkSweep".equals(bean.getName())) {
-                    if (timeSample>1000 && getStatsUptime()>300000){
-                        // snooze this e-mail for one minute after we forcefully schedule a preopen gc
+                    if (timeSample > 1000 && getStatsUptime() > 300000) {
+                        // snooze this e-mail for one minute after we forcefully schedule a preopen
+                        // gc
                         if (enableCmsAlerts.getAsBoolean()) {
-                            log.log(SimpleMailAppender.MAIL("Long GC detected -- " + System.getProperty("process.name")), "GC Time=" + timeSample);
+                            log.log(
+                                SimpleMailAppender.MAIL(
+                                    "Long GC detected -- " + System.getProperty("process.name")),
+                                "GC Time=" + timeSample);
                         }
                     }
 
-                    if (c - lastCount > 0 && getStatsUptime()>600000) {
+                    if (c - lastCount > 0 && getStatsUptime() > 600000) {
                         final long now = System.currentTimeMillis();
-                        if (now - lastCMSOccurrence < 30000) {  // twice in 30 seconds seems like a bit much
-                            if (now - lastCMSOccurrenceMailSent > TimeConstants.HOUR) {  // send at most one an hour
-                                SimpleDateFormat dateFormat=new SimpleDateFormat("HH:mm:ss.SSS");
+                        if (now - lastCMSOccurrence < 30000) { // twice in 30 seconds seems like a
+                                                               // bit much
+                            if (now - lastCMSOccurrenceMailSent > TimeConstants.HOUR) { // send at
+                                                                                        // most one
+                                                                                        // an hour
+                                SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
 
-                                final String message = "Last CMS collection at " + dateFormat.format(new Date(lastCMSOccurrence));
-                                log.log(SimpleMailAppender.MAIL("Rapid CMS detected -- " + System.getProperty("process.name")), message);
+                                final String message = "Last CMS collection at "
+                                    + dateFormat.format(new Date(lastCMSOccurrence));
+                                log.log(SimpleMailAppender.MAIL(
+                                    "Rapid CMS detected -- " + System.getProperty("process.name")),
+                                    message);
                                 if (alertFunction != null) {
                                     alertFunction.accept("Rapid CMS detected, " + message);
                                 }
@@ -141,7 +183,9 @@ public class StatsMemoryCollector {
             lastTime = t;
         }
     }
-    private final KeyedObjectHash<String, CollectorState> collectors = new KeyedObjectHash<String, CollectorState>(CollectorState.keyDef);
+
+    private final KeyedObjectHash<String, CollectorState> collectors =
+        new KeyedObjectHash<String, CollectorState>(CollectorState.keyDef);
 
     private final long seconds;
 
@@ -156,7 +200,8 @@ public class StatsMemoryCollector {
     private final Value directMemoryUsed;
     private final Value directMemoryMax;
 
-    StatsMemoryCollector(long interval, Consumer<String> alertFunction, BooleanSupplier cmsAlertEnabled) {
+    StatsMemoryCollector(long interval, Consumer<String> alertFunction,
+        BooleanSupplier cmsAlertEnabled) {
         this.alertFunction = alertFunction;
         this.cmsAlertEnabled = cmsAlertEnabled;
         this.seconds = interval / MILLIS;
@@ -167,7 +212,8 @@ public class StatsMemoryCollector {
         this.heapMax = Stats.makeItem("Memory-Heap", "Max", State.FACTORY).getValue();
 
         this.nonHeapUsed = Stats.makeItem("Memory-NonHeap", "Used", State.FACTORY).getValue();
-        this.nonHeapCommitted = Stats.makeItem("Memory-NonHeap", "Committed", State.FACTORY).getValue();
+        this.nonHeapCommitted =
+            Stats.makeItem("Memory-NonHeap", "Committed", State.FACTORY).getValue();
         this.nonHeapMax = Stats.makeItem("Memory-NonHeap", "Max", State.FACTORY).getValue();
 
         this.directMemoryUsed = Stats.makeItem("Memory-Direct", "Used", State.FACTORY).getValue();
@@ -190,24 +236,26 @@ public class StatsMemoryCollector {
         nonHeapMax.sample(nonHeap.getMax());
 
         AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
-            // Obviously we are using internal Sun APIs here.  Worst case is Java 9 breaks this and we have to do it a different way
+            // Obviously we are using internal Sun APIs here. Worst case is Java 9 breaks this and
+            // we have to do it a different way
             directMemoryUsed.sample(DIRECT_MEMORY_STATS.getMemoryUsed());
             directMemoryMax.sample(DIRECT_MEMORY_STATS.maxDirectMemory());
             return null;
         });
 
-        for ( MemoryPoolMXBean b : ManagementFactory.getMemoryPoolMXBeans() ) {
+        for (MemoryPoolMXBean b : ManagementFactory.getMemoryPoolMXBeans()) {
             PoolState pool = pools.get(b.getName());
-            if ( pool == null ) {
+            if (pool == null) {
                 pools.add(pool = new PoolState(seconds, b));
             }
             pool.update();
         }
 
-        for ( GarbageCollectorMXBean b : ManagementFactory.getGarbageCollectorMXBeans() ) {
+        for (GarbageCollectorMXBean b : ManagementFactory.getGarbageCollectorMXBeans()) {
             CollectorState collector = collectors.get(b.getName());
-            if ( collector == null ) {
-                collectors.add(collector = new CollectorState(seconds, b, alertFunction, cmsAlertEnabled));
+            if (collector == null) {
+                collectors.add(
+                    collector = new CollectorState(seconds, b, alertFunction, cmsAlertEnabled));
             }
             collector.update();
         }

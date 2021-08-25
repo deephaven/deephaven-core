@@ -17,17 +17,20 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * <p>{@link TupleSource} that produces key column values as {@link ArrayTuple}s from multiple {@link ColumnSource}s.
+ * <p>
+ * {@link TupleSource} that produces key column values as {@link ArrayTuple}s from multiple
+ * {@link ColumnSource}s.
  */
-final class MultiColumnTupleSource implements TupleSource<ArrayTuple>, DefaultChunkSource.WithPrev<Values> {
+final class MultiColumnTupleSource
+    implements TupleSource<ArrayTuple>, DefaultChunkSource.WithPrev<Values> {
 
     private final ColumnSource[] columnSources;
 
     private final List<ColumnSource> columnSourceList;
 
     /**
-     * Construct a new tuple source backed by the supplied column sources. The column sources array should not be
-     * changed after this call.
+     * Construct a new tuple source backed by the supplied column sources. The column sources array
+     * should not be changed after this call.
      *
      * @param columnSources The column sources to produce tuples from
      */
@@ -70,7 +73,9 @@ final class MultiColumnTupleSource implements TupleSource<ArrayTuple>, DefaultCh
     }
 
     @Override
-    public final <ELEMENT_TYPE> void exportElement(@NotNull final ArrayTuple tuple, final int elementIndex, @NotNull final WritableSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
+    public final <ELEMENT_TYPE> void exportElement(@NotNull final ArrayTuple tuple,
+        final int elementIndex, @NotNull final WritableSource<ELEMENT_TYPE> writableSource,
+        final long destinationIndexKey) {
         writableSource.set(destinationIndexKey, tuple.getElement(elementIndex));
     }
 
@@ -90,22 +95,28 @@ final class MultiColumnTupleSource implements TupleSource<ArrayTuple>, DefaultCh
     }
 
     @Override
-    public Chunk<Values> getChunk(@NotNull ChunkSource.GetContext context, @NotNull OrderedKeys orderedKeys) {
+    public Chunk<Values> getChunk(@NotNull ChunkSource.GetContext context,
+        @NotNull OrderedKeys orderedKeys) {
         return getChunk(context, orderedKeys, false);
     }
 
-    public Chunk<Values> getPrevChunk(@NotNull ChunkSource.GetContext context, @NotNull OrderedKeys orderedKeys) {
+    public Chunk<Values> getPrevChunk(@NotNull ChunkSource.GetContext context,
+        @NotNull OrderedKeys orderedKeys) {
         return getChunk(context, orderedKeys, true);
     }
 
-    private Chunk<Values> getChunk(@NotNull ChunkSource.GetContext context, @NotNull OrderedKeys orderedKeys, boolean usePrev) {
-        final GetContext gc = (GetContext)context;
-        final ObjectChunk<?, ? extends Values>[] underlyingValues = getUnderlyingChunks(orderedKeys, usePrev, gc);
+    private Chunk<Values> getChunk(@NotNull ChunkSource.GetContext context,
+        @NotNull OrderedKeys orderedKeys, boolean usePrev) {
+        final GetContext gc = (GetContext) context;
+        final ObjectChunk<?, ? extends Values>[] underlyingValues =
+            getUnderlyingChunks(orderedKeys, usePrev, gc);
         fillFromUnderlying(orderedKeys, underlyingValues, gc.values);
         return gc.values;
     }
 
-    private void fillFromUnderlying(@NotNull OrderedKeys orderedKeys, ObjectChunk<?, ? extends Values>[] underlyingValues, WritableObjectChunk<ArrayTuple, ? super Values> destination) {
+    private void fillFromUnderlying(@NotNull OrderedKeys orderedKeys,
+        ObjectChunk<?, ? extends Values>[] underlyingValues,
+        WritableObjectChunk<ArrayTuple, ? super Values> destination) {
         final int length = columnSources.length;
         final int size = orderedKeys.intSize();
         destination.setSize(size);
@@ -119,18 +130,21 @@ final class MultiColumnTupleSource implements TupleSource<ArrayTuple>, DefaultCh
     }
 
     @NotNull
-    private ObjectChunk<?, ? extends Values>[] getUnderlyingChunks(@NotNull OrderedKeys orderedKeys, boolean usePrev, FillContext fc) {
+    private ObjectChunk<?, ? extends Values>[] getUnderlyingChunks(@NotNull OrderedKeys orderedKeys,
+        boolean usePrev, FillContext fc) {
         final int length = columnSources.length;
 
-        //noinspection unchecked
-        final ObjectChunk<?, ? extends Values> [] underlyingValues = new ObjectChunk[length];
+        // noinspection unchecked
+        final ObjectChunk<?, ? extends Values>[] underlyingValues = new ObjectChunk[length];
         for (int csi = 0; csi < length; ++csi) {
             final Chunk<? extends Values> underlyingChunk;
             if (usePrev) {
-                //noinspection unchecked
-                underlyingChunk = columnSources[csi].getPrevChunk(fc.underlyingContexts[csi], orderedKeys);
+                // noinspection unchecked
+                underlyingChunk =
+                    columnSources[csi].getPrevChunk(fc.underlyingContexts[csi], orderedKeys);
             } else {
-                underlyingChunk = columnSources[csi].getChunk(fc.underlyingContexts[csi], orderedKeys);
+                underlyingChunk =
+                    columnSources[csi].getChunk(fc.underlyingContexts[csi], orderedKeys);
             }
             underlyingValues[csi] = fc.boxers[csi].box(underlyingChunk);
         }
@@ -138,25 +152,32 @@ final class MultiColumnTupleSource implements TupleSource<ArrayTuple>, DefaultCh
     }
 
     @Override
-    public void fillChunk(@NotNull ChunkSource.FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull OrderedKeys orderedKeys) {
-        final FillContext fc = (FillContext)context;
-        final ObjectChunk<?, ? extends Values>[] underlyingValues = getUnderlyingChunks(orderedKeys, false, fc);
+    public void fillChunk(@NotNull ChunkSource.FillContext context,
+        @NotNull WritableChunk<? super Values> destination, @NotNull OrderedKeys orderedKeys) {
+        final FillContext fc = (FillContext) context;
+        final ObjectChunk<?, ? extends Values>[] underlyingValues =
+            getUnderlyingChunks(orderedKeys, false, fc);
         fillFromUnderlying(orderedKeys, underlyingValues, destination.asWritableObjectChunk());
     }
 
-    public void fillPrevChunk(@NotNull ChunkSource.FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull OrderedKeys orderedKeys) {
-        final FillContext fc = (FillContext)context;
-        final ObjectChunk<?, ? extends Values>[] underlyingValues = getUnderlyingChunks(orderedKeys, true, fc);
+    public void fillPrevChunk(@NotNull ChunkSource.FillContext context,
+        @NotNull WritableChunk<? super Values> destination, @NotNull OrderedKeys orderedKeys) {
+        final FillContext fc = (FillContext) context;
+        final ObjectChunk<?, ? extends Values>[] underlyingValues =
+            getUnderlyingChunks(orderedKeys, true, fc);
         fillFromUnderlying(orderedKeys, underlyingValues, destination.asWritableObjectChunk());
     }
 
     private static class FillContext implements ChunkSource.FillContext {
-        final ChunkSource.GetContext [] underlyingContexts;
-        final ChunkBoxer.BoxerKernel [] boxers;
+        final ChunkSource.GetContext[] underlyingContexts;
+        final ChunkBoxer.BoxerKernel[] boxers;
 
         private FillContext(int chunkCapacity, ColumnSource[] columnSources) {
-            underlyingContexts = Arrays.stream(columnSources).map(cs -> cs.makeGetContext(chunkCapacity)).toArray(ChunkSource.GetContext[]::new);
-            boxers = Arrays.stream(columnSources).map(cs -> ChunkBoxer.getBoxer(cs.getChunkType(), chunkCapacity)).toArray(ChunkBoxer.BoxerKernel[]::new);
+            underlyingContexts = Arrays.stream(columnSources)
+                .map(cs -> cs.makeGetContext(chunkCapacity)).toArray(ChunkSource.GetContext[]::new);
+            boxers = Arrays.stream(columnSources)
+                .map(cs -> ChunkBoxer.getBoxer(cs.getChunkType(), chunkCapacity))
+                .toArray(ChunkBoxer.BoxerKernel[]::new);
         }
 
         @Override

@@ -56,35 +56,42 @@ public class SerializableClosure<T> implements Serializable {
     }
 
     @SuppressWarnings("unchecked")
-    private void readObject(final ObjectInputStream ois) throws IOException, ClassNotFoundException {
+    private void readObject(final ObjectInputStream ois)
+        throws IOException, ClassNotFoundException {
         final String closureClassName = (String) ois.readObject();
         final byte[] closureCode = (byte[]) ois.readObject();
         final byte[] closureData = (byte[]) ois.readObject();
 
         final MapBackedClassLoader cl = new MapBackedClassLoader();
         cl.addClassData(closureClassName, closureCode);
-        final ObjectInputStream objectStream = new CustomClassLoaderObjectInputStream<>(new ByteArrayInputStream(closureData), cl);
+        final ObjectInputStream objectStream =
+            new CustomClassLoaderObjectInputStream<>(new ByteArrayInputStream(closureData), cl);
         closure = (Closure) objectStream.readObject();
     }
 
-    private static class CustomClassLoaderObjectInputStream<CLT extends ClassLoader> extends ObjectInputStream {
+    private static class CustomClassLoaderObjectInputStream<CLT extends ClassLoader>
+        extends ObjectInputStream {
 
         private final CLT classLoader;
 
-        public CustomClassLoaderObjectInputStream(InputStream inputStream, CLT classLoader) throws IOException {
+        public CustomClassLoaderObjectInputStream(InputStream inputStream, CLT classLoader)
+            throws IOException {
             super(inputStream);
             this.classLoader = classLoader;
         }
 
         @Override
-        protected Class<?> resolveClass(ObjectStreamClass desc) throws ClassNotFoundException, IOException {
+        protected Class<?> resolveClass(ObjectStreamClass desc)
+            throws ClassNotFoundException, IOException {
             if (classLoader != null) {
                 try {
                     return Class.forName(desc.getName(), false, classLoader);
                 } catch (ClassNotFoundException cnfe) {
-                    /* The default implementation in ObjectInputStream handles primitive types with a map from name to class.
-                     * Rather than duplicate the functionality, we are delegating to the super method for all failures that
-                     * may be of this kind, as well as any case where the passed in ClassLoader fails to find the class.
+                    /*
+                     * The default implementation in ObjectInputStream handles primitive types with
+                     * a map from name to class. Rather than duplicate the functionality, we are
+                     * delegating to the super method for all failures that may be of this kind, as
+                     * well as any case where the passed in ClassLoader fails to find the class.
                      */
                 }
             }

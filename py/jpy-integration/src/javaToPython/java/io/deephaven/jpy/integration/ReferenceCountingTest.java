@@ -35,12 +35,12 @@ public class ReferenceCountingTest extends PythonTest {
         builtins = BuiltinsModule.create();
         destructor = DestructorModuleParent.create(getCreateModule());
         jpy = JpyModule.create();
-        //jpy.setFlags(EnumSet.of(Flag.ALL));
+        // jpy.setFlags(EnumSet.of(Flag.ALL));
     }
 
     @After
     public void tearDown() {
-        //jpy.setFlags(EnumSet.of(Flag.OFF));
+        // jpy.setFlags(EnumSet.of(Flag.OFF));
         destructor.close();
         builtins.close();
         pyOut.close();
@@ -49,13 +49,9 @@ public class ReferenceCountingTest extends PythonTest {
     }
 
     /*
-    @Test
-    public void javaOnlyObjectDoesntHavePythonReferences() {
-        final Object obj = new Object();
-        checkReferenceCount(0, obj);
-        blackhole(obj);
-    }
-    */
+     * @Test public void javaOnlyObjectDoesntHavePythonReferences() { final Object obj = new
+     * Object(); checkReferenceCount(0, obj); blackhole(obj); }
+     */
 
     @Test
     public void pythonObjectViaExecuteHasOneReference() {
@@ -150,7 +146,7 @@ public class ReferenceCountingTest extends PythonTest {
         ref.check(1, pyObject);
 
         // Ensure that if our explicit type is less specific, reference counting is still correct
-        noop.noop((Object)pyObject);
+        noop.noop((Object) pyObject);
         ref.check(1, pyObject);
 
         ReferenceCounting.blackhole(pyObject);
@@ -164,7 +160,7 @@ public class ReferenceCountingTest extends PythonTest {
         final PyObject copy1 = pyOut.identity(pyObject);
         ref.check(2, pyObject);
 
-        final PyObject copy2 = pyOut.identity((Object)pyObject);
+        final PyObject copy2 = pyOut.identity((Object) pyObject);
         ref.check(3, pyObject);
 
         ReferenceCounting.blackhole(pyObject, copy1, copy2);
@@ -172,7 +168,8 @@ public class ReferenceCountingTest extends PythonTest {
 
     @Test
     public void nativePythonObjectsCanLiveInJava() {
-        // A slightly different construction, showing raw executeCode as statements instead of expressions
+        // A slightly different construction, showing raw executeCode as statements instead of
+        // expressions
         PyObject.executeCode("devin = {'was': 'here'}", PyInputMode.STATEMENT);
         final PyObject devin = PyObject.executeCode("devin", PyInputMode.EXPRESSION);
         ref.check(2, devin);

@@ -8,7 +8,7 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Feature",
     namespace = JsPackage.GLOBAL)
 public class Feature {
-  public static int COMPRESSED_BODY,
-  DICTIONARY_REPLACEMENT,
-  UNUSED;
+    public static int COMPRESSED_BODY,
+        DICTIONARY_REPLACEMENT,
+        UNUSED;
 }

@@ -16,13 +16,14 @@ public interface LivenessReferent {
      */
     default void retainReference() {
         if (!tryRetainReference()) {
-            throw new LivenessStateException(this + " is no longer live and cannot be retained further");
+            throw new LivenessStateException(
+                this + " is no longer live and cannot be retained further");
         }
     }
 
     /**
-     * If this referent is "live", behave as {@link #retainReference()} and return true.
-     * Otherwise, returns false rather than throwing an exception.
+     * If this referent is "live", behave as {@link #retainReference()} and return true. Otherwise,
+     * returns false rather than throwing an exception.
      *
      * @return True if this referent was retained, false otherwise
      */
@@ -41,8 +42,8 @@ public interface LivenessReferent {
     WeakReference<? extends LivenessReferent> getWeakReference();
 
     /**
-     * Get a name that is suitable for uniquely identifying this {@link LivenessReferent} in debug and error messages.
-     * This is usually not the same as {@link Object#toString()}.
+     * Get a name that is suitable for uniquely identifying this {@link LivenessReferent} in debug
+     * and error messages. This is usually not the same as {@link Object#toString()}.
      *
      * @return A unique name for this referent for debugging and error message purposes
      */

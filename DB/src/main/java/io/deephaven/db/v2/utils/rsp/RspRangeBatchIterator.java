@@ -13,14 +13,16 @@ import static io.deephaven.db.v2.utils.rsp.RspArray.BLOCK_SIZE;
 
 public class RspRangeBatchIterator implements SafeCloseable {
     private RspArray.SpanCursorForward p;
-    // Iterator pointing to the next value to deliver in the current RB Container if there is one, null otherwise.
+    // Iterator pointing to the next value to deliver in the current RB Container if there is one,
+    // null otherwise.
     private SearchRangeIterator ri;
     // To hold the container to which ri refers.
     private SpanView riView;
-    private boolean moreSpans;  // if true, p has not been exhausted yet.
+    private boolean moreSpans; // if true, p has not been exhausted yet.
 
     private static final int BUF_SZ = Configuration.getInstance().getIntegerForClassWithDefault(
-            RspRangeBatchIterator.class, "shortBufSize", 2*32);  // 32 shorts is an IA64 cache line size.
+        RspRangeBatchIterator.class, "shortBufSize", 2 * 32); // 32 shorts is an IA64 cache line
+                                                              // size.
     private short[] buf = new short[BUF_SZ];
     private int bufOffset = 0;
     private int bufCount = 0;
@@ -28,7 +30,8 @@ public class RspRangeBatchIterator implements SafeCloseable {
     private long pendingStartOffset = 0;
     private long remaining;
 
-    public RspRangeBatchIterator(final RspArray.SpanCursorForward p, final long startOffset, final long maxCount) {
+    public RspRangeBatchIterator(final RspArray.SpanCursorForward p, final long startOffset,
+        final long maxCount) {
         if (!p.hasNext() || maxCount <= 0) {
             p.release();
             this.p = null;
@@ -57,7 +60,8 @@ public class RspRangeBatchIterator implements SafeCloseable {
             return;
         }
         riView.init(p.arr(), p.arrIdx(), spanInfo, s);
-        ri = riView.getContainer().getShortRangeIterator((int) ((long) (Integer.MAX_VALUE) & startOffset));
+        ri = riView.getContainer()
+            .getShortRangeIterator((int) ((long) (Integer.MAX_VALUE) & startOffset));
         bufKey = spanInfoToKey(spanInfo);
         if (!ri.hasNext()) {
             throw new IllegalStateException("Illegal offset");
@@ -76,7 +80,8 @@ public class RspRangeBatchIterator implements SafeCloseable {
     }
 
     private int flushBufToChunk(
-            final WritableLongChunk<OrderedKeyRanges> chunk, final int chunkOffset, final int chunkDelta, final int chunkMaxCount) {
+        final WritableLongChunk<OrderedKeyRanges> chunk, final int chunkOffset,
+        final int chunkDelta, final int chunkMaxCount) {
         final int bufDelta = Math.min(chunkMaxCount - chunkDelta, bufCount);
         int i = 0;
         while (remaining > 0 && i < bufDelta) {
@@ -100,8 +105,8 @@ public class RspRangeBatchIterator implements SafeCloseable {
 
     private void loadBuffer() {
         bufOffset = 0;
-        final int rangesWritten = ri.next(buf, 0, BUF_SZ/2);
-        bufCount = 2*rangesWritten;
+        final int rangesWritten = ri.next(buf, 0, BUF_SZ / 2);
+        bufCount = 2 * rangesWritten;
         if (!ri.hasNext()) {
             riView.reset();
             ri = null;
@@ -116,14 +121,15 @@ public class RspRangeBatchIterator implements SafeCloseable {
     private static final short BLOCK_LAST_AS_SHORT = (short) -1;
 
     /**
-     * Fill a writable long chunk with pairs of range boundaries (start, endInclusive)
-     * starting from the next iterator position forward.
+     * Fill a writable long chunk with pairs of range boundaries (start, endInclusive) starting from
+     * the next iterator position forward.
      *
      * @param chunk A writable chunk to fill
      * @param chunkOffset An offset inside the chunk to the position to start writing
      * @return The count of ranges written (which matches 2 times the number of elements written).
      */
-    public int fillRangeChunk(final WritableLongChunk<OrderedKeyRanges> chunk, final int chunkOffset) {
+    public int fillRangeChunk(final WritableLongChunk<OrderedKeyRanges> chunk,
+        final int chunkOffset) {
         final int chunkMaxCount = chunk.capacity();
         int chunkDelta = 0;
         // first, flush any leftovers in buf from previous calls.
@@ -132,23 +138,21 @@ public class RspRangeBatchIterator implements SafeCloseable {
             chunkDelta += flushBufToChunk(chunk, chunkOffset, chunkDelta, chunkMaxCount);
             if (remaining <= 0) {
                 setFinished();
-                return chunkDelta/2;
+                return chunkDelta / 2;
             }
             if (bufCount > 0) {
-                return chunkDelta/2;
+                return chunkDelta / 2;
             }
             keyForPrevRangeEndAtSpanBoundary =
-                    (buf[bufOffset - 1] == BLOCK_LAST_AS_SHORT) ?
-                        bufKey + BLOCK_SIZE :
-                        -1;
+                (buf[bufOffset - 1] == BLOCK_LAST_AS_SHORT) ? bufKey + BLOCK_SIZE : -1;
         }
         while (true) {
             while (ri != null) {
                 if (bufCount == 0) {
                     loadBuffer();
                     if (keyForPrevRangeEndAtSpanBoundary != -1 &&
-                            keyForPrevRangeEndAtSpanBoundary == bufKey &&
-                            buf[0] == (short) 0) {
+                        keyForPrevRangeEndAtSpanBoundary == bufKey &&
+                        buf[0] == (short) 0) {
                         long v = unsignedShortToLong(buf[1]);
                         long delta = v + 1;
                         if (delta >= remaining) {
@@ -168,28 +172,29 @@ public class RspRangeBatchIterator implements SafeCloseable {
                 }
                 if (chunkMaxCount - chunkDelta < 2) {
                     // moreSpans is still true.
-                    return chunkDelta/2;
+                    return chunkDelta / 2;
                 }
                 chunkDelta += flushBufToChunk(chunk, chunkOffset, chunkDelta, chunkMaxCount);
                 if (remaining <= 0) {
                     setFinished();
-                    return chunkDelta/2;
+                    return chunkDelta / 2;
                 }
                 if (ri == null) {
-                    // we can't return even if max had been reached: we may need to merge a later range.
+                    // we can't return even if max had been reached: we may need to merge a later
+                    // range.
                     if (bufCount > 0) {
                         // the only way we have leftover buf is if not all of it fit into chunk.
-                        return chunkDelta/2;
+                        return chunkDelta / 2;
                     }
                     keyForPrevRangeEndAtSpanBoundary =
-                            (bufOffset > 0 && buf[bufOffset - 1] == BLOCK_LAST_AS_SHORT) ?
-                                bufKey + BLOCK_SIZE :
-                                -1;
+                        (bufOffset > 0 && buf[bufOffset - 1] == BLOCK_LAST_AS_SHORT)
+                            ? bufKey + BLOCK_SIZE
+                            : -1;
                     break;
                 }
                 if (bufCount > 0) {
                     // the only way we have leftover buf is if not all of it fit into chunk.
-                    return chunkDelta/2;
+                    return chunkDelta / 2;
                 }
             }
             Object s = p.span();
@@ -199,17 +204,18 @@ public class RspRangeBatchIterator implements SafeCloseable {
                 final long sk = spanInfoToKey(spanInfo);
                 final long d;
                 // do we need to merge a previously stored span last range?
-                if (keyForPrevRangeEndAtSpanBoundary != -1 && keyForPrevRangeEndAtSpanBoundary == sk) {
-                    d = Math.min(remaining, slen*BLOCK_SIZE);
+                if (keyForPrevRangeEndAtSpanBoundary != -1
+                    && keyForPrevRangeEndAtSpanBoundary == sk) {
+                    d = Math.min(remaining, slen * BLOCK_SIZE);
                     chunk.set(chunkOffset + chunkDelta - 1, sk + d - 1);
                 } else {
                     if (chunkMaxCount - chunkDelta < 2) {
                         // moreSpans is still true.
-                        return chunkDelta/2;
+                        return chunkDelta / 2;
                     }
                     final long start = sk + pendingStartOffset;
                     chunk.set(chunkOffset + chunkDelta, start);
-                    d = Math.min(remaining, slen*BLOCK_SIZE - pendingStartOffset);
+                    d = Math.min(remaining, slen * BLOCK_SIZE - pendingStartOffset);
                     pendingStartOffset = 0;
                     chunk.set(chunkOffset + chunkDelta + 1, start + d - 1);
                     chunkDelta += 2;
@@ -217,15 +223,16 @@ public class RspRangeBatchIterator implements SafeCloseable {
                 remaining -= d;
                 if (remaining <= 0) {
                     setFinished();
-                    return chunkDelta/2;
+                    return chunkDelta / 2;
                 }
-                keyForPrevRangeEndAtSpanBoundary = sk + slen*BLOCK_SIZE;
+                keyForPrevRangeEndAtSpanBoundary = sk + slen * BLOCK_SIZE;
                 if (!p.hasNext()) {
                     setFinished();
-                    return chunkDelta/2;
+                    return chunkDelta / 2;
                 }
                 p.next();
-                // This span can't be a full block span: it would have been merged with the previous one.
+                // This span can't be a full block span: it would have been merged with the previous
+                // one.
                 // Therefore at this point we know p.span() is an RB Container.
                 s = p.span();
             }

@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 1, time = 30)
 @Measurement(iterations = 3, time = 20)
-@Timeout(time=60)
+@Timeout(time = 60)
 @Fork(1)
 public class RedirectionIndexBench extends RedirectionBenchBase {
     @Param({"10000000"})
@@ -40,7 +40,7 @@ public class RedirectionIndexBench extends RedirectionBenchBase {
         final BenchmarkTableBuilder builder1;
         builder1 = BenchmarkTools.persistentTableBuilder("T1", tableSize / 10);
         builder1.setSeed(0xDEADB00F)
-                .addColumn(BenchmarkTools.stringCol("PartCol1", 4, 5, 7, 0xFEEDBEEF));
+            .addColumn(BenchmarkTools.stringCol("PartCol1", 4, 5, 7, 0xFEEDBEEF));
         final String joinCol = "L";
         builder1.addColumn(BenchmarkTools.seqNumberCol(joinCol, long.class, 0, 1));
         builder1.addColumn(BenchmarkTools.numberCol("I1", int.class, -10_000_000, 10_000_000));
@@ -49,33 +49,34 @@ public class RedirectionIndexBench extends RedirectionBenchBase {
         final BenchmarkTableBuilder builder2;
         builder2 = BenchmarkTools.persistentTableBuilder("T2", tableSize);
         builder2.setSeed(0xDEADBEEF)
-                .addColumn(BenchmarkTools.stringCol("PartCol2", 4, 5, 7, 0xFEEDB00F));
+            .addColumn(BenchmarkTools.stringCol("PartCol2", 4, 5, 7, 0xFEEDB00F));
         builder2.addColumn(BenchmarkTools.seqNumberCol(joinCol, long.class, tableSize, -1));
         final BenchmarkTable bmTable2 = builder2.build();
         final Table t1 = bmTable1.getTable().coalesce();
         final Table t2 = bmTable2.getTable().coalesce();
         final long sizePerStep = Math.max(t1.size() / steps, 1);
-        final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(sizePerStep, sizePerStep);
+        final IncrementalReleaseFilter incrementalReleaseFilter =
+            new IncrementalReleaseFilter(sizePerStep, sizePerStep);
         final Table live;
         if (doSelect) {
             live = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(
-                    () -> t1.where(incrementalReleaseFilter).select(joinCol, "PartCol1", "I1").sort("I1").naturalJoin(
-                            t2, joinCol, "PartCol2"));
+                () -> t1.where(incrementalReleaseFilter).select(joinCol, "PartCol1", "I1")
+                    .sort("I1").naturalJoin(
+                        t2, joinCol, "PartCol2"));
         } else {
             live = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(
-                    () -> t1.where(incrementalReleaseFilter).sort("I1").naturalJoin(
-                            t2, joinCol, "PartCol2"));
+                () -> t1.where(incrementalReleaseFilter).sort("I1").naturalJoin(
+                    t2, joinCol, "PartCol2"));
         }
         return new QueryData(
-                live,
-                incrementalReleaseFilter,
-                steps,
-                new String[]{ joinCol },
-                WritableLongChunk.makeWritableChunk(chunkCapacity)
-        );
+            live,
+            incrementalReleaseFilter,
+            steps,
+            new String[] {joinCol},
+            WritableLongChunk.makeWritableChunk(chunkCapacity));
     }
 
-    public static void main(String [] args) {
+    public static void main(String[] args) {
         BenchUtil.run(RedirectionIndexBench.class);
     }
 }

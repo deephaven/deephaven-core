@@ -15,11 +15,11 @@ public class PieChartArray {
 
         Figure fig = FigureFactory.figure();
         Figure cht = fig.newChart(0)
-                .chartTitle("Chart Title");
+            .chartTitle("Chart Title");
         Figure axs = cht.newAxes()
-                .xLabel("X")
-                .yLabel("Y")
-                .piePlot("Test", categories, values).pointLabelFormat("{0}");
+            .xLabel("X")
+            .yLabel("Y")
+            .piePlot("Test", categories, values).pointLabelFormat("{0}");
 
         ExamplePlotUtils.display(axs);
     }

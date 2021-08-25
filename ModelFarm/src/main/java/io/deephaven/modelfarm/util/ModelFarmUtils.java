@@ -13,8 +13,7 @@ import io.deephaven.db.tables.utils.DBDateTime;
  * Utilities for building model farms.
  */
 public class ModelFarmUtils {
-    private ModelFarmUtils() {
-    }
+    private ModelFarmUtils() {}
 
     /**
      * Require a table to have specified columns of specified types.
@@ -24,40 +23,46 @@ public class ModelFarmUtils {
      * @param colNames required column names
      * @param colTypes required column types
      */
-    public static void requireTable(final String tableName, final Table t, final String[] colNames, final Class[] colTypes) {
+    public static void requireTable(final String tableName, final Table t, final String[] colNames,
+        final Class[] colTypes) {
         Require.eq(colNames.length, "colNames.length", colTypes.length, "colTypes.length");
 
         for (int i = 0; i < colNames.length; i++) {
             final String cn = colNames[i];
             final Class ct = colTypes[i];
-            Require.eqTrue(t.hasColumns(cn), "Table is missing column.  tableName=" + tableName + " columnName=" + cn);
+            Require.eqTrue(t.hasColumns(cn),
+                "Table is missing column.  tableName=" + tableName + " columnName=" + cn);
             final Class cta = t.getColumn(cn).getType();
-            Require.eqTrue(cta.equals(ct), "Table column is of the wrong type.  tableName=" + tableName + " columnName=" + cn + " typeRequired=" + ct + " typeActual=" + cta);
+            Require.eqTrue(cta.equals(ct), "Table column is of the wrong type.  tableName="
+                + tableName + " columnName=" + cn + " typeRequired=" + ct + " typeActual=" + cta);
         }
     }
 
     /**
      * Interpret a table cell value as a string array.
+     * 
      * @param o table cell value.
      * @return string array.
      */
     public static String[] arrayString(final Object o) {
-        //noinspection unchecked
+        // noinspection unchecked
         return o == null ? null : ((DbArray<String>) o).toArray();
     }
 
     /**
      * Interpret a table cell value as a date time array.
+     * 
      * @param o table cell value.
      * @return date time array.
      */
     public static DBDateTime[] arrayDBDateTime(final Object o) {
-        //noinspection unchecked
+        // noinspection unchecked
         return o == null ? null : ((DbArray<DBDateTime>) o).toArray();
     }
 
     /**
      * Interpret a table cell value as a float array.
+     * 
      * @param o table cell value.
      * @return float array.
      */
@@ -67,6 +72,7 @@ public class ModelFarmUtils {
 
     /**
      * Interpret a table cell value as a double array.
+     * 
      * @param o table cell value.
      * @return double array.
      */
@@ -76,6 +82,7 @@ public class ModelFarmUtils {
 
     /**
      * Interpret a table cell value as an int array.
+     * 
      * @param o table cell value.
      * @return int array.
      */
@@ -85,6 +92,7 @@ public class ModelFarmUtils {
 
     /**
      * Interpret a table cell value as a long array.
+     * 
      * @param o table cell value.
      * @return long array.
      */
@@ -94,6 +102,7 @@ public class ModelFarmUtils {
 
     /**
      * Interpret a table cell value as a 2D double array.
+     * 
      * @param o table cell value.
      * @return 2D double array.
      */

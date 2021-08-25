@@ -12,18 +12,20 @@ import io.deephaven.internal.log.LoggerFactory;
 public class RedirectionIndexTest extends LiveTableTestCase {
     private final Logger log = LoggerFactory.getLogger(RedirectionIndexTest.class);
 
-    public void testBasic(){
-        final RedirectionIndex redirectionIndex = RedirectionIndex.FACTORY.createRedirectionIndex(8);
-        for (int i = 0;i < 3;i++) {
-            redirectionIndex.put(i,i*2);
+    public void testBasic() {
+        final RedirectionIndex redirectionIndex =
+            RedirectionIndex.FACTORY.createRedirectionIndex(8);
+        for (int i = 0; i < 3; i++) {
+            redirectionIndex.put(i, i * 2);
         }
-        final RedirectionIndex redirectionIndex1 = RedirectionIndex.FACTORY.createRedirectionIndex(8);
-        for (int i = 0;i < 3;i++) {
-            redirectionIndex1.put(i*2,i*4);
+        final RedirectionIndex redirectionIndex1 =
+            RedirectionIndex.FACTORY.createRedirectionIndex(8);
+        for (int i = 0; i < 3; i++) {
+            redirectionIndex1.put(i * 2, i * 4);
         }
-        for (int i = 0;i<3;i++) {
-            assertEquals(redirectionIndex.get(i),i*2);
-            assertEquals(redirectionIndex1.get(i*2),i*4);
+        for (int i = 0; i < 3; i++) {
+            assertEquals(redirectionIndex.get(i), i * 2);
+            assertEquals(redirectionIndex1.get(i * 2), i * 4);
         }
         redirectionIndex.startTrackingPrevValues();
         redirectionIndex1.startTrackingPrevValues();
@@ -47,7 +49,7 @@ public class RedirectionIndexTest extends LiveTableTestCase {
         });
     }
 
-    public void testContiguous(){
+    public void testContiguous() {
         final RedirectionIndex redirectionIndex = new ContiguousRedirectionIndexImpl(10);
 
         // Fill redirection index with values 100 + ii * 2
@@ -79,7 +81,8 @@ public class RedirectionIndexTest extends LiveTableTestCase {
                 redirectionIndex.put(ii, 200 + ii * 3);
             }
 
-            // Confirm that get() returns 200 + ii * 3; meanwhile getPrev() still returns 100 + ii * 2
+            // Confirm that get() returns 200 + ii * 3; meanwhile getPrev() still returns 100 + ii *
+            // 2
             for (int ii = 0; ii < 100; ++ii) {
                 assertEquals(200 + ii * 3, redirectionIndex.get(ii));
             }

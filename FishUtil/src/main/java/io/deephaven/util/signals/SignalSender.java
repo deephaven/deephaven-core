@@ -19,13 +19,14 @@ public class SignalSender {
     public SignalSender(@NotNull final Logger log, final boolean useNative) {
         this.log = log;
         this.useNative = useNative;
-        if ( useNative ) {
+        if (useNative) {
             SignalUtils.loadNative();
         }
     }
 
     /**
-     * Helper method - sends SIQQUIT to a process.  If this process is a JVM, it will send a stack dump to stdout.
+     * Helper method - sends SIQQUIT to a process. If this process is a JVM, it will send a stack
+     * dump to stdout.
      *
      * @param processId The process ID to send the signal to
      * @return true on success, false on error
@@ -72,35 +73,38 @@ public class SignalSender {
      * @return true on success, false on error
      */
     private boolean sendSignal(final int processId, final SignalUtils.Signal signal) {
-        Require.gtZero(processId, "processId"); // Don't want to allow fancier usages for now.  See 'man -s 2 kill'.
+        Require.gtZero(processId, "processId"); // Don't want to allow fancier usages for now. See
+                                                // 'man -s 2 kill'.
         Require.neqNull(signal, "signal");
 
         final int rc;
-        if ( useNative ) {
+        if (useNative) {
             rc = SignalUtils.sendSignalNative(processId, signal.getSignalNumber());
-        }
-        else {
+        } else {
             try {
                 rc = SignalUtils.sendSignalWithBinKill(processId, signal.getSignalName());
             } catch (IOException e) {
-                log.error().append("sendSignal: Exception while using /bin/kill to send ").append(signal.toString()).
-                        append(" to processId ").append(processId).append(": ").append(e).endl();
+                log.error().append("sendSignal: Exception while using /bin/kill to send ")
+                    .append(signal.toString()).append(" to processId ").append(processId)
+                    .append(": ").append(e).endl();
                 return false;
             }
         }
 
-        if ( rc == 0 ) {
+        if (rc == 0) {
             return true;
         }
-        log.error().append("sendSignal: Error while using ").append(useNative ? "native code" : "/bin/kill")
-                .append(" to send ").append(signal.toString())
-                .append(" to processId ").append(processId)
-                .append(": kill returned ").append(rc).endl();
+        log.error().append("sendSignal: Error while using ")
+            .append(useNative ? "native code" : "/bin/kill")
+            .append(" to send ").append(signal.toString())
+            .append(" to processId ").append(processId)
+            .append(": kill returned ").append(rc).endl();
         return false;
     }
 
     /**
      * Simple program for functionality testing.
+     * 
      * @param args [ <pid> <signal> <use native?> ]
      */
     public static void main(final String... args) {

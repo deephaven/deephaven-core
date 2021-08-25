@@ -9,5 +9,5 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.grpcWeb.message.ProtobufMessageClass",
     namespace = JsPackage.GLOBAL)
 public interface ProtobufMessageClass<T> {
-  T deserializeBinary(Uint8Array bytes);
+    T deserializeBinary(Uint8Array bytes);
 }

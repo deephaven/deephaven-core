@@ -13,7 +13,8 @@ public abstract class AbstractNormalizingFilterTest {
     protected void assertFilterEquals(String message, Condition input, Condition output) {
         Condition actual = execute(input);
         if (!output.equals(actual)) {
-            fail(message + " expected: " + FilterPrinter.print(output) + " but was: " + FilterPrinter.print(actual));
+            fail(message + " expected: " + FilterPrinter.print(output) + " but was: "
+                + FilterPrinter.print(actual));
         }
         assertEquals(message, output, actual);
     }

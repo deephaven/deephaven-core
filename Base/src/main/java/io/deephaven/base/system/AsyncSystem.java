@@ -30,7 +30,9 @@ public class AsyncSystem {
     }
 
     /**
-     * Creates an {@link UncaughtExceptionHandler} which calls out to {@link #exitUncaught(Thread, Throwable, int, PrintStream)}.
+     * Creates an {@link UncaughtExceptionHandler} which calls out to
+     * {@link #exitUncaught(Thread, Throwable, int, PrintStream)}.
+     * 
      * @param status the exit status
      * @return the uncaught exception handler
      */
@@ -40,18 +42,19 @@ public class AsyncSystem {
 
     /**
      * Starts an asynchronous call to {@link System#exit(int)}. A new daemon thread will be started
-     * and it will invoke only {@code System.exit(status)}. In the event that {@link System#exit(int)}
-     * throws an exception, the name of the thread and the stacktrace will be printed out.
+     * and it will invoke only {@code System.exit(status)}. In the event that
+     * {@link System#exit(int)} throws an exception, the name of the thread and the stacktrace will
+     * be printed out.
      *
-     * <p>Note: this call will return, unlike a direct call to {@link System#exit(int)}. Callers
-     * should manage this as appropriate.
+     * <p>
+     * Note: this call will return, unlike a direct call to {@link System#exit(int)}. Callers should
+     * manage this as appropriate.
      *
      * @param name the name to attach to the thread
      * @param status exit status
      * @param out the output print stream (on exception)
-     * @throws SecurityException
-     *  if a security manager exists and its {@code checkExit}
-     *  method doesn't allow exit with the specified status.
+     * @throws SecurityException if a security manager exists and its {@code checkExit} method
+     *         doesn't allow exit with the specified status.
      */
     public static void exit(String name, int status, PrintStream out) {
         // preemptively checks security manager in the same way that System.exit does
@@ -65,14 +68,16 @@ public class AsyncSystem {
 
     /**
      * Prints out a message and stacktrace, and then calls {@link #exit(String, int, PrintStream)}.
-     * This should <b>only</b> be called from {@link UncaughtExceptionHandler uncaught exception handlers}.
+     * This should <b>only</b> be called from {@link UncaughtExceptionHandler uncaught exception
+     * handlers}.
      *
      * @param thread the thread
      * @param throwable the throwable
      * @param status the status
      * @param out the print stream
      */
-    public static void exitUncaught(Thread thread, Throwable throwable, int status, PrintStream out) {
+    public static void exitUncaught(Thread thread, Throwable throwable, int status,
+        PrintStream out) {
         try {
             out.println(String.format(
                 "Uncaught exception in thread %s. Shutting down with asynchronous system exit.",
@@ -100,7 +105,8 @@ public class AsyncSystem {
      * @param out the print stream
      * @param message the optional additional message
      */
-    public static void exitCaught(Thread thread, Throwable throwable, int status, PrintStream out, @Nullable String message) {
+    public static void exitCaught(Thread thread, Throwable throwable, int status, PrintStream out,
+        @Nullable String message) {
         try {
             if (message == null) {
                 out.println(String.format(

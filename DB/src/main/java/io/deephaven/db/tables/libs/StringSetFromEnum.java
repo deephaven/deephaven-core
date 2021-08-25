@@ -12,10 +12,10 @@ import java.util.HashSet;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * This class provides a object that converts from list of {@code String} values and their binary masks to a
- * StringSetWrapper.  (The first string corresponds to
- * the value 1, the second to 2, the third to 4, etc.)  Because of the use of values of 2,
- * this conversion can handle bit sets.  It is however limited to 31 possible enum values.
+ * This class provides a object that converts from list of {@code String} values and their binary
+ * masks to a StringSetWrapper. (The first string corresponds to the value 1, the second to 2, the
+ * third to 4, etc.) Because of the use of values of 2, this conversion can handle bit sets. It is
+ * however limited to 31 possible enum values.
  */
 public class StringSetFromEnum {
 
@@ -24,15 +24,14 @@ public class StringSetFromEnum {
     protected final ReentrantReadWriteLock setLock = new ReentrantReadWriteLock();
 
     /**
-     * Create a converter for the sequence of {@code enums}, where the i-th enum
-     * in the sequence is associated with the value {@code Math.pow(2,i)} (starting
-     * with index 0 and value 1).
+     * Create a converter for the sequence of {@code enums}, where the i-th enum in the sequence is
+     * associated with the value {@code Math.pow(2,i)} (starting with index 0 and value 1).
      */
     public StringSetFromEnum(String enums[]) {
         strings = Arrays.copyOf(enums, enums.length);
         enumsToString.put(0, new StringSetWrapper());
-        for (int i=0; i<enums.length; i++) {
-            // assert(enums[i] != null);  // you'd think!
+        for (int i = 0; i < enums.length; i++) {
+            // assert(enums[i] != null); // you'd think!
             enumsToString.put((int) Math.pow(2, i), new StringSetWrapper(enums[i]));
         }
     }

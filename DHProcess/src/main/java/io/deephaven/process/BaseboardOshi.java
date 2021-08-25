@@ -6,8 +6,7 @@ import org.immutables.value.Value;
 import oshi.hardware.Baseboard;
 
 /**
- * The Baseboard represents the system board, also called motherboard, logic
- * board, etc.
+ * The Baseboard represents the system board, also called motherboard, logic board, etc.
  */
 @Value.Immutable
 @ProcessStyle
@@ -68,63 +67,30 @@ public abstract class BaseboardOshi implements PropertySet {
     }
 
     /*
-    public static BaseboardOshi from(PropertySet properties) {
-        return Parser.INSTANCE.parse(properties);
-    }
-
-    enum Parser implements PropertySetParser<BaseboardOshi> {
-        INSTANCE;
-
-        @Override
-        public BaseboardOshi parse(PropertySet properties) {
-            final Visitor builder = new Visitor();
-            builder.visitProperties(properties);
-            return builder.build();
-        }
-    }
-
-    static class Visitor implements PropertyVisitor {
-
-        private final ImmutableBaseboardOshi.Builder builder = ImmutableBaseboardOshi.builder();
-
-        BaseboardOshi build() {
-            return builder.build();
-        }
-
-        @Override
-        public void visit(String key, String value) {
-            switch (key) {
-                case MANUFACTURER:
-                    builder.manufacturer(value);
-                    break;
-                case MODEL:
-                    builder.model(value);
-                    break;
-                case VERSION:
-                    builder.version(value);
-                    break;
-                case SERIAL_NUMBER:
-                    builder.serialNumber(value);
-                    break;
-                default:
-                    Error.INSTANCE.visit(key, value);
-            }
-        }
-
-        @Override
-        public void visit(String key, int value) {
-            Error.INSTANCE.visit(key, value);
-        }
-
-        @Override
-        public void visit(String key, long value) {
-            Error.INSTANCE.visit(key, value);
-        }
-
-        @Override
-        public void visit(String key, boolean value) {
-            Error.INSTANCE.visit(key, value);
-        }
-    }
+     * public static BaseboardOshi from(PropertySet properties) { return
+     * Parser.INSTANCE.parse(properties); }
+     * 
+     * enum Parser implements PropertySetParser<BaseboardOshi> { INSTANCE;
+     * 
+     * @Override public BaseboardOshi parse(PropertySet properties) { final Visitor builder = new
+     * Visitor(); builder.visitProperties(properties); return builder.build(); } }
+     * 
+     * static class Visitor implements PropertyVisitor {
+     * 
+     * private final ImmutableBaseboardOshi.Builder builder = ImmutableBaseboardOshi.builder();
+     * 
+     * BaseboardOshi build() { return builder.build(); }
+     * 
+     * @Override public void visit(String key, String value) { switch (key) { case MANUFACTURER:
+     * builder.manufacturer(value); break; case MODEL: builder.model(value); break; case VERSION:
+     * builder.version(value); break; case SERIAL_NUMBER: builder.serialNumber(value); break;
+     * default: Error.INSTANCE.visit(key, value); } }
+     * 
+     * @Override public void visit(String key, int value) { Error.INSTANCE.visit(key, value); }
+     * 
+     * @Override public void visit(String key, long value) { Error.INSTANCE.visit(key, value); }
+     * 
+     * @Override public void visit(String key, boolean value) { Error.INSTANCE.visit(key, value); }
+     * }
      */
 }

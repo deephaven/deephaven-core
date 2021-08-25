@@ -6,10 +6,7 @@ import java.io.Serializable;
 
 public class TableSnapshot implements Serializable {
     public enum SnapshotType {
-        INITIAL_SNAPSHOT,
-        UPDATE_COLUMN_SNAPSHOT,
-        UPDATE_ROW_SNAPSHOT,
-        FORCED_SNAPSHOT,
+        INITIAL_SNAPSHOT, UPDATE_COLUMN_SNAPSHOT, UPDATE_ROW_SNAPSHOT, FORCED_SNAPSHOT,
     }
 
     private SnapshotType snapshotType;
@@ -19,8 +16,7 @@ public class TableSnapshot implements Serializable {
 
     private long tableSize;
 
-    public TableSnapshot() {
-    }
+    public TableSnapshot() {}
 
     public TableSnapshot(RangeSet includedAdditions, ColumnData[] dataColumns, long tableSize) {
         this.snapshotType = SnapshotType.INITIAL_SNAPSHOT;

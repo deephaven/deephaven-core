@@ -22,29 +22,33 @@ public class FormulaAnalyzer {
     private static final Logger log = LoggerFactory.getLogger(FormulaAnalyzer.class);
 
     public static Result analyze(final String rawFormulaString,
-                                 final Map<String, ColumnDefinition> columnDefinitionMap,
-                                 Map<String, Class> otherVariables) {
+        final Map<String, ColumnDefinition> columnDefinitionMap,
+        Map<String, Class> otherVariables) {
         try {
             return analyzeHelper(rawFormulaString, columnDefinitionMap, otherVariables);
         } catch (Exception e) {
-            throw new FormulaCompilationException("Formula compilation error for: " + rawFormulaString, e);
+            throw new FormulaCompilationException(
+                "Formula compilation error for: " + rawFormulaString, e);
         }
     }
 
     private static Result analyzeHelper(final String rawFormulaString,
-                                        final Map<String, ColumnDefinition> columnDefinitionMap,
-                                        Map<String, Class> otherVariables) throws Exception {
+        final Map<String, ColumnDefinition> columnDefinitionMap,
+        Map<String, Class> otherVariables) throws Exception {
         final Map<String, Param> possibleParams = new HashMap<>();
         final QueryScope queryScope = QueryScope.getScope();
         for (Param param : queryScope.getParams(queryScope.getParamNames())) {
             possibleParams.put(param.getName(), param);
         }
 
-        final DBTimeUtils.Result timeConversionResult = DBTimeUtils.convertExpression(rawFormulaString);
-        final DBLanguageParser.Result result = getCompiledFormula(columnDefinitionMap, timeConversionResult,
+        final DBTimeUtils.Result timeConversionResult =
+            DBTimeUtils.convertExpression(rawFormulaString);
+        final DBLanguageParser.Result result =
+            getCompiledFormula(columnDefinitionMap, timeConversionResult,
                 otherVariables);
 
-        log.debug().append("Expression (after language conversion) : ").append(result.getConvertedExpression()).endl();
+        log.debug().append("Expression (after language conversion) : ")
+            .append(result.getConvertedExpression()).endl();
 
         final List<String> usedColumns = new ArrayList<>();
         final List<String> userParams = new ArrayList<>();
@@ -57,7 +61,8 @@ public class FormulaAnalyzer {
             } else if (columnDefinitionMap.get(variable) != null) {
                 usedColumns.add(variable);
             } else if (variable.endsWith(colSuffix) &&
-                    null != columnDefinitionMap.get(bareName = variable.substring(0, variable.length() - colSuffix.length()))) {
+                null != columnDefinitionMap.get(
+                    bareName = variable.substring(0, variable.length() - colSuffix.length()))) {
                 usedColumnArrays.add(bareName);
             } else if (possibleParams.containsKey(variable)) {
                 userParams.add(variable);
@@ -70,15 +75,16 @@ public class FormulaAnalyzer {
         final String cookedFormulaString = result.getConvertedExpression();
         final String timeInstanceVariables = timeConversionResult.getInstanceVariablesString();
         return new Result(returnedType,
-                usedColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                usedColumnArrays.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                userParams.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                rawFormulaString, cookedFormulaString, timeInstanceVariables);
+            usedColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+            usedColumnArrays.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+            userParams.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+            rawFormulaString, cookedFormulaString, timeInstanceVariables);
     }
 
-    public static DBLanguageParser.Result getCompiledFormula(Map<String, ColumnDefinition> availableColumns,
-                                                             DBTimeUtils.Result timeConversionResult,
-                                                             Map<String, Class> otherVariables) throws Exception {
+    public static DBLanguageParser.Result getCompiledFormula(
+        Map<String, ColumnDefinition> availableColumns,
+        DBTimeUtils.Result timeConversionResult,
+        Map<String, Class> otherVariables) throws Exception {
         final Map<String, Class> possibleVariables = new HashMap<>();
         possibleVariables.put("i", int.class);
         possibleVariables.put("ii", long.class);
@@ -88,13 +94,14 @@ public class FormulaAnalyzer {
 
         for (ColumnDefinition columnDefinition : availableColumns.values()) {
             final String columnSuffix = DhFormulaColumn.COLUMN_SUFFIX;
-            final Class dbArrayType = DhFormulaColumn.getDbArrayType(columnDefinition.getDataType());
+            final Class dbArrayType =
+                DhFormulaColumn.getDbArrayType(columnDefinition.getDataType());
 
             possibleVariables.put(columnDefinition.getName() + columnSuffix, dbArrayType);
 
             if (dbArrayType == DbArray.class) {
                 possibleVariableParameterizedTypes.put(columnDefinition.getName() + columnSuffix,
-                        new Class[]{columnDefinition.getDataType()});
+                    new Class[] {columnDefinition.getDataType()});
             }
         }
 
@@ -107,13 +114,15 @@ public class FormulaAnalyzer {
             possibleVariables.put(columnDefinition.getName(), columnDefinition.getDataType());
             final Class compType = columnDefinition.getComponentType();
             if (compType != null && !compType.isPrimitive()) {
-                possibleVariableParameterizedTypes.put(columnDefinition.getName(), new Class[]{compType});
+                possibleVariableParameterizedTypes.put(columnDefinition.getName(),
+                    new Class[] {compType});
             }
         }
 
-        //log.debug().append("Expression (before) : ").append(formulaString).endl();
+        // log.debug().append("Expression (before) : ").append(formulaString).endl();
 
-        log.debug().append("Expression (after time conversion) : ").append(timeConversionResult.getConvertedFormula()).endl();
+        log.debug().append("Expression (after time conversion) : ")
+            .append(timeConversionResult.getConvertedFormula()).endl();
 
         possibleVariables.putAll(timeConversionResult.getNewVariables());
         if (otherVariables != null) {
@@ -123,8 +132,10 @@ public class FormulaAnalyzer {
         final Set<Class> classImports = new HashSet<>(QueryLibrary.getClassImports());
         classImports.add(Index.class);
         classImports.add(WritableSource.class);
-        return new DBLanguageParser(timeConversionResult.getConvertedFormula(), QueryLibrary.getPackageImports(),
-                classImports, QueryLibrary.getStaticImports(), possibleVariables, possibleVariableParameterizedTypes).getResult();
+        return new DBLanguageParser(timeConversionResult.getConvertedFormula(),
+            QueryLibrary.getPackageImports(),
+            classImports, QueryLibrary.getStaticImports(), possibleVariables,
+            possibleVariableParameterizedTypes).getResult();
     }
 
     public static class Result {
@@ -133,9 +144,11 @@ public class FormulaAnalyzer {
         public final String cookedFormulaString;
         public final String timeInstanceVariables;
 
-        public Result(Class returnedType, String[] usedColumns, String[] usedArrays, String[] usedParams,
-                      String rawFormulaString, String cookedFormulaString, String timeInstanceVariables) {
-            this.sourceDescriptor = new FormulaSourceDescriptor(returnedType, usedColumns, usedArrays, usedParams);
+        public Result(Class returnedType, String[] usedColumns, String[] usedArrays,
+            String[] usedParams,
+            String rawFormulaString, String cookedFormulaString, String timeInstanceVariables) {
+            this.sourceDescriptor =
+                new FormulaSourceDescriptor(returnedType, usedColumns, usedArrays, usedParams);
             this.rawFormulaString = rawFormulaString;
             this.cookedFormulaString = cookedFormulaString;
             this.timeInstanceVariables = timeInstanceVariables;

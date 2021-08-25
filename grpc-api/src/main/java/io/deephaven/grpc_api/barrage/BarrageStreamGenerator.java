@@ -53,7 +53,8 @@ import java.util.function.Consumer;
 
 import static io.deephaven.grpc_api_client.barrage.chunk.BaseChunkInputStreamGenerator.PADDING_BUFFER;
 
-public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGenerator<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> {
+public class BarrageStreamGenerator implements
+    BarrageMessageProducer.StreamGenerator<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> {
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamGenerator.class);
 
     public static final long FLATBUFFER_MAGIC = 0x6E687064;
@@ -63,20 +64,25 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
     }
 
     @Singleton
-    public static class Factory implements BarrageMessageProducer.StreamGenerator.Factory<ChunkInputStreamGenerator.Options, View> {
+    public static class Factory implements
+        BarrageMessageProducer.StreamGenerator.Factory<ChunkInputStreamGenerator.Options, View> {
         @Inject
         public Factory() {}
 
         @Override
-        public BarrageMessageProducer.StreamGenerator<ChunkInputStreamGenerator.Options, View> newGenerator(final BarrageMessage message) {
+        public BarrageMessageProducer.StreamGenerator<ChunkInputStreamGenerator.Options, View> newGenerator(
+            final BarrageMessage message) {
             return new BarrageStreamGenerator(message);
         }
 
         @Override
-        public View getSchemaView(final ChunkInputStreamGenerator.Options options, final TableDefinition table, final Map<String, Object> attributes) {
+        public View getSchemaView(final ChunkInputStreamGenerator.Options options,
+            final TableDefinition table, final Map<String, Object> attributes) {
             final FlatBufferBuilder builder = new FlatBufferBuilder();
-            final int schemaOffset = BarrageSchemaUtil.makeSchemaPayload(builder, table, attributes);
-            builder.finish(wrapInMessage(builder, schemaOffset, org.apache.arrow.flatbuf.MessageHeader.Schema));
+            final int schemaOffset =
+                BarrageSchemaUtil.makeSchemaPayload(builder, table, attributes);
+            builder.finish(wrapInMessage(builder, schemaOffset,
+                org.apache.arrow.flatbuf.MessageHeader.Schema));
             return new SchemaView(builder.dataBuffer());
         }
     }
@@ -87,7 +93,8 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
 
         ModColumnData(final BarrageMessage.ModColumnData col) throws IOException {
             rowsModified = new IndexGenerator(col.rowsModified);
-            data = ChunkInputStreamGenerator.makeInputStreamGenerator(col.data.getChunkType(), col.type, col.data);
+            data = ChunkInputStreamGenerator.makeInputStreamGenerator(col.data.getChunkType(),
+                col.type, col.data);
         }
     }
 
@@ -108,7 +115,8 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
     public final ModColumnData[] modColumnData;
 
     /**
-     * Create a barrage stream generator that can slice and dice the barrage message for delivery to clients.
+     * Create a barrage stream generator that can slice and dice the barrage message for delivery to
+     * clients.
      *
      * @param message the generator takes ownership of the message and its internal objects
      */
@@ -128,7 +136,8 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             addColumnData = new ChunkInputStreamGenerator[message.addColumnData.length];
             for (int i = 0; i < message.addColumnData.length; ++i) {
                 final BarrageMessage.AddColumnData acd = message.addColumnData[i];
-                addColumnData[i] = ChunkInputStreamGenerator.makeInputStreamGenerator(acd.data.getChunkType(), acd.type, acd.data);
+                addColumnData[i] = ChunkInputStreamGenerator
+                    .makeInputStreamGenerator(acd.data.getChunkType(), acd.type, acd.data);
             }
             modColumnData = new ModColumnData[message.modColumnData.length];
             for (int i = 0; i < modColumnData.length; ++i) {
@@ -139,7 +148,8 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
                 message.snapshotIndex.close();
             }
         } catch (final IOException e) {
-            throw new UncheckedDeephavenException("unexpected IOException while creating barrage message stream", e);
+            throw new UncheckedDeephavenException(
+                "unexpected IOException while creating barrage message stream", e);
         } finally {
             if (message.snapshotIndex != null) {
                 message.snapshotIndex.close();
@@ -179,26 +189,31 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
      * @param viewport is the position-space viewport
      * @param keyspaceViewport is the key-space viewport
      * @param subscribedColumns are the columns subscribed for this view
-     * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
+     * @return a MessageView filtered by the subscription properties that can be sent to that
+     *         subscriber
      */
     @Override
     public SubView getSubView(final ChunkInputStreamGenerator.Options options,
-                              final boolean isInitialSnapshot,
-                              @Nullable final Index viewport,
-                              @Nullable final Index keyspaceViewport,
-                              @Nullable final BitSet subscribedColumns) {
-        return new SubView(this, options, isInitialSnapshot, viewport, keyspaceViewport, subscribedColumns);
+        final boolean isInitialSnapshot,
+        @Nullable final Index viewport,
+        @Nullable final Index keyspaceViewport,
+        @Nullable final BitSet subscribedColumns) {
+        return new SubView(this, options, isInitialSnapshot, viewport, keyspaceViewport,
+            subscribedColumns);
     }
 
     /**
-     * Obtain a Full-Subscription View of this StreamGenerator that can be sent to a single subscriber.
+     * Obtain a Full-Subscription View of this StreamGenerator that can be sent to a single
+     * subscriber.
      *
      * @param options serialization options for this specific view
      * @param isInitialSnapshot indicates whether or not this is the first snapshot for the listener
-     * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
+     * @return a MessageView filtered by the subscription properties that can be sent to that
+     *         subscriber
      */
     @Override
-    public SubView getSubView(ChunkInputStreamGenerator.Options options, boolean isInitialSnapshot) {
+    public SubView getSubView(ChunkInputStreamGenerator.Options options,
+        boolean isInitialSnapshot) {
         return getSubView(options, isInitialSnapshot, null, null, null);
     }
 
@@ -213,11 +228,11 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         public final boolean hasModBatch;
 
         public SubView(final BarrageStreamGenerator generator,
-                       final ChunkInputStreamGenerator.Options options,
-                       final boolean isInitialSnapshot,
-                       @Nullable final Index viewport,
-                       @Nullable final Index keyspaceViewport,
-                       @Nullable final BitSet subscribedColumns) {
+            final ChunkInputStreamGenerator.Options options,
+            final boolean isInitialSnapshot,
+            @Nullable final Index viewport,
+            @Nullable final Index keyspaceViewport,
+            @Nullable final BitSet subscribedColumns) {
             this.generator = generator;
             this.options = options;
             this.isInitialSnapshot = isInitialSnapshot;
@@ -233,11 +248,13 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         public void forEachStream(Consumer<InputStream> visitor) throws IOException {
             ByteBuffer metadata = generator.getMetadata(this);
             if (hasAddBatch) {
-                visitor.accept(generator.getInputStream(this, metadata, generator::appendAddColumns));
+                visitor
+                    .accept(generator.getInputStream(this, metadata, generator::appendAddColumns));
                 metadata = null;
             }
             if (hasModBatch) {
-                visitor.accept(generator.getInputStream(this, metadata, generator::appendModColumns));
+                visitor
+                    .accept(generator.getInputStream(this, metadata, generator::appendModColumns));
             }
         }
 
@@ -251,9 +268,9 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
 
         public SchemaView(final ByteBuffer buffer) {
             this.msgBytes = Flight.FlightData.newBuilder()
-                    .setDataHeader(ByteStringAccess.wrap(buffer))
-                    .build()
-                    .toByteArray();
+                .setDataHeader(ByteStringAccess.wrap(buffer))
+                .build()
+                .toByteArray();
         }
 
         @Override
@@ -265,16 +282,17 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
     /**
      * Treats the visitor with FlightData InputStream's to fulfill a DoGet.
      */
-    public void forEachDoGetStream(final SubView view, final Consumer<InputStream> visitor) throws IOException {
+    public void forEachDoGetStream(final SubView view, final Consumer<InputStream> visitor)
+        throws IOException {
         visitor.accept(getInputStream(view, null, view.generator::appendAddColumns));
     }
 
     @FunctionalInterface
     private interface ColumnVisitor {
         long visit(final SubView view,
-                   final Consumer<InputStream> addStream,
-                   final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
-                   final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException;
+            final Consumer<InputStream> addStream,
+            final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
+            final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException;
     }
 
     /**
@@ -282,10 +300,12 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
      *
      * @param view the view of the overall chunk to generate a RecordBatch for
      * @param metadata the optional flight data metadata to attach to the message
-     * @param columnVisitor the helper method responsible for appending the payload columns to the RecordBatch
+     * @param columnVisitor the helper method responsible for appending the payload columns to the
+     *        RecordBatch
      * @return an InputStream ready to be drained by GRPC
      */
-    private InputStream getInputStream(final SubView view, final ByteBuffer metadata, final ColumnVisitor columnVisitor) throws IOException {
+    private InputStream getInputStream(final SubView view, final ByteBuffer metadata,
+        final ColumnVisitor columnVisitor) throws IOException {
         final ArrayDeque<InputStream> streams = new ArrayDeque<>();
         final MutableInt size = new MutableInt();
 
@@ -303,7 +323,8 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
                 throw new UncheckedDeephavenException("Unexpected IOException", e);
             }
 
-            // These buffers must be aligned to an 8-byte boundary in order for efficient alignment in languages like C++.
+            // These buffers must be aligned to an 8-byte boundary in order for efficient alignment
+            // in languages like C++.
             if (size.intValue() % 8 != 0) {
                 final int paddingBytes = (8 - (size.intValue() % 8));
                 size.add(paddingBytes);
@@ -316,14 +337,18 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         final long numRows;
         final int nodesOffset;
         final int buffersOffset;
-        try (final WritableObjectChunk<ChunkInputStreamGenerator.FieldNodeInfo, Attributes.Values> nodeOffsets = WritableObjectChunk.makeWritableChunk(addColumnData.length);
-             final WritableLongChunk<Attributes.Values> bufferInfos = WritableLongChunk.makeWritableChunk(addColumnData.length * 3)) {
+        try (
+            final WritableObjectChunk<ChunkInputStreamGenerator.FieldNodeInfo, Attributes.Values> nodeOffsets =
+                WritableObjectChunk.makeWritableChunk(addColumnData.length);
+            final WritableLongChunk<Attributes.Values> bufferInfos =
+                WritableLongChunk.makeWritableChunk(addColumnData.length * 3)) {
             nodeOffsets.setSize(0);
             bufferInfos.setSize(0);
 
             final MutableLong totalBufferLength = new MutableLong();
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener =
-                    (numElements, nullCount) -> nodeOffsets.add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount));
+                (numElements, nullCount) -> nodeOffsets
+                    .add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount));
 
             final ChunkInputStreamGenerator.BufferListener bufferListener = (length) -> {
                 totalBufferLength.add(length);
@@ -352,18 +377,21 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         RecordBatch.addLength(header, numRows);
         final int headerOffset = RecordBatch.endRecordBatch(header);
 
-        header.finish(wrapInMessage(header, headerOffset, org.apache.arrow.flatbuf.MessageHeader.RecordBatch, size.intValue()));
+        header.finish(wrapInMessage(header, headerOffset,
+            org.apache.arrow.flatbuf.MessageHeader.RecordBatch, size.intValue()));
 
         // now create the proto header
         try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
             final CodedOutputStream cos = CodedOutputStream.newInstance(baos);
 
-            cos.writeByteBuffer(Flight.FlightData.DATA_HEADER_FIELD_NUMBER, header.dataBuffer().slice());
+            cos.writeByteBuffer(Flight.FlightData.DATA_HEADER_FIELD_NUMBER,
+                header.dataBuffer().slice());
             if (metadata != null) {
                 cos.writeByteBuffer(Flight.FlightData.APP_METADATA_FIELD_NUMBER, metadata);
             }
 
-            cos.writeTag(Flight.FlightData.DATA_BODY_FIELD_NUMBER, WireFormat.WIRETYPE_LENGTH_DELIMITED);
+            cos.writeTag(Flight.FlightData.DATA_BODY_FIELD_NUMBER,
+                WireFormat.WIRETYPE_LENGTH_DELIMITED);
             cos.writeUInt32NoTag(size.intValue());
             cos.flush();
 
@@ -375,11 +403,13 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         }
     }
 
-    public static int wrapInMessage(final FlatBufferBuilder builder, final int headerOffset, final byte headerType) {
+    public static int wrapInMessage(final FlatBufferBuilder builder, final int headerOffset,
+        final byte headerType) {
         return wrapInMessage(builder, headerOffset, headerType, 0);
     }
 
-    public static int wrapInMessage(final FlatBufferBuilder builder, final int headerOffset, final byte headerType, final int bodyLength) {
+    public static int wrapInMessage(final FlatBufferBuilder builder, final int headerOffset,
+        final byte headerType, final int bodyLength) {
         Message.startMessage(builder);
         Message.addHeaderType(builder, headerType);
         Message.addHeader(builder, headerOffset);
@@ -388,7 +418,8 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         return Message.endMessage(builder);
     }
 
-    private static int createByteVector(final FlatBufferBuilder builder, final byte[] data, final int offset, final int length) {
+    private static int createByteVector(final FlatBufferBuilder builder, final byte[] data,
+        final int offset, final int length) {
         builder.startVector(1, length, 1);
 
         if (length > 0) {
@@ -403,14 +434,15 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
     }
 
     private long appendAddColumns(final SubView view,
-                                  final Consumer<InputStream> addStream,
-                                  final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
-                                  final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
+        final Consumer<InputStream> addStream,
+        final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
+        final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
         // Added Chunk Data:
         final Index myAddedOffsets;
         if (view.isViewport()) {
             // only include added rows that are within the viewport
-            myAddedOffsets = rowsIncluded.original.invert(view.keyspaceViewport.intersect(rowsIncluded.original));
+            myAddedOffsets = rowsIncluded.original
+                .invert(view.keyspaceViewport.intersect(rowsIncluded.original));
         } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
             // there are scoped rows included in the chunks that need to be removed
             myAddedOffsets = rowsIncluded.original.invert(rowsAdded.original);
@@ -421,7 +453,8 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
 
         // add the add-column streams
         for (final ChunkInputStreamGenerator col : addColumnData) {
-            final ChunkInputStreamGenerator.DrainableColumn drainableColumn = col.getInputStream(view.options, myAddedOffsets);
+            final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
+                col.getInputStream(view.options, myAddedOffsets);
             addStream.accept(drainableColumn);
             drainableColumn.visitFieldNodes(fieldNodeListener);
             drainableColumn.visitBuffers(bufferListener);
@@ -430,23 +463,24 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
     }
 
     private long appendModColumns(final SubView view,
-                                  final Consumer<InputStream> addStream,
-                                  final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
-                                  final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
+        final Consumer<InputStream> addStream,
+        final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
+        final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
         // now add mod-column streams, and write the mod column indexes
         long numRows = 0;
         for (final ModColumnData mcd : modColumnData) {
             Index myModOffsets = null;
             if (view.isViewport()) {
                 // only include added rows that are within the viewport
-                myModOffsets = mcd.rowsModified.original.invert(view.keyspaceViewport.intersect(mcd.rowsModified.original));
+                myModOffsets = mcd.rowsModified.original
+                    .invert(view.keyspaceViewport.intersect(mcd.rowsModified.original));
                 numRows = Math.max(numRows, myModOffsets.size());
             } else {
                 numRows = Math.max(numRows, mcd.rowsModified.original.size());
             }
 
             final ChunkInputStreamGenerator.DrainableColumn drainableColumn =
-                    mcd.data.getInputStream(view.options, myModOffsets);
+                mcd.data.getInputStream(view.options, myModOffsets);
 
             addStream.accept(drainableColumn);
             drainableColumn.visitFieldNodes(fieldNodeListener);
@@ -484,7 +518,8 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
 
         int effectiveColumnSetOffset = 0;
         if (isSnapshot && view.subscribedColumns != null) {
-            effectiveColumnSetOffset = new BitSetGenerator(view.subscribedColumns).addToFlatBuffer(metadata);
+            effectiveColumnSetOffset =
+                new BitSetGenerator(view.subscribedColumns).addToFlatBuffer(metadata);
         }
 
         final int rowsAddedOffset;
@@ -513,11 +548,15 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             } else {
                 myModRowOffset = mcd.rowsModified.addToFlatBuffer(metadata);
             }
-            modOffsets.add(BarrageModColumnMetadata.createBarrageModColumnMetadata(metadata, myModRowOffset));
+            modOffsets.add(
+                BarrageModColumnMetadata.createBarrageModColumnMetadata(metadata, myModRowOffset));
         }
 
         BarrageUpdateMetadata.startNodesVector(metadata, modOffsets.size());
-        modOffsets.forEachDescending(offset -> { metadata.addOffset(offset); return true; });
+        modOffsets.forEachDescending(offset -> {
+            metadata.addOffset(offset);
+            return true;
+        });
         final int nodesOffset = metadata.endVector();
 
         BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
@@ -536,7 +575,8 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         metadata.finish(BarrageUpdateMetadata.endBarrageUpdateMetadata(metadata));
 
         final FlatBufferBuilder header = new FlatBufferBuilder();
-        final int payloadOffset = BarrageMessageWrapper.createMsgPayloadVector(header, metadata.dataBuffer());
+        final int payloadOffset =
+            BarrageMessageWrapper.createMsgPayloadVector(header, metadata.dataBuffer());
         BarrageMessageWrapper.startBarrageMessageWrapper(header);
         BarrageMessageWrapper.addMagic(header, FLATBUFFER_MAGIC);
         BarrageMessageWrapper.addMsgType(header, BarrageMessageType.BarrageUpdateMetadata);
@@ -560,9 +600,9 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
 
         public IndexGenerator(final Index index) throws IOException {
             this.original = index.clone();
-            //noinspection UnstableApiUsage
+            // noinspection UnstableApiUsage
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
-                 final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
+                final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
                 ExternalizableIndexUtils.writeExternalCompressedDeltas(oos, index);
                 oos.flush();
                 raw = baos.peekBuffer();
@@ -581,21 +621,23 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
 
         /**
          * Appends the intersection of the viewport and the originally provided index.
+         * 
          * @param viewport the key-space version of the viewport
          * @param builder the flatbuffer builder
          * @return offset of the item in the flatbuffer
          */
-        protected int addToFlatBuffer(final Index viewport, final FlatBufferBuilder builder) throws IOException {
+        protected int addToFlatBuffer(final Index viewport, final FlatBufferBuilder builder)
+            throws IOException {
             if (original.subsetOf(viewport)) {
                 return addToFlatBuffer(builder);
             }
 
             final int nlen;
             final byte[] nraw;
-            //noinspection UnstableApiUsage
+            // noinspection UnstableApiUsage
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
-                 final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos);
-                 final Index viewOfOriginal = original.intersect(viewport)) {
+                final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos);
+                final Index viewOfOriginal = original.intersect(viewport)) {
                 ExternalizableIndexUtils.writeExternalCompressedDeltas(oos, viewOfOriginal);
                 oos.flush();
                 nraw = baos.peekBuffer();
@@ -613,17 +655,18 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             this.original = bitset == null ? new BitSet() : bitset;
             this.raw = original.toByteArray();
             final int nBits = original.previousSetBit(Integer.MAX_VALUE - 1) + 1;
-            this.len = (int) ((long)nBits + 7) / 8;
+            this.len = (int) ((long) nBits + 7) / 8;
         }
 
-        public int addToFlatBuffer(final BitSet mine, final FlatBufferBuilder builder) throws IOException {
+        public int addToFlatBuffer(final BitSet mine, final FlatBufferBuilder builder)
+            throws IOException {
             if (mine.equals(original)) {
                 return addToFlatBuffer(builder);
             }
 
             final byte[] nraw = mine.toByteArray();
             final int nBits = mine.previousSetBit(Integer.MAX_VALUE - 1) + 1;
-            final int nlen = (int) ((long)nBits + 7) / 8;
+            final int nlen = (int) ((long) nBits + 7) / 8;
             return createByteVector(builder, nraw, 0, nlen);
         }
     }
@@ -634,9 +677,12 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         public IndexShiftDataGenerator(final IndexShiftData shifted) throws IOException {
             this.original = shifted;
 
-            final Index.SequentialBuilder sRangeBuilder = Index.CURRENT_FACTORY.getSequentialBuilder();
-            final Index.SequentialBuilder eRangeBuilder = Index.CURRENT_FACTORY.getSequentialBuilder();
-            final Index.SequentialBuilder destBuilder = Index.CURRENT_FACTORY.getSequentialBuilder();
+            final Index.SequentialBuilder sRangeBuilder =
+                Index.CURRENT_FACTORY.getSequentialBuilder();
+            final Index.SequentialBuilder eRangeBuilder =
+                Index.CURRENT_FACTORY.getSequentialBuilder();
+            final Index.SequentialBuilder destBuilder =
+                Index.CURRENT_FACTORY.getSequentialBuilder();
 
             if (shifted != null) {
                 for (int i = 0; i < shifted.size(); ++i) {
@@ -653,12 +699,12 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
                 }
             }
 
-            //noinspection UnstableApiUsage
+            // noinspection UnstableApiUsage
             try (final Index sRange = sRangeBuilder.getIndex();
-                 final Index eRange = eRangeBuilder.getIndex();
-                 final Index dest = destBuilder.getIndex();
-                 final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
-                 final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
+                final Index eRange = eRangeBuilder.getIndex();
+                final Index dest = destBuilder.getIndex();
+                final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
+                final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
                 ExternalizableIndexUtils.writeExternalCompressedDeltas(oos, sRange);
                 ExternalizableIndexUtils.writeExternalCompressedDeltas(oos, eRange);
                 ExternalizableIndexUtils.writeExternalCompressedDeltas(oos, dest);
@@ -669,7 +715,8 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
         }
     }
 
-    public static class DrainableByteArrayInputStream extends ByteArrayInputStream implements Drainable {
+    public static class DrainableByteArrayInputStream extends ByteArrayInputStream
+        implements Drainable {
         public DrainableByteArrayInputStream(final byte[] buf, final int offset, final int length) {
             super(buf, offset, length);
         }
@@ -691,11 +738,12 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
     private static class ConsecutiveDrainableStreams extends InputStream implements Drainable {
         final InputStream[] streams;
 
-        ConsecutiveDrainableStreams(final InputStream ...streams) {
+        ConsecutiveDrainableStreams(final InputStream... streams) {
             this.streams = streams;
             for (final InputStream stream : streams) {
                 if (!(stream instanceof Drainable)) {
-                    throw new IllegalArgumentException("expecting sub-class of Drainable; found: " + stream.getClass());
+                    throw new IllegalArgumentException(
+                        "expecting sub-class of Drainable; found: " + stream.getClass());
                 }
             }
         }
@@ -705,12 +753,14 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             int total = 0;
             for (final InputStream stream : streams) {
                 final int expected = total + stream.available();
-                total += ((Drainable)stream).drainTo(outputStream);
+                total += ((Drainable) stream).drainTo(outputStream);
                 if (expected != total) {
-                    throw new IllegalStateException("drained message drained wrong number of bytes");
+                    throw new IllegalStateException(
+                        "drained message drained wrong number of bytes");
                 }
                 if (total < 0) {
-                    throw new IllegalStateException("drained message is too large; exceeds Integer.MAX_VALUE");
+                    throw new IllegalStateException(
+                        "drained message is too large; exceeds Integer.MAX_VALUE");
                 }
             }
             return total;
@@ -727,7 +777,8 @@ public class BarrageStreamGenerator implements BarrageMessageProducer.StreamGene
             for (final InputStream stream : streams) {
                 total += stream.available();
                 if (total < 0) {
-                    throw new IllegalStateException("drained message is too large; exceeds Integer.MAX_VALUE");
+                    throw new IllegalStateException(
+                        "drained message is too large; exceeds Integer.MAX_VALUE");
                 }
             }
             return total;

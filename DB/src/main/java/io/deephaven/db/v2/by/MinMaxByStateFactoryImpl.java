@@ -7,10 +7,11 @@ package io.deephaven.db.v2.by;
 /**
  * Minimum and Maximum aggregation factory.
  *
- * Operates in two modes, for non-refreshing tables it requires very little state (just the current minimum or maximum).
+ * Operates in two modes, for non-refreshing tables it requires very little state (just the current
+ * minimum or maximum).
  *
- * For refreshing tables, it requires maintaining a TreeMap of values to counts; so that if the min/max value is removed
- * we are able to identify the next lowest/highest value.
+ * For refreshing tables, it requires maintaining a TreeMap of values to counts; so that if the
+ * min/max value is removed we are able to identify the next lowest/highest value.
  *
  * You can use {@link AddOnlyMinMaxByStateFactoryImpl} if you want to force add-only behavior.
  *
@@ -32,8 +33,9 @@ public class MinMaxByStateFactoryImpl extends ReaggregatableStatefactory {
      * Create a minBy or maxBy factory.
      *
      * @param minimum true if selecting the minimum value, false if selecting the maximum value.
-     * @param addOnly if true create a factory only suitable for add-only tables, if false the add-only factory will be
-     *                created for non-refreshing tables and the general factory is created for refreshing tables
+     * @param addOnly if true create a factory only suitable for add-only tables, if false the
+     *        add-only factory will be created for non-refreshing tables and the general factory is
+     *        created for refreshing tables
      */
     MinMaxByStateFactoryImpl(boolean minimum, boolean addOnly) {
         this.minimum = minimum;

@@ -3,7 +3,8 @@ package io.deephaven.stream;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * An interface for accepting failures from an incoming stream in order to propagate them to downstream tables.
+ * An interface for accepting failures from an incoming stream in order to propagate them to
+ * downstream tables.
  */
 public interface StreamFailureConsumer {
     /**

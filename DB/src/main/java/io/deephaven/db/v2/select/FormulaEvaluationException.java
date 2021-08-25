@@ -5,7 +5,7 @@
 package io.deephaven.db.v2.select;
 
 /**
- *  Exception while evaluating user formulas.
+ * Exception while evaluating user formulas.
  */
 public class FormulaEvaluationException extends RuntimeException {
     public FormulaEvaluationException(String message, Throwable cause) {

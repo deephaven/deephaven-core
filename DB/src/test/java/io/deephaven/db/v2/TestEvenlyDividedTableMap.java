@@ -12,17 +12,20 @@ public class TestEvenlyDividedTableMap extends LiveTableTestCase {
         final Table t = TableTools.emptyTable(1000000).update("K=k");
         final TableMap tm = EvenlyDividedTableMap.makeEvenlyDividedTableMap(t, 16, 100000);
         assertEquals(10, tm.size());
-        final Table t2 = ((TransformableTableMap)tm.asTable().update("K2=K*2")).merge();
+        final Table t2 = ((TransformableTableMap) tm.asTable().update("K2=K*2")).merge();
         TstUtils.assertTableEquals(t.update("K2=K*2"), t2);
     }
 
     public void testIncremental() {
         final QueryTable t = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(1000000));
-        final Table tu = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.update("K=k*2"));
-        final Table tk2 = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> tu.update("K2=K*2"));
+        final Table tu =
+            LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.update("K=k*2"));
+        final Table tk2 =
+            LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> tu.update("K2=K*2"));
         final TableMap tm = EvenlyDividedTableMap.makeEvenlyDividedTableMap(tu, 16, 100000);
         assertEquals(10, tm.size());
-        final Table t2 = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> ((TransformableTableMap)tm.asTable().update("K2=K*2")).merge());
+        final Table t2 = LiveTableMonitor.DEFAULT.sharedLock()
+            .computeLocked(() -> ((TransformableTableMap) tm.asTable().update("K2=K*2")).merge());
         TstUtils.assertTableEquals(tk2, t2);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {

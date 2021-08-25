@@ -52,29 +52,29 @@ public class FastArrayTest extends TestCase {
 
         Random myRandom = new Random(89324L);
 
-        //try to remove on an empty array
+        // try to remove on an empty array
         try {
             array.removeThisIndex(0);
             fail("removing anything from an empty array should throw");
         } catch (Exception e) {
-            //expected exception
+            // expected exception
         }
 
         try {
             array.removeThisIndex(-1);
             fail("removing index -1 should throw");
         } catch (Exception e) {
-            //expected exception
+            // expected exception
         }
 
         try {
             array.removeThisIndex(99);
             fail("removing any index beyond what we have should throw");
         } catch (Exception e) {
-            //expected exception
+            // expected exception
         }
 
-        //add a bunch to build up the array
+        // add a bunch to build up the array
         TrialClassA item1 = makeRandomTestObject(myRandom);
         array.add(item1);
         assertEquals(1, array.getLength());
@@ -85,18 +85,18 @@ public class FastArrayTest extends TestCase {
             array.removeThisIndex(-1);
             fail("removing index -1 should throw");
         } catch (Exception e) {
-            //expected exception
+            // expected exception
         }
 
         try {
             array.removeThisIndex(1);
             fail("removing any index beyond what we have should throw");
         } catch (Exception e) {
-            //expected exception
+            // expected exception
         }
 
 
-        //add a bunch
+        // add a bunch
         TrialClassA item2 = makeRandomTestObject(myRandom);
         array.add(item2);
         assertEquals(2, array.getLength());
@@ -121,17 +121,17 @@ public class FastArrayTest extends TestCase {
             array.removeThisIndex(-1);
             fail("removing index -1 should throw");
         } catch (Exception e) {
-            //expected exception
+            // expected exception
         }
 
         try {
             array.removeThisIndex(5);
             fail("removing any index beyond what we have should throw");
         } catch (Exception e) {
-            //expected exception
+            // expected exception
         }
 
-        //remove
+        // remove
         array.removeThisIndex(0);
         assertEquals(4, array.getLength());
         assertTrue(array.getUnsafeArray()[0].equals(item2));
@@ -143,17 +143,17 @@ public class FastArrayTest extends TestCase {
             array.removeThisIndex(-1);
             fail("removing index -1 should throw");
         } catch (Exception e) {
-            //expected exception
+            // expected exception
         }
 
         try {
             array.removeThisIndex(4);
             fail("removing any index beyond what we have should throw");
         } catch (Exception e) {
-            //expected exception
+            // expected exception
         }
 
-        //remove
+        // remove
         array.removeThisIndex(2);
         assertEquals(3, array.getLength());
         assertTrue(array.getUnsafeArray()[0].equals(item2));
@@ -164,17 +164,17 @@ public class FastArrayTest extends TestCase {
             array.removeThisIndex(-1);
             fail("removing index -1 should throw");
         } catch (Exception e) {
-            //expected exception
+            // expected exception
         }
 
         try {
             array.removeThisIndex(3);
             fail("removing any index beyond what we have should throw");
         } catch (Exception e) {
-            //expected exception
+            // expected exception
         }
 
-        //remove
+        // remove
         array.removeThisIndex(1);
         assertEquals(2, array.getLength());
         assertTrue(array.getUnsafeArray()[0].equals(item2));
@@ -184,17 +184,17 @@ public class FastArrayTest extends TestCase {
             array.removeThisIndex(-1);
             fail("removing index -1 should throw");
         } catch (Exception e) {
-            //expected exception
+            // expected exception
         }
 
         try {
             array.removeThisIndex(2);
             fail("removing any index beyond what we have should throw");
         } catch (Exception e) {
-            //expected exception
+            // expected exception
         }
 
-        //remove
+        // remove
         array.removeThisIndex(1);
         assertEquals(1, array.getLength());
         assertTrue(array.getUnsafeArray()[0].equals(item2));
@@ -203,17 +203,17 @@ public class FastArrayTest extends TestCase {
             array.removeThisIndex(-1);
             fail("removing index -1 should throw");
         } catch (Exception e) {
-            //expected exception
+            // expected exception
         }
 
         try {
             array.removeThisIndex(1);
             fail("removing any index beyond what we have should throw");
         } catch (Exception e) {
-            //expected exception
+            // expected exception
         }
 
-        //remove to make empty
+        // remove to make empty
         array.removeThisIndex(0);
         assertEquals(0, array.getLength());
 
@@ -221,14 +221,14 @@ public class FastArrayTest extends TestCase {
             array.removeThisIndex(-1);
             fail("removing index -1 should throw");
         } catch (Exception e) {
-            //expected exception
+            // expected exception
         }
 
         try {
             array.removeThisIndex(0);
             fail("removing any index beyond what we have should throw");
         } catch (Exception e) {
-            //expected exception
+            // expected exception
         }
 
     }
@@ -246,8 +246,8 @@ public class FastArrayTest extends TestCase {
         }
 
         array.normalReset(resetValue);
-        assertEquals(0, array.getLength());  //smokes the length
-        for (int i = 0; i < nItems; i++) {  // ... but fills in the values to our resetValue
+        assertEquals(0, array.getLength()); // smokes the length
+        for (int i = 0; i < nItems; i++) { // ... but fills in the values to our resetValue
             assertTrue(array.getUnsafeArray()[i].equals(resetValue));
             assertTrue(resetValue.equals(array.getUnsafeArray()[i]));
         }
@@ -272,9 +272,9 @@ public class FastArrayTest extends TestCase {
         assertEquals(int1, copy.getInt1());
         assertEquals(long1, copy.getLong1());
         assertTrue(orig.equals(copy));
-        assertTrue(copy.equals(orig));   //paranoid of some assymetry in the equals
+        assertTrue(copy.equals(orig)); // paranoid of some assymetry in the equals
 
-        //make the state more messy
+        // make the state more messy
         copy.setDouble1(double1 + 0.1);
         assertFalse(orig.equals(copy));
         assertFalse(copy.equals(orig));
@@ -297,7 +297,7 @@ public class FastArrayTest extends TestCase {
         assertTrue(copy.equals(orig));
 
 
-        //make it a real copy again
+        // make it a real copy again
         copy = orig.deepCopy();
         assertTrue(orig.equals(copy));
         assertTrue(copy.equals(orig));
@@ -306,7 +306,7 @@ public class FastArrayTest extends TestCase {
         assertFalse(orig.equals(copy));
         assertFalse(copy.equals(orig));
 
-        //now we know the test object is behaving itself
+        // now we know the test object is behaving itself
 
         FastArray<TrialClassA> arrayOrig = new FastArray<TrialClassA>(TrialClassA.class);
         FastArray<TrialClassA> arrayCopy = new FastArray<TrialClassA>(TrialClassA.class);
@@ -314,12 +314,12 @@ public class FastArrayTest extends TestCase {
         assertTrue(arrayOrig.equals(arrayCopy));
         assertTrue(arrayCopy.equals(arrayOrig));
 
-        //add something to orig
+        // add something to orig
         arrayOrig.add(orig);
         assertFalse(arrayOrig.equals(arrayCopy));
         assertFalse(arrayCopy.equals(arrayOrig));
 
-        //add another
+        // add another
         TrialClassA other = orig.deepCopy();
         other.setDouble1(double1 + 0.4);
         other.setInt1(int1 + 2);
@@ -330,26 +330,27 @@ public class FastArrayTest extends TestCase {
         assertFalse(arrayOrig.equals(arrayCopy));
         assertFalse(arrayCopy.equals(arrayOrig));
 
-        //add those to the copy array
-        //just the first item means they should still be not equal
+        // add those to the copy array
+        // just the first item means they should still be not equal
         arrayCopy.add(orig);
         assertFalse(arrayOrig.equals(arrayCopy));
         assertFalse(arrayCopy.equals(arrayOrig));
 
-        //add in all the same stuff so they should be equal
+        // add in all the same stuff so they should be equal
         arrayCopy.add(other);
         assertTrue(arrayOrig.equals(arrayCopy));
         assertTrue(arrayCopy.equals(arrayOrig));
     }
 
-    public void checkExternalization(FastArray<TrialClassA> arrayInput, FastArray<TrialClassA> arrayReceiver) throws Exception {
+    public void checkExternalization(FastArray<TrialClassA> arrayInput,
+        FastArray<TrialClassA> arrayReceiver) throws Exception {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(bos);
         try {
             FastArray.writeExternal(arrayInput, oos, TrialClassA.getWriter());
         } catch (IllegalArgumentException e) {
             if (arrayInput == null) {
-                //this is an expected failure
+                // this is an expected failure
                 return;
             } else {
                 throw e;
@@ -363,7 +364,7 @@ public class FastArrayTest extends TestCase {
             FastArray.readExternal(arrayReceiver, ois, TrialClassA.getReader());
         } catch (IllegalArgumentException e) {
             if (arrayReceiver == null) {
-                //this is an expected failure
+                // this is an expected failure
                 return;
             } else {
                 throw e;
@@ -384,7 +385,7 @@ public class FastArrayTest extends TestCase {
             FastArray<TrialClassA> result = new FastArray<TrialClassA>(TrialClassA.class);
             for (int i = 0; i < nItems; i++) {
                 TrialClassA thisItem = makeRandomTestObject(myRandom);
-//                System.out.println("random item look ok? " + i + " " + thisItem);
+                // System.out.println("random item look ok? " + i + " " + thisItem);
                 result.add(thisItem);
             }
             return result;
@@ -521,7 +522,7 @@ public class FastArrayTest extends TestCase {
         assertEquals(0, arrayInput.getLength());
         assertEquals(0, arrayReceiver.getLength());
 
-        //put items into input array
+        // put items into input array
         for (int i = 0; i < nItems; i++) {
             arrayInput.add(makeRandomTestObject(myRandom));
             assertEquals(i + 1, arrayInput.getLength());
@@ -529,10 +530,10 @@ public class FastArrayTest extends TestCase {
         assertEquals(nItems, arrayInput.getLength());
         assertEquals(0, arrayReceiver.getLength());
 
-        //copy them into receive
+        // copy them into receive
         FastArray.copyValuesDeep(arrayReceiver, arrayInput);
 
-        //check the receive array against the input array
+        // check the receive array against the input array
         assertEquals(nItems, arrayInput.getLength());
         assertEquals(nItems, arrayReceiver.getLength());
         for (int i = 0; i < nItems; i++) {
@@ -542,12 +543,12 @@ public class FastArrayTest extends TestCase {
             assertTrue(itemReceive.equals(itemInput));
         }
 
-        //change the values in the receive array
+        // change the values in the receive array
         for (int i = 0; i < nItems; i++) {
             arrayReceiver.getUnsafeArray()[i] = makeRandomTestObject(myRandom);
         }
 
-        //verify they are not equal
+        // verify they are not equal
         for (int i = 0; i < nItems; i++) {
             TrialClassA itemInput = arrayInput.getUnsafeArray()[i];
             TrialClassA itemReceive = arrayReceiver.getUnsafeArray()[i];
@@ -555,10 +556,11 @@ public class FastArrayTest extends TestCase {
             assertFalse(itemReceive.equals(itemInput));
         }
 
-        //copy the value from the input back into the receive array (now that we already have values in there
+        // copy the value from the input back into the receive array (now that we already have
+        // values in there
         FastArray.copyValuesDeep(arrayReceiver, arrayInput);
 
-        //check the receive array against the input array
+        // check the receive array against the input array
         assertEquals(nItems, arrayInput.getLength());
         assertEquals(nItems, arrayReceiver.getLength());
         for (int i = 0; i < nItems; i++) {

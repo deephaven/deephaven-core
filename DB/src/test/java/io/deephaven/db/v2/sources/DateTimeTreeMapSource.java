@@ -10,9 +10,11 @@ import java.util.Arrays;
 
 /**
  * DateTime column source that wraps and delegates the storage to an {@code TreeMapSource<Long>}.
- * This also provides an interface so this column can be interpreted as a long column (through UnboxedDateTimeTreeMapSource).
+ * This also provides an interface so this column can be interpreted as a long column (through
+ * UnboxedDateTimeTreeMapSource).
  */
-public class DateTimeTreeMapSource extends AbstractColumnSource<DBDateTime> implements MutableColumnSourceGetDefaults.ForObject<DBDateTime> {
+public class DateTimeTreeMapSource extends AbstractColumnSource<DBDateTime>
+    implements MutableColumnSourceGetDefaults.ForObject<DBDateTime> {
 
     private final TreeMapSource<Long> treeMapSource;
     private final UnboxedDateTimeTreeMapSource alternateColumnSource;
@@ -30,7 +32,7 @@ public class DateTimeTreeMapSource extends AbstractColumnSource<DBDateTime> impl
      * Create a new DateTimeTreeMapSource with the given index and data.
      *
      * @param index The row indexes for the initial data
-     * @param data  The initial data
+     * @param data The initial data
      */
     public DateTimeTreeMapSource(Index index, DBDateTime[] data) {
         super(DBDateTime.class);
@@ -42,7 +44,7 @@ public class DateTimeTreeMapSource extends AbstractColumnSource<DBDateTime> impl
      * Create a new DateTimeTreeMapSource with the given index and data.
      *
      * @param index The row indexes for the initial data
-     * @param data  The initial data
+     * @param data The initial data
      */
     public DateTimeTreeMapSource(Index index, long[] data) {
         super(DBDateTime.class);
@@ -104,13 +106,16 @@ public class DateTimeTreeMapSource extends AbstractColumnSource<DBDateTime> impl
     }
 
     @Override
-    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
+        @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         return alternateDataType == long.class;
     }
 
     @Override
-    public <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) throws IllegalArgumentException {
-        //noinspection unchecked
+    public <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
+        @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType)
+        throws IllegalArgumentException {
+        // noinspection unchecked
         return (ColumnSource<ALTERNATE_DATA_TYPE>) alternateColumnSource;
     }
 }

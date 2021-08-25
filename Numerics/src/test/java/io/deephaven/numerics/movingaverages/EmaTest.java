@@ -72,8 +72,8 @@ public class EmaTest extends TestCase {
     }
 
     /**
-     * Make sure that smaller timescales correspond to faster moving averages.  The smallest double should correspond
-     * to no averaging.
+     * Make sure that smaller timescales correspond to faster moving averages. The smallest double
+     * should correspond to no averaging.
      */
     public void testTimescales() {
         double timeScale = Double.MIN_VALUE;

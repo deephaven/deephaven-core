@@ -11,13 +11,18 @@ import java.util.*;
 /**
  * Dynamic chart title created from table columns
  * <p>
- * For each column, by default the title String takes 1 values. This is configurable either via property "Plot.chartTitle.maxRowsInTitle" or
+ * For each column, by default the title String takes 1 values. This is configurable either via
+ * property "Plot.chartTitle.maxRowsInTitle" or
  * {@link io.deephaven.db.plot.Chart#maxRowsInTitle(int)}
  * <p>
  * Also, the default format for the title is:
- * <p> ${comma separated values}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${comma separated values},...</p>
  * <p>
- * In order to customize this format, (a {@link java.text.MessageFormat} instance), please refer <br/>
+ * ${comma separated values}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${comma separated
+ * values},...
+ * </p>
+ * <p>
+ * In order to customize this format, (a {@link java.text.MessageFormat} instance), please refer
+ * <br/>
  * {@link io.deephaven.db.plot.Chart#chartTitle(String, Table, String...)} and<br/>
  * {@link io.deephaven.db.plot.Chart#chartTitle(String, SelectableDataSet, String...)}
  */
@@ -32,7 +37,8 @@ public abstract class DynamicChartTitle extends ChartTitle {
      */
     String dynamicTitleString;
 
-    DynamicChartTitle(final String titleFormat, final PlotInfo plotInfo, final int maxVisibleRowsCount) {
+    DynamicChartTitle(final String titleFormat, final PlotInfo plotInfo,
+        final int maxVisibleRowsCount) {
         super(plotInfo, maxVisibleRowsCount);
         this.titleFormat = titleFormat;
     }
@@ -62,7 +68,8 @@ public abstract class DynamicChartTitle extends ChartTitle {
         private final Set<String> titleColumns;
 
 
-        DynamicChartTitleTable(final String titleFormat, final Set<String> titleColumns, final PlotInfo plotInfo, final int maxVisibleRowsCount) {
+        DynamicChartTitleTable(final String titleFormat, final Set<String> titleColumns,
+            final PlotInfo plotInfo, final int maxVisibleRowsCount) {
             super(titleFormat, plotInfo, maxVisibleRowsCount);
             this.titleColumns = titleColumns;
         }
@@ -105,7 +112,8 @@ public abstract class DynamicChartTitle extends ChartTitle {
                 final StringBuilder sb = new StringBuilder();
 
                 for (int i = 0; i < titleColumns.length; i++) {
-                    sb.append("{").append(i).append("}").append(i == titleColumns.length - 1 ? "" : "        ");
+                    sb.append("{").append(i).append("}")
+                        .append(i == titleColumns.length - 1 ? "" : "        ");
                 }
 
                 return sb.toString();
@@ -132,8 +140,10 @@ public abstract class DynamicChartTitle extends ChartTitle {
         private transient Table localTable;
 
 
-        ChartTitleSwappableTable(final String titleFormat, final SwappableTable swappableTable, final PlotInfo plotInfo, final int maxVisibleRowsCount, final String... titleColumns) {
-            super(titleFormat, new LinkedHashSet<>(Arrays.asList(titleColumns)), plotInfo, maxVisibleRowsCount);
+        ChartTitleSwappableTable(final String titleFormat, final SwappableTable swappableTable,
+            final PlotInfo plotInfo, final int maxVisibleRowsCount, final String... titleColumns) {
+            super(titleFormat, new LinkedHashSet<>(Arrays.asList(titleColumns)), plotInfo,
+                maxVisibleRowsCount);
             this.swappableTable = swappableTable;
 
             if (swappableTable instanceof SwappableTableMap) {
@@ -167,7 +177,7 @@ public abstract class DynamicChartTitle extends ChartTitle {
      * Gets the string value with handling nulls
      *
      * @param indexableData - indexed data source
-     * @param index         - index
+     * @param index - index
      * @return String value of the indexed item
      */
     private static String getStringValue(final IndexableData indexableData, final int index) {
@@ -188,8 +198,10 @@ public abstract class DynamicChartTitle extends ChartTitle {
             return tableHandle;
         }
 
-        ChartTitleTable(final String titleFormat, final TableHandle tableHandle, final PlotInfo plotInfo, final int maxVisibleRowsCount, final String... titleColumns) {
-            super(titleFormat, new LinkedHashSet<>(Arrays.asList(titleColumns)), plotInfo, maxVisibleRowsCount);
+        ChartTitleTable(final String titleFormat, final TableHandle tableHandle,
+            final PlotInfo plotInfo, final int maxVisibleRowsCount, final String... titleColumns) {
+            super(titleFormat, new LinkedHashSet<>(Arrays.asList(titleColumns)), plotInfo,
+                maxVisibleRowsCount);
             this.tableHandle = tableHandle;
         }
 

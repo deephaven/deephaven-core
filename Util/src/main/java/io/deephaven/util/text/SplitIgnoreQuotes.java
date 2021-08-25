@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Splits a String on a character ignoring that character inside quotes and back ticks.
- * For example splitting on a comma:
+ * Splits a String on a character ignoring that character inside quotes and back ticks. For example
+ * splitting on a comma:
  *
  * 'a,b', "c,d", 'e', "f", g splits to ['a,b'] ["c,d"] ['e'] ["f"] [g]
  */
@@ -31,22 +31,22 @@ public class SplitIgnoreQuotes {
         builder = new StringBuilder();
         values.clear();
 
-        for(int i = 0; i < string.length(); i++) {
+        for (int i = 0; i < string.length(); i++) {
             final char c = string.charAt(i);
-            if(c == QUOTE) {
+            if (c == QUOTE) {
                 processQuote(c);
-            } else if(c == BACK_TICK) {
+            } else if (c == BACK_TICK) {
                 processBackTick(c);
-            } else if(c == splitter) {
+            } else if (c == splitter) {
                 processSplitter(c);
             } else {
                 processChar(c);
             }
         }
 
-        if(mode == SplitMode.IN_QUOTES) {
+        if (mode == SplitMode.IN_QUOTES) {
             throw new RuntimeException("Unmatched quote in expression " + string);
-        } else if(mode == SplitMode.IN_BACK_TICKS) {
+        } else if (mode == SplitMode.IN_BACK_TICKS) {
             throw new RuntimeException("Unmatched back tick in expression " + string);
         }
 
@@ -57,7 +57,7 @@ public class SplitIgnoreQuotes {
     }
 
     private void processQuote(char c) {
-        switch(mode) {
+        switch (mode) {
             case NORMAL:
                 mode = SplitMode.IN_QUOTES;
                 break;
@@ -69,7 +69,7 @@ public class SplitIgnoreQuotes {
     }
 
     private void processBackTick(char c) {
-        switch(mode) {
+        switch (mode) {
             case NORMAL:
                 mode = SplitMode.IN_BACK_TICKS;
                 break;
@@ -81,7 +81,7 @@ public class SplitIgnoreQuotes {
     }
 
     private void processSplitter(char c) {
-        if(mode == SplitMode.IN_QUOTES || mode == SplitMode.IN_BACK_TICKS) {
+        if (mode == SplitMode.IN_QUOTES || mode == SplitMode.IN_BACK_TICKS) {
             processChar(c);
         } else {
             // This is where the actual split occurs
@@ -92,7 +92,7 @@ public class SplitIgnoreQuotes {
 
     private void addCurrentValue() {
         final String value = builder.toString().trim();
-        if(!value.isEmpty()) {
+        if (!value.isEmpty()) {
             values.add(value);
         }
     }
@@ -102,8 +102,6 @@ public class SplitIgnoreQuotes {
     }
 
     private enum SplitMode {
-        NORMAL,
-        IN_QUOTES,
-        IN_BACK_TICKS
+        NORMAL, IN_QUOTES, IN_BACK_TICKS
     }
 }

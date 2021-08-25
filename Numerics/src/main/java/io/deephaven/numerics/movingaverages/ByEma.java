@@ -30,8 +30,10 @@ public abstract class ByEma implements Serializable {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
 
             Key key = (Key) o;
             return Arrays.equals(values, key.values);
@@ -45,15 +47,13 @@ public abstract class ByEma implements Serializable {
         @Override
         public String toString() {
             return "Key{" +
-                    "values=" + (values == null ? null : Arrays.asList(values)) +
-                    '}';
+                "values=" + (values == null ? null : Arrays.asList(values)) +
+                '}';
         }
     }
 
     public enum BadDataBehavior {
-        BD_RESET(true, false, true),
-        BD_SKIP(false, false, false),
-        BD_PROCESS(false, true, false);
+        BD_RESET(true, false, true), BD_SKIP(false, false, false), BD_PROCESS(false, true, false);
 
         private final boolean reset;
         private final boolean process;
@@ -78,11 +78,12 @@ public abstract class ByEma implements Serializable {
         Require.neqNull(nanBehavior, "nanBehavior");
     }
 
-    // DB automatic type conversion takes care of converting all non-double nulls into double nulls so we don't have to duplicate the null checking
+    // DB automatic type conversion takes care of converting all non-double nulls into double nulls
+    // so we don't have to duplicate the null checking
     // for each type.
 
     public synchronized double update(double value) {
-        return update(value, (Object)null);
+        return update(value, (Object) null);
     }
 
     public synchronized double update(double value, Object... by) {
@@ -90,7 +91,7 @@ public abstract class ByEma implements Serializable {
     }
 
     public synchronized double update(DBDateTime timestamp, double value) {
-        return update(timestamp, value, (Object)null);
+        return update(timestamp, value, (Object) null);
     }
 
     public synchronized double update(DBDateTime timestamp, double value, Object... by) {
@@ -98,22 +99,28 @@ public abstract class ByEma implements Serializable {
     }
 
     public synchronized double update(long timestampNanos, double value, Object... by) {
-        return updateInternal(timestampNanos, value, DoublePrimitives.isNull(value), Double.isNaN(value), by);
+        return updateInternal(timestampNanos, value, DoublePrimitives.isNull(value),
+            Double.isNaN(value), by);
     }
 
-    private static boolean resetEma(boolean isNull, BadDataBehavior nullBehavior, boolean isNaN, BadDataBehavior nanBehavior) {
+    private static boolean resetEma(boolean isNull, BadDataBehavior nullBehavior, boolean isNaN,
+        BadDataBehavior nanBehavior) {
         return (isNull && nullBehavior.reset) || (isNaN && nanBehavior.reset);
     }
 
-    private static boolean returnNan(boolean isNull, BadDataBehavior nullBehavior, boolean isNaN, BadDataBehavior nanBehavior) {
+    private static boolean returnNan(boolean isNull, BadDataBehavior nullBehavior, boolean isNaN,
+        BadDataBehavior nanBehavior) {
         return (isNull && nullBehavior.returnNan) || (isNaN && nanBehavior.returnNan);
     }
 
-    private static boolean processSample(boolean isNull, BadDataBehavior nullBehavior, boolean isNaN, BadDataBehavior nanBehavior) {
-        return (!isNull && !isNaN) || (isNull && nullBehavior.process) || (isNaN && nanBehavior.process);
+    private static boolean processSample(boolean isNull, BadDataBehavior nullBehavior,
+        boolean isNaN, BadDataBehavior nanBehavior) {
+        return (!isNull && !isNaN) || (isNull && nullBehavior.process)
+            || (isNaN && nanBehavior.process);
     }
 
-    private synchronized double updateInternal(long timestampNanos, double value, boolean isNull, boolean isNaN, Object... by) {
+    private synchronized double updateInternal(long timestampNanos, double value, boolean isNull,
+        boolean isNaN, Object... by) {
         Key key = new Key(by);
 
         AbstractMa ema = emas.get(key);

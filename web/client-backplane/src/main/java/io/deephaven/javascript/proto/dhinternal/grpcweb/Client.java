@@ -6,7 +6,6 @@ import jsinterop.annotations.JsType;
 
 @JsType(isNative = true, name = "dhinternal.grpcWeb.client", namespace = JsPackage.GLOBAL)
 public class Client {
-  public static native <TRequest, TResponse, M>
-      io.deephaven.javascript.proto.dhinternal.grpcweb.client.Client<TRequest, TResponse> client(
-          M methodDescriptor, ClientRpcOptions props);
+    public static native <TRequest, TResponse, M> io.deephaven.javascript.proto.dhinternal.grpcweb.client.Client<TRequest, TResponse> client(
+        M methodDescriptor, ClientRpcOptions props);
 }

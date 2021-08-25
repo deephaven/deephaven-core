@@ -17,8 +17,7 @@ public interface ColorPalette {
     Color nextColor();
 
     /**
-     * Gets the {@link Color} at the
-     * {@code index} in the palette.
+     * Gets the {@link Color} at the {@code index} in the palette.
      *
      * @param index index
      * @return {@code index}th {@link Color} in the palette.

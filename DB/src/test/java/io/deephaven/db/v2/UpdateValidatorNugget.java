@@ -33,18 +33,20 @@ public class UpdateValidatorNugget implements EvalNuggetInterface {
     private Throwable exception = null;
 
     // We should listen for failures on the table, and if we get any, the test case is no good.
-    private final ShiftAwareListener failureListener = new InstrumentedShiftAwareListener("Failure Listener") {
-        @Override
-        public void onUpdate(Update update) {}
+    private final ShiftAwareListener failureListener =
+        new InstrumentedShiftAwareListener("Failure Listener") {
+            @Override
+            public void onUpdate(Update update) {}
 
-        @Override
-        public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
-            exception = originalException;
-            final StringWriter errors = new StringWriter();
-            originalException.printStackTrace(new PrintWriter(errors));
-            TestCase.fail(errors.toString());
-        }
-    };
+            @Override
+            public void onFailureInternal(Throwable originalException,
+                UpdatePerformanceTracker.Entry sourceEntry) {
+                exception = originalException;
+                final StringWriter errors = new StringWriter();
+                originalException.printStackTrace(new PrintWriter(errors));
+                TestCase.fail(errors.toString());
+            }
+        };
 
     public void validate(final String msg) {
         Assert.assertNull(exception);

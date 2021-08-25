@@ -29,7 +29,8 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
     }
 
     /**
-     * Get the underlying Table definition (which includes the names and types of all of the columns).
+     * Get the underlying Table definition (which includes the names and types of all of the
+     * columns).
      *
      * @return the TableDefinition for our user-visible table
      */
@@ -45,8 +46,8 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
     void add(Table newData) throws IOException;
 
     /**
-     * Delete the keys contained in the parameter table from this input table. This method will block until
-     * rows are deleted.
+     * Delete the keys contained in the parameter table from this input table. This method will
+     * block until rows are deleted.
      *
      * @param table The rows to delete.
      * @throws IOException If a problem occurred while deleting the rows.
@@ -56,8 +57,8 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
     }
 
     /**
-     * Delete the keys contained in the parameter table from this input table. This method will block until
-     * rows are deleted.
+     * Delete the keys contained in the parameter table from this input table. This method will
+     * block until rows are deleted.
      *
      * @param table The rows to delete.
      * @throws IOException If a problem occurred while deleting the rows.
@@ -66,6 +67,7 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
 
     /**
      * Return a user-readable description of this MutableInputTable.
+     * 
      * @return a description of this input table
      */
     String getDescription();
@@ -102,8 +104,9 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
     /**
      * Queries whether this MutableInputTable is editable in the current context.
      *
-     * @return true if this MutableInputTable may be edited, false otherwise
-     * TODO (deephaven/deephaven-core/issues/255): Add AuthContext and whatever else is appropriate
+     * @return true if this MutableInputTable may be edited, false otherwise TODO
+     *         (deephaven/deephaven-core/issues/255): Add AuthContext and whatever else is
+     *         appropriate
      */
     boolean canEdit();
 }

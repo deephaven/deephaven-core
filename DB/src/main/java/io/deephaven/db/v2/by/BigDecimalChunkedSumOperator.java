@@ -16,9 +16,11 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Map;
 
-public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregationOperator, ChunkSource<Values> {
+public class BigDecimalChunkedSumOperator
+    implements IterativeChunkedAggregationOperator, ChunkSource<Values> {
     private final String name;
-    private final ObjectArraySource<BigDecimal> resultColumn = new ObjectArraySource<>(BigDecimal.class);
+    private final ObjectArraySource<BigDecimal> resultColumn =
+        new ObjectArraySource<>(BigDecimal.class);
     private final NonNullCounter nonNullCount = new NonNullCounter();
     private final boolean isAbsolute;
 
@@ -27,61 +29,82 @@ public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregation
         this.name = name;
     }
 
-    public static BigDecimal plus(BigDecimal a, BigDecimal b){
-        return a == null ? b: (b == null ? a : a.add(b));
+    public static BigDecimal plus(BigDecimal a, BigDecimal b) {
+        return a == null ? b : (b == null ? a : a.add(b));
     }
 
-    public static BigDecimal minus(BigDecimal a, BigDecimal b){
+    public static BigDecimal minus(BigDecimal a, BigDecimal b) {
         return b == null ? a : a == null ? b.negate() : (a.subtract(b));
     }
 
     @Override
-    public void addChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void addChunk(BucketedContext context, Chunk<? extends Values> values,
+        LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+        IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+        WritableBooleanChunk<Values> stateModified) {
         final ObjectChunk<BigDecimal, ? extends Values> asObjectChunk = values.asObjectChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-            stateModified.set(ii, addChunk(asObjectChunk, destination, startPosition, length.get(ii)));
+            stateModified.set(ii,
+                addChunk(asObjectChunk, destination, startPosition, length.get(ii)));
         }
     }
 
     @Override
-    public void removeChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
+        LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+        IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+        WritableBooleanChunk<Values> stateModified) {
         final ObjectChunk<BigDecimal, ? extends Values> asObjectChunk = values.asObjectChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-            stateModified.set(ii, removeChunk(asObjectChunk, destination, startPosition, length.get(ii)));
+            stateModified.set(ii,
+                removeChunk(asObjectChunk, destination, startPosition, length.get(ii)));
         }
     }
 
     @Override
-    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices, IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
-        final ObjectChunk<BigDecimal, ? extends Values> preAsObjectChunk = previousValues.asObjectChunk();
-        final ObjectChunk<BigDecimal, ? extends Values> postAsObjectChunk = newValues.asObjectChunk();
+    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues,
+        Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices,
+        IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions,
+        IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+        final ObjectChunk<BigDecimal, ? extends Values> preAsObjectChunk =
+            previousValues.asObjectChunk();
+        final ObjectChunk<BigDecimal, ? extends Values> postAsObjectChunk =
+            newValues.asObjectChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-            stateModified.set(ii, modifyChunk(preAsObjectChunk, postAsObjectChunk, destination, startPosition, length.get(ii)));
+            stateModified.set(ii, modifyChunk(preAsObjectChunk, postAsObjectChunk, destination,
+                startPosition, length.get(ii)));
         }
     }
 
     @Override
-    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, long destination) {
+    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+        LongChunk<? extends KeyIndices> inputIndices, long destination) {
         return addChunk(values.asObjectChunk(), destination, 0, values.size());
     }
 
     @Override
-    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, long destination) {
+    public boolean removeChunk(SingletonContext context, int chunkSize,
+        Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices,
+        long destination) {
         return removeChunk(values.asObjectChunk(), destination, 0, values.size());
     }
 
     @Override
-    public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
-        return modifyChunk(previousValues.asObjectChunk(), newValues.asObjectChunk(), destination, 0, previousValues.size());
+    public boolean modifyChunk(SingletonContext context, int chunkSize,
+        Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues,
+        LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
+        return modifyChunk(previousValues.asObjectChunk(), newValues.asObjectChunk(), destination,
+            0, previousValues.size());
     }
 
-    private boolean addChunk(ObjectChunk<BigDecimal, ? extends Values> values, long destination, int chunkStart, int chunkSize) {
+    private boolean addChunk(ObjectChunk<BigDecimal, ? extends Values> values, long destination,
+        int chunkStart, int chunkSize) {
         final MutableInt chunkNonNull = new MutableInt(0);
         final BigDecimal partialSum = doSum(values, chunkStart, chunkSize, chunkNonNull);
 
@@ -97,7 +120,8 @@ public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregation
         return changed;
     }
 
-    private boolean removeChunk(ObjectChunk<BigDecimal, ? extends Values> values, long destination, int chunkStart, int chunkSize) {
+    private boolean removeChunk(ObjectChunk<BigDecimal, ? extends Values> values, long destination,
+        int chunkStart, int chunkSize) {
         final MutableInt chunkNonNull = new MutableInt(0);
         final BigDecimal partialSum = doSum(values, chunkStart, chunkSize, chunkNonNull);
 
@@ -114,11 +138,14 @@ public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregation
         return true;
     }
 
-    private boolean modifyChunk(ObjectChunk<BigDecimal, ? extends Values> preValues, ObjectChunk<BigDecimal, ? extends Values> postValues, long destination, int chunkStart, int chunkSize) {
+    private boolean modifyChunk(ObjectChunk<BigDecimal, ? extends Values> preValues,
+        ObjectChunk<BigDecimal, ? extends Values> postValues, long destination, int chunkStart,
+        int chunkSize) {
         final MutableInt preChunkNonNull = new MutableInt(0);
         final MutableInt postChunkNonNull = new MutableInt(0);
         final BigDecimal prePartialSum = doSum(preValues, chunkStart, chunkSize, preChunkNonNull);
-        final BigDecimal postPartialSum = doSum(postValues, chunkStart, chunkSize, postChunkNonNull);
+        final BigDecimal postPartialSum =
+            doSum(postValues, chunkStart, chunkSize, postChunkNonNull);
 
         final int nullDifference = postChunkNonNull.intValue() - preChunkNonNull.intValue();
 
@@ -139,11 +166,14 @@ public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregation
         return true;
     }
 
-    private BigDecimal doSum(ObjectChunk<BigDecimal, ? extends Values> values, int chunkStart, int chunkSize, MutableInt chunkNonNull) {
+    private BigDecimal doSum(ObjectChunk<BigDecimal, ? extends Values> values, int chunkStart,
+        int chunkSize, MutableInt chunkNonNull) {
         if (isAbsolute) {
-            return SumBigDecimalChunk.sumBigDecimalChunkAbs(values, chunkStart, chunkSize, chunkNonNull);
+            return SumBigDecimalChunk.sumBigDecimalChunkAbs(values, chunkStart, chunkSize,
+                chunkNonNull);
         } else {
-            return SumBigDecimalChunk.sumBigDecimalChunk(values, chunkStart, chunkSize, chunkNonNull);
+            return SumBigDecimalChunk.sumBigDecimalChunk(values, chunkStart, chunkSize,
+                chunkNonNull);
         }
     }
 
@@ -173,17 +203,20 @@ public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregation
     }
 
     @Override
-    public Chunk<? extends Values> getChunk(@NotNull GetContext context, @NotNull OrderedKeys orderedKeys) {
+    public Chunk<? extends Values> getChunk(@NotNull GetContext context,
+        @NotNull OrderedKeys orderedKeys) {
         return resultColumn.getChunk(context, orderedKeys);
     }
 
     @Override
-    public Chunk<? extends Values> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
+    public Chunk<? extends Values> getChunk(@NotNull GetContext context, long firstKey,
+        long lastKey) {
         return resultColumn.getChunk(context, firstKey, lastKey);
     }
 
     @Override
-    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull OrderedKeys orderedKeys) {
+    public void fillChunk(@NotNull FillContext context,
+        @NotNull WritableChunk<? super Values> destination, @NotNull OrderedKeys orderedKeys) {
         resultColumn.fillChunk(context, destination, orderedKeys);
     }
 

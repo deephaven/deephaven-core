@@ -4,8 +4,9 @@ import java.util.HashMap;
 
 public final class SimpleTypeMap<V> {
 
-    public static <V> SimpleTypeMap<V> create(V forBoolean, V forChar, V forByte, V forShort, V forInt, V forLong,
-                                              V forFloat, V forDouble, V forObject) {
+    public static <V> SimpleTypeMap<V> create(V forBoolean, V forChar, V forByte, V forShort,
+        V forInt, V forLong,
+        V forFloat, V forDouble, V forObject) {
         final HashMap<Class<?>, V> map = new HashMap<>();
         map.put(boolean.class, forBoolean);
         map.put(char.class, forChar);
