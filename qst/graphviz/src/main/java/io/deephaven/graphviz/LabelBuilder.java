@@ -30,6 +30,12 @@ import java.util.function.Function;
 
 public class LabelBuilder extends TableVisitorGeneric {
 
+    /**
+     * Constructs a string label for the given {@code table}.
+     *
+     * @param table the table
+     * @return the label
+     */
     public static String of(TableSpec table) {
         return table.walk(new LabelBuilder(new StringBuilder())).sb.toString();
     }

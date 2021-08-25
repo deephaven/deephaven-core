@@ -19,6 +19,14 @@ import static guru.nidi.graphviz.model.Factory.to;
 
 public class GraphVizBuilder {
 
+    /**
+     * Creates a directed {@link MutableGraph mutable graph} from the given {@code tables}. Tables that are equal will
+     * be represented by the same node in the graph. Dependencies will be represented as directed edges, from dependee
+     * to dependency.
+     *
+     * @param tables the tables
+     * @return the graph
+     */
     public static MutableGraph of(Iterable<TableSpec> tables) {
         NodesBuilder consumer = new NodesBuilder();
         ParentsVisitor.postOrderList(tables).forEach(consumer);
@@ -30,6 +38,14 @@ public class GraphVizBuilder {
         return graph;
     }
 
+    /**
+     * Creates a directed {@link MutableGraph mutable graph} from the given {@code tables}. Tables that are equal will
+     * be represented by the same node in the graph. Dependencies will be represented as directed edges, from dependee
+     * to dependency. Labels will be represented as nodes with directed edges towards the respective table node.
+     *
+     * @param tables the tables
+     * @return the graph
+     */
     public static MutableGraph of(LabeledTables tables) {
         NodesBuilder consumer = new NodesBuilder();
         ParentsVisitor.postOrderList(tables.tables()).forEach(consumer);
@@ -62,7 +78,7 @@ public class GraphVizBuilder {
         @Override
         public final void accept(TableSpec table) {
             MutableNode node =
-                mutNode(String.format("op_%d", current++)).add(Label.of(LabelBuilder.of(table)));
+                    mutNode(String.format("op_%d", current++)).add(Label.of(LabelBuilder.of(table)));
             if (identifiers.put(table, node) != null) {
                 throw new IllegalStateException();
             }

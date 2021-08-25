@@ -19,21 +19,21 @@ import java.util.concurrent.Callable;
  * Converts a list of QSTs into the GraphViz DOT format.
  */
 @Command(name = "graphviz", mixinStandardHelpOptions = true,
-    description = "Converts a list of QSTs into the GraphViz DOT format", version = "0.1.0")
+        description = "Converts a list of QSTs into the GraphViz DOT format", version = "0.1.0")
 class GraphVizMain implements Callable<Void> {
 
     @Option(names = {"-o", "--out"}, paramLabel = "OUT",
-        description = "The output file. If none specified, outputs to stdout.")
+            description = "The output file. If none specified, outputs to stdout.")
     Path output;
 
     @Option(names = {"-f", "--format"}, paramLabel = "FORMAT",
-        description = "The output format, one of: [ ${COMPLETION-CANDIDATES} ]. Defaults to DOT.",
-        defaultValue = "DOT")
+            description = "The output format, one of: [ ${COMPLETION-CANDIDATES} ]. Defaults to DOT.",
+            defaultValue = "DOT")
     Format format;
 
     @Parameters(arity = "1..*", paramLabel = "QST",
-        description = "QST file(s) to process. May be in the form <PATH> or <KEY>=<PATH>.",
-        converter = LabeledTableConverter.class)
+            description = "QST file(s) to process. May be in the form <PATH> or <KEY>=<PATH>.",
+            converter = LabeledTableConverter.class)
     LabeledTable[] inputTables;
 
     private Renderer render() {

@@ -13,7 +13,7 @@ class LabeledTableConverter implements ITypeConverter<LabeledTable> {
         int eqIx = value.indexOf('=');
         if (eqIx >= 0) {
             return LabeledTable.of(value.substring(0, eqIx),
-                TableSpec.file(Paths.get(value.substring(eqIx + 1))));
+                    TableSpec.file(Paths.get(value.substring(eqIx + 1))));
         }
         return LabeledTable.of(value, TableSpec.file(Paths.get(value)));
     }

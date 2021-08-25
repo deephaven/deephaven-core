@@ -13,12 +13,23 @@ import static guru.nidi.graphviz.model.Factory.to;
 
 public class AppendLinks implements LinkConsumer {
 
+    /**
+     * Add the edges for all the tables, with labels as constructed by {@link LinkDescriber}.
+     *
+     * @param identifiers the graph nodes
+     */
     public static void ofAll(Map<TableSpec, MutableNode> identifiers) {
         for (TableSpec table : identifiers.keySet()) {
             of(identifiers, table);
         }
     }
 
+    /**
+     * Add the edges from {@code table} to its dependencies, with labels as constructed by {@link LinkDescriber}.
+     *
+     * @param identifiers the graph nodes
+     * @param table the table
+     */
     public static void of(Map<TableSpec, MutableNode> identifiers, TableSpec table) {
         new AppendLinks(identifiers, table).appendLinks();
     }

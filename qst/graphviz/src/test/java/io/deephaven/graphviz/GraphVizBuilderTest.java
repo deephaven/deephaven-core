@@ -46,7 +46,7 @@ public class GraphVizBuilderTest {
         TableSpec t4 = TableSpec.merge(t2, t3);
         TableSpec t5 = TableSpec.merge(t4, t4);
         check(LabeledTables.builder().putMap("t1", t1).putMap("t2", t2).putMap("t3", t3)
-            .putMap("t4", t4).putMap("t5", t5).build(), "example-1-labeled.dot");
+                .putMap("t4", t4).putMap("t5", t5).build(), "example-1-labeled.dot");
     }
 
     @Test
@@ -69,10 +69,10 @@ public class GraphVizBuilderTest {
 
     private static String getResource(String resourceName) throws IOException {
         try (
-            InputStream in =
-                Objects.requireNonNull(GraphVizBuilderTest.class.getResourceAsStream(resourceName));
-            InputStreamReader inReader = new InputStreamReader(in);
-            BufferedReader reader = new BufferedReader(inReader)) {
+                InputStream in =
+                        Objects.requireNonNull(GraphVizBuilderTest.class.getResourceAsStream(resourceName));
+                InputStreamReader inReader = new InputStreamReader(in);
+                BufferedReader reader = new BufferedReader(inReader)) {
             return reader.lines().collect(Collectors.joining(System.lineSeparator()));
         }
     }
