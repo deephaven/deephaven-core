@@ -75,6 +75,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     private volatile ColumnChunkReader[] columnChunkReaders;
     private final boolean hasGroupingTable;
 
+    // We should consider moving this to column level if needed. Column-location level likely allows more parallelism.
     private final PageCache<ATTR> pageCache = new PageCache<>(PAGE_CACHE_SIZE);
 
     private ColumnChunkPageStore<ATTR>[] pageStores;
