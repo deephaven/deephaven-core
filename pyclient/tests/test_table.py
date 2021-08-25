@@ -4,12 +4,10 @@
 
 import time
 
-import pyarrow as pa
 from pyarrow import csv
 
-from pydeephaven import ComboAggregation
+from pydeephaven import ComboAggregation, SortDirection
 from pydeephaven import DHError
-from pydeephaven.constants import AggType
 from pydeephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -57,11 +55,13 @@ class TableTestCase(BaseTestCase):
         self.assertEquals(1, len(table2.schema))
 
     def test_usv(self):
-        ops = [Table.update,
-               Table.lazy_update,
-               Table.view,
-               Table.update_view,
-               Table.select]
+        ops = [
+            Table.update,
+            Table.lazy_update,
+            Table.view,
+            Table.update_view,
+            Table.select
+        ]
         pa_table = csv.read_csv(self.csv_file)
         test_table = self.session.import_table(pa_table)
         for op in ops:
@@ -75,17 +75,19 @@ class TableTestCase(BaseTestCase):
         test_table = self.session.import_table(pa_table)
         unique_table = test_table.select_distinct(column_names=["a"])
         self.assertLessEqual(unique_table.size, pa_table.num_rows)
+        unique_table = test_table.select_distinct(column_names=[])
+        self.assertLessEqual(unique_table.size, pa_table.num_rows)
 
-    def test_filter(self):
+    def test_where(self):
         pa_table = csv.read_csv(self.csv_file)
         test_table = self.session.import_table(pa_table)
-        filtered_table = test_table.filter(["a > 10", "b < 100"])
+        filtered_table = test_table.where(["a > 10", "b < 100"])
         self.assertLessEqual(filtered_table.size, pa_table.num_rows)
 
     def test_sort(self):
         pa_table = csv.read_csv(self.csv_file)
         test_table = self.session.import_table(pa_table)
-        sorted_table = test_table.sort(column_names=["a", "b"], directions=["DESC"])
+        sorted_table = test_table.sort(column_names=["a", "b"], directions=[SortDirection.DESCENDING])
         df = sorted_table.snapshot().to_pandas()
 
         self.assertTrue(df.iloc[:, 0].is_monotonic_decreasing)
@@ -128,7 +130,7 @@ class TableTestCase(BaseTestCase):
     def test_cross_join(self):
         pa_table = csv.read_csv(self.csv_file)
         left_table = self.session.import_table(pa_table)
-        right_table = left_table.filter(["a % 2 > 0 && b % 3 == 1"]).drop_columns(column_names=["b", "c", "d"])
+        right_table = left_table.where(["a % 2 > 0 && b % 3 == 1"]).drop_columns(column_names=["b", "c", "d"])
         left_table = left_table.drop_columns(column_names=["e"])
         result_table = left_table.join(right_table, keys=["a"], columns_to_add=["e"])
         self.assertTrue(result_table.size < left_table.size)

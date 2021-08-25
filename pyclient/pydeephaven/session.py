@@ -4,7 +4,6 @@
 
 import os
 import threading
-# from concurrent.futures import ThreadPoolExecutor
 from typing import List
 
 import pyarrow
@@ -13,11 +12,12 @@ from bitstring import BitArray
 from pydeephaven._arrow_flight_service import ArrowFlightService
 from pydeephaven._console_service import ConsoleService
 from pydeephaven._session_service import SessionService
+from pydeephaven._table_ops import TimeTableOp, EmptyTableOp, MergeTablesOp
 from pydeephaven._table_service import TableService
 from pydeephaven.dherror import DHError
 from pydeephaven.proto import ticket_pb2
 from pydeephaven.query import Query
-from pydeephaven.table import Table, TimeTable, EmptyTable
+from pydeephaven.table import Table
 
 
 class Session:
@@ -30,11 +30,12 @@ class Session:
         is_alive (bool): check if the session is still alive (may refresh the session)
     """
 
-    def __init__(self, host: str = None, port: int = None):
+    def __init__(self, host: str = None, port: int = None, never_timeout: bool = True):
         """ Initialize a Session object that connects to the Deephaven server
         Args:
             host (str): the host name or IP address of the remote machine, default is 'localhost'
             port (int): the port number that Deephaven server is listening on, default is 10000
+            never_timeout (bool, optional): never allow the session to timeout, default is True
 
         Returns:
             None
@@ -64,6 +65,8 @@ class Session:
         self._console_service = None
         self._flight_service = None
         self._tables = {}
+        self._never_timeout = never_timeout
+        self._keep_alive_timer = None
 
         self._connect()
 
@@ -116,8 +119,24 @@ class Session:
 
     def _connect(self):
         with self._r_lock:
-            self.grpc_channel, self.session_token = self.session_service.connect()
+            self.grpc_channel, self.session_token, self._timeout = self.session_service.connect()
             self.is_connected = True
+            if self._never_timeout:
+                self._keep_alive()
+
+    def _keep_alive(self):
+        if self._keep_alive_timer:
+            self._refresh_token()
+        self._keep_alive_timer = threading.Timer(self._timeout / 2 / 1000, self._keep_alive)
+        self._keep_alive_timer.daemon = True
+        self._keep_alive_timer.start()
+
+    def _refresh_token(self):
+        with self._r_lock:
+            try:
+                self.session_token = self.session_service.refresh_token()
+            except DHError:
+                self.is_connected = False
 
     @property
     def is_alive(self):
@@ -125,12 +144,15 @@ class Session:
             if not self.is_connected:
                 return False
 
+            if self._never_timeout:
+                return True
+
             try:
-                self.session_token = self.session_service.keep_alive()
-            except Exception as e:
+                self.session_token = self.session_service.refresh_token()
+                return True
+            except DHError as e:
                 self.is_connected = False
-                # TODO: log the exception
-            return True
+                return False
 
     def close(self) -> None:
         """ Close the Session object if it hasn't timed out already.
@@ -215,7 +237,7 @@ class Session:
         with self._r_lock:
             self.console_service.bind_table(table=table, variable_name=name)
 
-    def time_table(self, start_time: int = 0, period: int = 1000000000) -> TimeTable:
+    def time_table(self, start_time: int = 0, period: int = 1000000000) -> Table:
         """ Create a time table on the server.
 
         Args:
@@ -223,28 +245,30 @@ class Session:
             period (int): the interval at which the time table ticks (adds a row), default is 1 second
 
         Returns:
-            a TimeTable object
+            a Table object
 
         Raises:
             DHError
 
         """
-        return self.table_service.time_table(start_time=start_time, period=period)
+        table_op = TimeTableOp(start_time=start_time, period=period)
+        return self.table_service.grpc_table_op(None, table_op)
 
-    def empty_table(self, size: int) -> EmptyTable:
+    def empty_table(self, size: int) -> Table:
         """ create an empty table on the server.
 
         Args:
             size (int): the size of the empty table in number of rows
 
         Returns:
-            a EmptyTable object
+            a Table object
 
         Raises:
             DHError
 
         """
-        return self.table_service.empty_table(size=size)
+        table_op = EmptyTableOp(size=size)
+        return self.table_service.grpc_table_op(None, table_op)
 
     def import_table(self, data: pyarrow.Table) -> Table:
         """ Import the pyarrow table as a new Deephaven table on the server.
@@ -264,7 +288,7 @@ class Session:
         """
         return self.flight_service.import_table(data=data)
 
-    def merge_tables(self, tables: List[Table], key_column: str = "") -> Table:
+    def merge_tables(self, tables: List[Table], key_column: str = None) -> Table:
         """ Merge several tables into one table on the server.
 
         Args:
@@ -278,7 +302,8 @@ class Session:
             DHError
 
         """
-        return self.table_service.merge(tables, key_column=key_column)
+        table_op = MergeTablesOp(tables=tables, key_column=key_column)
+        return self.table_service.grpc_table_op(None, table_op)
 
     def query(self, table: Table) -> Query:
         """ Create a Query object to define a sequence of operations on a Deephaven table.

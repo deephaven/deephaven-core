@@ -20,12 +20,12 @@ class SessionService:
         try:
             response = self._grpc_session_stub.NewSession(
                 session_pb2.HandshakeRequest(auth_protocol=1, payload=b'hello pydeephaven'))
-            return grpc_channel, response.session_token
+            return grpc_channel, response.session_token, response.token_expiration_delay_millis
         except Exception as e:
             grpc_channel.close()
             raise DHError("failed to connect to the server.") from e
 
-    def keep_alive(self):
+    def refresh_token(self):
         try:
             response = self._grpc_session_stub.RefreshSessionToken(
                 session_pb2.HandshakeRequest(auth_protocol=0, payload=self.session.session_token),

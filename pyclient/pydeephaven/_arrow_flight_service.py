@@ -1,7 +1,7 @@
 #
 #  Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
-
+import pyarrow
 import pyarrow as pa
 import pyarrow.flight as paflight
 from pydeephaven.dherror import DHError
@@ -65,7 +65,7 @@ class ArrowFlightService:
         self.session = session
         self._flight_client = paflight.connect((session.host, session.port))
 
-    def import_table(self, data):
+    def import_table(self, data:pyarrow.Table):
         try:
             options = paflight.FlightCallOptions(headers=self.session.grpc_metadata)
             if not isinstance(data, (pa.Table, pa.RecordBatch)):
@@ -86,7 +86,7 @@ class ArrowFlightService:
         except Exception as e:
             raise DHError("failed to create a Deephaven table from Arrow data.") from e
 
-    def snapshot_table(self, table):
+    def snapshot_table(self, table:Table):
         try:
             options = paflight.FlightCallOptions(headers=self.session.grpc_metadata)
             flight_ticket = paflight.Ticket(table.ticket.ticket)

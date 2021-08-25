@@ -13,7 +13,7 @@ from pydeephaven.proto import table_pb2
 @dataclass
 class AggBase(ABC):
     @abstractmethod
-    def build_grpc_request(self):
+    def make_grpc_request(self):
         ...
 
 
@@ -22,7 +22,7 @@ class CommonAgg(AggBase):
     agg_type: AggType
     column_specs: List[str]
 
-    def build_grpc_request(self):
+    def make_grpc_request(self):
         return table_pb2.ComboAggregateRequest.Aggregate(type=self.agg_type.value, match_pairs=self.column_specs)
 
 
@@ -34,7 +34,7 @@ class WeightedAvgAgg(CommonAgg):
         super().__init__(AggType.WEIGHTED_AVG, column_specs=column_specs)
         self.weight_column = weight_column
 
-    def build_grpc_request(self):
+    def make_grpc_request(self):
         return table_pb2.ComboAggregateRequest.Aggregate(type=self.agg_type.value, match_pairs=self.column_specs,
                                                          column_name=self.weight_column)
 
@@ -47,7 +47,7 @@ class PctAgg(CommonAgg):
         super().__init__(AggType.PERCENTILE, column_specs=column_specs)
         self.percentile = percentile
 
-    def build_grpc_request(self):
+    def make_grpc_request(self):
         return table_pb2.ComboAggregateRequest.Aggregate(type=self.agg_type.value, match_pairs=self.column_specs,
                                                          percentile=self.percentile)
 
@@ -60,7 +60,7 @@ class CountAgg(AggBase):
         super().__init__(AggType.COUNT)
         self.count_column = count_column
 
-    def build_grpc_request(self):
+    def make_grpc_request(self):
         return table_pb2.ComboAggregateRequest.Aggregate(type=self.agg_type.value, column_name=self.result_column)
 
 

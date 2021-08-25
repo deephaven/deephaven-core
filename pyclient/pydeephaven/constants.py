@@ -2,7 +2,7 @@
 #  Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
 
-from enum import Enum
+from enum import Enum, auto
 
 from pydeephaven.proto import table_pb2
 
@@ -16,7 +16,7 @@ class MatchRule(Enum):
 
 class AggType(Enum):
     SUM = table_pb2.ComboAggregateRequest.AggType.SUM
-    ABS_SUM = table_pb2.ComboAggregateRequest.AggType.SUM
+    ABS_SUM = table_pb2.ComboAggregateRequest.AggType.ABS_SUM
     ARRAY = table_pb2.ComboAggregateRequest.AggType.ARRAY
     AVG = table_pb2.ComboAggregateRequest.AggType.AVG
     COUNT = table_pb2.ComboAggregateRequest.AggType.COUNT
@@ -36,3 +36,33 @@ class SortDirection(Enum):
     DESCENDING = 1
     ASCENDING = 2
     REVERSE = 3
+
+
+class TableOpType(Enum):
+    EMPTY_TABLE = auto()
+    TIME_TABLE = auto()
+    DROP_COLUMNS = auto()
+    UPDATE = auto()
+    LAZY_UPDATE = auto()
+    VIEW = auto()
+    UPDATE_VIEW = auto()
+    SELECT = auto()
+    SELECT_DISTINCT = auto()
+    UNSTRUCTURED_FILTER = auto()
+    SORT = auto()
+    HEAD = auto()
+    TAIL = auto()
+    HEAD_BY = auto()
+    TAIL_BY = auto()
+    UNGROUP = auto()
+    MERGE_TABLES = auto()
+    FLATTEN = auto()
+    CROSS_JOIN = auto()
+    NATURAL_JOIN = auto()
+    EXACT_JOIN = auto()
+    LEFT_JOIN = auto()
+    AS_OF_JOIN = auto()
+    COMBO_AGG = auto()
+
+
+

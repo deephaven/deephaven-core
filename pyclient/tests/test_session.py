@@ -1,7 +1,7 @@
 #
 #  Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
-
+import unittest
 from time import sleep
 
 import pyarrow as pa
@@ -9,7 +9,6 @@ from pyarrow import csv
 
 from pydeephaven import DHError
 from pydeephaven import Session
-from pydeephaven.table import EmptyTable, TimeTable
 from tests.testbase import BaseTestCase
 
 
@@ -31,16 +30,26 @@ class SessionTestCase(BaseTestCase):
         with self.assertRaises(DHError):
             session = Session(port=80)
 
+    @unittest.skipIf(True, "don't want to wait until timeout is changeable.")
+    def test_never_timeout(self):
+        session = Session()
+        for _ in range(2):
+            token1 = session.session_token
+            sleep(300)
+            token2 = session.session_token
+            self.assertNotEqual(token1, token2)
+        session.close()
+
     def test_empty_table(self):
         session = Session()
         t = session.empty_table(1000)
-        self.assertIsInstance(t, EmptyTable)
+        self.assertEqual(t.size, 1000)
         session.close()
 
     def test_time_table(self):
         session = Session()
         t = session.time_table(period=100000)
-        self.assertIsInstance(t, TimeTable)
+        self.assertFalse(t.is_static)
         session.close()
 
     def test_merge_tables(self):
@@ -48,7 +57,7 @@ class SessionTestCase(BaseTestCase):
         pa_table = csv.read_csv(self.csv_file)
         table1 = session.import_table(pa_table)
         table2 = table1.group_by(column_names=["a", "c"]).ungroup(column_names=["b", "d", "e"])
-        table3 = table1.filter(["a % 2 > 0 && b % 3 == 1"])
+        table3 = table1.where(["a % 2 > 0 && b % 3 == 1"])
         result_table = session.merge_tables(tables=[table1, table2, table3], key_column="a")
 
         self.assertTrue(result_table.size > table1.size)
