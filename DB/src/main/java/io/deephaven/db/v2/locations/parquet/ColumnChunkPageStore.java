@@ -23,10 +23,11 @@ import java.lang.ref.WeakReference;
 import java.util.function.Supplier;
 
 public abstract class ColumnChunkPageStore<ATTR extends Any>
-        implements PageStore<ATTR, ATTR, ChunkPage<ATTR>>, Page<ATTR>, SafeCloseable, Releasable {
+    implements PageStore<ATTR, ATTR, ChunkPage<ATTR>>, Page<ATTR>, SafeCloseable, Releasable {
 
     private static final int CACHE_SIZE =
-            Configuration.getInstance().getIntegerWithDefault("ColumnChunkPageStore.cacheSize", 1 << 13);
+        Configuration.getInstance().getIntegerWithDefault("ColumnChunkPageStore.cacheSize",
+            1 << 13);
     private static final WeakReference<?> NULL_PAGE = new WeakReference<>(null);
 
     private final ColumnChunkReader columnChunkReader;
@@ -37,14 +38,16 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     final ColumnChunkReader.ColumnPageReaderIterator columnPageReaderIterator;
 
     final IntrusiveSoftLRU<IntrusivePage<ATTR>> intrusiveSoftLRU =
-            new IntrusiveSoftLRU<>(IntrusiveSoftLRU.Node.Adapter.<IntrusivePage<ATTR>>getInstance(), CACHE_SIZE);
+        new IntrusiveSoftLRU<>(IntrusiveSoftLRU.Node.Adapter.<IntrusivePage<ATTR>>getInstance(),
+            CACHE_SIZE);
 
     static <ATTR extends Any> WeakReference<IntrusivePage<ATTR>> getNullPage() {
-        //noinspection unchecked
+        // noinspection unchecked
         return (WeakReference<IntrusivePage<ATTR>>) NULL_PAGE;
     }
 
-    static class IntrusivePage<ATTR extends Any> extends IntrusiveSoftLRU.Node.Impl<IntrusivePage<ATTR>> {
+    static class IntrusivePage<ATTR extends Any>
+        extends IntrusiveSoftLRU.Node.Impl<IntrusivePage<ATTR>> {
 
         private final ChunkPage<ATTR> page;
 
@@ -64,29 +67,37 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         public final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore;
 
         private CreatorResult(@NotNull final ColumnChunkPageStore<ATTR> pageStore,
-                              final Supplier<Chunk<ATTR>> dictionaryChunkSupplier,
-                              final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore) {
+            final Supplier<Chunk<ATTR>> dictionaryChunkSupplier,
+            final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysPageStore) {
             this.pageStore = pageStore;
             this.dictionaryChunkSupplier = dictionaryChunkSupplier;
             this.dictionaryKeysPageStore = dictionaryKeysPageStore;
         }
     }
 
-    public static <ATTR extends Any> CreatorResult<ATTR> create(@NotNull final ColumnChunkReader columnChunkReader,
-                                                                final long mask,
-                                                                @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
+    public static <ATTR extends Any> CreatorResult<ATTR> create(
+        @NotNull final ColumnChunkReader columnChunkReader,
+        final long mask,
+        @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
         final boolean fixedSizePages = columnChunkReader.getPageFixedSize() >= 1;
         final ColumnChunkPageStore<ATTR> columnChunkPageStore = fixedSizePages
-                ? new FixedPageSizeColumnChunkPageStore<>(columnChunkReader, mask, toPage)
-                : new VariablePageSizeColumnChunkPageStore<>(columnChunkReader, mask, toPage);
-        final ToPage<DictionaryKeys, long[]> dictionaryKeysToPage = toPage.getDictionaryKeysToPage();
-        final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysColumnChunkPageStore = dictionaryKeysToPage == null ? null : fixedSizePages
-                ? new FixedPageSizeColumnChunkPageStore<>(columnChunkReader, mask, dictionaryKeysToPage)
-                : new VariablePageSizeColumnChunkPageStore<>(columnChunkReader, mask, dictionaryKeysToPage);
-        return new CreatorResult<>(columnChunkPageStore, toPage::getDictionaryChunk, dictionaryKeysColumnChunkPageStore);
+            ? new FixedPageSizeColumnChunkPageStore<>(columnChunkReader, mask, toPage)
+            : new VariablePageSizeColumnChunkPageStore<>(columnChunkReader, mask, toPage);
+        final ToPage<DictionaryKeys, long[]> dictionaryKeysToPage =
+            toPage.getDictionaryKeysToPage();
+        final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysColumnChunkPageStore =
+            dictionaryKeysToPage == null ? null
+                : fixedSizePages
+                    ? new FixedPageSizeColumnChunkPageStore<>(columnChunkReader, mask,
+                        dictionaryKeysToPage)
+                    : new VariablePageSizeColumnChunkPageStore<>(columnChunkReader, mask,
+                        dictionaryKeysToPage);
+        return new CreatorResult<>(columnChunkPageStore, toPage::getDictionaryChunk,
+            dictionaryKeysColumnChunkPageStore);
     }
 
-    ColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader, final long mask, final ToPage<ATTR, ?> toPage) throws IOException {
+    ColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader, final long mask,
+        final ToPage<ATTR, ?> toPage) throws IOException {
         Require.requirement(((mask + 1) & mask) == 0, "mask is one less than a power of two");
 
         this.columnChunkReader = columnChunkReader;
@@ -97,7 +108,8 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         this.columnPageReaderIterator = columnChunkReader.getPageIterator();
     }
 
-    ChunkPage<ATTR> toPage(final long offset, @NotNull final ColumnPageReader columnPageReader) throws IOException {
+    ChunkPage<ATTR> toPage(final long offset, @NotNull final ColumnPageReader columnPageReader)
+        throws IOException {
         return toPage.toPage(offset, columnPageReader, mask);
     }
 
@@ -122,7 +134,8 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     }
 
     /**
-     * These implementations don't use the FillContext parameter, so we're create a helper method to ignore it.
+     * These implementations don't use the FillContext parameter, so we're create a helper method to
+     * ignore it.
      */
     @NotNull
     public ChunkPage<ATTR> getPageContaining(final long row) {

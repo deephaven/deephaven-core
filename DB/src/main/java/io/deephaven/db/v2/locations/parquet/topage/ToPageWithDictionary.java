@@ -18,16 +18,17 @@ import java.util.function.Function;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any> implements ToPage<ATTR, DATA_TYPE[]> {
+public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
+    implements ToPage<ATTR, DATA_TYPE[]> {
 
     private final Class<DATA_TYPE> nativeType;
     private final ChunkDictionary<DATA_TYPE, ATTR> chunkDictionary;
     private final Function<Object, DATA_TYPE[]> convertResultFallbackFun;
 
     ToPageWithDictionary(
-            @NotNull final Class<DATA_TYPE> nativeType,
-            @NotNull final ChunkDictionary<DATA_TYPE, ATTR> chunkDictionary,
-            @NotNull final Function<Object, DATA_TYPE[]> convertResultFallbackFun) {
+        @NotNull final Class<DATA_TYPE> nativeType,
+        @NotNull final ChunkDictionary<DATA_TYPE, ATTR> chunkDictionary,
+        @NotNull final Function<Object, DATA_TYPE[]> convertResultFallbackFun) {
         this.nativeType = nativeType;
         this.chunkDictionary = chunkDictionary;
         this.convertResultFallbackFun = convertResultFallbackFun;
@@ -47,7 +48,8 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any> implements ToPage
 
     @Override
     @NotNull
-    public final Object getResult(@NotNull final ColumnPageReader columnPageReader) throws IOException {
+    public final Object getResult(@NotNull final ColumnPageReader columnPageReader)
+        throws IOException {
         if (columnPageReader.getDictionary() == ColumnChunkReader.NULL_DICTIONARY) {
             return ToPage.super.getResult(columnPageReader);
         }
@@ -66,7 +68,7 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any> implements ToPage
         }
 
         final int[] from = (int[]) result;
-        //noinspection unchecked
+        // noinspection unchecked
         final DATA_TYPE[] to = (DATA_TYPE[]) Array.newInstance(nativeType, from.length);
 
         for (int ii = 0; ii < from.length; ++ii) {
@@ -110,7 +112,8 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any> implements ToPage
             }
 
             @Override
-            public Object getResult(@NotNull final ColumnPageReader columnPageReader) throws IOException {
+            public Object getResult(@NotNull final ColumnPageReader columnPageReader)
+                throws IOException {
                 return ToPageWithDictionary.this.getResult(columnPageReader);
             }
 

@@ -46,7 +46,8 @@ public interface ColumnChunkReader {
 
     /**
      * @return Supplier for a Parquet dictionary for this column chunk
-     * @apiNote The result will never return {@code null}. It will instead supply {@link #NULL_DICTIONARY}.
+     * @apiNote The result will never return {@code null}. It will instead supply
+     *          {@link #NULL_DICTIONARY}.
      */
     Supplier<Dictionary> getDictionarySupplier();
 

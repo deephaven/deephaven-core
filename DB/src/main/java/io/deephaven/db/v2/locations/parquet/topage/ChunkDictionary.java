@@ -14,17 +14,18 @@ import java.util.function.Supplier;
 /**
  * Chunk-backed dictionary for use by {@link ToPage} implementations.
  */
-public class ChunkDictionary<T, ATTR extends Attributes.Any> implements StringSetImpl.ReversibleLookup<T> {
+public class ChunkDictionary<T, ATTR extends Attributes.Any>
+    implements StringSetImpl.ReversibleLookup<T> {
 
     @FunctionalInterface
     public interface Lookup<T> {
 
         /**
-         * Apply whatever lookup logic needs to be applied to a "raw" {@link Dictionary} in order to get a value for
-         * the supplied {@code key}.
+         * Apply whatever lookup logic needs to be applied to a "raw" {@link Dictionary} in order to
+         * get a value for the supplied {@code key}.
          *
          * @param dictionary The {@link Dictionary}
-         * @param key        The key
+         * @param key The key
          * @return The value that should be mapped by the enclosing {@link ChunkDictionary}
          */
         T lookup(@NotNull final Dictionary dictionary, final int key);
@@ -37,12 +38,15 @@ public class ChunkDictionary<T, ATTR extends Attributes.Any> implements StringSe
     private final Supplier<TObjectIntMap<T>> reverseMapSupplier;
 
     /**
-     * Construct a ChunkDictionary with the supplied {@link Lookup} function and {@link Dictionary} supplier
+     * Construct a ChunkDictionary with the supplied {@link Lookup} function and {@link Dictionary}
+     * supplier
      *
-     * @param lookup             Value {@link Lookup} function
+     * @param lookup Value {@link Lookup} function
      * @param dictionarySupplier {@link Dictionary} supplier
      */
-    ChunkDictionary(@NotNull final Lookup<T> lookup, @NotNull final Supplier<Dictionary> dictionarySupplier) {
+    ChunkDictionary(
+        @NotNull final Lookup<T> lookup,
+        @NotNull final Supplier<Dictionary> dictionarySupplier) {
         this.lookup = lookup;
         this.dictionarySupplier = dictionarySupplier;
         this.valuesSupplier = new LazyCachingSupplier<>(() -> {
@@ -70,8 +74,7 @@ public class ChunkDictionary<T, ATTR extends Attributes.Any> implements StringSe
     @Override
     public final T get(final long index) {
         final ObjectChunk<T, ATTR> values = getChunk();
-        return index < 0 || index >= values.size() ? null :
-                values.get((int) index);
+        return index < 0 || index >= values.size() ? null : values.get((int) index);
     }
 
     @Override

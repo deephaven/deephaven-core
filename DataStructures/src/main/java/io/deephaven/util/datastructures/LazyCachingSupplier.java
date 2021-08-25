@@ -6,8 +6,8 @@ import java.lang.ref.SoftReference;
 import java.util.function.Supplier;
 
 /**
- * {@link Supplier} wrapper that caches the result in a {@link SoftReference}. Only suitable to wrap suppliers that
- * are safely repeatable and don't return {@code null}.
+ * {@link Supplier} wrapper that caches the result in a {@link SoftReference}. Only suitable to wrap
+ * suppliers that are safely repeatable and don't return {@code null}.
  */
 public final class LazyCachingSupplier<T> implements Supplier<T> {
 
@@ -18,7 +18,8 @@ public final class LazyCachingSupplier<T> implements Supplier<T> {
     /**
      * Construct a {@link Supplier} wrapper.
      *
-     * @param internalSupplier The {@link Supplier} to wrap. Must be safely repeatable and must not return {@code null}.
+     * @param internalSupplier The {@link Supplier} to wrap. Must be safely repeatable and must not
+     *        return {@code null}.
      */
     public LazyCachingSupplier(@NotNull final Supplier<T> internalSupplier) {
         this.internalSupplier = internalSupplier;
