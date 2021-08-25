@@ -6,7 +6,6 @@ package io.deephaven.grpc_api.session;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.rpc.Code;
-import com.google.rpc.Status;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
@@ -18,7 +17,6 @@ import io.deephaven.db.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.db.tables.remotequery.QueryProcessingResults;
 import io.deephaven.db.tables.utils.QueryPerformanceNugget;
 import io.deephaven.db.tables.utils.QueryPerformanceRecorder;
-import io.deephaven.db.util.liveness.Liveness;
 import io.deephaven.db.util.liveness.LivenessArtifact;
 import io.deephaven.db.util.liveness.LivenessReferent;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
@@ -40,7 +38,6 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.auth.AuthContext;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.grpc.StatusRuntimeException;
-import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -1161,6 +1158,8 @@ public class SessionState {
 
         /**
          * Invoke this method to set the error handler to be notified if this export fails. Only one error handler may be set.
+         * <p></p>
+         * Not synchronized, it is expected that the provided callback handles thread safety itself.
          *
          * @param errorHandler the error handler to be notified
          * @return this builder
@@ -1175,19 +1174,20 @@ public class SessionState {
 
         /**
          * Invoke this method to set the error handler to be notified if this export fails. Only one error handler may be set.
-         * This is a convenience method for use with {@link io.grpc.stub.StreamObserver}.
+         * <p></p>
+         * Not synchronized, it is expected that the provided callback handles thread safety itself.
          *
          * @param errorHandler the error handler to be notified
          * @return this builder
          */
-        public ExportBuilder<T> onError(final ExportErrorGrpcHandler errorHandler) {
+        public ExportBuilder<T> onErrorHandler(final ExportErrorGrpcHandler errorHandler) {
             return onError(((resultState, errorContext, dependentExportId) -> {
                 final String dependentStr = dependentExportId == null ? ""
                         : (" (related parent export id: " + dependentExportId + ")");
-                errorHandler.onError(StatusProto.toStatusRuntimeException(Status.newBuilder()
-                        .setCode(Code.FAILED_PRECONDITION.getNumber())
-                        .setMessage("Details Logged w/ID '" + errorContext + "'" + dependentStr)
-                        .build()));
+                errorHandler.onError(GrpcUtil.statusRuntimeException(
+                        Code.FAILED_PRECONDITION,
+                        "Details Logged w/ID '" + errorContext + "'" + dependentStr
+                ));
             }));
         }
 
@@ -1195,16 +1195,16 @@ public class SessionState {
          * Invoke this method to set the error handler to be notified if this export fails. Only one error handler may be set.
          * This is a convenience method for use with {@link io.grpc.stub.StreamObserver}.
          * <p></p>
-         * This differs from {@link #onError(ExportErrorGrpcHandler)} in that it will synchronize on an instance, usually
-         * the observer in question, to ensure thread safety when interacting with the grpc response stream.
+         * Invoking onError will be synchronized on the StreamObserver instance, so callers can rely on that mechanism
+         * to deal with more than one thread trying to write to the stream.
          *
-         * @param errorHandler the error handler to be notified
+         * @param streamObserver the streamObserver to be notified of any error
          * @return this builder
          */
-        public ExportBuilder<T> onErrorSynchronized(Object instance, final ExportErrorGrpcHandler errorHandler) {
-            return onError(statusRuntimeException -> {
-                synchronized (instance) {
-                    errorHandler.onError(statusRuntimeException);
+        public ExportBuilder<T> onError(StreamObserver<?> streamObserver) {
+            return onErrorHandler(statusRuntimeException -> {
+                synchronized (streamObserver) {
+                    streamObserver.onError(statusRuntimeException);
                 }
             });
         }

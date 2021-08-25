@@ -24,7 +24,8 @@ public class BrowserStreamInterceptor implements ServerInterceptor {
     /**
      * Present to indicate that this is a half-close operation. If this is the first payload,
      * ticket and sequence are not required, and the payload will be considered. Otherwise,
-     * payload and sequence are required, and payload will be ignored.
+     * payload and sequence are required. The payload will be ignored to enable a client to
+     * open a stream, never send a message, and then close it.
      */
     private static final Metadata.Key<String> HALF_CLOSE_HEADER = Metadata.Key.of("x-deephaven-stream-halfclose", Metadata.ASCII_STRING_MARSHALLER);
 

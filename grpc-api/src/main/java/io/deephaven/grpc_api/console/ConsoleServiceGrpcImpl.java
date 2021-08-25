@@ -115,7 +115,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             }
 
             session.newExport(request.getResultId())
-                    .onError(responseObserver::onError)
+                    .onError(responseObserver)
                     .submit(() -> {
                         final ScriptSession scriptSession;
                         if (sessionType.equals(WORKER_CONSOLE_TYPE)) {
@@ -159,7 +159,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             session.nonExport()
                     .requiresSerialQueue()
                     .require(exportedConsole)
-                    .onError(responseObserver::onError)
+                    .onError(responseObserver)
                     .submit(() -> {
                         ScriptSession scriptSession = exportedConsole.get();
 
@@ -197,7 +197,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
             ExportBuilder<?> exportBuilder = session.nonExport()
                     .requiresSerialQueue()
-                    .onError(responseObserver::onError);
+                    .onError(responseObserver);
 
             if (request.hasConsoleId()) {
                 exportedConsole = ticketRouter.resolve(session, request.getConsoleId());
@@ -228,7 +228,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
             session.newExport(request.getTableId())
                     .require(exportedConsole)
-                    .onError(responseObserver::onError)
+                    .onError(responseObserver)
                     .submit(() -> liveTableMonitor.exclusiveLock().computeLocked(() -> {
                         ScriptSession scriptSession = exportedConsole.get();
                         String tableName = request.getTableName();
@@ -289,7 +289,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                             SessionState.ExportObject<ScriptSession> exportedConsole = session.getExport(request.getConsoleId());
                             session.nonExport()
                                     .require(exportedConsole)
-                                    .onErrorSynchronized(responseObserver, responseObserver::onError)
+                                    .onError(responseObserver)
                                     .submit(() -> {
                                         final VersionedTextDocumentIdentifier doc = request.getTextDocument();
                                         ScriptSession scriptSession = exportedConsole.get();
@@ -352,7 +352,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
             session.nonExport()
                     .require(exportedConsole)
-                    .onError(responseObserver::onError)
+                    .onError(responseObserver)
                     .submit(() -> {
                         ScriptSession scriptSession = exportedConsole.get();
 

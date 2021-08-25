@@ -264,7 +264,7 @@ public class GrpcServiceOverrideBuilder {
 
                 session.nonExport()
                         .require(browserStream)
-                        .onError(responseObserver::onError)
+                        .onError(responseObserver)
                         .submit(() -> {
                             browserStream.get().onMessageReceived(request, streamData);
                             responseObserver.onNext(null);//TODO simple response payload

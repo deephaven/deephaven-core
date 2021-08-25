@@ -76,7 +76,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             if (session != null) {
                 session.nonExport()
                         .require(export)
-                        .onError(responseObserver::onError)
+                        .onError(responseObserver)
                         .submit(() -> {
                             responseObserver.onNext(export.get());
                             responseObserver.onCompleted();
@@ -108,7 +108,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             if (session != null) {
                 session.nonExport()
                         .require(export)
-                        .onError(responseObserver::onError)
+                        .onError(responseObserver)
                         .submit(() -> {
                             responseObserver.onNext(Flight.SchemaResult.newBuilder()
                                     .setSchema(export.get().getSchema())
@@ -140,7 +140,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             final SessionState.ExportObject<BaseTable> export = ticketRouter.resolve(session, request);
             session.nonExport()
                     .require(export)
-                    .onError(responseObserver::onError)
+                    .onError(responseObserver)
                     .submit(() -> {
                         final BaseTable table = export.get();
 

@@ -18,10 +18,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.util.LongSizedDataStructure;
-import io.deephaven.db.util.liveness.Liveness;
-import io.deephaven.db.util.liveness.LivenessReferent;
 import io.deephaven.db.util.liveness.SingletonLivenessManager;
-import io.deephaven.db.v2.DynamicNode;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 import io.deephaven.db.v2.utils.BarrageMessage;
@@ -177,7 +174,7 @@ public class ArrowFlightUtil {
                     }
                     resultExportBuilder = ticketRouter
                             .<Table>publish(session, mi.descriptor)
-                            .onErrorSynchronized(observer, observer::onError);
+                            .onError(observer);
                     manage(resultExportBuilder.getExport());
                 }
 
@@ -411,7 +408,7 @@ public class ArrowFlightUtil {
 
                     onExportResolvedContinuation = session.nonExport()
                             .require(parent)
-                            .onError(listener::onError)
+                            .onError(listener)
                             .submit(() -> onExportResolved(parent));
                 }
             });

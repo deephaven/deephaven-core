@@ -335,7 +335,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
             session.newExport(resultId)
                     .require(dependencies)
-                    .onError(responseObserver::onError)
+                    .onError(responseObserver)
                     .submit(() -> {
                         final Table result = operation.create(request, dependencies);
                         safelyExecute(() -> {
