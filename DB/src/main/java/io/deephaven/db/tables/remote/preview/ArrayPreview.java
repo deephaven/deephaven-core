@@ -22,11 +22,10 @@ public class ArrayPreview implements PreviewType {
             return null;
         }
         if (!array.getClass().isArray()) {
-            throw new IllegalArgumentException(
-                "Input must be an array, instead input class is " + array.getClass());
+            throw new IllegalArgumentException("Input must be an array, instead input class is " + array.getClass());
         }
-        return new ArrayPreview(ChunkType.fromElementType(array.getClass().getComponentType())
-            .dbArrayWrap(array).toString(ARRAY_SIZE_CUTOFF));
+        return new ArrayPreview(ChunkType.fromElementType(array.getClass().getComponentType()).dbArrayWrap(array)
+                .toString(ARRAY_SIZE_CUTOFF));
     }
 
     private ArrayPreview(String displayString) {

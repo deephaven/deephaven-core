@@ -24,15 +24,13 @@ public class DisjunctiveFilter extends ComposedFilter {
         final List<SelectFilter> rawComponents = new ArrayList<>();
         for (int ii = 0; ii < componentFilters.length; ++ii) {
             if (componentFilters[ii] instanceof DisjunctiveFilter) {
-                rawComponents.addAll(Arrays
-                    .asList(((DisjunctiveFilter) componentFilters[ii]).getComponentFilters()));
+                rawComponents.addAll(Arrays.asList(((DisjunctiveFilter) componentFilters[ii]).getComponentFilters()));
             } else {
                 rawComponents.add(componentFilters[ii]);
             }
         }
 
-        return new DisjunctiveFilter(
-            rawComponents.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+        return new DisjunctiveFilter(rawComponents.toArray(SelectFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
     }
 
     @Override
@@ -67,15 +65,14 @@ public class DisjunctiveFilter extends ComposedFilter {
         }
 
         final Index result = matched == null ? selection.clone() : matched.clone();
-        Assert.eq(result.size(), "result.size()", result.getPrevIndex().size(),
-            "result.getPrevIndex.size()");
+        Assert.eq(result.size(), "result.size()", result.getPrevIndex().size(), "result.getPrevIndex.size()");
         return result;
     }
 
     @Override
     public DisjunctiveFilter copy() {
-        return new DisjunctiveFilter(Arrays.stream(getComponentFilters()).map(SelectFilter::copy)
-            .toArray(SelectFilter[]::new));
+        return new DisjunctiveFilter(
+                Arrays.stream(getComponentFilters()).map(SelectFilter::copy).toArray(SelectFilter[]::new));
     }
 
     @Override

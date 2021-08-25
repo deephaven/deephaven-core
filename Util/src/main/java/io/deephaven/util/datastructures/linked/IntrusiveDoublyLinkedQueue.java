@@ -13,8 +13,8 @@ import java.util.stream.StreamSupport;
 /**
  * A simple queue based on circular intrusive doubly linked nodes (for O(1) random removal).
  */
-public class IntrusiveDoublyLinkedQueue<VALUE_TYPE>
-    extends IntrusiveDoublyLinkedStructureBase<VALUE_TYPE> implements Iterable<VALUE_TYPE> {
+public class IntrusiveDoublyLinkedQueue<VALUE_TYPE> extends IntrusiveDoublyLinkedStructureBase<VALUE_TYPE>
+        implements Iterable<VALUE_TYPE> {
 
     /**
      * The head of the queue, or null if the queue is empty
@@ -58,8 +58,7 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE>
      *
      * @param other The queue to transfer from
      */
-    public final void transferBeforeHeadFrom(
-        @NotNull final IntrusiveDoublyLinkedQueue<VALUE_TYPE> other) {
+    public final void transferBeforeHeadFrom(@NotNull final IntrusiveDoublyLinkedQueue<VALUE_TYPE> other) {
         transferFrom(other, true);
     }
 
@@ -68,8 +67,7 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE>
      *
      * @param other The queue to transfer from
      */
-    public final void transferAfterTailFrom(
-        @NotNull final IntrusiveDoublyLinkedQueue<VALUE_TYPE> other) {
+    public final void transferAfterTailFrom(@NotNull final IntrusiveDoublyLinkedQueue<VALUE_TYPE> other) {
         transferFrom(other, false);
     }
 
@@ -77,14 +75,11 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE>
      * Move all nodes from {@code other} to this queue in O(1) time.
      *
      * @param other The queue to transfer from
-     * @param front Whether to add {@code other}'s elements at the front (instead of the back) of
-     *        this queue
+     * @param front Whether to add {@code other}'s elements at the front (instead of the back) of this queue
      */
-    private void transferFrom(@NotNull final IntrusiveDoublyLinkedQueue<VALUE_TYPE> other,
-        final boolean front) {
+    private void transferFrom(@NotNull final IntrusiveDoublyLinkedQueue<VALUE_TYPE> other, final boolean front) {
         if (!compatible(other)) {
-            throw new UnsupportedOperationException(
-                this + ": Attempted to transfer from incompatible queue " + other);
+            throw new UnsupportedOperationException(this + ": Attempted to transfer from incompatible queue " + other);
         }
         if (other.isEmpty()) {
             return;
@@ -132,8 +127,7 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE>
      */
     public final void insert(@NotNull final VALUE_TYPE node, final int offset) {
         if (offset < 0 || offset > size) {
-            throw new IllegalArgumentException(
-                "Invalid offset " + offset + ", must be in [0, size(" + size + ")]");
+            throw new IllegalArgumentException("Invalid offset " + offset + ", must be in [0, size(" + size + ")]");
         }
 
         if (offset == size) {
@@ -224,8 +218,7 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE>
     }
 
     /**
-     * Remove all nodes in the queue, without unlinking anything. This is suitable for nodes that
-     * will be discarded.
+     * Remove all nodes in the queue, without unlinking anything. This is suitable for nodes that will be discarded.
      */
     public final void clearFast() {
         head = null;
@@ -233,8 +226,8 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE>
     }
 
     /**
-     * Determine if a node is currently in the queue. Assumes that the node's prev/next pointers are
-     * only used in this queue.
+     * Determine if a node is currently in the queue. Assumes that the node's prev/next pointers are only used in this
+     * queue.
      *
      * @param node The node
      * @return Whether the node is currently in the queue
@@ -282,8 +275,10 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE>
 
     @Override
     public Spliterator<VALUE_TYPE> spliterator() {
-        return Spliterators.spliterator(iterator(), size(),
-            Spliterator.ORDERED | Spliterator.NONNULL); // Implicitly | SIZED | SUBSIZED, too.
+        return Spliterators.spliterator(iterator(), size(), Spliterator.ORDERED | Spliterator.NONNULL); // Implicitly |
+                                                                                                        // SIZED |
+                                                                                                        // SUBSIZED,
+                                                                                                        // too.
 
     }
 

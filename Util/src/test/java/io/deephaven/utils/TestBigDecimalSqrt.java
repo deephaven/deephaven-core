@@ -7,20 +7,18 @@ import java.math.BigDecimal;
 public class TestBigDecimalSqrt extends TestCase {
     public void testSqrt() {
         /*
-         * x = √10; eps = 1e-11 => (x + / -eps)^2 = x^2 +/- 2*eps*x + eps^2 Therefore the sqrt
-         * squared is accurate to 2*eps*x, which is ~6e-11 in this case.
+         * x = √10; eps = 1e-11 => (x + / -eps)^2 = x^2 +/- 2*eps*x + eps^2 Therefore the sqrt squared is accurate to
+         * 2*eps*x, which is ~6e-11 in this case.
          */
         testSqrt(BigDecimal.TEN, 11, 10);
         testSqrt(BigDecimal.ONE, 10, 10);
         testSqrt(BigDecimal.TEN.scaleByPowerOfTen(100), 50, 0);
         testSqrt(BigDecimal.valueOf(Long.MAX_VALUE).pow(4), 10, 10);
-        testSqrt(BigDecimal.valueOf(Long.MAX_VALUE).pow(4).divide(BigDecimal.valueOf(7),
-            BigDecimal.ROUND_HALF_UP), 40, 0);
+        testSqrt(BigDecimal.valueOf(Long.MAX_VALUE).pow(4).divide(BigDecimal.valueOf(7), BigDecimal.ROUND_HALF_UP), 40,
+                0);
         // value > Double.MAX_VALUE
-        testSqrt(
-            new BigDecimal(
-                "1.3965847798346571265746871246578426578246587146581476581476578465814276518E400"),
-            400, 200);
+        testSqrt(new BigDecimal("1.3965847798346571265746871246578426578246587146581476581476578465814276518E400"), 400,
+                200);
     }
 
     public void testSqrtExceptionals() {

@@ -19,8 +19,7 @@ import java.util.stream.Stream;
  */
 public interface JpyConfigSource {
 
-    // Note: these are "suggested" property names, since they might not be valid in all
-    // configuration
+    // Note: these are "suggested" property names, since they might not be valid in all configuration
     // contexts.
 
     /**
@@ -44,20 +43,20 @@ public interface JpyConfigSource {
     String JPY_PROGRAM_NAME_PROP = "jpy.programName";
 
     /**
-     * Suggested property name for use with {@link #getPythonLib()}. Matches the system property key
-     * that jpy uses internally for pythonLib.
+     * Suggested property name for use with {@link #getPythonLib()}. Matches the system property key that jpy uses
+     * internally for pythonLib.
      */
     String JPY_PY_LIB_PROP = "jpy.pythonLib";
 
     /**
-     * Suggested property name for use with {@link #getJpyLib()}. Matches the system property key
-     * that jpy uses internally for jpyLib.
+     * Suggested property name for use with {@link #getJpyLib()}. Matches the system property key that jpy uses
+     * internally for jpyLib.
      */
     String JPY_JPY_LIB_PROP = "jpy.jpyLib";
 
     /**
-     * Suggested property name for use with {@link #getJdlLib()}. Matches the system property key
-     * that jpy uses internally for jdlLib.
+     * Suggested property name for use with {@link #getJdlLib()}. Matches the system property key that jpy uses
+     * internally for jdlLib.
      */
     String JPY_JDL_LIB_PROP = "jpy.jdlLib";
 
@@ -90,38 +89,38 @@ public interface JpyConfigSource {
     default EnumSet<Flag> getFlagsSet() {
         final EnumSet<Flag> flags = EnumSet.noneOf(Flag.class);
         getFlags()
-            .map(s -> s.split(","))
-            .map(Stream::of)
-            .orElseGet(Stream::empty)
-            .map(String::trim)
-            .filter(s -> !s.isEmpty())
-            .map(Flag::valueOf)
-            .forEach(flags::add);
+                .map(s -> s.split(","))
+                .map(Stream::of)
+                .orElseGet(Stream::empty)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Flag::valueOf)
+                .forEach(flags::add);
         return flags;
     }
 
     default List<Path> getExtraPathsList() {
         final List<Path> extraPaths = new ArrayList<>();
         getExtraPaths()
-            .map(s -> s.split(","))
-            .map(Stream::of)
-            .orElseGet(Stream::empty)
-            .map(String::trim)
-            .filter(s -> !s.isEmpty())
-            .map(Paths::get)
-            .forEachOrdered(extraPaths::add);
+                .map(s -> s.split(","))
+                .map(Stream::of)
+                .orElseGet(Stream::empty)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(Paths::get)
+                .forEachOrdered(extraPaths::add);
         return extraPaths;
     }
 
     default JpyConfig asJpyConfig() {
         return new JpyConfig(
-            sanitize(getProgramName()),
-            sanitize(getPythonHome()),
-            sanitize(getPythonLib()),
-            sanitize(getJpyLib()),
-            sanitize(getJdlLib()),
-            getExtraPathsList(),
-            getFlagsSet());
+                sanitize(getProgramName()),
+                sanitize(getPythonHome()),
+                sanitize(getPythonLib()),
+                sanitize(getJpyLib()),
+                sanitize(getJdlLib()),
+                getExtraPathsList(),
+                getFlagsSet());
     }
 
     /* private */ static Path sanitize(Optional<String> value) {
@@ -129,8 +128,7 @@ public interface JpyConfigSource {
     }
 
     /**
-     * A system property based implementation of {@link JpyConfigSource}, using the suggested
-     * property names.
+     * A system property based implementation of {@link JpyConfigSource}, using the suggested property names.
      */
     enum SysProps implements JpyConfigSource {
         INSTANCE;

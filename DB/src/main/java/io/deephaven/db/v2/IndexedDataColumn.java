@@ -31,8 +31,8 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
     private final String name;
     @SuppressWarnings({"UnusedDeclaration", "FieldCanBeLocal"})
-    private final Object parent; // DO NOT DELETE - This reference preserves strong-reachability of
-                                 // the owning table and its listeners.
+    private final Object parent; // DO NOT DELETE - This reference preserves strong-reachability of the owning table and
+                                 // its listeners.
     private final Index index;
     private final ColumnSource<TYPE> columnSource;
 
@@ -42,12 +42,12 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     }
 
     public IndexedDataColumn(@NotNull final String name, @NotNull final Index index,
-        @NotNull final ColumnSource<TYPE> columnSource) {
+            @NotNull final ColumnSource<TYPE> columnSource) {
         this(name, null, index, columnSource);
     }
 
-    private IndexedDataColumn(@Nullable final String name, @Nullable final Object parent,
-        @NotNull final Index index, @NotNull final ColumnSource<TYPE> columnSource) {
+    private IndexedDataColumn(@Nullable final String name, @Nullable final Object parent, @NotNull final Index index,
+            @NotNull final ColumnSource<TYPE> columnSource) {
         this.name = name;
         this.parent = parent;
         this.index = index;
@@ -59,13 +59,12 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
      * 
      * @param index The index
      * @param columnSource The column source
-     * @return A data column with previous values for the supplied column source, according to the
-     *         previous version of the index
+     * @return A data column with previous values for the supplied column source, according to the previous version of
+     *         the index
      */
     public static <TYPE> IndexedDataColumn<TYPE> makePreviousColumn(@NotNull final Index index,
-        @NotNull final ColumnSource<TYPE> columnSource) {
-        return new IndexedDataColumn<>(null, null, index.getPrevIndex(),
-            new PrevColumnSource<>(columnSource));
+            @NotNull final ColumnSource<TYPE> columnSource) {
+        return new IndexedDataColumn<>(null, null, index.getPrevIndex(), new PrevColumnSource<>(columnSource));
     }
 
     @Override
@@ -94,7 +93,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
     private Index getSubIndexByPos(final long startPosInclusive, final long endPosExclusive) {
         return startPosInclusive == 0 && endPosExclusive == index.size() ? index.clone()
-            : index.subindexByPos(startPosInclusive, endPosExclusive);
+                : index.subindexByPos(startPosInclusive, endPosExclusive);
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -113,27 +112,24 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @Override
     public TYPE[] get(final long startPosInclusive, final long endPosExclusive) {
         final Iterable<TYPE> iterable =
-            () -> new ColumnIterator<>(getSubIndexByPos(startPosInclusive, endPosExclusive),
-                columnSource);
+                () -> new ColumnIterator<>(getSubIndexByPos(startPosInclusive, endPosExclusive), columnSource);
         // noinspection unchecked
         return StreamSupport.stream(iterable.spliterator(), false).toArray(s -> (TYPE[]) Array
-            .newInstance(io.deephaven.util.type.TypeUtils.getBoxedType(columnSource.getType()), s));
+                .newInstance(io.deephaven.util.type.TypeUtils.getBoxedType(columnSource.getType()), s));
     }
 
     @Override
     public TYPE[] get(final long... positions) {
         // noinspection unchecked
-        return Arrays.stream(positions).map(index::get).mapToObj(columnSource::get)
-            .toArray(s -> (TYPE[]) Array.newInstance(
-                io.deephaven.util.type.TypeUtils.getBoxedType(columnSource.getType()), s));
+        return Arrays.stream(positions).map(index::get).mapToObj(columnSource::get).toArray(s -> (TYPE[]) Array
+                .newInstance(io.deephaven.util.type.TypeUtils.getBoxedType(columnSource.getType()), s));
     }
 
     @Override
     public TYPE[] get(final int... positions) {
         // noinspection unchecked
-        return Arrays.stream(positions).mapToLong(i -> i).map(index::get)
-            .mapToObj(columnSource::get).toArray(
-                s -> (TYPE[]) Array.newInstance(TypeUtils.getBoxedType(columnSource.getType()), s));
+        return Arrays.stream(positions).mapToLong(i -> i).map(index::get).mapToObj(columnSource::get)
+                .toArray(s -> (TYPE[]) Array.newInstance(TypeUtils.getBoxedType(columnSource.getType()), s));
     }
 
     @Override
@@ -171,11 +167,10 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @Override
     public byte[] getBytes(final long startPosInclusive, final long endPosExclusive) {
         try (final Index rangeIndex = getSubIndexByPos(startPosInclusive, endPosExclusive);
-            final ChunkSource.FillContext context =
-                columnSource.makeFillContext(rangeIndex.intSize("getBytes"), null)) {
+                final ChunkSource.FillContext context =
+                        columnSource.makeFillContext(rangeIndex.intSize("getBytes"), null)) {
             final byte[] result = new byte[rangeIndex.intSize("getBytes")];
-            columnSource.fillChunk(context, WritableByteChunk.writableChunkWrap(result),
-                rangeIndex);
+            columnSource.fillChunk(context, WritableByteChunk.writableChunkWrap(result), rangeIndex);
             return result;
         }
     }
@@ -210,11 +205,10 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @Override
     public char[] getChars(final long startPosInclusive, final long endPosExclusive) {
         try (final Index rangeIndex = getSubIndexByPos(startPosInclusive, endPosExclusive);
-            final ChunkSource.FillContext context =
-                columnSource.makeFillContext(rangeIndex.intSize("getChars"), null)) {
+                final ChunkSource.FillContext context =
+                        columnSource.makeFillContext(rangeIndex.intSize("getChars"), null)) {
             final char[] result = new char[rangeIndex.intSize("getChars")];
-            columnSource.fillChunk(context, WritableCharChunk.writableChunkWrap(result),
-                rangeIndex);
+            columnSource.fillChunk(context, WritableCharChunk.writableChunkWrap(result), rangeIndex);
             return result;
         }
     }
@@ -249,11 +243,10 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @Override
     public double[] getDoubles(final long startPosInclusive, final long endPosExclusive) {
         try (final Index rangeIndex = getSubIndexByPos(startPosInclusive, endPosExclusive);
-            final ChunkSource.FillContext context =
-                columnSource.makeFillContext(rangeIndex.intSize("getDoubles"), null)) {
+                final ChunkSource.FillContext context =
+                        columnSource.makeFillContext(rangeIndex.intSize("getDoubles"), null)) {
             final double[] result = new double[rangeIndex.intSize("getDoubles")];
-            columnSource.fillChunk(context, WritableDoubleChunk.writableChunkWrap(result),
-                rangeIndex);
+            columnSource.fillChunk(context, WritableDoubleChunk.writableChunkWrap(result), rangeIndex);
             return result;
         }
     }
@@ -288,11 +281,10 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @Override
     public float[] getFloats(final long startPosInclusive, final long endPosExclusive) {
         try (final Index rangeIndex = getSubIndexByPos(startPosInclusive, endPosExclusive);
-            final ChunkSource.FillContext context =
-                columnSource.makeFillContext(rangeIndex.intSize("getFloats"), null)) {
+                final ChunkSource.FillContext context =
+                        columnSource.makeFillContext(rangeIndex.intSize("getFloats"), null)) {
             final float[] result = new float[rangeIndex.intSize("getFloats")];
-            columnSource.fillChunk(context, WritableFloatChunk.writableChunkWrap(result),
-                rangeIndex);
+            columnSource.fillChunk(context, WritableFloatChunk.writableChunkWrap(result), rangeIndex);
             return result;
         }
     }
@@ -327,8 +319,8 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @Override
     public int[] getInts(final long startPosInclusive, final long endPosExclusive) {
         try (final Index rangeIndex = getSubIndexByPos(startPosInclusive, endPosExclusive);
-            final ChunkSource.FillContext context =
-                columnSource.makeFillContext(rangeIndex.intSize("getInts"), null)) {
+                final ChunkSource.FillContext context =
+                        columnSource.makeFillContext(rangeIndex.intSize("getInts"), null)) {
             final int[] result = new int[rangeIndex.intSize("getInts")];
             columnSource.fillChunk(context, WritableIntChunk.writableChunkWrap(result), rangeIndex);
             return result;
@@ -365,11 +357,10 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @Override
     public long[] getLongs(final long startPosInclusive, final long endPosExclusive) {
         try (final Index rangeIndex = getSubIndexByPos(startPosInclusive, endPosExclusive);
-            final ChunkSource.FillContext context =
-                columnSource.makeFillContext(rangeIndex.intSize("getLongs"), null)) {
+                final ChunkSource.FillContext context =
+                        columnSource.makeFillContext(rangeIndex.intSize("getLongs"), null)) {
             final long[] result = new long[rangeIndex.intSize("getLongs")];
-            columnSource.fillChunk(context, WritableLongChunk.writableChunkWrap(result),
-                rangeIndex);
+            columnSource.fillChunk(context, WritableLongChunk.writableChunkWrap(result), rangeIndex);
             return result;
         }
     }
@@ -404,11 +395,10 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @Override
     public short[] getShorts(final long startPosInclusive, final long endPosExclusive) {
         try (final Index rangeIndex = getSubIndexByPos(startPosInclusive, endPosExclusive);
-            final ChunkSource.FillContext context =
-                columnSource.makeFillContext(rangeIndex.intSize("getShorts"), null)) {
+                final ChunkSource.FillContext context =
+                        columnSource.makeFillContext(rangeIndex.intSize("getShorts"), null)) {
             final short[] result = new short[rangeIndex.intSize("getShorts")];
-            columnSource.fillChunk(context, WritableShortChunk.writableChunkWrap(result),
-                rangeIndex);
+            columnSource.fillChunk(context, WritableShortChunk.writableChunkWrap(result), rangeIndex);
             return result;
         }
     }

@@ -51,8 +51,7 @@ public class ArrayUtil {
         assert a != null && i < a.length;
         T[] new_a = null;
         if (a.length > 1) {
-            new_a = (T[]) java.lang.reflect.Array.newInstance(a.getClass().getComponentType(),
-                a.length - 1);
+            new_a = (T[]) java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), a.length - 1);
             System.arraycopy(a, 0, new_a, 0, i);
             System.arraycopy(a, i + 1, new_a, i, a.length - (i + 1));
         }
@@ -182,8 +181,7 @@ public class ArrayUtil {
         return false;
     }
 
-    public static <T> T[] addUnless(T[] a, Class<T> c, Predicate.Unary<T> pred,
-        Function.Nullary<T> factory) {
+    public static <T> T[] addUnless(T[] a, Class<T> c, Predicate.Unary<T> pred, Function.Nullary<T> factory) {
         if (a != null) {
             for (int i = 0; i < a.length; ++i) {
                 if (pred.call(a[i])) {
@@ -194,8 +192,8 @@ public class ArrayUtil {
         return pushArray(factory.call(), a, c);
     }
 
-    public static <T, A> T[] addUnless(T[] a, Class<T> c, Predicate.Binary<T, A> pred,
-        Function.Unary<T, A> factory, A arg) {
+    public static <T, A> T[] addUnless(T[] a, Class<T> c, Predicate.Binary<T, A> pred, Function.Unary<T, A> factory,
+            A arg) {
         if (a != null) {
             for (int i = 0; i < a.length; ++i) {
                 if (pred.call(a[i], arg)) {
@@ -206,8 +204,8 @@ public class ArrayUtil {
         return pushArray(factory.call(arg), a, c);
     }
 
-    public static <T, A> T[] replaceOrAdd(T[] a, Class<T> c, Predicate.Binary<T, A> pred,
-        Function.Unary<T, A> factory, A arg) {
+    public static <T, A> T[] replaceOrAdd(T[] a, Class<T> c, Predicate.Binary<T, A> pred, Function.Unary<T, A> factory,
+            A arg) {
         if (a != null) {
             for (int i = 0; i < a.length; ++i) {
                 if (pred.call(a[i], arg)) {
@@ -663,18 +661,15 @@ public class ArrayUtil {
         return newArray;
     }
 
-    public static <T> T[] insert(T[] a, int insertionPoint, int numElements, T v,
-        Class<? extends T> c) {
+    public static <T> T[] insert(T[] a, int insertionPoint, int numElements, T v, Class<? extends T> c) {
         if (a.length < numElements + 1) {
             T[] a2 = extendNoCopy(a, numElements, c);
             System.arraycopy(a, 0, a2, 0, insertionPoint);
             a2[insertionPoint] = v;
-            System.arraycopy(a, insertionPoint, a2, insertionPoint + 1,
-                numElements - insertionPoint);
+            System.arraycopy(a, insertionPoint, a2, insertionPoint + 1, numElements - insertionPoint);
             return a2;
         } else {
-            System.arraycopy(a, insertionPoint, a, insertionPoint + 1,
-                numElements - insertionPoint);
+            System.arraycopy(a, insertionPoint, a, insertionPoint + 1, numElements - insertionPoint);
             a[insertionPoint] = v;
             return a;
         }
@@ -1281,8 +1276,7 @@ public class ArrayUtil {
         return result;
     }
 
-    public static <K, V> Map<K, V> mapFromArray(Class<K> keyType, Class<V> valueType,
-        Object... data) {
+    public static <K, V> Map<K, V> mapFromArray(Class<K> keyType, Class<V> valueType, Object... data) {
         Map<K, V> map = new HashMap<K, V>(data.length);
         for (int nIndex = 0; nIndex < data.length; nIndex += 2) {
             Object key = data[nIndex];
@@ -1332,8 +1326,7 @@ public class ArrayUtil {
         }
     }
 
-    public static StringBuilder appendIntArray(final StringBuilder sb, final int[] vs,
-        final boolean compact) {
+    public static StringBuilder appendIntArray(final StringBuilder sb, final int[] vs, final boolean compact) {
         for (int i = 0; i < vs.length; ++i) {
             if (i != 0) {
                 if (compact) {
@@ -1446,13 +1439,12 @@ public class ArrayUtil {
     public static <T extends Comparable<? super T>> boolean isSorted(T[] objects) {
         if (objects != null && objects.length >= 2) {
             for (int i = 1; i < objects.length; i++) {
-                // if the previous one is null it's either smaller or equal to the next 'null' and
-                // therefore sorted
+                // if the previous one is null it's either smaller or equal to the next 'null' and therefore sorted
                 if ((objects[i - 1] == null)) {
                     continue;
                 }
-                // if the later element is null (previous one cannot be) then its out of order,
-                // otherwise compare values (o1 < o2 == negative integer)
+                // if the later element is null (previous one cannot be) then its out of order, otherwise compare values
+                // (o1 < o2 == negative integer)
                 if (objects[i] == null || objects[i].compareTo(objects[i - 1]) < 0) {
                     return false;
                 }

@@ -52,8 +52,8 @@ public class UnfairMutex {
             if (leader.compareAndSet(null, me)) {
                 // if ( debugName != null ) {
                 // lastLeadChange = System.nanoTime();
-                // log.info("UnfairMutex: "+debugName+": UNFAIR thread "+me.getName()+" leading
-                // after "+((lastLeadChange - t0 + 500) / 1000)+" micros");
+                // log.info("UnfairMutex: "+debugName+": UNFAIR thread "+me.getName()+" leading after "+((lastLeadChange
+                // - t0 + 500) / 1000)+" micros");
                 // }
                 return;
             }
@@ -64,10 +64,9 @@ public class UnfairMutex {
         }
         int spins = 0;
         boolean peekNotMe = true;
-        while ((peekNotMe && (peekNotMe = (threads.peek() != me))) || // once we've peeked ourselves
-                                                                      // once, we don't need to do
-                                                                      // it again!
-            !leader.compareAndSet(null, me)) {
+        while ((peekNotMe && (peekNotMe = (threads.peek() != me))) || // once we've peeked ourselves once, we don't need
+                                                                      // to do it again!
+                !leader.compareAndSet(null, me)) {
             if ((++spins % spinsUntilPark) == 0) {
                 LockSupport.park(this);
 
@@ -86,16 +85,16 @@ public class UnfairMutex {
         }
         // if ( debugName != null ) {
         // lastLeadChange = System.nanoTime();
-        // log.info("UnfairMutex: "+debugName+": thread "+me.getName()+" leading after
-        // "+((lastLeadChange - t0 + 500) / 1000)+" micros");
+        // log.info("UnfairMutex: "+debugName+": thread "+me.getName()+" leading after "+((lastLeadChange - t0 + 500) /
+        // 1000)+" micros");
         // }
     }
 
     public void unlock() {
         Thread me = Thread.currentThread();
         // if ( debugName != null ) {
-        // log.info("UnfairMutex: "+debugName+": thread "+me.getName()+" handing off after
-        // "+((System.nanoTime() - lastLeadChange + 500) / 1000)+" micros");
+        // log.info("UnfairMutex: "+debugName+": thread "+me.getName()+" handing off after "+((System.nanoTime() -
+        // lastLeadChange + 500) / 1000)+" micros");
         // }
         if (!leader.compareAndSet(me, null)) {
             throw new IllegalStateException("wrong thread called handoff");

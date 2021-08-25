@@ -32,8 +32,8 @@ public class LocalDateCodecTest extends TestCase {
         roundTripWithOffset(args, value, value, offset);
     }
 
-    private void roundTripWithOffset(final String args, final LocalDate value,
-        final LocalDate expected, final int offset) {
+    private void roundTripWithOffset(final String args, final LocalDate value, final LocalDate expected,
+            final int offset) {
         final LocalDateCodec codec = new LocalDateCodec(args);
         byte[] enc = codec.encode(value);
         // if we expect to be decoding from an offset, construct the input accordingly
@@ -159,8 +159,7 @@ public class LocalDateCodecTest extends TestCase {
     }
 
     public void testCompactEncodingWithOffset() {
-        roundTripWithOffset(LocalDateCodec.Domain.Compact.name(), "0000-01-01", 3); // minimum
-                                                                                    // compact value
+        roundTripWithOffset(LocalDateCodec.Domain.Compact.name(), "0000-01-01", 3); // minimum compact value
         roundTripWithOffset(LocalDateCodec.Domain.Compact.name(), "9999-12-31", 3);
 
         roundTripWithOffset(LocalDateCodec.Domain.Compact.name(), "2018-01-01", 3);

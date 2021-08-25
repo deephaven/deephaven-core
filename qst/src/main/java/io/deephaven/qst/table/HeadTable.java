@@ -32,7 +32,7 @@ public abstract class HeadTable extends TableBase implements SingleParentTable {
     final void checkSize() {
         if (size() < 0) {
             throw new IllegalArgumentException(
-                String.format("head must have a non-negative size: %d", size()));
+                    String.format("head must have a non-negative size: %d", size()));
         }
     }
 }

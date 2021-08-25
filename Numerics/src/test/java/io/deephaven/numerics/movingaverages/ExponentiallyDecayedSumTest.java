@@ -31,8 +31,8 @@ public class ExponentiallyDecayedSumTest extends TestCase {
         double value3 = 8;
         eds.processDouble(time3, value3);
         assertEquals(time3, eds.getLastTimestamp());
-        assertEquals(value3 + Math.exp(-(time3 - time2) / rate) * value2
-            + Math.exp(-(time3 - time1) / rate) * value1, eds.getValue(), tol);
+        assertEquals(value3 + Math.exp(-(time3 - time2) / rate) * value2 + Math.exp(-(time3 - time1) / rate) * value1,
+                eds.getValue(), tol);
 
         eds.reset();
 

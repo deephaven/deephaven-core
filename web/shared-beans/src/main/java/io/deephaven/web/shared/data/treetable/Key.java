@@ -6,14 +6,13 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * OpenAPI compatible analog to SmartKey, leaving out hashcode when serializing. This is an opaque
- * object to client code, but serialized using the stream to get the benefits of shared fields
- * rather than simply byte[] encoding the java serialized data.
+ * OpenAPI compatible analog to SmartKey, leaving out hashcode when serializing. This is an opaque object to client
+ * code, but serialized using the stream to get the benefits of shared fields rather than simply byte[] encoding the
+ * java serialized data.
  *
- * In order to serialize this, as Object[] is not serializable, the custom field serializer must
- * descend into the array, and check each value. If the value is a serializable type as is, simply
- * write it, otherwise check for special cases that we accept (StringSet, DBDateTime) and use
- * appropriate wrappers.
+ * In order to serialize this, as Object[] is not serializable, the custom field serializer must descend into the array,
+ * and check each value. If the value is a serializable type as is, simply write it, otherwise check for special cases
+ * that we accept (StringSet, DBDateTime) and use appropriate wrappers.
  */
 public class Key implements Serializable {
     public static Key root() {

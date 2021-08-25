@@ -18,9 +18,9 @@ public class ScatterPlotTable {
         final Number[] x4 = {1.3, 3.2, 3.4, 3.8};
 
         Table t = TableTools.newTable(TableTools.col("x1", x1),
-            TableTools.col("x2", x2),
-            TableTools.col("x3", x3),
-            TableTools.col("x4", x4));
+                TableTools.col("x2", x2),
+                TableTools.col("x3", x3),
+                TableTools.col("x4", x4));
 
         ScatterPlotMatrix f = ScatterPlotMatrix.scatterPlotMatrix(t, "x1", "x2", "x3", "x4");
         ExamplePlotUtils.display(f);

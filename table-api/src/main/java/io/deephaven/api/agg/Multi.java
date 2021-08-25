@@ -7,8 +7,8 @@ import org.immutables.value.Value.Immutable;
 import java.util.List;
 
 /**
- * An aggregation that is a list of other aggregations. Useful as a helper when returning an
- * aggregation constructed via a varargs parameter.
+ * An aggregation that is a list of other aggregations. Useful as a helper when returning an aggregation constructed via
+ * a varargs parameter.
  *
  * @param <AGG> the aggregation type
  * @see AggregationFinisher#of(String...)
@@ -33,7 +33,7 @@ public abstract class Multi<AGG extends Aggregation> implements Aggregation {
     final void checkSize() {
         if (aggregations().size() < 2) {
             throw new IllegalArgumentException(
-                String.format("%s should have at least two aggregations", Multi.class));
+                    String.format("%s should have at least two aggregations", Multi.class));
         }
     }
 

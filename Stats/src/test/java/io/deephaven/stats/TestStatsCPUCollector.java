@@ -31,8 +31,7 @@ public class TestStatsCPUCollector extends TestCase {
                 long maxFdUpdates = maxFdItem.getValue().getN();
                 assertEquals(1, numFdsUpdates);
                 assertEquals(1, maxFdUpdates);
-                System.out.println(
-                    "TestStatsCPUCollector.testProcFd: " + numFds + " fds, maxFd = " + maxFd);
+                System.out.println("TestStatsCPUCollector.testProcFd: " + numFds + " fds, maxFd = " + maxFd);
             } else {
                 // if not, we see nothing - but we also don't crash
                 assertNull(numFdsItem);

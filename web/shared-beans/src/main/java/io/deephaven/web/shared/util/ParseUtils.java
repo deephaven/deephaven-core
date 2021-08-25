@@ -2,8 +2,8 @@ package io.deephaven.web.shared.util;
 
 public class ParseUtils {
     /**
-     * This method exists because Java's Boolean.parseBoolean is too permissive (that method maps
-     * "true" to true, any other string to false).
+     * This method exists because Java's Boolean.parseBoolean is too permissive (that method maps "true" to true, any
+     * other string to false).
      * 
      * @return
      *         <ul>

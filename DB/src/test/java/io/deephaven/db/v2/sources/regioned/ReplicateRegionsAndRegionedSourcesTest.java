@@ -9,15 +9,13 @@ import io.deephaven.compilertools.ReplicatePrimitiveCode;
 import java.io.IOException;
 
 /**
- * Code generation for tests of {@link RegionedColumnSource} implementations as well as well as the
- * primary region interfaces for some primitive types.
+ * Code generation for tests of {@link RegionedColumnSource} implementations as well as well as the primary region
+ * interfaces for some primitive types.
  */
 public class ReplicateRegionsAndRegionedSourcesTest {
 
     public static void main(String... args) throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean(TestRegionedColumnSourceChar.class,
-            ReplicatePrimitiveCode.TEST_SRC);
-        ReplicatePrimitiveCode.charToAllButBooleanAndByte(TstColumnRegionChar.class,
-            ReplicatePrimitiveCode.TEST_SRC);
+        ReplicatePrimitiveCode.charToAllButBoolean(TestRegionedColumnSourceChar.class, ReplicatePrimitiveCode.TEST_SRC);
+        ReplicatePrimitiveCode.charToAllButBooleanAndByte(TstColumnRegionChar.class, ReplicatePrimitiveCode.TEST_SRC);
     }
 }

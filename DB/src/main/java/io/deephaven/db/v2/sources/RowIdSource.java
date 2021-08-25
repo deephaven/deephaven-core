@@ -5,8 +5,7 @@
 package io.deephaven.db.v2.sources;
 
 @AbstractColumnSource.IsSerializable(value = true)
-public class RowIdSource extends AbstractColumnSource<Long>
-    implements ImmutableColumnSourceGetDefaults.ForLong {
+public class RowIdSource extends AbstractColumnSource<Long> implements ImmutableColumnSourceGetDefaults.ForLong {
     public static final RowIdSource INSTANCE = new RowIdSource();
 
     public RowIdSource() {

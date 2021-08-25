@@ -28,8 +28,8 @@ public class BigIntegerCodecTest extends TestCase {
         roundTripWithOffset(args, value, value, 0);
     }
 
-    private void roundTripWithOffset(final String args, final BigInteger value,
-        final BigInteger expected, final int offset) {
+    private void roundTripWithOffset(final String args, final BigInteger value, final BigInteger expected,
+            final int offset) {
         final BigIntegerCodec codec = new BigIntegerCodec(args);
         byte[] enc = codec.encode(value);
         // if we expect to be decoding from an offset, construct the input accordingly
@@ -149,10 +149,8 @@ public class BigIntegerCodecTest extends TestCase {
     public void testLargeValues() {
 
         final int maxPrec = BigIntegerCodec.MAX_FIXED_PRECISION;
-        final BigInteger hugeInt =
-            BigInteger.valueOf(10).pow(BigIntegerCodec.MAX_FIXED_PRECISION - 1);
-        final BigInteger hugeNegativeInt =
-            BigInteger.valueOf(10).pow(BigIntegerCodec.MAX_FIXED_PRECISION - 1).negate();
+        final BigInteger hugeInt = BigInteger.valueOf(10).pow(BigIntegerCodec.MAX_FIXED_PRECISION - 1);
+        final BigInteger hugeNegativeInt = BigInteger.valueOf(10).pow(BigIntegerCodec.MAX_FIXED_PRECISION - 1).negate();
 
         // prove that we can encode and decode a huge integer
         roundTrip(Integer.toString(maxPrec), hugeInt);

@@ -6,9 +6,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Utf8",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Utf8",
+        namespace = JsPackage.GLOBAL)
 public class Utf8 {
     public static native double createUtf8(Builder builder);
 

@@ -45,7 +45,7 @@ public class OrderedKeysBench {
         };
         TestValues.setup(tb, 16 * 1024 * 1024, TestValues.asymmetric);
         final WritableLongChunk<OrderedKeyIndices> fixedCostChunk =
-            WritableLongChunk.makeWritableChunk(fixedCostChunkSz);
+                WritableLongChunk.makeWritableChunk(fixedCostChunkSz);
         final Random r = new Random(1);
         long last = 0;
         for (int i = 0; i < fixedCostChunkSz; ++i) {

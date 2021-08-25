@@ -18,16 +18,14 @@ import javax.management.openmbean.CompositeData;
  * Gc event stats provides the stats {@code Memory-GC.Reclaimed} and {@code Memory.Allocated}.
  *
  * <p>
- * Unfortunately, the JVM doesn't seem to natively provide access to how much data has been
- * allocated, so we are using the GC before and after values as a proxy for that. (The JVM *does*
- * provide it on a per-thread basis though,
+ * Unfortunately, the JVM doesn't seem to natively provide access to how much data has been allocated, so we are using
+ * the GC before and after values as a proxy for that. (The JVM *does* provide it on a per-thread basis though,
  * {@link com.sun.management.ThreadMXBean#getThreadAllocatedBytes(long)}.)
  *
  * <p>
- * This implementation relies on
- * {@link GarbageCollectionNotificationInfo#GARBAGE_COLLECTION_NOTIFICATION} to get stats around the
- * memory usage before and after GCs. This means that these statistics are somewhat less useful when
- * GC events are sparse.
+ * This implementation relies on {@link GarbageCollectionNotificationInfo#GARBAGE_COLLECTION_NOTIFICATION} to get stats
+ * around the memory usage before and after GCs. This means that these statistics are somewhat less useful when GC
+ * events are sparse.
  */
 class GcEventStats implements NotificationListener {
 
@@ -63,16 +61,15 @@ class GcEventStats implements NotificationListener {
         if (!GARBAGE_COLLECTION_NOTIFICATION.equals(notification.getType())) {
             return;
         }
-        handleGCInfo(
-            GarbageCollectionNotificationInfo.from((CompositeData) notification.getUserData()));
+        handleGCInfo(GarbageCollectionNotificationInfo.from((CompositeData) notification.getUserData()));
     }
 
     // synchronized *shouldn't* be necessary, but doesn't hurt.
     private synchronized void handleGCInfo(GarbageCollectionNotificationInfo info) {
-        final long beforeGc = info.getGcInfo().getMemoryUsageBeforeGc().values().stream()
-            .mapToLong(MemoryUsage::getUsed).sum();
-        final long afterGc = info.getGcInfo().getMemoryUsageAfterGc().values().stream()
-            .mapToLong(MemoryUsage::getUsed).sum();
+        final long beforeGc =
+                info.getGcInfo().getMemoryUsageBeforeGc().values().stream().mapToLong(MemoryUsage::getUsed).sum();
+        final long afterGc =
+                info.getGcInfo().getMemoryUsageAfterGc().values().stream().mapToLong(MemoryUsage::getUsed).sum();
         final long reclaimedBytes = beforeGc - afterGc; // note: this *CAN* be negative
         reclaimed.increment(reclaimedBytes);
         // There are potentially other interesting stats that can be derived here in the future. The

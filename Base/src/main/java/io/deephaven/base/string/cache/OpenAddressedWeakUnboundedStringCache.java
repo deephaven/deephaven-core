@@ -8,11 +8,11 @@ import io.deephaven.base.cache.OpenAddressedCanonicalizationCache;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Unbounded StringCache built around a OpenAddressedCanonicalizationCache, which only enforces weak
- * reachability on its STRING_LIKE_TYPE members.
+ * Unbounded StringCache built around a OpenAddressedCanonicalizationCache, which only enforces weak reachability on its
+ * STRING_LIKE_TYPE members.
  */
 public class OpenAddressedWeakUnboundedStringCache<STRING_LIKE_TYPE extends CharSequence>
-    implements StringCache<STRING_LIKE_TYPE> {
+        implements StringCache<STRING_LIKE_TYPE> {
 
     /**
      * Adapter to make and compare cache members.
@@ -28,13 +28,13 @@ public class OpenAddressedWeakUnboundedStringCache<STRING_LIKE_TYPE extends Char
      * Canonicalization cache adapter implementation for String inputs.
      */
     private class StringCanonicalizationCacheAdapter
-        implements OpenAddressedCanonicalizationCache.Adapter<String, STRING_LIKE_TYPE> {
+            implements OpenAddressedCanonicalizationCache.Adapter<String, STRING_LIKE_TYPE> {
 
         @Override
         public boolean equals(@NotNull String inputItem, @NotNull Object cachedItem) {
             // noinspection unchecked
             return typeAdapter.getType() == cachedItem.getClass()
-                && typeAdapter.areEqual(inputItem, (STRING_LIKE_TYPE) cachedItem);
+                    && typeAdapter.areEqual(inputItem, (STRING_LIKE_TYPE) cachedItem);
         }
 
         @Override
@@ -57,13 +57,13 @@ public class OpenAddressedWeakUnboundedStringCache<STRING_LIKE_TYPE extends Char
      * Canonicalization cache adapter implementation for StringCompatible inputs.
      */
     private class StringCompatibleCanonicalizationCacheAdapter
-        implements OpenAddressedCanonicalizationCache.Adapter<StringCompatible, STRING_LIKE_TYPE> {
+            implements OpenAddressedCanonicalizationCache.Adapter<StringCompatible, STRING_LIKE_TYPE> {
 
         @Override
         public boolean equals(@NotNull StringCompatible inputItem, @NotNull Object cachedItem) {
             // noinspection unchecked
             return typeAdapter.getType() == cachedItem.getClass()
-                && typeAdapter.areEqual(inputItem, (STRING_LIKE_TYPE) cachedItem);
+                    && typeAdapter.areEqual(inputItem, (STRING_LIKE_TYPE) cachedItem);
         }
 
         @Override
@@ -87,9 +87,8 @@ public class OpenAddressedWeakUnboundedStringCache<STRING_LIKE_TYPE extends Char
      * @param initialCapacity Initial capacity of the map backing this cache
      */
     @SuppressWarnings("unused")
-    public OpenAddressedWeakUnboundedStringCache(
-        @NotNull final StringCacheTypeAdapter<STRING_LIKE_TYPE> typeAdapter,
-        final int initialCapacity) {
+    public OpenAddressedWeakUnboundedStringCache(@NotNull final StringCacheTypeAdapter<STRING_LIKE_TYPE> typeAdapter,
+            final int initialCapacity) {
         this(typeAdapter, new OpenAddressedCanonicalizationCache(initialCapacity));
     }
 
@@ -97,9 +96,8 @@ public class OpenAddressedWeakUnboundedStringCache<STRING_LIKE_TYPE extends Char
      * @param typeAdapter The type adapter for this String cache
      * @param cache The internal canonicalization cache
      */
-    public OpenAddressedWeakUnboundedStringCache(
-        @NotNull final StringCacheTypeAdapter<STRING_LIKE_TYPE> typeAdapter,
-        @NotNull final OpenAddressedCanonicalizationCache cache) {
+    public OpenAddressedWeakUnboundedStringCache(@NotNull final StringCacheTypeAdapter<STRING_LIKE_TYPE> typeAdapter,
+            @NotNull final OpenAddressedCanonicalizationCache cache) {
         this.typeAdapter = typeAdapter;
         this.cache = cache;
         stringC14nAdapter = new StringCanonicalizationCacheAdapter();

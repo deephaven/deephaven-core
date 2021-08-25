@@ -23,7 +23,7 @@ public class BarrageProtoUtil {
     public static ByteBuffer toByteBuffer(final Index index) {
         // noinspection UnstableApiUsage
         try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
-            final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
+                final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
             ExternalizableIndexUtils.writeExternalCompressedDeltas(oos, index);
             oos.flush();
             return ByteBuffer.wrap(baos.peekBuffer(), 0, baos.size());
@@ -35,11 +35,10 @@ public class BarrageProtoUtil {
     public static Index toIndex(final ByteBuffer string) {
         // noinspection UnstableApiUsage
         try (final InputStream bais = new ByteBufferInputStream(string);
-            final LittleEndianDataInputStream ois = new LittleEndianDataInputStream(bais)) {
+                final LittleEndianDataInputStream ois = new LittleEndianDataInputStream(bais)) {
             return ExternalizableIndexUtils.readExternalCompressedDelta(ois);
         } catch (final IOException e) {
-            throw new UncheckedDeephavenException("Unexpected exception during deserialization: ",
-                e);
+            throw new UncheckedDeephavenException("Unexpected exception during deserialization: ", e);
         }
     }
 

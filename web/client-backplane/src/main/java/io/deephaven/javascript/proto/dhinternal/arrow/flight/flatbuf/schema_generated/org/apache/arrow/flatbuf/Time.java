@@ -6,9 +6,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Time",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Time",
+        namespace = JsPackage.GLOBAL)
 public class Time {
     public static native void addBitWidth(Builder builder, double bitWidth);
 

@@ -25,8 +25,8 @@ public class StreamLoggerImpl implements Logger {
      * Static buffer pool, shared among all SystemOut loggers
      */
     private static final Pool<ByteBuffer> buffers = new ThreadSafeLenientFixedSizePool<>(2048,
-        () -> ByteBuffer.allocate(512),
-        null);
+            () -> ByteBuffer.allocate(512),
+            null);
 
     private static final LogBufferPool logBufferPool = new LogBufferPool() {
         @Override
@@ -59,8 +59,7 @@ public class StreamLoggerImpl implements Logger {
             return start(sink, stream, level, currentTime, null);
         }
 
-        public Entry start(LogSink sink, OutputStream stream, LogLevel level, long currentTime,
-            Throwable t) {
+        public Entry start(LogSink sink, OutputStream stream, LogLevel level, long currentTime, Throwable t) {
             super.start(sink, level, currentTime, t);
             this.stream = stream;
             return this;
@@ -71,8 +70,8 @@ public class StreamLoggerImpl implements Logger {
      * Static pool shared among all loggers
      */
     private static final Pool<Entry> entries = new ThreadSafeLenientFixedSizePool<>(1024,
-        () -> new Entry(logBufferPool),
-        null);
+            () -> new Entry(logBufferPool),
+            null);
 
     /**
      * Specialized sink for stream loggers
@@ -105,8 +104,7 @@ public class StreamLoggerImpl implements Logger {
 
         @Override
         public void addInterceptor(Interceptor<Entry> entryInterceptor) {
-            interceptors = ArrayUtil.pushArray(entryInterceptor, interceptors,
-                ClassUtil.generify(Interceptor.class));
+            interceptors = ArrayUtil.pushArray(entryInterceptor, interceptors, ClassUtil.generify(Interceptor.class));
         }
     }
 
@@ -136,14 +134,12 @@ public class StreamLoggerImpl implements Logger {
 
     @Override
     public LogEntry getEntry(LogLevel level) {
-        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000)
-            : LogEntry.NULL;
+        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000) : LogEntry.NULL;
     }
 
     @Override
     public LogEntry getEntry(LogLevel level, Throwable t) {
-        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000, t)
-            : LogEntry.NULL;
+        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000, t) : LogEntry.NULL;
     }
 
     @Override

@@ -49,8 +49,7 @@ public interface Scheduler extends TimeProvider {
         private final ExecutorService serialDelegate;
         private final ScheduledExecutorService concurrentDelegate;
 
-        public DelegatingImpl(final ExecutorService serialExecutor,
-            final ScheduledExecutorService concurrentExecutor) {
+        public DelegatingImpl(final ExecutorService serialExecutor, final ScheduledExecutorService concurrentExecutor) {
             this.serialDelegate = serialExecutor;
             this.concurrentDelegate = concurrentExecutor;
         }
@@ -61,8 +60,7 @@ public interface Scheduler extends TimeProvider {
         }
 
         @Override
-        public void runAtTime(@NotNull final DBDateTime absoluteTime,
-            final @NotNull Runnable command) {
+        public void runAtTime(@NotNull final DBDateTime absoluteTime, final @NotNull Runnable command) {
             runAfterDelay(absoluteTime.getMillis() - currentTime().getMillis(), command);
         }
 

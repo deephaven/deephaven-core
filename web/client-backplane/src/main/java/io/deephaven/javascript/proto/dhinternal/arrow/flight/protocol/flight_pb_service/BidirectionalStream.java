@@ -5,9 +5,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.Flight_pb_service.BidirectionalStream",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.Flight_pb_service.BidirectionalStream",
+        namespace = JsPackage.GLOBAL)
 public interface BidirectionalStream<ReqT, ResT> {
     void cancel();
 

@@ -385,21 +385,21 @@ public class ArrayUtilTest extends TestCase {
     }
 
     public void testAddUnlessUnary() {
-        StringWrapper[] sa = ArrayUtil.addUnless(null, StringWrapper.class,
-            new StringWrapper.UnaryEquals("foo"), new StringWrapper.NullaryFactory("foo"));
+        StringWrapper[] sa = ArrayUtil.addUnless(null, StringWrapper.class, new StringWrapper.UnaryEquals("foo"),
+                new StringWrapper.NullaryFactory("foo"));
         assertFalse(sa == null);
         assertEquals(StringWrapper.class, sa.getClass().getComponentType());
         assertEquals(1, sa.length);
         assertEquals("foo", sa[0].s);
         StringWrapper sw1 = sa[0];
 
-        StringWrapper[] sa2 = ArrayUtil.addUnless(sa, StringWrapper.class,
-            new StringWrapper.UnaryEquals("foo"), new StringWrapper.NullaryFactory("foo"));
+        StringWrapper[] sa2 = ArrayUtil.addUnless(sa, StringWrapper.class, new StringWrapper.UnaryEquals("foo"),
+                new StringWrapper.NullaryFactory("foo"));
         assertTrue(sa2 == sa);
         assertTrue(sa2[0] == sw1);
 
-        StringWrapper[] sa3 = ArrayUtil.addUnless(sa, StringWrapper.class,
-            new StringWrapper.UnaryEquals("bar"), new StringWrapper.NullaryFactory("bar"));
+        StringWrapper[] sa3 = ArrayUtil.addUnless(sa, StringWrapper.class, new StringWrapper.UnaryEquals("bar"),
+                new StringWrapper.NullaryFactory("bar"));
         assertFalse(sa3 == sa);
         assertEquals(StringWrapper.class, sa.getClass().getComponentType());
         assertEquals(2, sa3.length);
@@ -408,21 +408,21 @@ public class ArrayUtilTest extends TestCase {
     }
 
     public void testAddUnlessBinary() {
-        StringWrapper[] sa = ArrayUtil.addUnless(null, StringWrapper.class,
-            new StringWrapper.BinaryEquals(), new StringWrapper.UnaryFactory(), "foo");
+        StringWrapper[] sa = ArrayUtil.addUnless(null, StringWrapper.class, new StringWrapper.BinaryEquals(),
+                new StringWrapper.UnaryFactory(), "foo");
         assertFalse(sa == null);
         assertEquals(StringWrapper.class, sa.getClass().getComponentType());
         assertEquals(1, sa.length);
         assertEquals("foo", sa[0].s);
         StringWrapper sw1 = sa[0];
 
-        StringWrapper[] sa2 = ArrayUtil.addUnless(sa, StringWrapper.class,
-            new StringWrapper.BinaryEquals(), new StringWrapper.UnaryFactory(), "foo");
+        StringWrapper[] sa2 = ArrayUtil.addUnless(sa, StringWrapper.class, new StringWrapper.BinaryEquals(),
+                new StringWrapper.UnaryFactory(), "foo");
         assertTrue(sa2 == sa);
         assertTrue(sa2[0] == sw1);
 
-        StringWrapper[] sa3 = ArrayUtil.addUnless(sa, StringWrapper.class,
-            new StringWrapper.BinaryEquals(), new StringWrapper.UnaryFactory(), "bar");
+        StringWrapper[] sa3 = ArrayUtil.addUnless(sa, StringWrapper.class, new StringWrapper.BinaryEquals(),
+                new StringWrapper.UnaryFactory(), "bar");
         assertFalse(sa3 == sa);
         assertEquals(StringWrapper.class, sa.getClass().getComponentType());
         assertEquals(2, sa3.length);
@@ -431,22 +431,22 @@ public class ArrayUtilTest extends TestCase {
     }
 
     public void testReplaceOrAdd() {
-        StringWrapper[] sa = ArrayUtil.replaceOrAdd(null, StringWrapper.class,
-            new StringWrapper.BinaryEquals(), new StringWrapper.UnaryFactory(), "foo");
+        StringWrapper[] sa = ArrayUtil.replaceOrAdd(null, StringWrapper.class, new StringWrapper.BinaryEquals(),
+                new StringWrapper.UnaryFactory(), "foo");
         assertFalse(sa == null);
         assertEquals(StringWrapper.class, sa.getClass().getComponentType());
         assertEquals(1, sa.length);
         assertEquals("foo", sa[0].s);
         StringWrapper sw1 = sa[0];
 
-        StringWrapper[] sa2 = ArrayUtil.replaceOrAdd(sa, StringWrapper.class,
-            new StringWrapper.BinaryEquals(), new StringWrapper.UnaryFactory(), "foo");
+        StringWrapper[] sa2 = ArrayUtil.replaceOrAdd(sa, StringWrapper.class, new StringWrapper.BinaryEquals(),
+                new StringWrapper.UnaryFactory(), "foo");
         assertTrue(sa2 == sa);
         assertEquals("foo", sa2[0].s);
         assertTrue(sa2[0] != sw1);
 
-        StringWrapper[] sa3 = ArrayUtil.addUnless(sa, StringWrapper.class,
-            new StringWrapper.BinaryEquals(), new StringWrapper.UnaryFactory(), "bar");
+        StringWrapper[] sa3 = ArrayUtil.addUnless(sa, StringWrapper.class, new StringWrapper.BinaryEquals(),
+                new StringWrapper.UnaryFactory(), "bar");
         assertFalse(sa3 == sa);
         assertEquals(StringWrapper.class, sa.getClass().getComponentType());
         assertEquals(2, sa3.length);
@@ -527,8 +527,8 @@ public class ArrayUtilTest extends TestCase {
     }
 
     private static void checkRange(final String[] a, final int aFromIndex,
-        final String[] b, final int bFromIndex,
-        final int count) {
+            final String[] b, final int bFromIndex,
+            final int count) {
         assertTrue(aFromIndex + count <= a.length);
         assertTrue(bFromIndex + count <= b.length);
         for (int i = 0; i < count; ++i) {

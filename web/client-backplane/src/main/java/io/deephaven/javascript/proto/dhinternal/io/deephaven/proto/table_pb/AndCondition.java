@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.AndCondition",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.AndCondition",
+        namespace = JsPackage.GLOBAL)
 public class AndCondition {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -87,11 +87,11 @@ public class AndCondition {
 
                     @JsProperty
                     void setLiteral(
-                        AndCondition.ToObjectReturnType.FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
+                            AndCondition.ToObjectReturnType.FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
 
                     @JsProperty
                     void setReference(
-                        AndCondition.ToObjectReturnType.FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
+                            AndCondition.ToObjectReturnType.FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
                 }
 
                 @JsOverlay
@@ -116,7 +116,7 @@ public class AndCondition {
 
                 @JsProperty
                 void setLhs(
-                    AndCondition.ToObjectReturnType.FiltersListFieldType.CompareFieldType.LhsFieldType lhs);
+                        AndCondition.ToObjectReturnType.FiltersListFieldType.CompareFieldType.LhsFieldType lhs);
 
                 @JsProperty
                 void setOperation(double operation);
@@ -322,8 +322,7 @@ public class AndCondition {
 
                 @JsOverlay
                 default void setOptionalReferencesList(Object[] optionalReferencesList) {
-                    setOptionalReferencesList(
-                        Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
+                    setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
                 }
 
                 @JsProperty
@@ -370,23 +369,21 @@ public class AndCondition {
 
             @JsProperty
             void setCompare(
-                AndCondition.ToObjectReturnType.FiltersListFieldType.CompareFieldType compare);
+                    AndCondition.ToObjectReturnType.FiltersListFieldType.CompareFieldType compare);
 
             @JsProperty
             void setContains(
-                AndCondition.ToObjectReturnType.FiltersListFieldType.ContainsFieldType contains);
+                    AndCondition.ToObjectReturnType.FiltersListFieldType.ContainsFieldType contains);
 
             @JsProperty
-            void setInvoke(
-                AndCondition.ToObjectReturnType.FiltersListFieldType.InvokeFieldType invoke);
+            void setInvoke(AndCondition.ToObjectReturnType.FiltersListFieldType.InvokeFieldType invoke);
 
             @JsProperty
-            void setIsNull(
-                AndCondition.ToObjectReturnType.FiltersListFieldType.IsNullFieldType isNull);
+            void setIsNull(AndCondition.ToObjectReturnType.FiltersListFieldType.IsNullFieldType isNull);
 
             @JsProperty
             void setMatches(
-                AndCondition.ToObjectReturnType.FiltersListFieldType.MatchesFieldType matches);
+                    AndCondition.ToObjectReturnType.FiltersListFieldType.MatchesFieldType matches);
 
             @JsProperty
             void setNot(AndCondition.ToObjectReturnType.FiltersListFieldType.NotFieldType not);
@@ -395,12 +392,10 @@ public class AndCondition {
             void setOr(AndCondition.ToObjectReturnType.FiltersListFieldType.OrFieldType or);
 
             @JsProperty
-            void setPb_in(
-                AndCondition.ToObjectReturnType.FiltersListFieldType.Pb_inFieldType pb_in);
+            void setPb_in(AndCondition.ToObjectReturnType.FiltersListFieldType.Pb_inFieldType pb_in);
 
             @JsProperty
-            void setSearch(
-                AndCondition.ToObjectReturnType.FiltersListFieldType.SearchFieldType search);
+            void setSearch(AndCondition.ToObjectReturnType.FiltersListFieldType.SearchFieldType search);
         }
 
         @JsOverlay
@@ -413,15 +408,14 @@ public class AndCondition {
 
         @JsOverlay
         default void setFiltersList(
-            AndCondition.ToObjectReturnType.FiltersListFieldType[] filtersList) {
+                AndCondition.ToObjectReturnType.FiltersListFieldType[] filtersList) {
             setFiltersList(
-                Js.<JsArray<AndCondition.ToObjectReturnType.FiltersListFieldType>>uncheckedCast(
-                    filtersList));
+                    Js.<JsArray<AndCondition.ToObjectReturnType.FiltersListFieldType>>uncheckedCast(
+                            filtersList));
         }
 
         @JsProperty
-        void setFiltersList(
-            JsArray<AndCondition.ToObjectReturnType.FiltersListFieldType> filtersList);
+        void setFiltersList(JsArray<AndCondition.ToObjectReturnType.FiltersListFieldType> filtersList);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -497,11 +491,11 @@ public class AndCondition {
 
                     @JsProperty
                     void setLiteral(
-                        AndCondition.ToObjectReturnType0.FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
+                            AndCondition.ToObjectReturnType0.FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
 
                     @JsProperty
                     void setReference(
-                        AndCondition.ToObjectReturnType0.FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
+                            AndCondition.ToObjectReturnType0.FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
                 }
 
                 @JsOverlay
@@ -526,7 +520,7 @@ public class AndCondition {
 
                 @JsProperty
                 void setLhs(
-                    AndCondition.ToObjectReturnType0.FiltersListFieldType.CompareFieldType.LhsFieldType lhs);
+                        AndCondition.ToObjectReturnType0.FiltersListFieldType.CompareFieldType.LhsFieldType lhs);
 
                 @JsProperty
                 void setOperation(double operation);
@@ -732,8 +726,7 @@ public class AndCondition {
 
                 @JsOverlay
                 default void setOptionalReferencesList(Object[] optionalReferencesList) {
-                    setOptionalReferencesList(
-                        Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
+                    setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
                 }
 
                 @JsProperty
@@ -780,23 +773,21 @@ public class AndCondition {
 
             @JsProperty
             void setCompare(
-                AndCondition.ToObjectReturnType0.FiltersListFieldType.CompareFieldType compare);
+                    AndCondition.ToObjectReturnType0.FiltersListFieldType.CompareFieldType compare);
 
             @JsProperty
             void setContains(
-                AndCondition.ToObjectReturnType0.FiltersListFieldType.ContainsFieldType contains);
+                    AndCondition.ToObjectReturnType0.FiltersListFieldType.ContainsFieldType contains);
 
             @JsProperty
-            void setInvoke(
-                AndCondition.ToObjectReturnType0.FiltersListFieldType.InvokeFieldType invoke);
+            void setInvoke(AndCondition.ToObjectReturnType0.FiltersListFieldType.InvokeFieldType invoke);
 
             @JsProperty
-            void setIsNull(
-                AndCondition.ToObjectReturnType0.FiltersListFieldType.IsNullFieldType isNull);
+            void setIsNull(AndCondition.ToObjectReturnType0.FiltersListFieldType.IsNullFieldType isNull);
 
             @JsProperty
             void setMatches(
-                AndCondition.ToObjectReturnType0.FiltersListFieldType.MatchesFieldType matches);
+                    AndCondition.ToObjectReturnType0.FiltersListFieldType.MatchesFieldType matches);
 
             @JsProperty
             void setNot(AndCondition.ToObjectReturnType0.FiltersListFieldType.NotFieldType not);
@@ -805,12 +796,10 @@ public class AndCondition {
             void setOr(AndCondition.ToObjectReturnType0.FiltersListFieldType.OrFieldType or);
 
             @JsProperty
-            void setPb_in(
-                AndCondition.ToObjectReturnType0.FiltersListFieldType.Pb_inFieldType pb_in);
+            void setPb_in(AndCondition.ToObjectReturnType0.FiltersListFieldType.Pb_inFieldType pb_in);
 
             @JsProperty
-            void setSearch(
-                AndCondition.ToObjectReturnType0.FiltersListFieldType.SearchFieldType search);
+            void setSearch(AndCondition.ToObjectReturnType0.FiltersListFieldType.SearchFieldType search);
         }
 
         @JsOverlay
@@ -823,26 +812,25 @@ public class AndCondition {
 
         @JsOverlay
         default void setFiltersList(
-            AndCondition.ToObjectReturnType0.FiltersListFieldType[] filtersList) {
+                AndCondition.ToObjectReturnType0.FiltersListFieldType[] filtersList) {
             setFiltersList(
-                Js.<JsArray<AndCondition.ToObjectReturnType0.FiltersListFieldType>>uncheckedCast(
-                    filtersList));
+                    Js.<JsArray<AndCondition.ToObjectReturnType0.FiltersListFieldType>>uncheckedCast(
+                            filtersList));
         }
 
         @JsProperty
-        void setFiltersList(
-            JsArray<AndCondition.ToObjectReturnType0.FiltersListFieldType> filtersList);
+        void setFiltersList(JsArray<AndCondition.ToObjectReturnType0.FiltersListFieldType> filtersList);
     }
 
     public static native AndCondition deserializeBinary(Uint8Array bytes);
 
     public static native AndCondition deserializeBinaryFromReader(
-        AndCondition message, Object reader);
+            AndCondition message, Object reader);
 
     public static native void serializeBinaryToWriter(AndCondition message, Object writer);
 
     public static native AndCondition.ToObjectReturnType toObject(
-        boolean includeInstance, AndCondition msg);
+            boolean includeInstance, AndCondition msg);
 
     public native Condition addFilters();
 

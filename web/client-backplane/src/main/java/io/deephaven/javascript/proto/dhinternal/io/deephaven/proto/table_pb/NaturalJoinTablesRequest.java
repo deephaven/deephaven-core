@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.NaturalJoinTablesRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.NaturalJoinTablesRequest",
+        namespace = JsPackage.GLOBAL)
 public class NaturalJoinTablesRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -43,7 +43,7 @@ public class NaturalJoinTablesRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static NaturalJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -78,20 +78,20 @@ public class NaturalJoinTablesRequest {
 
             @JsProperty
             void setTicket(
-                NaturalJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    NaturalJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<NaturalJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<NaturalJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<NaturalJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<NaturalJoinTablesRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -169,7 +169,7 @@ public class NaturalJoinTablesRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static NaturalJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -204,20 +204,20 @@ public class NaturalJoinTablesRequest {
 
             @JsProperty
             void setTicket(
-                NaturalJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    NaturalJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<NaturalJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<NaturalJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<NaturalJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<NaturalJoinTablesRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -270,13 +270,13 @@ public class NaturalJoinTablesRequest {
     public static native NaturalJoinTablesRequest deserializeBinary(Uint8Array bytes);
 
     public static native NaturalJoinTablesRequest deserializeBinaryFromReader(
-        NaturalJoinTablesRequest message, Object reader);
+            NaturalJoinTablesRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(
-        NaturalJoinTablesRequest message, Object writer);
+            NaturalJoinTablesRequest message, Object writer);
 
     public static native NaturalJoinTablesRequest.ToObjectReturnType toObject(
-        boolean includeInstance, NaturalJoinTablesRequest msg);
+            boolean includeInstance, NaturalJoinTablesRequest msg);
 
     public native String addColumnsToAdd(String value, double index);
 

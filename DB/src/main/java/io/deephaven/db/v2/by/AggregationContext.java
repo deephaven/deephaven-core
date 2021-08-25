@@ -25,8 +25,8 @@ import java.util.function.UnaryOperator;
 /**
  * Encapsulates the operators and inputs for an aggregation operation.
  * <p>
- * Provides utility methods for the ChunkedOperationAggregationHelper to manipulate and interrogate
- * the operators, inputs and outputs.
+ * Provides utility methods for the ChunkedOperationAggregationHelper to manipulate and interrogate the operators,
+ * inputs and outputs.
  */
 class AggregationContext {
     /**
@@ -35,8 +35,7 @@ class AggregationContext {
     final IterativeChunkedAggregationOperator[] operators;
 
     /**
-     * Our input columns (currently one per operator, but that will change to support zero or
-     * multiple input operators).
+     * Our input columns (currently one per operator, but that will change to support zero or multiple input operators).
      */
     final ChunkSource.WithPrev<Values>[] inputColumns;
 
@@ -46,8 +45,7 @@ class AggregationContext {
     final String[][] inputNames;
 
     /**
-     * Does any operator require indices? See
-     * {@link IterativeChunkedAggregationOperator#requiresIndices()}.
+     * Does any operator require indices? See {@link IterativeChunkedAggregationOperator#requiresIndices()}.
      */
     private final boolean requiresIndices;
 
@@ -74,39 +72,36 @@ class AggregationContext {
     private final AggregationContextTransformer[] transformers;
 
     /**
-     * For a given operator index, the first slot that the column exists in. If the value in index
-     * oi is equal to oi, then we will read from this column. If the value is not equal to oi
-     * (because it is -1 for a null column or a value less than oi), we will reuse an already read
-     * value.
+     * For a given operator index, the first slot that the column exists in. If the value in index oi is equal to oi,
+     * then we will read from this column. If the value is not equal to oi (because it is -1 for a null column or a
+     * value less than oi), we will reuse an already read value.
      */
     private final int[] inputSlots;
 
     AggregationContext(IterativeChunkedAggregationOperator[] operators, String[][] inputNames,
-        ChunkSource.WithPrev<Values>[] inputColumns) {
+            ChunkSource.WithPrev<Values>[] inputColumns) {
         this(operators, inputNames, inputColumns, true);
     }
 
     AggregationContext(IterativeChunkedAggregationOperator[] operators, String[][] inputNames,
-        ChunkSource.WithPrev<Values>[] inputColumns, boolean addedBackModified) {
+            ChunkSource.WithPrev<Values>[] inputColumns, boolean addedBackModified) {
         this(operators, inputNames, inputColumns, null, true);
     }
 
     AggregationContext(IterativeChunkedAggregationOperator[] operators, String[][] inputNames,
-        ChunkSource.WithPrev<Values>[] inputColumns, AggregationContextTransformer[] transformers,
-        boolean addedBackModified) {
+            ChunkSource.WithPrev<Values>[] inputColumns, AggregationContextTransformer[] transformers,
+            boolean addedBackModified) {
         this.operators = operators;
         this.inputNames = inputNames;
         this.inputColumns = inputColumns;
         this.transformers = transformers;
         this.addedBackModified = addedBackModified;
-        requiresIndices = Arrays.stream(this.operators)
-            .anyMatch(IterativeChunkedAggregationOperator::requiresIndices);
+        requiresIndices = Arrays.stream(this.operators).anyMatch(IterativeChunkedAggregationOperator::requiresIndices);
         requiresInputs = Arrays.stream(this.inputColumns).anyMatch(Objects::nonNull);
-        unchunkedIndices = Arrays.stream(this.operators)
-            .allMatch(IterativeChunkedAggregationOperator::unchunkedIndex);
+        unchunkedIndices = Arrays.stream(this.operators).allMatch(IterativeChunkedAggregationOperator::unchunkedIndex);
         // noinspection unchecked
-        resultColumns = merge(Arrays.stream(this.operators)
-            .map(IterativeChunkedAggregationOperator::getResultColumns).toArray(Map[]::new));
+        resultColumns = merge(Arrays.stream(this.operators).map(IterativeChunkedAggregationOperator::getResultColumns)
+                .toArray(Map[]::new));
 
         this.inputSlots = new int[inputColumns.length];
         for (int currentSlot = 0; currentSlot < inputSlots.length; ++currentSlot) {
@@ -128,8 +123,7 @@ class AggregationContext {
         }
     }
 
-    private static Map<String, ColumnSource<?>> merge(
-        Map<String, ColumnSource<?>>[] operatorResultColumns) {
+    private static Map<String, ColumnSource<?>> merge(Map<String, ColumnSource<?>>[] operatorResultColumns) {
         final Map<String, ColumnSource<?>> mergedResult = new LinkedHashMap<>();
         for (final Map<String, ColumnSource<?>> operatorColumns : operatorResultColumns) {
             for (final Map.Entry<String, ColumnSource<?>> entry : operatorColumns.entrySet()) {
@@ -183,9 +177,8 @@ class AggregationContext {
     }
 
     /**
-     * The helper passes in the result column source map, which contains the key columns if any. The
-     * context is responsible for filling in the columns generated by the operators or
-     * transformations.
+     * The helper passes in the result column source map, which contains the key columns if any. The context is
+     * responsible for filling in the columns generated by the operators or transformations.
      *
      * @param keyColumns the keyColumns as input, the result column source map as output.
      */
@@ -216,8 +209,7 @@ class AggregationContext {
      * @return an array, parallel to operators, of the input column sets for each operator
      */
     ModifiedColumnSet[] getInputModifiedColumnSets(QueryTable input) {
-        final ModifiedColumnSet[] inputModifiedColumnSet =
-            new ModifiedColumnSet[inputColumns.length];
+        final ModifiedColumnSet[] inputModifiedColumnSet = new ModifiedColumnSet[inputColumns.length];
         for (int ii = 0; ii < inputColumns.length; ++ii) {
             inputModifiedColumnSet[ii] = input.newModifiedColumnSet(inputNames[ii]);
         }
@@ -225,8 +217,8 @@ class AggregationContext {
     }
 
     /**
-     * Allow all operators to perform any internal state keeping needed for destinations that were
-     * added during initialization.
+     * Allow all operators to perform any internal state keeping needed for destinations that were added during
+     * initialization.
      *
      * @param resultTable The result {@link QueryTable} after initialization
      */
@@ -237,32 +229,30 @@ class AggregationContext {
     }
 
     /**
-     * Initialize refreshing result support for all operators. As a side effect, get an array of
-     * factories to produce result modified column sets for each operator from the upstream modified
-     * column set. Each factory is used in turn when its operator reports a modification, in order
-     * to produce a final result modified column set.
+     * Initialize refreshing result support for all operators. As a side effect, get an array of factories to produce
+     * result modified column sets for each operator from the upstream modified column set. Each factory is used in turn
+     * when its operator reports a modification, in order to produce a final result modified column set.
      *
      * @param resultTable The result table
-     * @param aggregationUpdateListener The aggregation update listener, which may be needed for
-     *        referential integrity
-     * @return An array, parallel to operators, of factories that produce a result modified column
-     *         set from the upstream modified column set
+     * @param aggregationUpdateListener The aggregation update listener, which may be needed for referential integrity
+     * @return An array, parallel to operators, of factories that produce a result modified column set from the upstream
+     *         modified column set
      */
     UnaryOperator<ModifiedColumnSet>[] initializeRefreshing(@NotNull final QueryTable resultTable,
-        @NotNull final LivenessReferent aggregationUpdateListener) {
+            @NotNull final LivenessReferent aggregationUpdateListener) {
         // noinspection unchecked
         final UnaryOperator<ModifiedColumnSet>[] resultModifiedColumnSetFactories =
-            new UnaryOperator[inputColumns.length];
+                new UnaryOperator[inputColumns.length];
         for (int ii = 0; ii < inputColumns.length; ++ii) {
             resultModifiedColumnSetFactories[ii] =
-                operators[ii].initializeRefreshing(resultTable, aggregationUpdateListener);
+                    operators[ii].initializeRefreshing(resultTable, aggregationUpdateListener);
         }
         return resultModifiedColumnSetFactories;
     }
 
     /**
-     * Allow all operators to reset any per-step internal state. Note that the arguments to this
-     * method should not be mutated in any way.
+     * Allow all operators to reset any per-step internal state. Note that the arguments to this method should not be
+     * mutated in any way.
      *
      * @param upstream The upstream {@link ShiftAwareListener.Update}
      */
@@ -273,17 +263,16 @@ class AggregationContext {
     }
 
     /**
-     * Allow all operators to perform any internal state keeping needed for destinations that were
-     * added (went from 0 keys to &gt 0), removed (went from &gt 0 keys to 0), or modified (keys
-     * added or removed, or keys modified) by this iteration. Note that the arguments to this method
-     * should not be mutated in any way.
+     * Allow all operators to perform any internal state keeping needed for destinations that were added (went from 0
+     * keys to &gt 0), removed (went from &gt 0 keys to 0), or modified (keys added or removed, or keys modified) by
+     * this iteration. Note that the arguments to this method should not be mutated in any way.
      *
-     * @param downstream The downstream {@link ShiftAwareListener.Update} (which does <em>not</em>
-     *        have its {@link ModifiedColumnSet} finalized yet)
+     * @param downstream The downstream {@link ShiftAwareListener.Update} (which does <em>not</em> have its
+     *        {@link ModifiedColumnSet} finalized yet)
      * @param newDestinations New destinations added on this update
      */
     void propagateChangesToOperators(@NotNull final ShiftAwareListener.Update downstream,
-        @NotNull final ReadOnlyIndex newDestinations) {
+            @NotNull final ReadOnlyIndex newDestinations) {
         for (final IterativeChunkedAggregationOperator operator : operators) {
             operator.propagateUpdates(downstream, newDestinations);
         }
@@ -296,7 +285,7 @@ class AggregationContext {
      * @param sourceEntry The {@link UpdatePerformanceTracker.Entry} for the failed listener
      */
     void propagateFailureToOperators(@NotNull final Throwable originalException,
-        @NotNull final UpdatePerformanceTracker.Entry sourceEntry) {
+            @NotNull final UpdatePerformanceTracker.Entry sourceEntry) {
         for (final IterativeChunkedAggregationOperator operator : operators) {
             operator.propagateFailure(originalException, sourceEntry);
         }
@@ -309,8 +298,7 @@ class AggregationContext {
      * @param getContexts the array to initialize with getContexts
      * @param maxSize maximum size to allocate
      */
-    void initializeGetContexts(SharedContext sharedContext, ChunkSource.GetContext[] getContexts,
-        long maxSize) {
+    void initializeGetContexts(SharedContext sharedContext, ChunkSource.GetContext[] getContexts, long maxSize) {
         final int chunkSize = ChunkedOperatorAggregationHelper.chunkSize(maxSize);
         for (int oi = 0; oi < size(); ++oi) {
             if (inputSlot(oi) != oi) {
@@ -328,8 +316,8 @@ class AggregationContext {
      * @param maxSize maximum size to allocate
      * @param mask only initialize getContexts[i] if mask[i] is true
      */
-    void initializeGetContexts(SharedContext sharedContext, ChunkSource.GetContext[] getContexts,
-        long maxSize, boolean[] mask) {
+    void initializeGetContexts(SharedContext sharedContext, ChunkSource.GetContext[] getContexts, long maxSize,
+            boolean[] mask) {
         final int chunkSize = ChunkedOperatorAggregationHelper.chunkSize(maxSize);
         for (int oi = 0; oi < size(); ++oi) {
             if (!mask[oi])
@@ -337,8 +325,7 @@ class AggregationContext {
             final int inputSlot = inputSlot(oi);
             if (inputSlot < 0 || getContexts[inputSlot] != null)
                 continue;
-            getContexts[inputSlot] =
-                inputColumns[inputSlot].makeGetContext(chunkSize, sharedContext);
+            getContexts[inputSlot] = inputColumns[inputSlot].makeGetContext(chunkSize, sharedContext);
         }
     }
 
@@ -347,8 +334,7 @@ class AggregationContext {
      *
      * @param contexts the array to initialize with getContexts
      */
-    void initializeSingletonContexts(
-        IterativeChunkedAggregationOperator.SingletonContext[] contexts, long maxSize) {
+    void initializeSingletonContexts(IterativeChunkedAggregationOperator.SingletonContext[] contexts, long maxSize) {
         final int chunkSize = ChunkedOperatorAggregationHelper.chunkSize(maxSize);
         for (int oi = 0; oi < size(); ++oi) {
             contexts[oi] = operators[oi].makeSingletonContext(chunkSize);
@@ -361,9 +347,8 @@ class AggregationContext {
      * @param contexts the array to initialize with getContexts
      * @param mask the columns to initialize
      */
-    private void initializeSingletonContexts(
-        IterativeChunkedAggregationOperator.SingletonContext[] contexts, long maxSize,
-        boolean[] mask) {
+    private void initializeSingletonContexts(IterativeChunkedAggregationOperator.SingletonContext[] contexts,
+            long maxSize, boolean[] mask) {
         final int chunkSize = ChunkedOperatorAggregationHelper.chunkSize(maxSize);
         for (int oi = 0; oi < size(); ++oi) {
             if (mask[oi]) {
@@ -375,23 +360,20 @@ class AggregationContext {
     /**
      * Initialize an array of singleton contexts based on an upstream update.
      */
-    void initializeSingletonContexts(
-        IterativeChunkedAggregationOperator.SingletonContext[] opContexts,
-        ShiftAwareListener.Update upstream, boolean[] modifiedColumns) {
-        final long maxSize =
-            UpdateSizeCalculator.chunkSize(upstream, ChunkedOperatorAggregationHelper.CHUNK_SIZE);
+    void initializeSingletonContexts(IterativeChunkedAggregationOperator.SingletonContext[] opContexts,
+            ShiftAwareListener.Update upstream, boolean[] modifiedColumns) {
+        final long maxSize = UpdateSizeCalculator.chunkSize(upstream, ChunkedOperatorAggregationHelper.CHUNK_SIZE);
         if (upstream.removed.nonempty() || upstream.added.nonempty()) {
             initializeSingletonContexts(opContexts, maxSize);
             return;
         }
 
-        final boolean[] toInitialize =
-            computeInitializationMaskFromUpdate(upstream, modifiedColumns);
+        final boolean[] toInitialize = computeInitializationMaskFromUpdate(upstream, modifiedColumns);
         initializeSingletonContexts(opContexts, maxSize, toInitialize);
     }
 
     private boolean[] computeInitializationMaskFromUpdate(ShiftAwareListener.Update upstream,
-        boolean[] modifiedColumns) {
+            boolean[] modifiedColumns) {
         final boolean[] toInitialize = new boolean[size()];
         if (requiresIndices() && upstream.shifted.nonempty()) {
             for (int ii = 0; ii < size(); ++ii) {
@@ -418,8 +400,7 @@ class AggregationContext {
      *
      * @param contexts the array to initialize with getContexts
      */
-    void initializeBucketedContexts(IterativeChunkedAggregationOperator.BucketedContext[] contexts,
-        long maxSize) {
+    void initializeBucketedContexts(IterativeChunkedAggregationOperator.BucketedContext[] contexts, long maxSize) {
         final int chunkSize = ChunkedOperatorAggregationHelper.chunkSize(maxSize);
         for (int oi = 0; oi < size(); ++oi) {
             contexts[oi] = operators[oi].makeBucketedContext(chunkSize);
@@ -430,21 +411,18 @@ class AggregationContext {
      * Initialize an array of singleton contexts based on an upstream update.
      */
     void initializeBucketedContexts(IterativeChunkedAggregationOperator.BucketedContext[] contexts,
-        ShiftAwareListener.Update upstream, boolean keysModified, boolean[] modifiedColumns) {
-        final long maxSize =
-            UpdateSizeCalculator.chunkSize(upstream, ChunkedOperatorAggregationHelper.CHUNK_SIZE);
+            ShiftAwareListener.Update upstream, boolean keysModified, boolean[] modifiedColumns) {
+        final long maxSize = UpdateSizeCalculator.chunkSize(upstream, ChunkedOperatorAggregationHelper.CHUNK_SIZE);
         if (upstream.added.nonempty() || upstream.removed.nonempty() || keysModified) {
             initializeBucketedContexts(contexts, maxSize);
             return;
         }
-        final boolean[] toInitialize =
-            computeInitializationMaskFromUpdate(upstream, modifiedColumns);
+        final boolean[] toInitialize = computeInitializationMaskFromUpdate(upstream, modifiedColumns);
         initializeBucketedContexts(contexts, maxSize, toInitialize);
     }
 
-    private void initializeBucketedContexts(
-        IterativeChunkedAggregationOperator.BucketedContext[] contexts, long maxSize,
-        boolean[] mask) {
+    private void initializeBucketedContexts(IterativeChunkedAggregationOperator.BucketedContext[] contexts,
+            long maxSize, boolean[] mask) {
         final int chunkSize = ChunkedOperatorAggregationHelper.chunkSize(maxSize);
         for (int oi = 0; oi < size(); ++oi) {
             if (mask[oi]) {
@@ -474,16 +452,14 @@ class AggregationContext {
         final PermuteKernel[] permuteKernels = new PermuteKernel[size()];
         for (int oi = 0; oi < size(); ++oi) {
             if (inputSlot(oi) == oi) {
-                permuteKernels[oi] =
-                    PermuteKernel.makePermuteKernel(inputColumns[oi].getChunkType());
+                permuteKernels[oi] = PermuteKernel.makePermuteKernel(inputColumns[oi].getChunkType());
             }
         }
         return permuteKernels;
     }
 
     /**
-     * Returns true if slots that are removed and then reincarnated on the same cycle should be
-     * marked as modified.
+     * Returns true if slots that are removed and then reincarnated on the same cycle should be marked as modified.
      */
     boolean addedBackModified() {
         return addedBackModified;

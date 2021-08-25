@@ -36,9 +36,8 @@ public class LoggerImpl implements Logger {
         }
     };
 
-    public LoggerImpl(LogEntryPool logEntryPool, LogSink logSink, String prefix,
-        LogLevel loggingLevel, LoggerTimeSource timeSource, TimeZone tz, boolean showLevel,
-        boolean showThreadName) {
+    public LoggerImpl(LogEntryPool logEntryPool, LogSink logSink, String prefix, LogLevel loggingLevel,
+            LoggerTimeSource timeSource, TimeZone tz, boolean showLevel, boolean showThreadName) {
         this.logEntryPool = logEntryPool;
         this.logSink = logSink;
 
@@ -81,8 +80,7 @@ public class LoggerImpl implements Logger {
             LogEntry entry = logEntryPool.take().start(logSink, level, currentTimeMicros, t);
 
             if (tz != null) {
-                entry.append("[").appendTimestampMicros(entry.getTimestampMicros(), localTimestamp)
-                    .append("] ");
+                entry.append("[").appendTimestampMicros(entry.getTimestampMicros(), localTimestamp).append("] ");
             }
 
             if (showLevel) {

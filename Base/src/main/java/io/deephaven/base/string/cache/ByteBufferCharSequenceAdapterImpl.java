@@ -34,8 +34,7 @@ public class ByteBufferCharSequenceAdapterImpl extends ByteOrientedCharSequenceA
     /**
      * Set the ByteBuffer backing this CharSequenceAdapter.
      * 
-     * @param buffer A ByteBuffer instance that contains a proto-String this adapter knows how to
-     *        convert.
+     * @param buffer A ByteBuffer instance that contains a proto-String this adapter knows how to convert.
      * @param offset The index of the first char in buffer that belongs to the proto-String.
      * @param length The length of the proto-String in chars.
      * @return This CharSequenceAdapter.

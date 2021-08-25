@@ -5,8 +5,8 @@ import io.deephaven.web.shared.data.LocalTime;
 import java.util.Arrays;
 
 /**
- * Holder for data associated with a column of type java.time.LocalTime. This type is serialized
- * with a custom LocalTime type for efficiency and GWT compatibility.
+ * Holder for data associated with a column of type java.time.LocalTime. This type is serialized with a custom LocalTime
+ * type for efficiency and GWT compatibility.
  */
 public class LocalTimeArrayColumnData extends ColumnData {
     private LocalTime[] data;

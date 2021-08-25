@@ -11,10 +11,7 @@ public final class SelectFactoryConstants {
     /** The end of a complete expression. Matches any trailing spaces and the end of the input */
     public static final String END_PTRN = "\\s*\\Z";
 
-    /**
-     * Matches a variable starting with a letter, _ or $ followed by any number of letters, numbers,
-     * _ or $
-     */
+    /** Matches a variable starting with a letter, _ or $ followed by any number of letters, numbers, _ or $ */
     public static final String ID_PTRN = "[a-zA-Z_$][a-zA-Z0-9_$]*";
 
     /** An integer, including the initial minus sign */
@@ -33,11 +30,11 @@ public final class SelectFactoryConstants {
     public static final String BOOL_PTRN = "[tT][rR][uU][eE]" + "|" + "[fF][aA][lL][sS][eE]";
 
     /**
-     * Any {@link #INT_PTRN int}, {@link #FLT_PTRN float}, {@link #BOOL_PTRN boolean}, or
-     * {@link #STR_PTRN string} as defined above
+     * Any {@link #INT_PTRN int}, {@link #FLT_PTRN float}, {@link #BOOL_PTRN boolean}, or {@link #STR_PTRN string} as
+     * defined above
      */
-    public static final String LITERAL_PTRN = "(?:" + INT_PTRN + ")|(?:" + FLT_PTRN + ")|(?:"
-        + BOOL_PTRN + ")|(?:" + STR_PTRN + ")|(?:" + DATETIME_PTRN + ")";
+    public static final String LITERAL_PTRN = "(?:" + INT_PTRN + ")|(?:" + FLT_PTRN + ")|(?:" + BOOL_PTRN + ")|(?:"
+            + STR_PTRN + ")|(?:" + DATETIME_PTRN + ")";
 
     /** Case insensitive 'icase' expression */
     public static final String ICASE = "[iI][cC][aA][sS][eE]";

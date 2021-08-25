@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest",
+        namespace = JsPackage.GLOBAL)
 public class DropColumnsRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -23,7 +23,7 @@ public class DropColumnsRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static DropColumnsRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -58,20 +58,20 @@ public class DropColumnsRequest {
 
             @JsProperty
             void setTicket(
-                DropColumnsRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    DropColumnsRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<DropColumnsRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<DropColumnsRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<DropColumnsRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<DropColumnsRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -132,7 +132,7 @@ public class DropColumnsRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static DropColumnsRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -167,20 +167,20 @@ public class DropColumnsRequest {
 
             @JsProperty
             void setTicket(
-                DropColumnsRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    DropColumnsRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<DropColumnsRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<DropColumnsRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<DropColumnsRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<DropColumnsRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -236,12 +236,12 @@ public class DropColumnsRequest {
     public static native DropColumnsRequest deserializeBinary(Uint8Array bytes);
 
     public static native DropColumnsRequest deserializeBinaryFromReader(
-        DropColumnsRequest message, Object reader);
+            DropColumnsRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(DropColumnsRequest message, Object writer);
 
     public static native DropColumnsRequest.ToObjectReturnType toObject(
-        boolean includeInstance, DropColumnsRequest msg);
+            boolean includeInstance, DropColumnsRequest msg);
 
     public native String addColumnNames(String value, double index);
 

@@ -55,11 +55,10 @@ final class ArrayContainerRangeIterator implements SearchRangeIterator {
     }
 
     /**
-     * Set the current iterator range based on the index idx and value v provided. Look for a range
-     * starting at the value at index idx. The provided value v is to the left or inside that range,
-     * never to the right. Set the end of the current iterator range to the end of the range at idx.
-     * Set the current iterator range start to v if v is inside the range, or the start of the range
-     * at idx otherwise.
+     * Set the current iterator range based on the index idx and value v provided. Look for a range starting at the
+     * value at index idx. The provided value v is to the left or inside that range, never to the right. Set the end of
+     * the current iterator range to the end of the range at idx. Set the current iterator range start to v if v is
+     * inside the range, or the start of the range at idx otherwise.
      *
      * @param v A value to the left or inside the range at idx
      * @param idx a valid index inside our contents array.
@@ -88,7 +87,7 @@ final class ArrayContainerRangeIterator implements SearchRangeIterator {
             return true;
         }
         int i = ContainerUtil.unsignedBinarySearch(parent.content, nextPos, parent.cardinality,
-            ContainerUtil.lowbits(v));
+                ContainerUtil.lowbits(v));
         if (i < 0) {
             i = -i - 1;
         }

@@ -21,17 +21,15 @@ public class DefaultFatalErrorReporter extends FatalErrorReporterBase {
 
     @Override
     protected void reportImpl(@NotNull final String message, @NotNull final Throwable throwable,
-        boolean isUncaughtException) {
-        // Similar code has Thread.setDefaultUncaughtExceptionHandler(null); here "to prevent
-        // deadlocks."
+            boolean isUncaughtException) {
+        // Similar code has Thread.setDefaultUncaughtExceptionHandler(null); here "to prevent deadlocks."
         // I think our control over the actual System.exit() call is sufficient.
-        final boolean initiateShutdown =
-            !ProcessEnvironment.getGlobalShutdownManager().tasksInvoked();
+        final boolean initiateShutdown = !ProcessEnvironment.getGlobalShutdownManager().tasksInvoked();
 
         // It's a tricky proposition to try and write out to a io.deephaven.io.logger.Logger here.
         // Instead, we log to a PrintStream, ideally the original System.err.
         err.println(String.format("%s: %s",
-            initiateShutdown ? "Initiating shutdown due to" : "After shutdown initiated", message));
+                initiateShutdown ? "Initiating shutdown due to" : "After shutdown initiated", message));
         throwable.printStackTrace(err);
 
         if (initiateShutdown) {
@@ -51,14 +49,13 @@ public class DefaultFatalErrorReporter extends FatalErrorReporterBase {
     }
 
     /**
-     * The semantics of {@link System#exit(int)} indicate that "This method never returns normally".
-     * We would like to preserve that property for our calls to {@link #report(String, Throwable)}
-     * even in the case where we aren't initiating
-     * {@link AsyncSystem#exit(String, int, PrintStream)}.
+     * The semantics of {@link System#exit(int)} indicate that "This method never returns normally". We would like to
+     * preserve that property for our calls to {@link #report(String, Throwable)} even in the case where we aren't
+     * initiating {@link AsyncSystem#exit(String, int, PrintStream)}.
      *
      * <p>
-     * Note: the JVM will still exit once {@link System#exit(int)} finishes, even if the current
-     * thread is a non-daemon thread.
+     * Note: the JVM will still exit once {@link System#exit(int)} finishes, even if the current thread is a non-daemon
+     * thread.
      */
     private void neverReturn() {
         // noinspection InfiniteLoopStatement

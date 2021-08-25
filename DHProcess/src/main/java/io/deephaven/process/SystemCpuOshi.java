@@ -8,9 +8,8 @@ import oshi.hardware.CentralProcessor;
 import oshi.hardware.CentralProcessor.ProcessorIdentifier;
 
 /**
- * The Central Processing Unit (CPU) or the processor is the portion of a computer system that
- * carries out the instructions of a computer program, and is the primary element carrying out the
- * computer's functions.
+ * The Central Processing Unit (CPU) or the processor is the portion of a computer system that carries out the
+ * instructions of a computer program, and is the primary element carrying out the computer's functions.
  */
 @Value.Immutable
 @ProcessStyle
@@ -45,8 +44,8 @@ public abstract class SystemCpuOshi implements PropertySet {
     public abstract String getName();
 
     /**
-     * Vendor frequency (in Hz), eg. for processor named Intel(R) Core(TM)2 Duo CPU T7300 @ 2.00GHz
-     * the vendor frequency is 2000000000.
+     * Vendor frequency (in Hz), eg. for processor named Intel(R) Core(TM)2 Duo CPU T7300 @ 2.00GHz the vendor frequency
+     * is 2000000000.
      *
      * @return Processor frequency, if known
      */
@@ -54,14 +53,13 @@ public abstract class SystemCpuOshi implements PropertySet {
     public abstract OptionalLong getVendorFreq();
 
     /**
-     * Gets the Processor ID. This is a hexidecimal string representing an 8-byte value, normally
-     * obtained using the CPUID opcode with the EAX register set to 1. The first four bytes are the
-     * resulting contents of the EAX register, which is the Processor signature, represented in
-     * human-readable form by {@link #getIdentifier()} . The remaining four bytes are the contents
-     * of the EDX register, containing feature flags.
+     * Gets the Processor ID. This is a hexidecimal string representing an 8-byte value, normally obtained using the
+     * CPUID opcode with the EAX register set to 1. The first four bytes are the resulting contents of the EAX register,
+     * which is the Processor signature, represented in human-readable form by {@link #getIdentifier()} . The remaining
+     * four bytes are the contents of the EDX register, containing feature flags.
      *
-     * NOTE: The order of returned bytes is platform and software dependent. Values may be in either
-     * Big Endian or Little Endian order.
+     * NOTE: The order of returned bytes is platform and software dependent. Values may be in either Big Endian or
+     * Little Endian order.
      *
      * @return A string representing the Processor ID
      */
@@ -87,8 +85,8 @@ public abstract class SystemCpuOshi implements PropertySet {
     public abstract String getFamily();
 
     /**
-     * Get the number of logical CPUs available for processing. This value may be higher than
-     * physical CPUs if hyperthreading is enabled.
+     * Get the number of logical CPUs available for processing. This value may be higher than physical CPUs if
+     * hyperthreading is enabled.
      *
      * @return The number of logical CPUs available.
      */
@@ -104,8 +102,7 @@ public abstract class SystemCpuOshi implements PropertySet {
     public abstract int getPhysicalProcessorCount();
 
     /**
-     * Get the number of packages/sockets in the system. A single package may contain multiple
-     * cores.
+     * Get the number of packages/sockets in the system. A single package may contain multiple cores.
      *
      * @return The number of physical packages available.
      */
@@ -138,18 +135,18 @@ public abstract class SystemCpuOshi implements PropertySet {
     public static SystemCpuOshi from(CentralProcessor centralProcessor) {
         final ProcessorIdentifier identifier = centralProcessor.getProcessorIdentifier();
         return ImmutableSystemCpuOshi.builder()
-            .vendor(identifier.getVendor())
-            .name(identifier.getName())
-            .processorID(identifier.getProcessorID())
-            .stepping(identifier.getStepping())
-            .model(identifier.getModel())
-            .family(identifier.getFamily())
-            .logicalProcessorCount(centralProcessor.getLogicalProcessorCount())
-            .physicalProcessorCount(centralProcessor.getPhysicalProcessorCount())
-            .physicalPackageCount(centralProcessor.getPhysicalPackageCount())
-            .is64bit(identifier.isCpu64bit())
-            .vendorFreq(identifier.getVendorFreq() == -1 ? OptionalLong.empty()
-                : OptionalLong.of(identifier.getVendorFreq()))
-            .build();
+                .vendor(identifier.getVendor())
+                .name(identifier.getName())
+                .processorID(identifier.getProcessorID())
+                .stepping(identifier.getStepping())
+                .model(identifier.getModel())
+                .family(identifier.getFamily())
+                .logicalProcessorCount(centralProcessor.getLogicalProcessorCount())
+                .physicalProcessorCount(centralProcessor.getPhysicalProcessorCount())
+                .physicalPackageCount(centralProcessor.getPhysicalPackageCount())
+                .is64bit(identifier.isCpu64bit())
+                .vendorFreq(identifier.getVendorFreq() == -1 ? OptionalLong.empty()
+                        : OptionalLong.of(identifier.getVendorFreq()))
+                .build();
     }
 }

@@ -4,8 +4,7 @@ import elemental2.core.JsArray;
 import io.deephaven.web.shared.fu.JsProvider;
 
 /**
- * Useful for logging; toString calls a supplier so you can easily hide expensive toString() behind
- * a lambda
+ * Useful for logging; toString calls a supplier so you can easily hide expensive toString() behind a lambda
  */
 public class LazyString {
     private final JsProvider<Object> expensiveThing;

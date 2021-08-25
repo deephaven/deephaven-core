@@ -8,11 +8,10 @@ import org.immutables.value.Value.Immutable;
 import java.util.List;
 
 /**
- * Note: the sorted-last aggregation only supports {@link SortColumn.Order#ASCENDING} columns at the
- * moment.
+ * Note: the sorted-last aggregation only supports {@link SortColumn.Order#ASCENDING} columns at the moment.
  * 
- * @see <a href="https://github.com/deephaven/deephaven-core/issues/821">SortedFirst / SortedLast
- *      aggregations with sort direction</a>
+ * @see <a href="https://github.com/deephaven/deephaven-core/issues/821">SortedFirst / SortedLast aggregations with sort
+ *      direction</a>
  */
 @Immutable
 @BuildableStyle
@@ -44,7 +43,7 @@ public abstract class SortedLast implements Aggregation {
         // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
         if (!columns().stream().map(SortColumn::order).allMatch(SortedLast::isAscending)) {
             throw new IllegalArgumentException(
-                "Can only construct SortedLast with ascending, see https://github.com/deephaven/deephaven-core/issues/821");
+                    "Can only construct SortedLast with ascending, see https://github.com/deephaven/deephaven-core/issues/821");
         }
     }
 

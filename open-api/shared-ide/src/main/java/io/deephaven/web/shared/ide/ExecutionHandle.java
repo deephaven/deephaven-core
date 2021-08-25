@@ -5,8 +5,7 @@ import io.deephaven.web.shared.cmd.ServerReplyHandle;
 /**
  * A client-generated handle for each execution.
  *
- * This allows the client to issue cancellation requests using an id it knows before the script is
- * even requested.
+ * This allows the client to issue cancellation requests using an id it knows before the script is even requested.
  */
 public class ExecutionHandle extends ServerReplyHandle {
 

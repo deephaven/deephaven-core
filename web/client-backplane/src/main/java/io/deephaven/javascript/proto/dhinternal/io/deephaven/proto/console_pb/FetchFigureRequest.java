@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FetchFigureRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.FetchFigureRequest",
+        namespace = JsPackage.GLOBAL)
 public class FetchFigureRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -22,7 +22,7 @@ public class FetchFigureRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static FetchFigureRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -57,20 +57,20 @@ public class FetchFigureRequest {
 
             @JsProperty
             void setTicket(
-                FetchFigureRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    FetchFigureRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<FetchFigureRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FetchFigureRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<FetchFigureRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FetchFigureRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -100,7 +100,7 @@ public class FetchFigureRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static FetchFigureRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -135,20 +135,20 @@ public class FetchFigureRequest {
 
             @JsProperty
             void setTicket(
-                FetchFigureRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    FetchFigureRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<FetchFigureRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FetchFigureRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<FetchFigureRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FetchFigureRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -173,12 +173,12 @@ public class FetchFigureRequest {
     public static native FetchFigureRequest deserializeBinary(Uint8Array bytes);
 
     public static native FetchFigureRequest deserializeBinaryFromReader(
-        FetchFigureRequest message, Object reader);
+            FetchFigureRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(FetchFigureRequest message, Object writer);
 
     public static native FetchFigureRequest.ToObjectReturnType toObject(
-        boolean includeInstance, FetchFigureRequest msg);
+            boolean includeInstance, FetchFigureRequest msg);
 
     public native void clearConsoleId();
 

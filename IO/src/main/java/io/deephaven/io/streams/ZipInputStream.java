@@ -29,8 +29,8 @@ public class ZipInputStream extends FilterInputStream {
         try {
             noBytes = dataIn.readInt();
             if (noBytes < 0 || noBytes > BUFFER_LIMIT)
-                throw new ZipException("io.deephaven.io.streams.ZipInputStream was asked to read "
-                    + noBytes + " which exceeded buffer limit.  Is this a Zip file?");
+                throw new ZipException("io.deephaven.io.streams.ZipInputStream was asked to read " + noBytes
+                        + " which exceeded buffer limit.  Is this a Zip file?");
             buf = new byte[noBytes];
         } catch (EOFException ee) {
             return;
@@ -56,12 +56,12 @@ public class ZipInputStream extends FilterInputStream {
     }
 
     public synchronized int read(byte b[])
-        throws IOException {
+            throws IOException {
         return read(b, 0, b.length);
     }
 
     public synchronized int read(byte b[], int off, int len)
-        throws IOException {
+            throws IOException {
         if (iis.available() == 0) {
             fill();
             if (iis == null) {

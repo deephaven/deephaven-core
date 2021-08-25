@@ -8,9 +8,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.grpcWeb.service.ServiceDefinition",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.grpcWeb.service.ServiceDefinition",
+        namespace = JsPackage.GLOBAL)
 public interface ServiceDefinition {
     @JsOverlay
     static ServiceDefinition create() {

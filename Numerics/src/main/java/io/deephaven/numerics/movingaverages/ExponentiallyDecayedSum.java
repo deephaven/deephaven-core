@@ -21,8 +21,8 @@ public class ExponentiallyDecayedSum implements Serializable {
      * Creates a new exponentially decayed sum.
      *
      * @param decayRate rate in milliseconds to decay the sum.
-     * @param enableTimestepOutOfOrderException true to allow an exception to be thrown when
-     *        timesteps are not sequential.
+     * @param enableTimestepOutOfOrderException true to allow an exception to be thrown when timesteps are not
+     *        sequential.
      */
     public ExponentiallyDecayedSum(double decayRate, boolean enableTimestepOutOfOrderException) {
         this.decayRate = decayRate;
@@ -34,7 +34,7 @@ public class ExponentiallyDecayedSum implements Serializable {
 
         if (enableTimestepOutOfOrderException && lastTimestamp != Long.MIN_VALUE && dt < 0) {
             throw new IllegalStateException(
-                "Timesteps are out of order: timestamps=" + lastTimestamp + "," + timestamp);
+                    "Timesteps are out of order: timestamps=" + lastTimestamp + "," + timestamp);
         }
 
         double weight = Math.exp(-dt / decayRate);

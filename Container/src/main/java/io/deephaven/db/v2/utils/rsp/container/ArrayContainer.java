@@ -1,8 +1,8 @@
 /*
  * (c) the authors Licensed under the Apache License, Version 2.0.
  *
- * The code in this file is a heavily modified version of the original in the RoaringBitmap library;
- * please see https://roaringbitmap.org/
+ * The code in this file is a heavily modified version of the original in the RoaringBitmap library; please see
+ * https://roaringbitmap.org/
  *
  */
 
@@ -31,8 +31,7 @@ public class ArrayContainer extends Container {
     // containers with DEFAULT_MAX_SZE or less integers should be ArrayContainers
     static final int DEFAULT_MAX_SIZE = 4096 - 6; // 12 bytes of object overhead is 6 shorts.
 
-    public static final int SWITCH_CONTAINER_CARDINALITY_THRESHOLD =
-        DEFAULT_MAX_SIZE - DEFAULT_MAX_SIZE / 16;
+    public static final int SWITCH_CONTAINER_CARDINALITY_THRESHOLD = DEFAULT_MAX_SIZE - DEFAULT_MAX_SIZE / 16;
 
     static int sizeInBytes(final int cardinality) {
         return cardinality * Short.BYTES;
@@ -71,8 +70,8 @@ public class ArrayContainer extends Container {
     }
 
     /**
-     * Create an array container with a run of ones from firstOfRun to lastOfRun, inclusive. Caller
-     * is responsible for making sure the range is small enough that ArrayContainer is appropriate.
+     * Create an array container with a run of ones from firstOfRun to lastOfRun, inclusive. Caller is responsible for
+     * making sure the range is small enough that ArrayContainer is appropriate.
      *
      * @param firstOfRun first index
      * @param lastOfRun last index (range is exclusive)
@@ -100,8 +99,7 @@ public class ArrayContainer extends Container {
      * @param offset index position for the first value to copy.
      * @param sz number of values to copy.
      */
-    private ArrayContainer(final int newCapacity, final short[] arr, final int offset,
-        final int sz) {
+    private ArrayContainer(final int newCapacity, final short[] arr, final int offset, final int sz) {
         cardinality = sz;
         final short[] cs = new short[shortArraySizeRounding(newCapacity)];
         System.arraycopy(arr, offset, cs, 0, sz);
@@ -148,17 +146,15 @@ public class ArrayContainer extends Container {
         return makeByCopying(sz, arr, offset, sz);
     }
 
-    public static ArrayContainer makeByCopying(final int newCapacity, final short[] arr,
-        final int offset, final int sz) {
+    public static ArrayContainer makeByCopying(final int newCapacity, final short[] arr, final int offset,
+            final int sz) {
         return new ArrayContainer(newCapacity, arr, offset, sz);
     }
 
     /**
-     * Construct a new ArrayContainer using the provided array. The container takes ownership of the
-     * array.
+     * Construct a new ArrayContainer using the provided array. The container takes ownership of the array.
      *
-     * @param arr array with values in increasing unsigned short order. The container takes
-     *        ownership of this array.
+     * @param arr array with values in increasing unsigned short order. The container takes ownership of this array.
      * @param sz number of elements in arr.
      */
     @SuppressWarnings("unused")
@@ -184,8 +180,7 @@ public class ArrayContainer extends Container {
         if (indexstart < 0) {
             indexstart = -indexstart - 1;
         }
-        int indexend =
-            ContainerUtil.unsignedBinarySearch(content, 0, cardinality, (short) (end - 1));
+        int indexend = ContainerUtil.unsignedBinarySearch(content, 0, cardinality, (short) (end - 1));
         if (indexend < 0) {
             indexend = -indexend - 1;
         } else {
@@ -199,7 +194,7 @@ public class ArrayContainer extends Container {
         }
         final ArrayContainer answer = makeByCopying(newcardinality, content, 0, indexstart);
         System.arraycopy(content, indexend, answer.content, indexstart + rangelength,
-            cardinality - indexend);
+                cardinality - indexend);
         for (int k = 0; k < rangelength; ++k) {
             answer.content[k + indexstart] = (short) (begin + k);
         }
@@ -243,9 +238,9 @@ public class ArrayContainer extends Container {
     }
 
     private Container isetImpl(final short x,
-        final PositionHint positionHint,
-        final Supplier<ArrayContainer> self,
-        final Supplier<ArrayContainer> copy) {
+            final PositionHint positionHint,
+            final Supplier<ArrayContainer> self,
+            final Supplier<ArrayContainer> copy) {
         final int begin = getIfNotNullAndNonNegative(positionHint, 0);
         int loc = ContainerUtil.unsignedBinarySearch(content, begin, cardinality, x);
         if (loc >= 0) {
@@ -266,8 +261,7 @@ public class ArrayContainer extends Container {
         return ans.isetImplSecondHalf(x, loc, positionHint);
     }
 
-    private Container isetImplSecondHalf(final short x, final int loc,
-        final PositionHint positionHintOut) {
+    private Container isetImplSecondHalf(final short x, final int loc, final PositionHint positionHintOut) {
         if (cardinality >= content.length) {
             increaseCapacity();
         }
@@ -313,8 +307,7 @@ public class ArrayContainer extends Container {
         ArrayContainer value1 = this;
         final int desiredCapacity = Math.min(value1.getCardinality(), value2.getCardinality());
         ArrayContainer answer = new ArrayContainer(desiredCapacity);
-        answer.cardinality =
-            ContainerUtil.unsignedIntersect2by2(value1.content, value1.getCardinality(),
+        answer.cardinality = ContainerUtil.unsignedIntersect2by2(value1.content, value1.getCardinality(),
                 value2.content, value2.getCardinality(), answer.content);
         return answer.maybeSwitchContainer();
     }
@@ -338,8 +331,7 @@ public class ArrayContainer extends Container {
         ArrayContainer value1 = this;
         final int desiredCapacity = value1.getCardinality();
         ArrayContainer answer = new ArrayContainer(desiredCapacity);
-        answer.cardinality =
-            ContainerUtil.unsignedDifference(value1.content, value1.getCardinality(),
+        answer.cardinality = ContainerUtil.unsignedDifference(value1.content, value1.getCardinality(),
                 value2.content, value2.getCardinality(), answer.content);
         return answer.maybeSwitchContainer();
     }
@@ -422,12 +414,11 @@ public class ArrayContainer extends Container {
         if (start >= cardinality) {
             return false;
         }
-        final int end =
-            ContainerUtil.advanceUntil(content, start - 1, cardinality, (short) maximum);
+        final int end = ContainerUtil.advanceUntil(content, start - 1, cardinality, (short) maximum);
         return end < cardinality
-            && end - start == maximum - rangeStart
-            && content[start] == (short) rangeStart
-            && content[end] == (short) maximum;
+                && end - start == maximum - rangeStart
+                && content[start] == (short) rangeStart
+                && content[end] == (short) maximum;
     }
 
     @Override
@@ -446,9 +437,9 @@ public class ArrayContainer extends Container {
             }
             int end = ContainerUtil.advanceUntil(content, start - 1, cardinality, (short) last);
             if (end >= cardinality ||
-                end - start != last - first ||
-                content[start] != (short) first ||
-                content[end] != (short) last) {
+                    end - start != last - first ||
+                    content[start] != (short) first ||
+                    content[end] != (short) last) {
                 return false;
             }
             prev = end - 1;
@@ -573,8 +564,7 @@ public class ArrayContainer extends Container {
             if (ContainerUtil.toIntUnsigned(parent.content[pos]) <= v) {
                 return true;
             }
-            int i = ContainerUtil.unsignedBinarySearch(parent.content, 0, pos + 1,
-                ContainerUtil.lowbits(v));
+            int i = ContainerUtil.unsignedBinarySearch(parent.content, 0, pos + 1, ContainerUtil.lowbits(v));
             if (i < 0) {
                 i = -i - 1;
                 if (i == 0) {
@@ -675,8 +665,7 @@ public class ArrayContainer extends Container {
         if (indexstart < 0) {
             indexstart = -indexstart - 1;
         }
-        int indexend =
-            ContainerUtil.unsignedBinarySearch(content, 0, cardinality, (short) (end - 1));
+        int indexend = ContainerUtil.unsignedBinarySearch(content, 0, cardinality, (short) (end - 1));
         if (indexend < 0) {
             indexend = -indexend - 1;
         } else {
@@ -689,26 +678,25 @@ public class ArrayContainer extends Container {
             return a.iadd(begin, end);
         }
         /*
-         * b - index of begin(indexstart), e - index of end(indexend), |--| is current sequential
-         * indexes in content. Total 6 cases are possible, listed as below:
+         * b - index of begin(indexstart), e - index of end(indexend), |--| is current sequential indexes in content.
+         * Total 6 cases are possible, listed as below:
          *
-         * case-1) |--------|b-e case-2) |----b---|e case-3) |---b---e---| case-4) b|----e---|
-         * case-5) b-e|------| case-6) b|-----|e
+         * case-1) |--------|b-e case-2) |----b---|e case-3) |---b---e---| case-4) b|----e---| case-5) b-e|------|
+         * case-6) b|-----|e
          *
-         * In case of old approach, we did (1a) Array.copyOf in increaseCapacity ( # of elements
-         * copied -> cardinality), (1b) then we moved elements using System.arrayCopy ( # of
-         * elements copied -> cardinality -indexend), (1c) then we set all elements from begin to
-         * end ( # of elements set -> end - begin)
+         * In case of old approach, we did (1a) Array.copyOf in increaseCapacity ( # of elements copied -> cardinality),
+         * (1b) then we moved elements using System.arrayCopy ( # of elements copied -> cardinality -indexend), (1c)
+         * then we set all elements from begin to end ( # of elements set -> end - begin)
          *
-         * With new approach, (2a) we set all elements from begin to end ( # of elements set -> end-
-         * begin), (2b) we only copy elements in current set which are not in range begin-end ( # of
-         * elements copied -> cardinality - (end-begin) )
+         * With new approach, (2a) we set all elements from begin to end ( # of elements set -> end- begin), (2b) we
+         * only copy elements in current set which are not in range begin-end ( # of elements copied -> cardinality -
+         * (end-begin) )
          *
-         * why is it faster? Logically we are doing less # of copies. Mathematically proof as below:
-         * -> 2a is same as 1c, so we can avoid. Assume, 2b < (1a+1b), lets prove this assumption.
-         * Substitute the values. (cardinality - (end-begin)) < ( 2*cardinality - indexend) , lowest
-         * possible value of indexend is 0 and equation holds true , hightest possible value of
-         * indexend is cardinality and equation holds true , hence "<" equation holds true always
+         * why is it faster? Logically we are doing less # of copies. Mathematically proof as below: -> 2a is same as
+         * 1c, so we can avoid. Assume, 2b < (1a+1b), lets prove this assumption. Substitute the values. (cardinality -
+         * (end-begin)) < ( 2*cardinality - indexend) , lowest possible value of indexend is 0 and equation holds true ,
+         * hightest possible value of indexend is cardinality and equation holds true , hence "<" equation holds true
+         * always
          */
         final ArrayContainer ans;
         if (newcardinality > content.length) {
@@ -720,12 +708,12 @@ public class ArrayContainer extends Container {
                 destination[k + indexstart] = (short) (begin + k);
             }
             /*
-             * so far cases - 1,2 and 6 are done Now, if e < cardinality, we copy from e to
-             * cardinality.Otherwise do noting this covers remaining 3,4 and 5 cases
+             * so far cases - 1,2 and 6 are done Now, if e < cardinality, we copy from e to cardinality.Otherwise do
+             * noting this covers remaining 3,4 and 5 cases
              */
             System.arraycopy(content, indexend,
-                destination, indexstart + rangelength,
-                cardinality - indexend);
+                    destination, indexstart + rangelength,
+                    cardinality - indexend);
             if (shared) {
                 ans = new ArrayContainer(destination, newcardinality);
             } else {
@@ -741,8 +729,8 @@ public class ArrayContainer extends Container {
                 ans = this;
             }
             System.arraycopy(content, indexend,
-                ans.content, indexstart + rangelength,
-                cardinality - indexend);
+                    ans.content, indexstart + rangelength,
+                    cardinality - indexend);
             for (int k = 0; k < rangelength; ++k) {
                 ans.content[k + indexstart] = (short) (begin + k);
             }
@@ -790,7 +778,7 @@ public class ArrayContainer extends Container {
     public Container iand(final ArrayContainer value2) {
         final ArrayContainer ans = deepcopyIfShared();
         ans.cardinality = ContainerUtil.unsignedIntersect2by2(ans.content, ans.getCardinality(),
-            value2.content, value2.getCardinality(), ans.content);
+                value2.content, value2.getCardinality(), ans.content);
         return ans.maybeSwitchContainer();
     }
 
@@ -817,8 +805,7 @@ public class ArrayContainer extends Container {
     @Override
     public Container iandNot(final ArrayContainer value2) {
         final ArrayContainer ans = deepcopyIfShared();
-        ans.cardinality =
-            ContainerUtil.unsignedDifference(ans.content, ans.getCardinality(), value2.content,
+        ans.cardinality = ContainerUtil.unsignedDifference(ans.content, ans.getCardinality(), value2.content,
                 value2.getCardinality(), ans.content);
         return ans.maybeSwitchContainer();
     }
@@ -849,9 +836,9 @@ public class ArrayContainer extends Container {
 
     private static int nextCapacity(final int oldCapacity) {
         return (oldCapacity == 0) ? DEFAULT_INIT_SIZE
-            : oldCapacity < 64 ? shortArraySizeRounding(oldCapacity * 2)
-                : oldCapacity < 1067 ? shortArraySizeRounding(oldCapacity * 3 / 2)
-                    : shortArraySizeRounding(oldCapacity * 5 / 4);
+                : oldCapacity < 64 ? shortArraySizeRounding(oldCapacity * 2)
+                        : oldCapacity < 1067 ? shortArraySizeRounding(oldCapacity * 3 / 2)
+                                : shortArraySizeRounding(oldCapacity * 5 / 4);
     }
 
     // temporarily allow an illegally large size, as long as the operation creating
@@ -883,13 +870,11 @@ public class ArrayContainer extends Container {
     public Container inot(final int firstOfRange, final int exclusiveEndOfRange) {
         // TODO: may need to convert to a RunContainer
         // determine the span of array indices to be affected
-        int startIndex =
-            ContainerUtil.unsignedBinarySearch(content, 0, cardinality, (short) firstOfRange);
+        int startIndex = ContainerUtil.unsignedBinarySearch(content, 0, cardinality, (short) firstOfRange);
         if (startIndex < 0) {
             startIndex = -startIndex - 1;
         }
-        int lastIndex = ContainerUtil.unsignedBinarySearch(content, 0, cardinality,
-            (short) (exclusiveEndOfRange - 1));
+        int lastIndex = ContainerUtil.unsignedBinarySearch(content, 0, cardinality, (short) (exclusiveEndOfRange - 1));
         if (lastIndex < 0) {
             lastIndex = -lastIndex - 1 - 1;
         }
@@ -904,8 +889,7 @@ public class ArrayContainer extends Container {
             final short[] src = content;
             // so big we need a bitmap?
             if (newCardinality > DEFAULT_MAX_SIZE) {
-                return toBiggerCardinalityContainer(newCardinality).inot(firstOfRange,
-                    exclusiveEndOfRange);
+                return toBiggerCardinalityContainer(newCardinality).inot(firstOfRange, exclusiveEndOfRange);
             }
             if (shared) {
                 ans = new ArrayContainer(calculateCapacity(newCardinality));
@@ -918,10 +902,9 @@ public class ArrayContainer extends Container {
                 }
             }
             // slide right the contents after the range
-            System.arraycopy(src, startIndex + currentValuesInRange, ans.content,
-                startIndex + newValuesInRange, cardinality - 1 - lastIndex);
-            ans.negateRange(newValuesInRange, startIndex, lastIndex, firstOfRange,
-                exclusiveEndOfRange);
+            System.arraycopy(src, startIndex + currentValuesInRange, ans.content, startIndex + newValuesInRange,
+                    cardinality - 1 - lastIndex);
+            ans.negateRange(newValuesInRange, startIndex, lastIndex, firstOfRange, exclusiveEndOfRange);
         } else { // no alloc expansion needed
             if (shared) {
                 if (cardinalityChange == 0) {
@@ -933,13 +916,12 @@ public class ArrayContainer extends Container {
             } else {
                 ans = this;
             }
-            ans.negateRange(newValuesInRange, startIndex, lastIndex, firstOfRange,
-                exclusiveEndOfRange);
+            ans.negateRange(newValuesInRange, startIndex, lastIndex, firstOfRange, exclusiveEndOfRange);
             if (cardinalityChange < 0) {
                 // contraction, left sliding.
                 // Leave array oversize
-                System.arraycopy(content, startIndex + currentValuesInRange, ans.content,
-                    startIndex + newValuesInRange, cardinality - 1 - lastIndex);
+                System.arraycopy(content, startIndex + currentValuesInRange, ans.content, startIndex + newValuesInRange,
+                        cardinality - 1 - lastIndex);
             }
         }
         ans.cardinality = newCardinality;
@@ -985,16 +967,14 @@ public class ArrayContainer extends Container {
             int newCapacity = calculateCapacity(sumOfCardinalities);
             final ArrayContainer ans = new ArrayContainer(newCapacity);
             ans.cardinality =
-                ContainerUtil.unsignedUnion2by2(content, 0, cardinality, value2.content, 0,
-                    value2.cardinality,
-                    ans.content);
+                    ContainerUtil.unsignedUnion2by2(content, 0, cardinality, value2.content, 0, value2.cardinality,
+                            ans.content);
             return ans;
         }
         System.arraycopy(content, 0, content, value2.cardinality, cardinality);
         cardinality =
-            ContainerUtil.unsignedUnion2by2(content, value2.cardinality, cardinality,
-                value2.content, 0,
-                value2.cardinality, content);
+                ContainerUtil.unsignedUnion2by2(content, value2.cardinality, cardinality, value2.content, 0,
+                        value2.cardinality, content);
         return this;
     }
 
@@ -1036,8 +1016,7 @@ public class ArrayContainer extends Container {
         if (indexstart < 0) {
             indexstart = -indexstart - 1;
         }
-        int indexend =
-            ContainerUtil.unsignedBinarySearch(content, 0, cardinality, (short) (end - 1));
+        int indexend = ContainerUtil.unsignedBinarySearch(content, 0, cardinality, (short) (end - 1));
         if (indexend < 0) {
             indexend = -indexend - 1;
         } else {
@@ -1055,10 +1034,8 @@ public class ArrayContainer extends Container {
             return makeSingletonContainer(content[indexstart > 0 ? 0 : indexend]);
         }
         if (newCardinality == 2) {
-            // Since elements in the range need to be contiguous, you can think about the range
-            // inside our contents
-            // array as one block. The two values remaining can only be either both at the
-            // beginning, before the block,
+            // Since elements in the range need to be contiguous, you can think about the range inside our contents
+            // array as one block. The two values remaining can only be either both at the beginning, before the block,
             // or one before and one after, or both after the block at the end.
             final int i0;
             final int i1;
@@ -1083,7 +1060,7 @@ public class ArrayContainer extends Container {
             System.arraycopy(content, 0, ans.content, 0, indexstart);
         }
         System.arraycopy(content, indexstart + rangelength, ans.content, indexstart,
-            cardinality - indexstart - rangelength);
+                cardinality - indexstart - rangelength);
         ans.cardinality = newCardinality;
         return ans;
     }
@@ -1110,15 +1087,14 @@ public class ArrayContainer extends Container {
     }
 
     protected void loadDataWithSkipValue(
-        final BitmapContainer bitmapContainer, final short valueToSkip,
-        final PositionHint positionHintOut) {
+            final BitmapContainer bitmapContainer, final short valueToSkip, final PositionHint positionHintOut) {
         cardinality = bitmapContainer.fillArrayWithSkipValue(content, valueToSkip, positionHintOut);
     }
 
     // for use in inot range known to be nonempty
     private void negateRange(final int valuesInRange,
-        final int startIndex, final int lastIndex,
-        final int startRange, final int lastRange) {
+            final int startIndex, final int lastIndex,
+            final int startRange, final int lastRange) {
         // compute the negation into buffer
         final short[] buf = threadLocalBuf.get();
         final short[] buffer = buf.length >= valuesInRange ? buf : new short[valuesInRange];
@@ -1159,13 +1135,11 @@ public class ArrayContainer extends Container {
         }
 
         // determine the span of array indices to be affected
-        int startIndex =
-            ContainerUtil.unsignedBinarySearch(content, 0, cardinality, (short) firstOfRange);
+        int startIndex = ContainerUtil.unsignedBinarySearch(content, 0, cardinality, (short) firstOfRange);
         if (startIndex < 0) {
             startIndex = -startIndex - 1;
         }
-        int lastIndex =
-            ContainerUtil.unsignedBinarySearch(content, 0, cardinality, (short) (lastOfRange - 1));
+        int lastIndex = ContainerUtil.unsignedBinarySearch(content, 0, cardinality, (short) (lastOfRange - 1));
         if (lastIndex < 0) {
             lastIndex = -lastIndex - 2;
         }
@@ -1260,10 +1234,10 @@ public class ArrayContainer extends Container {
         }
         ArrayContainer answer = new ArrayContainer(totalCardinality);
         answer.cardinality =
-            ContainerUtil.unsignedUnion2by2(
-                value1.content, 0, value1.getCardinality(),
-                value2.content, 0, value2.getCardinality(),
-                answer.content);
+                ContainerUtil.unsignedUnion2by2(
+                        value1.content, 0, value1.getCardinality(),
+                        value2.content, 0, value2.getCardinality(),
+                        answer.content);
         return answer;
     }
 
@@ -1295,15 +1269,13 @@ public class ArrayContainer extends Container {
         final ArrayContainer ac = new ArrayContainer();
         int myItPos = 0;
         // do a merge. int -1 denotes end of input.
-        int myHead =
-            (myItPos == cardinality) ? -1 : ContainerUtil.toIntUnsigned(content[myItPos++]);
+        int myHead = (myItPos == cardinality) ? -1 : ContainerUtil.toIntUnsigned(content[myItPos++]);
         int hisHead = advance(it);
 
         while (myHead != -1 && hisHead != -1) {
             if (myHead < hisHead) {
                 ac.forceAppend((short) myHead);
-                myHead =
-                    (myItPos == cardinality) ? -1 : ContainerUtil.toIntUnsigned(content[myItPos++]);
+                myHead = (myItPos == cardinality) ? -1 : ContainerUtil.toIntUnsigned(content[myItPos++]);
             } else if (myHead > hisHead) {
                 ac.forceAppend((short) hisHead);
                 hisHead = advance(it);
@@ -1312,15 +1284,13 @@ public class ArrayContainer extends Container {
                     ac.forceAppend((short) hisHead);
                 }
                 hisHead = advance(it);
-                myHead =
-                    (myItPos == cardinality) ? -1 : ContainerUtil.toIntUnsigned(content[myItPos++]);
+                myHead = (myItPos == cardinality) ? -1 : ContainerUtil.toIntUnsigned(content[myItPos++]);
             }
         }
 
         while (myHead != -1) {
             ac.forceAppend((short) myHead);
-            myHead =
-                (myItPos == cardinality) ? -1 : ContainerUtil.toIntUnsigned(content[myItPos++]);
+            myHead = (myItPos == cardinality) ? -1 : ContainerUtil.toIntUnsigned(content[myItPos++]);
         }
 
         while (hisHead != -1) {
@@ -1370,8 +1340,7 @@ public class ArrayContainer extends Container {
         return unsetImpl(x, false, positionHint);
     }
 
-    private Container unsetImpl(final short x, final boolean inPlace,
-        final PositionHint positionHint) {
+    private Container unsetImpl(final short x, final boolean inPlace, final PositionHint positionHint) {
         final int searchStartPos = getIfNotNullAndNonNegative(positionHint, 0);
         final int loc = ContainerUtil.unsignedBinarySearch(content, searchStartPos, cardinality, x);
         if (loc < 0) {
@@ -1435,12 +1404,11 @@ public class ArrayContainer extends Container {
     }
 
     private void compact() {
-        if (shared || content.length == cardinality
-            || (cardinality == 0 && content.length == DEFAULT_INIT_SIZE)) {
+        if (shared || content.length == cardinality || (cardinality == 0 && content.length == DEFAULT_INIT_SIZE)) {
             return;
         }
         final short[] newContent =
-            new short[cardinality == 0 ? DEFAULT_INIT_SIZE : shortArraySizeRounding(cardinality)];
+                new short[cardinality == 0 ? DEFAULT_INIT_SIZE : shortArraySizeRounding(cardinality)];
         System.arraycopy(content, 0, newContent, 0, cardinality);
         content = newContent;
     }
@@ -1505,8 +1473,7 @@ public class ArrayContainer extends Container {
         if (end <= start || isEmpty()) {
             return Container.empty();
         }
-        int firstPos = ContainerUtil.unsignedBinarySearch(content, 0, cardinality,
-            ContainerUtil.lowbits(start));
+        int firstPos = ContainerUtil.unsignedBinarySearch(content, 0, cardinality, ContainerUtil.lowbits(start));
         if (firstPos < 0) {
             firstPos = ~firstPos;
             if (firstPos >= cardinality || ContainerUtil.toIntUnsigned(content[firstPos]) >= end) {
@@ -1514,8 +1481,8 @@ public class ArrayContainer extends Container {
             }
         }
         // inclusive.
-        int lastPos = ContainerUtil.unsignedBinarySearch(content, firstPos, cardinality,
-            ContainerUtil.lowbits(end - 1));
+        int lastPos =
+                ContainerUtil.unsignedBinarySearch(content, firstPos, cardinality, ContainerUtil.lowbits(end - 1));
         if (lastPos < 0) {
             lastPos = ~lastPos - 1;
         }
@@ -1563,7 +1530,7 @@ public class ArrayContainer extends Container {
                     return true;
                 }
                 int pos = ContainerUtil.unsignedBinarySearch(content, startSearch, cardinality,
-                    ContainerUtil.lowbits(key));
+                        ContainerUtil.lowbits(key));
                 if (pos < 0) {
                     throw new IllegalArgumentException("findRanges for invalid key=" + key);
                 }
@@ -1607,8 +1574,7 @@ public class ArrayContainer extends Container {
     public int nextValue(short fromValue) {
         int index = ContainerUtil.advanceUntil(content, -1, cardinality, fromValue);
         int effectiveIndex = index >= 0 ? index : -index - 1;
-        return effectiveIndex >= cardinality ? -1
-            : ContainerUtil.toIntUnsigned(content[effectiveIndex]);
+        return effectiveIndex >= cardinality ? -1 : ContainerUtil.toIntUnsigned(content[effectiveIndex]);
     }
 
     private void assertNonEmpty() {
@@ -1660,8 +1626,7 @@ public class ArrayContainer extends Container {
             return bc;
         }
         ArrayContainer answer = new ArrayContainer(totalCardinality);
-        answer.cardinality =
-            ContainerUtil.unsignedExclusiveUnion2by2(value1.content, value1.getCardinality(),
+        answer.cardinality = ContainerUtil.unsignedExclusiveUnion2by2(value1.content, value1.getCardinality(),
                 value2.content, value2.getCardinality(), answer.content);
         return answer.maybeSwitchContainer();
     }
@@ -1729,8 +1694,8 @@ public class ArrayContainer extends Container {
             return false;
         }
         if (cardinality > c.cardinality ||
-            first() < c.first() ||
-            last() > c.last()) {
+                first() < c.first() ||
+                last() > c.last()) {
             return false;
         }
         int ci = 0;
@@ -1854,7 +1819,7 @@ public class ArrayContainer extends Container {
     @Override
     public boolean overlaps(final RunContainer c) {
         return (getCardinality() < c.getCardinality()) ? ContainerUtil.overlaps(this, c)
-            : ContainerUtil.overlaps(c, this);
+                : ContainerUtil.overlaps(c, this);
     }
 
     @Override

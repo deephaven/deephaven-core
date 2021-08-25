@@ -26,8 +26,7 @@ public class EncodingUtil {
      * @throws IllegalArgumentException if there is no associated encoding
      */
     @NotNull
-    public static EncodingInfo getEncodingInfoForCharset(@NotNull Charset charSet)
-        throws IllegalArgumentException {
+    public static EncodingInfo getEncodingInfoForCharset(@NotNull Charset charSet) throws IllegalArgumentException {
         return getEncodingInfoForCharset(charSet.name());
     }
 
@@ -40,15 +39,14 @@ public class EncodingUtil {
      */
     public static EncodingInfo getEncodingInfoForCharset(@NotNull String charsetName) {
         return Stream.of(EncodingInfo.values())
-            .filter(info -> info.getCharset().name().equals(charsetName))
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("No EncodingInfo for " + charsetName));
+                .filter(info -> info.getCharset().name().equals(charsetName))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("No EncodingInfo for " + charsetName));
     }
 
     /**
-     * Get an array containing the possible {@link ByteOrderMark byte order marks} that could be
-     * present within a file of the specified encoding. This is intended for use with
-     * {@link org.apache.commons.io.input.BOMInputStream}
+     * Get an array containing the possible {@link ByteOrderMark byte order marks} that could be present within a file
+     * of the specified encoding. This is intended for use with {@link org.apache.commons.io.input.BOMInputStream}
      *
      * @param encoding The encoding.
      * @return An array containing the possible {@link ByteOrderMark BOMs} for the encoding.
@@ -70,31 +68,28 @@ public class EncodingUtil {
     }
 
     /**
-     * Encode the given string in UTF-8 format into the given ByteBuffer. The string is encoded as
-     * an int length followed by the encoded bytes.
+     * Encode the given string in UTF-8 format into the given ByteBuffer. The string is encoded as an int length
+     * followed by the encoded bytes.
      *
-     * @param destination a ByteBuffer in which to encode the string. The buffer must be big enough
-     *        for the encoded string.
+     * @param destination a ByteBuffer in which to encode the string. The buffer must be big enough for the encoded
+     *        string.
      * @param value the String value to encode.
      * @throws BufferOverflowException if the destination isn't big enough.
      */
-    public static void putUtf8String(@NotNull final ByteBuffer destination,
-        @NotNull final String value) {
+    public static void putUtf8String(@NotNull final ByteBuffer destination, @NotNull final String value) {
         final int initialPosition = destination.position();
         destination.position(initialPosition + Integer.BYTES);
         final CharsetEncoder encoder = EncodingInfo.UTF_8.getEncoder().reset();
         if (!encoder.encode(CharBuffer.wrap(value), destination, true).isUnderflow()
-            || !encoder.flush(destination).isUnderflow()) {
+                || !encoder.flush(destination).isUnderflow()) {
             throw new BufferOverflowException();
         }
-        destination.putInt(initialPosition,
-            destination.position() - initialPosition - Integer.BYTES);
+        destination.putInt(initialPosition, destination.position() - initialPosition - Integer.BYTES);
     }
 
     /**
-     * Extract a UTF-8 encoded string from the given buffer. The buffer must be positioned at the
-     * start of the encoding, which is an int length followed by the UTF-8 encoded bytes. The buffer
-     * is advanced to the end of the string.
+     * Extract a UTF-8 encoded string from the given buffer. The buffer must be positioned at the start of the encoding,
+     * which is an int length followed by the UTF-8 encoded bytes. The buffer is advanced to the end of the string.
      *
      * @param source a ByteBuffer positioned at the string encoded as length + UTF-8 encoded bytes.
      * @return a new String extracted from the buffer

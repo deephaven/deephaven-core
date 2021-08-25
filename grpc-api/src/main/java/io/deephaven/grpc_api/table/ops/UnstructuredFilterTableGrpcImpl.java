@@ -14,26 +14,22 @@ import javax.inject.Singleton;
 import java.util.List;
 
 @Singleton
-public class UnstructuredFilterTableGrpcImpl
-    extends GrpcTableOperation<UnstructuredFilterTableRequest> {
+public class UnstructuredFilterTableGrpcImpl extends GrpcTableOperation<UnstructuredFilterTableRequest> {
 
     @Inject
     public UnstructuredFilterTableGrpcImpl() {
-        super(BatchTableRequest.Operation::getUnstructuredFilter,
-            UnstructuredFilterTableRequest::getResultId,
-            UnstructuredFilterTableRequest::getSourceId);
+        super(BatchTableRequest.Operation::getUnstructuredFilter, UnstructuredFilterTableRequest::getResultId,
+                UnstructuredFilterTableRequest::getSourceId);
     }
 
     @Override
     public Table create(final UnstructuredFilterTableRequest request,
-        final List<SessionState.ExportObject<Table>> sourceTables) {
+            final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();
-        final String[] filters =
-            request.getFiltersList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-        final SelectFilter[] selectFilters =
-            ColumnExpressionValidator.validateSelectFilters(filters, parent);
+        final String[] filters = request.getFiltersList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final SelectFilter[] selectFilters = ColumnExpressionValidator.validateSelectFilters(filters, parent);
         return parent.where(selectFilters);
     }
 }

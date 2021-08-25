@@ -7,9 +7,9 @@ public class TestColumnRenderersBuilder extends TestCase {
 
     public static final String TEST_DIRECTIVE_ENUM = "A=DEFAULT,B=PROGRESS_BAR,C=PROGRESS_BAR,";
     public static final String TEST_DIRECTIVE_CLASS =
-        "A=io.deephaven.gui.table.ColumnRenderer,B=io.deephaven.gui.table.TextAreaColumnRenderer,C=io.deephaven.console.events.ProgressRenderer,";
+            "A=io.deephaven.gui.table.ColumnRenderer,B=io.deephaven.gui.table.TextAreaColumnRenderer,C=io.deephaven.console.events.ProgressRenderer,";
     public static final String TEST_DIRECTIVE_MIXED =
-        "A=DEFAULT,B=io.deephaven.gui.table.TextAreaColumnRenderer,C=PROGRESS_BAR,";
+            "A=DEFAULT,B=io.deephaven.gui.table.TextAreaColumnRenderer,C=PROGRESS_BAR,";
 
     @Test
     public void testBuildDirectiveEnum() {
@@ -30,23 +30,17 @@ public class TestColumnRenderersBuilder extends TestCase {
         assertTrue(builder.isColumnRendererSet("C"));
         assertFalse(builder.isColumnRendererSet("D"));
 
-        assertEquals(ColumnRenderersBuilder.ColumnRendererType.DEFAULT,
-            builder.getRendererType("A"));
-        assertEquals(ColumnRenderersBuilder.ColumnRendererType.PROGRESS_BAR,
-            builder.getRendererType("B"));
-        assertEquals(ColumnRenderersBuilder.ColumnRendererType.PROGRESS_BAR,
-            builder.getRendererType("C"));
+        assertEquals(ColumnRenderersBuilder.ColumnRendererType.DEFAULT, builder.getRendererType("A"));
+        assertEquals(ColumnRenderersBuilder.ColumnRendererType.PROGRESS_BAR, builder.getRendererType("B"));
+        assertEquals(ColumnRenderersBuilder.ColumnRendererType.PROGRESS_BAR, builder.getRendererType("C"));
         assertNull(builder.getRendererType("D"));
 
-        assertEquals(
-            builder.getRenderClassForType(ColumnRenderersBuilder.ColumnRendererType.DEFAULT),
-            builder.getRenderClassName("A"));
-        assertEquals(
-            builder.getRenderClassForType(ColumnRenderersBuilder.ColumnRendererType.PROGRESS_BAR),
-            builder.getRenderClassName("B"));
-        assertEquals(
-            builder.getRenderClassForType(ColumnRenderersBuilder.ColumnRendererType.PROGRESS_BAR),
-            builder.getRenderClassName("C"));
+        assertEquals(builder.getRenderClassForType(ColumnRenderersBuilder.ColumnRendererType.DEFAULT),
+                builder.getRenderClassName("A"));
+        assertEquals(builder.getRenderClassForType(ColumnRenderersBuilder.ColumnRendererType.PROGRESS_BAR),
+                builder.getRenderClassName("B"));
+        assertEquals(builder.getRenderClassForType(ColumnRenderersBuilder.ColumnRendererType.PROGRESS_BAR),
+                builder.getRenderClassName("C"));
         assertNull(builder.getRenderClassName("D"));
     }
 
@@ -75,10 +69,8 @@ public class TestColumnRenderersBuilder extends TestCase {
         assertNull(builder.getRendererType("D"));
 
         assertEquals("io.deephaven.gui.table.ColumnRenderer", builder.getRenderClassName("A"));
-        assertEquals("io.deephaven.gui.table.TextAreaColumnRenderer",
-            builder.getRenderClassName("B"));
-        assertEquals("io.deephaven.console.events.ProgressRenderer",
-            builder.getRenderClassName("C"));
+        assertEquals("io.deephaven.gui.table.TextAreaColumnRenderer", builder.getRenderClassName("B"));
+        assertEquals("io.deephaven.console.events.ProgressRenderer", builder.getRenderClassName("C"));
         assertNull(builder.getRenderClassName("D"));
     }
 
@@ -101,21 +93,16 @@ public class TestColumnRenderersBuilder extends TestCase {
         assertTrue(builder.isColumnRendererSet("C"));
         assertFalse(builder.isColumnRendererSet("D"));
 
-        assertEquals(ColumnRenderersBuilder.ColumnRendererType.DEFAULT,
-            builder.getRendererType("A"));
+        assertEquals(ColumnRenderersBuilder.ColumnRendererType.DEFAULT, builder.getRendererType("A"));
         assertNull(builder.getRendererType("B"));
-        assertEquals(ColumnRenderersBuilder.ColumnRendererType.PROGRESS_BAR,
-            builder.getRendererType("C"));
+        assertEquals(ColumnRenderersBuilder.ColumnRendererType.PROGRESS_BAR, builder.getRendererType("C"));
         assertNull(builder.getRendererType("D"));
 
-        assertEquals(
-            builder.getRenderClassForType(ColumnRenderersBuilder.ColumnRendererType.DEFAULT),
-            builder.getRenderClassName("A"));
-        assertEquals("io.deephaven.gui.table.TextAreaColumnRenderer",
-            builder.getRenderClassName("B"));
-        assertEquals(
-            builder.getRenderClassForType(ColumnRenderersBuilder.ColumnRendererType.PROGRESS_BAR),
-            builder.getRenderClassName("C"));
+        assertEquals(builder.getRenderClassForType(ColumnRenderersBuilder.ColumnRendererType.DEFAULT),
+                builder.getRenderClassName("A"));
+        assertEquals("io.deephaven.gui.table.TextAreaColumnRenderer", builder.getRenderClassName("B"));
+        assertEquals(builder.getRenderClassForType(ColumnRenderersBuilder.ColumnRendererType.PROGRESS_BAR),
+                builder.getRenderClassName("C"));
         assertNull(builder.getRenderClassName("D"));
     }
 

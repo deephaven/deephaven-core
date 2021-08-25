@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.session_pb.ExportNotification",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.session_pb.ExportNotification",
+        namespace = JsPackage.GLOBAL)
 public class ExportNotification {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -23,7 +23,7 @@ public class ExportNotification {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -58,20 +58,20 @@ public class ExportNotification {
 
             @JsProperty
             void setTicket(
-                ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType ticket);
+                    ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ExportNotification.ToObjectReturnType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -113,7 +113,7 @@ public class ExportNotification {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -148,20 +148,20 @@ public class ExportNotification {
 
             @JsProperty
             void setTicket(
-                ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType ticket);
+                    ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<ExportNotification.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -200,12 +200,12 @@ public class ExportNotification {
     public static native ExportNotification deserializeBinary(Uint8Array bytes);
 
     public static native ExportNotification deserializeBinaryFromReader(
-        ExportNotification message, Object reader);
+            ExportNotification message, Object reader);
 
     public static native void serializeBinaryToWriter(ExportNotification message, Object writer);
 
     public static native ExportNotification.ToObjectReturnType toObject(
-        boolean includeInstance, ExportNotification msg);
+            boolean includeInstance, ExportNotification msg);
 
     public native void clearTicket();
 

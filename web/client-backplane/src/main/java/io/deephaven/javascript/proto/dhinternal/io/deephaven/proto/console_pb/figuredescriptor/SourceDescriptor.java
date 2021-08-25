@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.SourceDescriptor",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.SourceDescriptor",
+        namespace = JsPackage.GLOBAL)
 public class SourceDescriptor {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -189,12 +189,12 @@ public class SourceDescriptor {
     public static native SourceDescriptor deserializeBinary(Uint8Array bytes);
 
     public static native SourceDescriptor deserializeBinaryFromReader(
-        SourceDescriptor message, Object reader);
+            SourceDescriptor message, Object reader);
 
     public static native void serializeBinaryToWriter(SourceDescriptor message, Object writer);
 
     public static native SourceDescriptor.ToObjectReturnType toObject(
-        boolean includeInstance, SourceDescriptor msg);
+            boolean includeInstance, SourceDescriptor msg);
 
     public native void clearOneClick();
 

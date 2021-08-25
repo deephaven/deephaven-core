@@ -30,9 +30,9 @@ public final class ClassUtil {
                 final String name = f.getName();
                 final Object value = f.get(p);
                 log.info(prefix
-                    + tName
-                    + " " + name
-                    + " = " + value.toString());
+                        + tName
+                        + " " + name
+                        + " = " + value.toString());
             } catch (Exception ignored) {
             }
         }

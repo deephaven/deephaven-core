@@ -28,8 +28,7 @@ public interface Listener extends ListenerBase {
      * @param modified rows modified
      * @return table change notification
      */
-    NotificationQueue.IndexUpdateNotification getNotification(Index added, Index removed,
-        Index modified);
+    NotificationQueue.IndexUpdateNotification getNotification(Index added, Index removed, Index modified);
 
     /**
      * Sets the index for the initial data.

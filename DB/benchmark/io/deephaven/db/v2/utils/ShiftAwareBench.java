@@ -56,14 +56,13 @@ public class ShiftAwareBench {
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
 
         final BenchmarkTableBuilder builder = BenchmarkTools.inMemoryTableBuilder("ShiftAwareBench",
-            BenchmarkTools.sizeWithSparsity(tableSize, sparsity));
+                BenchmarkTools.sizeWithSparsity(tableSize, sparsity));
 
         builder.setSeed(0xDEADBEEF);
         builder.addColumn(BenchmarkTools.numberCol("intCol", Integer.class, 0, 1 << 20));
         bmTable = builder.build();
 
-        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()),
-            params.getWarmup().getCount());
+        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
 
         inputTable = applySparsity(bmTable.getTable(), tableSize, sparsity, 0);
     }
@@ -85,7 +84,7 @@ public class ShiftAwareBench {
     private <R> R incrementalBenchmark(Function<Table, R> function) {
         final long sizePerStep = Math.max(inputTable.size() / 10, 1);
         final IncrementalReleaseFilter incrementalReleaseFilter =
-            new IncrementalReleaseFilter(sizePerStep, sizePerStep);
+                new IncrementalReleaseFilter(sizePerStep, sizePerStep);
         final Table filtered = inputTable.where(incrementalReleaseFilter);
 
         final R result = function.apply(filtered);
@@ -101,22 +100,20 @@ public class ShiftAwareBench {
 
     @Benchmark
     public Table b00_flattenWhere() {
-        final Table result =
-            incrementalBenchmark((Table t) -> t.flatten().where("intCol % 3 == 0"));
+        final Table result = incrementalBenchmark((Table t) -> t.flatten().where("intCol % 3 == 0"));
         return state.setResult(result);
     }
 
     @Benchmark
     public Table b01_mergeWhere() {
-        final Table result =
-            incrementalBenchmark((Table t) -> TableTools.merge(t, t).where("intCol % 3 == 0"));
+        final Table result = incrementalBenchmark((Table t) -> TableTools.merge(t, t).where("intCol % 3 == 0"));
         return state.setResult(result);
     }
 
     @Benchmark
     public Table b02_mergeFlattenWhere() {
-        final Table result = incrementalBenchmark(
-            (Table t) -> TableTools.merge(t, t).flatten().where("intCol % 3 == 0"));
+        final Table result =
+                incrementalBenchmark((Table t) -> TableTools.merge(t, t).flatten().where("intCol % 3 == 0"));
         return state.setResult(result);
     }
 

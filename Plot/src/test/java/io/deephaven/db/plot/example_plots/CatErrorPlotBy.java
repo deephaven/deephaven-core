@@ -20,16 +20,16 @@ public class CatErrorPlotBy {
         final double[] highValues = {6, 5, 5, 4};
 
         Table t = TableTools.newTable(TableTools.col("USym", usym),
-            TableTools.col("Cats", cats),
-            TableTools.doubleCol("Values", values),
-            TableTools.doubleCol("Low", lowValues),
-            TableTools.doubleCol("High", highValues)).update("Cats = i % 2 == 0 ? null : Cats")
-            .update("A = `A`").update("B = `B`");
+                TableTools.col("Cats", cats),
+                TableTools.doubleCol("Values", values),
+                TableTools.doubleCol("Low", lowValues),
+                TableTools.doubleCol("High", highValues)).update("Cats = i % 2 == 0 ? null : Cats").update("A = `A`")
+                .update("B = `B`");
 
         TableTools.show(t);
 
         Figure fig = FigureFactory.figure()
-            .catPlotBy("Test1", t, "Cats", "Values", "A").show();
+                .catPlotBy("Test1", t, "Cats", "Values", "A").show();
 
         ExamplePlotUtils.display(fig);
     }

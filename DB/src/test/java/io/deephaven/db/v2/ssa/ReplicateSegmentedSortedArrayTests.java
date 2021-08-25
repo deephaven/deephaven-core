@@ -13,10 +13,9 @@ public class ReplicateSegmentedSortedArrayTests {
     public static void main(String[] args) throws IOException {
         ReplicateSegmentedSortedArray.main(args);
 
-        ReplicatePrimitiveCode.charToAllButBoolean(TestCharSegmentedSortedArray.class,
-            ReplicatePrimitiveCode.TEST_SRC);
-        final String objectSsaTest = ReplicatePrimitiveCode
-            .charToObject(TestCharSegmentedSortedArray.class, ReplicatePrimitiveCode.TEST_SRC);
+        ReplicatePrimitiveCode.charToAllButBoolean(TestCharSegmentedSortedArray.class, ReplicatePrimitiveCode.TEST_SRC);
+        final String objectSsaTest = ReplicatePrimitiveCode.charToObject(TestCharSegmentedSortedArray.class,
+                ReplicatePrimitiveCode.TEST_SRC);
         fixupObjectSsaTest(objectSsaTest);
     }
 

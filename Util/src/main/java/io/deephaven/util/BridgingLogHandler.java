@@ -23,8 +23,8 @@ public final class BridgingLogHandler extends Handler {
     static {
         // Tools that don't want this in their output should set this to false.
         final String propValue = System.getProperty("BridgingLogHandler.flushPendingOnShutdown");
-        flushPendingOnShutdown = (propValue == null) ? FLUSH_PENDING_ON_SHUTDOWN_DEFAULT
-            : Boolean.parseBoolean(propValue);
+        flushPendingOnShutdown =
+                (propValue == null) ? FLUSH_PENDING_ON_SHUTDOWN_DEFAULT : Boolean.parseBoolean(propValue);
     }
 
     public static synchronized void setFlushPendingOnShutdown(final boolean v) {
@@ -41,13 +41,13 @@ public final class BridgingLogHandler extends Handler {
         public final String msg;
 
         public PendingLogRecord(
-            final Level level,
-            final long timeMillis,
-            final Throwable throwable,
-            final String sourceClassName,
-            final String sourceMethodName,
-            final int threadId,
-            final String msg) {
+                final Level level,
+                final long timeMillis,
+                final Throwable throwable,
+                final String sourceClassName,
+                final String sourceMethodName,
+                final int threadId,
+                final String msg) {
             this.level = level;
             this.throwable = throwable;
             this.timeMillis = timeMillis;
@@ -89,54 +89,51 @@ public final class BridgingLogHandler extends Handler {
                     if (pending == null) {
                         pending = new ArrayList<>();
                         if (flushPendingOnShutdown) {
-                            Runtime.getRuntime().addShutdownHook(
-                                new Thread(BridgingLogHandler::pushPendingToStdout));
+                            Runtime.getRuntime().addShutdownHook(new Thread(BridgingLogHandler::pushPendingToStdout));
                         }
                     }
                     pending.add(new PendingLogRecord(
-                        logRecord.getLevel(),
-                        logRecord.getMillis(),
-                        logRecord.getThrown(),
-                        sourceClassName,
-                        sourceMethodName,
-                        logRecord.getThreadID(),
-                        logRecord.getMessage()));
+                            logRecord.getLevel(),
+                            logRecord.getMillis(),
+                            logRecord.getThrown(),
+                            sourceClassName,
+                            sourceMethodName,
+                            logRecord.getThreadID(),
+                            logRecord.getMessage()));
                     return;
                 }
             }
         }
-        final LogEntry entry =
-            logEntry(log, logRecord.getLevel(), logRecord.getMillis(), logRecord.getThrown());
+        final LogEntry entry = logEntry(log, logRecord.getLevel(), logRecord.getMillis(), logRecord.getThrown());
         appendMsg(entry, sourceClassName, sourceMethodName,
-            logRecord.getThreadID(), logRecord.getMessage());
+                logRecord.getThreadID(), logRecord.getMessage());
         entry.endl();
     }
 
     public static void appendPendingLogRecord(
-        final LogOutput logOutput, final PendingLogRecord pendingLogRecord) {
+            final LogOutput logOutput, final PendingLogRecord pendingLogRecord) {
         appendMsg(logOutput,
-            pendingLogRecord.sourceClassName,
-            pendingLogRecord.sourceMethodName,
-            pendingLogRecord.threadId,
-            pendingLogRecord.msg);
+                pendingLogRecord.sourceClassName,
+                pendingLogRecord.sourceMethodName,
+                pendingLogRecord.threadId,
+                pendingLogRecord.msg);
     }
 
     private static void appendMsg(LogOutput logOutput,
-        final String sourceClassName, final String sourceMethodName, final int threadId,
-        final String msg) {
+            final String sourceClassName, final String sourceMethodName, final int threadId, final String msg) {
         logOutput.append("[")
-            .append(sourceClassName)
-            .append(":")
-            .append(sourceMethodName)
-            .append(":tid=")
-            .append(threadId)
-            .append("] ")
-            .append(msg);
+                .append(sourceClassName)
+                .append(":")
+                .append(sourceMethodName)
+                .append(":tid=")
+                .append(threadId)
+                .append("] ")
+                .append(msg);
     }
 
     private static LogEntry logEntry(
-        final io.deephaven.io.logger.Logger log, final Level level, final long timeMillis,
-        final Throwable throwable) {
+            final io.deephaven.io.logger.Logger log, final Level level, final long timeMillis,
+            final Throwable throwable) {
         return log.getEntry(mapLevel(level), 1000 * timeMillis, throwable);
     }
 

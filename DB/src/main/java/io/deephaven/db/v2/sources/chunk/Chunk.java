@@ -45,15 +45,12 @@ public interface Chunk<ATTR extends Any> {
     }
 
     /**
-     * Make a new Chunk that represents either exactly the same view on the underlying data as this
-     * Chunk, or a subrange of that view. The view is defined as [0..size) (in the coordinate space
-     * of this Chunk).
+     * Make a new Chunk that represents either exactly the same view on the underlying data as this Chunk, or a subrange
+     * of that view. The view is defined as [0..size) (in the coordinate space of this Chunk).
      * 
      * @param offset Offset of the new Chunk, relative to this Chunk. 0 ≤ offset ≤ this.size
-     * @param capacity Capacity and initial size of the new Chunk. 0 ≤ capacity ≤ this.size -
-     *        {@code offset}.
-     * @return The new Chunk. A new Chunk will always be returned, even if the Chunks represent the
-     *         same view.
+     * @param capacity Capacity and initial size of the new Chunk. 0 ≤ capacity ≤ this.size - {@code offset}.
+     * @return The new Chunk. A new Chunk will always be returned, even if the Chunks represent the same view.
      */
     Chunk<ATTR> slice(int offset, int capacity);
 
@@ -80,29 +77,27 @@ public interface Chunk<ATTR extends Any> {
 
     /**
      * <p>
-     * Copy a sub-range of this chunk to a {@link Buffer}. This is an optional method, as some chunk
-     * types do not have a corresponding buffer type.
+     * Copy a sub-range of this chunk to a {@link Buffer}. This is an optional method, as some chunk types do not have a
+     * corresponding buffer type.
      *
      * <p>
-     * Implementations are free to copy data as efficiently as they may, and will use absolute
-     * rather than positional access where possible. To facilitate this pattern, {@code destOffset}
-     * is an absolute offset from position 0, rather than a relative offset from
-     * {@code destBuffer.position()}.
+     * Implementations are free to copy data as efficiently as they may, and will use absolute rather than positional
+     * access where possible. To facilitate this pattern, {@code destOffset} is an absolute offset from position 0,
+     * rather than a relative offset from {@code destBuffer.position()}.
      *
      * <p>
      * <It is required that {@code destBuffer.limit()} is at least {@code destOffset + length}.
      *
      * <p>
-     * {@code destBuffer}'s position may be modified, but will always be restored to its initial
-     * value upon successful return.
+     * {@code destBuffer}'s position may be modified, but will always be restored to its initial value upon successful
+     * return.
      *
      * @param srcOffset The offset into this chunk to start copying from
      * @param destBuffer The destination {@link Buffer}
      * @param destOffset The absolute offset into {@code destBuffer} to start copying to
      * @param length The number of elements to copy
      */
-    default void copyToBuffer(int srcOffset, @NotNull Buffer destBuffer, int destOffset,
-        int length) {
+    default void copyToBuffer(int srcOffset, @NotNull Buffer destBuffer, int destOffset, int length) {
         throw new UnsupportedOperationException();
     }
 
@@ -120,7 +115,7 @@ public interface Chunk<ATTR extends Any> {
         final ChunkType actual = getChunkType();
         if (actual != expected) {
             throw new IllegalArgumentException(
-                String.format("Expected chunk type '%s', but is '%s'.", expected, actual));
+                    String.format("Expected chunk type '%s', but is '%s'.", expected, actual));
         }
     }
 
@@ -176,17 +171,15 @@ public interface Chunk<ATTR extends Any> {
     /**
      * Downcast the attribute.
      *
-     * When you know the data in this chunk which you plan to read is a more specific sub-type, you
-     * can downcast the attribute with this helper method. This might be necessary, for instance,
-     * when you have a KeyIndices chunk which you sort, and now want to treat it as an
-     * OrderedKeyIndices.
+     * When you know the data in this chunk which you plan to read is a more specific sub-type, you can downcast the
+     * attribute with this helper method. This might be necessary, for instance, when you have a KeyIndices chunk which
+     * you sort, and now want to treat it as an OrderedKeyIndices.
      *
-     * @apiNote Upcast should not be necessary on read-only chunks, as a read-only chunk method
-     *          should accept an upper bound wildcard.
+     * @apiNote Upcast should not be necessary on read-only chunks, as a read-only chunk method should accept an upper
+     *          bound wildcard.
      */
 
-    static <ATTR extends Any, ATTR_DERIV extends ATTR> Chunk<ATTR_DERIV> downcast(
-        Chunk<? extends ATTR> self) {
+    static <ATTR extends Any, ATTR_DERIV extends ATTR> Chunk<ATTR_DERIV> downcast(Chunk<? extends ATTR> self) {
         // noinspection unchecked
         return (Chunk<ATTR_DERIV>) self;
     }

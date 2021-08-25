@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.IsNullCondition",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.IsNullCondition",
+        namespace = JsPackage.GLOBAL)
 public class IsNullCondition {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -72,12 +72,12 @@ public class IsNullCondition {
     public static native IsNullCondition deserializeBinary(Uint8Array bytes);
 
     public static native IsNullCondition deserializeBinaryFromReader(
-        IsNullCondition message, Object reader);
+            IsNullCondition message, Object reader);
 
     public static native void serializeBinaryToWriter(IsNullCondition message, Object writer);
 
     public static native IsNullCondition.ToObjectReturnType toObject(
-        boolean includeInstance, IsNullCondition msg);
+            boolean includeInstance, IsNullCondition msg);
 
     public native void clearReference();
 

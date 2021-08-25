@@ -50,20 +50,20 @@ public class PyLibTest extends PythonTest {
     @Test
     public void pingPong5() {
         Assert.assertEquals("PyLibTest(java,5)(python,4)(java,3)(python,2)(java,1)",
-            PingPongStack.pingPongPython("PyLibTest", 5));
+                PingPongStack.pingPongPython("PyLibTest", 5));
     }
 
     @Test
     public void pingPong4() {
         Assert.assertEquals("PyLibTest(java,4)(python,3)(java,2)(python,1)",
-            PingPongStack.pingPongPython("PyLibTest", 4));
+                PingPongStack.pingPongPython("PyLibTest", 4));
     }
 
     private static String readResource(String name) {
         try {
             return new String(
-                Files.readAllBytes(Paths.get(PyLibTest.class.getResource(name).toURI())),
-                StandardCharsets.UTF_8);
+                    Files.readAllBytes(Paths.get(PyLibTest.class.getResource(name).toURI())),
+                    StandardCharsets.UTF_8);
         } catch (IOException | URISyntaxException e) {
             throw new RuntimeException(e);
         }

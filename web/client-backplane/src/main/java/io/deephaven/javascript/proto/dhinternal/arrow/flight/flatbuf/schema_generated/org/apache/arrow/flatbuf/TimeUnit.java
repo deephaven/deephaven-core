@@ -4,12 +4,12 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.TimeUnit",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.TimeUnit",
+        namespace = JsPackage.GLOBAL)
 public class TimeUnit {
     public static int MICROSECOND,
-        MILLISECOND,
-        NANOSECOND,
-        SECOND;
+            MILLISECOND,
+            NANOSECOND,
+            SECOND;
 }

@@ -17,10 +17,9 @@ public class LoggerShutdownTask extends OnetimeShutdownTask {
         LogManager.shutdown();
     }
 
-    // I think I can replace all of the following (adapted from ServiceFactorImpl.finishLogging()
-    // and related methods) with
-    // LogManager.shutdown(). Keeping this around for posterity until I've got sufficient confidence
-    // in the new way:
+    // I think I can replace all of the following (adapted from ServiceFactorImpl.finishLogging() and related methods)
+    // with
+    // LogManager.shutdown(). Keeping this around for posterity until I've got sufficient confidence in the new way:
     // ---------------------------------------------------------------------------------------------------------------------
     //
     // private static void tryToFlushLo44jAppenders() {
@@ -28,8 +27,8 @@ public class LoggerShutdownTask extends OnetimeShutdownTask {
     // if (log4jAppender instanceof WriterAppender){
     // ((WriterAppender)log4jAppender).setImmediateFlush(true);
     // log4jAppender.setLayout(new PatternLayout(""));
-    // ((WriterAppender)log4jAppender).append(new LoggingEvent("LoggerShutdownTask", <some logger>,
-    // Level.INFO, null, null));
+    // ((WriterAppender)log4jAppender).append(new LoggingEvent("LoggerShutdownTask", <some logger>, Level.INFO, null,
+    // null));
     // }
     // }
     // }
@@ -37,27 +36,26 @@ public class LoggerShutdownTask extends OnetimeShutdownTask {
     // @SuppressWarnings("unchecked")
     // private static Collection<Appender> gatherLog4jAppenders() {
     // final HashSet<Appender> appenders = new HashSet<>();
-    // for (final Enumeration<org.apache.log4j.Logger> currentLoggers =
-    // LogManager.getCurrentLoggers(); currentLoggers.hasMoreElements();) {
-    // for (final Enumeration<Appender> currentAppenders =
-    // currentLoggers.nextElement().getAllAppenders(); currentAppenders.hasMoreElements();) {
+    // for (final Enumeration<org.apache.log4j.Logger> currentLoggers = LogManager.getCurrentLoggers();
+    // currentLoggers.hasMoreElements();) {
+    // for (final Enumeration<Appender> currentAppenders = currentLoggers.nextElement().getAllAppenders();
+    // currentAppenders.hasMoreElements();) {
     // addLog4jAppenders(appenders, currentAppenders.nextElement());
     // }
     // }
-    // for (final Enumeration<Appender> rootLoggerAppenders =
-    // LogManager.getRootLogger().getAllAppenders(); rootLoggerAppenders.hasMoreElements();) {
+    // for (final Enumeration<Appender> rootLoggerAppenders = LogManager.getRootLogger().getAllAppenders();
+    // rootLoggerAppenders.hasMoreElements();) {
     // addLog4jAppenders(appenders, rootLoggerAppenders.nextElement());
     // }
     // return appenders;
     // }
     //
     // @SuppressWarnings("unchecked")
-    // private static void addLog4jAppenders(final Collection<Appender> appenders, final Appender
-    // appender){
+    // private static void addLog4jAppenders(final Collection<Appender> appenders, final Appender appender){
     // appenders.add(appender);
     // if (appender instanceof AppenderAttachable){
-    // for (final Enumeration<Appender> attachedAppenders =
-    // ((AppenderAttachable)appender).getAllAppenders(); attachedAppenders.hasMoreElements();) {
+    // for (final Enumeration<Appender> attachedAppenders = ((AppenderAttachable)appender).getAllAppenders();
+    // attachedAppenders.hasMoreElements();) {
     // addLog4jAppenders(appenders, attachedAppenders.nextElement());
     // }
     // }

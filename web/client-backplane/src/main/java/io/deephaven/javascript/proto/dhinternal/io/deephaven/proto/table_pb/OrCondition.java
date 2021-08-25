@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.OrCondition",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.OrCondition",
+        namespace = JsPackage.GLOBAL)
 public class OrCondition {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -106,11 +106,11 @@ public class OrCondition {
 
                     @JsProperty
                     void setLiteral(
-                        OrCondition.ToObjectReturnType.FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
+                            OrCondition.ToObjectReturnType.FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
 
                     @JsProperty
                     void setReference(
-                        OrCondition.ToObjectReturnType.FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
+                            OrCondition.ToObjectReturnType.FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
                 }
 
                 @JsOverlay
@@ -135,7 +135,7 @@ public class OrCondition {
 
                 @JsProperty
                 void setLhs(
-                    OrCondition.ToObjectReturnType.FiltersListFieldType.CompareFieldType.LhsFieldType lhs);
+                        OrCondition.ToObjectReturnType.FiltersListFieldType.CompareFieldType.LhsFieldType lhs);
 
                 @JsProperty
                 void setOperation(double operation);
@@ -322,8 +322,7 @@ public class OrCondition {
 
                 @JsOverlay
                 default void setOptionalReferencesList(Object[] optionalReferencesList) {
-                    setOptionalReferencesList(
-                        Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
+                    setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
                 }
 
                 @JsProperty
@@ -369,24 +368,20 @@ public class OrCondition {
             void setAnd(OrCondition.ToObjectReturnType.FiltersListFieldType.AndFieldType and);
 
             @JsProperty
-            void setCompare(
-                OrCondition.ToObjectReturnType.FiltersListFieldType.CompareFieldType compare);
+            void setCompare(OrCondition.ToObjectReturnType.FiltersListFieldType.CompareFieldType compare);
 
             @JsProperty
             void setContains(
-                OrCondition.ToObjectReturnType.FiltersListFieldType.ContainsFieldType contains);
+                    OrCondition.ToObjectReturnType.FiltersListFieldType.ContainsFieldType contains);
 
             @JsProperty
-            void setInvoke(
-                OrCondition.ToObjectReturnType.FiltersListFieldType.InvokeFieldType invoke);
+            void setInvoke(OrCondition.ToObjectReturnType.FiltersListFieldType.InvokeFieldType invoke);
 
             @JsProperty
-            void setIsNull(
-                OrCondition.ToObjectReturnType.FiltersListFieldType.IsNullFieldType isNull);
+            void setIsNull(OrCondition.ToObjectReturnType.FiltersListFieldType.IsNullFieldType isNull);
 
             @JsProperty
-            void setMatches(
-                OrCondition.ToObjectReturnType.FiltersListFieldType.MatchesFieldType matches);
+            void setMatches(OrCondition.ToObjectReturnType.FiltersListFieldType.MatchesFieldType matches);
 
             @JsProperty
             void setNot(OrCondition.ToObjectReturnType.FiltersListFieldType.NotFieldType not);
@@ -398,8 +393,7 @@ public class OrCondition {
             void setPb_in(OrCondition.ToObjectReturnType.FiltersListFieldType.Pb_inFieldType pb_in);
 
             @JsProperty
-            void setSearch(
-                OrCondition.ToObjectReturnType.FiltersListFieldType.SearchFieldType search);
+            void setSearch(OrCondition.ToObjectReturnType.FiltersListFieldType.SearchFieldType search);
         }
 
         @JsOverlay
@@ -411,16 +405,14 @@ public class OrCondition {
         JsArray<OrCondition.ToObjectReturnType.FiltersListFieldType> getFiltersList();
 
         @JsOverlay
-        default void setFiltersList(
-            OrCondition.ToObjectReturnType.FiltersListFieldType[] filtersList) {
+        default void setFiltersList(OrCondition.ToObjectReturnType.FiltersListFieldType[] filtersList) {
             setFiltersList(
-                Js.<JsArray<OrCondition.ToObjectReturnType.FiltersListFieldType>>uncheckedCast(
-                    filtersList));
+                    Js.<JsArray<OrCondition.ToObjectReturnType.FiltersListFieldType>>uncheckedCast(
+                            filtersList));
         }
 
         @JsProperty
-        void setFiltersList(
-            JsArray<OrCondition.ToObjectReturnType.FiltersListFieldType> filtersList);
+        void setFiltersList(JsArray<OrCondition.ToObjectReturnType.FiltersListFieldType> filtersList);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -515,11 +507,11 @@ public class OrCondition {
 
                     @JsProperty
                     void setLiteral(
-                        OrCondition.ToObjectReturnType0.FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
+                            OrCondition.ToObjectReturnType0.FiltersListFieldType.CompareFieldType.LhsFieldType.LiteralFieldType literal);
 
                     @JsProperty
                     void setReference(
-                        OrCondition.ToObjectReturnType0.FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
+                            OrCondition.ToObjectReturnType0.FiltersListFieldType.CompareFieldType.LhsFieldType.ReferenceFieldType reference);
                 }
 
                 @JsOverlay
@@ -544,7 +536,7 @@ public class OrCondition {
 
                 @JsProperty
                 void setLhs(
-                    OrCondition.ToObjectReturnType0.FiltersListFieldType.CompareFieldType.LhsFieldType lhs);
+                        OrCondition.ToObjectReturnType0.FiltersListFieldType.CompareFieldType.LhsFieldType lhs);
 
                 @JsProperty
                 void setOperation(double operation);
@@ -731,8 +723,7 @@ public class OrCondition {
 
                 @JsOverlay
                 default void setOptionalReferencesList(Object[] optionalReferencesList) {
-                    setOptionalReferencesList(
-                        Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
+                    setOptionalReferencesList(Js.<JsArray<Object>>uncheckedCast(optionalReferencesList));
                 }
 
                 @JsProperty
@@ -779,23 +770,21 @@ public class OrCondition {
 
             @JsProperty
             void setCompare(
-                OrCondition.ToObjectReturnType0.FiltersListFieldType.CompareFieldType compare);
+                    OrCondition.ToObjectReturnType0.FiltersListFieldType.CompareFieldType compare);
 
             @JsProperty
             void setContains(
-                OrCondition.ToObjectReturnType0.FiltersListFieldType.ContainsFieldType contains);
+                    OrCondition.ToObjectReturnType0.FiltersListFieldType.ContainsFieldType contains);
 
             @JsProperty
-            void setInvoke(
-                OrCondition.ToObjectReturnType0.FiltersListFieldType.InvokeFieldType invoke);
+            void setInvoke(OrCondition.ToObjectReturnType0.FiltersListFieldType.InvokeFieldType invoke);
 
             @JsProperty
-            void setIsNull(
-                OrCondition.ToObjectReturnType0.FiltersListFieldType.IsNullFieldType isNull);
+            void setIsNull(OrCondition.ToObjectReturnType0.FiltersListFieldType.IsNullFieldType isNull);
 
             @JsProperty
             void setMatches(
-                OrCondition.ToObjectReturnType0.FiltersListFieldType.MatchesFieldType matches);
+                    OrCondition.ToObjectReturnType0.FiltersListFieldType.MatchesFieldType matches);
 
             @JsProperty
             void setNot(OrCondition.ToObjectReturnType0.FiltersListFieldType.NotFieldType not);
@@ -804,12 +793,10 @@ public class OrCondition {
             void setOr(Object or);
 
             @JsProperty
-            void setPb_in(
-                OrCondition.ToObjectReturnType0.FiltersListFieldType.Pb_inFieldType pb_in);
+            void setPb_in(OrCondition.ToObjectReturnType0.FiltersListFieldType.Pb_inFieldType pb_in);
 
             @JsProperty
-            void setSearch(
-                OrCondition.ToObjectReturnType0.FiltersListFieldType.SearchFieldType search);
+            void setSearch(OrCondition.ToObjectReturnType0.FiltersListFieldType.SearchFieldType search);
         }
 
         @JsOverlay
@@ -822,26 +809,24 @@ public class OrCondition {
 
         @JsOverlay
         default void setFiltersList(
-            OrCondition.ToObjectReturnType0.FiltersListFieldType[] filtersList) {
+                OrCondition.ToObjectReturnType0.FiltersListFieldType[] filtersList) {
             setFiltersList(
-                Js.<JsArray<OrCondition.ToObjectReturnType0.FiltersListFieldType>>uncheckedCast(
-                    filtersList));
+                    Js.<JsArray<OrCondition.ToObjectReturnType0.FiltersListFieldType>>uncheckedCast(
+                            filtersList));
         }
 
         @JsProperty
-        void setFiltersList(
-            JsArray<OrCondition.ToObjectReturnType0.FiltersListFieldType> filtersList);
+        void setFiltersList(JsArray<OrCondition.ToObjectReturnType0.FiltersListFieldType> filtersList);
     }
 
     public static native OrCondition deserializeBinary(Uint8Array bytes);
 
-    public static native OrCondition deserializeBinaryFromReader(OrCondition message,
-        Object reader);
+    public static native OrCondition deserializeBinaryFromReader(OrCondition message, Object reader);
 
     public static native void serializeBinaryToWriter(OrCondition message, Object writer);
 
     public static native OrCondition.ToObjectReturnType toObject(
-        boolean includeInstance, OrCondition msg);
+            boolean includeInstance, OrCondition msg);
 
     public native Condition addFilters();
 

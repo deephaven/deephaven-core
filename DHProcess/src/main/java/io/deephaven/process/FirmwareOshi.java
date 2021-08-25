@@ -69,22 +69,21 @@ public abstract class FirmwareOshi implements PropertySet {
 
     public static FirmwareOshi from(Firmware firmware) {
         return ImmutableFirmwareOshi.builder()
-            .manufacturer(firmware.getManufacturer())
-            .name(firmware.getName())
-            .description(firmware.getDescription())
-            .version(firmware.getVersion())
-            .releaseDate(firmware.getReleaseDate())
-            .build();
+                .manufacturer(firmware.getManufacturer())
+                .name(firmware.getName())
+                .description(firmware.getDescription())
+                .version(firmware.getVersion())
+                .releaseDate(firmware.getReleaseDate())
+                .build();
     }
 
     /*
-     * public static FirmwareOshi from(PropertySet properties) { return
-     * Parser.INSTANCE.parse(properties); }
+     * public static FirmwareOshi from(PropertySet properties) { return Parser.INSTANCE.parse(properties); }
      * 
      * enum Parser implements PropertySetParser<FirmwareOshi> { INSTANCE;
      * 
-     * @Override public FirmwareOshi parse(PropertySet properties) { final Visitor parser = new
-     * Visitor(); parser.visitProperties(properties); return parser.build(); } }
+     * @Override public FirmwareOshi parse(PropertySet properties) { final Visitor parser = new Visitor();
+     * parser.visitProperties(properties); return parser.build(); } }
      * 
      * static class Visitor implements PropertyVisitor {
      * 
@@ -94,15 +93,13 @@ public abstract class FirmwareOshi implements PropertySet {
      * 
      * @Override public void visit(String key, String value) { switch (key) { case MANUFACTURER:
      * builder.manufacturer(value); break; case NAME: builder.name(value); break; case DESCRIPTION:
-     * builder.description(value); break; case VERSION: builder.version(value); break; case
-     * RELEASE_DATE: builder.releaseDate(value); break; default: Error.INSTANCE.visit(key, value); }
-     * }
+     * builder.description(value); break; case VERSION: builder.version(value); break; case RELEASE_DATE:
+     * builder.releaseDate(value); break; default: Error.INSTANCE.visit(key, value); } }
      * 
      * @Override public void visit(String key, int value) { Error.INSTANCE.visit(key, value); }
      * 
      * @Override public void visit(String key, long value) { Error.INSTANCE.visit(key, value); }
      * 
-     * @Override public void visit(String key, boolean value) { Error.INSTANCE.visit(key, value); }
-     * }
+     * @Override public void visit(String key, boolean value) { Error.INSTANCE.visit(key, value); } }
      */
 }

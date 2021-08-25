@@ -11,24 +11,23 @@ import io.deephaven.db.v2.utils.RedirectionIndex;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * A {@link ColumnSource} that provides a redirected view into another {@link ColumnSource} by
- * mapping keys using a {@link RedirectionIndex}.
+ * A {@link ColumnSource} that provides a redirected view into another {@link ColumnSource} by mapping keys using a
+ * {@link RedirectionIndex}.
  */
-public class RedirectedColumnSource<T> extends ReadOnlyRedirectedColumnSource<T>
-    implements WritableSource<T> {
+public class RedirectedColumnSource<T> extends ReadOnlyRedirectedColumnSource<T> implements WritableSource<T> {
     private long maxInnerIndex;
 
     /**
-     * Create a type-appropriate RedirectedColumnSource for the supplied {@link RedirectionIndex}
-     * and inner {@link ColumnSource}.
+     * Create a type-appropriate RedirectedColumnSource for the supplied {@link RedirectionIndex} and inner
+     * {@link ColumnSource}.
      *
      * @param redirectionIndex The redirection index to use
      * @param innerSource The column source to redirect
      * @param maxInnerIndex The maximum index key available in innerSource
      */
     public RedirectedColumnSource(@NotNull final RedirectionIndex redirectionIndex,
-        @NotNull final ColumnSource<T> innerSource,
-        final long maxInnerIndex) {
+            @NotNull final ColumnSource<T> innerSource,
+            final long maxInnerIndex) {
         super(redirectionIndex, innerSource);
         this.maxInnerIndex = maxInnerIndex;
     }
@@ -101,8 +100,7 @@ public class RedirectedColumnSource<T> extends ReadOnlyRedirectedColumnSource<T>
 
         private RedirectionFillFrom(int chunkCapacity) {
             this.redirectionFillContext = redirectionIndex.makeFillContext(chunkCapacity, null);
-            this.innerFillFromContext =
-                ((WritableSource) innerSource).makeFillFromContext(chunkCapacity);
+            this.innerFillFromContext = ((WritableSource) innerSource).makeFillFromContext(chunkCapacity);
             this.redirections = WritableLongChunk.makeWritableChunk(chunkCapacity);
         }
 
@@ -120,24 +118,24 @@ public class RedirectedColumnSource<T> extends ReadOnlyRedirectedColumnSource<T>
     }
 
     @Override
-    public void fillFromChunk(@NotNull FillFromContext context,
-        @NotNull Chunk<? extends Attributes.Values> src, @NotNull OrderedKeys orderedKeys) {
+    public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Attributes.Values> src,
+            @NotNull OrderedKeys orderedKeys) {
         // noinspection unchecked
         final RedirectionFillFrom redirectionFillFrom = (RedirectionFillFrom) context;
-        redirectionIndex.fillChunk(redirectionFillFrom.redirectionFillContext,
-            redirectionFillFrom.redirections, orderedKeys);
-        ((WritableSource) innerSource).fillFromChunkUnordered(
-            redirectionFillFrom.innerFillFromContext, src, redirectionFillFrom.redirections);
+        redirectionIndex.fillChunk(redirectionFillFrom.redirectionFillContext, redirectionFillFrom.redirections,
+                orderedKeys);
+        ((WritableSource) innerSource).fillFromChunkUnordered(redirectionFillFrom.innerFillFromContext, src,
+                redirectionFillFrom.redirections);
     }
 
     @Override
     public void fillFromChunkUnordered(@NotNull FillFromContext context,
-        @NotNull Chunk<? extends Attributes.Values> src, @NotNull LongChunk<KeyIndices> keys) {
+            @NotNull Chunk<? extends Attributes.Values> src, @NotNull LongChunk<KeyIndices> keys) {
         // noinspection unchecked
         final RedirectionFillFrom redirectionFillFrom = (RedirectionFillFrom) context;
         redirectionIndex.fillChunkUnordered(redirectionFillFrom.redirectionFillContext,
-            redirectionFillFrom.redirections, keys);
-        ((WritableSource) innerSource).fillFromChunkUnordered(
-            redirectionFillFrom.innerFillFromContext, src, redirectionFillFrom.redirections);
+                redirectionFillFrom.redirections, keys);
+        ((WritableSource) innerSource).fillFromChunkUnordered(redirectionFillFrom.innerFillFromContext, src,
+                redirectionFillFrom.redirections);
     }
 }

@@ -17,8 +17,8 @@ public class IndexPeformanceTest {
         for (Index.Iterator it = index.iterator(); it.hasNext();) {
             sum += it.nextLong();
         }
-        System.out.println("Range iteration per item time = "
-            + (System.currentTimeMillis() - start) / (SIZE / 1000000) + "ns " + sum);
+        System.out.println("Range iteration per item time = " + (System.currentTimeMillis() - start) / (SIZE / 1000000)
+                + "ns " + sum);
         Random random = new Random(0);
         Index.RandomBuilder indexBuilder = Index.FACTORY.getRandomBuilder();
         long runningValue = 0;// Math.abs(random.nextLong());
@@ -40,16 +40,16 @@ public class IndexPeformanceTest {
                 indexBuilder.addKey(runningValue);
             }
         }
-        System.out.println("Random construction per item time = "
-            + (System.currentTimeMillis() - start) / (SIZE / 1000000) +
-            "ns " + sum + " " + runningValue);
+        System.out.println(
+                "Random construction per item time = " + (System.currentTimeMillis() - start) / (SIZE / 1000000) +
+                        "ns " + sum + " " + runningValue);
         index = indexBuilder.getIndex();
         sum = 0;
         start = System.currentTimeMillis();
         for (Index.Iterator it = index.iterator(); it.hasNext();) {
             sum += it.nextLong();
         }
-        System.out.println("Random iteration per item time = "
-            + (System.currentTimeMillis() - start) / (SIZE / 1000000) + "ns " + sum);
+        System.out.println("Random iteration per item time = " + (System.currentTimeMillis() - start) / (SIZE / 1000000)
+                + "ns " + sum);
     }
 }

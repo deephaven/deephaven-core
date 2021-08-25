@@ -55,18 +55,17 @@ public class NaturalJoinBenchmark {
         switch (tableType) {
             case "Historical":
                 rightBuilder = BenchmarkTools.persistentTableBuilder("Carlos", rightSize)
-                    .setPartitioningFormula("${autobalance_single}")
-                    .setPartitionCount(10);
+                        .setPartitioningFormula("${autobalance_single}")
+                        .setPartitionCount(10);
                 leftBuilder = BenchmarkTools.persistentTableBuilder("Karl", leftSize)
-                    .setPartitioningFormula("${autobalance_single}")
-                    .setPartitionCount(10);
+                        .setPartitioningFormula("${autobalance_single}")
+                        .setPartitionCount(10);
                 break;
             case "Intraday":
                 rightBuilder = BenchmarkTools.persistentTableBuilder("Carlos", rightSize);
                 leftBuilder = BenchmarkTools.persistentTableBuilder("Karl", leftSize);
                 if (leftGrouped) {
-                    throw new UnsupportedOperationException(
-                        "Can not run this benchmark combination.");
+                    throw new UnsupportedOperationException("Can not run this benchmark combination.");
                 }
                 break;
 
@@ -74,16 +73,13 @@ public class NaturalJoinBenchmark {
                 throw new IllegalStateException("Table type must be Historical or Intraday");
         }
 
-        rightBuilder.setSeed(0xDEADBEEF)
-            .addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
-        leftBuilder.setSeed(0xDEADBEEF)
-            .addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
+        rightBuilder.setSeed(0xDEADBEEF).addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
+        leftBuilder.setSeed(0xDEADBEEF).addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
 
-        final EnumStringColumnGenerator stringJoinKey =
-            (EnumStringColumnGenerator) BenchmarkTools.stringCol("JString", rightSize, 6, 6,
-                0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
-        final ColumnGenerator intJoinKey = BenchmarkTools.seqNumberCol("JInt", int.class, 0, 1,
-            rightSize, SequentialNumColumnGenerator.Mode.RollAtLimit);
+        final EnumStringColumnGenerator stringJoinKey = (EnumStringColumnGenerator) BenchmarkTools.stringCol("JString",
+                rightSize, 6, 6, 0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
+        final ColumnGenerator intJoinKey = BenchmarkTools.seqNumberCol("JInt", int.class, 0, 1, rightSize,
+                SequentialNumColumnGenerator.Mode.RollAtLimit);
 
         System.out.println("Join key type: " + joinKeyType);
         switch (joinKeyType) {
@@ -104,8 +100,7 @@ public class NaturalJoinBenchmark {
                 leftBuilder.addColumn(intJoinKey);
                 joinKeyName = stringJoinKey.getName() + "," + intJoinKey.getName();
                 if (leftGrouped) {
-                    throw new UnsupportedOperationException(
-                        "Can not run this benchmark combination.");
+                    throw new UnsupportedOperationException("Can not run this benchmark combination.");
                 }
                 break;
             default:
@@ -117,15 +112,14 @@ public class NaturalJoinBenchmark {
         }
 
         final BenchmarkTable bmRight = rightBuilder
-            .addColumn(BenchmarkTools.numberCol("RightSentinel", long.class))
-            .build();
+                .addColumn(BenchmarkTools.numberCol("RightSentinel", long.class))
+                .build();
 
         final BenchmarkTable bmLeft = leftBuilder
-            .addColumn(BenchmarkTools.numberCol("LeftSentinel", long.class))
-            .build();
+                .addColumn(BenchmarkTools.numberCol("LeftSentinel", long.class))
+                .build();
 
-        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()),
-            params.getWarmup().getCount());
+        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
 
         rightTable = bmRight.getTable().coalesce().dropColumns("PartCol");
         leftTable = bmLeft.getTable().coalesce().dropColumns("PartCol");
@@ -163,18 +157,15 @@ public class NaturalJoinBenchmark {
     @Benchmark
     public Table naturalJoinStatic() {
         final Table result = LiveTableMonitor.DEFAULT.sharedLock()
-            .computeLocked(() -> leftTable.naturalJoin(rightTable, joinKeyName));
+                .computeLocked(() -> leftTable.naturalJoin(rightTable, joinKeyName));
         return state.setResult(result);
     }
 
     @Benchmark
     public Table naturalJoinIncremental() {
-        final Table result =
-            IncrementalBenchmark
-                .incrementalBenchmark(
-                    (lt, rt) -> LiveTableMonitor.DEFAULT.sharedLock()
-                        .computeLocked(() -> lt.naturalJoin(rt, joinKeyName)),
-                    leftTable, rightTable);
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (lt, rt) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> lt.naturalJoin(rt, joinKeyName)),
+                leftTable, rightTable);
         return state.setResult(result);
     }
 

@@ -24,13 +24,12 @@ public abstract class ArrowModule {
 
     @Binds
     @IntoSet
-    abstract BindableService bindBrowserFlightServiceBinding(
-        BrowserFlightServiceGrpcBinding service);
+    abstract BindableService bindBrowserFlightServiceBinding(BrowserFlightServiceGrpcBinding service);
 
     @Binds
     @Singleton
     abstract BarrageMessageProducer.StreamGenerator.Factory<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> bindStreamGenerator(
-        BarrageStreamGenerator.Factory factory);
+            BarrageStreamGenerator.Factory factory);
 
     @Provides
     static BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGenerator.View>> provideListenerAdapter() {

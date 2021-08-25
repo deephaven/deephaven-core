@@ -27,25 +27,24 @@ import static io.deephaven.util.QueryConstants.*;
  */
 @SuppressWarnings({"AnonymousInnerClassMayBeStatic", "JUnit4AnnotatedMethodInJUnit3TestCase"})
 public abstract class TstRegionedColumnSourcePrimitive<DATA_TYPE, ATTR extends Attributes.Values, REGION_TYPE extends ColumnRegion<ATTR>>
-    extends BaseCachedJMockTestCase {
+        extends BaseCachedJMockTestCase {
 
     static final byte[] TEST_BYTES =
-        new byte[] {NULL_BYTE, 0, 1, 2, Byte.MIN_VALUE + 1, Byte.MAX_VALUE, 100, 126, -56, -1};
+            new byte[] {NULL_BYTE, 0, 1, 2, Byte.MIN_VALUE + 1, Byte.MAX_VALUE, 100, 126, -56, -1};
     @SuppressWarnings("AutoBoxing")
-    static final Boolean[] TEST_BOOLEANS = new Boolean[] {NULL_BOOLEAN, true, false, NULL_BOOLEAN,
-            false, true, true, false, false, true};
-    static final char[] TEST_CHARS =
-        new char[] {NULL_CHAR, 'A', 'B', 'C', 'D', '1', '2', '3', '4', '5'};
-    static final short[] TEST_SHORTS = new short[] {NULL_SHORT, 0, 1, 2, Short.MIN_VALUE + 1,
-            Short.MAX_VALUE, 10000, 126, -5600, -1};
-    static final int[] TEST_INTS = new int[] {NULL_INT, 0, 1, 2, Integer.MIN_VALUE + 1,
-            Integer.MAX_VALUE, 1000000000, 126, -560000000, -1};
-    static final long[] TEST_LONGS = new long[] {NULL_LONG, 0, 1, 2, Long.MIN_VALUE + 1,
-            Long.MAX_VALUE, 1000000000000000000L, 12659, -5600000000000000000L, -1L};
-    static final float[] TEST_FLOATS = new float[] {NULL_FLOAT, 0.1f, 1.2f, 2.3f,
-            Float.MIN_VALUE + 1.4f, Float.MAX_VALUE, 100.123f, 126000f, -56869.2f, -1.0f};
-    static final double[] TEST_DOUBLES = new double[] {NULL_DOUBLE, 0.1, 1.2, 2.3,
-            Double.MIN_VALUE + 1.4, Double.MAX_VALUE, 100.123, 126000, -56869.2, -1.0};
+    static final Boolean[] TEST_BOOLEANS =
+            new Boolean[] {NULL_BOOLEAN, true, false, NULL_BOOLEAN, false, true, true, false, false, true};
+    static final char[] TEST_CHARS = new char[] {NULL_CHAR, 'A', 'B', 'C', 'D', '1', '2', '3', '4', '5'};
+    static final short[] TEST_SHORTS =
+            new short[] {NULL_SHORT, 0, 1, 2, Short.MIN_VALUE + 1, Short.MAX_VALUE, 10000, 126, -5600, -1};
+    static final int[] TEST_INTS =
+            new int[] {NULL_INT, 0, 1, 2, Integer.MIN_VALUE + 1, Integer.MAX_VALUE, 1000000000, 126, -560000000, -1};
+    static final long[] TEST_LONGS = new long[] {NULL_LONG, 0, 1, 2, Long.MIN_VALUE + 1, Long.MAX_VALUE,
+            1000000000000000000L, 12659, -5600000000000000000L, -1L};
+    static final float[] TEST_FLOATS = new float[] {NULL_FLOAT, 0.1f, 1.2f, 2.3f, Float.MIN_VALUE + 1.4f,
+            Float.MAX_VALUE, 100.123f, 126000f, -56869.2f, -1.0f};
+    static final double[] TEST_DOUBLES = new double[] {NULL_DOUBLE, 0.1, 1.2, 2.3, Double.MIN_VALUE + 1.4,
+            Double.MAX_VALUE, 100.123, 126000, -56869.2, -1.0};
 
     REGION_TYPE[] cr;
     RegionedColumnSourceBase<DATA_TYPE, ATTR, REGION_TYPE> SUT;

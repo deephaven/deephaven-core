@@ -19,8 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 public class BuildSortedRangesBench {
 
-    private static final int count = 415 * 1000; // -Xmx768M makes for a tight heap, which is how we
-                                                 // want to test.
+    private static final int count = 415 * 1000; // -Xmx768M makes for a tight heap, which is how we want to test.
     private static final int sortedRangesIntMaxCapacity = SortedRanges.MAX_CAPACITY / 2;
     private static final int sz = sortedRangesIntMaxCapacity - 2;
     private static final long[] values = new long[sz + 1];

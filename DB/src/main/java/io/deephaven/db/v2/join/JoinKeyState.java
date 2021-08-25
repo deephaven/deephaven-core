@@ -15,13 +15,12 @@ interface JoinKeyState {
 
     void removeRightIndices(Index rightIndices);
 
-    void modifyByRightIndices(Index rightIndex);// Informs the state the right index at that
-                                                // position was modified
+    void modifyByRightIndices(Index rightIndex);// Informs the state the right index at that position was modified
 
     /**
-     * After the right side has been changed (all additions, modifications, removals, etc.) have
-     * been completed; each state is visited calling propagateRightUpdates to update its
-     * RedirectionIndex and the list of left indicesthat have been modified by right changes.
+     * After the right side has been changed (all additions, modifications, removals, etc.) have been completed; each
+     * state is visited calling propagateRightUpdates to update its RedirectionIndex and the list of left indicesthat
+     * have been modified by right changes.
      */
     void propagateRightUpdates();
 
@@ -39,8 +38,8 @@ interface JoinKeyState {
     /**
      * Intrusive set for touchedStates or statesTouchedByRight.
      *
-     * The sets can swap back and forth; so rather than having to remove things from one set and
-     * enter them into another; we swap which of the two intrusive references we use.
+     * The sets can swap back and forth; so rather than having to remove things from one set and enter them into
+     * another; we swap which of the two intrusive references we use.
      */
     int getSlot1();
 

@@ -15,20 +15,18 @@ import java.util.stream.Stream;
 
 public class ReplicateUtilities {
     /**
-     * Take a list of lines; and apply a given fixup expressed as a code region, regular expression,
-     * then function from the matcher to the replacement line.
+     * Take a list of lines; and apply a given fixup expressed as a code region, regular expression, then function from
+     * the matcher to the replacement line.
      *
      * @param lines the input lines
-     * @param region the name of the region started by "// region &lt;name&gt;" and ended by "//
-     *        endregion &lt;name&gt;"
+     * @param region the name of the region started by "// region &lt;name&gt;" and ended by "// endregion &lt;name&gt;"
      * @param searchPattern the pattern to search for
-     * @param replacer a function from the search pattern's successful matcher to the new lines to
-     *        apply as a List.
+     * @param replacer a function from the search pattern's successful matcher to the new lines to apply as a List.
      * @return a new list of lines with the fixup applied
      */
     @NotNull
-    public static List<String> applyFixup(List<String> lines, final String region,
-        final String searchPattern, final Function<Matcher, List<String>> replacer) {
+    public static List<String> applyFixup(List<String> lines, final String region, final String searchPattern,
+            final Function<Matcher, List<String>> replacer) {
         final List<String> newLines = new ArrayList<>();
 
         final Pattern startPattern = Pattern.compile("// region " + region);
@@ -74,15 +72,13 @@ public class ReplicateUtilities {
      * Take a list of lines; and apply a given fixup expressed as a code region and replacements
      * 
      * @param lines the input lines
-     * @param region the name of the region started by "// region &lt;name&gt;" and ended by "//
-     *        endregion &lt;name&gt;"
-     * @param replacements an array with an even number of elements, even elements are a thing to
-     *        replace, the next element is the thing to replace it with
+     * @param region the name of the region started by "// region &lt;name&gt;" and ended by "// endregion &lt;name&gt;"
+     * @param replacements an array with an even number of elements, even elements are a thing to replace, the next
+     *        element is the thing to replace it with
      * @return a new list of lines with the fixup applied
      */
     @NotNull
-    public static List<String> simpleFixup(List<String> lines, final String region,
-        final String... replacements) {
+    public static List<String> simpleFixup(List<String> lines, final String region, final String... replacements) {
         final List<String> newLines = new ArrayList<>();
 
         final Pattern startPattern = Pattern.compile("// region " + region);
@@ -117,16 +113,15 @@ public class ReplicateUtilities {
     }
 
     /**
-     * Do whatever miscellaneous cleanups might be appropriate for all replicated classes. For now,
-     * this removes identical import lines.
+     * Do whatever miscellaneous cleanups might be appropriate for all replicated classes. For now, this removes
+     * identical import lines.
      */
     public static List<String> standardCleanups(List<String> lines) {
         final List<String> newLines = new ArrayList<>();
         final Set<String> imports = new HashSet<>();
 
         for (final String line : lines) {
-            // Gets copied over if it is not an import statement, or if it is an import statement
-            // that we have seen
+            // Gets copied over if it is not an import statement, or if it is an import statement that we have seen
             // for the first time. Otherwise gets dropped.
             if (!line.startsWith("import") || imports.add(line)) {
                 newLines.add(line);
@@ -136,8 +131,8 @@ public class ReplicateUtilities {
     }
 
     /**
-     * Locates the region demarked by "// region &lt;name&gt;" and ended by "// endregion
-     * &lt;name&gt;" and adds extra lines at the top.
+     * Locates the region demarked by "// region &lt;name&gt;" and ended by "// endregion &lt;name&gt;" and adds extra
+     * lines at the top.
      *
      * @param lines the lines to process
      * @param region the name of the region
@@ -145,8 +140,7 @@ public class ReplicateUtilities {
      * @return a new list of lines
      */
     @NotNull
-    public static List<String> insertRegion(List<String> lines, final String region,
-        List<String> extraLines) {
+    public static List<String> insertRegion(List<String> lines, final String region, List<String> extraLines) {
         final List<String> newLines = new ArrayList<>();
 
         final Pattern startPattern = Pattern.compile("// region " + region);
@@ -180,8 +174,7 @@ public class ReplicateUtilities {
     }
 
     /**
-     * Locates the region demarked by "// region &lt;name&gt;" and ended by "// endregion
-     * &lt;name&gt;" and removes it.
+     * Locates the region demarked by "// region &lt;name&gt;" and ended by "// endregion &lt;name&gt;" and removes it.
      *
      * @param lines the lines to process
      * @param region the name of the region
@@ -193,8 +186,8 @@ public class ReplicateUtilities {
     }
 
     /**
-     * Locates the region demarked by "// region &lt;name&gt;" and ended by "// endregion
-     * &lt;name&gt;" and replaces the text with the contents of replacement.
+     * Locates the region demarked by "// region &lt;name&gt;" and ended by "// endregion &lt;name&gt;" and replaces the
+     * text with the contents of replacement.
      *
      * @param lines the lines to process
      * @param region the name of the region
@@ -202,8 +195,7 @@ public class ReplicateUtilities {
      * @return a new list of lines
      */
     @NotNull
-    public static List<String> replaceRegion(List<String> lines, final String region,
-        List<String> replacement) {
+    public static List<String> replaceRegion(List<String> lines, final String region, List<String> replacement) {
         final List<String> newLines = new ArrayList<>();
 
         final Pattern startPattern = Pattern.compile("//\\s*region " + region);
@@ -237,16 +229,14 @@ public class ReplicateUtilities {
         return newLines;
     }
 
-    public static List<String> globalReplacements(int skip, List<String> lines,
-        String... replacements) {
+    public static List<String> globalReplacements(int skip, List<String> lines, String... replacements) {
         if (replacements.length == 0 || replacements.length % 2 != 0) {
             throw new IllegalArgumentException("Bad replacement length: " + replacements.length);
         }
         final Stream<String> startStream = lines.subList(0, skip).stream();
         final Stream<String> replacementStream = lines.subList(skip, lines.size()).stream();
-        return Stream
-            .concat(startStream, replacementStream.map(x -> doLineReplacements(x, replacements)))
-            .collect(Collectors.toList());
+        return Stream.concat(startStream, replacementStream.map(x -> doLineReplacements(x, replacements)))
+                .collect(Collectors.toList());
     }
 
     public static List<String> globalReplacements(List<String> lines, String... replacements) {
@@ -254,13 +244,13 @@ public class ReplicateUtilities {
     }
 
     public static List<String> addImport(List<String> lines, Class... importClasses) {
-        return addImport(lines, Arrays.stream(importClasses)
-            .map(c -> "import " + c.getCanonicalName() + ";").toArray(String[]::new));
+        return addImport(lines,
+                Arrays.stream(importClasses).map(c -> "import " + c.getCanonicalName() + ";").toArray(String[]::new));
     }
 
     public static List<String> removeImport(List<String> lines, Class... importClasses) {
         return removeImport(lines, Arrays.stream(importClasses)
-            .map(c -> "\\s*import\\s+" + c.getCanonicalName() + "\\s*;").toArray(String[]::new));
+                .map(c -> "\\s*import\\s+" + c.getCanonicalName() + "\\s*;").toArray(String[]::new));
     }
 
     public static List<String> addImport(List<String> lines, String... importString) {
@@ -279,8 +269,7 @@ public class ReplicateUtilities {
      * Remove all of the specified imports -- Error if any are not found.
      */
     public static List<String> removeImport(List<String> lines, String... importRegex) {
-        final List<Pattern> patterns =
-            Arrays.stream(importRegex).map(Pattern::compile).collect(Collectors.toList());
+        final List<Pattern> patterns = Arrays.stream(importRegex).map(Pattern::compile).collect(Collectors.toList());
         final List<String> newLines = removeAnyImports(lines, patterns);
         if (!patterns.isEmpty()) {
             throw new IllegalArgumentException("Could not find imports to remove: " + patterns);
@@ -292,8 +281,7 @@ public class ReplicateUtilities {
      * Remove imports if they match any of the patterns.
      */
     public static List<String> removeAnyImports(List<String> lines, String... importRegex) {
-        final List<Pattern> patterns =
-            Arrays.stream(importRegex).map(Pattern::compile).collect(Collectors.toList());
+        final List<Pattern> patterns = Arrays.stream(importRegex).map(Pattern::compile).collect(Collectors.toList());
         return removeAnyImports(lines, patterns);
     }
 
@@ -332,15 +320,14 @@ public class ReplicateUtilities {
 
     @NotNull
     public static List<String> fixupChunkAttributes(List<String> lines, final String genericType) {
-        lines = lines.stream()
-            .map(x -> x.replaceAll("ObjectChunk<([^>]*)>", "ObjectChunk<" + genericType + ", $1>"))
-            .collect(Collectors.toList());
+        lines = lines.stream().map(x -> x.replaceAll("ObjectChunk<([^>]*)>", "ObjectChunk<" + genericType + ", $1>"))
+                .collect(Collectors.toList());
         return lines;
     }
 
     public static void fixupChunkAttributes(String objectPath) throws IOException {
-        FileUtils.writeLines(new File(objectPath), fixupChunkAttributes(
-            FileUtils.readLines(new File(objectPath), Charset.defaultCharset())));
+        FileUtils.writeLines(new File(objectPath),
+                fixupChunkAttributes(FileUtils.readLines(new File(objectPath), Charset.defaultCharset())));
     }
 
     public static List<String> indent(final List<String> lines, int spaces) {

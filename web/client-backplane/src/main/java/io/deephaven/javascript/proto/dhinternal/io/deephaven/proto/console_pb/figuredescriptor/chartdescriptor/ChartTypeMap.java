@@ -8,9 +8,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.ChartDescriptor.ChartTypeMap",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.ChartDescriptor.ChartTypeMap",
+        namespace = JsPackage.GLOBAL)
 public interface ChartTypeMap {
     @JsOverlay
     static ChartTypeMap create() {

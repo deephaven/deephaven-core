@@ -7,8 +7,7 @@ public class IterableUtils {
         return appendCommaSeparatedList(new StringBuilder(), s).toString();
     }
 
-    public static <T> String makeSeparatedList(Iterable<T> s, String separator,
-        Function<T, String> renderer) {
+    public static <T> String makeSeparatedList(Iterable<T> s, String separator, Function<T, String> renderer) {
         return appendSeparatedList(new StringBuilder(), s, separator, renderer).toString();
     }
 
@@ -16,9 +15,8 @@ public class IterableUtils {
         return appendSeparatedList(sb, s, ", ", Object::toString);
     }
 
-    public static <T> StringBuilder appendSeparatedList(StringBuilder sb, Iterable<T> s,
-        String separator,
-        Function<T, String> renderer) {
+    public static <T> StringBuilder appendSeparatedList(StringBuilder sb, Iterable<T> s, String separator,
+            Function<T, String> renderer) {
         String currentSep = "";
         for (T element : s) {
             sb.append(currentSep);

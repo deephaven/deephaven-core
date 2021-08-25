@@ -41,9 +41,8 @@ public class PyDictTest extends PythonTest {
 
     @Test
     public void simpleDict() {
-        PyDictWrapper dict = PyObject
-            .executeCode("{'mock':'yeah', 'ing':'yeah', 'bird':'yeah'}", PyInputMode.EXPRESSION)
-            .asDict();
+        PyDictWrapper dict =
+                PyObject.executeCode("{'mock':'yeah', 'ing':'yeah', 'bird':'yeah'}", PyInputMode.EXPRESSION).asDict();
 
         Assert.assertTrue(!dict.isEmpty());
         Assert.assertTrue(!dict.keySet().isEmpty());
@@ -80,12 +79,12 @@ public class PyDictTest extends PythonTest {
     @Test
     public void globals() {
         PyLib.getMainGlobals()
-            .asDict()
-            .copy()
-            .entrySet()
-            .stream()
-            .map(e -> new SimpleImmutableEntry<>(e.getKey().toString(), convert(e.getValue())))
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+                .asDict()
+                .copy()
+                .entrySet()
+                .stream()
+                .map(e -> new SimpleImmutableEntry<>(e.getKey().toString(), convert(e.getValue())))
+                .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
     }
 
     static Object convert(PyObject pyObject) {

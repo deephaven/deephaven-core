@@ -3,8 +3,7 @@ package io.deephaven.util.datastructures.linked;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Interface for allowing sub-interfaces to enforce a common interface for intrusive doubly-linked
- * nodes.
+ * Interface for allowing sub-interfaces to enforce a common interface for intrusive doubly-linked nodes.
  */
 public interface IntrusiveDoublyLinkedNode<NODE_TYPE extends IntrusiveDoublyLinkedNode<NODE_TYPE>> {
 
@@ -39,8 +38,7 @@ public interface IntrusiveDoublyLinkedNode<NODE_TYPE extends IntrusiveDoublyLink
     void setPrev(@NotNull NODE_TYPE other);
 
     /**
-     * Basic implementation for classes that can simply extend it rather than implement the
-     * interface directly.
+     * Basic implementation for classes that can simply extend it rather than implement the interface directly.
      */
     class Impl<NODE_TYPE extends Impl<NODE_TYPE>> implements IntrusiveDoublyLinkedNode<NODE_TYPE> {
 
@@ -76,14 +74,12 @@ public interface IntrusiveDoublyLinkedNode<NODE_TYPE extends IntrusiveDoublyLink
     }
 
     /**
-     * Generic {@link IntrusiveDoublyLinkedStructureBase.Adapter} usable with any implementing
-     * class.
+     * Generic {@link IntrusiveDoublyLinkedStructureBase.Adapter} usable with any implementing class.
      */
     class Adapter<NODE_TYPE extends IntrusiveDoublyLinkedNode<NODE_TYPE>>
-        implements IntrusiveDoublyLinkedStructureBase.Adapter<NODE_TYPE> {
+            implements IntrusiveDoublyLinkedStructureBase.Adapter<NODE_TYPE> {
 
-        private static final IntrusiveDoublyLinkedStructureBase.Adapter<?> INSTANCE =
-            new Adapter<>();
+        private static final IntrusiveDoublyLinkedStructureBase.Adapter<?> INSTANCE = new Adapter<>();
 
         public static <NODE_TYPE extends IntrusiveDoublyLinkedNode<NODE_TYPE>> IntrusiveDoublyLinkedStructureBase.Adapter<NODE_TYPE> getInstance() {
             // noinspection unchecked

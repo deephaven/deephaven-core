@@ -56,8 +56,8 @@ public class SizedChunk<T extends Attributes.Any> implements SafeCloseable {
      *
      * If the chunk has existing data, then it is copied to the new chunk.
      *
-     * If the underlying chunk already exists, then the size of the chunk is the original size. If
-     * the chunk did not exist, then the size of the returned chunk is zero.
+     * If the underlying chunk already exists, then the size of the chunk is the original size. If the chunk did not
+     * exist, then the size of the returned chunk is zero.
      *
      * @param capacity the minimum capacity for the chunk.
      *

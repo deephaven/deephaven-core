@@ -9,9 +9,9 @@ public class SelectableTest {
 
     private static final Selectable FOO = ColumnName.of("Foo");
     private static final Selectable FOO_BAR =
-        Selectable.of(ColumnName.of("Foo"), ColumnName.of("Bar"));
+            Selectable.of(ColumnName.of("Foo"), ColumnName.of("Bar"));
     private static final Selectable FOO_EXP =
-        Selectable.of(ColumnName.of("Foo"), RawString.of("foo(Bar) + 42"));
+            Selectable.of(ColumnName.of("Foo"), RawString.of("foo(Bar) + 42"));
 
     @Test
     void newColumn() {

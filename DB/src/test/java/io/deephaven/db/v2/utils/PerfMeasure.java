@@ -72,8 +72,7 @@ public class PerfMeasure {
 
     static {
         String s = "Used allocated memory readings using ";
-        java.lang.management.ThreadMXBean t =
-            java.lang.management.ManagementFactory.getThreadMXBean();
+        java.lang.management.ThreadMXBean t = java.lang.management.ManagementFactory.getThreadMXBean();
         if (t instanceof com.sun.management.ThreadMXBean) {
             amb = (com.sun.management.ThreadMXBean) t;
             amb.setThreadAllocatedMemoryEnabled(true);

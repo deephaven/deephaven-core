@@ -8,8 +8,8 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 
 /**
- * A trivial circular buffer, like java.util.concurrent.ArrayBlockingQueue but without all the
- * synchronization and collection cruft.
+ * A trivial circular buffer, like java.util.concurrent.ArrayBlockingQueue but without all the synchronization and
+ * collection cruft.
  */
 public class RingBuffer<E> {
     private Object[] storage;

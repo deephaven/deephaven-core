@@ -8,9 +8,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Message_generated.org.apache.arrow.flatbuf.RecordBatch",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Message_generated.org.apache.arrow.flatbuf.RecordBatch",
+        namespace = JsPackage.GLOBAL)
 public class RecordBatch {
     public static native void addBuffers(Builder builder, double buffersOffset);
 
@@ -26,8 +26,7 @@ public class RecordBatch {
 
     public static native RecordBatch getRootAsRecordBatch(ByteBuffer bb);
 
-    public static native RecordBatch getSizePrefixedRootAsRecordBatch(ByteBuffer bb,
-        RecordBatch obj);
+    public static native RecordBatch getSizePrefixedRootAsRecordBatch(ByteBuffer bb, RecordBatch obj);
 
     public static native RecordBatch getSizePrefixedRootAsRecordBatch(ByteBuffer bb);
 

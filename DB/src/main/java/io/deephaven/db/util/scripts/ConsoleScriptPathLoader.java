@@ -12,8 +12,8 @@ import java.io.IOException;
 import java.util.Set;
 
 /**
- * This loader loads *only* using {@link GroovyDeephavenSession#findScript(String)}. Consistency
- * locking and refresh methods are no-ops.
+ * This loader loads *only* using {@link GroovyDeephavenSession#findScript(String)}. Consistency locking and refresh
+ * methods are no-ops.
  */
 public class ConsoleScriptPathLoader implements ScriptPathLoader {
 
@@ -34,8 +34,7 @@ public class ConsoleScriptPathLoader implements ScriptPathLoader {
     }
 
     @Override
-    public String getScriptBodyByRelativePath(@NotNull final String relativePath)
-        throws IOException {
+    public String getScriptBodyByRelativePath(@NotNull final String relativePath) throws IOException {
         return FileUtils.readTextFile(GroovyDeephavenSession.findScript(relativePath));
     }
 

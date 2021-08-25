@@ -18,15 +18,15 @@ public class SimpleXYPlot2 {
 
         Figure fig = FigureFactory.figure();
         Figure cht = fig.newChart(0)
-            .chartTitle("Chart Title")
+                .chartTitle("Chart Title")
 
-            .newAxes()
-            .xLabel("X1")
-            .yLabel("Y1")
-            .plot("Test1", x1, y1).plotStyle("bar").twin()
-            .xLabel("X2")
-            .yLabel("Y2")
-            .plot("Test2", x2, y2);
+                .newAxes()
+                .xLabel("X1")
+                .yLabel("Y1")
+                .plot("Test1", x1, y1).plotStyle("bar").twin()
+                .xLabel("X2")
+                .yLabel("Y2")
+                .plot("Test2", x2, y2);
 
         ExamplePlotUtils.display(cht);
 

@@ -104,10 +104,10 @@ public class PropertyFile {
     }
 
     /**
-     * Gets the value of the given property, aborting if the value is not specified in the system
-     * config files. Note that it is by design that there is no overloaded method taking a default
-     * value. Rather than scattering default values through all the source files, all properties
-     * should be in one config file (as much as possible). Put default values in <U>common.prop</U>.
+     * Gets the value of the given property, aborting if the value is not specified in the system config files. Note
+     * that it is by design that there is no overloaded method taking a default value. Rather than scattering default
+     * values through all the source files, all properties should be in one config file (as much as possible). Put
+     * default values in <U>common.prop</U>.
      */
     public @NotNull String getProperty(String propertyName) {
         String result = properties.getProperty(propertyName);
@@ -174,8 +174,7 @@ public class PropertyFile {
         return getInteger(propertyName);
     }
 
-    public int getPossibleIntegerWithDefault(final int defaultValue,
-        final String... possiblePropertyNames) {
+    public int getPossibleIntegerWithDefault(final int defaultValue, final String... possiblePropertyNames) {
         for (final String propertyName : possiblePropertyNames) {
             if (hasProperty(propertyName)) {
                 return getInteger(propertyName);
@@ -191,8 +190,7 @@ public class PropertyFile {
         return getProperty(propertyName);
     }
 
-    public String getPossibleStringWithDefault(final String defaultValue,
-        final String... possiblePropertyNames) {
+    public String getPossibleStringWithDefault(final String defaultValue, final String... possiblePropertyNames) {
         for (final String propertyName : possiblePropertyNames) {
             if (hasProperty(propertyName)) {
                 return getProperty(propertyName);
@@ -270,7 +268,7 @@ public class PropertyFile {
     }
 
     private <T extends Parser> java.lang.Object get(T parser, String propertyName,
-        Logger logger, String logPrefix) {
+            Logger logger, String logPrefix) {
         String propStringValue = properties.getProperty(propertyName);
         if (propStringValue == null) {
             String msg = "property " + propertyName + " is missing";
@@ -283,7 +281,7 @@ public class PropertyFile {
             return propValue;
         } catch (NumberFormatException e) {
             String msg = "property " + propertyName + " string value " + propStringValue
-                + " couldn't be parsed as " + parser.typeName();
+                    + " couldn't be parsed as " + parser.typeName();
             logger.error(logPrefix + ": " + msg);
             throw new PropertyException(msg);
         }
@@ -331,8 +329,7 @@ public class PropertyFile {
         return getBoolean(c.getSimpleName() + "." + propertyLast, log, c.getName());
     }
 
-    public boolean getBooleanForClassWithDefault(Class c, String propertyLast,
-        final boolean defaultValue) {
+    public boolean getBooleanForClassWithDefault(Class c, String propertyLast, final boolean defaultValue) {
         final String prop = c.getSimpleName() + "." + propertyLast;
         if (!hasProperty(prop)) {
             return defaultValue;
@@ -344,8 +341,7 @@ public class PropertyFile {
         return getInteger(c.getSimpleName() + "." + propertyLast, log, c.getName());
     }
 
-    public int getIntegerForClassWithDefault(final Class c, final String propertyLast,
-        final int defaultValue) {
+    public int getIntegerForClassWithDefault(final Class c, final String propertyLast, final int defaultValue) {
         final String prop = c.getSimpleName() + "." + propertyLast;
         if (!hasProperty(prop)) {
             return defaultValue;
@@ -361,8 +357,7 @@ public class PropertyFile {
         return getLong(c.getSimpleName() + "." + propertyLast, log, c.getName());
     }
 
-    public long getLongForClassWithDefault(final Class c, final String propertyLast,
-        final long defaultValue) {
+    public long getLongForClassWithDefault(final Class c, final String propertyLast, final long defaultValue) {
         final String prop = c.getSimpleName() + "." + propertyLast;
         if (!hasProperty(prop)) {
             return defaultValue;
@@ -374,8 +369,7 @@ public class PropertyFile {
         return getDouble(c.getSimpleName() + "." + propertyLast, log, c.getName());
     }
 
-    public double getDoubleForClassWithDefault(Class c, String propertyLast,
-        final double defaultValue) {
+    public double getDoubleForClassWithDefault(Class c, String propertyLast, final double defaultValue) {
         final String prop = c.getSimpleName() + "." + propertyLast;
         if (!hasProperty(prop)) {
             return defaultValue;
@@ -408,7 +402,7 @@ public class PropertyFile {
     }
 
     public void getClassParams(final Logger log, final Class c, final String instanceStr,
-        final Object obj, final int desiredMods) {
+            final Object obj, final int desiredMods) {
         Class paramClass = obj.getClass();
         Field[] fields = paramClass.getDeclaredFields();
         final String propBase = c.getSimpleName();
@@ -416,11 +410,10 @@ public class PropertyFile {
         for (Field f : fields) {
             if ((f.getModifiers() & desiredMods) == 0) {
                 throw new PropertyException(errMsg,
-                    new PropertyException("Field with wrong modifiers " + f.toString()));
+                        new PropertyException("Field with wrong modifiers " + f.toString()));
             }
             final String fieldName = f.getName();
-            final String s =
-                (instanceStr == null || instanceStr.length() == 0) ? "" : (instanceStr + ".");
+            final String s = (instanceStr == null || instanceStr.length() == 0) ? "" : (instanceStr + ".");
             final String propName = propBase + "." + s + fieldName;
             try {
                 final String value = getProperties().getProperty(propName);
@@ -429,8 +422,7 @@ public class PropertyFile {
                     throw new PropertyException("null value for property " + propName);
                 } else {
                     source = "file";
-                    // Setting field accessibility should be allowed by our code, but not from
-                    // outside classes, so
+                    // Setting field accessibility should be allowed by our code, but not from outside classes, so
                     // this should be privileged.
                     AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
                         f.setAccessible(true);
@@ -460,8 +452,7 @@ public class PropertyFile {
                     }
                 }
                 if (log != null)
-                    log.info(
-                        ">>>" + propName + " = " + f.get(obj).toString() + " (" + source + ")");
+                    log.info(">>>" + propName + " = " + f.get(obj).toString() + " (" + source + ")");
             } catch (Exception e) {
                 throw new PropertyException("Property " + propName + " is missing.", e);
             }
@@ -476,8 +467,7 @@ public class PropertyFile {
         getClassParams(log, c, null, obj, Modifier.PUBLIC);
     }
 
-    public void getClassParams(final Logger log, final Class c, final String name,
-        final Object obj) {
+    public void getClassParams(final Logger log, final Class c, final String name, final Object obj) {
         getClassParams(log, c, name, obj, Modifier.PUBLIC);
     }
 
@@ -497,8 +487,7 @@ public class PropertyFile {
         return set;
     }
 
-    public Set<String> getStringSetFromPropertyWithDefault(final String propertyName,
-        final Set<String> defaultValue) {
+    public Set<String> getStringSetFromPropertyWithDefault(final String propertyName, final Set<String> defaultValue) {
         return hasProperty(propertyName) ? getStringSetFromProperty(propertyName) : defaultValue;
     }
 
@@ -506,8 +495,7 @@ public class PropertyFile {
         return getProperty(propertyName).split("[, ]");
     }
 
-    public String[] getStringArrayFromPropertyWithDefault(final String propertyName,
-        final String[] defaultValue) {
+    public String[] getStringArrayFromPropertyWithDefault(final String propertyName, final String[] defaultValue) {
         return hasProperty(propertyName) ? getStringArrayFromProperty(propertyName) : defaultValue;
     }
 
@@ -535,8 +523,8 @@ public class PropertyFile {
             return Collections.emptyMap();
         }
         final Matcher propertyMapMatcher =
-            Pattern.compile("\\A\\(\\s*((?:[a-zA-Z0-9\\-\\. ]+=>[a-zA-Z0-9\\-\\. ]+,?)*)\\s*\\)\\Z")
-                .matcher(propertyValue);
+                Pattern.compile("\\A\\(\\s*((?:[a-zA-Z0-9\\-\\. ]+=>[a-zA-Z0-9\\-\\. ]+,?)*)\\s*\\)\\Z")
+                        .matcher(propertyValue);
         Require.requirement(propertyMapMatcher.matches(), "propertyMapMatcher.matches())");
         Map<String, String> result = new HashMap<>();
         for (String pair : propertyMapMatcher.group(1).split(",")) {
@@ -546,7 +534,7 @@ public class PropertyFile {
             String[] values = pair.split("=>");
             Require.eq(values.length, "values.length", 2);
             Require.eqNull(result.put(values[0].trim(), values[1].trim()),
-                "result.put(values[0].trim(), values[1].trim())");
+                    "result.put(values[0].trim(), values[1].trim())");
         }
         return result;
     }
@@ -565,8 +553,8 @@ public class PropertyFile {
     }
 
     /**
-     * Parse a set of non-negative ints from a property. Format is comma-separated individual values
-     * and ranges of the form start-end.
+     * Parse a set of non-negative ints from a property. Format is comma-separated individual values and ranges of the
+     * form start-end.
      * 
      * @example 0,22,100-200,99,1000-2000
      * @param propertyName
@@ -588,7 +576,7 @@ public class PropertyFile {
                 final int rangeBegin = Integer.parseInt(rangeMatcher.group(1));
                 final int rangeEnd = Integer.parseInt(rangeMatcher.group(2));
                 Assert.assertion(0 <= rangeBegin && rangeBegin <= rangeEnd,
-                    "0 <= rangeBegin && rangeBegin <= rangeEnd");
+                        "0 <= rangeBegin && rangeBegin <= rangeEnd");
                 for (int value = rangeBegin; value <= rangeEnd; ++value) {
                     result.add(value);
                 }
@@ -614,8 +602,7 @@ public class PropertyFile {
         return result;
     }
 
-    public TObjectIntHashMap<String> getStringIntHashMap(final String propertyName,
-        final String separator) {
+    public TObjectIntHashMap<String> getStringIntHashMap(final String propertyName, final String separator) {
         final String s = getProperty(propertyName);
         if (s.equals("")) {
             return new TObjectIntHashMap<>();

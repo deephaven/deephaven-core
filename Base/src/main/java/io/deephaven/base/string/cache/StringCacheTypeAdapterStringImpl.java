@@ -11,8 +11,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class StringCacheTypeAdapterStringImpl implements StringCacheTypeAdapter<String> {
 
-    public static final StringCacheTypeAdapter<String> INSTANCE =
-        new StringCacheTypeAdapterStringImpl();
+    public static final StringCacheTypeAdapter<String> INSTANCE = new StringCacheTypeAdapterStringImpl();
 
     private static final String EMPTY_VALUE = "";
 

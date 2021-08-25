@@ -89,44 +89,41 @@ public class MatchPair implements Serializable {
         return Arrays.stream(matchPairs).map(MatchPair::right).toArray(String[]::new);
     }
 
-    public static final LogOutput.ObjFormatter<MatchPair[]> MATCH_PAIR_ARRAY_FORMATTER =
-        (logOutput, matchPairs) -> {
-            if (matchPairs == null) {
-                logOutput.append("null");
-            } else {
-                boolean first = true;
-                logOutput.append('[');
-                for (MatchPair mp : matchPairs) {
-                    if (!first) {
-                        logOutput.append(", ");
-                    }
-                    if (mp.left().equals(mp.right())) {
-                        logOutput.append(mp.left());
-                    } else {
-                        logOutput.append(mp.left()).append('=').append(mp.right());
-                    }
-                    first = false;
+    public static final LogOutput.ObjFormatter<MatchPair[]> MATCH_PAIR_ARRAY_FORMATTER = (logOutput, matchPairs) -> {
+        if (matchPairs == null) {
+            logOutput.append("null");
+        } else {
+            boolean first = true;
+            logOutput.append('[');
+            for (MatchPair mp : matchPairs) {
+                if (!first) {
+                    logOutput.append(", ");
                 }
-                logOutput.append(']');
-            }
-        };
-
-    public static final LogOutput.ObjFormatter<MatchPair> MATCH_PAIR_FORMATTER =
-        (logOutput, mp) -> {
-            if (mp == null) {
-                logOutput.append("null");
-            } else {
                 if (mp.left().equals(mp.right())) {
                     logOutput.append(mp.left());
                 } else {
                     logOutput.append(mp.left()).append('=').append(mp.right());
                 }
+                first = false;
             }
-        };
+            logOutput.append(']');
+        }
+    };
+
+    public static final LogOutput.ObjFormatter<MatchPair> MATCH_PAIR_FORMATTER = (logOutput, mp) -> {
+        if (mp == null) {
+            logOutput.append("null");
+        } else {
+            if (mp.left().equals(mp.right())) {
+                logOutput.append(mp.left());
+            } else {
+                logOutput.append(mp.left()).append('=').append(mp.right());
+            }
+        }
+    };
 
     public static String matchString(final MatchPair[] matchPairArray) {
-        return new LogOutputStringImpl().append(MATCH_PAIR_ARRAY_FORMATTER, matchPairArray)
-            .toString();
+        return new LogOutputStringImpl().append(MATCH_PAIR_ARRAY_FORMATTER, matchPairArray).toString();
     }
 
     public static String matchString(final MatchPair matchPair) {
@@ -141,7 +138,7 @@ public class MatchPair implements Serializable {
             return false;
         final MatchPair matchPair = (MatchPair) o;
         return Objects.equals(leftColumn, matchPair.leftColumn) &&
-            Objects.equals(rightColumn, matchPair.rightColumn);
+                Objects.equals(rightColumn, matchPair.rightColumn);
     }
 
     @Override

@@ -7,8 +7,8 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 /**
- * Provides the option to write values of specific type in bulk The concrete type of the bulkValue
- * object depends in the specific implementation
+ * Provides the option to write values of specific type in bulk The concrete type of the bulkValue object depends in the
+ * specific implementation
  */
 public interface BulkWriter<T, L> {
     void writeBulk(T bulkValues, int rowCount);
@@ -28,12 +28,11 @@ public interface BulkWriter<T, L> {
         }
     }
 
-    WriteResult writeBulkFilterNulls(T bulkValues, L nullValue,
-        RunLengthBitPackingHybridEncoder dlEncoder, int rowCount) throws IOException;
+    WriteResult writeBulkFilterNulls(T bulkValues, L nullValue, RunLengthBitPackingHybridEncoder dlEncoder,
+            int rowCount) throws IOException;
 
-    int writeBulkVector(T bulkValues, IntBuffer repeatCount,
-        RunLengthBitPackingHybridEncoder rlEncoder, RunLengthBitPackingHybridEncoder dlEncoder,
-        int nonNullValueCount, L nullValue) throws IOException;
+    int writeBulkVector(T bulkValues, IntBuffer repeatCount, RunLengthBitPackingHybridEncoder rlEncoder,
+            RunLengthBitPackingHybridEncoder dlEncoder, int nonNullValueCount, L nullValue) throws IOException;
 
     WriteResult writeBulkFilterNulls(T bulkValues, L nullValue, int rowCount);
 

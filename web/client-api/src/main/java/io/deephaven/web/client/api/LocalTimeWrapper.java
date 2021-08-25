@@ -7,8 +7,7 @@ import jsinterop.annotations.JsMethod;
 import javax.annotation.Nonnull;
 
 /**
- * Wrap LocalTime values for use in JS. Provides text formatting for display and access to the
- * underlying value.
+ * Wrap LocalTime values for use in JS. Provides text formatting for display and access to the underlying value.
  */
 public class LocalTimeWrapper {
     private final static NumberFormat TWO_DIGIT_FORMAT = NumberFormat.getFormat("00");
@@ -53,8 +52,8 @@ public class LocalTimeWrapper {
     @Override
     public String toString() {
         return TWO_DIGIT_FORMAT.format(localTime.getHour())
-            + ":" + TWO_DIGIT_FORMAT.format(localTime.getMinute())
-            + ":" + TWO_DIGIT_FORMAT.format(localTime.getSecond())
-            + "." + NANOS_FORMAT.format(localTime.getNano());
+                + ":" + TWO_DIGIT_FORMAT.format(localTime.getMinute())
+                + ":" + TWO_DIGIT_FORMAT.format(localTime.getSecond())
+                + "." + NANOS_FORMAT.format(localTime.getNano());
     }
 }

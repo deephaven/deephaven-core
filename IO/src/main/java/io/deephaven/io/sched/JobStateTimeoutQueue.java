@@ -9,8 +9,7 @@ import io.deephaven.io.logger.Logger;
 import java.util.Set;
 
 /**
- * A priority queue (heap) for JobState instances, ordered by their deadlines. Note that this class
- * is package-private.
+ * A priority queue (heap) for JobState instances, ordered by their deadlines. Note that this class is package-private.
  */
 class JobStateTimeoutQueue implements Cloneable {
     private final Logger log;
@@ -168,8 +167,8 @@ class JobStateTimeoutQueue implements Cloneable {
     boolean testInvariantAux(int i, String what) {
         if (i <= size) {
             if (queue[i].tqPos != i) {
-                log.error().append(what).append(": queue[").append(i).append("].tqPos=")
-                    .append(queue[i].tqPos).append(" != ").append(i).endl();
+                log.error().append(what).append(": queue[").append(i).append("].tqPos=").append(queue[i].tqPos)
+                        .append(" != ").append(i).endl();
             }
             if (!testInvariantAux(i * 2, what)) {
                 return false;
@@ -179,9 +178,8 @@ class JobStateTimeoutQueue implements Cloneable {
             }
             if (i > 1) {
                 if (queue[i].deadline < queue[i / 2].deadline) {
-                    log.error().append(what).append(": child[").append(i).append("]=")
-                        .append(queue[i].deadline).append(" < parent[").append((i / 2)).append("]=")
-                        .append(queue[i / 2].deadline).endl();
+                    log.error().append(what).append(": child[").append(i).append("]=").append(queue[i].deadline)
+                            .append(" < parent[").append((i / 2)).append("]=").append(queue[i / 2].deadline).endl();
                     return false;
                 }
             }
@@ -194,8 +192,8 @@ class JobStateTimeoutQueue implements Cloneable {
         if (result) {
             for (int i = size + 1; i < queue.length; ++i) {
                 if (queue[i] != null) {
-                    log.error().append(what).append(": size = ").append(size).append(", child[")
-                        .append(i).append("]=").append(queue[i].deadline).append(" != null").endl();
+                    log.error().append(what).append(": size = ").append(size).append(", child[").append(i).append("]=")
+                            .append(queue[i].deadline).append(" != null").endl();
                     result = false;
                 }
             }

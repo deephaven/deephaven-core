@@ -7,10 +7,9 @@ import io.deephaven.db.v2.sources.chunk.sized.SizedChunk;
 import io.deephaven.db.v2.sources.chunk.sized.SizedIntChunk;
 import io.deephaven.db.v2.ssms.SegmentedSortedMultiSet;
 
-public class SsmDistinctRollupContext
-    implements IterativeChunkedAggregationOperator.SingletonContext {
+public class SsmDistinctRollupContext implements IterativeChunkedAggregationOperator.SingletonContext {
     public final SegmentedSortedMultiSet.RemoveContext removeContext =
-        SegmentedSortedMultiSet.makeRemoveContext(DistinctOperatorFactory.NODE_SIZE);
+            SegmentedSortedMultiSet.makeRemoveContext(DistinctOperatorFactory.NODE_SIZE);
     public final SizedChunk<Attributes.Values> valueCopy;
     public final SizedIntChunk<Attributes.ChunkLengths> counts;
 

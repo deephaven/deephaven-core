@@ -27,8 +27,8 @@ public class TableDetails implements Serializable {
     @Override
     public String toString() {
         return "TableDetails{" +
-            ", key=" + key +
-            ", children=" + Arrays.toString(children) +
-            '}';
+                ", key=" + key +
+                ", children=" + Arrays.toString(children) +
+                '}';
     }
 }

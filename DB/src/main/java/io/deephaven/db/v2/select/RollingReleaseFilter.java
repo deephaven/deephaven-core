@@ -14,8 +14,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * This will filter a table starting off with the first N rows, and then adding new rows to the
- * table on each refresh.
+ * This will filter a table starting off with the first N rows, and then adding new rows to the table on each refresh.
  */
 public class RollingReleaseFilter extends SelectFilterLivenessArtifactImpl implements LiveTable {
     private final long workingSize;
@@ -78,10 +77,7 @@ public class RollingReleaseFilter extends SelectFilterLivenessArtifactImpl imple
 
     @Override
     public boolean isSimpleFilter() {
-        /*
-         * This doesn't execute any user code, so it should be safe to execute it against untrusted
-         * data.
-         */
+        /* This doesn't execute any user code, so it should be safe to execute it against untrusted data. */
         return true;
     }
 

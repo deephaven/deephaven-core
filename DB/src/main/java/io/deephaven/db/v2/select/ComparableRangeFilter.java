@@ -15,8 +15,8 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
     private final Comparable upper;
     private final Comparable lower;
 
-    ComparableRangeFilter(String columnName, Comparable val1, Comparable val2,
-        boolean lowerInclusive, boolean upperInclusive) {
+    ComparableRangeFilter(String columnName, Comparable val1, Comparable val2, boolean lowerInclusive,
+            boolean upperInclusive) {
         super(columnName, lowerInclusive, upperInclusive);
 
         if (DhObjectComparisons.compare(val1, val2) > 0) {
@@ -29,8 +29,8 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
     }
 
     @TestUseOnly
-    public static ComparableRangeFilter makeForTest(String columnName, Comparable lower,
-        Comparable upper, boolean lowerInclusive, boolean upperInclusive) {
+    public static ComparableRangeFilter makeForTest(String columnName, Comparable lower, Comparable upper,
+            boolean lowerInclusive, boolean upperInclusive) {
         return new ComparableRangeFilter(columnName, lower, upper, lowerInclusive, upperInclusive);
     }
 
@@ -42,20 +42,18 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
 
         final ColumnDefinition def = tableDefinition.getColumn(columnName);
         if (def == null) {
-            throw new RuntimeException(
-                "Column \"" + columnName + "\" doesn't exist in this table, available columns: "
+            throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: "
                     + tableDefinition.getColumnNames());
         }
 
         Assert.assertion(Comparable.class.isAssignableFrom(def.getDataType()),
-            "Comparable.class.isAssignableFrom(def.getDataType())", def.getDataType(),
-            "def.getDataType()");
+                "Comparable.class.isAssignableFrom(def.getDataType())", def.getDataType(), "def.getDataType()");
 
         chunkFilter = makeComparableChunkFilter(lower, upper, lowerInclusive, upperInclusive);
     }
 
-    public static ChunkFilter makeComparableChunkFilter(Comparable lower, Comparable upper,
-        boolean lowerInclusive, boolean upperInclusive) {
+    public static ChunkFilter makeComparableChunkFilter(Comparable lower, Comparable upper, boolean lowerInclusive,
+            boolean upperInclusive) {
         if (lowerInclusive) {
             if (upperInclusive) {
                 return new InclusiveInclusiveComparableChunkFilter(lower, upper);
@@ -79,8 +77,8 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
     @Override
     public String toString() {
         return "ComparableRangeFilter(" + columnName + " in " +
-            (lowerInclusive ? "[" : "(") + lower + "," + upper +
-            (upperInclusive ? "]" : ")") + ")";
+                (lowerInclusive ? "[" : "(") + lower + "," + upper +
+                (upperInclusive ? "]" : ")") + ")";
     }
 
     private static class InclusiveInclusiveComparableChunkFilter implements ChunkFilter {
@@ -94,9 +92,8 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
 
         @Override
         public void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-            WritableLongChunk<OrderedKeyIndices> results) {
-            final ObjectChunk<? extends Comparable, ? extends Values> objectChunk =
-                values.asObjectChunk();
+                WritableLongChunk<OrderedKeyIndices> results) {
+            final ObjectChunk<? extends Comparable, ? extends Values> objectChunk = values.asObjectChunk();
 
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
@@ -128,9 +125,8 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
 
         @Override
         public void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-            WritableLongChunk<OrderedKeyIndices> results) {
-            final ObjectChunk<? extends Comparable, ? extends Values> objectChunk =
-                values.asObjectChunk();
+                WritableLongChunk<OrderedKeyIndices> results) {
+            final ObjectChunk<? extends Comparable, ? extends Values> objectChunk = values.asObjectChunk();
 
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
@@ -162,9 +158,8 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
 
         @Override
         public void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-            WritableLongChunk<OrderedKeyIndices> results) {
-            final ObjectChunk<? extends Comparable, ? extends Values> objectChunk =
-                values.asObjectChunk();
+                WritableLongChunk<OrderedKeyIndices> results) {
+            final ObjectChunk<? extends Comparable, ? extends Values> objectChunk = values.asObjectChunk();
 
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
@@ -198,9 +193,8 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
 
         @Override
         public void filter(Chunk<? extends Values> values, LongChunk<OrderedKeyIndices> keys,
-            WritableLongChunk<OrderedKeyIndices> results) {
-            final ObjectChunk<? extends Comparable, ? extends Values> objectChunk =
-                values.asObjectChunk();
+                WritableLongChunk<OrderedKeyIndices> results) {
+            final ObjectChunk<? extends Comparable, ? extends Values> objectChunk = values.asObjectChunk();
 
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
@@ -223,15 +217,13 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
     }
 
     @Override
-    Index binarySearch(Index selection, ColumnSource columnSource, boolean usePrev,
-        boolean reverse) {
+    Index binarySearch(Index selection, ColumnSource columnSource, boolean usePrev, boolean reverse) {
         if (selection.isEmpty()) {
             return selection;
         }
 
         // noinspection unchecked
-        final ColumnSource<Comparable> comparableColumnSource =
-            (ColumnSource<Comparable>) columnSource;
+        final ColumnSource<Comparable> comparableColumnSource = (ColumnSource<Comparable>) columnSource;
 
         final Comparable<?> startValue = reverse ? upper : lower;
         final Comparable<?> endValue = reverse ? lower : upper;
@@ -239,26 +231,25 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
         final boolean endInclusive = reverse ? lowerInclusive : upperInclusive;
         final int compareSign = reverse ? -1 : 1;
 
-        long lowerBoundMin = bound(selection, usePrev, comparableColumnSource, 0, selection.size(),
-            startValue, startInclusive, compareSign, false);
-        long upperBoundMin = bound(selection, usePrev, comparableColumnSource, lowerBoundMin,
-            selection.size(), endValue, endInclusive, compareSign, true);
+        long lowerBoundMin = bound(selection, usePrev, comparableColumnSource, 0, selection.size(), startValue,
+                startInclusive, compareSign, false);
+        long upperBoundMin = bound(selection, usePrev, comparableColumnSource, lowerBoundMin, selection.size(),
+                endValue, endInclusive, compareSign, true);
 
         return selection.subindexByPos(lowerBoundMin, upperBoundMin);
     }
 
 
-    static long bound(Index selection, boolean usePrev,
-        ColumnSource<Comparable> comparableColumnSource, long minPosition, long maxPosition,
-        Comparable targetValue, boolean inclusive, int compareSign, boolean end) {
+    static long bound(Index selection, boolean usePrev, ColumnSource<Comparable> comparableColumnSource,
+            long minPosition, long maxPosition, Comparable targetValue, boolean inclusive, int compareSign,
+            boolean end) {
         while (minPosition < maxPosition) {
             final long midPos = (minPosition + maxPosition) / 2;
             final long midIdx = selection.get(midPos);
 
-            final Comparable<?> compareValue = usePrev ? comparableColumnSource.getPrev(midIdx)
-                : comparableColumnSource.get(midIdx);
-            final int compareResult =
-                compareSign * DhObjectComparisons.compare(compareValue, targetValue);
+            final Comparable<?> compareValue =
+                    usePrev ? comparableColumnSource.getPrev(midIdx) : comparableColumnSource.get(midIdx);
+            final int compareResult = compareSign * DhObjectComparisons.compare(compareValue, targetValue);
 
             if (compareResult < 0) {
                 minPosition = midPos + 1;

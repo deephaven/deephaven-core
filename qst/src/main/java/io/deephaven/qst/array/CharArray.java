@@ -89,7 +89,7 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
     }
 
     public static class Builder extends PrimitiveArrayHelper<char[]>
-        implements ArrayBuilder<Character, CharArray, Builder> {
+            implements ArrayBuilder<Character, CharArray, Builder> {
 
         private Builder(int initialCapacity) {
             super(new char[initialCapacity]);

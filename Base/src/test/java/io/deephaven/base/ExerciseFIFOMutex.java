@@ -71,8 +71,7 @@ public class ExerciseFIFOMutex {
                 if (t.isAlive()) {
                     System.out.println("Couldn't stop thread " + i);
                 } else {
-                    // System.out.println("Locker "+i+"/"+NTHREADS+" executed
-                    // "+lockers[i].loopCount+" loops");
+                    // System.out.println("Locker "+i+"/"+NTHREADS+" executed "+lockers[i].loopCount+" loops");
                     totalLoops += lockers[i].loopCount;
                     minLoops = Math.min(minLoops, lockers[i].loopCount);
                     maxLoops = Math.max(maxLoops, lockers[i].loopCount);
@@ -81,8 +80,8 @@ public class ExerciseFIFOMutex {
                 // ignore
             }
         }
-        System.out.println(NTHREADS + " lockers executed " + totalLoops + " loops in total; min="
-            + minLoops + ", max=" + maxLoops);
+        System.out.println(NTHREADS + " lockers executed " + totalLoops + " loops in total; min=" + minLoops + ", max="
+                + maxLoops);
     }
 
     public static void main(String[] args) {

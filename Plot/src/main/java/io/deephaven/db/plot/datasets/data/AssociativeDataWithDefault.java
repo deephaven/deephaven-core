@@ -10,8 +10,8 @@ import io.deephaven.db.plot.errors.PlotRuntimeException;
 import java.util.Map;
 
 /**
- * Dataset which has values associated with keys. When the dataset has no value associated with a
- * given key, it falls back to a specified default value.
+ * Dataset which has values associated with keys. When the dataset has no value associated with a given key, it falls
+ * back to a specified default value.
  */
 public class AssociativeDataWithDefault<KEY, VALUE> extends AssociativeData<KEY, VALUE> {
 
@@ -80,8 +80,7 @@ public class AssociativeDataWithDefault<KEY, VALUE> extends AssociativeData<KEY,
     @Override
     public void put(final KEY key, final VALUE value) {
         if (!isModifiable()) {
-            throw new PlotRuntimeException("AssociativeDataWithDefault is unmodifiable",
-                getPlotInfo());
+            throw new PlotRuntimeException("AssociativeDataWithDefault is unmodifiable", getPlotInfo());
         }
 
         specificValues.put(key, value);
@@ -90,8 +89,7 @@ public class AssociativeDataWithDefault<KEY, VALUE> extends AssociativeData<KEY,
     @Override
     public <K extends KEY, V extends VALUE> void putAll(final Map<K, V> values) {
         if (!isModifiable()) {
-            throw new PlotRuntimeException("AssociativeDataWithDefault is unmodifiable",
-                getPlotInfo());
+            throw new PlotRuntimeException("AssociativeDataWithDefault is unmodifiable", getPlotInfo());
         }
 
         specificValues.putAll(values);

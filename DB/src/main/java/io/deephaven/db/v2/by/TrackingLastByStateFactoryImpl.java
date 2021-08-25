@@ -9,8 +9,7 @@ public class TrackingLastByStateFactoryImpl extends IterativeIndexStateFactory {
         this(false, false, 0);
     }
 
-    private TrackingLastByStateFactoryImpl(boolean lowestRollup, boolean secondRollup,
-        int rollupColumnIdentifier) {
+    private TrackingLastByStateFactoryImpl(boolean lowestRollup, boolean secondRollup, int rollupColumnIdentifier) {
         super(lowestRollup, secondRollup, rollupColumnIdentifier);
     }
 
@@ -33,8 +32,7 @@ public class TrackingLastByStateFactoryImpl extends IterativeIndexStateFactory {
     @Override
     ReaggregatableStatefactory rollupFactory() {
         return new SortedFirstOrLastByFactoryImpl(false, false, true, rollupColumnIdentifier,
-            REDIRECTION_INDEX_PREFIX + rollupColumnIdentifier
-                + ComboAggregateFactory.ROLLUP_COLUMN_SUFFIX);
+                REDIRECTION_INDEX_PREFIX + rollupColumnIdentifier + ComboAggregateFactory.ROLLUP_COLUMN_SUFFIX);
     }
 
     @Override
@@ -43,10 +41,10 @@ public class TrackingLastByStateFactoryImpl extends IterativeIndexStateFactory {
             return "TrackingLastByStateFactory";
         } else {
             return "TrackingLastByStateFactory{" +
-                "lowestRollup=" + lowestRollup +
-                ", secondRollup=" + secondRollup +
-                ", rollupColumnIdentifier=" + rollupColumnIdentifier +
-                '}';
+                    "lowestRollup=" + lowestRollup +
+                    ", secondRollup=" + secondRollup +
+                    ", rollupColumnIdentifier=" + rollupColumnIdentifier +
+                    '}';
         }
     }
 }

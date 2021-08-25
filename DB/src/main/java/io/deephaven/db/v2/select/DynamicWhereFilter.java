@@ -34,8 +34,7 @@ import java.util.*;
  *
  * Each time the set table ticks, the entire where filter is recalculated.
  */
-public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl
-    implements NotificationQueue.Dependency {
+public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl implements NotificationQueue.Dependency {
     private static final int CHUNK_SIZE = 1 << 16;
 
     private final MatchPair[] matchPairs;
@@ -60,13 +59,12 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl
     private RecomputeListener listener;
     private QueryTable resultTable;
 
-    public DynamicWhereFilter(final Table setTable, final boolean inclusion,
-        final MatchPair... setColumnsNames) {
+    public DynamicWhereFilter(final Table setTable, final boolean inclusion, final MatchPair... setColumnsNames) {
         this(Table.GroupStrategy.DEFAULT, setTable, inclusion, setColumnsNames);
     }
 
-    public DynamicWhereFilter(final Table.GroupStrategy groupStrategy, final Table setTable,
-        final boolean inclusion, final MatchPair... setColumnsNames) {
+    public DynamicWhereFilter(final Table.GroupStrategy groupStrategy, final Table setTable, final boolean inclusion,
+            final MatchPair... setColumnsNames) {
         if (setTable.isLive()) {
             LiveTableMonitor.DEFAULT.checkInitiateTableOperation();
         }
@@ -76,25 +74,22 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl
         this.inclusion = inclusion;
 
         this.setTable = setTable;
-        final ColumnSource[] setColumns = Arrays.stream(matchPairs)
-            .map(mp -> setTable.getColumnSource(mp.right())).toArray(ColumnSource[]::new);
+        final ColumnSource[] setColumns =
+                Arrays.stream(matchPairs).map(mp -> setTable.getColumnSource(mp.right())).toArray(ColumnSource[]::new);
         setTupleSource = TupleSourceFactory.makeTupleSource(setColumns);
 
         setTable.getIndex().forAllLongs((final long v) -> addKey(makeKey(v)));
 
         if (DynamicNode.isDynamicAndIsRefreshing(setTable)) {
-            final String[] columnNames =
-                Arrays.stream(matchPairs).map(MatchPair::right).toArray(String[]::new);
-            final ModifiedColumnSet modTokenSet =
-                ((DynamicTable) setTable).newModifiedColumnSet(columnNames);
+            final String[] columnNames = Arrays.stream(matchPairs).map(MatchPair::right).toArray(String[]::new);
+            final ModifiedColumnSet modTokenSet = ((DynamicTable) setTable).newModifiedColumnSet(columnNames);
             setUpdateListener = new InstrumentedShiftAwareListenerAdapter(
-                "DynamicWhereFilter(" + Arrays.toString(setColumnsNames) + ")",
-                (DynamicTable) setTable, false) {
+                    "DynamicWhereFilter(" + Arrays.toString(setColumnsNames) + ")", (DynamicTable) setTable, false) {
 
                 @Override
                 public void onUpdate(final Update upstream) {
                     if (upstream.added.empty() && upstream.removed.empty()
-                        && !upstream.modifiedColumnSet.containsAny(modTokenSet)) {
+                            && !upstream.modifiedColumnSet.containsAny(modTokenSet)) {
                         return;
                     }
 
@@ -113,8 +108,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl
                         }
                     });
 
-                    // Pretend every row of the original table was modified, this is essential so
-                    // that the where clause
+                    // Pretend every row of the original table was modified, this is essential so that the where clause
                     // can be re-evaluated based on the updated live set.
                     if (listener != null) {
                         if (upstream.added.nonempty() || trueModification.booleanValue()) {
@@ -135,8 +129,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl
                 }
 
                 @Override
-                public void onFailureInternal(Throwable originalException,
-                    UpdatePerformanceTracker.Entry sourceEntry) {
+                public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
                     if (listener != null) {
                         resultTable.notifyListenersOnError(originalException, sourceEntry);
                     }
@@ -195,8 +188,8 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl
             throw new PreviousFilteringNotSupported();
         }
 
-        final ColumnSource[] keyColumns = Arrays.stream(matchPairs)
-            .map(mp -> table.getColumnSource(mp.left())).toArray(ColumnSource[]::new);
+        final ColumnSource[] keyColumns =
+                Arrays.stream(matchPairs).map(mp -> table.getColumnSource(mp.left())).toArray(ColumnSource[]::new);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
 
         switch (groupStrategy) {
@@ -204,12 +197,11 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl
                 if (matchPairs.length == 1) {
                     // this is just a single column filter so it will actually be exactly right
                     if (!liveValuesArrayValid) {
-                        liveValuesArray =
-                            liveValues.toArray(CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                        liveValuesArray = liveValues.toArray(CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                         liveValuesArrayValid = true;
                     }
-                    return table.getColumnSource(matchPairs[0].left()).match(!inclusion, false,
-                        false, selection, liveValuesArray);
+                    return table.getColumnSource(matchPairs[0].left()).match(!inclusion, false, false, selection,
+                            liveValuesArray);
                 }
 
                 // pick something sensible
@@ -220,18 +212,16 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl
                         return filterLinear(selection, keyColumns, tupleSource);
                     }
                 }
-                final boolean allGrouping =
-                    Arrays.stream(keyColumns).allMatch(selection::hasGrouping);
+                final boolean allGrouping = Arrays.stream(keyColumns).allMatch(selection::hasGrouping);
                 if (allGrouping) {
                     return filterGrouping(selection, tupleSource);
                 }
 
-                final ColumnSource[] sourcesWithGroupings = Arrays.stream(keyColumns)
-                    .filter(selection::hasGrouping).toArray(ColumnSource[]::new);
-                final OptionalInt minGroupCount = Arrays.stream(sourcesWithGroupings)
-                    .mapToInt(x -> selection.getGrouping(x).size()).min();
-                if (minGroupCount.isPresent()
-                    && (minGroupCount.getAsInt() * 4) < selection.size()) {
+                final ColumnSource[] sourcesWithGroupings =
+                        Arrays.stream(keyColumns).filter(selection::hasGrouping).toArray(ColumnSource[]::new);
+                final OptionalInt minGroupCount =
+                        Arrays.stream(sourcesWithGroupings).mapToInt(x -> selection.getGrouping(x).size()).min();
+                if (minGroupCount.isPresent() && (minGroupCount.getAsInt() * 4) < selection.size()) {
                     return filterGrouping(selection, tupleSource);
                 }
                 return filterLinear(selection, keyColumns, tupleSource);
@@ -256,14 +246,13 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl
     }
 
     private Index filterGrouping(Index selection, Table table) {
-        final ColumnSource[] keyColumns = Arrays.stream(matchPairs)
-            .map(mp -> table.getColumnSource(mp.left())).toArray(ColumnSource[]::new);
+        final ColumnSource[] keyColumns =
+                Arrays.stream(matchPairs).map(mp -> table.getColumnSource(mp.left())).toArray(ColumnSource[]::new);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
         return filterGrouping(selection, tupleSource);
     }
 
-    private Index filterLinear(Index selection, ColumnSource[] keyColumns,
-        TupleSource tupleSource) {
+    private Index filterLinear(Index selection, ColumnSource[] keyColumns, TupleSource tupleSource) {
         if (keyColumns.length == 1) {
             return filterLinearOne(selection, keyColumns[0]);
         } else {
@@ -277,19 +266,17 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl
         }
 
         if (!kernelValid) {
-            setInclusionKernel =
-                SetInclusionKernel.makeKernel(keyColumn.getChunkType(), liveValues, inclusion);
+            setInclusionKernel = SetInclusionKernel.makeKernel(keyColumn.getChunkType(), liveValues, inclusion);
             kernelValid = true;
         }
 
         final Index.SequentialBuilder indexBuilder = Index.FACTORY.getSequentialBuilder();
 
         try (final ColumnSource.GetContext getContext = keyColumn.makeGetContext(CHUNK_SIZE);
-            final OrderedKeys.Iterator okIt = selection.getOrderedKeysIterator()) {
+                final OrderedKeys.Iterator okIt = selection.getOrderedKeysIterator()) {
             final WritableLongChunk<Attributes.OrderedKeyIndices> keyIndices =
-                WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
-            final WritableBooleanChunk<Attributes.Values> matches =
-                WritableBooleanChunk.makeWritableChunk(CHUNK_SIZE);
+                    WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
+            final WritableBooleanChunk<Attributes.Values> matches = WritableBooleanChunk.makeWritableChunk(CHUNK_SIZE);
 
             while (okIt.hasMore()) {
                 final OrderedKeys chunkOk = okIt.getNextOrderedKeysWithLength(CHUNK_SIZE);
@@ -328,10 +315,7 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl
 
     @Override
     public boolean isSimpleFilter() {
-        /*
-         * This doesn't execute any user code, so it should be safe to execute it against untrusted
-         * data.
-         */
+        /* This doesn't execute any user code, so it should be safe to execute it against untrusted data. */
         return true;
     }
 
@@ -361,8 +345,8 @@ public class DynamicWhereFilter extends SelectFilterLivenessArtifactImpl
 
     @Override
     public LogOutput append(LogOutput logOutput) {
-        return logOutput.append("DynamicWhereFilter(")
-            .append(MatchPair.MATCH_PAIR_ARRAY_FORMATTER, matchPairs).append(")");
+        return logOutput.append("DynamicWhereFilter(").append(MatchPair.MATCH_PAIR_ARRAY_FORMATTER, matchPairs)
+                .append(")");
     }
 
     @Override

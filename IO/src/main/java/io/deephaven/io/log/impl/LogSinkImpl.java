@@ -35,12 +35,11 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
 
     private static Factory _FACTORY = new Factory() {
         @Override
-        public LogSink create(String basePath, int rollInterval, DateFormat rollFormat,
-            Pool elementPool, boolean append, LogOutput outputBuffer, String header,
-            LogSinkWriter maybeWriter) {
+        public LogSink create(String basePath, int rollInterval, DateFormat rollFormat, Pool elementPool,
+                boolean append, LogOutput outputBuffer, String header, LogSinkWriter maybeWriter) {
             // noinspection unchecked
-            return new LogSinkImpl(basePath, rollInterval, rollFormat, elementPool, append,
-                outputBuffer, header, maybeWriter);
+            return new LogSinkImpl(basePath, rollInterval, rollFormat, elementPool, append, outputBuffer, header,
+                    maybeWriter);
         }
     };
 
@@ -118,7 +117,7 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
     public static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd-HHmmss.SSSZ");
 
     public static final BigWriterThread globalWriterThread =
-        new BigWriterThread("LogSinkImpl.GlobalWriterThread", 1000000); // park for 1 milli
+            new BigWriterThread("LogSinkImpl.GlobalWriterThread", 1000000); // park for 1 milli
 
     /**
      * Constructor
@@ -130,57 +129,51 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
     /**
      * Constructor
      */
-    public LogSinkImpl(String basePath, long rollIntervalMillis, Pool<T> elementPool,
-        LogOutput outputBuffer) {
+    public LogSinkImpl(String basePath, long rollIntervalMillis, Pool<T> elementPool, LogOutput outputBuffer) {
         this(basePath, rollIntervalMillis, DATE_FORMAT, elementPool, true, outputBuffer, null);
     }
 
     /**
      * Constructor
      */
-    public LogSinkImpl(String basePath, long rollIntervalMillis, Pool<T> elementPool,
-        boolean append) {
+    public LogSinkImpl(String basePath, long rollIntervalMillis, Pool<T> elementPool, boolean append) {
         this(basePath, rollIntervalMillis, DATE_FORMAT, elementPool, append, null, null);
     }
 
     /**
      * Constructor
      */
-    public LogSinkImpl(String basePath, long rollIntervalMillis, Pool<T> elementPool,
-        boolean append, LogOutput outputBuffer) {
+    public LogSinkImpl(String basePath, long rollIntervalMillis, Pool<T> elementPool, boolean append,
+            LogOutput outputBuffer) {
         this(basePath, rollIntervalMillis, DATE_FORMAT, elementPool, append, outputBuffer, null);
     }
 
     /**
      * Constructor
      */
-    public LogSinkImpl(String basePath, long rollIntervalMillis, DateFormat rollFormat,
-        Pool<T> elementPool, boolean append) {
+    public LogSinkImpl(String basePath, long rollIntervalMillis, DateFormat rollFormat, Pool<T> elementPool,
+            boolean append) {
         this(basePath, rollIntervalMillis, rollFormat, elementPool, append, null, null);
     }
 
     /**
      * Constructor
      */
-    public LogSinkImpl(String basePath, long rollIntervalMillis, DateFormat rollFormat,
-        Pool<T> elementPool, boolean append,
-        LogOutput outputBuffer, String header) {
-        this(basePath, rollIntervalMillis, rollFormat, elementPool, append, outputBuffer, header,
-            null);
+    public LogSinkImpl(String basePath, long rollIntervalMillis, DateFormat rollFormat, Pool<T> elementPool,
+            boolean append,
+            LogOutput outputBuffer, String header) {
+        this(basePath, rollIntervalMillis, rollFormat, elementPool, append, outputBuffer, header, null);
     }
 
     /**
      * Constructor
      */
-    public LogSinkImpl(String basePath, long rollIntervalMillis, DateFormat rollFormat,
-        Pool<T> elementPool, boolean append,
-        LogOutput outputBuffer, String header, LogSinkWriter<LogSinkImpl<T>> maybeWriter) {
+    public LogSinkImpl(String basePath, long rollIntervalMillis, DateFormat rollFormat, Pool<T> elementPool,
+            boolean append,
+            LogOutput outputBuffer, String header, LogSinkWriter<LogSinkImpl<T>> maybeWriter) {
         this.basePath = basePath;
         this.rollIntervalMicros = rollIntervalMillis * 1000L;
-        this.rollFormat = null == rollFormat ? null : (DateFormat) rollFormat.clone(); // make sure
-                                                                                       // we have
-                                                                                       // one
-                                                                                       // instance
+        this.rollFormat = null == rollFormat ? null : (DateFormat) rollFormat.clone(); // make sure we have one instance
                                                                                        // per sink
         this.elementPool = elementPool;
         this.append = append;
@@ -189,14 +182,8 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
         this.header = header;
 
         this.linkPath = new File(basePath + ".current").toPath();
-        this.supportsLinks = !System.getProperty("os.name").toLowerCase().contains("win"); // enabled
-                                                                                           // until
-                                                                                           // we
-                                                                                           // find
-                                                                                           // out
-                                                                                           // otherwise,
-                                                                                           // except
-                                                                                           // on
+        this.supportsLinks = !System.getProperty("os.name").toLowerCase().contains("win"); // enabled until we find out
+                                                                                           // otherwise, except on
                                                                                            // windows
 
         // don't create the output file until we actually write to it
@@ -213,8 +200,7 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
             writer = maybeWriter;
             writer.addLogSink(this); // will start if not started
         } else {
-            final WriterThread<T> thread =
-                new WriterThread<>("LogSinkImpl.WriterThread-" + basePath);
+            final WriterThread<T> thread = new WriterThread<>("LogSinkImpl.WriterThread-" + basePath);
             thread.setDaemon(true);
             writer = thread;
             writer.addLogSink(this); // will start it
@@ -237,8 +223,8 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
     @Override
     public void write(T e) {
         if (shutdown)
-            return; // don't want to add anything new to the queue, b/c we can cause
-                    // isOpenAfterWrite() to never return (if we keep the queue full)
+            return; // don't want to add anything new to the queue, b/c we can cause isOpenAfterWrite() to never return
+                    // (if we keep the queue full)
 
         int spins = 0;
         while (!outputQueue.enqueue(e)) {
@@ -273,15 +259,13 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
     }
 
     /**
-     * Terminate the sink - does not guarantee entries will ever be written, but will not block
-     * shutdown() calls.
+     * Terminate the sink - does not guarantee entries will ever be written, but will not block shutdown() calls.
      */
     @Override
     public void terminate() {
         shutdown = true;
         // We're not going to write any more entries, so don't block shutdown calls.
-        // If we release the semaphore extra times, it won't hurt anything - the semaphore could be
-        // replaced
+        // If we release the semaphore extra times, it won't hurt anything - the semaphore could be replaced
         // by a boolean and a condition variable in its current usage.
         writtenOnShutdown.release(1);
     }
@@ -291,8 +275,8 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
      */
     @Override
     public void addInterceptor(Interceptor<T> interceptor) {
-        interceptors = ArrayUtil.pushArray(interceptor, interceptors,
-            ClassUtil.<Interceptor<T>>generify(Interceptor.class));
+        interceptors =
+                ArrayUtil.pushArray(interceptor, interceptors, ClassUtil.<Interceptor<T>>generify(Interceptor.class));
     }
 
     // -------------------------------------------------------------------------------------------
@@ -335,8 +319,7 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
     /**
      * The writer thread
      */
-    private class WriterThread<T extends LogSink.Element> extends Thread
-        implements LogSinkWriter<LogSinkImpl<T>> {
+    private class WriterThread<T extends LogSink.Element> extends Thread implements LogSinkWriter<LogSinkImpl<T>> {
 
         private final AtomicBoolean started;
         private final PrintStream err;
@@ -369,7 +352,7 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
                     t.addSuppressed(t2);
                 } finally {
                     AsyncSystem.exitCaught(this, t, EXIT_STATUS, err,
-                        "LogSinkImpl: unable to write log entry");
+                            "LogSinkImpl: unable to write log entry");
                 }
             }
         }
@@ -413,8 +396,8 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
             int spinsSinceLastChange = 0;
             while (true) {
                 impl = toWriteOut.dequeue();
-                Assert.neqNull(impl, "impl"); // b/c we are using a semaphore to wait, there should
-                                              // always be something here
+                Assert.neqNull(impl, "impl"); // b/c we are using a semaphore to wait, there should always be something
+                                              // here
                 try {
                     if (impl.didWrite()) {
                         spinsSinceLastChange = 0;
@@ -442,7 +425,7 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
                         t.addSuppressed(t2);
                     } finally {
                         AsyncSystem.exitCaught(this, t, EXIT_STATUS, err,
-                            "LogSinkImpl: unable to write log entry");
+                                "LogSinkImpl: unable to write log entry");
                     }
                     return;
                 }
@@ -465,15 +448,13 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
     private void checkOutputFile(long nowMicros) throws IOException {
         boolean updateLink = false;
         if (outputFile == null) {
-            currentIntervalMicros =
-                nowMicros - (rollIntervalMicros == 0 ? 0 : (nowMicros % rollIntervalMicros));
+            currentIntervalMicros = nowMicros - (rollIntervalMicros == 0 ? 0 : (nowMicros % rollIntervalMicros));
             // note: first file has complete timestamp
             currentPath = stampedOutputFilePath(nowMicros);
             outputFile = new FileOutputStream(currentPath, append).getChannel();
             writeHeader();
             updateLink = true;
-        } else if (rollIntervalMicros > 0
-            && nowMicros > currentIntervalMicros + rollIntervalMicros) {
+        } else if (rollIntervalMicros > 0 && nowMicros > currentIntervalMicros + rollIntervalMicros) {
             outputFile.close();
             currentIntervalMicros = nowMicros - (nowMicros % rollIntervalMicros);
             currentPath = stampedOutputFilePath(currentIntervalMicros);
@@ -493,8 +474,7 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
     }
 
     private String stampedOutputFilePath(long nowMicros) {
-        return rollFormat == null ? basePath
-            : basePath + "." + rollFormat.format(new Date(nowMicros / 1000));
+        return rollFormat == null ? basePath : basePath + "." + rollFormat.format(new Date(nowMicros / 1000));
     }
 
     private void writeHeader() throws IOException {
@@ -525,8 +505,8 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
             ByteBuffer b = data.getBuffer(i);
             while (b.remaining() > 0) {
                 if (outputFile.write(b) == 0) {
-                    // this is a file channel, so if we write zero bytes the disk is full - don't
-                    // bang our heads against the wall
+                    // this is a file channel, so if we write zero bytes the disk is full - don't bang our heads against
+                    // the wall
                     break;
                 }
             }

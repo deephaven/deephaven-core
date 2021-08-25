@@ -55,8 +55,7 @@ public class OutputInputStreamTest extends TestCase {
     private OutputStream getOutputStream(int i, ByteBuffer buffer) {
         switch (i) {
             case 0:
-                return new ByteBufferOutputStream(ByteBuffer.allocate(1),
-                    new SmallByteSink(buffer));
+                return new ByteBufferOutputStream(ByteBuffer.allocate(1), new SmallByteSink(buffer));
 
             default:
                 fail("No such output stream");
@@ -90,8 +89,7 @@ public class OutputInputStreamTest extends TestCase {
     private ByteBufferOutputStream getByteBufferOutputStream(int i, ByteBuffer buffer) {
         switch (i) {
             case 0:
-                return new ByteBufferOutputStream(ByteBuffer.allocate(1),
-                    new SmallByteSink(buffer));
+                return new ByteBufferOutputStream(ByteBuffer.allocate(1), new SmallByteSink(buffer));
 
             default:
                 fail("No such output stream");
@@ -132,8 +130,7 @@ public class OutputInputStreamTest extends TestCase {
 
                 buffer.clear();
                 buffer.limit(0);
-                testWriteReadByteInterleave(getOutputStream(out, buffer),
-                    getInputStream(in, buffer));
+                testWriteReadByteInterleave(getOutputStream(out, buffer), getInputStream(in, buffer));
 
                 buffer.clear();
                 buffer.limit(0);
@@ -148,23 +145,21 @@ public class OutputInputStreamTest extends TestCase {
             for (int out = 0; out < outs; ++out) {
                 buffer.clear();
                 buffer.limit(0);
-                testWriteByteBuffer(getByteBufferOutputStream(out, buffer),
-                    getByteBufferInputStream(in, buffer));
+                testWriteByteBuffer(getByteBufferOutputStream(out, buffer), getByteBufferInputStream(in, buffer));
 
                 buffer.clear();
                 buffer.limit(0);
                 testAppendBytesCharSequence(getByteBufferOutputStream(out, buffer),
-                    getByteBufferInputStream(in, buffer));
+                        getByteBufferInputStream(in, buffer));
 
                 buffer.clear();
                 buffer.limit(0);
                 testAppendCharsCharSequence(getByteBufferOutputStream(out, buffer),
-                    getByteBufferInputStream(in, buffer));
+                        getByteBufferInputStream(in, buffer));
 
                 buffer.clear();
                 buffer.limit(0);
-                testWriteUTF(getByteBufferOutputStream(out, buffer),
-                    getByteBufferInputStream(in, buffer));
+                testWriteUTF(getByteBufferOutputStream(out, buffer), getByteBufferInputStream(in, buffer));
             }
         }
     }

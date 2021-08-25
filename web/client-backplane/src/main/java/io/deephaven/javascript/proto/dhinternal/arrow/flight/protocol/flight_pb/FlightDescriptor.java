@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.Flight_pb.FlightDescriptor",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.Flight_pb.FlightDescriptor",
+        namespace = JsPackage.GLOBAL)
 public class FlightDescriptor {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface GetCmdUnionType {
@@ -214,12 +214,12 @@ public class FlightDescriptor {
     public static native FlightDescriptor deserializeBinary(Uint8Array bytes);
 
     public static native FlightDescriptor deserializeBinaryFromReader(
-        FlightDescriptor message, Object reader);
+            FlightDescriptor message, Object reader);
 
     public static native void serializeBinaryToWriter(FlightDescriptor message, Object writer);
 
     public static native FlightDescriptor.ToObjectReturnType toObject(
-        boolean includeInstance, FlightDescriptor msg);
+            boolean includeInstance, FlightDescriptor msg);
 
     public native String addPath(String value, double index);
 

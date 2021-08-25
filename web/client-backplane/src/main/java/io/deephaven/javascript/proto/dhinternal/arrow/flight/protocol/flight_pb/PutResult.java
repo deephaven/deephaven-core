@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.Flight_pb.PutResult",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.Flight_pb.PutResult",
+        namespace = JsPackage.GLOBAL)
 public class PutResult {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface GetAppMetadataUnionType {
@@ -113,15 +113,13 @@ public class PutResult {
         @JsOverlay
         default void setAppMetadata(String appMetadata) {
             setAppMetadata(
-                Js.<PutResult.ToObjectReturnType.GetAppMetadataUnionType>uncheckedCast(
-                    appMetadata));
+                    Js.<PutResult.ToObjectReturnType.GetAppMetadataUnionType>uncheckedCast(appMetadata));
         }
 
         @JsOverlay
         default void setAppMetadata(Uint8Array appMetadata) {
             setAppMetadata(
-                Js.<PutResult.ToObjectReturnType.GetAppMetadataUnionType>uncheckedCast(
-                    appMetadata));
+                    Js.<PutResult.ToObjectReturnType.GetAppMetadataUnionType>uncheckedCast(appMetadata));
         }
     }
 
@@ -169,15 +167,13 @@ public class PutResult {
         @JsOverlay
         default void setAppMetadata(String appMetadata) {
             setAppMetadata(
-                Js.<PutResult.ToObjectReturnType0.GetAppMetadataUnionType>uncheckedCast(
-                    appMetadata));
+                    Js.<PutResult.ToObjectReturnType0.GetAppMetadataUnionType>uncheckedCast(appMetadata));
         }
 
         @JsOverlay
         default void setAppMetadata(Uint8Array appMetadata) {
             setAppMetadata(
-                Js.<PutResult.ToObjectReturnType0.GetAppMetadataUnionType>uncheckedCast(
-                    appMetadata));
+                    Js.<PutResult.ToObjectReturnType0.GetAppMetadataUnionType>uncheckedCast(appMetadata));
         }
     }
 
@@ -188,7 +184,7 @@ public class PutResult {
     public static native void serializeBinaryToWriter(PutResult message, Object writer);
 
     public static native PutResult.ToObjectReturnType toObject(
-        boolean includeInstance, PutResult msg);
+            boolean includeInstance, PutResult msg);
 
     public native PutResult.GetAppMetadataUnionType getAppMetadata();
 

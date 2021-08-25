@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.FlattenRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.FlattenRequest",
+        namespace = JsPackage.GLOBAL)
 public class FlattenRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -21,8 +21,7 @@ public class FlattenRequest {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface GetTicketUnionType {
                 @JsOverlay
-                static FlattenRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                static FlattenRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(Object o) {
                     return Js.cast(o);
                 }
 
@@ -56,21 +55,20 @@ public class FlattenRequest {
             FlattenRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType getTicket();
 
             @JsProperty
-            void setTicket(
-                FlattenRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+            void setTicket(FlattenRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<FlattenRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FlattenRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<FlattenRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FlattenRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -120,7 +118,7 @@ public class FlattenRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static FlattenRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -155,20 +153,20 @@ public class FlattenRequest {
 
             @JsProperty
             void setTicket(
-                FlattenRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    FlattenRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<FlattenRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FlattenRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<FlattenRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<FlattenRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -213,12 +211,12 @@ public class FlattenRequest {
     public static native FlattenRequest deserializeBinary(Uint8Array bytes);
 
     public static native FlattenRequest deserializeBinaryFromReader(
-        FlattenRequest message, Object reader);
+            FlattenRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(FlattenRequest message, Object writer);
 
     public static native FlattenRequest.ToObjectReturnType toObject(
-        boolean includeInstance, FlattenRequest msg);
+            boolean includeInstance, FlattenRequest msg);
 
     public native void clearResultId();
 

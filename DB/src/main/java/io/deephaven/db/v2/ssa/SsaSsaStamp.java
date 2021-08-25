@@ -58,24 +58,22 @@ public interface SsaSsaStamp {
         }
     }
 
-    void processEntry(SegmentedSortedArray leftSsa, SegmentedSortedArray ssa,
-        RedirectionIndex redirectionIndex, boolean disallowExactMatch);
+    void processEntry(SegmentedSortedArray leftSsa, SegmentedSortedArray ssa, RedirectionIndex redirectionIndex,
+            boolean disallowExactMatch);
 
     void processRemovals(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk,
-        LongChunk<KeyIndices> rightKeys, WritableLongChunk<KeyIndices> priorRedirections,
-        RedirectionIndex redirectionIndex, Index.RandomBuilder modifiedBuilder,
-        boolean disallowExactMatch);
+            LongChunk<KeyIndices> rightKeys, WritableLongChunk<KeyIndices> priorRedirections,
+            RedirectionIndex redirectionIndex, Index.RandomBuilder modifiedBuilder, boolean disallowExactMatch);
 
     void processInsertion(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk,
-        LongChunk<KeyIndices> rightKeys, Chunk<Values> nextRightValue,
-        RedirectionIndex redirectionIndex, Index.RandomBuilder modifiedBuilder,
-        boolean endsWithLastValue, boolean disallowExactMatch);
+            LongChunk<KeyIndices> rightKeys, Chunk<Values> nextRightValue, RedirectionIndex redirectionIndex,
+            Index.RandomBuilder modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch);
 
     void findModified(SegmentedSortedArray leftSsa, RedirectionIndex redirectionIndex,
-        Chunk<? extends Values> rightStampChunk, LongChunk<KeyIndices> rightStampIndices,
-        Index.RandomBuilder modifiedBuilder, boolean disallowExactMatch);
+            Chunk<? extends Values> rightStampChunk, LongChunk<KeyIndices> rightStampIndices,
+            Index.RandomBuilder modifiedBuilder, boolean disallowExactMatch);
 
     void applyShift(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk,
-        LongChunk<KeyIndices> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex,
-        boolean disallowExactMatch);
+            LongChunk<KeyIndices> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex,
+            boolean disallowExactMatch);
 }

@@ -13,9 +13,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.BusinessCalendarDescriptor",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.BusinessCalendarDescriptor",
+        namespace = JsPackage.GLOBAL)
 public class BusinessCalendarDescriptor {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -88,7 +88,7 @@ public class BusinessCalendarDescriptor {
 
             @JsProperty
             void setDate(
-                BusinessCalendarDescriptor.ToObjectReturnType.HolidaysListFieldType.DateFieldType date);
+                    BusinessCalendarDescriptor.ToObjectReturnType.HolidaysListFieldType.DateFieldType date);
         }
 
         @JsOverlay
@@ -121,27 +121,27 @@ public class BusinessCalendarDescriptor {
 
         @JsOverlay
         default void setBusinessPeriodsList(
-            BusinessCalendarDescriptor.ToObjectReturnType.BusinessPeriodsListFieldType[] businessPeriodsList) {
+                BusinessCalendarDescriptor.ToObjectReturnType.BusinessPeriodsListFieldType[] businessPeriodsList) {
             setBusinessPeriodsList(
-                Js.<JsArray<BusinessCalendarDescriptor.ToObjectReturnType.BusinessPeriodsListFieldType>>uncheckedCast(
-                    businessPeriodsList));
+                    Js.<JsArray<BusinessCalendarDescriptor.ToObjectReturnType.BusinessPeriodsListFieldType>>uncheckedCast(
+                            businessPeriodsList));
         }
 
         @JsProperty
         void setBusinessPeriodsList(
-            JsArray<BusinessCalendarDescriptor.ToObjectReturnType.BusinessPeriodsListFieldType> businessPeriodsList);
+                JsArray<BusinessCalendarDescriptor.ToObjectReturnType.BusinessPeriodsListFieldType> businessPeriodsList);
 
         @JsOverlay
         default void setHolidaysList(
-            BusinessCalendarDescriptor.ToObjectReturnType.HolidaysListFieldType[] holidaysList) {
+                BusinessCalendarDescriptor.ToObjectReturnType.HolidaysListFieldType[] holidaysList) {
             setHolidaysList(
-                Js.<JsArray<BusinessCalendarDescriptor.ToObjectReturnType.HolidaysListFieldType>>uncheckedCast(
-                    holidaysList));
+                    Js.<JsArray<BusinessCalendarDescriptor.ToObjectReturnType.HolidaysListFieldType>>uncheckedCast(
+                            holidaysList));
         }
 
         @JsProperty
         void setHolidaysList(
-            JsArray<BusinessCalendarDescriptor.ToObjectReturnType.HolidaysListFieldType> holidaysList);
+                JsArray<BusinessCalendarDescriptor.ToObjectReturnType.HolidaysListFieldType> holidaysList);
 
         @JsProperty
         void setName(String name);
@@ -221,7 +221,7 @@ public class BusinessCalendarDescriptor {
 
             @JsProperty
             void setDate(
-                BusinessCalendarDescriptor.ToObjectReturnType0.HolidaysListFieldType.DateFieldType date);
+                    BusinessCalendarDescriptor.ToObjectReturnType0.HolidaysListFieldType.DateFieldType date);
         }
 
         @JsOverlay
@@ -254,27 +254,27 @@ public class BusinessCalendarDescriptor {
 
         @JsOverlay
         default void setBusinessPeriodsList(
-            BusinessCalendarDescriptor.ToObjectReturnType0.BusinessPeriodsListFieldType[] businessPeriodsList) {
+                BusinessCalendarDescriptor.ToObjectReturnType0.BusinessPeriodsListFieldType[] businessPeriodsList) {
             setBusinessPeriodsList(
-                Js.<JsArray<BusinessCalendarDescriptor.ToObjectReturnType0.BusinessPeriodsListFieldType>>uncheckedCast(
-                    businessPeriodsList));
+                    Js.<JsArray<BusinessCalendarDescriptor.ToObjectReturnType0.BusinessPeriodsListFieldType>>uncheckedCast(
+                            businessPeriodsList));
         }
 
         @JsProperty
         void setBusinessPeriodsList(
-            JsArray<BusinessCalendarDescriptor.ToObjectReturnType0.BusinessPeriodsListFieldType> businessPeriodsList);
+                JsArray<BusinessCalendarDescriptor.ToObjectReturnType0.BusinessPeriodsListFieldType> businessPeriodsList);
 
         @JsOverlay
         default void setHolidaysList(
-            BusinessCalendarDescriptor.ToObjectReturnType0.HolidaysListFieldType[] holidaysList) {
+                BusinessCalendarDescriptor.ToObjectReturnType0.HolidaysListFieldType[] holidaysList) {
             setHolidaysList(
-                Js.<JsArray<BusinessCalendarDescriptor.ToObjectReturnType0.HolidaysListFieldType>>uncheckedCast(
-                    holidaysList));
+                    Js.<JsArray<BusinessCalendarDescriptor.ToObjectReturnType0.HolidaysListFieldType>>uncheckedCast(
+                            holidaysList));
         }
 
         @JsProperty
         void setHolidaysList(
-            JsArray<BusinessCalendarDescriptor.ToObjectReturnType0.HolidaysListFieldType> holidaysList);
+                JsArray<BusinessCalendarDescriptor.ToObjectReturnType0.HolidaysListFieldType> holidaysList);
 
         @JsProperty
         void setName(String name);
@@ -288,13 +288,13 @@ public class BusinessCalendarDescriptor {
     public static native BusinessCalendarDescriptor deserializeBinary(Uint8Array bytes);
 
     public static native BusinessCalendarDescriptor deserializeBinaryFromReader(
-        BusinessCalendarDescriptor message, Object reader);
+            BusinessCalendarDescriptor message, Object reader);
 
     public static native void serializeBinaryToWriter(
-        BusinessCalendarDescriptor message, Object writer);
+            BusinessCalendarDescriptor message, Object writer);
 
     public static native BusinessCalendarDescriptor.ToObjectReturnType toObject(
-        boolean includeInstance, BusinessCalendarDescriptor msg);
+            boolean includeInstance, BusinessCalendarDescriptor msg);
 
     public native double addBusinessDays(double value, double index);
 

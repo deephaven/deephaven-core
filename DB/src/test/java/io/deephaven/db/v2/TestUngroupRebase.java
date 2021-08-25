@@ -22,16 +22,13 @@ public class TestUngroupRebase extends LiveTableTestCase {
             int size = 9;
             Random random = new Random(0);
 
-            ColumnHolder arrayColumnHolder =
-                TstUtils.c("Y", new int[] {10, 20}, new int[] {110, 120, 130});
-            final QueryTable table =
-                TstUtils.testRefreshingTable(TstUtils.c("X", 1, 3), arrayColumnHolder);
+            ColumnHolder arrayColumnHolder = TstUtils.c("Y", new int[] {10, 20}, new int[] {110, 120, 130});
+            final QueryTable table = TstUtils.testRefreshingTable(TstUtils.c("X", 1, 3), arrayColumnHolder);
 
             EvalNugget en[] = new EvalNugget[] {
                     new EvalNugget() {
                         public Table e() {
-                            return LiveTableMonitor.DEFAULT.exclusiveLock()
-                                .computeLocked(table::ungroup);
+                            return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(table::ungroup);
                         }
                     },
             };
@@ -70,16 +67,14 @@ public class TestUngroupRebase extends LiveTableTestCase {
 
             // Time to start fresh again, so we can do an addition operation,
             // without having such a high base for the table.
-            arrayColumnHolder = TstUtils.c("Y", new int[] {10, 20}, new int[] {200},
-                new int[] {110, 120, 130}, new int[] {310});
-            final QueryTable table2 =
-                TstUtils.testRefreshingTable(TstUtils.c("X", 1, 2, 3, 4), arrayColumnHolder);
+            arrayColumnHolder =
+                    TstUtils.c("Y", new int[] {10, 20}, new int[] {200}, new int[] {110, 120, 130}, new int[] {310});
+            final QueryTable table2 = TstUtils.testRefreshingTable(TstUtils.c("X", 1, 2, 3, 4), arrayColumnHolder);
 
             en = new EvalNugget[] {
                     new EvalNugget() {
                         public Table e() {
-                            return LiveTableMonitor.DEFAULT.exclusiveLock()
-                                .computeLocked(table2::ungroup);
+                            return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(table2::ungroup);
                         }
                     },
             };

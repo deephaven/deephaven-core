@@ -42,8 +42,7 @@ public class LinkedIterable<T> implements MappedIterable<T> {
         public void remove() {
             if (remover != null) {
                 if (removed) {
-                    throw new IllegalStateException(
-                        "Cannot call remove() more than once per next()");
+                    throw new IllegalStateException("Cannot call remove() more than once per next()");
                 }
                 removed = true;
                 if (node == null) {
@@ -62,11 +61,10 @@ public class LinkedIterable<T> implements MappedIterable<T> {
     private final boolean skipHead;
     private JsBiConsumer<T, T> remover;
 
-    public LinkedIterable(T head, T tail, boolean includeTail, boolean strict,
-        UnaryOperator<T> next) {
+    public LinkedIterable(T head, T tail, boolean includeTail, boolean strict, UnaryOperator<T> next) {
         this(head, new UnaryOperator<T>() {
-            boolean done = head == tail; // when head == tail, we will always return the head
-                                         // anyway, so just skip the next-ing.
+            boolean done = head == tail; // when head == tail, we will always return the head anyway, so just skip the
+                                         // next-ing.
 
             @Override
             public T apply(T cur) {
@@ -81,8 +79,7 @@ public class LinkedIterable<T> implements MappedIterable<T> {
                 }
                 final T find = next.apply(cur);
                 if (strict && find == null) {
-                    throw new IllegalStateException(
-                        "Iterable starting at " + head + " did not end with " + tail);
+                    throw new IllegalStateException("Iterable starting at " + head + " did not end with " + tail);
                 }
                 if (find == tail) {
                     done = true;

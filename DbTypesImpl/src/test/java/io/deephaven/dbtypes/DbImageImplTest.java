@@ -11,7 +11,7 @@ import java.io.*;
 public class DbImageImplTest extends BaseArrayTestCase {
 
     final private String file = Configuration.getInstance().getDevRootPath()
-        + "/DbTypesImpl/src/test/resources/io/deephaven/dbtypes/white.jpg";
+            + "/DbTypesImpl/src/test/resources/io/deephaven/dbtypes/white.jpg";
 
     private void assertEquals(DbImage image1, DbImage image2) {
         assertEquals(image1.getName(), image2.getName());
@@ -181,8 +181,7 @@ public class DbImageImplTest extends BaseArrayTestCase {
             final ObjectOutputStream oos = new ObjectOutputStream(bos);
             oos.writeObject(image);
             oos.close();
-            final ObjectInputStream ois =
-                new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray()));
+            final ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray()));
             final DbImageImpl img = (DbImageImpl) ois.readObject();
             assertNotNull(img);
             assertEquals(image, img);

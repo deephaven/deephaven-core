@@ -14,9 +14,9 @@ public abstract class MemoryMxBeanInfo implements PropertySet {
 
     public static MemoryMxBeanInfo of(MemoryMXBean bean) {
         return ImmutableMemoryMxBeanInfo.builder()
-            .heap(MemoryUsageInfo.of(bean.getHeapMemoryUsage()))
-            .nonHeap(MemoryUsageInfo.of(bean.getNonHeapMemoryUsage()))
-            .build();
+                .heap(MemoryUsageInfo.of(bean.getHeapMemoryUsage()))
+                .nonHeap(MemoryUsageInfo.of(bean.getNonHeapMemoryUsage()))
+                .build();
     }
 
     @Value.Parameter

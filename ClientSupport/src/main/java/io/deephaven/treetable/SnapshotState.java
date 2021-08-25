@@ -33,8 +33,8 @@ class SnapshotState {
     private final int childColumnIndex;
 
     /**
-     * A List of column-name, data array mappings. The arrays in this mapping are references to
-     * items in dataMatrix below
+     * A List of column-name, data array mappings. The arrays in this mapping are references to items in dataMatrix
+     * below
      */
     private final List<Pair<String, Object>> data = new ArrayList<>();
 
@@ -48,10 +48,7 @@ class SnapshotState {
     /** How many rows have actually been copied into the snapshot */
     private int copied = 0;
 
-    /**
-     * The number of total rows that have been skipped by the snapshot algorithm before data is
-     * collected
-     */
+    /** The number of total rows that have been skipped by the snapshot algorithm before data is collected */
     int skippedRows = 0;
 
     /** The number of rows that have been consumed and will be added to the viewport */
@@ -70,10 +67,7 @@ class SnapshotState {
     /** Mapping of aggregated column name to source column name */
     private final Map<String, String> aggToSourceMap;
 
-    /**
-     * Copiers that copy data from the original table to the intermediate columns. These are for
-     * rollups only
-     */
+    /** Copiers that copy data from the original table to the intermediate columns. These are for rollups only */
     private Map<String, Copier> constituentCopiers;
 
     /** Analagous to {@link #data} except containing entries for constituent rows */
@@ -88,22 +82,22 @@ class SnapshotState {
     private final HierarchicalTableInfo info;
 
     /**
-     * Single snapshot state -- Set to true if the snapshot in progress included data from an
-     * include-constituent Rollup leaf table
+     * Single snapshot state -- Set to true if the snapshot in progress included data from an include-constituent Rollup
+     * leaf table
      */
     private boolean includesLeafData = false;
     // endregion
 
     interface Copier {
-        void copy(boolean usePrev, ColumnSource columnSource, Index.Iterator it, Object target,
-            int offset, Table table, TableMap tableMap, BitSet childPresenceColumn);
+        void copy(boolean usePrev, ColumnSource columnSource, Index.Iterator it, Object target, int offset, Table table,
+                TableMap tableMap, BitSet childPresenceColumn);
     }
 
     SnapshotState(HierarchicalTable baseTable, String hierarchicalColumnName) {
         this.baseTable = baseTable;
         this.info = baseTable.getInfo();
-        includeConstituents = (info instanceof RollupInfo
-            && ((RollupInfo) info).getLeafType() == RollupInfo.LeafType.Constituent);
+        includeConstituents =
+                (info instanceof RollupInfo && ((RollupInfo) info).getLeafType() == RollupInfo.LeafType.Constituent);
 
         final TableDefinition definition = baseTable.getDefinition();
         childColumnIndex = definition.getColumnIndex(definition.getColumn(hierarchicalColumnName));
@@ -114,12 +108,11 @@ class SnapshotState {
             constituentCopiers = new HashMap<>();
             constituentData = new HashMap<>();
             aggToSourceMap = ((RollupInfo) info).getMatchPairs()
-                .stream()
-                .filter(p -> source.hasColumns(p.rightColumn)) // Filter out any columns that don't
-                                                               // exist in the parent
-                                                               // this is a concern for the Count
-                                                               // aggregation.
-                .collect(Collectors.toMap(MatchPair::left, MatchPair::right));
+                    .stream()
+                    .filter(p -> source.hasColumns(p.rightColumn)) // Filter out any columns that don't exist in the
+                                                                   // parent
+                                                                   // this is a concern for the Count aggregation.
+                    .collect(Collectors.toMap(MatchPair::left, MatchPair::right));
             includedConstituentColumns = new HashSet<>();
         } else {
             constituentCopiers = null;
@@ -132,23 +125,23 @@ class SnapshotState {
         dataMatrix = new Object[definition.getColumns().length];
     }
 
-    void beginSnapshot(Map<Object, TableDetails> tablesByKey, BitSet requestedColumns,
-        long firstViewportRow, long lastViewportRow) {
+    void beginSnapshot(Map<Object, TableDetails> tablesByKey, BitSet requestedColumns, long firstViewportRow,
+            long lastViewportRow) {
         // Compute snapshot boundaries
         includesLeafData = false;
         skippedRows = consumed = copied = 0;
         childPresenceColumn.clear();
         totalRowCount = tablesByKey.values().stream()
-            .filter(v -> !v.isRemoved())
-            .mapToLong(v -> v.getTable().size()).sum();
+                .filter(v -> !v.isRemoved())
+                .mapToLong(v -> v.getTable().size()).sum();
 
-        final int newViewportSize = (int) (Math.min(lastViewportRow + 1, totalRowCount)
-            - Math.min(firstViewportRow, totalRowCount));
+        final int newViewportSize =
+                (int) (Math.min(lastViewportRow + 1, totalRowCount) - Math.min(firstViewportRow, totalRowCount));
 
         // Do any allocation required if we have to.
         // Update the final data matrix with the proper set of requeted columns.
         if (ensureSpace(newViewportSize, tablesByKey.get(TreeTableConstants.ROOT_TABLE_KEY))
-            || !requestedColumns.equals(columns)) {
+                || !requestedColumns.equals(columns)) {
             this.columns = requestedColumns;
 
             // Properly populate the dataMatrix
@@ -157,24 +150,18 @@ class SnapshotState {
                     final Pair<String, Object> dataPair = data.get(ii);
                     dataMatrix[ii] = dataPair.second;
 
-                    // If including constituents, populate the set of original columns that we
-                    // actually need, to save us work
+                    // If including constituents, populate the set of original columns that we actually need, to save us
+                    // work
                     // later on. Ignore the by columns, they do not get modified.
                     if (includeConstituents) { // Do we include constituents?
                         final String sourceName = aggToSourceMap.get(dataPair.first);
                         if (!io.deephaven.db.util.string.StringUtils.isNullOrEmpty(sourceName) &&
-                            !((RollupInfo) info).getSelectColumnNames().contains(dataPair.first) && // Is
-                                                                                                    // it
-                                                                                                    // one
-                                                                                                    // of
-                                                                                                    // the
-                                                                                                    // grouping
-                                                                                                    // columns?
-                            !RollupInfo.ROLLUP_COLUMN.equals(dataPair.first) && // Is it the magic
-                                                                                // rollup column?
-                            !ColumnFormattingValues.isFormattingColumn(dataPair.first)) { // Is it a
-                                                                                          // formatting
-                                                                                          // column?
+                                !((RollupInfo) info).getSelectColumnNames().contains(dataPair.first) && // Is it one of
+                                                                                                        // the grouping
+                                                                                                        // columns?
+                                !RollupInfo.ROLLUP_COLUMN.equals(dataPair.first) && // Is it the magic rollup column?
+                                !ColumnFormattingValues.isFormattingColumn(dataPair.first)) { // Is it a formatting
+                                                                                              // column?
                             includedConstituentColumns.add(sourceName);
                         }
                     }
@@ -186,20 +173,17 @@ class SnapshotState {
     }
 
     /**
-     * Copy data from the specified table into the resultant data matrix at the offsets specified in
-     * the viewport state.
+     * Copy data from the specified table into the resultant data matrix at the offsets specified in the viewport state.
      *
-     * @implNote This method populates an additional data column that maps each row back to the
-     *           table they came from by it's table key, so that clients can map rows back into the
-     *           tree structure.
+     * @implNote This method populates an additional data column that maps each row back to the table they came from by
+     *           it's table key, so that clients can map rows back into the tree structure.
      *
      * @param usePrev if the snapshot should use previous values.
      * @param snapshotIndex An index containing the rows to copy from the source table.
      */
-    void addToSnapshot(boolean usePrev, Table table, Object tableKey, TableMap tableMap,
-        Index snapshotIndex) {
-        Assert.leq(copied + snapshotIndex.size(), "dataOffset + snapshotIndex.size()",
-            actualViewportSize, "viewport size");
+    void addToSnapshot(boolean usePrev, Table table, Object tableKey, TableMap tableMap, Index snapshotIndex) {
+        Assert.leq(copied + snapshotIndex.size(), "dataOffset + snapshotIndex.size()", actualViewportSize,
+                "viewport size");
 
         if (table.hasAttribute(Table.ROLLUP_LEAF_ATTRIBUTE) && includeConstituents) {
             addToSnapshotConstituent(usePrev, table, tableMap, snapshotIndex);
@@ -216,31 +200,28 @@ class SnapshotState {
     /**
      * Copy data directly from the table in question.
      */
-    private void addToSnapshotNormal(boolean usePrev, Table table, TableMap tableMap,
-        Index snapshotIndex) {
+    private void addToSnapshotNormal(boolean usePrev, Table table, TableMap tableMap, Index snapshotIndex) {
         for (int ii = 0; ii < data.size(); ii++) {
             if (!columns.get(ii)) {
                 continue;
             }
 
             final ColumnSource cs = table.getColumnSource(data.get(ii).first);
-            columnCopiers[ii].copy(usePrev, cs, snapshotIndex.iterator(), data.get(ii).second,
-                copied, table, tableMap, childPresenceColumn);
+            columnCopiers[ii].copy(usePrev, cs, snapshotIndex.iterator(), data.get(ii).second, copied, table, tableMap,
+                    childPresenceColumn);
         }
     }
 
     /**
-     * Copy the data from the table in question, assuming that the table is a constituent table.
-     * This means that we need to copy the data to the alternate data set because column types may
-     * be reused or changed.
+     * Copy the data from the table in question, assuming that the table is a constituent table. This means that we need
+     * to copy the data to the alternate data set because column types may be reused or changed.
      */
-    private void addToSnapshotConstituent(boolean usePrev, Table table, TableMap tableMap,
-        Index snapshotIndex) {
+    private void addToSnapshotConstituent(boolean usePrev, Table table, TableMap tableMap, Index snapshotIndex) {
         includesLeafData = true;
         includedConstituentColumns.forEach(cn -> {
             final ColumnSource<?> cs = table.getColumnSource(cn);
-            constituentCopiers.get(cn).copy(usePrev, cs, snapshotIndex.iterator(),
-                constituentData.get(cn).getSecond(), copied, table, tableMap, childPresenceColumn);
+            constituentCopiers.get(cn).copy(usePrev, cs, snapshotIndex.iterator(), constituentData.get(cn).getSecond(),
+                    copied, table, tableMap, childPresenceColumn);
         });
 
         final Map<String, ? extends ColumnSource> columnSourceMap = table.getColumnSourceMap();
@@ -248,28 +229,28 @@ class SnapshotState {
         for (int ii = 0; ii < data.size(); ii++) {
             final String columnName = data.get(ii).first;
             if (columns.get(ii) &&
-                (((RollupInfo) info).getSelectColumnNames().contains(columnName) ||
-                    ColumnFormattingValues.isFormattingColumn(columnName))) {
+                    (((RollupInfo) info).getSelectColumnNames().contains(columnName) ||
+                            ColumnFormattingValues.isFormattingColumn(columnName))) {
 
-                // In the case of constituent rows, because column types can change, we may have
-                // omitted formatting columns
+                // In the case of constituent rows, because column types can change, we may have omitted formatting
+                // columns
                 // so we'll allow those to not exist and be null-filled
                 final ColumnSource<?> cs = columnSourceMap.get(columnName);
                 if (cs != null) {
-                    columnCopiers[ii].copy(usePrev, cs, snapshotIndex.iterator(),
-                        data.get(ii).second, copied, table, tableMap, childPresenceColumn);
+                    columnCopiers[ii].copy(usePrev, cs, snapshotIndex.iterator(), data.get(ii).second, copied, table,
+                            tableMap, childPresenceColumn);
                 } else if (!ColumnFormattingValues.isFormattingColumn(columnName)) {
                     throw new UncheckedTableException(
-                        "Column " + columnName + " does not exist. Available column names are [" +
-                            StringUtils.joinStrings(columnSourceMap.keySet(), ",") + "]");
+                            "Column " + columnName + " does not exist. Available column names are [" +
+                                    StringUtils.joinStrings(columnSourceMap.keySet(), ",") + "]");
                 }
             }
         }
     }
 
     /**
-     * Allocate a type-correct matrix to store the resultant snapshot into. It will create Columns+1
-     * columns to allow for the extra table-mapping column.
+     * Allocate a type-correct matrix to store the resultant snapshot into. It will create Columns+1 columns to allow
+     * for the extra table-mapping column.
      *
      * @param requestedViewportSize The total size of the snapshot to allocate.
      * @param rootData Any table in the tree, to read column types from
@@ -278,8 +259,8 @@ class SnapshotState {
      */
     private boolean ensureSpace(int requestedViewportSize, TableDetails rootData) {
         if (requestedViewportSize == actualViewportSize) {
-            // Since viewports will always be exactly sized, we don't need to iterate the arrays and
-            // null values out. Copiers will
+            // Since viewports will always be exactly sized, we don't need to iterate the arrays and null values out.
+            // Copiers will
             // always overwrite.
             return false;
         }
@@ -288,29 +269,25 @@ class SnapshotState {
         data.clear();
 
         rootData.getTable().getDefinition().getColumnList()
-            .forEach(col -> data.add(makeData(col, requestedViewportSize)));
+                .forEach(col -> data.add(makeData(col, requestedViewportSize)));
 
         tableKeyColumn = new Object[requestedViewportSize];
         childPresenceColumn = new BitSet(requestedViewportSize);
 
         if (includeConstituents) {
-            // TODO: With a little bit of creativity we can re-use the existing column array if the
-            // original and rolldup
-            // TODO: column types are the same. I will do this in a second pass, after this one
-            // works.
+            // TODO: With a little bit of creativity we can re-use the existing column array if the original and rolldup
+            // TODO: column types are the same. I will do this in a second pass, after this one works.
             final Table originalTable = baseTable.getSourceTable();
             constituentData.clear();
             originalTable.getDefinition().getColumnList()
-                .forEach(col -> constituentData.put(col.getName(),
-                    makeData(col, requestedViewportSize)));
+                    .forEach(col -> constituentData.put(col.getName(), makeData(col, requestedViewportSize)));
         }
 
         return true;
     }
 
     /**
-     * Create a Pair containing the name and appropriately typed and sized array store for a
-     * particular column.
+     * Create a Pair containing the name and appropriately typed and sized array store for a particular column.
      *
      * @param col the column to allocate space for.
      * @param requestedViewportSize the requested viewport size.
@@ -350,7 +327,7 @@ class SnapshotState {
      */
     private void makeCopiers() {
         final ColumnSource[] columnSources =
-            baseTable.getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
+                baseTable.getColumnSources().toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         columnCopiers = new Copier[columnSources.length];
 
         for (int ii = 0; ii < columnSources.length; ii++) {
@@ -363,9 +340,9 @@ class SnapshotState {
             final List<MatchPair> matchPairs = ((RollupInfo) info).getMatchPairs();
 
             matchPairs.stream()
-                .filter(p -> originalTable.hasColumns(p.rightColumn))
-                .forEach(col -> constituentCopiers.computeIfAbsent(col.rightColumn,
-                    (name) -> makeCopier(originalTable.getColumn(name).getType())));
+                    .filter(p -> originalTable.hasColumns(p.rightColumn))
+                    .forEach(col -> constituentCopiers.computeIfAbsent(col.rightColumn,
+                            (name) -> makeCopier(originalTable.getColumn(name).getType())));
         }
     }
 
@@ -377,13 +354,12 @@ class SnapshotState {
      */
     private Copier makeChildCopier(Class type) {
         if (type == DBDateTime.class) {
-            return (usePrev, columnSource, it, target, offset, table, tableMap,
-                childPresenceColumn) -> {
+            return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 Assert.neqNull(tableMap, "Child table map");
                 while (it.hasNext()) {
                     final long next = it.nextLong();
-                    final DBDateTime keyVal = (DBDateTime) (usePrev ? columnSource.getPrev(next)
-                        : columnSource.get(next));
+                    final DBDateTime keyVal =
+                            (DBDateTime) (usePrev ? columnSource.getPrev(next) : columnSource.get(next));
                     final Table child = tableMap.get(keyVal);
                     ((long[]) target)[offset] = keyVal.getNanos();
                     childPresenceColumn.set(offset++, child != null && child.size() > 0);
@@ -392,91 +368,77 @@ class SnapshotState {
         } else if (type == boolean.class || type == Boolean.class) {
             throw new UnsupportedOperationException("Booleans can't be used as child IDs");
         } else if (type == long.class || type == Long.class) {
-            return (usePrev, columnSource, it, target, offset, table, tableMap,
-                childPresenceColumn) -> {
+            return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 Assert.neqNull(tableMap, "Child table map");
                 while (it.hasNext()) {
                     final long next = it.nextLong();
-                    final long keyVal =
-                        usePrev ? columnSource.getPrevLong(next) : columnSource.getLong(next);
+                    final long keyVal = usePrev ? columnSource.getPrevLong(next) : columnSource.getLong(next);
                     final Table child = tableMap.get(keyVal);
                     ((long[]) target)[offset] = keyVal;
                     childPresenceColumn.set(offset++, child != null && child.size() > 0);
                 }
             };
         } else if (type == int.class || type == Integer.class) {
-            return (usePrev, columnSource, it, target, offset, table, tableMap,
-                childPresenceColumn) -> {
+            return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 Assert.neqNull(tableMap, "Child table map");
                 while (it.hasNext()) {
                     final long next = it.nextLong();
-                    final int keyVal =
-                        usePrev ? columnSource.getPrevInt(next) : columnSource.getInt(next);
+                    final int keyVal = usePrev ? columnSource.getPrevInt(next) : columnSource.getInt(next);
                     final Table child = tableMap.get(keyVal);
                     ((int[]) target)[offset] = keyVal;
                     childPresenceColumn.set(offset++, child != null && child.size() > 0);
                 }
             };
         } else if (type == short.class || type == Short.class) {
-            return (usePrev, columnSource, it, target, offset, table, tableMap,
-                childPresenceColumn) -> {
+            return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 Assert.neqNull(tableMap, "Child table map");
                 while (it.hasNext()) {
                     final long next = it.nextLong();
-                    final short keyVal =
-                        usePrev ? columnSource.getPrevShort(next) : columnSource.getShort(next);
+                    final short keyVal = usePrev ? columnSource.getPrevShort(next) : columnSource.getShort(next);
                     final Table child = tableMap.get(keyVal);
                     ((short[]) target)[offset] = keyVal;
                     childPresenceColumn.set(offset++, child != null && child.size() > 0);
                 }
             };
         } else if (type == byte.class || type == Byte.class) {
-            return (usePrev, columnSource, it, target, offset, table, tableMap,
-                childPresenceColumn) -> {
+            return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 Assert.neqNull(tableMap, "Child table map");
                 while (it.hasNext()) {
                     final long next = it.nextLong();
-                    final byte keyVal =
-                        usePrev ? columnSource.getPrevByte(next) : columnSource.getByte(next);
+                    final byte keyVal = usePrev ? columnSource.getPrevByte(next) : columnSource.getByte(next);
                     final Table child = tableMap.get(keyVal);
                     ((byte[]) target)[offset] = keyVal;
                     childPresenceColumn.set(offset++, child != null && child.size() > 0);
                 }
             };
         } else if (type == char.class || type == Character.class) {
-            return (usePrev, columnSource, it, target, offset, table, tableMap,
-                childPresenceColumn) -> {
+            return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 Assert.neqNull(tableMap, "Child table map");
                 while (it.hasNext()) {
                     final long next = it.nextLong();
-                    final char keyVal =
-                        usePrev ? columnSource.getPrevChar(next) : columnSource.getChar(next);
+                    final char keyVal = usePrev ? columnSource.getPrevChar(next) : columnSource.getChar(next);
                     final Table child = tableMap.get(keyVal);
                     ((char[]) target)[offset] = keyVal;
                     childPresenceColumn.set(offset++, child != null && child.size() > 0);
                 }
             };
         } else if (type == double.class || type == Double.class) {
-            return (usePrev, columnSource, it, target, offset, table, tableMap,
-                childPresenceColumn) -> {
+            return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 Assert.neqNull(tableMap, "Child table map");
                 while (it.hasNext()) {
                     final long next = it.nextLong();
-                    final double keyVal =
-                        usePrev ? columnSource.getPrevDouble(next) : columnSource.getDouble(next);
+                    final double keyVal = usePrev ? columnSource.getPrevDouble(next) : columnSource.getDouble(next);
                     final Table child = tableMap.get(keyVal);
                     ((double[]) target)[offset] = keyVal;
                     childPresenceColumn.set(offset++, child != null && child.size() > 0);
                 }
             };
         } else if (type == float.class || type == Float.class) {
-            return (usePrev, columnSource, it, target, offset, table, tableMap,
-                childPresenceColumn) -> {
+            return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 Assert.neqNull(tableMap, "Child table map");
                 while (it.hasNext()) {
                     final long next = it.nextLong();
-                    final float keyVal =
-                        usePrev ? columnSource.getPrevFloat(next) : columnSource.getFloat(next);
+                    final float keyVal = usePrev ? columnSource.getPrevFloat(next) : columnSource.getFloat(next);
                     final Table child = tableMap.get(keyVal);
                     ((float[]) target)[offset] = keyVal;
                     childPresenceColumn.set(offset++, child != null && child.size() > 0);
@@ -484,8 +446,7 @@ class SnapshotState {
             };
         }
 
-        return (usePrev, columnSource, it, target, offset, table, tableMap,
-            childPresenceColumn) -> {
+        return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
             Assert.neqNull(tableMap, "Child table map");
             while (it.hasNext()) {
                 final long next = it.nextLong();
@@ -502,96 +463,80 @@ class SnapshotState {
      */
     private Copier makeCopier(Class type) {
         if (type == DBDateTime.class) {
-            return (usePrev, columnSource, it, target, offset, table, tableMap,
-                childPresenceColumn) -> {
+            return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 while (it.hasNext()) {
                     final long next = it.nextLong();
-                    final DBDateTime dbDateTime = (DBDateTime) (usePrev ? columnSource.getPrev(next)
-                        : columnSource.get(next));
-                    ((long[]) target)[offset++] =
-                        dbDateTime == null ? QueryConstants.NULL_LONG : dbDateTime.getNanos();
+                    final DBDateTime dbDateTime =
+                            (DBDateTime) (usePrev ? columnSource.getPrev(next) : columnSource.get(next));
+                    ((long[]) target)[offset++] = dbDateTime == null ? QueryConstants.NULL_LONG : dbDateTime.getNanos();
                 }
             };
         } else if (type == boolean.class || type == Boolean.class) {
-            return (usePrev, columnSource, it, target, offset, table, tableMap,
-                childPresenceColumn) -> {
+            return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 while (it.hasNext()) {
                     final long next = it.nextLong();
-                    ((byte[]) target)[offset++] = BooleanUtils.booleanAsByte(
-                        (Boolean) (usePrev ? columnSource.getPrev(next) : columnSource.get(next)));
+                    ((byte[]) target)[offset++] = BooleanUtils
+                            .booleanAsByte((Boolean) (usePrev ? columnSource.getPrev(next) : columnSource.get(next)));
                 }
             };
         } else if (type == long.class || type == Long.class) {
-            return (usePrev, columnSource, it, target, offset, table, tableMap,
-                childPresenceColumn) -> {
+            return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 while (it.hasNext()) {
                     final long next = it.nextLong();
-                    ((long[]) target)[offset++] =
-                        usePrev ? columnSource.getPrevLong(next) : columnSource.getLong(next);
+                    ((long[]) target)[offset++] = usePrev ? columnSource.getPrevLong(next) : columnSource.getLong(next);
                 }
             };
         } else if (type == int.class || type == Integer.class) {
-            return (usePrev, columnSource, it, target, offset, table, tableMap,
-                childPresenceColumn) -> {
+            return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 while (it.hasNext()) {
                     final long next = it.nextLong();
-                    ((int[]) target)[offset++] =
-                        usePrev ? columnSource.getPrevInt(next) : columnSource.getInt(next);
+                    ((int[]) target)[offset++] = usePrev ? columnSource.getPrevInt(next) : columnSource.getInt(next);
                 }
             };
         } else if (type == short.class || type == Short.class) {
-            return (usePrev, columnSource, it, target, offset, table, tableMap,
-                childPresenceColumn) -> {
+            return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 while (it.hasNext()) {
                     final long next = it.nextLong();
                     ((short[]) target)[offset++] =
-                        usePrev ? columnSource.getPrevShort(next) : columnSource.getShort(next);
+                            usePrev ? columnSource.getPrevShort(next) : columnSource.getShort(next);
                 }
             };
         } else if (type == byte.class || type == Byte.class) {
-            return (usePrev, columnSource, it, target, offset, table, tableMap,
-                childPresenceColumn) -> {
+            return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 while (it.hasNext()) {
                     final long next = it.nextLong();
-                    ((byte[]) target)[offset++] =
-                        usePrev ? columnSource.getPrevByte(next) : columnSource.getByte(next);
+                    ((byte[]) target)[offset++] = usePrev ? columnSource.getPrevByte(next) : columnSource.getByte(next);
                 }
             };
         } else if (type == char.class || type == Character.class) {
-            return (usePrev, columnSource, it, target, offset, table, tableMap,
-                childPresenceColumn) -> {
+            return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 while (it.hasNext()) {
                     final long next = it.nextLong();
-                    ((char[]) target)[offset++] =
-                        usePrev ? columnSource.getPrevChar(next) : columnSource.getChar(next);
+                    ((char[]) target)[offset++] = usePrev ? columnSource.getPrevChar(next) : columnSource.getChar(next);
                 }
             };
         } else if (type == double.class || type == Double.class) {
-            return (usePrev, columnSource, it, target, offset, table, tableMap,
-                childPresenceColumn) -> {
+            return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 while (it.hasNext()) {
                     final long next = it.nextLong();
                     ((double[]) target)[offset++] =
-                        usePrev ? columnSource.getPrevDouble(next) : columnSource.getDouble(next);
+                            usePrev ? columnSource.getPrevDouble(next) : columnSource.getDouble(next);
                 }
             };
         } else if (type == float.class || type == Float.class) {
-            return (usePrev, columnSource, it, target, offset, table, tableMap,
-                childPresenceColumn) -> {
+            return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 while (it.hasNext()) {
                     final long next = it.nextLong();
                     ((float[]) target)[offset++] =
-                        usePrev ? columnSource.getPrevFloat(next) : columnSource.getFloat(next);
+                            usePrev ? columnSource.getPrevFloat(next) : columnSource.getFloat(next);
                 }
             };
         }
 
-        return (usePrev, columnSource, it, target, offset, table, tableMap,
-            childPresenceColumn) -> {
+        return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
             while (it.hasNext()) {
                 final long next = it.nextLong();
-                ((Object[]) target)[offset++] =
-                    usePrev ? columnSource.getPrev(next) : columnSource.get(next);
+                ((Object[]) target)[offset++] = usePrev ? columnSource.getPrev(next) : columnSource.get(next);
             }
         };
     }
@@ -601,8 +546,8 @@ class SnapshotState {
     }
 
     /**
-     * Get any required alternate data columns. This is happens when a rollup is showing constituent
-     * rows and those rows are part of the viewport.
+     * Get any required alternate data columns. This is happens when a rollup is showing constituent rows and those rows
+     * are part of the viewport.
      *
      */
     Pair<String, Object>[] getRequiredConstituents() {
@@ -612,7 +557,7 @@ class SnapshotState {
 
         // noinspection unchecked
         return includedConstituentColumns.stream()
-            .map(constituentData::get)
-            .toArray(Pair[]::new);
+                .map(constituentData::get)
+                .toArray(Pair[]::new);
     }
 }

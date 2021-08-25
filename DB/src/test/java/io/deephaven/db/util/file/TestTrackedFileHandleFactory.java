@@ -19,8 +19,8 @@ import java.io.IOException;
 
 public class TestTrackedFileHandleFactory extends BaseCachedJMockTestCase {
 
-    private static final File FILE = new File(Configuration.getInstance().getWorkspacePath(),
-        "TestTrackedFileHandleFactory.dat");
+    private static final File FILE =
+            new File(Configuration.getInstance().getWorkspacePath(), "TestTrackedFileHandleFactory.dat");
     private static final int CAPACITY = 100;
     private static final double TARGET_USAGE_RATIO = 0.9;
     private static final int TARGET_USAGE_THRESHOLD = 90;
@@ -103,8 +103,8 @@ public class TestTrackedFileHandleFactory extends BaseCachedJMockTestCase {
             handles[fhi] = FHCUT.readOnlyHandleCreator.invoke(FILE);
             assertIsSatisfied();
         }
-        // Synchronous cleanup brings us down to threshold, but the handle that triggered the
-        // cleanup is recorded afterwards.
+        // Synchronous cleanup brings us down to threshold, but the handle that triggered the cleanup is recorded
+        // afterwards.
         TestCase.assertEquals(TARGET_USAGE_THRESHOLD + 1, FHCUT.getSize());
 
         for (int fhi = 0; fhi < handles.length; ++fhi) {

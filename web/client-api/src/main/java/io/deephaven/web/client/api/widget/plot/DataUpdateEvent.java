@@ -17,7 +17,7 @@ public class DataUpdateEvent {
         return new DataUpdateEvent(series, null, null) {
             @Override
             public JsArray<Any> getArray(JsSeries series, int sourceType,
-                @JsOptional JsFunction<Any, Any> mappingFunc) {
+                    @JsOptional JsFunction<Any, Any> mappingFunc) {
                 return new JsArray<>();
             }
         };
@@ -43,8 +43,7 @@ public class DataUpdateEvent {
     }
 
     @JsMethod
-    public JsArray<Any> getArray(JsSeries series, int sourceType,
-        @JsOptional JsFunction<Any, Any> mappingFunc) {
+    public JsArray<Any> getArray(JsSeries series, int sourceType, @JsOptional JsFunction<Any, Any> mappingFunc) {
         String columnName = getColumnName(series, sourceType);
 
         return data.getColumn(columnName, mappingFunc, currentUpdate);
@@ -52,9 +51,8 @@ public class DataUpdateEvent {
 
     private String getColumnName(JsSeries series, int sourceType) {
         return series.getDescriptor().getDataSourcesList().asList().stream()
-            .filter(sd -> sd.getType() == sourceType)
-            .findFirst().map(SourceDescriptor::getColumnName)
-            .orElseThrow(() -> new IllegalArgumentException(
-                "No sourceType " + sourceType + " in provided series"));
+                .filter(sd -> sd.getType() == sourceType)
+                .findFirst().map(SourceDescriptor::getColumnName)
+                .orElseThrow(() -> new IllegalArgumentException("No sourceType " + sourceType + " in provided series"));
     }
 }

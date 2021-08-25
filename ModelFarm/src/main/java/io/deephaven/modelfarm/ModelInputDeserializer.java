@@ -42,8 +42,7 @@ public class ModelInputDeserializer<T> implements AutoCloseable {
      */
     public synchronized T next() throws IOException, ClassNotFoundException {
         if (isClosed) {
-            throw new RuntimeException(
-                "Attempting to access the next value after the stream is closed.");
+            throw new RuntimeException("Attempting to access the next value after the stream is closed.");
         }
 
         return c.cast(ois.readObject());

@@ -29,9 +29,9 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
     private final LiveTableMonitor liveTableMonitor;
 
     protected HeadOrTailByGrpcImpl(
-        final Function<BatchTableRequest.Operation, HeadOrTailByRequest> getRequest,
-        final RealTableOperation realTableOperation,
-        final LiveTableMonitor liveTableMonitor) {
+            final Function<BatchTableRequest.Operation, HeadOrTailByRequest> getRequest,
+            final RealTableOperation realTableOperation,
+            final LiveTableMonitor liveTableMonitor) {
         super(getRequest, HeadOrTailByRequest::getResultId, HeadOrTailByRequest::getSourceId);
         this.realTableOperation = realTableOperation;
         this.liveTableMonitor = liveTableMonitor;
@@ -41,30 +41,27 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
     public void validateRequest(final HeadOrTailByRequest request) throws StatusRuntimeException {
         final long nRows = request.getNumRows();
         if (nRows < 0) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                "numRows must be >= 0 (found: " + nRows + ")");
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "numRows must be >= 0 (found: " + nRows + ")");
         }
     }
 
     @Override
-    public Table create(final HeadOrTailByRequest request,
-        final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final HeadOrTailByRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();
         final String[] columnSpecs =
-            request.getGroupByColumnSpecsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                request.getGroupByColumnSpecsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
         final SelectColumn[] expressions = SelectColumnFactory.getExpressions(columnSpecs);
 
         // note: we don't use the output from validateColumnExpressions because the headBy/tailBy
-        // overloads that take SelectColumn arrays throw UnsupportedOperationException, but we
-        // validate anyway
+        // overloads that take SelectColumn arrays throw UnsupportedOperationException, but we validate anyway
         ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, parent);
 
 
         // note that headBy/tailBy use ungroup which currently requires the LTM lock
-        return liveTableMonitor.sharedLock().computeLocked(
-            () -> realTableOperation.apply(parent, request.getNumRows(), columnSpecs));
+        return liveTableMonitor.sharedLock()
+                .computeLocked(() -> realTableOperation.apply(parent, request.getNumRows(), columnSpecs));
     }
 
     @Singleton

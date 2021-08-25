@@ -29,9 +29,8 @@ public interface Clock {
     Null NULL = new Null();
 
     /**
-     * This implementation just returns the last value passed to set(). It allows for precise
-     * control over when clock calls are made to the underlying system (e.g.
-     * AppClock.currentTimeMicros()).
+     * This implementation just returns the last value passed to set(). It allows for precise control over when clock
+     * calls are made to the underlying system (e.g. AppClock.currentTimeMicros()).
      */
     class Cached implements Clock {
         private long cachedNowMicros;
@@ -52,8 +51,8 @@ public interface Clock {
     }
 
     /**
-     * This implementation is similar to cached, except that is calls set() itself on a the Clock
-     * instance given to the constructor exactly once between reset() calls.
+     * This implementation is similar to cached, except that is calls set() itself on a the Clock instance given to the
+     * constructor exactly once between reset() calls.
      */
     class CachedOnDemand implements Clock {
         private final Clock realClock;

@@ -24,8 +24,8 @@ public class SessionServiceTest {
     public void setup() {
         livenessScope = LivenessScopeStack.open();
         scheduler = new TestControlledScheduler();
-        sessionService = new SessionService(scheduler,
-            authContext -> new SessionState(scheduler, authContext), TOKEN_EXPIRE_MS);
+        sessionService =
+                new SessionService(scheduler, authContext -> new SessionState(scheduler, authContext), TOKEN_EXPIRE_MS);
     }
 
     @After
@@ -53,17 +53,16 @@ public class SessionServiceTest {
         Assert.eqTrue(session.isExpired(), "session.isExpired()");
         Assert.eqNull(session.getExpiration(), "session.getExpiration()");
         Assert.eqNull(sessionService.getSessionForToken(expiration.token),
-            "sessionService.getSessionForToken(expiration.token)");
+                "sessionService.getSessionForToken(expiration.token)");
     }
 
     @Test
     public void testTokenRotationHasSpamProtection() {
-        // because we need to keep some state per refresh token, we must protect slightly from
-        // accidental DOS spam
+        // because we need to keep some state per refresh token, we must protect slightly from accidental DOS spam
         final SessionState session = sessionService.newSession(AUTH_CONTEXT);
         final SessionService.TokenExpiration initialToken = session.getExpiration();
-        Assert.eq(sessionService.refreshToken(session), "sessionService.refreshToken(session)",
-            initialToken, "initialToken");
+        Assert.eq(sessionService.refreshToken(session), "sessionService.refreshToken(session)", initialToken,
+                "initialToken");
     }
 
     @Test
@@ -74,8 +73,7 @@ public class SessionServiceTest {
         // let's advance by some reasonable amount and ensure that the token now refreshes
         scheduler.runUntil(scheduler.timeAfterMs(TOKEN_EXPIRE_MS / 3));
         final SessionService.TokenExpiration newToken = sessionService.refreshToken(session);
-        final long timeToNewExpiration =
-            newToken.deadline.getMillis() - scheduler.currentTime().getMillis();
+        final long timeToNewExpiration = newToken.deadline.getMillis() - scheduler.currentTime().getMillis();
         Assert.eq(timeToNewExpiration, "timeToNewExpiration", TOKEN_EXPIRE_MS);
 
         // ensure that the UUIDs are different so they may expire independently
@@ -114,7 +112,7 @@ public class SessionServiceTest {
         final SessionState session = sessionService.newSession(AUTH_CONTEXT);
         final SessionService.TokenExpiration initialToken = session.getExpiration();
         Assert.eq(sessionService.getSessionForToken(initialToken.token),
-            "sessionService.getSessionForToken(initialToken.token)", session, "session");
+                "sessionService.getSessionForToken(initialToken.token)", session, "session");
 
         // advance so we can rotate token
         scheduler.runUntil(scheduler.timeAfterMs(TOKEN_EXPIRE_MS / 3));
@@ -123,22 +121,22 @@ public class SessionServiceTest {
 
         // check both tokens are valid
         Assert.eq(sessionService.getSessionForToken(initialToken.token),
-            "sessionService.getSessionForToken(initialToken.token)", session, "session");
+                "sessionService.getSessionForToken(initialToken.token)", session, "session");
         Assert.eq(sessionService.getSessionForToken(newToken.token),
-            "sessionService.getSessionForToken(newToken.token)", session, "session");
+                "sessionService.getSessionForToken(newToken.token)", session, "session");
 
         // expire original token; current token should be valid
         scheduler.runThrough(initialToken.deadline);
         Assert.eqNull(sessionService.getSessionForToken(initialToken.token),
-            "sessionService.getSessionForToken(initialToken.token)");
+                "sessionService.getSessionForToken(initialToken.token)");
         Assert.eq(sessionService.getSessionForToken(newToken.token),
-            "sessionService.getSessionForToken(newToken.token)", session, "session");
+                "sessionService.getSessionForToken(newToken.token)", session, "session");
 
         // let's expire the new token
         scheduler.runThrough(session.getExpiration().deadline);
         Assert.eqTrue(session.isExpired(), "session.isExpired()");
         Assert.eqNull(sessionService.getSessionForToken(newToken.token),
-            "sessionService.getSessionForToken(newToken.token)");
+                "sessionService.getSessionForToken(newToken.token)");
     }
 
     @Test
@@ -152,20 +150,20 @@ public class SessionServiceTest {
         final SessionService.TokenExpiration expiration1 = sessionService.refreshToken(session1);
         final SessionService.TokenExpiration expiration2 = session2.getExpiration();
 
-        Assert.lt(expiration2.deadline.getNanos(), "expiration2.deadline",
-            expiration1.deadline.getNanos(), "expiration1.deadline");
+        Assert.lt(expiration2.deadline.getNanos(), "expiration2.deadline", expiration1.deadline.getNanos(),
+                "expiration1.deadline");
         scheduler.runThrough(expiration2.deadline);
 
         // first session is live
         Assert.eqFalse(session1.isExpired(), "session2.isExpired()");
         Assert.eq(sessionService.getSessionForToken(expiration1.token),
-            "sessionService.getSessionForToken(expiration1.token)", session1, "session1");
+                "sessionService.getSessionForToken(expiration1.token)", session1, "session1");
         Assert.eqNull(sessionService.getSessionForToken(expiration2.token),
-            "sessionService.getSessionForToken(initialToken.token)");
+                "sessionService.getSessionForToken(initialToken.token)");
 
         // second session has expired
         Assert.eqTrue(session2.isExpired(), "session2.isExpired()");
         Assert.eqNull(sessionService.getSessionForToken(expiration2.token),
-            "sessionService.getSessionForToken(initialToken.token)");
+                "sessionService.getSessionForToken(initialToken.token)");
     }
 }

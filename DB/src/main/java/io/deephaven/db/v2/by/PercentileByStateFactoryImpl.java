@@ -40,7 +40,7 @@ public class PercentileByStateFactoryImpl implements Serializable, AggregationSt
                 return false;
             final MemoKey memoKey = (MemoKey) o;
             return Double.compare(memoKey.percentile, percentile) == 0 &&
-                averageMedian == memoKey.averageMedian;
+                    averageMedian == memoKey.averageMedian;
         }
 
         @Override

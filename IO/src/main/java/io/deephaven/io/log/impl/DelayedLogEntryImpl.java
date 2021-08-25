@@ -54,14 +54,11 @@ public class DelayedLogEntryImpl implements LogEntry {
     private final FastLongArray longs = new FastLongArray(8);
     private final FastFloatArray floats = new FastFloatArray(8);
     private final FastDoubleArray doubles = new FastDoubleArray(8);
-    private final FastArray<CharSequence> sequences =
-        new FastArray<>(CharSequence.class, null, 8, false);
-    private final FastArray<TimestampBuffer> timestamps =
-        new FastArray<>(TimestampBuffer.class, null, 8, false);
+    private final FastArray<CharSequence> sequences = new FastArray<>(CharSequence.class, null, 8, false);
+    private final FastArray<TimestampBuffer> timestamps = new FastArray<>(TimestampBuffer.class, null, 8, false);
     private final FastArray<TimestampBufferMicros> timestampsMicros =
-        new FastArray<>(TimestampBufferMicros.class, null, 8, false);
-    private final FastArray<Throwable> throwables =
-        new FastArray<>(Throwable.class, null, 8, false);
+            new FastArray<>(TimestampBufferMicros.class, null, 8, false);
+    private final FastArray<Throwable> throwables = new FastArray<>(Throwable.class, null, 8, false);
 
     private void reset() {
         actions.quickReset();
@@ -111,8 +108,7 @@ public class DelayedLogEntryImpl implements LogEntry {
     }
 
     @Override
-    public LogEntry start(final LogSink sink, final LogLevel level, final long currentTimeMicros,
-        final Throwable t) {
+    public LogEntry start(final LogSink sink, final LogLevel level, final long currentTimeMicros, final Throwable t) {
         starts.getAndIncrement();
         this.timestamp = currentTimeMicros;
         this.level = level;
@@ -393,16 +389,14 @@ public class DelayedLogEntryImpl implements LogEntry {
                     logOutputBuffer = logOutputBuffer.append(seqs[seqPosition++]);
                     break;
                 case APPEND_CHARSEQ_RANGE:
-                    logOutputBuffer = logOutputBuffer.append(seqs[seqPosition++], is[intPosition++],
-                        is[intPosition++]);
+                    logOutputBuffer = logOutputBuffer.append(seqs[seqPosition++], is[intPosition++], is[intPosition++]);
                     break;
                 case APPEND_TIMESTAMP:
-                    logOutputBuffer =
-                        logOutputBuffer.appendTimestamp(ls[longPosition++], times[timePosition++]);
+                    logOutputBuffer = logOutputBuffer.appendTimestamp(ls[longPosition++], times[timePosition++]);
                     break;
                 case APPEND_TIMESTAMP_MICROS:
                     logOutputBuffer = logOutputBuffer.appendTimestampMicros(ls[longPosition++],
-                        timesMicros[timeMicrosPosition++]);
+                            timesMicros[timeMicrosPosition++]);
                     break;
                 case APPEND_NULL:
                     logOutputBuffer = logOutputBuffer.append((LogOutputAppendable) null);

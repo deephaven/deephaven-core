@@ -21,8 +21,8 @@ public class DbArrayTest extends TestCase {
     public void testDbArrayColumnWrapper() {
         // noinspection unchecked
         DbArray dbArray = new DbArrayColumnWrapper(
-            ArrayBackedColumnSource.getMemoryColumnSourceUntyped(new String[] {"a", "b", "c"}),
-            Index.FACTORY.getIndexByRange(0, 2));
+                ArrayBackedColumnSource.getMemoryColumnSourceUntyped(new String[] {"a", "b", "c"}),
+                Index.FACTORY.getIndexByRange(0, 2));
         assertEquals(3, dbArray.size());
         assertEquals("a", dbArray.get(0));
         assertEquals("b", dbArray.get(1));
@@ -77,8 +77,7 @@ public class DbArrayTest extends TestCase {
         assertEquals(null, dbArrayDirect.subArray(0, 1).get(-1));
 
         assertEquals(2, dbArrayDirect.subArray(1, 3).size());
-        assertEquals(Arrays.asList("b", "c"),
-            Arrays.asList(dbArrayDirect.subArray(1, 3).toArray()));
+        assertEquals(Arrays.asList("b", "c"), Arrays.asList(dbArrayDirect.subArray(1, 3).toArray()));
         assertEquals(null, dbArrayDirect.subArray(1, 3).get(2));
         assertEquals(null, dbArrayDirect.subArray(0, 1).get(-1));
     }
@@ -86,8 +85,8 @@ public class DbArrayTest extends TestCase {
     public void testSubArray() {
         // noinspection unchecked
         DbArray dbArray = new DbArrayColumnWrapper(
-            ArrayBackedColumnSource.getMemoryColumnSourceUntyped(new Object[] {10, 20, 30}),
-            Index.FACTORY.getIndexByRange(0, 2));
+                ArrayBackedColumnSource.getMemoryColumnSourceUntyped(new Object[] {10, 20, 30}),
+                Index.FACTORY.getIndexByRange(0, 2));
 
         for (int start = -4; start <= 4; start++) {
             for (int end = -1; end <= 7; end++) {
@@ -116,8 +115,7 @@ public class DbArrayTest extends TestCase {
                         Object result[] = new Object[end - start];
 
                         for (int i = start; i < end; i++) {
-                            result[i - start] =
-                                (i < 0 || i >= dbArray.size()) ? null : dbArray.get(i);
+                            result[i - start] = (i < 0 || i >= dbArray.size()) ? null : dbArray.get(i);
                         }
 
                         Object result2[] = new Object[end2 - start2];
@@ -145,8 +143,7 @@ public class DbArrayTest extends TestCase {
         }
     }
 
-    private void checkDoubleSubArray(DbArray dbArray, int start, int end, int start2, int end2,
-        Object result[]) {
+    private void checkDoubleSubArray(DbArray dbArray, int start, int end, int start2, int end2, Object result[]) {
         DbArray subArray = dbArray.subArray(start, end);
         subArray = subArray.subArray(start2, end2);
         Object array[] = subArray.toArray();
@@ -166,7 +163,7 @@ public class DbArrayTest extends TestCase {
             integerArraySource.set(ii, (ii + 1) * 10);
         }
         DbArray<Integer> dbColumnArray =
-            new DbArrayColumnWrapper<>(integerArraySource, Index.FACTORY.getIndexByRange(0, 5));
+                new DbArrayColumnWrapper<>(integerArraySource, Index.FACTORY.getIndexByRange(0, 5));
         DbIntArray dbDirectArray = new DbIntArrayDirect(10, 20, 30, 40, 50, 60);
 
         Random random = new Random(42);
@@ -182,9 +179,8 @@ public class DbArrayTest extends TestCase {
             }
 
             DbArray<Integer> columnResult =
-                dbColumnArray.subArrayByPositions(positions.toArray(new long[positions.size()]));
-            DbIntArray directResult =
-                dbDirectArray.subArrayByPositions(positions.toArray(new long[positions.size()]));
+                    dbColumnArray.subArrayByPositions(positions.toArray(new long[positions.size()]));
+            DbIntArray directResult = dbDirectArray.subArrayByPositions(positions.toArray(new long[positions.size()]));
 
             assertEquals(expected.size(), columnResult.size());
             assertEquals(expected.size(), directResult.size());
@@ -197,16 +193,15 @@ public class DbArrayTest extends TestCase {
     }
 
     /**
-     * Verify that a DbArrayColumnWrapper can correctly invoke the 'getDirect' operation even when
-     * one of the column sources is null.
+     * Verify that a DbArrayColumnWrapper can correctly invoke the 'getDirect' operation even when one of the column
+     * sources is null.
      */
     public void testGetDirect() {
         DbArrayDirect dbArrayDirect = new DbArrayDirect<>("a", "b", "c");
         // noinspection unchecked
         DbArrayColumnWrapper dbArray = new DbArrayColumnWrapper(
-            ArrayBackedColumnSource
-                .getMemoryColumnSourceUntyped(new DbArrayBase[] {dbArrayDirect, null}),
-            Index.FACTORY.getIndexByRange(0, 1));
+                ArrayBackedColumnSource.getMemoryColumnSourceUntyped(new DbArrayBase[] {dbArrayDirect, null}),
+                Index.FACTORY.getIndexByRange(0, 1));
         DbArrayBase base = dbArray.getDirect();
         assertEquals(2, base.intSize());
         assertTrue(DbArrayDirect.class.isAssignableFrom(base.getClass()));

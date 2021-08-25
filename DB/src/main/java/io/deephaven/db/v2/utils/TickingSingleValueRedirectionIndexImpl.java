@@ -69,9 +69,9 @@ public class TickingSingleValueRedirectionIndexImpl implements SingleValueRedire
 
     @Override
     public void fillChunk(
-        @NotNull final FillContext fillContext,
-        @NotNull final WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
-        @NotNull final OrderedKeys keysToMap) {
+            @NotNull final FillContext fillContext,
+            @NotNull final WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
+            @NotNull final OrderedKeys keysToMap) {
         final int sz = keysToMap.intSize();
         mappedKeysOut.setSize(sz);
         mappedKeysOut.fillWithValue(0, sz, value);
@@ -79,13 +79,11 @@ public class TickingSingleValueRedirectionIndexImpl implements SingleValueRedire
 
     @Override
     public void fillPrevChunk(
-        @NotNull FillContext fillContext,
-        @NotNull WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
-        @NotNull OrderedKeys keysToMap) {
+            @NotNull FillContext fillContext,
+            @NotNull WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
+            @NotNull OrderedKeys keysToMap) {
         final long fillValue =
-            (updatedClockTick > 0 && updatedClockTick == LogicalClock.DEFAULT.currentStep())
-                ? prevValue
-                : value;
+                (updatedClockTick > 0 && updatedClockTick == LogicalClock.DEFAULT.currentStep()) ? prevValue : value;
         final int sz = keysToMap.intSize();
         mappedKeysOut.setSize(sz);
         mappedKeysOut.fillWithValue(0, sz, fillValue);

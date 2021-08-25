@@ -33,8 +33,7 @@ public class UpdatePerformanceTest {
 
         Factory getFactory();
 
-        // Since tests will run multiple times, and creation time is high (higher than individual
-        // operations),
+        // Since tests will run multiple times, and creation time is high (higher than individual operations),
         // we create the base index one and clone it before every run of update.
         void cloneBase();
 
@@ -52,8 +51,7 @@ public class UpdatePerformanceTest {
 
         long removeSize();
 
-        long optimizerBait(); // some value calculated from the result to prevent the optimizer from
-                              // removing the code.
+        long optimizerBait(); // some value calculated from the result to prevent the optimizer from removing the code.
 
         Runnable getRunner(int i);
 
@@ -293,7 +291,7 @@ public class UpdatePerformanceTest {
     }
 
     public static void setupStrategy(final UpdateStrategy s, final int sz,
-        final TestValues.Config c, final String pref, final boolean print) {
+            final TestValues.Config c, final String pref, final boolean print) {
         final TestValues.Builder baseBuilder = s.baseBuilder();
         final TestValues.Builder addBuilder = s.addBuilder();
         final TestValues.Builder removeBuilder = s.removeBuilder();
@@ -307,8 +305,7 @@ public class UpdatePerformanceTest {
         System.out.println(pref + "remove size = " + nf(s.removeSize()));
     }
 
-    static long runAndGetSamples(final UpdateStrategy s, final int ri, final int runs,
-        final PerfStats stats) {
+    static long runAndGetSamples(final UpdateStrategy s, final int ri, final int runs, final PerfStats stats) {
         long trick = 0; // to prevent the optimizer from eliminating unused steps.
         final PerfMeasure pm = new PerfMeasure(false);
         for (int i = 0; i < runs; ++i) {
@@ -351,8 +348,7 @@ public class UpdatePerformanceTest {
     final static boolean runIndexParallel = true;
     final static boolean runIndexSequential = false;
     final static boolean runRspBitmap = true;
-    static final TestValues.Config configs[] = {TestValues.dense}; // { TestValues.sparse,
-                                                                   // TestValues.dense,
+    static final TestValues.Config configs[] = {TestValues.dense}; // { TestValues.sparse, TestValues.dense,
                                                                    // TestValues.asymmetric };
     final static boolean doCrc32Check = true;
 
@@ -360,9 +356,8 @@ public class UpdatePerformanceTest {
     static final double s2ns = 1e9;
 
     static void runStep(
-        final TestValues.Config c, final int sn, final UpdateStrategy[] ss, final int[][] rs,
-        final String stepName, final int sz, final int runs, final boolean check,
-        final boolean print) {
+            final TestValues.Config c, final int sn, final UpdateStrategy[] ss, final int[][] rs,
+            final String stepName, final int sz, final int runs, final boolean check, final boolean print) {
         final Runtime rt = Runtime.getRuntime();
         System.out.println(me + ": Running " + c.name + " " + stepName + " sz=" + nf(sz));
         final String pfx = me + "    ";
@@ -375,9 +370,9 @@ public class UpdatePerformanceTest {
             final double dMb = pm.dm() / (1024.0 * 1024.0);
             if (print) {
                 System.out.println(pfx + String.format(
-                    "Building values for " + ss[si].getClass().getSimpleName() +
-                        " done in %.3f secs, delta memory used %s",
-                    pm.dt() / s2ns, mf(dMb)));
+                        "Building values for " + ss[si].getClass().getSimpleName() +
+                                " done in %.3f secs, delta memory used %s",
+                        pm.dt() / s2ns, mf(dMb)));
             }
             pm.reset();
         }
@@ -396,8 +391,8 @@ public class UpdatePerformanceTest {
                 System.out.println(pfx + "trick optimizer value = " + nf(trick));
                 if (!(si == 0 && ri == 0)) {
                     PerfStats.comparePrint(
-                        pStats, ss[0].getRunner(0).toString(), sStats,
-                        ss[si].getRunner(rs[si][ri]).toString(), pfx);
+                            pStats, ss[0].getRunner(0).toString(), sStats, ss[si].getRunner(rs[si][ri]).toString(),
+                            pfx);
                 }
             }
         }
@@ -412,8 +407,8 @@ public class UpdatePerformanceTest {
                     final long crc32 = ss[si].getBaseCrc32();
                     final long ct1 = System.nanoTime();
                     System.out.println(
-                        pfx + ss[si].getRunner(rs[si][ri]).toString() + " crc32=" + nf(crc32) +
-                            " done in " + (ct1 - ct0) / s2ns + " s.");
+                            pfx + ss[si].getRunner(rs[si][ri]).toString() + " crc32=" + nf(crc32) +
+                                    " done in " + (ct1 - ct0) / s2ns + " s.");
                 }
             }
         }
@@ -421,22 +416,19 @@ public class UpdatePerformanceTest {
     }
 
     // Having separate warmup and full methods helps separate them in JProfiler.
-    static void runStepWarmup(final TestValues.Config c, final int sn, final UpdateStrategy ss[],
-        final int[][] rs,
-        final int sz, final int runs) {
+    static void runStepWarmup(final TestValues.Config c, final int sn, final UpdateStrategy ss[], final int[][] rs,
+            final int sz, final int runs) {
         runStep(c, sn, ss, rs, "warmup", sz, runs, false, false);
     }
 
-    static void runStepFull(final TestValues.Config c, final int sn, final UpdateStrategy ss[],
-        final int[][] rs,
-        final int sz, final int runs, final boolean check) {
+    static void runStepFull(final TestValues.Config c, final int sn, final UpdateStrategy ss[], final int[][] rs,
+            final int sz, final int runs, final boolean check) {
         runStep(c, sn, ss, rs, "full test", sz, runs, check, true);
     }
 
     static void run(
-        final TestValues.Config c, final int sn, final UpdateStrategy[] ss, final int[][] rs,
-        final int warmupSz, final int warmupRuns, final int fullSz, final int fullRuns,
-        final boolean check) {
+            final TestValues.Config c, final int sn, final UpdateStrategy[] ss, final int[][] rs,
+            final int warmupSz, final int warmupRuns, final int fullSz, final int fullRuns, final boolean check) {
         runStepWarmup(c, sn, ss, rs, warmupSz, warmupRuns);
         runStepFull(c, sn, ss, rs, fullSz, fullRuns, check);
     }
@@ -470,8 +462,7 @@ public class UpdatePerformanceTest {
             final double wo = codeWarmup(ss[si].getFactory(), rs[si]);
             final long t1 = System.nanoTime();
             final long dt = t1 - t0;
-            System.out
-                .println(me + ": " + ss[si].getClass().getSimpleName() + " Code warmup ran in " +
+            System.out.println(me + ": " + ss[si].getClass().getSimpleName() + " Code warmup ran in " +
                     dt / s2ns + " seconds, output=" + wo);
         }
         final int warmupSz = 1 * 1000 * 1000;

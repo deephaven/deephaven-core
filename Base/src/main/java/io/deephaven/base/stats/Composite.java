@@ -9,10 +9,10 @@ import io.deephaven.base.verify.Require;
 
 // --------------------------------------------------------------------
 /**
- * A statistic that represents the composite or rolled-up value of a set of child statistics, as
- * best as possible. This statistic cannot be {@link #sample}d or {@link #increment}ed. Currently,
- * calls to {@link #update} are silently ignored, which also means that Composites are not logged.
- * Thus a Composite is currently only useful for summaries in web/JMX displays.
+ * A statistic that represents the composite or rolled-up value of a set of child statistics, as best as possible. This
+ * statistic cannot be {@link #sample}d or {@link #increment}ed. Currently, calls to {@link #update} are silently
+ * ignored, which also means that Composites are not logged. Thus a Composite is currently only useful for summaries in
+ * web/JMX displays.
  */
 public class Composite extends Value {
 
@@ -32,8 +32,7 @@ public class Composite extends Value {
         char typeTag = values[0].getTypeTag();
         for (int nIndex = 1; nIndex < values.length; nIndex++) {
             Require.neqNull(values[nIndex], "values[nIndex]", 1);
-            Require.eq(values[nIndex].getTypeTag(), "values[nIndex].getTypeTag()", typeTag,
-                "typeTag", 1);
+            Require.eq(values[nIndex].getTypeTag(), "values[nIndex].getTypeTag()", typeTag, "typeTag", 1);
         }
         return values;
     }
@@ -114,8 +113,7 @@ public class Composite extends Value {
 
     // ----------------------------------------------------------------
     @Override // from Value
-    public void update(Item item, ItemUpdateListener listener, long logInterval, long now,
-        long appNow) {
+    public void update(Item item, ItemUpdateListener listener, long logInterval, long now, long appNow) {
         // composites are not updated (or logged)
     }
 

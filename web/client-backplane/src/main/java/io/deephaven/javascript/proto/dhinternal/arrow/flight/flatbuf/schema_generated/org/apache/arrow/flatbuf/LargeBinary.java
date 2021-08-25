@@ -6,9 +6,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.LargeBinary",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.LargeBinary",
+        namespace = JsPackage.GLOBAL)
 public class LargeBinary {
     public static native double createLargeBinary(Builder builder);
 
@@ -18,8 +18,7 @@ public class LargeBinary {
 
     public static native LargeBinary getRootAsLargeBinary(ByteBuffer bb);
 
-    public static native LargeBinary getSizePrefixedRootAsLargeBinary(ByteBuffer bb,
-        LargeBinary obj);
+    public static native LargeBinary getSizePrefixedRootAsLargeBinary(ByteBuffer bb, LargeBinary obj);
 
     public static native LargeBinary getSizePrefixedRootAsLargeBinary(ByteBuffer bb);
 

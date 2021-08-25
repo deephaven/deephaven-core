@@ -21,8 +21,7 @@ import static io.deephaven.db.plot.util.NullCategory.INSTANCE;
 /**
  * A dataset for categorical data which maps a category to it's numerical value.
  * <p>
- * The number of categories and the number of values must be the same. Does not support repeat
- * categories.
+ * The number of categories and the number of values must be the same. Does not support repeat categories.
  */
 public class CategoryDataSeriesMap extends AbstractMapBasedCategoryDataSeries {
 
@@ -35,8 +34,7 @@ public class CategoryDataSeriesMap extends AbstractMapBasedCategoryDataSeries {
     /**
      * Creates an instance of CategoryDataSeriesMap, which maps a category to it's numerical value.
      * <p>
-     * The number of categories and the number of values must be the same. Does not support null or
-     * repeat categories.
+     * The number of categories and the number of values must be the same. Does not support null or repeat categories.
      *
      * @param axes {@link AxesImpl} on which this dataset is being plotted
      * @param id data series id
@@ -44,25 +42,25 @@ public class CategoryDataSeriesMap extends AbstractMapBasedCategoryDataSeries {
      * @param categories categorical data
      * @param values numerical data
      * @param <T> type of the categorical data
-     * @throws IllegalArgumentException {@code categories} and {@code values} must not be null
-     *         {@code categories} and {@code values} must have equal sizes
-     * @throws UnsupportedOperationException {@code categories} must not contain null values
-     *         {@code categories} must not contain repeat values
+     * @throws IllegalArgumentException {@code categories} and {@code values} must not be null {@code categories} and
+     *         {@code values} must have equal sizes
+     * @throws UnsupportedOperationException {@code categories} must not contain null values {@code categories} must not
+     *         contain repeat values
      */
     public <T extends Comparable<?>> CategoryDataSeriesMap(final AxesImpl axes,
-        final int id,
-        final Comparable<?> name,
-        final IndexableData<T> categories,
-        final IndexableNumericData values) {
+            final int id,
+            final Comparable<?> name,
+            final IndexableData<T> categories,
+            final IndexableNumericData values) {
         this(axes, id, name, categories, values, null);
     }
 
     public <T extends Comparable<?>> CategoryDataSeriesMap(final AxesImpl axes,
-        final int id,
-        final Comparable<?> name,
-        final IndexableData<T> categories,
-        final IndexableNumericData values,
-        final AbstractCategoryDataSeries series) {
+            final int id,
+            final Comparable<?> name,
+            final IndexableData<T> categories,
+            final IndexableNumericData values,
+            final AbstractCategoryDataSeries series) {
         super(axes, id, name, series);
 
         if (categories == null || values == null) {
@@ -70,8 +68,7 @@ public class CategoryDataSeriesMap extends AbstractMapBasedCategoryDataSeries {
         }
 
         if (categories.size() != values.size()) {
-            throw new PlotIllegalArgumentException("Categories and Values lengths do not match",
-                this);
+            throw new PlotIllegalArgumentException("Categories and Values lengths do not match", this);
         }
 
         for (int i = 0; i < categories.size(); i++) {
@@ -79,10 +76,8 @@ public class CategoryDataSeriesMap extends AbstractMapBasedCategoryDataSeries {
             category = category == null ? INSTANCE : category;
 
             if (data.containsKey(category)) {
-                throw new PlotUnsupportedOperationException(
-                    "Category value repeated multiple times in dataset: series=" + name
-                        + "category=" + categories.get(i),
-                    this);
+                throw new PlotUnsupportedOperationException("Category value repeated multiple times in dataset: series="
+                        + name + "category=" + categories.get(i), this);
             }
 
             final double value = values.get(i);

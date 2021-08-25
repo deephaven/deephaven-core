@@ -44,18 +44,17 @@ public class AllTokenIterableImpl implements MappedIterable<Token> {
                     } else {
                         next = cur.next;
                         if (mark == null) {
-                            // not processing specialToken yet; we don't want to look at
-                            // specialToken if we're already
+                            // not processing specialToken yet; we don't want to look at specialToken if we're already
                             // processing a chain of specialTokens...
                             if (next.specialToken != null) {
                                 // ok, now we process specialToken.
-                                // specialToken is weird. When you see one, if you want to iterate
-                                // them in lexical order,
-                                // you must follow the specialToken links until they dry up, then
-                                // follow the `next` links
+                                // specialToken is weird. When you see one, if you want to iterate them in lexical
+                                // order,
+                                // you must follow the specialToken links until they dry up, then follow the `next`
+                                // links
                                 // until they are null.
-                                // We mark the node where we start, then skip next ahead to the end
-                                // of specialToken chain.
+                                // We mark the node where we start, then skip next ahead to the end of specialToken
+                                // chain.
                                 mark = next;
                                 while (next.specialToken != null) {
                                     next = next.specialToken;

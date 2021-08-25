@@ -22,8 +22,8 @@ public interface ColumnPageReader extends AutoCloseable {
      * Triggers the value decompression and decoding
      * 
      * @param nullValue The value to be stored under the null entries
-     * @return the data for that page in a format that makes sense for the given type - typically
-     *         array of something that makes sense
+     * @return the data for that page in a format that makes sense for the given type - typically array of something
+     *         that makes sense
      */
     Object materialize(Object nullValue) throws IOException;
 

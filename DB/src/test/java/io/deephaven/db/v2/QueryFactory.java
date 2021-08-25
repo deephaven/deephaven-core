@@ -7,12 +7,10 @@ import java.util.stream.Collectors;
 
 
 /**
- * Class to generate query strings. You can use the along with the getTablePreamble() function to
- * create queries.
+ * Class to generate query strings. You can use the along with the getTablePreamble() function to create queries.
  * <p>
  * <p>
- * To use on a remote server jar up this class and stick it in /etc/sysconfig/deephaven.d/java_lib/
- * on all nodes.
+ * To use on a remote server jar up this class and stick it in /etc/sysconfig/deephaven.d/java_lib/ on all nodes.
  * <p>
  * Example:
  * <p>
@@ -26,8 +24,7 @@ import java.util.stream.Collectors;
  * <p>
  * import io.deephaven.db.v2.QueryFactory
  * <p>
- * qf = new QueryFactory() queryPart1 = qf.getTablePreamble(123L) queryPart2 =
- * qf.generateQuery(456L)
+ * qf = new QueryFactory() queryPart1 = qf.getTablePreamble(123L) queryPart2 = qf.generateQuery(456L)
  * <p>
  * __groovySession.evaluate(queryPart1) __groovySession.evaluate(queryPart2)
  */
@@ -54,39 +51,36 @@ public class QueryFactory {
     // default values
     private static final String DEFAULT_TABLE_ONE = "randomValues";
     private static final String DEFAULT_TABLE_TWO = "tickingValues";
-    private static final String[] DEFAULT_COLUMN_NAMES =
-        {"Timestamp", "MyString", "MyInt", "MyLong", "MyFloat", "MyDouble", "MyBoolean", "MyChar",
-                "MyShort", "MyByte", "MyBigDecimal", "MyBigInteger"};
-    private static final Class[] DEFAULT_COLUMN_TYPES = {DBDateTime.class, String.class,
-            Integer.class, Long.class, Float.class, Double.class, Boolean.class, Character.class,
-            short.class, byte.class, java.math.BigDecimal.class, java.math.BigInteger.class};
+    private static final String[] DEFAULT_COLUMN_NAMES = {"Timestamp", "MyString", "MyInt", "MyLong", "MyFloat",
+            "MyDouble", "MyBoolean", "MyChar", "MyShort", "MyByte", "MyBigDecimal", "MyBigInteger"};
+    private static final Class[] DEFAULT_COLUMN_TYPES =
+            {DBDateTime.class, String.class, Integer.class, Long.class, Float.class, Double.class, Boolean.class,
+                    Character.class, short.class, byte.class, java.math.BigDecimal.class, java.math.BigInteger.class};
     // Copy and modify this block of code if you want to disable an operation.
-    private static final String[] IMPLEMENTED_OPS = {"where", "merge", "flatten", "slice", "head",
-            "tail", "headPct", "tailPct", "reverse", "sort", "byOpp", "aggCombo", "byExternal"};
-    private static final String[] CHANGING_AGG = {"AggSum", "AggVar", "AggStd", "AggArray",
-            "AggCount", "AggWAvg", "AggDistinct", "AggCountDistinct"};
+    private static final String[] IMPLEMENTED_OPS = {"where", "merge", "flatten", "slice", "head", "tail", "headPct",
+            "tailPct", "reverse", "sort", "byOpp", "aggCombo", "byExternal"};
+    private static final String[] CHANGING_AGG =
+            {"AggSum", "AggVar", "AggStd", "AggArray", "AggCount", "AggWAvg", "AggDistinct", "AggCountDistinct"};
     private static final String[] CHANGING_BY =
-        {"avgBy", "sumBy", "stdBy", "varBy", "countBy", "medianBy", "percentileBy"};
+            {"avgBy", "sumBy", "stdBy", "varBy", "countBy", "medianBy", "percentileBy"};
     private static final String[] ROLLUP_AGG =
-        {"AggSum", "AggVar", "AggStd", "AggCount", "AggMin", "AggMax", "AggFirst", "AggLast"};
+            {"AggSum", "AggVar", "AggStd", "AggCount", "AggMin", "AggMax", "AggFirst", "AggLast"};
     private static final String[] SAFE_AGG = {"AggMin", "AggMax", "AggFirst", "AggLast"};
-    private static final String[] SAFE_BY =
-        {"maxBy", "minBy", "firstBy", "lastBy", "sortedFirstBy", "sortedLastBy"};
+    private static final String[] SAFE_BY = {"maxBy", "minBy", "firstBy", "lastBy", "sortedFirstBy", "sortedLastBy"};
     private static final String[] FINAL_OPS =
-        {"selectDistinct", "byOperation", "aggCombo", "treeTable", "rollup", "applyToAllBy"};
-    private static final HashMap<String, String[]> DEFAULT_SWITCH_CONTROL =
-        new HashMap<String, String[]>() {
-            {
-                put("supportedOps", IMPLEMENTED_OPS);
-                put("changingAgg", CHANGING_AGG);
-                put("changingBy", CHANGING_BY);
-                put("safeAgg", SAFE_AGG);
-                put("safeBy", SAFE_BY);
-                put("rollupAgg", ROLLUP_AGG);
-                put("finalOps", FINAL_OPS);
+            {"selectDistinct", "byOperation", "aggCombo", "treeTable", "rollup", "applyToAllBy"};
+    private static final HashMap<String, String[]> DEFAULT_SWITCH_CONTROL = new HashMap<String, String[]>() {
+        {
+            put("supportedOps", IMPLEMENTED_OPS);
+            put("changingAgg", CHANGING_AGG);
+            put("changingBy", CHANGING_BY);
+            put("safeAgg", SAFE_AGG);
+            put("safeBy", SAFE_BY);
+            put("rollupAgg", ROLLUP_AGG);
+            put("finalOps", FINAL_OPS);
 
-            }
-        };
+        }
+    };
     private static final Set<Class> NUMERIC_TYPES = new HashSet<Class>() {
         {
             add(Integer.class);
@@ -107,10 +101,9 @@ public class QueryFactory {
     };
 
     @SuppressWarnings("WeakerAccess")
-    public QueryFactory(int numberOfOperations, boolean finalOperationChangesTypes,
-        boolean doSelectHalfWay, boolean doJoinMostOfTheWayIn, String firstTableName,
-        String secondTableName, String[] columnNames, Class[] columnTypes,
-        Map<String, String[]> switchControlValues) {
+    public QueryFactory(int numberOfOperations, boolean finalOperationChangesTypes, boolean doSelectHalfWay,
+            boolean doJoinMostOfTheWayIn, String firstTableName, String secondTableName, String[] columnNames,
+            Class[] columnTypes, Map<String, String[]> switchControlValues) {
         this.numberOfOperations = numberOfOperations;
         this.finalOperationChangesTypes = finalOperationChangesTypes;
         this.doSelectHalfWay = doSelectHalfWay;
@@ -134,11 +127,9 @@ public class QueryFactory {
     }
 
     @SuppressWarnings("WeakerAccess")
-    public QueryFactory(int numberOfOperations, boolean finalOperationChangesTypes,
-        boolean doSelectHalfWay) {
-        this(numberOfOperations, finalOperationChangesTypes, doSelectHalfWay, true,
-            DEFAULT_TABLE_ONE, DEFAULT_TABLE_TWO, DEFAULT_COLUMN_NAMES, DEFAULT_COLUMN_TYPES,
-            DEFAULT_SWITCH_CONTROL);
+    public QueryFactory(int numberOfOperations, boolean finalOperationChangesTypes, boolean doSelectHalfWay) {
+        this(numberOfOperations, finalOperationChangesTypes, doSelectHalfWay, true, DEFAULT_TABLE_ONE,
+                DEFAULT_TABLE_TWO, DEFAULT_COLUMN_NAMES, DEFAULT_COLUMN_TYPES, DEFAULT_SWITCH_CONTROL);
     }
 
     @SuppressWarnings("WeakerAccess")
@@ -174,13 +165,12 @@ public class QueryFactory {
      * Adds the string "table[seedName]_opNum = table[seedName]_opNum-1" to the StringBuilder
      */
     private void addNormalTableSegment(StringBuilder opChain, String nameSeed, int opNum) {
-        opChain.append("table").append(nameSeed).append("_").append(opNum).append(" = table")
-            .append(nameSeed).append("_").append(opNum - 1);
+        opChain.append("table").append(nameSeed).append("_").append(opNum).append(" = table").append(nameSeed)
+                .append("_").append(opNum - 1);
     }
 
     /**
-     * Create a new query from a given long seed value. This query will always be the same for the
-     * given seed value.
+     * Create a new query from a given long seed value. This query will always be the same for the given seed value.
      *
      * @param seed Seed you want to use.
      * @return String query
@@ -197,8 +187,7 @@ public class QueryFactory {
             opChain.append(tableNameTwo).append(".select();\n");
 
         }
-        opChain.append("table").append(nameSeed).append("_0.setAttribute(\"TESTSEED\",")
-            .append(seed).append(");\n");
+        opChain.append("table").append(nameSeed).append("_0.setAttribute(\"TESTSEED\",").append(seed).append(");\n");
 
         for (int opNum = 1; opNum <= numberOfOperations; ++opNum) {
 
@@ -214,7 +203,7 @@ public class QueryFactory {
             if (finalOperationChangesTypes && opNum == numberOfOperations) {
                 // Pick by or combo style
                 String operation = this.switchControlValues.get("finalOps")[queryRandom
-                    .nextInt(switchControlValues.get("finalOps").length)];
+                        .nextInt(switchControlValues.get("finalOps").length)];
                 switch (operation) {
                     case "selectDistinct":
                         addNormalTableSegment(opChain, nameSeed, opNum);
@@ -222,12 +211,11 @@ public class QueryFactory {
                         opChain.append(".selectDistinct(\"").append(col).append("\");\n");
                         break;
                     case "byOperation":
-                        addByOperation(opNum, opChain, queryRandom,
-                            switchControlValues.get("changingBy"), nameSeed);
+                        addByOperation(opNum, opChain, queryRandom, switchControlValues.get("changingBy"), nameSeed);
                         break;
                     case "aggCombo":
-                        addComboOperation(opNum, opChain, queryRandom,
-                            switchControlValues.get("changingAgg"), nameSeed);
+                        addComboOperation(opNum, opChain, queryRandom, switchControlValues.get("changingAgg"),
+                                nameSeed);
                         break;
                     case "treeTable":
                         addTreeTableOperation(opNum, opChain, queryRandom, nameSeed);
@@ -274,42 +262,36 @@ public class QueryFactory {
         final String nextTableName = "table" + nameSeed + "_" + opNum;
         final String lastTableName = "table" + nameSeed + "_" + (opNum - 1);
         opChain.append(nextTableName).append("prime = ");
-        opChain.append("io.deephaven.db.v2.SelectOverheadLimiter.clampSelectOverhead(")
-            .append(lastTableName).append(", 10.0d);\n");
-        opChain.append(nextTableName).append(" = ").append(nextTableName).append("prime")
-            .append(".select();\n");
+        opChain.append("io.deephaven.db.v2.SelectOverheadLimiter.clampSelectOverhead(").append(lastTableName)
+                .append(", 10.0d);\n");
+        opChain.append(nextTableName).append(" = ").append(nextTableName).append("prime").append(".select();\n");
     }
 
-    private void addMergeOperation(int opNum, StringBuilder opChain, Random random,
-        String nameSeed) {
+    private void addMergeOperation(int opNum, StringBuilder opChain, Random random, String nameSeed) {
         final int style = random.nextInt(10);// Make the old style rare
         if (style != 0) {
             // make sure we have at least some values
-            opChain.append("map = merge(table").append(nameSeed).append("_").append(opNum - 1)
-                .append(", ");
+            opChain.append("map = merge(table").append(nameSeed).append("_").append(opNum - 1).append(", ");
             opChain.append(tableNameOne).append(".head(1L)").append(", ");
             opChain.append(tableNameTwo).append(".head(1L)").append(")");
 
-            opChain.append(".byExternal(\"").append(columnNames[random.nextInt(columnNames.length)])
-                .append("\");\n");
+            opChain.append(".byExternal(\"").append(columnNames[random.nextInt(columnNames.length)]).append("\");\n");
             opChain.append("table").append(nameSeed).append("_").append(opNum).append(" = ");
             opChain.append("map.asTable().merge();\n");
         } else {
             opChain.append("table").append(nameSeed).append("_").append(opNum).append(" = merge(");
             if (random.nextInt(2) == 0) {
-                opChain.append("table").append(nameSeed).append("_").append(opNum - 1).append(",")
-                    .append(tableNameTwo);
+                opChain.append("table").append(nameSeed).append("_").append(opNum - 1).append(",").append(tableNameTwo);
             } else {
-                opChain.append("table").append(nameSeed).append("_").append(opNum - 1).append(",")
-                    .append(tableNameOne);
+                opChain.append("table").append(nameSeed).append("_").append(opNum - 1).append(",").append(tableNameOne);
 
             }
             opChain.append(");\n");
         }
     }
 
-    private void addByOperation(int opNum, StringBuilder opChain, Random random,
-        String[] possibleByOperations, String nameSeed) {
+    private void addByOperation(int opNum, StringBuilder opChain, Random random, String[] possibleByOperations,
+            String nameSeed) {
 
         final String operation = possibleByOperations[random.nextInt(possibleByOperations.length)];
         final int numberOfColumns = random.nextInt(3) + 1;
@@ -331,71 +313,57 @@ public class QueryFactory {
         switch (operation) {
 
             case "avgBy":
-                opChain.append(".dropColumns(")
-                    .append(stringArrayToMultipleStringArgumentList(nonNumericColumns))
-                    .append(").avgBy(").append(stringArrayToMultipleStringArgumentList(numericCols))
-                    .append(");\n");
+                opChain.append(".dropColumns(").append(stringArrayToMultipleStringArgumentList(nonNumericColumns))
+                        .append(").avgBy(").append(stringArrayToMultipleStringArgumentList(numericCols)).append(");\n");
                 break;
 
             case "sumBy":
-                opChain.append(".dropColumns(")
-                    .append(stringArrayToMultipleStringArgumentList(nonNumericColumns))
-                    .append(").sumBy(").append(stringArrayToMultipleStringArgumentList(numericCols))
-                    .append(");\n");
+                opChain.append(".dropColumns(").append(stringArrayToMultipleStringArgumentList(nonNumericColumns))
+                        .append(").sumBy(").append(stringArrayToMultipleStringArgumentList(numericCols)).append(");\n");
                 break;
 
             case "stdBy":
-                opChain.append(".dropColumns(")
-                    .append(stringArrayToMultipleStringArgumentList(nonNumericColumns))
-                    .append(").stdBy(").append(stringArrayToMultipleStringArgumentList(numericCols))
-                    .append(");\n");
+                opChain.append(".dropColumns(").append(stringArrayToMultipleStringArgumentList(nonNumericColumns))
+                        .append(").stdBy(").append(stringArrayToMultipleStringArgumentList(numericCols)).append(");\n");
                 break;
 
             case "varBy":
-                opChain.append(".dropColumns(")
-                    .append(stringArrayToMultipleStringArgumentList(nonNumericColumns))
-                    .append(").varBy(").append(stringArrayToMultipleStringArgumentList(numericCols))
-                    .append(");\n");
+                opChain.append(".dropColumns(").append(stringArrayToMultipleStringArgumentList(nonNumericColumns))
+                        .append(").varBy(").append(stringArrayToMultipleStringArgumentList(numericCols)).append(");\n");
                 break;
 
             case "medianBy":
-                opChain.append(".medianBy(")
-                    .append(stringArrayToMultipleStringArgumentList(anyCols)).append(");\n");
+                opChain.append(".medianBy(").append(stringArrayToMultipleStringArgumentList(anyCols)).append(");\n");
                 break;
 
             case "countBy":
-                opChain.append(".countBy(").append(stringArrayToMultipleStringArgumentList(anyCols))
-                    .append(");\n");
+                opChain.append(".countBy(").append(stringArrayToMultipleStringArgumentList(anyCols)).append(");\n");
                 break;
 
             case "maxBy":
-                opChain.append(".maxBy(").append(stringArrayToMultipleStringArgumentList(anyCols))
-                    .append(");\n");
+                opChain.append(".maxBy(").append(stringArrayToMultipleStringArgumentList(anyCols)).append(");\n");
                 break;
 
             case "minBy":
-                opChain.append(".minBy(").append(stringArrayToMultipleStringArgumentList(anyCols))
-                    .append(");\n");
+                opChain.append(".minBy(").append(stringArrayToMultipleStringArgumentList(anyCols)).append(");\n");
                 break;
 
             case "firstBy":
-                opChain.append(".firstBy(").append(stringArrayToMultipleStringArgumentList(anyCols))
-                    .append(");\n");
+                opChain.append(".firstBy(").append(stringArrayToMultipleStringArgumentList(anyCols)).append(");\n");
                 break;
 
             case "lastBy":
-                opChain.append(".lastBy(").append(stringArrayToMultipleStringArgumentList(anyCols))
-                    .append(");\n");
+                opChain.append(".lastBy(").append(stringArrayToMultipleStringArgumentList(anyCols)).append(");\n");
                 break;
 
             case "sortedFirstBy":
-                opChain.append(".by( new SortedFirstBy(")
-                    .append(stringArrayToMultipleStringArgumentList(anyCols)).append("));\n");
+                opChain.append(".by( new SortedFirstBy(").append(stringArrayToMultipleStringArgumentList(anyCols))
+                        .append("));\n");
                 break;
 
             case "sortedLastBy":
-                opChain.append(".by( new SortedLastBy(")
-                    .append(stringArrayToMultipleStringArgumentList(anyCols)).append("));\n");
+                opChain.append(".by( new SortedLastBy(").append(stringArrayToMultipleStringArgumentList(anyCols))
+                        .append("));\n");
                 break;
 
             case "percentileBy":
@@ -404,15 +372,13 @@ public class QueryFactory {
 
 
             default:
-                throw new RuntimeException(
-                    "By operation(" + operation + ") not found in switch statement");
+                throw new RuntimeException("By operation(" + operation + ") not found in switch statement");
 
         }
 
     }
 
-    private void addApplyToAllByOperation(int opNum, StringBuilder opChain, Random random,
-        String nameSeed) {
+    private void addApplyToAllByOperation(int opNum, StringBuilder opChain, Random random, String nameSeed) {
         addNormalTableSegment(opChain, nameSeed, opNum);
         // getDirect() is required for previous value to work. see IDS-6257
         opChain.append(".applyToAllBy(\"each.getDirect().subArray(0L,1L)\",");
@@ -430,11 +396,9 @@ public class QueryFactory {
 
     }
 
-    private void addRollupOperation(int opNum, StringBuilder opChain, Random random,
-        String nameSeed) {
+    private void addRollupOperation(int opNum, StringBuilder opChain, Random random, String nameSeed) {
         addNormalTableSegment(opChain, nameSeed, opNum);
-        final ArrayList<String> aggSet =
-            new ArrayList<>(Arrays.asList(switchControlValues.get("rollupAgg")));
+        final ArrayList<String> aggSet = new ArrayList<>(Arrays.asList(switchControlValues.get("rollupAgg")));
         final ArrayList<String> activeAggs = new ArrayList<>();
         final ArrayList<String> colSet = new ArrayList<>(numericColumns);
         final int numOfAggs = random.nextInt(colSet.size() - 1) + 1;
@@ -464,55 +428,46 @@ public class QueryFactory {
 
     }
 
-    private void addTreeTableOperation(int opNum, StringBuilder opChain, Random random,
-        String nameSeed) {
-        StringBuilder previousTableName =
-            new StringBuilder("table").append(nameSeed).append("_").append(opNum - 1);
+    private void addTreeTableOperation(int opNum, StringBuilder opChain, Random random, String nameSeed) {
+        StringBuilder previousTableName = new StringBuilder("table").append(nameSeed).append("_").append(opNum - 1);
         String columnName = columnNames[random.nextInt(columnNames.length)];
 
-        opChain.append("part2 = ").append(previousTableName).append(".selectDistinct(\"")
-            .append(columnName).append("\").update(\"Parent= (String) null\",\"ID= `T`+")
-            .append(columnName).append("\")");
+        opChain.append("part2 = ").append(previousTableName).append(".selectDistinct(\"").append(columnName)
+                .append("\").update(\"Parent= (String) null\",\"ID= `T`+").append(columnName).append("\")");
         opChain.append(".update(");
         for (int colNumber = 0; colNumber < columnNames.length; ++colNumber) {
-            opChain.append("\"").append(columnNames[colNumber]).append(" = (")
-                .append(columnTypes[colNumber].getName()).append(") null \",");
+            opChain.append("\"").append(columnNames[colNumber]).append(" = (").append(columnTypes[colNumber].getName())
+                    .append(") null \",");
         }
         opChain.deleteCharAt(opChain.length() - 1);
         opChain.append(");\n");
 
-        opChain.append("atomicLong_").append(nameSeed)
-            .append(" = new java.util.concurrent.atomic.AtomicLong();\n");
-        opChain.append("part1 = ").append(previousTableName).append(".update(\"ID=`a`+atomicLong_")
-            .append(nameSeed).append(".getAndIncrement()\",");
+        opChain.append("atomicLong_").append(nameSeed).append(" = new java.util.concurrent.atomic.AtomicLong();\n");
+        opChain.append("part1 = ").append(previousTableName).append(".update(\"ID=`a`+atomicLong_").append(nameSeed)
+                .append(".getAndIncrement()\",");
 
 
         opChain.append(" \"Parent = `T`+").append(columnName).append("\");\n");
 
-        opChain.append("tree").append(nameSeed)
-            .append(" = merge(part1,part2).treeTable(\"ID\",\"Parent\");\n");
+        opChain.append("tree").append(nameSeed).append(" = merge(part1,part2).treeTable(\"ID\",\"Parent\");\n");
 
 
     }
 
 
-    private void addByExternalOperation(int opNum, StringBuilder opChain, Random random,
-        String nameSeed) {
-        final StringBuilder mapName =
-            new StringBuilder("map").append(nameSeed).append("_").append(opNum);
+    private void addByExternalOperation(int opNum, StringBuilder opChain, Random random, String nameSeed) {
+        final StringBuilder mapName = new StringBuilder("map").append(nameSeed).append("_").append(opNum);
         final StringBuilder previousTableName =
-            new StringBuilder("table").append(nameSeed).append("_").append(opNum - 1);
+                new StringBuilder("table").append(nameSeed).append("_").append(opNum - 1);
         opChain.append(mapName).append(" = ").append(previousTableName).append(".byExternal(\"")
-            .append(columnNames[random.nextInt(columnNames.length)]).append("\");\n");
+                .append(columnNames[random.nextInt(columnNames.length)]).append("\");\n");
         opChain.append("table").append(nameSeed).append("_").append(opNum).append(" = ");
-        opChain.append(mapName).append(".getKeySet().length == 0 ? ").append(previousTableName)
-            .append(" : ");
+        opChain.append(mapName).append(".getKeySet().length == 0 ? ").append(previousTableName).append(" : ");
         opChain.append(mapName).append(".get(").append(mapName).append(".getKeySet()[0]);\n");
 
     }
 
-    private void addJoinOperation(int opNum, StringBuilder opChain, Random random,
-        String nameSeed) {
+    private void addJoinOperation(int opNum, StringBuilder opChain, Random random, String nameSeed) {
         addNormalTableSegment(opChain, nameSeed, opNum);
         String joinCol = columnNames[random.nextInt(columnNames.length)];
         ArrayList<String> colsToJoin = new ArrayList<>();
@@ -532,7 +487,7 @@ public class QueryFactory {
 
 
         opChain.append(".dropColumns(").append(stringArrayToMultipleStringArgumentList(colsToJoin))
-            .append(").flatten().join(");
+                .append(").flatten().join(");
         if (random.nextInt(2) == 0) {
             opChain.append(tableNameOne);
 
@@ -540,13 +495,12 @@ public class QueryFactory {
             opChain.append(tableNameTwo);
         }
 
-        opChain.append(",\"").append(joinCol).append("\",")
-            .append(stringArrayToSingleArgumentList(colsToJoin)).append(");\n");
+        opChain.append(",\"").append(joinCol).append("\",").append(stringArrayToSingleArgumentList(colsToJoin))
+                .append(");\n");
 
     }
 
-    private void addNaturalJoinOperation(int opNum, StringBuilder opChain, Random random,
-        String nameSeed) {
+    private void addNaturalJoinOperation(int opNum, StringBuilder opChain, Random random, String nameSeed) {
         final ArrayList<String> columnsToDrop = new ArrayList<>();
         final ArrayList<String> columnsToMatch = new ArrayList<>();
 
@@ -564,16 +518,15 @@ public class QueryFactory {
         }
 
         addNormalTableSegment(opChain, nameSeed, opNum);
-        opChain.append(".dropColumns(")
-            .append(stringArrayToMultipleStringArgumentList(columnsToDrop)).append(")");
+        opChain.append(".dropColumns(").append(stringArrayToMultipleStringArgumentList(columnsToDrop)).append(")");
         opChain.append(".naturalJoin(table").append(nameSeed).append("_0.lastBy(")
-            .append(stringArrayToMultipleStringArgumentList(columnsToMatch)).append("),");
+                .append(stringArrayToMultipleStringArgumentList(columnsToMatch)).append("),");
         opChain.append(stringArrayToSingleArgumentList(columnsToMatch)).append(", ")
-            .append(stringArrayToSingleArgumentList(columnsToDrop)).append(");\n");
+                .append(stringArrayToSingleArgumentList(columnsToDrop)).append(");\n");
     }
 
-    private void addComboOperation(int opNum, StringBuilder opChain, Random random,
-        String[] possiblyComboOperation, String nameSeed) {
+    private void addComboOperation(int opNum, StringBuilder opChain, Random random, String[] possiblyComboOperation,
+            String nameSeed) {
         // combo style op
         // AggSum, AggVar, AggAvg, AggStd, AggArray, AggCount
         ArrayList<String> aggSet = new ArrayList<>(Arrays.asList(possiblyComboOperation));
@@ -641,8 +594,7 @@ public class QueryFactory {
                     break;
 
                 case "AggCount":
-                    opChain.append("AggCount(\"").append(argLists.get(aggNum).get(0))
-                        .append("\"),");
+                    opChain.append("AggCount(\"").append(argLists.get(aggNum).get(0)).append("\"),");
                     safeOp = false;
                     continue;
 
@@ -677,20 +629,17 @@ public class QueryFactory {
                     break;
 
                 case "AggWAvg":
-                    // Can't use BigInteger or BigDecimal on here. Create a new set for this. Make
-                    // sure the columns are renamed
-                    String[] wightedAverageCols =
-                        {"MyInt", "MyLong", "MyFloat", "MyDouble", "MyShort", "MyByte"};
-                    ArrayList<String> otherColSet =
-                        new ArrayList<>(Arrays.asList(wightedAverageCols));
+                    // Can't use BigInteger or BigDecimal on here. Create a new set for this. Make sure the columns are
+                    // renamed
+                    String[] wightedAverageCols = {"MyInt", "MyLong", "MyFloat", "MyDouble", "MyShort", "MyByte"};
+                    ArrayList<String> otherColSet = new ArrayList<>(Arrays.asList(wightedAverageCols));
                     int otherColNum = 1;
                     int numOfColumns = random.nextInt(otherColSet.size() - 1) + 1;
                     opChain.append("AggWAvg(\"").append(otherColSet.get(0)).append("\",");
                     Collections.shuffle(otherColSet, random);
                     for (; otherColNum < numOfColumns; ++otherColNum) {
                         String col = otherColSet.get(otherColNum);
-                        opChain.append("\"other_").append(col).append(" = ").append(col)
-                            .append("\",");
+                        opChain.append("\"other_").append(col).append(" = ").append(col).append("\",");
                     }
                     opChain.deleteCharAt(opChain.length() - 1);
                     opChain.append("),");
@@ -702,21 +651,18 @@ public class QueryFactory {
                     continue;
 
                 default:
-                    throw new RuntimeException(
-                        "Have a bug in the  aggCombo: " + activeAggs.get(aggNum) + " missing");
+                    throw new RuntimeException("Have a bug in the  aggCombo: " + activeAggs.get(aggNum) + " missing");
 
             }
-            opChain.append(stringArrayToMultipleStringArgumentList(argLists.get(aggNum)))
-                .append("),");
+            opChain.append(stringArrayToMultipleStringArgumentList(argLists.get(aggNum))).append("),");
         }
 
         opChain.deleteCharAt(opChain.length() - 1);
         opChain.append("))");
         if (safeOp)
-            opChain.append(".join( table").append(nameSeed).append("_").append(opNum - 1)
-                .append(",\"").append(argLists.get(0).get(0)).append("\", ")
-                .append(stringArrayToSingleArgumentList(argLists.get(argLists.size() - 1)))
-                .append(");\n");
+            opChain.append(".join( table").append(nameSeed).append("_").append(opNum - 1).append(",\"")
+                    .append(argLists.get(0).get(0)).append("\", ")
+                    .append(stringArrayToSingleArgumentList(argLists.get(argLists.size() - 1))).append(");\n");
 
 
     }
@@ -763,8 +709,7 @@ public class QueryFactory {
 
             case "char":
             case "Character":
-                filter.append("in(").append(colName).append(",'")
-                    .append((char) (random.nextInt(27) + 97)).append("')");
+                filter.append("in(").append(colName).append(",'").append((char) (random.nextInt(27) + 97)).append("')");
                 break;
 
 
@@ -780,19 +725,17 @@ public class QueryFactory {
 
 
             default:
-                throw new RuntimeException(
-                    "Column type not found:" + columnTypes[colNum].getSimpleName());
+                throw new RuntimeException("Column type not found:" + columnTypes[colNum].getSimpleName());
 
         }
 
         return filter.toString();
     }
 
-    private void addNormalOperation(int opNum, StringBuilder opChain, Random random,
-        String nameSeed) {
+    private void addNormalOperation(int opNum, StringBuilder opChain, Random random, String nameSeed) {
 
-        String operation = switchControlValues.get("supportedOps")[random
-            .nextInt(switchControlValues.get("supportedOps").length)];
+        String operation =
+                switchControlValues.get("supportedOps")[random.nextInt(switchControlValues.get("supportedOps").length)];
 
 
         switch (operation) {
@@ -857,13 +800,11 @@ public class QueryFactory {
                 break;
 
             case "byOpp":
-                addByOperation(opNum, opChain, random, this.switchControlValues.get("safeBy"),
-                    nameSeed);
+                addByOperation(opNum, opChain, random, this.switchControlValues.get("safeBy"), nameSeed);
                 break;
 
             case "aggCombo":
-                addComboOperation(opNum, opChain, random, switchControlValues.get("safeAgg"),
-                    nameSeed);
+                addComboOperation(opNum, opChain, random, switchControlValues.get("safeAgg"), nameSeed);
                 break;
 
             case "join":
@@ -896,69 +837,64 @@ public class QueryFactory {
 
 
         return "\n\nimport io.deephaven.db.v2.by.SortedFirstBy;\n" +
-            "import io.deephaven.db.v2.by.PercentileByStateFactoryImpl;\n" +
-            "import io.deephaven.db.v2.by.SortedLastBy;\n\n\n" +
-            "tableSeed = " + tableSeed + " as long;\n" +
-            "size = 100 as int;\n" +
-            "scale = 1000 as int;\n" +
-            "useRandomNullPoints = true as boolean;\n" +
-            "tableRandom = new Random(tableSeed) as Random;\n\n" +
-            "columnRandoms = new Random[11] as Random[];\n" +
-            "for(int colNum =0; colNum<11;++colNum) {\n" +
-            "\tseed = tableRandom.nextLong();\n" +
-            "\tSystem.out.println(\"column: \"+colNum+\"[Seed] \" + seed);\n" +
-            "\tcolumnRandoms[colNum] = new Random(seed);\n" +
-            "}\n\n" +
-            "tt = timeTable(\"00:00:00.1\");" +
-            "tickingValues = tt.update(\n" +
-            "\"MyString=new String(`a`+i)\",\n" +
-            "\"MyInt=new Integer(i)\",\n" +
-            "\"MyLong=new Long(i)\",\n" +
-            "\"MyDouble=new Double(i+i/10)\",\n" +
-            "\"MyFloat=new Float(i+i/10)\",\n" +
-            "\"MyBoolean=new Boolean(i%2==0)\",\n" +
-            "\"MyChar= new Character((char) ((i%26)+97))\",\n" +
-            "\"MyShort=new Short(Integer.toString(i%32767))\",\n" +
-            "\"MyByte= new java.lang.Byte(Integer.toString(i%127))\",\n" +
-            "\"MyBigDecimal= new java.math.BigDecimal(i+i/10)\",\n" +
-            "\"MyBigInteger= new java.math.BigInteger(Integer.toString(i))\"\n" +
-            ");\n" +
-            "\n" +
-            "nullPoints = new int[16] as int[];\n" +
-            "if (useRandomNullPoints) {\n" +
-            "\tfor (int k = 0; k < nullPoints.length; ++k) {\n" +
-            "\t\tnullPoints[k] = tableRandom.nextInt(60) + 4;\n" +
-            "\t}\n" +
-            "} else {\n" +
-            "\tnullPoints = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] as int[];\n"
-            +
-            "}\n" +
-            "\n" +
-            "randomValues = emptyTable(size)\n" +
-            ".update(\"Timestamp= i%nullPoints[0] == 0 ? null : new DBDateTime(i*1_000_000_000L)\")\n"
-            +
-            ".update(\"MyString=(i%nullPoints[1] == 0 ? null : `a`+ (columnRandoms[0].nextInt(scale*2) - scale) )\",\n"
-            +
-            "\"MyInt=(i%nullPoints[2] == 0 ? null : columnRandoms[1].nextInt(scale*2) - scale )\",\n"
-            +
-            "\"MyLong=(i%nullPoints[3] ==0 ? null : (long)(columnRandoms[2].nextInt(scale*2) - scale))\",\n"
-            +
-            "\"MyFloat=(float)(i%nullPoints[4] == 0 ? null : i%nullPoints[5] == 0 ? 1.0F/0.0F: i%nullPoints[6] == 0 ? -1.0F/0.0F : (columnRandoms[3].nextFloat()-0.5)*scale)\",\n"
-            +
-            "\"MyDouble=(double)(i%nullPoints[7] == 0 ? null : i%nullPoints[8] == 0 ? 1.0D/0.0D: i%nullPoints[9] == 0 ? -1.0D/0.0D : (columnRandoms[4].nextDouble()-0.5)*scale)\",\n"
-            +
-            "\"MyBoolean = (i%nullPoints[10] == 0 ? null : columnRandoms[5].nextBoolean())\",\n" +
-            "\"MyChar = (i%nullPoints[11] == 0 ? null : new Character( (char) (columnRandoms[6].nextInt(27)+97) ) )\",\n"
-            +
-            "\"MyShort=(short)(i%nullPoints[12] == 0 ? null : columnRandoms[7].nextInt(scale*2) - scale )\",\n"
-            +
-            "\"MyByte=(Byte)(i%nullPoints[13] == 0 ? null : new Byte( Integer.toString( (int)( columnRandoms[8].nextInt(Byte.MAX_VALUE*2)-Byte.MAX_VALUE ) ) ) )\",\n"
-            +
-            "\"MyBigDecimal=(i%nullPoints[14] == 0 ? null : new java.math.BigDecimal( (columnRandoms[9].nextDouble()-0.5)*scale ))\",\n"
-            +
-            "\"MyBigInteger=(i%nullPoints[15] == 0 ? null : new java.math.BigInteger(Integer.toString(columnRandoms[10].nextInt(scale*2) - scale) ))\"\n"
-            +
-            ");\n\n";
+                "import io.deephaven.db.v2.by.PercentileByStateFactoryImpl;\n" +
+                "import io.deephaven.db.v2.by.SortedLastBy;\n\n\n" +
+                "tableSeed = " + tableSeed + " as long;\n" +
+                "size = 100 as int;\n" +
+                "scale = 1000 as int;\n" +
+                "useRandomNullPoints = true as boolean;\n" +
+                "tableRandom = new Random(tableSeed) as Random;\n\n" +
+                "columnRandoms = new Random[11] as Random[];\n" +
+                "for(int colNum =0; colNum<11;++colNum) {\n" +
+                "\tseed = tableRandom.nextLong();\n" +
+                "\tSystem.out.println(\"column: \"+colNum+\"[Seed] \" + seed);\n" +
+                "\tcolumnRandoms[colNum] = new Random(seed);\n" +
+                "}\n\n" +
+                "tt = timeTable(\"00:00:00.1\");" +
+                "tickingValues = tt.update(\n" +
+                "\"MyString=new String(`a`+i)\",\n" +
+                "\"MyInt=new Integer(i)\",\n" +
+                "\"MyLong=new Long(i)\",\n" +
+                "\"MyDouble=new Double(i+i/10)\",\n" +
+                "\"MyFloat=new Float(i+i/10)\",\n" +
+                "\"MyBoolean=new Boolean(i%2==0)\",\n" +
+                "\"MyChar= new Character((char) ((i%26)+97))\",\n" +
+                "\"MyShort=new Short(Integer.toString(i%32767))\",\n" +
+                "\"MyByte= new java.lang.Byte(Integer.toString(i%127))\",\n" +
+                "\"MyBigDecimal= new java.math.BigDecimal(i+i/10)\",\n" +
+                "\"MyBigInteger= new java.math.BigInteger(Integer.toString(i))\"\n" +
+                ");\n" +
+                "\n" +
+                "nullPoints = new int[16] as int[];\n" +
+                "if (useRandomNullPoints) {\n" +
+                "\tfor (int k = 0; k < nullPoints.length; ++k) {\n" +
+                "\t\tnullPoints[k] = tableRandom.nextInt(60) + 4;\n" +
+                "\t}\n" +
+                "} else {\n" +
+                "\tnullPoints = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19] as int[];\n" +
+                "}\n" +
+                "\n" +
+                "randomValues = emptyTable(size)\n" +
+                ".update(\"Timestamp= i%nullPoints[0] == 0 ? null : new DBDateTime(i*1_000_000_000L)\")\n" +
+                ".update(\"MyString=(i%nullPoints[1] == 0 ? null : `a`+ (columnRandoms[0].nextInt(scale*2) - scale) )\",\n"
+                +
+                "\"MyInt=(i%nullPoints[2] == 0 ? null : columnRandoms[1].nextInt(scale*2) - scale )\",\n" +
+                "\"MyLong=(i%nullPoints[3] ==0 ? null : (long)(columnRandoms[2].nextInt(scale*2) - scale))\",\n" +
+                "\"MyFloat=(float)(i%nullPoints[4] == 0 ? null : i%nullPoints[5] == 0 ? 1.0F/0.0F: i%nullPoints[6] == 0 ? -1.0F/0.0F : (columnRandoms[3].nextFloat()-0.5)*scale)\",\n"
+                +
+                "\"MyDouble=(double)(i%nullPoints[7] == 0 ? null : i%nullPoints[8] == 0 ? 1.0D/0.0D: i%nullPoints[9] == 0 ? -1.0D/0.0D : (columnRandoms[4].nextDouble()-0.5)*scale)\",\n"
+                +
+                "\"MyBoolean = (i%nullPoints[10] == 0 ? null : columnRandoms[5].nextBoolean())\",\n" +
+                "\"MyChar = (i%nullPoints[11] == 0 ? null : new Character( (char) (columnRandoms[6].nextInt(27)+97) ) )\",\n"
+                +
+                "\"MyShort=(short)(i%nullPoints[12] == 0 ? null : columnRandoms[7].nextInt(scale*2) - scale )\",\n" +
+                "\"MyByte=(Byte)(i%nullPoints[13] == 0 ? null : new Byte( Integer.toString( (int)( columnRandoms[8].nextInt(Byte.MAX_VALUE*2)-Byte.MAX_VALUE ) ) ) )\",\n"
+                +
+                "\"MyBigDecimal=(i%nullPoints[14] == 0 ? null : new java.math.BigDecimal( (columnRandoms[9].nextDouble()-0.5)*scale ))\",\n"
+                +
+                "\"MyBigInteger=(i%nullPoints[15] == 0 ? null : new java.math.BigInteger(Integer.toString(columnRandoms[10].nextInt(scale*2) - scale) ))\"\n"
+                +
+                ");\n\n";
 
     }
 

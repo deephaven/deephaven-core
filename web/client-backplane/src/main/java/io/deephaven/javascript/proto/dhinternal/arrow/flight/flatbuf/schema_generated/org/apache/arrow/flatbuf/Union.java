@@ -11,9 +11,9 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Union",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Union",
+        namespace = JsPackage.GLOBAL)
 public class Union {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface CreateTypeIdsVectorDataUnionType {
@@ -59,27 +59,27 @@ public class Union {
 
     @Deprecated
     public static native double createTypeIdsVector(
-        Builder builder, Union.CreateTypeIdsVectorDataUnionType data);
+            Builder builder, Union.CreateTypeIdsVectorDataUnionType data);
 
     @JsOverlay
     @Deprecated
     public static final double createTypeIdsVector(Builder builder, Int32Array data) {
         return createTypeIdsVector(
-            builder, Js.<Union.CreateTypeIdsVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<Union.CreateTypeIdsVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createTypeIdsVector(Builder builder, JsArray<Double> data) {
         return createTypeIdsVector(
-            builder, Js.<Union.CreateTypeIdsVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<Union.CreateTypeIdsVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay
     @Deprecated
     public static final double createTypeIdsVector(Builder builder, Uint8Array data) {
         return createTypeIdsVector(
-            builder, Js.<Union.CreateTypeIdsVectorDataUnionType>uncheckedCast(data));
+                builder, Js.<Union.CreateTypeIdsVectorDataUnionType>uncheckedCast(data));
     }
 
     @JsOverlay

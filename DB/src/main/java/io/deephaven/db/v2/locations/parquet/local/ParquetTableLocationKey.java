@@ -32,23 +32,20 @@ public final class ParquetTableLocationKey extends FileTableLocationKey {
     /**
      * Construct a new ParquetTableLocationKey for the supplied {@code file} and {@code partitions}.
      *
-     * @param file The parquet file that backs the keyed location. Will be adjusted to an absolute
-     *        path.
+     * @param file The parquet file that backs the keyed location. Will be adjusted to an absolute path.
      * @param order Explicit ordering index, taking precedence over other fields
-     * @param partitions The table partitions enclosing the table location keyed by {@code this}.
-     *        Note that if this parameter is {@code null}, the location will be a member of no
-     *        partitions. An ordered copy of the map will be made, so the calling code is free to
-     *        mutate the map after this call
+     * @param partitions The table partitions enclosing the table location keyed by {@code this}. Note that if this
+     *        parameter is {@code null}, the location will be a member of no partitions. An ordered copy of the map will
+     *        be made, so the calling code is free to mutate the map after this call
      */
     public ParquetTableLocationKey(@NotNull final File file, final int order,
-        @Nullable final Map<String, Comparable<?>> partitions) {
+            @Nullable final Map<String, Comparable<?>> partitions) {
         super(validateParquetFile(file), order, partitions);
     }
 
     private static File validateParquetFile(@NotNull final File file) {
         if (!file.getName().endsWith(ParquetTableWriter.PARQUET_FILE_EXTENSION)) {
-            throw new IllegalArgumentException(
-                "Parquet file must end in " + ParquetTableWriter.PARQUET_FILE_EXTENSION);
+            throw new IllegalArgumentException("Parquet file must end in " + ParquetTableWriter.PARQUET_FILE_EXTENSION);
         }
         return file;
     }
@@ -60,8 +57,8 @@ public final class ParquetTableLocationKey extends FileTableLocationKey {
 
 
     /**
-     * Get a previously-{@link #setFileReader(ParquetFileReader) set} or on-demand created
-     * {@link ParquetFileReader} for this location key's {@code file}.
+     * Get a previously-{@link #setFileReader(ParquetFileReader) set} or on-demand created {@link ParquetFileReader} for
+     * this location key's {@code file}.
      *
      * @return A {@link ParquetFileReader} for this location key's {@code file}.
      */
@@ -73,9 +70,9 @@ public final class ParquetTableLocationKey extends FileTableLocationKey {
     }
 
     /**
-     * Set the {@link ParquetFileReader} that will be returned by {@link #getFileReader()}. Pass
-     * {@code null} to force on-demand construction at the next invocation. Always clears cached
-     * {@link ParquetMetadata} and {@link RowGroup} indices.
+     * Set the {@link ParquetFileReader} that will be returned by {@link #getFileReader()}. Pass {@code null} to force
+     * on-demand construction at the next invocation. Always clears cached {@link ParquetMetadata} and {@link RowGroup}
+     * indices.
      *
      * @param fileReader The new {@link ParquetFileReader}
      */
@@ -86,8 +83,8 @@ public final class ParquetTableLocationKey extends FileTableLocationKey {
     }
 
     /**
-     * Get a previously-{@link #setMetadata(ParquetMetadata) set} or on-demand created
-     * {@link ParquetMetadata} for this location key's {@code file}.
+     * Get a previously-{@link #setMetadata(ParquetMetadata) set} or on-demand created {@link ParquetMetadata} for this
+     * location key's {@code file}.
      *
      * @return A {@link ParquetMetadata} for this location key's {@code file}.
      */
@@ -96,17 +93,15 @@ public final class ParquetTableLocationKey extends FileTableLocationKey {
             return metadata;
         }
         try {
-            return metadata =
-                new ParquetMetadataConverter().fromParquetMetadata(getFileReader().fileMetaData);
+            return metadata = new ParquetMetadataConverter().fromParquetMetadata(getFileReader().fileMetaData);
         } catch (IOException e) {
-            throw new TableDataException("Failed to convert Parquet file metadata: " + getFile(),
-                e);
+            throw new TableDataException("Failed to convert Parquet file metadata: " + getFile(), e);
         }
     }
 
     /**
-     * Set the {@link ParquetMetadata} that will be returned by {@link #getMetadata()} ()}. Pass
-     * {@code null} to force on-demand construction at the next invocation.
+     * Set the {@link ParquetMetadata} that will be returned by {@link #getMetadata()} ()}. Pass {@code null} to force
+     * on-demand construction at the next invocation.
      *
      * @param metadata The new {@link ParquetMetadata}
      */
@@ -115,8 +110,8 @@ public final class ParquetTableLocationKey extends FileTableLocationKey {
     }
 
     /**
-     * Get previously-{@link #setRowGroupIndices(int[]) set} or on-demand created {@link RowGroup}
-     * indices for this location key's current {@link ParquetFileReader}.
+     * Get previously-{@link #setRowGroupIndices(int[]) set} or on-demand created {@link RowGroup} indices for this
+     * location key's current {@link ParquetFileReader}.
      *
      * @return {@link RowGroup} indices for this location key's current {@link ParquetFileReader}.
      */
@@ -126,17 +121,13 @@ public final class ParquetTableLocationKey extends FileTableLocationKey {
         }
         final List<RowGroup> rowGroups = getFileReader().fileMetaData.getRow_groups();
         return rowGroupIndices = IntStream.range(0, rowGroups.size()).filter(rgi -> {
-            // 1. We can safely assume there's always at least one column. Our tools will refuse to
-            // write a
+            // 1. We can safely assume there's always at least one column. Our tools will refuse to write a
             // column-less table, and other readers we've tested fail catastrophically.
-            // 2. null file path means the column is local to the file the metadata was read from
-            // (which had
+            // 2. null file path means the column is local to the file the metadata was read from (which had
             // better be this file, in that case).
             // 3. We're assuming row groups are contained within a single file.
-            // While it seems that row group *could* have column chunks splayed out into multiple
-            // files,
-            // we're not expecting that in this code path. To support it, discovery tools should
-            // figure out
+            // While it seems that row group *could* have column chunks splayed out into multiple files,
+            // we're not expecting that in this code path. To support it, discovery tools should figure out
             // the row groups for a partition themselves and call setRowGroupReaders.
             final String filePath = rowGroups.get(rgi).getColumns().get(0).getFile_path();
             return filePath == null || new File(filePath).getAbsoluteFile().equals(file);

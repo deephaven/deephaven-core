@@ -61,9 +61,9 @@ public class Viewport implements Serializable {
     @Override
     public String toString() {
         return "Viewport{" +
-            "rows=" + rows +
-            ", columns=" + columns +
-            '}';
+                "rows=" + rows +
+                ", columns=" + columns +
+                '}';
     }
 
     public boolean isEmpty() {

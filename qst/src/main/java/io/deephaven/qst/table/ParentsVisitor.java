@@ -31,9 +31,8 @@ public class ParentsVisitor implements TableSpec.Visitor {
      * Create a post-order set from {@code tables}.
      *
      * <p>
-     * Post-order means that for any given table, the table's dependencies will come before the
-     * table itself. There may be multiple valid post-orderings; callers should not rely on a
-     * specific post-ordering.
+     * Post-order means that for any given table, the table's dependencies will come before the table itself. There may
+     * be multiple valid post-orderings; callers should not rely on a specific post-ordering.
      *
      * @param tables the tables
      * @return the post-order set
@@ -49,9 +48,8 @@ public class ParentsVisitor implements TableSpec.Visitor {
      * Create a de-duplicated, post-order list from {@code tables}.
      *
      * <p>
-     * Post-order means that for any given table, the table's dependencies will come before the
-     * table itself. There may be multiple valid post-orderings; callers should not rely on a
-     * specific post-ordering.
+     * Post-order means that for any given table, the table's dependencies will come before the table itself. There may
+     * be multiple valid post-orderings; callers should not rely on a specific post-ordering.
      *
      * @param tables the tables
      * @return the de-duplicated, post-order list

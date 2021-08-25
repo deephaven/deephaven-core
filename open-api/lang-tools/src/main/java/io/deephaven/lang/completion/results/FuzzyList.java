@@ -11,12 +11,10 @@ import java.util.TreeSet;
 /**
  * A list-like object that performs fuzzy sorting on the edit distance of strings.
  *
- * The constructor takes the pattern String (user input), then you can add-by-string-key any number
- * of objects of type T. The score for each String is used to sort entries which contain source
- * object and string key.
+ * The constructor takes the pattern String (user input), then you can add-by-string-key any number of objects of type
+ * T. The score for each String is used to sort entries which contain source object and string key.
  *
- * This can allow you to, for example, sort methods based on distance to a user-entered search
- * query.
+ * This can allow you to, for example, sort methods based on distance to a user-entered search query.
  */
 public class FuzzyList<T> implements Iterable<T> {
 

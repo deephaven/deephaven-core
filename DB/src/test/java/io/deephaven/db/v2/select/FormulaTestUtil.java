@@ -108,18 +108,16 @@ public class FormulaTestUtil {
     static void setUpQueryScope() {
         QueryScope.addParam("myBoolean", true);
         QueryScope.addParam("myString", Integer.toString(QUERYSCOPE_OBJ_BASE_VALUE));
-        QueryScope.addParam("myCharSequence",
-            (CharSequence) Integer.toString(QUERYSCOPE_OBJ_BASE_VALUE));
+        QueryScope.addParam("myCharSequence", (CharSequence) Integer.toString(QUERYSCOPE_OBJ_BASE_VALUE));
         QueryScope.addParam("myObject", Object.class);
 
         QueryScope.addParam("myIntArray", BASE_VALUES.clone());
         QueryScope.addParam("myDoubleArray", IntStream.of(BASE_VALUES).asDoubleStream().toArray());
         QueryScope.addParam("myCharArray", ArrayUtils.getUnboxedArray(
-            IntStream.of(BASE_VALUES).mapToObj((anInt) -> (char) anInt).toArray(Character[]::new)));
+                IntStream.of(BASE_VALUES).mapToObj((anInt) -> (char) anInt).toArray(Character[]::new)));
         QueryScope.addParam("myDoubleObjArray",
-            IntStream.of(BASE_VALUES).asDoubleStream().boxed().toArray(Double[]::new));
-        QueryScope.addParam("myIntegerObjArray",
-            IntStream.of(BASE_VALUES).boxed().toArray(Integer[]::new));
+                IntStream.of(BASE_VALUES).asDoubleStream().boxed().toArray(Double[]::new));
+        QueryScope.addParam("myIntegerObjArray", IntStream.of(BASE_VALUES).boxed().toArray(Integer[]::new));
         QueryScope.addParam("myByteArray", IntStream.of(BASE_VALUES));
 
         QueryScope.addParam("myBooleanObj", true);
@@ -132,16 +130,15 @@ public class FormulaTestUtil {
         QueryScope.addParam("myDoubleObj", (double) QUERYSCOPE_OBJ_BASE_VALUE);
 
         QueryScope.addParam("myArrayList",
-            new ArrayList<>(IntStream.of(BASE_VALUES).boxed().collect(Collectors.toList())));
-        QueryScope.addParam("myHashMap", new HashMap<>(
-            Collections.singletonMap(QUERYSCOPE_OBJ_BASE_VALUE, QUERYSCOPE_OBJ_BASE_VALUE)));
-        QueryScope.addParam("myDBArray",
-            new DbArrayDirect<>(IntStream.of(BASE_VALUES).boxed().toArray()));
+                new ArrayList<>(IntStream.of(BASE_VALUES).boxed().collect(Collectors.toList())));
+        QueryScope.addParam("myHashMap",
+                new HashMap<>(Collections.singletonMap(QUERYSCOPE_OBJ_BASE_VALUE, QUERYSCOPE_OBJ_BASE_VALUE)));
+        QueryScope.addParam("myDBArray", new DbArrayDirect<>(IntStream.of(BASE_VALUES).boxed().toArray()));
         QueryScope.addParam("myEnumValue", TestFormulaColumnEnum.ONE);
         QueryScope.addParam("myObjectDBArray", DbArray.class);
         QueryScope.addParam("myIntDBArray", new DbIntArrayDirect(BASE_VALUES));
-        QueryScope.addParam("myByteDBArray", new DbByteArrayDirect(ArrayUtils.getUnboxedArray(
-            IntStream.of(BASE_VALUES).boxed().map(Integer::byteValue).toArray(Byte[]::new))));
+        QueryScope.addParam("myByteDBArray", new DbByteArrayDirect(ArrayUtils
+                .getUnboxedArray(IntStream.of(BASE_VALUES).boxed().map(Integer::byteValue).toArray(Byte[]::new))));
         // QueryScope.addParam("myBooleanDBArray", DbBooleanArray.class);
 
         QueryScope.addParam("ExampleQuantity", 1);
@@ -154,21 +151,17 @@ public class FormulaTestUtil {
     @NotNull
     static Table getTestDataTable() {
         return TableTools.newTable(
-            TableTools.col("BooleanCol", false, true, QueryConstants.NULL_BOOLEAN),
-            TableTools.charCol("CharCol", (char) BASE_VALUES[0], (char) BASE_VALUES[1],
-                QueryConstants.NULL_CHAR),
-            TableTools.byteCol("ByteCol", (byte) BASE_VALUES[0], (byte) BASE_VALUES[1],
-                QueryConstants.NULL_BYTE),
-            TableTools.shortCol("ShortCol", (short) BASE_VALUES[0], (short) BASE_VALUES[1],
-                QueryConstants.NULL_SHORT),
-            TableTools.intCol("IntCol", (int) BASE_VALUES[0], (int) BASE_VALUES[1],
-                QueryConstants.NULL_INT),
-            TableTools.longCol("LongCol", (long) BASE_VALUES[0], (long) BASE_VALUES[1],
-                QueryConstants.NULL_LONG),
-            TableTools.floatCol("FloatCol", (float) BASE_VALUES[0], (float) BASE_VALUES[1],
-                QueryConstants.NULL_FLOAT),
-            TableTools.doubleCol("DoubleCol", (double) BASE_VALUES[0], (double) BASE_VALUES[1],
-                QueryConstants.NULL_DOUBLE));
+                TableTools.col("BooleanCol", false, true, QueryConstants.NULL_BOOLEAN),
+                TableTools.charCol("CharCol", (char) BASE_VALUES[0], (char) BASE_VALUES[1], QueryConstants.NULL_CHAR),
+                TableTools.byteCol("ByteCol", (byte) BASE_VALUES[0], (byte) BASE_VALUES[1], QueryConstants.NULL_BYTE),
+                TableTools.shortCol("ShortCol", (short) BASE_VALUES[0], (short) BASE_VALUES[1],
+                        QueryConstants.NULL_SHORT),
+                TableTools.intCol("IntCol", (int) BASE_VALUES[0], (int) BASE_VALUES[1], QueryConstants.NULL_INT),
+                TableTools.longCol("LongCol", (long) BASE_VALUES[0], (long) BASE_VALUES[1], QueryConstants.NULL_LONG),
+                TableTools.floatCol("FloatCol", (float) BASE_VALUES[0], (float) BASE_VALUES[1],
+                        QueryConstants.NULL_FLOAT),
+                TableTools.doubleCol("DoubleCol", (double) BASE_VALUES[0], (double) BASE_VALUES[1],
+                        QueryConstants.NULL_DOUBLE));
     }
 
     enum TestFormulaColumnEnum {

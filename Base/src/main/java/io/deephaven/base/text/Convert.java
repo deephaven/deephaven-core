@@ -24,8 +24,8 @@ public class Convert {
     public static int MAX_LONG_BYTES = 20;
 
     /**
-     * the maximum number of bytes in the ASCII decimal representation of a double: 17 digits,
-     * decimal point, sign, 'E', exponent
+     * the maximum number of bytes in the ASCII decimal representation of a double: 17 digits, decimal point, sign, 'E',
+     * exponent
      */
     public static int MAX_DOUBLE_BYTES = 24;
 
@@ -134,7 +134,7 @@ public class Convert {
     // ------------------------------------------------------------------------------------------
 
     private static final ThreadLocal<StringBuilder> STRING_BUILDER_THREAD_LOCAL =
-        ThreadLocal.withInitial(() -> new StringBuilder(MAX_DOUBLE_BYTES));
+            ThreadLocal.withInitial(() -> new StringBuilder(MAX_DOUBLE_BYTES));
 
     /**
      * Append a decimal representation of a {@code double} to a {@link ByteBuffer}. Works as if
@@ -160,8 +160,7 @@ public class Convert {
     // ------------------------------------------------------------------------------------------
 
     /**
-     * The number of days preceding the first day of the given month, ignoring leap days, with Jan
-     * == 1.
+     * The number of days preceding the first day of the given month, ignoring leap days, with Jan == 1.
      */
     private static final int[] DAYS_SO_FAR = {
             0, 0, 31, 59, 90, 120, // xxx Jan Feb Mar Apr May
@@ -195,9 +194,8 @@ public class Convert {
     }
 
     /**
-     * Append an ISO 8601 representation of millis-since-the-epoch timestamp to a byte buffer. The
-     * output length is always 23 bytes plus the length of the GMT offset suffix:
-     * YYYY-MM-DDTHH:MM:SS.MMM&lt;suffix&gt;.
+     * Append an ISO 8601 representation of millis-since-the-epoch timestamp to a byte buffer. The output length is
+     * always 23 bytes plus the length of the GMT offset suffix: YYYY-MM-DDTHH:MM:SS.MMM&lt;suffix&gt;.
      *
      * @param t the timestamp to be converted, millis since 1970-01-01T00:00:00 GMT
      * @param gmtOffsetSuffix the time zone suffix, or null for no suffix
@@ -249,9 +247,8 @@ public class Convert {
     }
 
     /**
-     * Append an ISO 8601 representation of a broken-down time to a byte buffer. The output length
-     * is always 23 bytes plus the length of the GMT offset suffix:
-     * YYYY-MM-DDTHH:MM:SS.MMM&lt;suffix&gt;.
+     * Append an ISO 8601 representation of a broken-down time to a byte buffer. The output length is always 23 bytes
+     * plus the length of the GMT offset suffix: YYYY-MM-DDTHH:MM:SS.MMM&lt;suffix&gt;.
      *
      * @param year the year
      * @param month the month
@@ -266,8 +263,8 @@ public class Convert {
      * @throws java.nio.BufferOverflowException if there is not enough space in the buffer
      */
     public static ByteBuffer appendISO8601(int year, int month, int day,
-        int hour, int minute, int second, int millis,
-        byte[] gmtOffsetSuffix, ByteBuffer b) {
+            int hour, int minute, int second, int millis,
+            byte[] gmtOffsetSuffix, ByteBuffer b) {
         b.put((byte) ('0' + year / 1000));
         b.put((byte) ('0' + (year % 1000) / 100));
         b.put((byte) ('0' + (year % 100) / 10));
@@ -298,9 +295,8 @@ public class Convert {
     }
 
     /**
-     * Append an ISO 8601 representation of micros-since-the-epoch timestamp to a byte buffer. The
-     * output length is always 26 bytes plus the length of the GMT offset suffix:
-     * YYYY-MM-DDTHH:MM:SS.MMMMMM&lt;suffix&gt;.
+     * Append an ISO 8601 representation of micros-since-the-epoch timestamp to a byte buffer. The output length is
+     * always 26 bytes plus the length of the GMT offset suffix: YYYY-MM-DDTHH:MM:SS.MMMMMM&lt;suffix&gt;.
      *
      * @param t the timestamp to be converted, micros since 1970-01-01T00:00:00 GMT
      * @param gmtOffsetSuffix the time zone suffix, or null for no suffix
@@ -350,14 +346,12 @@ public class Convert {
         minute %= 60;
 
         /* put it into the byte buffer */
-        return appendISO8601Micros(year, month, day, hour, minute, second, millis, (int) micros,
-            gmtOffsetSuffix, b);
+        return appendISO8601Micros(year, month, day, hour, minute, second, millis, (int) micros, gmtOffsetSuffix, b);
     }
 
     /**
-     * Append an ISO 8601 representation of a broken-down time to a byte buffer. The output length
-     * is always 23 bytes plus the length of the GMT offset suffix:
-     * YYYY-MM-DDTHH:MM:SS.MMM&lt;suffix&gt;.
+     * Append an ISO 8601 representation of a broken-down time to a byte buffer. The output length is always 23 bytes
+     * plus the length of the GMT offset suffix: YYYY-MM-DDTHH:MM:SS.MMM&lt;suffix&gt;.
      *
      * @param year the year
      * @param month the month
@@ -373,8 +367,8 @@ public class Convert {
      * @throws java.nio.BufferOverflowException if there is not enough space in the buffer
      */
     public static ByteBuffer appendISO8601Micros(int year, int month, int day,
-        int hour, int minute, int second, int millis, int micros,
-        byte[] gmtOffsetSuffix, ByteBuffer b) {
+            int hour, int minute, int second, int millis, int micros,
+            byte[] gmtOffsetSuffix, ByteBuffer b) {
         b.put((byte) ('0' + year / 1000));
         b.put((byte) ('0' + (year % 1000) / 100));
         b.put((byte) ('0' + (year % 100) / 10));

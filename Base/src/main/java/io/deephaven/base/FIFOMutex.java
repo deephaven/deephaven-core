@@ -39,10 +39,9 @@ public class FIFOMutex {
         }
         int spins = 0;
         boolean peekNotMe = true;
-        while ((peekNotMe && (peekNotMe = (threads.peek() != me))) || // once we've peeked ourselves
-                                                                      // once, we don't need to do
-                                                                      // it again!
-            !leader.compareAndSet(null, me)) {
+        while ((peekNotMe && (peekNotMe = (threads.peek() != me))) || // once we've peeked ourselves once, we don't need
+                                                                      // to do it again!
+                !leader.compareAndSet(null, me)) {
             if ((++spins % 1000) == 0) {
                 LockSupport.park(this);
 
@@ -62,7 +61,7 @@ public class FIFOMutex {
         if (debugName != null) {
             lastLeadChange = System.nanoTime();
             log.info("FIFOMutex: " + debugName + ": thread " + me.getName() + " leading after "
-                + ((lastLeadChange - t0 + 500) / 1000) + " micros");
+                    + ((lastLeadChange - t0 + 500) / 1000) + " micros");
         }
     }
 
@@ -70,7 +69,7 @@ public class FIFOMutex {
         Thread me = Thread.currentThread();
         if (debugName != null) {
             log.info("FIFOMutex: " + debugName + ": thread " + me.getName() + " handing off after "
-                + ((System.nanoTime() - lastLeadChange + 500) / 1000) + " micros");
+                    + ((System.nanoTime() - lastLeadChange + 500) / 1000) + " micros");
         }
         if (!leader.compareAndSet(me, null)) {
             throw new IllegalStateException("wrong thread called handoff");

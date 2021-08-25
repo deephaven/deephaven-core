@@ -32,17 +32,17 @@ public class FilterTest {
     @Test
     void ands() {
         toString(
-            FilterAnd.of(Filter.isNotNull(ColumnName.of("Foo")),
-                FilterCondition.gt(ColumnName.of("Foo"), Value.of(42L))),
-            "(!isNull(Foo)) && (Foo > 42)");
+                FilterAnd.of(Filter.isNotNull(ColumnName.of("Foo")),
+                        FilterCondition.gt(ColumnName.of("Foo"), Value.of(42L))),
+                "(!isNull(Foo)) && (Foo > 42)");
     }
 
     @Test
     void ors() {
         toString(
-            FilterOr.of(Filter.isNull(ColumnName.of("Foo")),
-                FilterCondition.eq(ColumnName.of("Foo"), Value.of(42L))),
-            "(isNull(Foo)) || (Foo == 42)");
+                FilterOr.of(Filter.isNull(ColumnName.of("Foo")),
+                        FilterCondition.eq(ColumnName.of("Foo"), Value.of(42L))),
+                "(isNull(Foo)) || (Foo == 42)");
     }
 
     private static void toString(Filter filter, String expected) {

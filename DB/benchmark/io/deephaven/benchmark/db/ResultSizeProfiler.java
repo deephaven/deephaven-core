@@ -12,8 +12,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 /**
- * Simple profiler that just records how many rows were in the result (presuming you set the result
- * size).
+ * Simple profiler that just records how many rows were in the result (presuming you set the result size).
  */
 public class ResultSizeProfiler implements InternalProfiler {
     private static long resultSize;
@@ -29,11 +28,9 @@ public class ResultSizeProfiler implements InternalProfiler {
     }
 
     @Override
-    public Collection<? extends Result> afterIteration(BenchmarkParams benchmarkParams,
-        IterationParams iterationParams,
-        IterationResult result) {
-        return Collections
-            .singleton(new ScalarResult("Result size", resultSize, "rows", AggregationPolicy.AVG));
+    public Collection<? extends Result> afterIteration(BenchmarkParams benchmarkParams, IterationParams iterationParams,
+            IterationResult result) {
+        return Collections.singleton(new ScalarResult("Result size", resultSize, "rows", AggregationPolicy.AVG));
     }
 
     public static void setResultSize(long resultSize) {

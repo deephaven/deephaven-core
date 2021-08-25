@@ -27,8 +27,7 @@ public class TableMapSupplier implements TableMap {
     // This list of functions is for table map transformations
     private final List<TransformTablesFunction> functions;
 
-    private final WeakReferenceManager<Listener> internalListeners =
-        new WeakReferenceManager<>(true);
+    private final WeakReferenceManager<Listener> internalListeners = new WeakReferenceManager<>(true);
 
     @ReferentialIntegrity
     private final Listener internalListener = (key, table) -> {
@@ -42,18 +41,21 @@ public class TableMapSupplier implements TableMap {
         });
     };
 
-    public TableMapSupplier(TableMap sourceMap,
-        List<java.util.function.Function<Table, Table>> functions) {
+    public TableMapSupplier(TableMap sourceMap, List<java.util.function.Function<Table, Table>> functions) {
         this.sourceMap = sourceMap;
         this.functions = functions.stream()
-            .map(TableMapFunctionAdapter::of)
-            .map(f -> new TransformTablesFunction(null, f))
-            .collect(Collectors.toCollection(ArrayList::new));
+                .map(TableMapFunctionAdapter::of)
+                .map(f -> new TransformTablesFunction(null, f))
+                .collect(Collectors.toCollection(ArrayList::new));
         sourceMap.addListener(internalListener);
     }
 
-    private TableMapSupplier(TableMap sourceMap, List<TransformTablesFunction> functions,
-        boolean sentinel) { // sentinel forces new type-signature for constructor
+    private TableMapSupplier(TableMap sourceMap, List<TransformTablesFunction> functions, boolean sentinel) { // sentinel
+                                                                                                              // forces
+                                                                                                              // new
+                                                                                                              // type-signature
+                                                                                                              // for
+                                                                                                              // constructor
         this.sourceMap = sourceMap;
         this.functions = new ArrayList<>(functions);
         sourceMap.addListener(internalListener);
@@ -105,8 +107,7 @@ public class TableMapSupplier implements TableMap {
 
     @Override
     public Collection<Table> values() {
-        return sourceMap.entrySet().stream().map(this::applyOperations)
-            .collect(Collectors.toList());
+        return sourceMap.entrySet().stream().map(this::applyOperations).collect(Collectors.toList());
     }
 
     @Override
@@ -158,17 +159,15 @@ public class TableMapSupplier implements TableMap {
 
     @Override
     public TableMap transformTablesWithKey(TableDefinition returnDefinition,
-        BiFunction<Object, Table, Table> function) {
+            BiFunction<Object, Table, Table> function) {
         final TableMapSupplier copy = new TableMapSupplier(sourceMap, functions, true);
         copy.functions.add(new TransformTablesFunction(returnDefinition, function));
         return copy;
     }
 
     @Override
-    public TableMap transformTablesWithMap(TableMap otherMap,
-        BiFunction<Table, Table, Table> function) {
-        throw new UnsupportedOperationException(
-            "TableSupplierMap does not support transformTablesWithMap");
+    public TableMap transformTablesWithMap(TableMap otherMap, BiFunction<Table, Table, Table> function) {
+        throw new UnsupportedOperationException("TableSupplierMap does not support transformTablesWithMap");
     }
 
     @Override
@@ -193,15 +192,13 @@ public class TableMapSupplier implements TableMap {
 
     @Override
     public Table merge() {
-        // note: this is different than the previous logic - we are doing are operations on the
-        // inner tables first
+        // note: this is different than the previous logic - we are doing are operations on the inner tables first
         return applyFunctionsToSourceMap().merge();
     }
 
     @Override
     public Table asTable(boolean strictKeys, boolean allowCoalesce, boolean sanityCheckJoins) {
-        // note: this is different than the previous logic - we are doing are operations on the
-        // inner tables first
+        // note: this is different than the previous logic - we are doing are operations on the inner tables first
         return applyFunctionsToSourceMap().asTable(strictKeys, allowCoalesce, sanityCheckJoins);
     }
 

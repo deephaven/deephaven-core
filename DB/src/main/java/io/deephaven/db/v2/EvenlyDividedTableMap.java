@@ -24,9 +24,9 @@ public class EvenlyDividedTableMap {
         @Override
         public String toString() {
             return "Division{" +
-                "start=" + start +
-                ", end=" + end +
-                '}';
+                    "start=" + start +
+                    ", end=" + end +
+                    '}';
         }
 
         @Override
@@ -37,7 +37,7 @@ public class EvenlyDividedTableMap {
                 return false;
             final Division division = (Division) o;
             return start == division.start &&
-                end == division.end;
+                    end == division.end;
         }
 
         @Override
@@ -50,11 +50,10 @@ public class EvenlyDividedTableMap {
      * Divide the table into even slices, inserting the results into a TableMap.
      *
      * <p>
-     * This method is intended to be used to enable parallelism by creating a TableMap without the
-     * cost of a full byExternal. It is important to note that any natural boundaries in the data
-     * are not respected, thus when doing operations in parallel and calling
-     * {@link TransformableTableMap#merge()} the result is very likely not the same as doing the
-     * operations individually. Care must be taken to preserve your desired semantics.
+     * This method is intended to be used to enable parallelism by creating a TableMap without the cost of a full
+     * byExternal. It is important to note that any natural boundaries in the data are not respected, thus when doing
+     * operations in parallel and calling {@link TransformableTableMap#merge()} the result is very likely not the same
+     * as doing the operations individually. Care must be taken to preserve your desired semantics.
      * </p>
      *
      * @param table the table to divide
@@ -75,30 +74,27 @@ public class EvenlyDividedTableMap {
 
         long start;
         for (start = 0; start < tableSize; start += divisionSize) {
-            localTableMap.put(new Division(start, start + divisionSize),
-                queryTable.slice(start, start + divisionSize));
+            localTableMap.put(new Division(start, start + divisionSize), queryTable.slice(start, start + divisionSize));
         }
         if (queryTable.isRefreshing()) {
             localTableMap.setRefreshing(true);
             final long fStart = start;
             final ShiftAwareListener listener =
-                new InstrumentedShiftAwareListenerAdapter("tablemap division", queryTable, false) {
-                    long currentEnd = fStart;
+                    new InstrumentedShiftAwareListenerAdapter("tablemap division", queryTable, false) {
+                        long currentEnd = fStart;
 
-                    @Override
-                    public void onUpdate(Update upstream) {
-                        if (queryTable.getIndex().size() > currentEnd) {
-                            // we should slice the table again and make a new segment for our
-                            // tablemap
-                            while (currentEnd < queryTable.getIndex().size()) {
-                                localTableMap.put(
-                                    new Division(currentEnd, currentEnd + divisionSize),
-                                    queryTable.slice(currentEnd, currentEnd + divisionSize));
-                                currentEnd += divisionSize;
+                        @Override
+                        public void onUpdate(Update upstream) {
+                            if (queryTable.getIndex().size() > currentEnd) {
+                                // we should slice the table again and make a new segment for our tablemap
+                                while (currentEnd < queryTable.getIndex().size()) {
+                                    localTableMap.put(new Division(currentEnd, currentEnd + divisionSize),
+                                            queryTable.slice(currentEnd, currentEnd + divisionSize));
+                                    currentEnd += divisionSize;
+                                }
                             }
                         }
-                    }
-                };
+                    };
             queryTable.listenForUpdates(listener);
             localTableMap.manage(listener);
             localTableMap.addParentReference(listener);

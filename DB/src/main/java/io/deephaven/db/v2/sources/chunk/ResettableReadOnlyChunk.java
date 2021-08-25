@@ -4,26 +4,22 @@ import io.deephaven.db.v2.sources.chunk.Attributes.Any;
 import io.deephaven.db.v2.sources.chunk.util.pools.PoolableChunk;
 
 /**
- * {@link Chunk} that may have its backing storage reset to a slice of that belonging to another
- * {@link Chunk} or a native array.
+ * {@link Chunk} that may have its backing storage reset to a slice of that belonging to another {@link Chunk} or a
+ * native array.
  */
-public interface ResettableReadOnlyChunk<ATTR_BASE extends Any>
-    extends ResettableChunk<ATTR_BASE>, PoolableChunk {
+public interface ResettableReadOnlyChunk<ATTR_BASE extends Any> extends ResettableChunk<ATTR_BASE>, PoolableChunk {
 
     /**
-     * Reset the data and bounds of this chunk to a range or sub-range of the specified
-     * {@link Chunk}.
+     * Reset the data and bounds of this chunk to a range or sub-range of the specified {@link Chunk}.
      *
      * @param other The other {@link Chunk}
      * @param offset The offset into other
      * @param capacity The capacity this should have after reset
      */
-    <ATTR extends ATTR_BASE> Chunk<ATTR> resetFromChunk(Chunk<? extends ATTR> other, int offset,
-        int capacity);
+    <ATTR extends ATTR_BASE> Chunk<ATTR> resetFromChunk(Chunk<? extends ATTR> other, int offset, int capacity);
 
     @Override
-    default <ATTR extends ATTR_BASE> Chunk<ATTR> resetFromChunk(WritableChunk<ATTR> other,
-        int offset, int capacity) {
+    default <ATTR extends ATTR_BASE> Chunk<ATTR> resetFromChunk(WritableChunk<ATTR> other, int offset, int capacity) {
         return resetFromChunk((Chunk<ATTR>) other, offset, capacity);
     }
 

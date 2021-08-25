@@ -22,18 +22,16 @@ import java.util.Set;
  */
 class TableShowTools {
 
-    static void showInternal(Table source, long firstRow, long lastRowExclusive,
-        DBTimeZone timeZone, String delimiter, PrintStream out, boolean showIndex,
-        String[] columns) {
-        final QueryPerformanceNugget nugget =
-            QueryPerformanceRecorder.getInstance().getNugget("TableTools.show()");
+    static void showInternal(Table source, long firstRow, long lastRowExclusive, DBTimeZone timeZone, String delimiter,
+            PrintStream out, boolean showIndex, String[] columns) {
+        final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance().getNugget("TableTools.show()");
         try {
             if (columns.length == 0) {
                 final List<String> columnNames = source.getDefinition().getColumnNames();
                 columns = columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
             }
             final ColumnSource[] columnSources =
-                Arrays.stream(columns).map(source::getColumnSource).toArray(ColumnSource[]::new);
+                    Arrays.stream(columns).map(source::getColumnSource).toArray(ColumnSource[]::new);
 
             final Index index = source.getIndex();
             int lineLen = 0;
@@ -55,8 +53,7 @@ class TableShowTools {
                     columnLimits.add(lineLen);
                     lineLen++;
                 }
-                final int columnLen =
-                    columnLengths[i] = getColumnLen(column, columnSources[i], index);
+                final int columnLen = columnLengths[i] = getColumnLen(column, columnSources[i], index);
                 while (columnLen > column.length()) {
                     column = " " + column;
                 }
@@ -84,7 +81,7 @@ class TableShowTools {
             final ColumnPrinter indexPrinter = new DefaultPrinter(10);
             long ri = 0;
             for (final Index.Iterator indexIterator = index.iterator(); ri < lastRowExclusive
-                && indexIterator.hasNext(); ++ri) {
+                    && indexIterator.hasNext(); ++ri) {
                 final long key = indexIterator.nextLong();
                 if (ri < firstRow) {
                     continue;
@@ -117,8 +114,7 @@ class TableShowTools {
             len = Math.max(len, 40);
         } else if (columnSource.getType() == long.class || columnSource.getType() == Long.class) {
             len = Math.max(len, 20);
-        } else if (columnSource.getType() == double.class
-            || columnSource.getType() == Double.class) {
+        } else if (columnSource.getType() == double.class || columnSource.getType() == Double.class) {
             len = Math.max(len, 20);
         } else if (columnSource.getType() == DBDateTime.class) {
             len = Math.max(len, 33);
@@ -127,8 +123,7 @@ class TableShowTools {
         } else if (columnSource.getType() == SmartKey.class) {
             len = Math.max(len, 40);
         } else {
-            final Annotation annotation =
-                columnSource.getType().getAnnotation(TableToolsShowControl.class);
+            final Annotation annotation = columnSource.getType().getAnnotation(TableToolsShowControl.class);
             if (annotation != null) {
                 len = Math.max(len, ((TableToolsShowControl) annotation).getWidth());
             } else {
@@ -147,8 +142,7 @@ class TableShowTools {
         return len;
     }
 
-    private static ColumnPrinter getColumnPrinter(ColumnSource column, int len,
-        DBTimeZone timeZone) {
+    private static ColumnPrinter getColumnPrinter(ColumnSource column, int len, DBTimeZone timeZone) {
         if (column.getType() == DBDateTime.class) {
             return new DateTimePrinter(len, timeZone);
         } else if (!column.getType().isArray()) {

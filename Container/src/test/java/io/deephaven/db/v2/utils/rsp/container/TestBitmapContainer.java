@@ -581,7 +581,7 @@ public class TestBitmapContainer extends TestContainerBase {
     @Test
     public void testIntersectsWithRangeHitScan() {
         Container container = new BitmapContainer().add(0, 10)
-            .add(500, 512).add(lower16Bits(-50), lower16Bits(-10));
+                .add(500, 512).add(lower16Bits(-50), lower16Bits(-10));
         assertTrue(container.intersects(0, 1));
         assertTrue(container.intersects(0, 101));
         assertTrue(container.intersects(0, 1 << 16));
@@ -828,7 +828,7 @@ public class TestBitmapContainer extends TestContainerBase {
         Container bc = new BitmapContainer();
         bc = bc.iadd(67, 70);
         BitmapContainer.ValuesInRangeIter it =
-            new BitmapContainer.ValuesInRangeIter(((BitmapContainer) bc).bitmap, 68, 2001);
+                new BitmapContainer.ValuesInRangeIter(((BitmapContainer) bc).bitmap, 68, 2001);
         assertTrue(it.hasNext());
         assertEquals(68, it.next());
         assertTrue(it.hasNext());
@@ -860,10 +860,10 @@ public class TestBitmapContainer extends TestContainerBase {
         bc = bc.add(32767, 32769);
         bc = bc.add(65535, 65536);
         final BitmapContainer.ValuesInRangeContext ctx =
-            new BitmapContainer.ValuesInRangeContext(29566, 44970);
+                new BitmapContainer.ValuesInRangeContext(29566, 44970);
         final long[] bitmap = ((BitmapContainer) bc).bitmap;
         BitmapContainer.ValuesInRangeIter it =
-            new BitmapContainer.ValuesInRangeIter(bitmap, ctx);
+                new BitmapContainer.ValuesInRangeIter(bitmap, ctx);
         assertEquals(2, ctx.cardinalityInRange(bitmap));
         assertTrue(it.hasNext());
         assertEquals((short) 32767, it.next());
@@ -876,10 +876,10 @@ public class TestBitmapContainer extends TestContainerBase {
     public void testValuesInRangeIterRegression1() {
         Container bc = new BitmapContainer();
         final BitmapContainer.ValuesInRangeContext ctx =
-            new BitmapContainer.ValuesInRangeContext(0, 65535);
+                new BitmapContainer.ValuesInRangeContext(0, 65535);
         final long[] bitmap = ((BitmapContainer) bc).bitmap;
         final BitmapContainer.ValuesInRangeIter it =
-            new BitmapContainer.ValuesInRangeIter(bitmap, ctx);
+                new BitmapContainer.ValuesInRangeIter(bitmap, ctx);
         assertFalse(it.hasNext());
     }
 
@@ -913,8 +913,7 @@ public class TestBitmapContainer extends TestContainerBase {
                 final Container onesInRange = Container.singleRange(start, end);
                 final Container bcRestricted = bc.and(onesInRange);
                 final ShortIterator sit = bcRestricted.getShortIterator();
-                final BitmapContainer.ValuesInRangeIter vit =
-                    new BitmapContainer.ValuesInRangeIter(bitmap, start, end);
+                final BitmapContainer.ValuesInRangeIter vit = new BitmapContainer.ValuesInRangeIter(bitmap, start, end);
                 while (sit.hasNext()) {
                     assertTrue(vit.hasNext());
                     assertEquals(sit.next(), vit.next());

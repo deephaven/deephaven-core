@@ -90,10 +90,7 @@ public class TimeSeriesFilter extends SelectFilterLivenessArtifactImpl implement
 
     @Override
     public boolean isSimpleFilter() {
-        /*
-         * This doesn't execute any user code, so it should be safe to execute it against untrusted
-         * data.
-         */
+        /* This doesn't execute any user code, so it should be safe to execute it against untrusted data. */
         return true;
     }
 

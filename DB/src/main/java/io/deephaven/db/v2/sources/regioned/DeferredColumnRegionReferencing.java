@@ -6,15 +6,15 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.Supplier;
 
 /**
- * {@link ColumnRegionReferencing} implementation for deferred regions, i.e. regions that will be
- * properly constructed on first access.
+ * {@link ColumnRegionReferencing} implementation for deferred regions, i.e. regions that will be properly constructed
+ * on first access.
  */
 public class DeferredColumnRegionReferencing<ATTR extends Attributes.Any, REFERENCED_COLUMN_REGION extends ColumnRegion<ATTR>>
-    extends DeferredColumnRegionBase<ATTR, ColumnRegionReferencing<ATTR, REFERENCED_COLUMN_REGION>>
-    implements ColumnRegionReferencing<ATTR, REFERENCED_COLUMN_REGION> {
+        extends DeferredColumnRegionBase<ATTR, ColumnRegionReferencing<ATTR, REFERENCED_COLUMN_REGION>>
+        implements ColumnRegionReferencing<ATTR, REFERENCED_COLUMN_REGION> {
 
     DeferredColumnRegionReferencing(final long pageMask,
-        @NotNull Supplier<ColumnRegionReferencing<ATTR, REFERENCED_COLUMN_REGION>> resultRegionFactory) {
+            @NotNull Supplier<ColumnRegionReferencing<ATTR, REFERENCED_COLUMN_REGION>> resultRegionFactory) {
         super(pageMask, resultRegionFactory);
     }
 

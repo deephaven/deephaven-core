@@ -35,25 +35,25 @@ public class TestColumnHandlerFactory extends BaseArrayTestCase {
     private final Paint[] paints = {null, new Color(100, 0, 0), new Color(0, 100, 0)};
     private final String[] strings = {"A", "B", "C"};
     private final Table table = TableTools.newTable(
-        TableTools.intCol("ints", ints),
-        TableTools.floatCol("floats", floats),
-        TableTools.longCol("longs", longs),
-        TableTools.doubleCol("doubles", doubles),
-        TableTools.shortCol("shorts", shorts),
-        TableTools.col("Shorts", Shorts),
-        TableTools.col("Integers", Integers),
-        TableTools.col("Longs", Longs),
-        TableTools.col("Floats", Floats),
-        TableTools.col("Doubles", Doubles),
-        TableTools.col("Numbers", Numbers),
-        TableTools.col("Dates", Dates),
-        TableTools.col("DBDateTimes", DBDateTimes),
-        TableTools.col("Paints", paints),
-        TableTools.col("Strings", strings)).ungroup();
+            TableTools.intCol("ints", ints),
+            TableTools.floatCol("floats", floats),
+            TableTools.longCol("longs", longs),
+            TableTools.doubleCol("doubles", doubles),
+            TableTools.shortCol("shorts", shorts),
+            TableTools.col("Shorts", Shorts),
+            TableTools.col("Integers", Integers),
+            TableTools.col("Longs", Longs),
+            TableTools.col("Floats", Floats),
+            TableTools.col("Doubles", Doubles),
+            TableTools.col("Numbers", Numbers),
+            TableTools.col("Dates", Dates),
+            TableTools.col("DBDateTimes", DBDateTimes),
+            TableTools.col("Paints", paints),
+            TableTools.col("Strings", strings)).ungroup();
 
     private final TableHandle tableHandle = new TableHandle(table,
-        "ints", "floats", "longs", "doubles", "shorts", "Shorts", "Integers", "Longs", "Floats",
-        "Doubles", "Numbers", "Dates", "DBDateTimes", "Paints", "Strings");
+            "ints", "floats", "longs", "doubles", "shorts", "Shorts", "Integers", "Longs", "Floats", "Doubles",
+            "Numbers", "Dates", "DBDateTimes", "Paints", "Strings");
 
 
     public void testTypeClassification() {
@@ -80,55 +80,42 @@ public class TestColumnHandlerFactory extends BaseArrayTestCase {
             assertTrue(e.getMessage().contains("Null"));
         }
 
-        ColumnHandlerFactory.ColumnHandler handler =
-            ColumnHandlerFactory.newNumericHandler(tableHandle, "ints", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "ints", int.class,
-            handler);
+        ColumnHandlerFactory.ColumnHandler handler = ColumnHandlerFactory.newNumericHandler(tableHandle, "ints", null);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "ints", int.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(tableHandle, "doubles", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "doubles",
-            double.class, handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "doubles", double.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(tableHandle, "longs", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "longs", long.class,
-            handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "longs", long.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(tableHandle, "floats", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "floats",
-            float.class, handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "floats", float.class, handler);
 
 
         handler = ColumnHandlerFactory.newNumericHandler(tableHandle, "Integers", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "Integers", int.class,
-            handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "Integers", int.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(tableHandle, "Doubles", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "Doubles",
-            double.class, handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "Doubles", double.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(tableHandle, "Floats", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "Floats",
-            float.class, handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "Floats", float.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(tableHandle, "Shorts", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "Shorts", short.class,
-            handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "Shorts", short.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(tableHandle, "Longs", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "Longs", long.class,
-            handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "Longs", long.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(tableHandle, "Numbers", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "Numbers",
-            Number.class, handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "Numbers", Number.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(tableHandle, "Dates", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.TIME, "Dates", Date.class,
-            handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.TIME, "Dates", Date.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(tableHandle, "DBDateTimes", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.TIME, "DBDateTimes",
-            DBDateTime.class, handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.TIME, "DBDateTimes", DBDateTime.class, handler);
 
         handler.getTableHandle();
         handler = ColumnHandlerFactory.newNumericHandler(tableHandle, "Paints", null);
@@ -173,55 +160,42 @@ public class TestColumnHandlerFactory extends BaseArrayTestCase {
             assertTrue(e.getMessage().contains("Null"));
         }
 
-        ColumnHandlerFactory.ColumnHandler handler =
-            ColumnHandlerFactory.newNumericHandler(table, "ints", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "ints", int.class,
-            handler);
+        ColumnHandlerFactory.ColumnHandler handler = ColumnHandlerFactory.newNumericHandler(table, "ints", null);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "ints", int.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(table, "doubles", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "doubles",
-            double.class, handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "doubles", double.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(table, "longs", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "longs", long.class,
-            handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "longs", long.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(table, "floats", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "floats",
-            float.class, handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "floats", float.class, handler);
 
 
         handler = ColumnHandlerFactory.newNumericHandler(table, "Integers", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "Integers", int.class,
-            handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "Integers", int.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(table, "Doubles", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "Doubles",
-            double.class, handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "Doubles", double.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(table, "Floats", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "Floats",
-            float.class, handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "Floats", float.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(table, "Shorts", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "Shorts", short.class,
-            handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "Shorts", short.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(table, "Longs", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "Longs", long.class,
-            handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.INTEGER, "Longs", long.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(table, "Numbers", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "Numbers",
-            Number.class, handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.FLOATINGPOINT, "Numbers", Number.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(table, "Dates", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.TIME, "Dates", Date.class,
-            handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.TIME, "Dates", Date.class, handler);
 
         handler = ColumnHandlerFactory.newNumericHandler(table, "DBDateTimes", null);
-        columnHandlerTest(ColumnHandlerFactory.TypeClassification.TIME, "DBDateTimes",
-            DBDateTime.class, handler);
+        columnHandlerTest(ColumnHandlerFactory.TypeClassification.TIME, "DBDateTimes", DBDateTime.class, handler);
 
         try {
             handler.getTableHandle();
@@ -280,9 +254,8 @@ public class TestColumnHandlerFactory extends BaseArrayTestCase {
 
 
         ColumnHandlerFactory.ColumnHandler handler =
-            ColumnHandlerFactory.newComparableHandler(tableHandle, "Strings", null);
-        assertEquals(ColumnHandlerFactory.TypeClassification.COMPARABLE,
-            handler.typeClassification());
+                ColumnHandlerFactory.newComparableHandler(tableHandle, "Strings", null);
+        assertEquals(ColumnHandlerFactory.TypeClassification.COMPARABLE, handler.typeClassification());
         assertEquals(strings.length, handler.size());
         assertEquals("Strings", handler.getColumnName());
         assertEquals(String.class, handler.type());
@@ -321,10 +294,8 @@ public class TestColumnHandlerFactory extends BaseArrayTestCase {
         }
 
 
-        ColumnHandlerFactory.ColumnHandler handler =
-            ColumnHandlerFactory.newComparableHandler(table, "Strings", null);
-        assertEquals(ColumnHandlerFactory.TypeClassification.COMPARABLE,
-            handler.typeClassification());
+        ColumnHandlerFactory.ColumnHandler handler = ColumnHandlerFactory.newComparableHandler(table, "Strings", null);
+        assertEquals(ColumnHandlerFactory.TypeClassification.COMPARABLE, handler.typeClassification());
         assertEquals(strings.length, handler.size());
         assertEquals("Strings", handler.getColumnName());
         assertEquals(String.class, handler.type());
@@ -357,7 +328,7 @@ public class TestColumnHandlerFactory extends BaseArrayTestCase {
 
 
         ColumnHandlerFactory.ColumnHandler handler =
-            ColumnHandlerFactory.newObjectHandler(tableHandle, "Strings", null);
+                ColumnHandlerFactory.newObjectHandler(tableHandle, "Strings", null);
         assertEquals(ColumnHandlerFactory.TypeClassification.OBJECT, handler.typeClassification());
         assertEquals(strings.length, handler.size());
         assertEquals("Strings", handler.getColumnName());
@@ -390,8 +361,7 @@ public class TestColumnHandlerFactory extends BaseArrayTestCase {
         }
 
 
-        ColumnHandlerFactory.ColumnHandler handler =
-            ColumnHandlerFactory.newObjectHandler(table, "Strings", null);
+        ColumnHandlerFactory.ColumnHandler handler = ColumnHandlerFactory.newObjectHandler(table, "Strings", null);
         assertEquals(ColumnHandlerFactory.TypeClassification.OBJECT, handler.typeClassification());
         assertEquals(strings.length, handler.size());
         assertEquals("Strings", handler.getColumnName());
@@ -408,8 +378,8 @@ public class TestColumnHandlerFactory extends BaseArrayTestCase {
         }
     }
 
-    private void columnHandlerTest(ColumnHandlerFactory.TypeClassification type, String name,
-        Class clazz, ColumnHandlerFactory.ColumnHandler handler) {
+    private void columnHandlerTest(ColumnHandlerFactory.TypeClassification type, String name, Class clazz,
+            ColumnHandlerFactory.ColumnHandler handler) {
 
         assertEquals(type, handler.typeClassification());
         assertEquals(doubles.length, handler.size());

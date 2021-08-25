@@ -15,8 +15,7 @@ import java.util.*;
 /**
  * Displayable version of a Figure.
  */
-public class FigureWidget extends FigureImpl
-    implements LiveWidget, LiveWidgetVisibilityProvider, FigureWidgetMarker {
+public class FigureWidget extends FigureImpl implements LiveWidget, LiveWidgetVisibilityProvider, FigureWidgetMarker {
 
     private static final long serialVersionUID = 763409998768966385L;
     private String[] validGroups;

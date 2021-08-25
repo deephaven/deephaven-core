@@ -44,39 +44,36 @@ public class SelectFilterTest extends TestCase {
     }
 
     public void testGt() {
-        expect(FilterCondition.gt(FOO, V42), LongRangeFilter.class,
-            "LongRangeFilter(Foo in (42,9223372036854775807])");
+        expect(FilterCondition.gt(FOO, V42), LongRangeFilter.class, "LongRangeFilter(Foo in (42,9223372036854775807])");
         expect(FilterCondition.gt(V42, FOO), LongRangeFilter.class,
-            "LongRangeFilter(Foo in [-9223372036854775808,42))");
+                "LongRangeFilter(Foo in [-9223372036854775808,42))");
         expect(FilterCondition.gt(FOO, BAR), ConditionFilter.class, "Foo > Bar");
     }
 
     public void testGte() {
         expect(FilterCondition.gte(FOO, V42), LongRangeFilter.class,
-            "LongRangeFilter(Foo in [42,9223372036854775807])");
+                "LongRangeFilter(Foo in [42,9223372036854775807])");
         expect(FilterCondition.gte(V42, FOO), LongRangeFilter.class,
-            "LongRangeFilter(Foo in [-9223372036854775808,42])");
+                "LongRangeFilter(Foo in [-9223372036854775808,42])");
         expect(FilterCondition.gte(FOO, BAR), ConditionFilter.class, "Foo >= Bar");
     }
 
     public void testLt() {
         expect(FilterCondition.lt(FOO, V42), LongRangeFilter.class,
-            "LongRangeFilter(Foo in [-9223372036854775808,42))");
-        expect(FilterCondition.lt(V42, FOO), LongRangeFilter.class,
-            "LongRangeFilter(Foo in (42,9223372036854775807])");
+                "LongRangeFilter(Foo in [-9223372036854775808,42))");
+        expect(FilterCondition.lt(V42, FOO), LongRangeFilter.class, "LongRangeFilter(Foo in (42,9223372036854775807])");
         expect(FilterCondition.lt(FOO, BAR), ConditionFilter.class, "Foo < Bar");
     }
 
     public void testLte() {
         expect(FilterCondition.lte(FOO, V42), LongRangeFilter.class,
-            "LongRangeFilter(Foo in [-9223372036854775808,42])");
+                "LongRangeFilter(Foo in [-9223372036854775808,42])");
         expect(FilterCondition.lte(V42, FOO), LongRangeFilter.class,
-            "LongRangeFilter(Foo in [42,9223372036854775807])");
+                "LongRangeFilter(Foo in [42,9223372036854775807])");
         expect(FilterCondition.lte(FOO, BAR), ConditionFilter.class, "Foo <= Bar");
     }
 
-    private static void expect(Filter filter, Class<? extends SelectFilter> clazz,
-        String expected) {
+    private static void expect(Filter filter, Class<? extends SelectFilter> clazz, String expected) {
         SelectFilter impl = SelectFilter.of(filter);
         assertThat(impl).isInstanceOf(clazz);
         // SelectFilter doesn't necessary implement equals, so we need to use the string repr

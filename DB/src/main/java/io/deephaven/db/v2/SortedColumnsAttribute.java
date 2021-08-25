@@ -33,8 +33,7 @@ public class SortedColumnsAttribute {
      * @return an optional containing the SortingOrder of the column if defined, empty otherwise
      */
     public static Optional<SortingOrder> getOrderForColumn(Table table, String columnName) {
-        return getOrderForColumn((String) table.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE),
-            columnName);
+        return getOrderForColumn((String) table.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE), columnName);
     }
 
     /**
@@ -59,8 +58,7 @@ public class SortedColumnsAttribute {
      * @param order the order that the column is sorted in
      * @return a String suitable for use as a {@link Table#SORTED_COLUMNS_ATTRIBUTE} value.
      */
-    public static String setOrderForColumn(String attribute, String columnName,
-        SortingOrder order) {
+    public static String setOrderForColumn(String attribute, String columnName, SortingOrder order) {
         Map<String, SortingOrder> map = stringToMap(attribute, true);
         map.put(columnName, order);
         return stringFromMap(map);
@@ -86,7 +84,7 @@ public class SortedColumnsAttribute {
         final String[] columnAttrs = attribute.split(",");
 
         Map<String, SortingOrder> map = Arrays.stream(columnAttrs).map(s -> s.split("="))
-            .collect(Collectors.toMap(a -> a[0], a -> SortingOrder.valueOf(a[1])));
+                .collect(Collectors.toMap(a -> a[0], a -> SortingOrder.valueOf(a[1])));
         if (writable) {
             return map;
         } else {
@@ -98,7 +96,6 @@ public class SortedColumnsAttribute {
         if (map.isEmpty()) {
             return null;
         }
-        return map.entrySet().stream().map(x -> x.getKey() + "=" + x.getValue())
-            .collect(Collectors.joining(","));
+        return map.entrySet().stream().map(x -> x.getKey() + "=" + x.getValue()).collect(Collectors.joining(","));
     }
 }

@@ -60,22 +60,21 @@ public class TreeSnapshotResult {
      * @param updatedSource An updated source table. Should be set to null if it hasn't changed.
      * @param treeSize The total size of tree taking into account currently expanded rows.
      * @param data An array of arrays containing each data column for the snapshot.
-     * @param tableData The list of {@link TableDetails} describing the state of the tree as of this
-     *        TSQ.
+     * @param tableData The list of {@link TableDetails} describing the state of the tree as of this TSQ.
      * @param tableKeyColumn A column containing the table key of the parent table of each row.
      * @param childPresenceColumn A bitset where each bit represents if that row has children.
      * @param start The actual start of the snapshot in viewport coordinates.
      * @param end The actual end of the snapshot in viewport coordinates.
      */
     TreeSnapshotResult(@Nullable Table updatedSource,
-        long treeSize,
-        Object[] data,
-        TableDetails[] tableData,
-        Object[] tableKeyColumn,
-        BitSet childPresenceColumn,
-        long start,
-        long end,
-        Pair<String, Object>[] constituentData) {
+            long treeSize,
+            Object[] data,
+            TableDetails[] tableData,
+            Object[] tableKeyColumn,
+            BitSet childPresenceColumn,
+            long start,
+            long end,
+            Pair<String, Object>[] constituentData) {
         this.tableData = tableData;
         this.data = data;
         this.treeSize = treeSize;
@@ -136,22 +135,18 @@ public class TreeSnapshotResult {
 
         for (int i = 0; i < data.length; i++) {
             if (data[i] != null) {
-                final ColumnDefinition<?> colDef =
-                    originalTree.getDefinition().getColumn(columnNames.get(i));
+                final ColumnDefinition<?> colDef = originalTree.getDefinition().getColumn(columnNames.get(i));
                 // noinspection unchecked
-                sources.put(columnNames.get(i),
-                    ArrayBackedColumnSource.getImmutableMemoryColumnSource(data[i],
+                sources.put(columnNames.get(i), ArrayBackedColumnSource.getImmutableMemoryColumnSource(data[i],
                         colDef.getDataType(), colDef.getComponentType()));
             }
         }
 
         sources.put(TreeTableConstants.TABLE_KEY_COLUMN,
-            ArrayBackedColumnSource.getImmutableMemoryColumnSource(tableKeyColumn));
-        sources.put(TreeTableConstants.CHILD_PRESENCE_COLUMN,
-            new BitSetColumnSource(childPresenceColumn));
+                ArrayBackedColumnSource.getImmutableMemoryColumnSource(tableKeyColumn));
+        sources.put(TreeTableConstants.CHILD_PRESENCE_COLUMN, new BitSetColumnSource(childPresenceColumn));
 
-        return new QueryTable(Index.FACTORY.getFlatIndex((snapshotEnd - snapshotStart) + 1),
-            sources);
+        return new QueryTable(Index.FACTORY.getFlatIndex((snapshotEnd - snapshotStart) + 1), sources);
     }
 
     public Table getUpdatedSource() {
@@ -172,9 +167,8 @@ public class TreeSnapshotResult {
         private final Pair<String, Object>[] constituentData;
 
         Descriptor(long treeSize, Object[] data, TableDetails[] tableData, long start, long end,
-            Object[] tableKeyColumn,
-            BitSet childPresenceColumn, Table updatedSource,
-            Pair<String, Object>[] constituentData) {
+                Object[] tableKeyColumn,
+                BitSet childPresenceColumn, Table updatedSource, Pair<String, Object>[] constituentData) {
             this.treeSize = treeSize;
             this.data = data;
             this.tableData = tableData;

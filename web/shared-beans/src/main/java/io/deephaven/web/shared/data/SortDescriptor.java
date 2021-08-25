@@ -43,9 +43,9 @@ public class SortDescriptor implements Serializable {
     @Override
     public String toString() {
         return "SortDescriptor{" +
-            "dir='" + dir + '\'' +
-            ", columnName='" + columnName + '\'' +
-            ", abs=" + abs +
-            '}';
+                "dir='" + dir + '\'' +
+                ", columnName='" + columnName + '\'' +
+                ", abs=" + abs +
+                '}';
     }
 }

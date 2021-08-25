@@ -17,13 +17,11 @@ public class FilterDescriptor implements Serializable {
         // 1 child, condition. this is sugar over almost any other Condition operation
         NOT(Kind.Condition),
         // 2 children are values
-        LT(Kind.Condition), GT(Kind.Condition), LTE(Kind.Condition), GTE(Kind.Condition), EQ(
-            Kind.Condition), EQ_ICASE(
+        LT(Kind.Condition), GT(Kind.Condition), LTE(Kind.Condition), GTE(Kind.Condition), EQ(Kind.Condition), EQ_ICASE(
                 Kind.Condition), NEQ(Kind.Condition), NEQ_ICASE(Kind.Condition),
 
         // 2+ children are values
-        IN(Kind.Condition), IN_ICASE(Kind.Condition), NOT_IN(Kind.Condition), NOT_IN_ICASE(
-            Kind.Condition),
+        IN(Kind.Condition), IN_ICASE(Kind.Condition), NOT_IN(Kind.Condition), NOT_IN_ICASE(Kind.Condition),
         // 1 child is anything (probably just value)
         IS_NULL(Kind.Condition),
         // 0+ children are anything
@@ -31,8 +29,8 @@ public class FilterDescriptor implements Serializable {
         // 0 children
         LITERAL(Kind.Value), REFERENCE(Kind.Value),
 
-        CONTAINS(Kind.Condition), CONTAINS_ICASE(Kind.Condition), MATCHES(
-            Kind.Condition), MATCHES_ICASE(Kind.Condition),
+        CONTAINS(Kind.Condition), CONTAINS_ICASE(Kind.Condition), MATCHES(Kind.Condition), MATCHES_ICASE(
+                Kind.Condition),
 
         SEARCH(Kind.Condition),
         ;
@@ -45,8 +43,8 @@ public class FilterDescriptor implements Serializable {
     }
 
     /**
-     * Describes types of value literals. This is much rougher than we'll eventually want, but as an
-     * internal-only detail it does fit our purposes
+     * Describes types of value literals. This is much rougher than we'll eventually want, but as an internal-only
+     * detail it does fit our purposes
      */
     public enum ValueType {
         // js/java String
@@ -77,8 +75,8 @@ public class FilterDescriptor implements Serializable {
         children = EMPTY;
     }
 
-    public FilterDescriptor(FilterOperation operation, @Nullable String value,
-        @Nullable ValueType type, FilterDescriptor[] children) {
+    public FilterDescriptor(FilterOperation operation, @Nullable String value, @Nullable ValueType type,
+            FilterDescriptor[] children) {
         setOperation(operation);
         setValue(value);
         setType(type);
@@ -365,10 +363,10 @@ public class FilterDescriptor implements Serializable {
     @Override
     public String toString() {
         return "FilterDescriptor{" +
-            "operation=" + operation +
-            ", value='" + value + '\'' +
-            ", type=" + type +
-            ", children=" + Arrays.toString(children) +
-            '}';
+                "operation=" + operation +
+                ", value='" + value + '\'' +
+                ", type=" + type +
+                ", children=" + Arrays.toString(children) +
+                '}';
     }
 }

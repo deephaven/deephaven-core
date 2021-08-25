@@ -29,10 +29,9 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
  * An object representing a timepoint in Deephaven.
  *
  * <p>
- * The DBDateTime object is a timepoint, that is a precise instance in time without respect to
- * timezones. The timepoint is stored as a signed 64-bit long nanoseconds since the epoch (January
- * 1, 1970, 00:00:00 GMT). This provides a range from 1677-09-21T00:12:43.146-775807 UTC to
- * 2262-04-11T23:47:16.854775807 UTC. The minimum long value is reserved for
+ * The DBDateTime object is a timepoint, that is a precise instance in time without respect to timezones. The timepoint
+ * is stored as a signed 64-bit long nanoseconds since the epoch (January 1, 1970, 00:00:00 GMT). This provides a range
+ * from 1677-09-21T00:12:43.146-775807 UTC to 2262-04-11T23:47:16.854775807 UTC. The minimum long value is reserved for
  * {@link QueryConstants#NULL_LONG} and therefore is not permitted as a valid DBDateTime.
  * </p>
  */
@@ -44,8 +43,7 @@ public final class DBDateTime implements Comparable<DBDateTime>, Externalizable 
 
     private long nanos;
 
-    private static final DateTimeFormatter dateTimeFormat =
-        DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+    private static final DateTimeFormatter dateTimeFormat = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
     private static final DateTimeFormatter dateFormat = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     public static DBDateTime of(Instant instant) {
@@ -63,8 +61,7 @@ public final class DBDateTime implements Comparable<DBDateTime>, Externalizable 
      * Create a new DBDatetime initialized to the current time.
      *
      * <p>
-     * The precision of DBDateTime is nanoseconds, but the resolution of the now method is currently
-     * microseconds.
+     * The precision of DBDateTime is nanoseconds, but the resolution of the now method is currently microseconds.
      * </p>
      *
      * @return a new DBDateTime initialized to the current time.
@@ -204,15 +201,13 @@ public final class DBDateTime implements Comparable<DBDateTime>, Externalizable 
      */
     public String toString(DBTimeZone timeZone) {
         return dateTimeFormat.withZone(timeZone.getTimeZone()).print(getMillis())
-            + StringUtils.pad(String.valueOf(getNanosPartial()), 6, '0') + " "
-            + timeZone.toString().substring(3);
+                + StringUtils.pad(String.valueOf(getNanosPartial()), 6, '0') + " " + timeZone.toString().substring(3);
     }
 
     /**
      * Get the date represented by this DBDateTime in the default {@link DBTimeZone}.
      *
-     * @return The date (yyyy-MM-dd) represented by this {@code DBDateTime} in the default
-     *         {@link DBTimeZone}.
+     * @return The date (yyyy-MM-dd) represented by this {@code DBDateTime} in the default {@link DBTimeZone}.
      */
     public String toDateString() {
         return toDateString(DBTimeZone.TZ_DEFAULT);
@@ -232,8 +227,7 @@ public final class DBDateTime implements Comparable<DBDateTime>, Externalizable 
      * Get the date represented by this DBDateTime in the given joda {@code DateTimeZone}.
      *
      * @param timeZone A joda DateTimeZone
-     * @return The date (yyyy-MM-dd) represented by this {@code DBDateTime} in the given
-     *         {@code timeZone}
+     * @return The date (yyyy-MM-dd) represented by this {@code DBDateTime} in the given {@code timeZone}
      */
     public String toDateString(DateTimeZone timeZone) {
         if (timeZone == null) {
@@ -246,8 +240,8 @@ public final class DBDateTime implements Comparable<DBDateTime>, Externalizable 
      * Get the date represented by this DBDateTime in the time zone specified by {@code zoneId}
      *
      * @param zoneId A java time zone ID string
-     * @return The date (yyyy-MM-dd) represented by this {@code DBDateTime} in time zone represented
-     *         by the given {@code zoneId}
+     * @return The date (yyyy-MM-dd) represented by this {@code DBDateTime} in time zone represented by the given
+     *         {@code zoneId}
      */
     public String toDateString(String zoneId) {
         return toDateString(ZoneId.of(zoneId));
@@ -257,8 +251,7 @@ public final class DBDateTime implements Comparable<DBDateTime>, Externalizable 
      * Get the date represented by this DBDateTime in the given java {@code ZoneId}.
      *
      * @param timeZone A java {@link ZoneId time zone ID}.
-     * @return The date (yyyy-MM-dd) represented by this {@code DBDateTime} in the given
-     *         {@code timeZone}
+     * @return The date (yyyy-MM-dd) represented by this {@code DBDateTime} in the given {@code timeZone}
      */
     public String toDateString(ZoneId timeZone) {
         if (timeZone == null) {

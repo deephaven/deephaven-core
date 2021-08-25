@@ -51,18 +51,17 @@ public class SingleTableKeyedStringOperations {
         int columnCount = 1 << logColumnCount;
         Configuration.getInstance().setProperty("QueryTable.memoizeResults", "false");
 
-        final BenchmarkTableBuilder builder = BenchmarkTools.inMemoryTableBuilder(
-            "SingleTableOperations", BenchmarkTools.sizeWithSparsity(tableSize, sparsity));
+        final BenchmarkTableBuilder builder = BenchmarkTools.inMemoryTableBuilder("SingleTableOperations",
+                BenchmarkTools.sizeWithSparsity(tableSize, sparsity));
 
         builder.setSeed(0xDEADBEEF).addColumn(BenchmarkTools.numberCol("Mock", int.class));
         for (int i = 0; i < columnCount; i++) {
             builder.addColumn(BenchmarkTools.numberCol("InputColumn" + i, long.class, 0,
-                1 << Math.max(0, logSpaceSize - logColumnCount)));
+                    1 << Math.max(0, logSpaceSize - logColumnCount)));
         }
         bmTable = builder.build();
 
-        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()),
-            params.getWarmup().getCount());
+        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
 
 
         keyColumns = new String[columnCount];
@@ -78,8 +77,7 @@ public class SingleTableKeyedStringOperations {
     @Setup(Level.Iteration)
     public void setupIteration() {
         state.init();
-        inputTable =
-            applySparsity(bmTable.getTable().select(convertToDateTime), tableSize, sparsity, 0);
+        inputTable = applySparsity(bmTable.getTable().select(convertToDateTime), tableSize, sparsity, 0);
     }
 
 

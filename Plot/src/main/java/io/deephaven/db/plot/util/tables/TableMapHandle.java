@@ -41,8 +41,7 @@ public abstract class TableMapHandle implements Serializable, PlotExceptionCause
 
     private final PlotInfo plotInfo;
 
-    protected TableMapHandle(final Collection<String> columns, final String[] keyColumns,
-        final PlotInfo plotInfo) {
+    protected TableMapHandle(final Collection<String> columns, final String[] keyColumns, final PlotInfo plotInfo) {
         this.id = nextId.incrementAndGet();
         this.requiredColumns = new LinkedHashSet<>(columns);
         Collections.addAll(this.requiredColumns, keyColumns);
@@ -79,10 +78,9 @@ public abstract class TableMapHandle implements Serializable, PlotExceptionCause
     }
 
     /**
-     * Get the set of columns to .view() when the table is fetched. Typically this is identical to
-     * {@link #getColumns()} however, there are situations where the transformations applied to a
-     * TableMap result in columns that are not present in the base tableMap. (for example
-     * catHistPlot).
+     * Get the set of columns to .view() when the table is fetched. Typically this is identical to {@link #getColumns()}
+     * however, there are situations where the transformations applied to a TableMap result in columns that are not
+     * present in the base tableMap. (for example catHistPlot).
      *
      * @return
      */

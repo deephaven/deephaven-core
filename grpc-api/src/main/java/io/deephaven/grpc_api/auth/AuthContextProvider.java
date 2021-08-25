@@ -4,14 +4,12 @@ import com.google.protobuf.ByteString;
 import io.deephaven.util.auth.AuthContext;
 
 /**
- * The AuthContextProvider's job is to manage all authentication and authorization responsibilities.
- * If audit logging is required, an implementation of this (and its companion AuthContext) is the
- * correct way path forward.
+ * The AuthContextProvider's job is to manage all authentication and authorization responsibilities. If audit logging is
+ * required, an implementation of this (and its companion AuthContext) is the correct way path forward.
  */
 public interface AuthContextProvider {
     /**
-     * Returns true if this auth context provider can authenticate using the provided protocol
-     * version.
+     * Returns true if this auth context provider can authenticate using the provided protocol version.
      * 
      * @param authProtocol the protocol version to use (application specific)
      * @return true iff `authProtocol` is supported

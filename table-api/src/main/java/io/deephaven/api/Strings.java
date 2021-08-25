@@ -15,8 +15,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * A set of static helpers to turn strongly-typed api arguments into their {@link String}
- * counterparts.
+ * A set of static helpers to turn strongly-typed api arguments into their {@link String} counterparts.
  */
 public class Strings {
 
@@ -46,7 +45,7 @@ public class Strings {
                 return String.format("%s != %s", lhs, rhs);
             default:
                 throw new IllegalStateException(
-                    "Unexpected condition operator: " + condition.operator());
+                        "Unexpected condition operator: " + condition.operator());
         }
     }
 
@@ -64,12 +63,12 @@ public class Strings {
 
     public static String of(FilterOr filterOr) {
         return filterOr.filters().stream().map(Strings::of)
-            .collect(Collectors.joining(") || (", "(", ")"));
+                .collect(Collectors.joining(") || (", "(", ")"));
     }
 
     public static String of(FilterAnd filterAnd) {
         return filterAnd.filters().stream().map(Strings::of)
-            .collect(Collectors.joining(") && (", "(", ")"));
+                .collect(Collectors.joining(") && (", "(", ")"));
     }
 
     public static String of(Pair pair) {
@@ -120,7 +119,7 @@ public class Strings {
      * If we ever need to provide more specificity for a type, we can create a non-universal impl.
      */
     private static class UniversalAdapter
-        implements Filter.Visitor, Expression.Visitor, Value.Visitor {
+            implements Filter.Visitor, Expression.Visitor, Value.Visitor {
         private String out;
 
         public String getOut() {

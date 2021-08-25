@@ -9,12 +9,12 @@ import java.util.Map;
 
 public interface FormulaGenerator {
     List<String> initDef(Map<String, ColumnDefinition> columnDefinitionMap,
-        Map<String, ? extends ColumnSource> columnsOverride);
+            Map<String, ? extends ColumnSource> columnsOverride);
 
     Formula getFormula(Index index, Class returnType, boolean initLazyMap,
-        Map<String, ? extends ColumnSource> columnsToData,
-        Map<String, ? extends ColumnSource> fallThroughColumns, boolean fallThroughContiguous,
-        Map<String, ? extends ColumnSource> columnsOverride, Index overrideIndex);
+            Map<String, ? extends ColumnSource> columnsToData,
+            Map<String, ? extends ColumnSource> fallThroughColumns, boolean fallThroughContiguous,
+            Map<String, ? extends ColumnSource> columnsOverride, Index overrideIndex);
 
     Class getReturnedType();
 

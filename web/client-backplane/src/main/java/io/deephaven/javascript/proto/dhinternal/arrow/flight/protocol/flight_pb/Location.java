@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.Flight_pb.Location",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.Flight_pb.Location",
+        namespace = JsPackage.GLOBAL)
 public class Location {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -47,8 +47,7 @@ public class Location {
 
     public static native void serializeBinaryToWriter(Location message, Object writer);
 
-    public static native Location.ToObjectReturnType toObject(boolean includeInstance,
-        Location msg);
+    public static native Location.ToObjectReturnType toObject(boolean includeInstance, Location msg);
 
     public native String getUri();
 

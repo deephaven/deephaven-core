@@ -11,9 +11,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.StartConsoleResponse",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.StartConsoleResponse",
+        namespace = JsPackage.GLOBAL)
 public class StartConsoleResponse {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -23,7 +23,7 @@ public class StartConsoleResponse {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static StartConsoleResponse.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -58,20 +58,20 @@ public class StartConsoleResponse {
 
             @JsProperty
             void setTicket(
-                StartConsoleResponse.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+                    StartConsoleResponse.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<StartConsoleResponse.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<StartConsoleResponse.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<StartConsoleResponse.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<StartConsoleResponse.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -117,7 +117,7 @@ public class StartConsoleResponse {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static StartConsoleResponse.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -152,20 +152,20 @@ public class StartConsoleResponse {
 
             @JsProperty
             void setTicket(
-                StartConsoleResponse.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+                    StartConsoleResponse.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<StartConsoleResponse.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<StartConsoleResponse.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<StartConsoleResponse.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<StartConsoleResponse.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -206,12 +206,12 @@ public class StartConsoleResponse {
     public static native StartConsoleResponse deserializeBinary(Uint8Array bytes);
 
     public static native StartConsoleResponse deserializeBinaryFromReader(
-        StartConsoleResponse message, Object reader);
+            StartConsoleResponse message, Object reader);
 
     public static native void serializeBinaryToWriter(StartConsoleResponse message, Object writer);
 
     public static native StartConsoleResponse.ToObjectReturnType toObject(
-        boolean includeInstance, StartConsoleResponse msg);
+            boolean includeInstance, StartConsoleResponse msg);
 
     public native String addTableNames(String value, double index);
 

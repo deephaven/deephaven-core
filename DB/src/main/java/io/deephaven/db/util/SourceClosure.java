@@ -10,8 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * This class represents uses of the source() and sourceOnce() method calls. It will use the
- * underlying scriptPathLoader to get the script text to use.
+ * This class represents uses of the source() and sourceOnce() method calls. It will use the underlying scriptPathLoader
+ * to get the script text to use.
  */
 public class SourceClosure extends Closure<Object> {
     private final ScriptPathLoader scriptPathLoader;
@@ -21,8 +21,8 @@ public class SourceClosure extends Closure<Object> {
     // Attempt to cache scripts as long as memory permits.
     private final Map<String, SoftReference<String>> scriptCache;
 
-    public SourceClosure(final GroovyDeephavenSession groovySession,
-        final ScriptPathLoader scriptPathLoader, final boolean sourceOnce, final boolean caching) {
+    public SourceClosure(final GroovyDeephavenSession groovySession, final ScriptPathLoader scriptPathLoader,
+            final boolean sourceOnce, final boolean caching) {
         super(groovySession, null);
         this.scriptPathLoader = scriptPathLoader;
         this.sourceOnce = sourceOnce;
