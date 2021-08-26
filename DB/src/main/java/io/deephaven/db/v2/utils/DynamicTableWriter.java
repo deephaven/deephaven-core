@@ -63,15 +63,12 @@ public class DynamicTableWriter implements TableWriter {
         this(header, Collections.emptyMap());
     }
 
-    /**
-     * Creates a TableWriter that produces an in-memory table using the provided column names and types.
-     *
-     * @param columnNames the names of the columns in the output table (and our input)
-     * @param columnTypes the types of the columns in the output table (must be compatible with the input)
-     * @param constantValues a Map of columns with constant values
-     */
+    // This constructor is no longer public to simplify access from python: jpy cannot resolve
+    // calls with arguments of list type when there is more than one alternative with array element type
+    // on the java side.  Prefer the constructor taking qst.table.TableHeader or an array of qst.type.Type
+    // objects.
     @SuppressWarnings("WeakerAccess")
-    public DynamicTableWriter(
+    DynamicTableWriter(
             final String[] columnNames,
             final Class<?>[] columnTypes,
             final Map<String, Object> constantValues) {
@@ -93,13 +90,11 @@ public class DynamicTableWriter implements TableWriter {
         this(columnNames, (int i) -> columnTypes[i].clazz(), constantValues);
     }
 
-    /**
-     * Creates a TableWriter that produces an in-memory table using the provided column names and types.
-     *
-     * @param columnNames the names of the columns in the output table (and our input)
-     * @param columnTypes the types of the columns in the output table (must be compatible with the input)
-     */
-    public DynamicTableWriter(final String[] columnNames, final Class<?>[] columnTypes) {
+    // This constructor is no longer public to simplify access from python: jpy cannot resolve
+    // calls with arguments of list type when there is more than one alternative with array element type
+    // on the java side.  Prefer the constructor taking qst.table.TableHeader or an array of qst.type.Type
+    // objects.
+    DynamicTableWriter(final String[] columnNames, final Class<?>[] columnTypes) {
         this(columnNames, columnTypes, Collections.emptyMap());
     }
 
