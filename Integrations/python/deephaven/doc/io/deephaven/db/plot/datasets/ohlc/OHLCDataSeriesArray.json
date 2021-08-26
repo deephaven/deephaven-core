@@ -12,6 +12,6 @@
   "size": "Gets the size of this data set.\n\n:return: (int) size of this data set"
  },
  "path": "io.deephaven.db.plot.datasets.ohlc.OHLCDataSeriesArray",
- "text": "An implementation of OHLCDataSeriesInternal.\n This Doesn't allow for multiple series.",
+ "text": "An implementation of OHLCDataSeriesInternal. This Doesn't allow for multiple series.",
  "typeName": "class"
 }

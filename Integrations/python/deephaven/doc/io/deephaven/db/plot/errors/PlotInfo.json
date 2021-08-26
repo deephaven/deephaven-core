@@ -5,6 +5,6 @@
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.db.plot.errors.PlotInfo",
- "text": "Information about a plot. Has 3 pieces of information (all optional)\n Figure title, if it has one\n Chart title, if it has one\n Series name",
+ "text": "Information about a plot. Has 3 pieces of information (all optional) Figure title, if it has one Chart title, if it\n has one Series name",
  "typeName": "class"
 }

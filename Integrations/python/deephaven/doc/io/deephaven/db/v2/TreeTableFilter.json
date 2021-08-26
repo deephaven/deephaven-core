@@ -8,6 +8,6 @@
   "toTreeTable": ":param rawTable: io.deephaven.db.tables.Table\n:param originalTree: io.deephaven.db.tables.Table\n:return: io.deephaven.db.tables.Table"
  },
  "path": "io.deephaven.db.v2.TreeTableFilter",
- "text": "Apply filters, preserving parents.\n\n  The TreeTableFilter takes a TreeTable and SelectFilters as input.  The original source table is filtered and\n  any matching rows are included; as well as their ancestors.  The result table is then converted into a tree\n  table using the original parameters.",
+ "text": "Apply filters, preserving parents.\n\n The TreeTableFilter takes a TreeTable and SelectFilters as input. The original source table is filtered and any\n matching rows are included; as well as their ancestors. The result table is then converted into a tree table using\n the original parameters.",
  "typeName": "class"
 }

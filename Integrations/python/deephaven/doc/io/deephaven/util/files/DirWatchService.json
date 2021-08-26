@@ -1,13 +1,13 @@
 {
  "className": "io.deephaven.util.files.DirWatchService",
  "methods": {
-  "addExactFileWatch": "Adds an exact match file pattern to watch for; equivalent to adding with the EXACT_MATCH_WITH_SEPARATOR MatcherType\n\n:param separator: java.lang.String\n:param filePattern: (java.lang.String) - The exact file pattern to watch for (i.e. the part before the separator must match this)\n:param consumer: (java.util.function.BiConsumer<java.nio.file.Path,java.nio.file.WatchEvent.Kind>) - The consumer to be called when the pattern is matched",
+  "addExactFileWatch": "Adds an exact match file pattern to watch for; equivalent to adding with the EXACT_MATCH_WITH_SEPARATOR\n MatcherType\n\n:param separator: java.lang.String\n:param filePattern: (java.lang.String) - The exact file pattern to watch for (i.e. the part before the separator must match this)\n:param consumer: (java.util.function.BiConsumer<java.nio.file.Path,java.nio.file.WatchEvent.Kind>) - The consumer to be called when the pattern is matched",
   "addFileWatchAtEnd": "Adds a file pattern to watch for at the end of the ordered watch list\n\n:param matcher: (java.util.function.Predicate<java.lang.String>) - The filtering predicate, returns true for files that should be consumed\n:param consumer: (java.util.function.BiConsumer<java.nio.file.Path,java.nio.file.WatchEvent.Kind>) - Consumer to be called with the file and event type",
   "addFileWatchAtStart": "Adds a file pattern to watch for at the start of the ordered watch list\n\n:param matcher: (java.util.function.Predicate<java.lang.String>) - The filtering predicate, returns true for files that should be consumed\n:param consumer: (java.util.function.BiConsumer<java.nio.file.Path,java.nio.file.WatchEvent.Kind>) - Consumer to be called with the file and event type",
   "makeEndsWithMatcher": ":param suffix: java.lang.String\n:return: java.util.function.Predicate<java.lang.String>",
   "makeRegexMatcher": ":param regex: java.lang.String\n:return: java.util.function.Predicate<java.lang.String>",
   "makeStartsWithMatcher": ":param prefix: java.lang.String\n:return: java.util.function.Predicate<java.lang.String>",
-  "start": "Starts the watch service thread. Even if it's initially empty the service should start as it could get files later.",
+  "start": "Starts the watch service thread. Even if it's initially empty the service should start as it could get files\n later.",
   "stop": "Request that the fileWatcher thread stop. This will not return until the thread has stopped."
  },
  "path": "io.deephaven.util.files.DirWatchService",

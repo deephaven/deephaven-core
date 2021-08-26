@@ -4,6 +4,6 @@
   "threadDump": "**Incompatible overloads text - text from the first overload:**\n\nGenerate a thread dump as a String.\n\n*Overload 1*  \n  :param out: (java.io.PrintStream) - the output stream to write the thread dump of the current process to\n  \n*Overload 2*  \n  :param logger: (io.deephaven.io.logger.Logger) - the logger to write the thread dump of the current process to\n  \n*Overload 3*  \n  :return: (java.lang.String) a String containing a thread dump of the curent process."
  },
  "path": "io.deephaven.util.thread.ThreadDump",
- "text": "A simple method for generating a Thread dump for this JVM; it doesn't do all the stuff that the kill -3 does; but\n you can easily run it from inside the JVM without having to send yourself a signal.",
+ "text": "A simple method for generating a Thread dump for this JVM; it doesn't do all the stuff that the kill -3 does; but you\n can easily run it from inside the JVM without having to send yourself a signal.",
  "typeName": "class"
 }

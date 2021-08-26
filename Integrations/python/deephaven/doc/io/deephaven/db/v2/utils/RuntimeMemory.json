@@ -6,6 +6,6 @@
   "totalMemory": "See Runtime.totalMemory().\n\n:return: long"
  },
  "path": "io.deephaven.db.v2.utils.RuntimeMemory",
- "text": "Cache memory utilization.\n\n >Calling Runtime.getRuntime().getFreeMemory() is expensive; and we may do it a lot when we have automatically\n computed tables, such as in a byExternal.  Instead of calling the runtime directly from the performance\n instrumentation framework, we call this class's methods; which cache the result for a configurable number of\n milliseconds to avoid repeated calls that are not likely any different./p>\n\n A\n dditionally, we log our JVM heap usage on a regular basis; to enable users to quickly examine their worker\n logs and understand memory issues.",
+ "text": "Cache memory utilization.\n\n \n >Calling Runtime.getRuntime().getFreeMemory() is expensive; and we may do it a lot when we have automatically\n computed tables, such as in a byExternal. Instead of calling the runtime directly from the performance\n instrumentation framework, we call this class's methods; which cache the result for a configurable number of\n milliseconds to avoid repeated calls that are not likely any different./p>\n\n \n A dditionally, we log our JVM heap usage on a regular basis; to enable users to quickly examine their worker logs and\n understand memory issues.",
  "typeName": "class"
 }

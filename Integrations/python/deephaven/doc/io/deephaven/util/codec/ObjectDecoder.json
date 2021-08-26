@@ -1,11 +1,11 @@
 {
  "className": "io.deephaven.util.codec.ObjectDecoder",
  "methods": {
-  "checkWidth": "Verify that this codec is capable of supporting a column that has an actual width of\n actualWidth.\n\n:param actualWidth: (int) - the actual width of the instantiated column",
+  "checkWidth": "Verify that this codec is capable of supporting a column that has an actual width of actualWidth.\n\n:param actualWidth: (int) - the actual width of the instantiated column",
   "decode": "Decode an object from an array of bytes.\n\n:param input: (byte[]) - The input byte array containing bytes to decode\n:param offset: (int) - The offset into the byte array to start decoding from\n:param length: (int) - The length of the byte array to decode from, starting at the offset\n:return: (ObjectDecoder.TYPE) The output object, possibly null",
-  "expectedObjectWidth": "What width byte array does this ObjectCodec expect to encode and decode?\n\n:return: (int) VARIABLE_WIDTH_SENTINEL if the codec  must encode and decode variable width columns, otherwise the fixed\n size of byte array that must be decoded and encoded."
+  "expectedObjectWidth": "What width byte array does this ObjectCodec expect to encode and decode?\n\n:return: (int) VARIABLE_WIDTH_SENTINEL if the codec must encode and decode variable width columns, otherwise the fixed\n         size of byte array that must be decoded and encoded."
  },
  "path": "io.deephaven.util.codec.ObjectDecoder",
- "text": "Codec superinterface for Object translation from byte arrays for serialization and deserialization.\n Implementations must follow several rules to enable correct usage:\n \n* They must be stateless or designed for concurrent use (e.g. by using only ThreadLocal state), as they will\n generally be cached and re-used.\n* They must not modify their inputs in any way, retain references to their inputs, or return results that retain\n references to their inputs.",
+ "text": "Codec superinterface for Object translation from byte arrays for serialization and deserialization.\n \n Implementations must follow several rules to enable correct usage:\n \n* They must be stateless or designed for concurrent use (e.g. by using only ThreadLocal state), as they will\n generally be cached and re-used.\n* They must not modify their inputs in any way, retain references to their inputs, or return results that retain\n references to their inputs.",
  "typeName": "interface"
 }

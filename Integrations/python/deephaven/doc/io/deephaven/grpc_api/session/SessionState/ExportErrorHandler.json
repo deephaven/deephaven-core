@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.grpc_api.session.SessionState$ExportErrorHandler",
  "methods": {
-  "onError": "Notify the handler that the final state of this export failed.\n\n:param resultState: (io.deephaven.proto.backplane.grpc.ExportNotification.State) - the final state of the export\n:param errorContext: (java.lang.String) - an identifier to locate the details as to why the export failed\n:param dependentExportId: (java.lang.String) - an identifier for the export id of the dependent that caused the failure if applicable"
+  "onError": "Notify the handler that the final state of this export failed.\n\n:param resultState: (io.deephaven.proto.backplane.grpc.ExportNotification.State) - the final state of the export\n:param errorContext: (java.lang.String) - an identifier to locate the details as to why the export failed\n:param dependentExportId: (java.lang.String) - an identifier for the export id of the dependent that caused the failure if\n        applicable"
  },
  "path": "io.deephaven.grpc_api.session.SessionState.ExportErrorHandler",
  "typeName": "interface"

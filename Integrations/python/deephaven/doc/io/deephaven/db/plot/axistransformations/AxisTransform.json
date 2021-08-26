@@ -6,6 +6,6 @@
   "transform": "Transforms a data point to Axis space.\n\n:param dataValue: (double) - data point\n:return: (double) corresponding value in Axis space"
  },
  "path": "io.deephaven.db.plot.axistransformations.AxisTransform",
- "text": "Function applied to transform data before plotting.  For example, a log plot is a logarithmic transform of an axis.\n\n Determines how dataset values are displayed in the plot by transforming dataset values into Axis space and back.\n\n For example, if the forward transform is x -> x^0.5,  a dataset value of 1 maps to 1 in Axis space; a dataset\n value of 4 maps to 2. In the plot these values will be displayed close together.",
+ "text": "Function applied to transform data before plotting. For example, a log plot is a logarithmic transform of an axis.\n\n Determines how dataset values are displayed in the plot by transforming dataset values into Axis space and back.\n\n For example, if the forward transform is x -> x^0.5, a dataset value of 1 maps to 1 in Axis space; a dataset value of\n 4 maps to 2. In the plot these values will be displayed close together.",
  "typeName": "interface"
 }

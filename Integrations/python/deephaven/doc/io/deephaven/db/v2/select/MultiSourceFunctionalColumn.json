@@ -2,9 +2,9 @@
  "className": "io.deephaven.db.v2.select.MultiSourceFunctionalColumn",
  "methods": {
   "copy": "Create a copy of this SelectColumn.\n\n:return: (io.deephaven.db.v2.select.MultiSourceFunctionalColumn<MultiSourceFunctionalColumn.D>) an independent copy of this SelectColumn.",
-  "disallowRefresh": "Should we disallow use of this column for refreshing tables?\n\n Some formulas can not be reliably computed with a refreshing table, therefore we will refuse to compute those values.\n\n:return: boolean",
-  "getColumnArrays": "Get a list of the names of column arrays used in this SelectColumn.  Behavior is undefined if none of the init* methods have been called yet.\n\n:return: (java.util.List<java.lang.String>) the list of column arrays used",
-  "getColumns": "Get a list of the names of columns used in this SelectColumn.  Behavior is undefined if none of the init* methods have been called yet.\n\n:return: (java.util.List<java.lang.String>) the columns used in this SelectColumn",
+  "disallowRefresh": "Should we disallow use of this column for refreshing tables?\n\n Some formulas can not be reliably computed with a refreshing table, therefore we will refuse to compute those\n values.\n\n:return: boolean",
+  "getColumnArrays": "Get a list of the names of column arrays used in this SelectColumn. Behavior is undefined if none of the init*\n methods have been called yet.\n\n:return: (java.util.List<java.lang.String>) the list of column arrays used",
+  "getColumns": "Get a list of the names of columns used in this SelectColumn. Behavior is undefined if none of the init* methods\n have been called yet.\n\n:return: (java.util.List<java.lang.String>) the columns used in this SelectColumn",
   "getDataView": "Get a ColumnSource that can be used to access the data on demand.\n\n:return: (io.deephaven.db.v2.sources.ColumnSource) a ColumnSource",
   "getLazyView": "Returns a lazily computed view of this column.\n\n:return: (io.deephaven.db.v2.sources.ColumnSource) a lazily computed column source",
   "getMatchPair": "Get a MatchPair for this column, if applicable.\n\n:return: io.deephaven.db.tables.select.MatchPair",

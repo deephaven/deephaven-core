@@ -16,11 +16,11 @@
   "hasExecutedScript": ":param scriptName: java.lang.String\n:return: boolean",
   "hasVariableName": "Check if the scope has the given variable name\n\n:param name: (java.lang.String) - the variable name\n:return: (boolean) True iff the scope has the given variable name",
   "initializeTransientFieldsForLiveness": "Package-private for Serializable sub-classes to use in readObject only.\n Public to allow unit tests in another package to work around mock issues where the constructor is never invoked.",
-  "isValidImportString": "Ensure that the given importString is valid.  Return a canonical version of the import string if it is valid.\n\n:param log: io.deephaven.io.logger.Logger\n:param importString: (java.lang.String) - the string to check.  importString is \"[import] [static] package.class[.innerclass...][.field|.method][.*][;]\".\n:return: (java.lang.String) null if importString is not valid, else a string of the form \"import [static] package.class.part.part[.*];\"",
+  "isValidImportString": "Ensure that the given importString is valid. Return a canonical version of the import string if it is valid.\n\n:param log: io.deephaven.io.logger.Logger\n:param importString: (java.lang.String) - the string to check. importString is \"[import] [static]\n        package.class[.innerclass...][.field|.method][.*][;]\".\n:return: (java.lang.String) null if importString is not valid, else a string of the form \"import [static]\n         package.class.part.part[.*];\"",
   "newQueryScope": ":return: (io.deephaven.db.tables.select.QueryScope) a query scope for this session; only invoked during construction",
   "onApplicationInitializationBegin": "Called before Application initialization, should setup sourcing from the controller (as required).\n\n:param pathLoaderSupplier: java.util.function.Supplier<io.deephaven.db.util.scripts.ScriptPathLoader>\n:param scriptLoaderState: io.deephaven.db.util.scripts.ScriptPathLoaderState",
   "onApplicationInitializationEnd": "Called after Application initialization.",
-  "removeComments": "Remove comments from an import statement.  /* comments take precedence over eol (//) comments.\n This ignores escaping and quoting, as they are not valid in an import statement.\n\n:param s: (java.lang.String) - import statement string from which to remove comments\n:return: (java.lang.String) the input string with comments removed, and whitespace trimmed",
+  "removeComments": "Remove comments from an import statement. /* comments take precedence over eol (//) comments. This ignores\n escaping and quoting, as they are not valid in an import statement.\n\n:param s: (java.lang.String) - import statement string from which to remove comments\n:return: (java.lang.String) the input string with comments removed, and whitespace trimmed",
   "runScript": ":param script: java.lang.String",
   "runScriptOnce": ":param script: java.lang.String",
   "sanitizeThrowable": "If this script session can throw unserializable exceptions, this method is responsible for turning those\n exceptions into something suitable for sending back to a client.\n\n:param e: (java.lang.Throwable) - the exception to (possibly) sanitize\n:return: (java.lang.Throwable) the sanitized exception",
@@ -29,7 +29,7 @@
   "setUseOriginalScriptLoaderState": "Informs the session whether or not we should be using the original ScriptLoaderState for source commands.\n\n:param useOriginal: (boolean) - whether to use the script loader state at persistent query initialization\n:return: boolean",
   "setVariable": "Inserts a value into the script's scope.\n\n:param name: (java.lang.String) - the variable name to set\n:param value: (java.lang.Object) - the new value of the variable",
   "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: (io.deephaven.db.util.liveness.LivenessReferent) - The referent to add\n:return: (boolean) Whether the referent was in fact added",
-  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true.\n Otherwise, returns false rather than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
+  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true. Otherwise, returns false rather\n than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
  },
  "path": "io.deephaven.db.util.GroovyDeephavenSession",
  "text": "Groovy ScriptSession. Not safe for concurrent use.",

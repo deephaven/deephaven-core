@@ -10,6 +10,6 @@
   "walk": "Note: Java generics information - <V extends io.deephaven.api.filter.Filter.Visitor>\n\n:param visitor: V\n:return: V"
  },
  "path": "io.deephaven.api.filter.FilterOr",
- "text": "Evaluates to true when any of the given filters evaluates to\n true.",
+ "text": "Evaluates to true when any of the given filters evaluates to true.",
  "typeName": "class"
 }

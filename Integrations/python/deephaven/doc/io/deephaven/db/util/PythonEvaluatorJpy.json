@@ -10,6 +10,6 @@
   "withGlobalCopy": ":return: io.deephaven.db.util.PythonEvaluatorJpy"
  },
  "path": "io.deephaven.db.util.PythonEvaluatorJpy",
- "text": "The sole implementation of the PythonEvaluator, using Jpy to create a cpython interpreter instance inside of our JVM.\n\n Each evaluator has their own copy of the globals.",
+ "text": "The sole implementation of the PythonEvaluator, using Jpy to create a cpython interpreter instance inside of\n our JVM.\n\n Each evaluator has their own copy of the globals.",
  "typeName": "class"
 }

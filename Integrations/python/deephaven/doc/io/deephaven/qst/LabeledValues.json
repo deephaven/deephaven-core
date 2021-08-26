@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.qst.LabeledValues",
+ "methods": {
+  "builder": "Note: Java generics information - <T>\n\n:return: io.deephaven.qst.LabeledValues.Builder<T>",
+  "forEach": ":param action: java.util.function.Consumer<? superio.deephaven.qst.LabeledValue<LabeledValues.T>>",
+  "get": ":param name: java.lang.String\n:return: LabeledValues.T",
+  "iterator": ":return: java.util.Iterator<io.deephaven.qst.LabeledValue<LabeledValues.T>>",
+  "labels": ":return: java.util.Collection<java.lang.String>",
+  "merge": "*Overload 1*  \n  Note: Java generics information - <T>\n  \n  :param labeledValues: io.deephaven.qst.LabeledValues<T>...\n  :return: io.deephaven.qst.LabeledValues<T>\n  \n*Overload 2*  \n  Note: Java generics information - <T>\n  \n  :param labeledValues: java.lang.Iterable<io.deephaven.qst.LabeledValues<T>>\n  :return: io.deephaven.qst.LabeledValues<T>",
+  "of": "Note: Java generics information - <T>\n\n:param labels: java.lang.Iterable<java.lang.String>\n:param values: java.lang.Iterable<T>\n:return: io.deephaven.qst.LabeledValues<T>",
+  "spliterator": ":return: java.util.Spliterator<io.deephaven.qst.LabeledValue<LabeledValues.T>>",
+  "valueSet": ":return: java.util.Set<LabeledValues.T>",
+  "values": ":return: java.lang.Iterable<LabeledValues.T>",
+  "valuesStream": ":return: java.util.stream.Stream<LabeledValues.T>"
+ },
+ "path": "io.deephaven.qst.LabeledValues",
+ "typeName": "class"
+}

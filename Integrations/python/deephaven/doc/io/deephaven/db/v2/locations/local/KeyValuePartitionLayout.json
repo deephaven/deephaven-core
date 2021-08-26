@@ -6,6 +6,6 @@
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.db.v2.locations.local.KeyValuePartitionLayout",
- "text": "Location finder that will traverse a directory hierarchy and infer partitions from\n key-value pairs in the directory names, for example:\n tableRootDirectory/Country=France/City=Paris/parisData.parquet\n Traversal is depth-first, and assumes that target files will only be found at a single depth.",
+ "text": "Location finder that will traverse a directory hierarchy and infer partitions from\n key-value pairs in the directory names, for example:\n \n \n tableRootDirectory/Country=France/City=Paris/parisData.parquet\n \n \n Traversal is depth-first, and assumes that target files will only be found at a single depth.",
  "typeName": "class"
 }

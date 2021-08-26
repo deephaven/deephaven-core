@@ -2,7 +2,7 @@
  "className": "io.deephaven.gui.color.ColorPaletteAlgorithm",
  "methods": {
   "getInitialColor": "Gets the algorithm's starting Color.\n\n:return: (io.deephaven.gui.color.Color) algorithm's starting Color",
-  "nextColor": "Gets the next Color after c\n in the algorithm.\n\n:param c: (io.deephaven.gui.color.Color) - color\n:return: (io.deephaven.gui.color.Color) result of plugging c in the algorithm"
+  "nextColor": "Gets the next Color after c in the algorithm.\n\n:param c: (io.deephaven.gui.color.Color) - color\n:return: (io.deephaven.gui.color.Color) result of plugging c in the algorithm"
  },
  "path": "io.deephaven.gui.color.ColorPaletteAlgorithm",
  "text": "Algorithm for generating a sequence of Colors.",

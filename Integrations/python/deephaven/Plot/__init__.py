@@ -583,10 +583,8 @@ def color(color):
     
      Colors are specified by name or hex value.
     
-     Hex values are parsed as follows:
-     first two digits set the Red component of the color;
-     second two digits set the Green component; third two the Blue.
-     Hex values must have a "#" in front, e.g. "#001122"
+     Hex values are parsed as follows: first two digits set the Red component of the color; second two digits set the
+     Green component; third two the Blue. Hex values must have a "#" in front, e.g. "#001122"
     
      For available names, see Color and colorNames()
     
@@ -600,14 +598,14 @@ def color(color):
 @_convertArguments
 def colorHSL(*args):
     """
-    Creates a Color with the specified hue, saturation,
-     lightness, and alpha.  The lower the alpha, the more transparent the color.
+    Creates a Color with the specified hue, saturation, lightness, and alpha. The lower the alpha, the more
+     transparent the color.
     
     *Overload 1*  
       :param h: (float) - the hue component, as a degree on the color wheel
       :param s: (float) - the saturation component, as a percentage
       :param l: (float) - the lightness component, as a percentage
-      :return: (io.deephaven.gui.color.Color) Color with the specified HSL values.  Alpha is defaulted to 1.0.
+      :return: (io.deephaven.gui.color.Color) Color with the specified HSL values. Alpha is defaulted to 1.0.
       
     *Overload 2*  
       :param h: (float) - the hue component, as a degree on the color wheel
@@ -640,7 +638,7 @@ def colorRGB(*args):
       :param r: (int) - the red component in the range (0 - 255).
       :param g: (int) - the green component in the range (0 - 255).
       :param b: (int) - the blue component in the range (0 - 255).
-      :return: (io.deephaven.gui.color.Color) Color with the specified RGB values.  Alpha is defaulted to 255.
+      :return: (io.deephaven.gui.color.Color) Color with the specified RGB values. Alpha is defaulted to 255.
       
     *Overload 2*  
       :param r: (int) - the red component in the range (0 - 255).
@@ -650,14 +648,15 @@ def colorRGB(*args):
       :return: (io.deephaven.gui.color.Color) Color with the specified RGBA values
       
     *Overload 3*  
-      :param rgb: (int) - the combined rbga components consisting of the alpha component in bits 24-31, the red component in bits 16-23,
-              the green component in bits 8-15, and the blue component in bits 0-7. Alpha is defaulted to 255.
+      :param rgb: (int) - the combined rbga components consisting of the alpha component in bits 24-31, the red component in
+              bits 16-23, the green component in bits 8-15, and the blue component in bits 0-7. Alpha is defaulted to
+              255.
       :return: (io.deephaven.gui.color.Color) Color with the specified RGB value
       
     *Overload 4*  
-      :param rgba: (int) - the combined rbga components consisting of the alpha component in bits 24-31, the red component in bits 16-23,
-              the green component in bits 8-15, and the blue component in bits 0-7.
-              If hasAlpha is false, alpha is set to 255.
+      :param rgba: (int) - the combined rbga components consisting of the alpha component in bits 24-31, the red component in
+              bits 16-23, the green component in bits 8-15, and the blue component in bits 0-7. If hasAlpha is
+              false, alpha is set to 255.
       :param hasAlpha: (boolean) - if true, rgba is parsed with an alpha component. Otherwise, alpha defaults to 255
       :return: (io.deephaven.gui.color.Color) Color with the specified RGBA value
       
@@ -665,13 +664,13 @@ def colorRGB(*args):
       :param r: (float) - the red component in the range (0.0 - 1.0).
       :param g: (float) - the green component in the range (0.0 - 1.0).
       :param b: (float) - the blue component in the range (0.0 - 1.0).
-      :return: (io.deephaven.gui.color.Color) Color with the specified RGB values.  Alpha is defaulted to 1.0.
+      :return: (io.deephaven.gui.color.Color) Color with the specified RGB values. Alpha is defaulted to 1.0.
       
     *Overload 6*  
       :param r: (float) - the red component in the range (0.0 - 1.0).
       :param g: (float) - the green component in the range (0.0 - 1.0).
       :param b: (float) - the blue component in the range (0.0 - 1.0).
-      :param a: (float) - the alpha component in the range (0.0-1.0).  The lower the alpha, the more transparent the color.
+      :param a: (float) - the alpha component in the range (0.0-1.0). The lower the alpha, the more transparent the color.
       :return: (io.deephaven.gui.color.Color) Color with the specified RGBA values
     """
     
@@ -2125,23 +2124,24 @@ def newChart(*args):
     Adds a new Chart to this figure.
     
     *Overload 1*  
-      :return: (io.deephaven.db.plot.Figure) the new Chart.  The Chart is placed in the next available grid space, starting at the upper left hand corner of the grid,
-               going left to right, top to bottom.  If no available space is found in the grid:
-              
-      * if this Figure was created with no specified grid size, then the Figure will resize itself to add the new Chart;
+      :return: (io.deephaven.db.plot.Figure) the new Chart. The Chart is placed in the next available grid space, starting at the
+               upper left hand corner of the grid, going left to right, top to bottom. If no available space is found in
+               the grid:
+               
+      * if this Figure was created with no specified grid size, then the Figure will resize itself to add the
+               new Chart;
       * if not, a RuntimeException will be thrown.
       
     *Overload 2*  
-      :param index: (int) - index from the Figure's grid to remove.  The index starts at 0 in the upper left hand corner of the grid and increases
-              going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be
-              [0, 1]
+      :param index: (int) - index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the
+              grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1]
               [2, 3].
-      :return: (io.deephaven.db.plot.Figure) the new Chart.  The Chart is placed at the grid space indicated by the index.
+      :return: (io.deephaven.db.plot.Figure) the new Chart. The Chart is placed at the grid space indicated by the index.
       
     *Overload 3*  
-      :param rowNum: (int) - row index in this Figure's grid.  The row index starts at 0.
-      :param colNum: (int) - column index in this Figure's grid.  The column index starts at 0.
-      :return: (io.deephaven.db.plot.Figure) the new Chart.  The Chart is placed at the grid space [rowNum, colNum.
+      :param rowNum: (int) - row index in this Figure's grid. The row index starts at 0.
+      :param colNum: (int) - column index in this Figure's grid. The column index starts at 0.
+      :return: (io.deephaven.db.plot.Figure) the new Chart. The Chart is placed at the grid space [rowNum, colNum.
     """
     
     return FigureWrapper().newChart(*args)
@@ -2364,21 +2364,24 @@ def oneClick(*args):
       
     *Overload 4*  
       :param t: (io.deephaven.db.tables.Table) - table
-      :param requireAllFiltersToDisplay: (boolean) - false to display data when not all oneclicks are selected; true to only display data when appropriate oneclicks are selected
+      :param requireAllFiltersToDisplay: (boolean) - false to display data when not all oneclicks are selected; true to only display
+              data when appropriate oneclicks are selected
       :param byColumns: (java.lang.String...) - selected columns
       :return: (io.deephaven.db.plot.filters.SelectableDataSetOneClick) SelectableDataSetOneClick with the specified table and columns
       
     *Overload 5*  
       :param tMap: (io.deephaven.db.v2.TableMap) - TableMap
       :param t: io.deephaven.db.tables.Table
-      :param requireAllFiltersToDisplay: (boolean) - false to display data when not all oneclicks are selected; true to only display data when appropriate oneclicks are selected
+      :param requireAllFiltersToDisplay: (boolean) - false to display data when not all oneclicks are selected; true to only display
+              data when appropriate oneclicks are selected
       :param byColumns: (java.lang.String...) - selected columns
       :return: (io.deephaven.db.plot.filters.SelectableDataSetOneClick) SelectableDataSetOneClick with the specified table map and columns
       
     *Overload 6*  
       :param tMap: (io.deephaven.db.v2.TableMap) - TableMap
       :param tableDefinition: io.deephaven.db.tables.TableDefinition
-      :param requireAllFiltersToDisplay: (boolean) - false to display data when not all oneclicks are selected; true to only display data when appropriate oneclicks are selected
+      :param requireAllFiltersToDisplay: (boolean) - false to display data when not all oneclicks are selected; true to only display
+              data when appropriate oneclicks are selected
       :param byColumns: (java.lang.String...) - selected columns
       :return: (io.deephaven.db.plot.filters.SelectableDataSetOneClick) SelectableDataSetOneClick with the specified table map and columns
     """
@@ -3173,7 +3176,8 @@ def scatterPlotMatrix(*args):
       Note: Java generics information - <T extends java.lang.Number>
       
       :param variables: (T[]...) - data to plot
-      :return: (io.deephaven.db.plot.composite.ScatterPlotMatrix) new Figure containing the scatter plot matrix where variable names are assigned as x1, x2, ... in order.
+      :return: (io.deephaven.db.plot.composite.ScatterPlotMatrix) new Figure containing the scatter plot matrix where variable names are assigned as x1, x2, ... in
+               order.
       
     *Overload 2*  
       Note: Java generics information - <T extends java.lang.Number>
@@ -3184,7 +3188,8 @@ def scatterPlotMatrix(*args):
       
     *Overload 3*  
       :param variables: (int[]...) - data to plot
-      :return: (io.deephaven.db.plot.composite.ScatterPlotMatrix) new Figure containing the scatter plot matrix where variable names are assigned as x1, x2, ... in order.
+      :return: (io.deephaven.db.plot.composite.ScatterPlotMatrix) new Figure containing the scatter plot matrix where variable names are assigned as x1, x2, ... in
+               order.
       
     *Overload 4*  
       :param variableNames: (java.lang.String[]) - variable names
@@ -3193,7 +3198,8 @@ def scatterPlotMatrix(*args):
       
     *Overload 5*  
       :param variables: (long[]...) - data to plot
-      :return: (io.deephaven.db.plot.composite.ScatterPlotMatrix) new Figure containing the scatter plot matrix where variable names are assigned as x1, x2, ... in order.
+      :return: (io.deephaven.db.plot.composite.ScatterPlotMatrix) new Figure containing the scatter plot matrix where variable names are assigned as x1, x2, ... in
+               order.
       
     *Overload 6*  
       :param variableNames: (java.lang.String[]) - variable names
@@ -3202,7 +3208,8 @@ def scatterPlotMatrix(*args):
       
     *Overload 7*  
       :param variables: (float[]...) - data to plot
-      :return: (io.deephaven.db.plot.composite.ScatterPlotMatrix) new Figure containing the scatter plot matrix where variable names are assigned as x1, x2, ... in order.
+      :return: (io.deephaven.db.plot.composite.ScatterPlotMatrix) new Figure containing the scatter plot matrix where variable names are assigned as x1, x2, ... in
+               order.
       
     *Overload 8*  
       :param variableNames: (java.lang.String[]) - variable names
@@ -3211,7 +3218,8 @@ def scatterPlotMatrix(*args):
       
     *Overload 9*  
       :param variables: (double[]...) - data to plot
-      :return: (io.deephaven.db.plot.composite.ScatterPlotMatrix) new Figure containing the scatter plot matrix where variable names are assigned as x1, x2, ... in order.
+      :return: (io.deephaven.db.plot.composite.ScatterPlotMatrix) new Figure containing the scatter plot matrix where variable names are assigned as x1, x2, ... in
+               order.
       
     *Overload 10*  
       :param variableNames: (java.lang.String[]) - variable names

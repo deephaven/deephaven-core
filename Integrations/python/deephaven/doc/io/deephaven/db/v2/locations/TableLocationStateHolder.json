@@ -1,13 +1,13 @@
 {
  "className": "io.deephaven.db.v2.locations.TableLocationStateHolder",
  "methods": {
-  "getIndex": ":return: (io.deephaven.db.v2.utils.ReadOnlyIndex) The (possibly-empty) index of a table location, or null if index information\n is unknown or does not exist for this table location.",
-  "getLastModifiedTimeMillis": ":return: (long) The last modified time for a table location, in milliseconds from the epoch:\n  NULL_TIME: Modification time information is unknown or does not exist for this location\n  >= 0: The time this table was last modified, in milliseconds from the UTC epoch",
-  "getSize": ":return: (long) The size of a table location:\n NULL_SIZE: Size information is unknown or does not exist for this location\n  >= 0: The table location exists and has (possibly empty) data",
-  "getStateLock": ":return: (java.lang.Object) The Object that accessors should synchronize on if they want to invoke multiple getters with consistent results.",
-  "setValues": "Set all state values.\n\n:param index: (io.deephaven.db.v2.utils.ReadOnlyIndex) - The new index. Ownership passes to this holder; callers should\n                              clone it if necessary.\n:param lastModifiedTimeMillis: (long) - The new modification time\n:return: (boolean) Whether any of the values changed"
+  "getIndex": ":return: (io.deephaven.db.v2.utils.ReadOnlyIndex) The (possibly-empty) index of a table location, or null if index\n         information is unknown or does not exist for this table location.",
+  "getLastModifiedTimeMillis": ":return: (long) The last modified time for a table location, in milliseconds from the epoch: \nNULL_TIME: Modification time information is unknown or does not exist for this\n         location \n>= 0: The time this table was last modified, in milliseconds from the UTC epoch",
+  "getSize": ":return: (long) The size of a table location: \nNULL_SIZE: Size information is unknown or does not exist for this location \n>= 0: The table location exists and has (possibly empty) data",
+  "getStateLock": ":return: (java.lang.Object) The Object that accessors should synchronize on if they want to invoke multiple getters with consistent\n         results.",
+  "setValues": "Set all state values.\n\n:param index: (io.deephaven.db.v2.utils.ReadOnlyIndex) - The new index. Ownership passes to this holder; callers should clone\n        it if necessary.\n:param lastModifiedTimeMillis: (long) - The new modification time\n:return: (boolean) Whether any of the values changed"
  },
  "path": "io.deephaven.db.v2.locations.TableLocationStateHolder",
- "text": "Tool for generic multi-field \"atomic\" get/set of state values for a table location.\n NB: Possibly-concurrent usages should be externally synchronized.",
+ "text": "Tool for generic multi-field \"atomic\" get/set of state values for a table location. NB: Possibly-concurrent usages\n should be externally synchronized.",
  "typeName": "class"
 }

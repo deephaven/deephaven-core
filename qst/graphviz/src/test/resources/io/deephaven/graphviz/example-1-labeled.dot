@@ -1,0 +1,25 @@
+digraph {
+"op_0" ["label"="time(PT1S)"]
+"op_1" ["label"="view(I=i)"]
+"op_2" ["label"="tail(10)"]
+"op_3" ["label"="head(1)"]
+"op_4" ["label"="MergeTable"]
+"op_5" ["label"="MergeTable"]
+"t1" ["shape"="note"]
+"t2" ["shape"="note"]
+"t3" ["shape"="note"]
+"t4" ["shape"="note"]
+"t5" ["shape"="note"]
+"op_1" -> "op_0"
+"op_2" -> "op_1"
+"op_3" -> "op_2"
+"op_4" -> "op_2" ["label"="0"]
+"op_4" -> "op_3" ["label"="1"]
+"op_5" -> "op_4" ["label"="0"]
+"op_5" -> "op_4" ["label"="1"]
+"t1" -> "op_1"
+"t2" -> "op_2"
+"t3" -> "op_3"
+"t4" -> "op_4"
+"t5" -> "op_5"
+}

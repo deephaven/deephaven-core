@@ -1,11 +1,11 @@
 {
  "className": "io.deephaven.modelfarm.RowDataManager",
  "methods": {
-  "loadData": "Populates a data object with data from a table row.\n \n This method should be called while the LTM lock is held.  This can occur either during the update loop or the\n LTM lock can be acquired outside the update loop.  If the LTM lock is not held, the loaded data can be inconsistent\n or corrupt.\n\n:param data: (RowDataManager.DATATYPE) - data structure to populate\n:param index: (long) - table index of the row to load data from\n:param usePrev: (boolean) - use data from the previous table update",
+  "loadData": "Populates a data object with data from a table row.\n \n This method should be called while the LTM lock is held. This can occur either during the update loop or the LTM\n lock can be acquired outside the update loop. If the LTM lock is not held, the loaded data can be inconsistent or\n corrupt.\n\n:param data: (RowDataManager.DATATYPE) - data structure to populate\n:param index: (long) - table index of the row to load data from\n:param usePrev: (boolean) - use data from the previous table update",
   "newData": "Creates a new data instance.\n\n:return: (RowDataManager.DATATYPE) new data instance.",
   "table": "Gets the source table.\n\n:return: (io.deephaven.db.v2.DynamicTable) source table.",
   "uniqueIdCurrent": "Gets the current unique identifier value for a row.\n \n This function should only be called during an update loop or while holding the LTM lock.\n\n:param index: (long) - table row index.\n:return: (RowDataManager.KEYTYPE) current unique identifier for a row.",
-  "uniqueIdPrev": "Gets the previous unique identifier value for a row.  One column of each table is designated as a unique identifier for data rows.\n \n This function should only be called during an update loop or while holding the LTM lock.\n\n:param index: (long) - table row index.\n:return: (RowDataManager.KEYTYPE) previous underlying id."
+  "uniqueIdPrev": "Gets the previous unique identifier value for a row. One column of each table is designated as a unique\n identifier for data rows.\n \n This function should only be called during an update loop or while holding the LTM lock.\n\n:param index: (long) - table row index.\n:return: (RowDataManager.KEYTYPE) previous underlying id."
  },
  "path": "io.deephaven.modelfarm.RowDataManager",
  "text": "An interface for accessing and querying data contained in rows of a dynamic table.",

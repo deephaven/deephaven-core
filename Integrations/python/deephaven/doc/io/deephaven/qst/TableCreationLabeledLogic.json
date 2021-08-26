@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.qst.TableCreationLabeledLogic",
+ "methods": {
+  "create": "Note: Java generics information - <T extends io.deephaven.api.TableOperations<T,\nT>>\n\n:param creation: io.deephaven.qst.TableCreator<T>\n:return: io.deephaven.qst.LabeledValues<T>"
+ },
+ "path": "io.deephaven.qst.TableCreationLabeledLogic",
+ "text": "An encapsulation of the logic to return a labeled tables, when the table type is also TableOperations.",
+ "typeName": "interface"
+}

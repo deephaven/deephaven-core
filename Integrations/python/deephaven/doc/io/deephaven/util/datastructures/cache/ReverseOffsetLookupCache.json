@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.util.datastructures.cache.ReverseOffsetLookupCache",
  "methods": {
-  "applyAsInt": "Get the index of value in reverse lookup cache.\n Be sure to call ensurePopulated(int, Supplier, Consumer) for the appropriate index bound, first.\n\n:param value: (ReverseOffsetLookupCache.VALUE_TYPE) - The value to look up\n:return: (int) The index of value in the cache, or NULL_INDEX (-1) if not found",
+  "applyAsInt": "Get the index of value in reverse lookup cache. Be sure to call ensurePopulated(int, Supplier, Consumer)\n for the appropriate index bound, first.\n\n:param value: (ReverseOffsetLookupCache.VALUE_TYPE) - The value to look up\n:return: (int) The index of value in the cache, or NULL_INDEX (-1) if not found",
   "clear": "Release all resources held by the cache.",
   "ensurePopulated": "Ensure that the cache is populated for all indexes <= highestIndexNeeded.\n\n:param highestIndexNeeded: (int) - The highest index needed for this operation\n:param extraFactory: java.util.function.Supplier<ReverseOffsetLookupCache.EXTRA_INPUT_TYPE>\n:param extraCleanup: java.util.function.Consumer<ReverseOffsetLookupCache.EXTRA_INPUT_TYPE>"
  },
