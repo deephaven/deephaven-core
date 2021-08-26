@@ -333,7 +333,7 @@ public class IdeSession extends HasEventHandling {
                 .asPromise()
                 .then(Promise::resolve, fail -> {
                     pendingAutocompleteCalls.remove(request.getRequestId());
-                    //noinspection unchecked, rawtypes, rawtypes
+                    //noinspection unchecked, rawtypes
                     return (Promise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>>) (Promise) Promise.reject(fail);
                 });
     }
