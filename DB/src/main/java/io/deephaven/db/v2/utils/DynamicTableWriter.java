@@ -5,7 +5,6 @@
 package io.deephaven.db.v2.utils;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.db.v2.DynamicTable;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.type.Type;
@@ -45,46 +44,23 @@ public class DynamicTableWriter implements TableWriter {
     private int lastCommittedRow = -1;
     private int lastSetterRow;
 
+    /**
+     * Creates a TableWriter that produces an in-memory table using the provided column names and types.
+     *
+     * @param header the names and types of the columns in the output table (and our input)
+     * @param constantValues a Map of columns with constant values
+     */
     public DynamicTableWriter(final TableHeader header, final Map<String, Object> constantValues) {
-        final Map<String, ColumnSource<?>> sources = new LinkedHashMap<>();
-        arrayColumnSources = new ArrayBackedColumnSource[header.numColumns()];
-        allocatedSize = 256;
-        columnNames = new String[header.numColumns()];
-        int i = 0;
-        final Iterator<ColumnHeader<?>> it = header.iterator();
-        while (it.hasNext()) {
-            final ColumnHeader<?> colHeader = it.next();
-            final String colName = colHeader.name();
-            final Class<?> colType = colHeader.componentType().clazz();
-            if (constantValues.containsKey(colName)) {
-                final SingleValueColumnSource singleValueColumnSource =
-                        SingleValueColumnSource.getSingleValueColumnSource(colType);
-                // noinspection unchecked
-                singleValueColumnSource.set(constantValues.get(colName));
-                sources.put(colName, singleValueColumnSource);
-            } else {
-                arrayColumnSources[i] =
-                        ArrayBackedColumnSource.getMemoryColumnSource(allocatedSize, colType);
-                sources.put(colName, arrayColumnSources[i]);
-            }
-            columnNames[i] = colName;
-            ++i;
-        }
+        this(getSources(header, constantValues, 256), constantValues, 256);
+    }
 
-        this.table = new LiveQueryTable(Index.FACTORY.getIndexByValues(), sources);
-        LiveTableMonitor.DEFAULT.addTable(table);
-        if (constantValues.isEmpty()) {
-            return;
-        }
-        final DataColumn<?>[] columns = table.getColumns();
-        for (int ii = 0; ii < columns.length; ii++) {
-            if (constantValues.containsKey(columnNames[ii])) {
-                continue;
-            }
-            final int index = ii;
-            factoryMap.put(columns[index].getName(),
-                    (currentRow) -> createRowSetter(columns[index].getType(), arrayColumnSources[index]));
-        }
+    /**
+     * Creates a TableWriter that produces an in-memory table using the provided column names and types.
+     *
+     * @param header the names and types of the columns in the output table (and our input)
+     */
+    public DynamicTableWriter(final TableHeader header) {
+        this(header, Collections.emptyMap());
     }
 
     /**
@@ -99,7 +75,7 @@ public class DynamicTableWriter implements TableWriter {
             final String[] columnNames,
             final Class<?>[] columnTypes,
             final Map<String, Object> constantValues) {
-        this(columnNames, columnTypes.length, (int i) -> columnTypes[i], constantValues);
+        this(columnNames, (int i) -> columnTypes[i], constantValues);
     }
 
     /**
@@ -114,7 +90,7 @@ public class DynamicTableWriter implements TableWriter {
             final String[] columnNames,
             final Type<?>[] columnTypes,
             final Map<String, Object> constantValues) {
-        this(columnNames, columnTypes.length, (int i) -> columnTypes[i].clazz(), constantValues);
+        this(columnNames, (int i) -> columnTypes[i].clazz(), constantValues);
     }
 
     /**
@@ -303,14 +279,40 @@ public class DynamicTableWriter implements TableWriter {
         return columnNames;
     }
 
-    // Convenience implementation method.
-    private DynamicTableWriter(final String[] columnNames, final int columnTypesSize,
+    private static Map<String, ColumnSource<?>> getSources(
+            final TableHeader header,
+            final Map<String, Object> constantValues,
+            final int allocatedSize
+    ) {
+        final Map<String, ColumnSource<?>> sources = new LinkedHashMap<>();
+        final Iterator<ColumnHeader<?>> it = header.iterator();
+        while (it.hasNext()) {
+            final ColumnHeader<?> colHeader = it.next();
+            final String colName = colHeader.name();
+            final Class<?> colType = colHeader.componentType().clazz();
+            if (constantValues.containsKey(colName)) {
+                final SingleValueColumnSource singleValueColumnSource =
+                        SingleValueColumnSource.getSingleValueColumnSource(colType);
+                // noinspection unchecked
+                singleValueColumnSource.set(constantValues.get(colName));
+                sources.put(colName, singleValueColumnSource);
+            } else {
+                ColumnSource<?> source =
+                        ArrayBackedColumnSource.getMemoryColumnSource(allocatedSize, colType);
+                sources.put(colName, source);
+            }
+        }
+        return sources;
+    }
+
+    private static Map<String, ColumnSource<?>> getSources(
+            final String[] columnNames,
             final IntFunction<Class<?>> columnTypes,
-            final Map<String, Object> constantValues) {
-        final Map<String, ColumnSource> sources = new LinkedHashMap<>();
-        arrayColumnSources = new ArrayBackedColumnSource[columnTypesSize];
-        allocatedSize = 256;
-        for (int i = 0; i < columnTypesSize; i++) {
+            final Map<String, Object> constantValues,
+            final int allocatedSize
+    ) {
+        final Map<String, ColumnSource<?>> sources = new LinkedHashMap<>();
+        for (int i = 0; i < columnNames.length; i++) {
             if (constantValues.containsKey(columnNames[i])) {
                 final SingleValueColumnSource singleValueColumnSource =
                         SingleValueColumnSource.getSingleValueColumnSource(columnTypes.apply(i));
@@ -318,26 +320,46 @@ public class DynamicTableWriter implements TableWriter {
                 singleValueColumnSource.set(constantValues.get(columnNames[i]));
                 sources.put(columnNames[i], singleValueColumnSource);
             } else {
-                arrayColumnSources[i] =
+                ArrayBackedColumnSource<?> source =
                         ArrayBackedColumnSource.getMemoryColumnSource(allocatedSize,
                                 columnTypes.apply(i));
-                sources.put(columnNames[i], arrayColumnSources[i]);
+                sources.put(columnNames[i], source);
             }
         }
+        return sources;
+    }
 
+    // Convenience implementation method.
+    private DynamicTableWriter(
+            final String[] columnNames,
+            final IntFunction<Class<?>> columnTypes,
+            final Map<String, Object> constantValues) {
+        this(getSources(columnNames, columnTypes, constantValues, 256), constantValues, 256);
+    }
 
+    private DynamicTableWriter(final Map<String, ColumnSource<?>> sources, final Map<String, Object> constantValues, final int allocatedSize) {
+        this.allocatedSize = 256;
         this.table = new LiveQueryTable(Index.FACTORY.getIndexByValues(), sources);
-        LiveTableMonitor.DEFAULT.addTable(table);
-        this.columnNames = columnNames;
+        final int nCols = sources.size();;
+        this.columnNames = new String[nCols];
+        this.arrayColumnSources = new ArrayBackedColumnSource[nCols];
+        int ii = 0;
         final DataColumn[] columns = table.getColumns();
-        for (int ii = 0; ii < columns.length; ii++) {
+        for (Map.Entry<String, ColumnSource<?>> entry : sources.entrySet()) {
+            columnNames[ii] = entry.getKey();
+            ColumnSource<?> source = entry.getValue();
+            if (source instanceof ArrayBackedColumnSource) {
+                arrayColumnSources[ii] = (ArrayBackedColumnSource) source;
+            }
             if (constantValues.containsKey(columnNames[ii])) {
                 continue;
             }
             final int index = ii;
             factoryMap.put(columns[index].getName(),
                     (currentRow) -> createRowSetter(columns[index].getType(), arrayColumnSources[index]));
+            ++ii;
         }
+        LiveTableMonitor.DEFAULT.addTable(table);
     }
 
     private RowSetterImpl createRowSetter(Class type, ArrayBackedColumnSource buffer) {
