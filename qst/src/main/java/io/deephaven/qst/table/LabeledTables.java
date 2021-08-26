@@ -1,6 +1,8 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.qst.TableCreationLabeledLogic;
+import io.deephaven.qst.LabeledValues;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Collection;
@@ -53,7 +55,33 @@ public abstract class LabeledTables implements Iterable<LabeledTable> {
         return builder().addTables(tables).build();
     }
 
+    public static LabeledTables of(Iterable<String> labels, Iterable<TableSpec> values) {
+        Builder builder = builder();
+        Iterator<String> it1 = labels.iterator();
+        Iterator<TableSpec> it2 = values.iterator();
+        while (it1.hasNext() && it2.hasNext()) {
+            builder.putMap(it1.next(), it2.next());
+        }
+        if (it1.hasNext() || it2.hasNext()) {
+            throw new IllegalArgumentException();
+        }
+        return builder.build();
+    }
+
+    public static LabeledTables of(TableCreationLabeledLogic logic) {
+        LabeledValues<TableSpec> labeledValues = logic.create(TableCreatorImpl.INSTANCE);
+        return of(labeledValues.labels(), labeledValues.values());
+    }
+
     abstract Map<String, TableSpec> map();
+
+    public final int size() {
+        return map().size();
+    }
+
+    public final Collection<String> labels() {
+        return map().keySet();
+    }
 
     public final Collection<TableSpec> tables() {
         return map().values();
@@ -65,6 +93,10 @@ public abstract class LabeledTables implements Iterable<LabeledTable> {
 
     public final Stream<LabeledTable> stream() {
         return StreamSupport.stream(spliterator(), false);
+    }
+
+    public final Collection<TableSpec> values() {
+        return map().values();
     }
 
     @Override
