@@ -1098,15 +1098,6 @@ public class ConsoleServiceClient {
                         metadata_or_callback));
     }
 
-    public native UnaryResponse executeCommand(
-            ExecuteCommandRequest requestMessage,
-            ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType metadata_or_callback,
-            ConsoleServiceClient.ExecuteCommandCallbackFn callback);
-
-    public native UnaryResponse executeCommand(
-            ExecuteCommandRequest requestMessage,
-            ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType metadata_or_callback);
-
     @JsOverlay
     public final UnaryResponse executeCommand(
             ExecuteCommandRequest requestMessage,
@@ -1314,15 +1305,6 @@ public class ConsoleServiceClient {
                 Js.<ConsoleServiceClient.FetchTableMapMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback));
     }
-
-    public native UnaryResponse fetchTableMap(
-            FetchTableMapRequest requestMessage,
-            ConsoleServiceClient.FetchTableMapMetadata_or_callbackUnionType metadata_or_callback,
-            ConsoleServiceClient.FetchTableMapCallbackFn callback);
-
-    public native UnaryResponse fetchTableMap(
-            FetchTableMapRequest requestMessage,
-            ConsoleServiceClient.FetchTableMapMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse fetchTableMap(
