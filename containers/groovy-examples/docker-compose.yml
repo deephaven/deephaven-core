@@ -6,7 +6,7 @@ services:
     expose:
       - '8080'
     volumes:
-      - ./docker/core/data:/data
+      - ./data:/data
       - api-cache:/cache
     environment:
       - JAVA_TOOL_OPTIONS=-Xmx4g -Dio.deephaven.console.type=groovy
