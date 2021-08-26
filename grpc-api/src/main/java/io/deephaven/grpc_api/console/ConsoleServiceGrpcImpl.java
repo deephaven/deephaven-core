@@ -171,18 +171,18 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                         // produce a diff
                         ExecuteCommandResponse.Builder diff = ExecuteCommandResponse.newBuilder();
 
-                    ScriptSession.Changes changes = scriptSession.evaluateScript(request.getCode());
+                        ScriptSession.Changes changes = scriptSession.evaluateScript(request.getCode());
 
-                    changes.created.entrySet()
-                        .forEach(entry -> diff.addCreated(makeVariableDefinition(entry)));
-                    changes.updated.entrySet()
-                        .forEach(entry -> diff.addUpdated(makeVariableDefinition(entry)));
-                    changes.removed.entrySet()
-                        .forEach(entry -> diff.addRemoved(makeVariableDefinition(entry)));
+                        changes.created.entrySet()
+                                .forEach(entry -> diff.addCreated(makeVariableDefinition(entry)));
+                        changes.updated.entrySet()
+                                .forEach(entry -> diff.addUpdated(makeVariableDefinition(entry)));
+                        changes.removed.entrySet()
+                                .forEach(entry -> diff.addRemoved(makeVariableDefinition(entry)));
 
-                    responseObserver.onNext(diff.build());
-                    responseObserver.onCompleted();
-                });
+                        responseObserver.onNext(diff.build());
+                        responseObserver.onCompleted();
+                    });
         });
     }
 

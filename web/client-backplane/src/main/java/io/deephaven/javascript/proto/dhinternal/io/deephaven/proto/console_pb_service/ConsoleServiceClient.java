@@ -1099,13 +1099,13 @@ public class ConsoleServiceClient {
     }
 
     public native UnaryResponse executeCommand(
-        ExecuteCommandRequest requestMessage,
-        ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType metadata_or_callback,
-        ConsoleServiceClient.ExecuteCommandCallbackFn callback);
+            ExecuteCommandRequest requestMessage,
+            ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType metadata_or_callback,
+            ConsoleServiceClient.ExecuteCommandCallbackFn callback);
 
     public native UnaryResponse executeCommand(
-        ExecuteCommandRequest requestMessage,
-        ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType metadata_or_callback);
+            ExecuteCommandRequest requestMessage,
+            ConsoleServiceClient.ExecuteCommandMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse executeCommand(
