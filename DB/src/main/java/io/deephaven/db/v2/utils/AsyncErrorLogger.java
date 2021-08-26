@@ -4,6 +4,8 @@
 
 package io.deephaven.db.v2.utils;
 
+import io.deephaven.qst.column.header.ColumnHeader;
+import io.deephaven.qst.table.TableHeader;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.v2.DynamicTable;
@@ -14,10 +16,17 @@ import java.io.IOException;
 public class AsyncErrorLogger {
 
     private static final DynamicTableWriter tableWriter = new DynamicTableWriter(
-            new String[] {"Time", "EvaluationNumber", "OperationNumber", "Description", "SourceQueryEvaluationNumber",
-                    "SourceQueryOperationNumber", "SourceQueryDescription", "Cause", "WorkerName", "HostName"},
-            new Class[] {DBDateTime.class, int.class, int.class, String.class, int.class, int.class, String.class,
-                    Exception.class, String.class, String.class});
+            TableHeader.of(
+                    ColumnHeader.of("Time", DBDateTime.class),
+                    ColumnHeader.ofInt("EvaluationNumber"),
+                    ColumnHeader.ofInt("OperationNumber"),
+                    ColumnHeader.ofString("Description"),
+                    ColumnHeader.ofInt("SourceQueryEvaluationNumber"),
+                    ColumnHeader.ofInt("SourceQueryOperationNumber"),
+                    ColumnHeader.ofString("SourceQueryDescription"),
+                    ColumnHeader.of("Cause", Exception.class),
+                    ColumnHeader.ofString("WorkerName"),
+                    ColumnHeader.ofString("HostName")));
     private static final RowSetter<DBDateTime> timeSetter = tableWriter.getSetter("Time");
     private static final RowSetter<Integer> evaluationNumberSetter = tableWriter.getSetter("EvaluationNumber");
     private static final RowSetter<Integer> operationNumberSetter = tableWriter.getSetter("OperationNumber");
