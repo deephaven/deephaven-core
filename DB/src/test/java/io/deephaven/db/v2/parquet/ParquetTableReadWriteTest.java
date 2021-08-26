@@ -269,10 +269,4 @@ public class ParquetTableReadWriteTest {
     public void testParquetGzipCompressionCodec() {
         compressionCodecTestHelper("GZIP");
     }
-
-    @Test
-    public void testLoadBigFile() {
-        final Table t = ParquetTools.readTable("../../data/core-test-data/complete.parquet");
-        TableTools.show(t, 50);
-    }
 }
