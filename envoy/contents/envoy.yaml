@@ -22,7 +22,7 @@ static_resources:
                 codec_type: AUTO
                 upgrade_configs:
                  - upgrade_type: websocket
-
+                stream_idle_timeout: 0s
                 route_config:
                   name: local_route
                   virtual_hosts:
