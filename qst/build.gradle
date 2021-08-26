@@ -2,6 +2,8 @@ plugins {
     id 'java-library'
 }
 
+description = 'The Query Syntax Tree POJOs'
+
 dependencies {
     api project(':table-api')
 
@@ -16,3 +18,5 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+apply plugin: 'io.deephaven.java-publishing-conventions'

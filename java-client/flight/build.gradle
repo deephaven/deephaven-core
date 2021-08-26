@@ -2,8 +2,12 @@ plugins {
     id 'java-library'
 }
 
+description = 'The java client flight library'
+
 dependencies {
     api project(':java-client-session')
+    implementation project(':proto:proto-backplane-grpc-util')
+
     api 'org.apache.arrow:flight-core:5.0.0'
     implementation 'org.apache.arrow:flight-grpc:5.0.0'
 
@@ -21,3 +25,5 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+apply plugin: 'io.deephaven.java-publishing-conventions'

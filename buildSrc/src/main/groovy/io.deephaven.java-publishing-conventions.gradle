@@ -1,0 +1,73 @@
+plugins {
+  id 'java'
+  id 'signing'
+  id 'maven-publish'
+}
+
+java {
+  withJavadocJar()
+  withSourcesJar()
+}
+
+// TODO: parameterize based on io.deephaven.tools.License
+def licenseName = 'Deephaven Community License Agreement 1.0'
+def licenseUrl = 'https://github.com/deephaven/deephaven-core/blob/main/LICENSE.md'
+
+// TODO: parameterize, or choose deephaven group email
+def developerId = 'devinrsmith'
+def developerName = 'Devin Smith'
+def developerEmail = 'devinsmith@deephaven.io'
+
+publishing {
+  publications {
+    mavenJava(MavenPublication) {
+      from components.java
+      pom {
+        description = project.description
+        url = 'https://github.com/deephaven/deephaven-core'
+        licenses {
+          license {
+            name = licenseName
+            url = licenseUrl
+          }
+        }
+        scm {
+          url = 'https://github.com/deephaven/deephaven-core/tree/main'
+          connection = 'scm:git:git://github.com/deephaven/deephaven-core.git'
+          developerConnection = 'scm:git:ssh://github.com/deephaven/deephaven-core.git'
+        }
+        developers {
+          developer {
+            id = developerId
+            name = developerName
+            email = developerEmail
+          }
+        }
+      }
+    }
+  }
+  repositories {
+    maven {
+      name = 'ossrh'
+      // ossrhUsername, ossrhPassword
+      credentials(PasswordCredentials)
+      def releasesRepoUrl = "fake" //https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+      def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+      url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+    }
+  }
+}
+
+signing {
+  sign publishing.publications.mavenJava
+  String signingKey = findProperty("signingKey")
+  String signingPassword = findProperty("signingPassword")
+  if (signingKey != null && signingPassword != null) {
+    // In CI, it's harder to pass a file; so we use the in-memory version.
+    useInMemoryPgpKeys(signingKey, signingPassword)
+  }
+  // Otherwise, it will use the properties:
+  // signing.keyId
+  // signing.secretKeyRingFile
+  // signing.password
+}

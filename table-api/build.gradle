@@ -2,6 +2,8 @@ plugins {
   id 'java-library'
 }
 
+description = 'The table operations API'
+
 dependencies {
   annotationProcessor 'org.immutables:value:2.8.1'
   compileOnly 'org.immutables:value-annotations:2.8.1'
@@ -14,3 +16,5 @@ dependencies {
 test {
   useJUnitPlatform()
 }
+
+apply plugin: 'io.deephaven.java-publishing-conventions'

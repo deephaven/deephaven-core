@@ -13,6 +13,9 @@ plugins {
   id "com.github.hierynomus.license" version "0.14.0" apply false
   id "com.google.protobuf" version "0.8.10" apply false
   id 'com.diffplug.spotless' version '5.14.2' apply false
+
+  id 'io.deephaven.java-conventions' apply false
+  id 'io.deephaven.java-publishing-conventions' apply false
 }
 
 import io.deephaven.tools.Java
@@ -74,7 +77,7 @@ idea {
 }
 
 ext.versionSource = versionSource
-ext.globalVersion = "0.4.0"
+ext.globalVersion = "0.4.0-SNAPSHOT"
 
 // To set fishlibVersion, go to project-local gradle.properties file
 // (or, use the gradle.properties in $USER_HOME/.gradle for a global override)
@@ -137,7 +140,7 @@ allprojects*.tasks*.withType(JavaCompile)*.configureEach {
 
 subprojects {
     Project p ->
-    p.group = 'dh'
+    p.group = 'io.deephaven'
     p.version = globalVersion
     p.plugins.apply('io.deephaven.java-conventions')
     License.createFrom(p).register()
