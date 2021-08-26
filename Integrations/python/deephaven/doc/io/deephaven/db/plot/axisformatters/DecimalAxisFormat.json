@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.plot.axisformatters.DecimalAxisFormat",
  "methods": {
-  "getNumberFormatter": "Gets the formatter for given pattern.\n \n     Note that as time values are expressed as numbers, a number formatter is\n     still suitable for dates.\n \n\n:return: (java.text.NumberFormat) formatter",
+  "getNumberFormatter": "Gets the formatter for given pattern.\n \n Note that as time values are expressed as numbers, a number formatter is still suitable for dates.\n \n\n:return: (java.text.NumberFormat) formatter",
   "setPattern": "Set the pattern used for formatting values.\n\n:param pattern: (java.lang.String) - string indicating how values should be formatted."
  },
  "path": "io.deephaven.db.plot.axisformatters.DecimalAxisFormat",

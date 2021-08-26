@@ -318,8 +318,10 @@ class FigureWrapper(object):
           
         *Overload 3*  
           :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing the business calendar.
-          :param valueColumn: (java.lang.String) - name of a column containing String values, where each value is the name of a BusinessCalendar.
-          :return: (io.deephaven.db.plot.Figure) this Axis using the business calendar from row 0 of the filtered sds for the business calendar.  If no value is found, no transform will be applied.
+          :param valueColumn: (java.lang.String) - name of a column containing String values, where each value is the name of a
+                  BusinessCalendar.
+          :return: (io.deephaven.db.plot.Figure) this Axis using the business calendar from row 0 of the filtered sds for the business calendar.
+                   If no value is found, no transform will be applied.
         """
         
         return FigureWrapper(figure=self.figure.businessTime(*args))
@@ -793,15 +795,14 @@ class FigureWrapper(object):
         Returns a chart from this Figure's grid.
         
         *Overload 1*  
-          :param index: (int) - index from the Figure's grid to remove.  The index starts at 0 in the upper left hand corner of the grid and increases
-                  going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be
-                  [0, 1]
+          :param index: (int) - index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the
+                  grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1]
                   [2, 3].
           :return: (io.deephaven.db.plot.Figure) selected Chart
           
         *Overload 2*  
-          :param rowNum: (int) - row index in this Figure's grid.  The row index starts at 0.
-          :param colNum: (int) - column index in this Figure's grid.  The column index starts at 0.
+          :param rowNum: (int) - row index in this Figure's grid. The row index starts at 0.
+          :param colNum: (int) - column index in this Figure's grid. The column index starts at 0.
           :return: (io.deephaven.db.plot.Figure) selected Chart
         """
         
@@ -838,15 +839,17 @@ class FigureWrapper(object):
           :return: (io.deephaven.db.plot.Figure) this Chart with the title set to display comma-separated values from the table
           
         *Overload 4*  
-          :param showColumnNamesInTitle: (boolean) - Whether to show column names in title. If this is true, the title format will include the column name before the comma separated values;
-                                                  otherwise only the comma separated values will be included.
+          :param showColumnNamesInTitle: (boolean) - Whether to show column names in title. If this is true, the title format will
+                  include the column name before the comma separated values; otherwise only the comma separated values will
+                  be included.
           :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick table)
           :param titleColumns: (java.lang.String...) - columns to include in the chart title
           :return: (io.deephaven.db.plot.Figure) this Chart with the title set to display comma-separated values from the table
           
         *Overload 5*  
-          :param showColumnNamesInTitle: (boolean) - Whether to show column names in title. If this is true, the title format will include the column name before the comma separated values;
-                                                  otherwise only the comma separated values will be included.
+          :param showColumnNamesInTitle: (boolean) - Whether to show column names in title. If this is true, the title format will
+                  include the column name before the comma separated values; otherwise only the comma separated values will
+                  be included.
           :param t: (io.deephaven.db.tables.Table) - table
           :param titleColumns: (java.lang.String...) - columns to include in the chart title
           :return: (io.deephaven.db.plot.Figure) this Chart with the title set to display comma-separated values from the table
@@ -2385,7 +2388,8 @@ class FigureWrapper(object):
           :return: (io.deephaven.db.plot.Figure) this Axes
           
         *Overload 2*  
-          :param invert: (boolean) - if true, larger values will be closer to the origin; otherwise, smaller values will be closer to the origin.
+          :param invert: (boolean) - if true, larger values will be closer to the origin; otherwise, smaller values will be closer to
+                  the origin.
           :return: (io.deephaven.db.plot.Figure) this Axes
         """
         
@@ -2537,16 +2541,13 @@ class FigureWrapper(object):
         """
         Sets the maximum row values that will be shown in title.
          
-         If total rows < maxRowsCount, then all the values will be shown separated by comma,
-         otherwise just maxRowsCount values will be shown along with ellipsis.
-         
-         if maxRowsCount is < 0, all values will be shown.
-         
-         if maxRowsCount is 0, then just first value will be shown without ellipsis.
-         
+         If total rows < maxRowsCount, then all the values will be shown separated by comma, otherwise just
+         maxRowsCount values will be shown along with ellipsis. 
+         if maxRowsCount is < 0, all values will be shown. 
+         if maxRowsCount is 0, then just first value will be shown without ellipsis. 
          The default is 0.
         
-        :param maxRowsCount: (int) - maximum  number of row values to show in chart title
+        :param maxRowsCount: (int) - maximum number of row values to show in chart title
         :return: (io.deephaven.db.plot.Figure) this Chart
         """
         
@@ -2572,8 +2573,7 @@ class FigureWrapper(object):
     @_convertArguments
     def minorTicks(self, count):
         """
-        Sets the number of minor ticks between consecutive major ticks.
-         These minor ticks are equally spaced.
+        Sets the number of minor ticks between consecutive major ticks. These minor ticks are equally spaced.
         
         :param count: (int) - number of minor ticks between consecutive major ticks.
         :return: (io.deephaven.db.plot.Figure) this Axis
@@ -2622,23 +2622,24 @@ class FigureWrapper(object):
         Adds a new Chart to this figure.
         
         *Overload 1*  
-          :return: (io.deephaven.db.plot.Figure) the new Chart.  The Chart is placed in the next available grid space, starting at the upper left hand corner of the grid,
-                   going left to right, top to bottom.  If no available space is found in the grid:
-                  
-          * if this Figure was created with no specified grid size, then the Figure will resize itself to add the new Chart;
+          :return: (io.deephaven.db.plot.Figure) the new Chart. The Chart is placed in the next available grid space, starting at the
+                   upper left hand corner of the grid, going left to right, top to bottom. If no available space is found in
+                   the grid:
+                   
+          * if this Figure was created with no specified grid size, then the Figure will resize itself to add the
+                   new Chart;
           * if not, a RuntimeException will be thrown.
           
         *Overload 2*  
-          :param index: (int) - index from the Figure's grid to remove.  The index starts at 0 in the upper left hand corner of the grid and increases
-                  going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be
-                  [0, 1]
+          :param index: (int) - index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the
+                  grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1]
                   [2, 3].
-          :return: (io.deephaven.db.plot.Figure) the new Chart.  The Chart is placed at the grid space indicated by the index.
+          :return: (io.deephaven.db.plot.Figure) the new Chart. The Chart is placed at the grid space indicated by the index.
           
         *Overload 3*  
-          :param rowNum: (int) - row index in this Figure's grid.  The row index starts at 0.
-          :param colNum: (int) - column index in this Figure's grid.  The column index starts at 0.
-          :return: (io.deephaven.db.plot.Figure) the new Chart.  The Chart is placed at the grid space [rowNum, colNum.
+          :param rowNum: (int) - row index in this Figure's grid. The row index starts at 0.
+          :param colNum: (int) - column index in this Figure's grid. The column index starts at 0.
+          :return: (io.deephaven.db.plot.Figure) the new Chart. The Chart is placed at the grid space [rowNum, colNum.
         """
         
         return FigureWrapper(figure=self.figure.newChart(*args))
@@ -2839,8 +2840,7 @@ class FigureWrapper(object):
     @_convertArguments
     def piePercentLabelFormat(self, *args):
         """
-        Sets the format of the percentage point label format
-         in pie plots.
+        Sets the format of the percentage point label format in pie plots.
         
         *Overload 1*  
           :param format: (java.lang.String) - format
@@ -3651,7 +3651,7 @@ class FigureWrapper(object):
     @_convertArguments
     def pointColor(self, *args):
         """
-        Sets the point color.  Unspecified points use the default color.
+        Sets the point color. Unspecified points use the default color.
         
         *Overload 1*  
           :param color: (int) - color
@@ -3663,7 +3663,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 3*  
-          :param colors: (int...) - color palette indices.  The color for data point i comes from index i.  A value of 3 corresponds to the 3rd color from the color pallette.
+          :param colors: (int...) - color palette indices. The color for data point i comes from index i. A value of 3 corresponds to
+                  the 3rd color from the color pallette.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 4*  
@@ -3673,7 +3674,7 @@ class FigureWrapper(object):
           
         *Overload 5*  
           :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing colors
-          :param columnName: (java.lang.String) - column in sds containing colors.  The color data for point i comes from row i.
+          :param columnName: (java.lang.String) - column in sds containing colors. The color data for point i comes from row i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 6*  
@@ -3685,7 +3686,8 @@ class FigureWrapper(object):
         *Overload 7*  
           :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
           :param keyColumn: (java.lang.String) - column in sds, specifying category values
-          :param valueColumn: (java.lang.String) - column in sds, specifying Paints or ints/Integers representing color palette values.
+          :param valueColumn: (java.lang.String) - column in sds, specifying Paints or ints/Integers representing color palette
+                  values.
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 8*  
@@ -3697,7 +3699,7 @@ class FigureWrapper(object):
           
         *Overload 9*  
           :param t: (io.deephaven.db.tables.Table) - table containing colors
-          :param columnName: (java.lang.String) - column in t containing colors.  The color data for point i comes from row i.
+          :param columnName: (java.lang.String) - column in t containing colors. The color data for point i comes from row i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 10*  
@@ -3709,7 +3711,8 @@ class FigureWrapper(object):
         *Overload 11*  
           :param t: (io.deephaven.db.tables.Table) - table
           :param keyColumn: (java.lang.String) - column in t, specifying category values
-          :param valueColumn: (java.lang.String) - column in t, specifying Paints or ints/Integers representing color palette values.
+          :param valueColumn: (java.lang.String) - column in t, specifying Paints or ints/Integers representing color palette
+                  values.
           :return: (io.deephaven.db.plot.Figure) this CategoryDataSeries
           
         *Overload 12*  
@@ -3729,7 +3732,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 15*  
-          :param colors: (io.deephaven.gui.color.Paint...) - colors.  The color for data point i comes from index i.
+          :param colors: (io.deephaven.gui.color.Paint...) - colors. The color for data point i comes from index i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 16*  
@@ -3771,7 +3774,8 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 23*  
-          :param colors: (java.lang.Integer...) - color palette indices.  The color for data point i comes from index i.  A value of 3 corresponds to the 3rd color from the color pallette.
+          :param colors: (java.lang.Integer...) - color palette indices. The color for data point i comes from index i. A value of 3 corresponds to
+                  the 3rd color from the color pallette.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 24*  
@@ -3789,7 +3793,7 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 27*  
-          :param colors: (java.lang.String...) - color names.  The color for data point i comes from index i.
+          :param colors: (java.lang.String...) - color names. The color for data point i comes from index i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 28*  
@@ -3841,7 +3845,7 @@ class FigureWrapper(object):
         *Overload 35*  
           Note: Java generics information - <T extends io.deephaven.gui.color.Paint>
           
-          :param colors: (io.deephaven.db.plot.datasets.data.IndexableData<T>) - colors.  The color for data point i comes from index i.
+          :param colors: (io.deephaven.db.plot.datasets.data.IndexableData<T>) - colors. The color for data point i comes from index i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 36*  
@@ -3904,10 +3908,10 @@ class FigureWrapper(object):
     @_convertArguments
     def pointColorInteger(self, *args):
         """
-        Sets the point color.  Unspecified points use the default color.
+        Sets the point color. Unspecified points use the default color.
         
         *Overload 1*  
-          :param colors: (io.deephaven.db.plot.datasets.data.IndexableData<java.lang.Integer>) - colors.  The color for data point i comes from index i.
+          :param colors: (io.deephaven.db.plot.datasets.data.IndexableData<java.lang.Integer>) - colors. The color for data point i comes from index i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 2*  
@@ -3956,8 +3960,8 @@ class FigureWrapper(object):
     @_convertArguments
     def pointLabel(self, *args):
         """
-        Sets the point label for data point i from index i of the input labels.
-         Points outside of these indices are unlabeled.
+        Sets the point label for data point i from index i of the input labels. Points outside of these indices are
+         unlabeled.
         
         *Overload 1*  
           :param labels: (io.deephaven.db.plot.datasets.data.IndexableData<?>) - labels
@@ -3970,7 +3974,7 @@ class FigureWrapper(object):
           
         *Overload 3*  
           :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing labels
-          :param columnName: (java.lang.String) - column in sds containing labels.  The color data for point i comes from row i.
+          :param columnName: (java.lang.String) - column in sds containing labels. The color data for point i comes from row i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 4*  
@@ -3994,7 +3998,7 @@ class FigureWrapper(object):
           
         *Overload 7*  
           :param t: (io.deephaven.db.tables.Table) - table containing labels
-          :param columnName: (java.lang.String) - column in t containing labels.  The label data for point i comes from row i.
+          :param columnName: (java.lang.String) - column in t containing labels. The label data for point i comes from row i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 8*  
@@ -4094,10 +4098,8 @@ class FigureWrapper(object):
         """
         Sets the point label format.
          
-         Use {0} where the data series name should be inserted,
-         {1} for the x-value and
-         {2} y-value
-         e.g. "{0}: ({1}, {2})" will display as Series1: (2.0, 5.5).
+         Use {0} where the data series name should be inserted, {1} for the x-value and {2} y-value e.g. "{0}: ({1}, {2})"
+         will display as Series1: (2.0, 5.5).
         
         *Overload 1*  
           :param format: (java.lang.String) - format
@@ -4114,8 +4116,8 @@ class FigureWrapper(object):
     @_convertArguments
     def pointShape(self, *args):
         """
-        Sets the point shapes for data point i from index i of the input labels.
-         Points outside of these indices use default shapes.
+        Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
+         default shapes.
         
         *Overload 1*  
           :param shapes: (groovy.lang.Closure<java.lang.String>) - closure used to determine point shapes
@@ -4137,7 +4139,7 @@ class FigureWrapper(object):
           
         *Overload 5*  
           :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing shapes
-          :param columnName: (java.lang.String) - column in sds containing shapes.  The color data for point i comes from row i.
+          :param columnName: (java.lang.String) - column in sds containing shapes. The color data for point i comes from row i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 6*  
@@ -4161,7 +4163,7 @@ class FigureWrapper(object):
           
         *Overload 9*  
           :param t: (io.deephaven.db.tables.Table) - table containing shapes
-          :param columnName: (java.lang.String) - column in t containing shapes.  The shape data for point i comes from row i.
+          :param columnName: (java.lang.String) - column in t containing shapes. The shape data for point i comes from row i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 10*  
@@ -4269,8 +4271,8 @@ class FigureWrapper(object):
     @_convertArguments
     def pointSize(self, *args):
         """
-        Sets the point size.  A scale factor of 1 is the default size.  A scale factor of 2 is 2x the
-         default size.  Unspecified points use the default size.
+        Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
+         Unspecified points use the default size.
         
         *Overload 1*  
           :param factor: (double) - point size
@@ -4308,8 +4310,10 @@ class FigureWrapper(object):
           :return: io.deephaven.db.plot.Figure
           
         *Overload 9*  
-          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing factors to multiply the default size (1) by
-          :param columnName: (java.lang.String) - column in sds containing size scaling factors.  The size data for point i comes from row i.
+          :param sds: (io.deephaven.db.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing factors to multiply the default size
+                  (1) by
+          :param columnName: (java.lang.String) - column in sds containing size scaling factors. The size data for point i comes from row
+                  i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 10*  
@@ -4333,7 +4337,8 @@ class FigureWrapper(object):
           
         *Overload 13*  
           :param t: (io.deephaven.db.tables.Table) - table containing factors to multiply the default size (1) by
-          :param columnName: (java.lang.String) - column in t containing size scaling factors.  The size data for point i comes from row i.
+          :param columnName: (java.lang.String) - column in t containing size scaling factors. The size data for point i comes from row
+                  i.
           :return: (io.deephaven.db.plot.Figure) this XYDataSeries
           
         *Overload 14*  
@@ -4563,15 +4568,14 @@ class FigureWrapper(object):
         Removes a chart from the Figure's grid.
         
         *Overload 1*  
-          :param index: (int) - index from the Figure's grid to remove.  The index starts at 0 in the upper left hand corner of the grid and increases
-                  going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be
-                  [0, 1]
+          :param index: (int) - index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the
+                  grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1]
                   [2, 3].
           :return: (io.deephaven.db.plot.Figure) this Figure with the chart removed.
           
         *Overload 2*  
-          :param rowNum: (int) - row index in this Figure's grid.  The row index starts at 0.
-          :param colNum: (int) - column index in this Figure's grid.  The column index starts at 0.
+          :param rowNum: (int) - row index in this Figure's grid. The row index starts at 0.
+          :param colNum: (int) - column index in this Figure's grid. The column index starts at 0.
           :return: (io.deephaven.db.plot.Figure) this Figure with the chart removed.
         """
         
@@ -4722,7 +4726,8 @@ class FigureWrapper(object):
           :return: (io.deephaven.db.plot.Figure) this Axis
           
         *Overload 2*  
-          :param gapBetweenTicks: (double) - the distance between ticks.  For example, if gapBetweenTicks is 5.0, and the first tick is at 10.0, the next will be drawn at 15.0.
+          :param gapBetweenTicks: (double) - the distance between ticks. For example, if gapBetweenTicks is 5.0, and the first
+                  tick is at 10.0, the next will be drawn at 15.0.
           :return: (io.deephaven.db.plot.Figure) this Axis
         """
         

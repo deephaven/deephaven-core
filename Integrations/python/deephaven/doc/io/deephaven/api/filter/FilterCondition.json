@@ -9,7 +9,7 @@
   "lhs": "The left-hand side value.\n\n:return: (io.deephaven.api.value.Value) the left-hand side value",
   "lt": ":param lhs: io.deephaven.api.value.Value\n:param rhs: io.deephaven.api.value.Value\n:return: io.deephaven.api.filter.FilterCondition",
   "lte": ":param lhs: io.deephaven.api.value.Value\n:param rhs: io.deephaven.api.value.Value\n:return: io.deephaven.api.filter.FilterCondition",
-  "maybeTranspose": "Transpose the filter if the left-hand side is not a\n ColumnName and the right-hand side is a ColumnName.\n\n \n Useful in cases where a visitor wants to walk the sides, and prefers to have a\n ColumnName on the left-hand side.\n\n:return: (io.deephaven.api.filter.FilterCondition) the filter, potentially transposed",
+  "maybeTranspose": "Transpose the filter if the left-hand side is not a ColumnName and\n the right-hand side is a ColumnName.\n\n \n Useful in cases where a visitor wants to walk the sides, and prefers to have a ColumnName on the\n left-hand side.\n\n:return: (io.deephaven.api.filter.FilterCondition) the filter, potentially transposed",
   "neq": ":param lhs: io.deephaven.api.value.Value\n:param rhs: io.deephaven.api.value.Value\n:return: io.deephaven.api.filter.FilterCondition",
   "operator": "The operator.\n\n:return: (io.deephaven.api.filter.FilterCondition.Operator) the operator",
   "rhs": "The right-hand side value.\n\n:return: (io.deephaven.api.value.Value) the right-hand side value",
@@ -17,6 +17,6 @@
   "walk": "Note: Java generics information - <V extends io.deephaven.api.filter.Filter.Visitor>\n\n:param visitor: V\n:return: V"
  },
  "path": "io.deephaven.api.filter.FilterCondition",
- "text": "Evaluates to true based on the specific operator applied to the left-hand side and right-hand side.",
+ "text": "Evaluates to true based on the specific operator applied to the left-hand side and\n right-hand side.",
  "typeName": "class"
 }

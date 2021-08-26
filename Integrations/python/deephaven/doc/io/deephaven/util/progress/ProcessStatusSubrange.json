@@ -3,7 +3,7 @@
  "methods": {
   "getStepValue": "Get the current value of the the current step/subrange.\n\n:return: (int) the % complete of the current step - a number between 1 and 100",
   "getValue": "get the current value of the progress object.\n\n:return: (int) the % complete of the topmost ProcessStatus - a number between 1 and 100",
-  "update": "This object has been assigned a range of the parents range.\n Adjust the stepProgress value from 0-100 to the value in the full range of the parent object.\n\n:param progress: (int) - percent complete (0-100)\n:param status: (java.util.function.Supplier<java.lang.String>) - optional message text"
+  "update": "This object has been assigned a range of the parents range. Adjust the stepProgress value from 0-100 to the value\n in the full range of the parent object.\n\n:param progress: (int) - percent complete (0-100)\n:param status: (java.util.function.Supplier<java.lang.String>) - optional message text"
  },
  "path": "io.deephaven.util.progress.ProcessStatusSubrange",
  "text": "An interface class that allows a StatusCallback to represent a portion of another's range.",

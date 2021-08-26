@@ -2,6 +2,6 @@
  "className": "io.deephaven.util.annotations.ScriptApi",
  "methods": {},
  "path": "io.deephaven.util.annotations.ScriptApi",
- "text": "This annotation indicates that a class or method is used externally via scripts.\nClasses and methods with this annotation should be public",
+ "text": "This annotation indicates that a class or method is used externally via scripts.\n \n\n Classes and methods with this annotation should be public",
  "typeName": "class"
 }

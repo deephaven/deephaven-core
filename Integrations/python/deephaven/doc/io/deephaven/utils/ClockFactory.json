@@ -7,6 +7,6 @@
   "set": "Set the Clock that will be returned by get().\n\n:param newTimesource: io.deephaven.base.clock.Clock"
  },
  "path": "io.deephaven.utils.ClockFactory",
- "text": "This is a hook to enable testing and simulation.\n Users of Clock should use this factory to get an instance. When they do,\n it is possible to change the class behavior from a test harness.\n\n Note: This would be better housed as a member of Clock.",
+ "text": "This is a hook to enable testing and simulation. Users of Clock should use this factory to get an instance. When they\n do, it is possible to change the class behavior from a test harness.\n\n Note: This would be better housed as a member of Clock.",
  "typeName": "class"
 }

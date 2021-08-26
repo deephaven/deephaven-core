@@ -16,6 +16,6 @@
   "getY": "Gets the y value of the data point at index i.\n\n:param i: (int) - index\n:return: (double) x value of this data point at index i"
  },
  "path": "io.deephaven.db.plot.datasets.xy.XYDataSeriesInternal",
- "text": "DataSeriesInternal with two numerical components, x and y.\n Data points are numbered and are accessed with an index.",
+ "text": "DataSeriesInternal with two numerical components, x and y. Data points are numbered and are accessed with an\n index.",
  "typeName": "interface"
 }

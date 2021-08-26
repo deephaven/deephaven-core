@@ -4,6 +4,6 @@
   "load": ":param clazz: java.lang.Class<?>\n:param moduleName: java.lang.String\n:param resource: java.lang.String\n:return: org.jpy.PyObject"
  },
  "path": "io.deephaven.python.PyModuleFromResource",
- "text": "Allows us to create a PyObject from a resource.\n\n This sort of functionality is needed because python is unable to natively find java resource\n modules, since java resources aren't exposed to the filesystem.\n\n Note: we could implement a custom module loader, via\n https://www.python.org/dev/peps/pep-0302/, if we wanted to resolve java resources more natively.",
+ "text": "Allows us to create a PyObject from a resource.\n\n This sort of functionality is needed because python is unable to natively find java resource modules, since java\n resources aren't exposed to the filesystem.\n\n Note: we could implement a custom module loader, via https://www.python.org/dev/peps/pep-0302/, if we wanted to\n resolve java resources more natively.",
  "typeName": "class"
 }

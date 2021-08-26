@@ -16,6 +16,6 @@
   "getValue": "Gets the numeric value corresponding to the given category.\n\n:param category: (java.lang.Comparable) - category\n:return: (java.lang.Number) numeric value corresponding to the given category"
  },
  "path": "io.deephaven.db.plot.datasets.category.CategoryDataSeriesInternal",
- "text": "Dataset with discrete and numeric components.\n Discrete values must extend Comparable and are called categories.",
+ "text": "Dataset with discrete and numeric components. Discrete values must extend Comparable and are called\n categories.",
  "typeName": "interface"
 }

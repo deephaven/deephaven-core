@@ -6,6 +6,6 @@
   "update": "Update the progress % and status message.\n\n:param progress: (int) - percent complete (0-100)\n:param status: (java.util.function.Supplier<java.lang.String>) - optional message supplier"
  },
  "path": "io.deephaven.util.progress.MinProcessStatus",
- "text": "Minimal root implementation of a Process Status.\n No interface is needed at this point.",
+ "text": "Minimal root implementation of a Process Status. No interface is needed at this point.",
  "typeName": "class"
 }

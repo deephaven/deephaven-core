@@ -7,6 +7,6 @@
   "values": "Returns an array containing the constants of this enum type, in\nthe order they are declared.\n\n:return: (io.deephaven.qst.table.TableCreatorImpl[]) an array containing the constants of this enum type, in the order they are declared"
  },
  "path": "io.deephaven.qst.table.TableCreatorImpl",
- "text": "A \"no-op\" table creator impl, based on the QST structure itself. Mainly useful for testing the\n equivalence for the TableOperations of TableSpec; but publicly available for\n functional completeness.",
+ "text": "A \"no-op\" table creator impl, based on the QST structure itself. Mainly useful for testing the equivalence for the\n TableOperations of TableSpec; but publicly available for functional completeness.",
  "typeName": "enum"
 }

@@ -7,6 +7,6 @@
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.db.v2.remote.InitialSnapshot",
- "text": "A Raw table snapshot.  Users may use InitialSnapshotTable.setupInitialSnapshotTable(Table, InitialSnapshot) to\n convert this into a QueryTable",
+ "text": "A Raw table snapshot. Users may use InitialSnapshotTable.setupInitialSnapshotTable(Table, InitialSnapshot) to\n convert this into a QueryTable",
  "typeName": "class"
 }

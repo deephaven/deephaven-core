@@ -12,7 +12,7 @@
   "retain": "Modifies the index by removing any keys not in the indexToIntersect argument.\n\n:param indexToIntersect: (io.deephaven.db.v2.utils.ReadOnlyIndex) - an index with the keys to retain; any other keys not in indexToIntersect will be removed.",
   "retainRange": "Modifies the index by keeping only keys in the interval [start, end]\n\n:param start: (long) - beginning of interval of keys to keep.\n:param end: (long) - end of interval of keys to keep (inclusive).",
   "shiftInPlace": ":param shiftAmount: long",
-  "update": "Simultaneously adds the keys from the first index and removes the keys from the second one.\n API assumption: the intersection of added and removed is empty.\n\n:param added: io.deephaven.db.v2.utils.ReadOnlyIndex\n:param removed: io.deephaven.db.v2.utils.ReadOnlyIndex"
+  "update": "Simultaneously adds the keys from the first index and removes the keys from the second one. API assumption: the\n intersection of added and removed is empty.\n\n:param added: io.deephaven.db.v2.utils.ReadOnlyIndex\n:param removed: io.deephaven.db.v2.utils.ReadOnlyIndex"
  },
  "path": "io.deephaven.db.v2.utils.Index",
  "text": "A set of sorted long keys between 0 and Long.MAX_VALUE",

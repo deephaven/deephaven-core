@@ -5,10 +5,13 @@
   "forEach": ":param action: java.util.function.Consumer<? superio.deephaven.qst.table.LabeledTable>",
   "getTable": ":param name: java.lang.String\n:return: io.deephaven.qst.table.TableSpec",
   "iterator": ":return: java.util.Iterator<io.deephaven.qst.table.LabeledTable>",
-  "of": ":param tables: io.deephaven.qst.table.LabeledTable...\n:return: io.deephaven.qst.table.LabeledTables",
+  "labels": ":return: java.util.Collection<java.lang.String>",
+  "of": "*Overload 1*  \n  :param tables: io.deephaven.qst.table.LabeledTable...\n  :return: io.deephaven.qst.table.LabeledTables\n  \n*Overload 2*  \n  :param labels: java.lang.Iterable<java.lang.String>\n  :param values: java.lang.Iterable<io.deephaven.qst.table.TableSpec>\n  :return: io.deephaven.qst.table.LabeledTables\n  \n*Overload 3*  \n  :param logic: io.deephaven.qst.TableCreationLabeledLogic\n  :return: io.deephaven.qst.table.LabeledTables",
+  "size": ":return: int",
   "spliterator": ":return: java.util.Spliterator<io.deephaven.qst.table.LabeledTable>",
   "stream": ":return: java.util.stream.Stream<io.deephaven.qst.table.LabeledTable>",
-  "tables": ":return: java.util.Collection<io.deephaven.qst.table.TableSpec>"
+  "tables": ":return: java.util.Collection<io.deephaven.qst.table.TableSpec>",
+  "values": ":return: java.util.Collection<io.deephaven.qst.table.TableSpec>"
  },
  "path": "io.deephaven.qst.table.LabeledTables",
  "text": "Labeled tables is a list of labeled tables. Each label will be distinct.",

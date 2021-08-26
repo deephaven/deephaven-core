@@ -12,7 +12,7 @@
   "appendRanges": ":param it: io.deephaven.db.v2.utils.LongRangeIterator",
   "execute": ":param value: long\n:return: boolean",
   "getIndex": ":return: io.deephaven.db.v2.utils.Index",
-  "setDomain": "No obligation to call, but if called,\n  (a) should be called before providing any values, and\n  (b) no value should be provided outside of the domain.\n Implementations may be able to use this information to\n improve memory utilization.\n Either of the arguments may be given as Index.NULL_KEY,\n indicating that the respective value is not known.\n\n:param minKey: (long) - the minimum key to be provided, or Index.NULL_KEY if not known.\n:param maxKey: (long) - the maximum key to be provided, or Index.NULL_KEY if not known."
+  "setDomain": "No obligation to call, but if called, (a) should be called before providing any values, and (b) no value\n should be provided outside of the domain. Implementations may be able to use this information to improve\n memory utilization. Either of the arguments may be given as Index.NULL_KEY, indicating that the respective\n value is not known.\n\n:param minKey: (long) - the minimum key to be provided, or Index.NULL_KEY if not known.\n:param maxKey: (long) - the maximum key to be provided, or Index.NULL_KEY if not known."
  },
  "path": "io.deephaven.db.v2.utils.Index.SequentialBuilder",
  "typeName": "interface"
