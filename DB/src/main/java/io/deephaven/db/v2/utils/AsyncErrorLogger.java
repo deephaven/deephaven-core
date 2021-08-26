@@ -6,7 +6,6 @@ package io.deephaven.db.v2.utils;
 
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
-import io.deephaven.qst.type.Type;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.v2.DynamicTable;
@@ -18,14 +17,14 @@ public class AsyncErrorLogger {
 
     private static final DynamicTableWriter tableWriter = new DynamicTableWriter(
             TableHeader.of(
-                    ColumnHeader.ofInstant("Time"),
+                    ColumnHeader.of("Time", DBDateTime.class),
                     ColumnHeader.ofInt("EvaluationNumber"),
                     ColumnHeader.ofInt("OperationNumber"),
                     ColumnHeader.ofString("Description"),
                     ColumnHeader.ofInt("SourceQueryEvaluationNumber"),
                     ColumnHeader.ofInt("SourceQueryOperationNumber"),
                     ColumnHeader.ofString("SourceQueryDescription"),
-                    ColumnHeader.of("Cause", Type.ofCustom(Exception.class)),
+                    ColumnHeader.of("Cause", Exception.class),
                     ColumnHeader.ofString("WorkerName"),
                     ColumnHeader.ofString("HostName")
             ));
