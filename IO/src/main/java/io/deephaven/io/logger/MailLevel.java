@@ -7,7 +7,7 @@ package io.deephaven.io.logger;
 import org.apache.log4j.Level;
 
 public class MailLevel extends Level {
-    private String subject=null;
+    private String subject = null;
 
     public MailLevel() {
         this(null);
@@ -15,7 +15,7 @@ public class MailLevel extends Level {
 
     public MailLevel(String subject) {
         super(50001, "MAILER", 0);
-        this.subject=subject;
+        this.subject = subject;
     }
 
     public String getSubject() {

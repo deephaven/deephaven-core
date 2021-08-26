@@ -38,7 +38,8 @@ public abstract class DependencyLayerBase extends SelectAndViewAnalyzer {
     @Override
     public void updateColumnDefinitionsFromTopLayer(Map<String, ColumnDefinition> columnDefinitions) {
         // noinspection unchecked
-        final ColumnDefinition cd = ColumnDefinition.fromGenericType(name, columnSource.getType(), columnSource.getComponentType());
+        final ColumnDefinition cd =
+                ColumnDefinition.fromGenericType(name, columnSource.getType(), columnSource.getComponentType());
         columnDefinitions.put(name, cd);
     }
 

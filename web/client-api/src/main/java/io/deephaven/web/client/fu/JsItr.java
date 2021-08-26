@@ -49,8 +49,8 @@ public class JsItr {
                 }
             }
         };
-        Iterator[] itrs = new Iterator[]{itr};
-        return ()-> {
+        Iterator[] itrs = new Iterator[] {itr};
+        return () -> {
             final Iterator toReturn = itrs[0];
             itrs[0] = NO_REUSE;
             return toReturn;
@@ -61,7 +61,7 @@ public class JsItr {
      * js forEach signature is a bit weird, so we'll adapt it to something saner here
      */
     public static <K, V> void forEach(JsMap<K, V> map, JsBiConsumer<K, V> callback) {
-        map.forEach((v, k, m)->{
+        map.forEach((v, k, m) -> {
             callback.apply(k, v);
             return null;
         });

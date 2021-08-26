@@ -30,17 +30,20 @@ public class TableToolsMergeHelper {
 
     /**
      * @param tableDef = The definition to apply to the result table.
-     * @param tables   = The list of tables to merge -- all elements must be non-null and un-partitioned.
+     * @param tables = The list of tables to merge -- all elements must be non-null and un-partitioned.
      * @return A new table, containing all the rows from tables, respecting the input ordering.
      */
-    public static Table mergeInternal(TableDefinition tableDef, List<Table> tables, NotificationQueue.Dependency parentDependency) {
-        final Set<String> targetColumnNames = tableDef.getColumnStream().map(ColumnDefinition::getName).collect(Collectors.toSet());
+    public static Table mergeInternal(TableDefinition tableDef, List<Table> tables,
+            NotificationQueue.Dependency parentDependency) {
+        final Set<String> targetColumnNames =
+                tableDef.getColumnStream().map(ColumnDefinition::getName).collect(Collectors.toSet());
 
         boolean isStatic = true;
         for (int ti = 0; ti < tables.size(); ++ti) {
             // verify the column names are exactly the same as our target
             final TableDefinition definition = tables.get(ti).getDefinition();
-            final Set<String> columnNames = definition.getColumnStream().map(ColumnDefinition::getName).collect(Collectors.toSet());
+            final Set<String> columnNames =
+                    definition.getColumnStream().map(ColumnDefinition::getName).collect(Collectors.toSet());
             isStatic &= !tables.get(ti).isLive();
 
             if (!targetColumnNames.containsAll(columnNames) || !columnNames.containsAll(targetColumnNames)) {
@@ -48,15 +51,19 @@ public class TableToolsMergeHelper {
                 missingTargets.removeAll(columnNames);
                 columnNames.removeAll(targetColumnNames);
                 if (missingTargets.isEmpty()) {
-                    throw new UnsupportedOperationException("Column mismatch for table " + ti + ", additional columns: " + columnNames);
+                    throw new UnsupportedOperationException(
+                            "Column mismatch for table " + ti + ", additional columns: " + columnNames);
                 } else if (columnNames.isEmpty()) {
-                    throw new UnsupportedOperationException("Column mismatch for table " + ti + ", missing columns: " + missingTargets);
+                    throw new UnsupportedOperationException(
+                            "Column mismatch for table " + ti + ", missing columns: " + missingTargets);
                 } else {
-                    throw new UnsupportedOperationException("Column mismatch for table " + ti + ", missing columns: " + missingTargets + ", additional columns: " + columnNames);
+                    throw new UnsupportedOperationException("Column mismatch for table " + ti + ", missing columns: "
+                            + missingTargets + ", additional columns: " + columnNames);
                 }
             }
 
-            //TODO: Make this check better?  It's slightly too permissive, if we want identical column sets, and not permissive enough if we want the "merge non-conflicting defs with nulls" behavior.
+            // TODO: Make this check better? It's slightly too permissive, if we want identical column sets, and not
+            // permissive enough if we want the "merge non-conflicting defs with nulls" behavior.
             try {
                 definition.checkCompatibility(tableDef);
             } catch (RuntimeException e) {
@@ -93,23 +100,20 @@ public class TableToolsMergeHelper {
      */
     private static Collection<? extends Table> getComponentTables(Table table) {
 
-        Map<String, ColumnSource> columnSourceMap = ((QueryTable)table).getColumnSourceMap();
+        Map<String, ColumnSource> columnSourceMap = ((QueryTable) table).getColumnSourceMap();
         Assert.assertion(columnSourceMap.size() > 0, "columnSourceMap.size() > 0");
 
         UnionSourceManager unionSourceManager = null;
 
-        for (Map.Entry<String, ColumnSource> entry : columnSourceMap.entrySet())
-        {
-            UnionColumnSource unionColumnSource = (UnionColumnSource)entry.getValue();
+        for (Map.Entry<String, ColumnSource> entry : columnSourceMap.entrySet()) {
+            UnionColumnSource unionColumnSource = (UnionColumnSource) entry.getValue();
             UnionSourceManager thisUnionSourceManager = unionColumnSource.getUnionSourceManager();
 
-            if (unionSourceManager == null)
-            {
+            if (unionSourceManager == null) {
                 unionSourceManager = thisUnionSourceManager;
-            }
-            else if (unionSourceManager != thisUnionSourceManager)
-            {
-                throw new RuntimeException("A table exists with columns from multiple UnionSourceManagers, this doesn't make any sense.");
+            } else if (unionSourceManager != thisUnionSourceManager) {
+                throw new RuntimeException(
+                        "A table exists with columns from multiple UnionSourceManagers, this doesn't make any sense.");
             }
         }
 
@@ -126,7 +130,7 @@ public class TableToolsMergeHelper {
             ArrayList<Table> result = new ArrayList<>();
             int componentIndex = 0;
             for (Table componentAsTable : componentTables) {
-                QueryTable component = (QueryTable)componentAsTable;
+                QueryTable component = (QueryTable) componentAsTable;
                 // copy the sub sources over
                 Map<String, ColumnSource> componentSources = new LinkedHashMap<>();
                 for (Map.Entry<String, ColumnSource> entry : columnSourceMap.entrySet()) {
@@ -137,7 +141,8 @@ public class TableToolsMergeHelper {
 
                 QueryTable viewedTable = new QueryTable(component.getIndex(), componentSources);
                 if (component.isRefreshing()) {
-                    component.listenForUpdates(new BaseTable.ShiftAwareListenerImpl("union view", component, viewedTable));
+                    component.listenForUpdates(
+                            new BaseTable.ShiftAwareListenerImpl("union view", component, viewedTable));
                 }
                 result.add(viewedTable);
             }

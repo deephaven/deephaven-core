@@ -17,7 +17,7 @@ import static io.deephaven.benchmarking.BenchmarkTools.applySparsity;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Warmup(iterations = 0, time = 1)
 @Measurement(iterations = 3, time = 1)
-@Timeout(time=3)
+@Timeout(time = 3)
 @Fork(1)
 public class SortMultiBenchmark {
     private TableBenchmarkState state;
@@ -36,21 +36,23 @@ public class SortMultiBenchmark {
     @Param({"25000000"})
     private int tableSize;
 
-    @Param({"90"}) //, "10", "5", "1"})
+    @Param({"90"}) // , "10", "5", "1"})
     private int sparsity;
     private Table inputTable;
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        final EnumStringColumnGenerator enumStringCol1 = (EnumStringColumnGenerator)BenchmarkTools.stringCol("Enum1", 10000, 6, 6, 0xB00FB00F);
-        final EnumStringColumnGenerator enumStringCol2 = (EnumStringColumnGenerator)BenchmarkTools.stringCol("Enum2", 1000, 6, 6, 0xF00DF00D);
+        final EnumStringColumnGenerator enumStringCol1 =
+                (EnumStringColumnGenerator) BenchmarkTools.stringCol("Enum1", 10000, 6, 6, 0xB00FB00F);
+        final EnumStringColumnGenerator enumStringCol2 =
+                (EnumStringColumnGenerator) BenchmarkTools.stringCol("Enum2", 1000, 6, 6, 0xF00DF00D);
 
         final BenchmarkTableBuilder builder;
         final int actualSize = BenchmarkTools.sizeWithSparsity(tableSize, sparsity);
 
         System.out.println("Actual Size: " + actualSize);
 
-        switch(tableType) {
+        switch (tableType) {
             case "Historical":
                 builder = BenchmarkTools.persistentTableBuilder("Carlos", actualSize)
                         .addGroupingColumns("Enum1")
@@ -90,7 +92,7 @@ public class SortMultiBenchmark {
     @Setup(Level.Iteration)
     public void setupIteration() {
         state.init();
-        inputTable = applySparsity(bmTable.getTable(),tableSize,sparsity,0);
+        inputTable = applySparsity(bmTable.getTable(), tableSize, sparsity, 0);
     }
 
     @TearDown(Level.Iteration)

@@ -7,12 +7,10 @@ import io.deephaven.web.shared.util.ParseUtils;
 import java.util.function.UnaryOperator;
 
 /**
- * Prints a readable string representing this filter. Note that this
- * is presently only suitable for debugging purposes, and doesn't
- * generate something that the SelectFilterFactory can handle at this
- * time. However, this can be used to produce individual java snippets
- * of simple conditions, and is used on the JVM by the visitor that
- * builds SelectFilters recursively from the filter AST.
+ * Prints a readable string representing this filter. Note that this is presently only suitable for debugging purposes,
+ * and doesn't generate something that the SelectFilterFactory can handle at this time. However, this can be used to
+ * produce individual java snippets of simple conditions, and is used on the JVM by the visitor that builds
+ * SelectFilters recursively from the filter AST.
  */
 public class FilterPrinter implements FilterDescriptor.Visitor {
     private final StringBuilder sb = new StringBuilder();
@@ -204,7 +202,7 @@ public class FilterPrinter implements FilterDescriptor.Visitor {
 
     @Override
     public void onLiteral(FilterDescriptor descriptor) {
-        //switch on type, correctly escape any string
+        // switch on type, correctly escape any string
         switch (descriptor.getType()) {
             case String:
                 sb.append(stringEscape.apply(descriptor.getValue()));
@@ -214,22 +212,22 @@ public class FilterPrinter implements FilterDescriptor.Visitor {
                 sb.append(descriptor.getValue());
                 break;
             case Datetime:
-                //noinspection ResultOfMethodCallIgnored
+                // noinspection ResultOfMethodCallIgnored
                 Long.parseLong(descriptor.getValue());
                 sb.append("new DBDateTime(").append(descriptor.getValue()).append(")");
                 break;
             case Long:
-                //noinspection ResultOfMethodCallIgnored
+                // noinspection ResultOfMethodCallIgnored
                 Long.parseLong(descriptor.getValue());
                 sb.append(descriptor.getValue());
                 break;
             case Number:
-                //noinspection ResultOfMethodCallIgnored
+                // noinspection ResultOfMethodCallIgnored
                 Double.parseDouble(descriptor.getValue());
                 sb.append(descriptor.getValue());
                 break;
             case Other:
-                //print as a string, not sure how to handle otherwise
+                // print as a string, not sure how to handle otherwise
                 sb.append(stringEscape.apply(descriptor.getValue()));
                 break;
         }

@@ -18,7 +18,8 @@ public class SortKernelBenchmark {
                 .warmupIterations(1)
                 .measurementIterations(10)
                 .measurementTime(TimeValue.seconds(1))
-                .param("chunkSize", IntStream.range(8, 21).mapToObj(exp -> Integer.toString(1 << exp)).toArray(String[]::new))
+                .param("chunkSize",
+                        IntStream.range(8, 21).mapToObj(exp -> Integer.toString(1 << exp)).toArray(String[]::new))
                 .param("algorithm", "timsort", "javaarray")
                 .param("runType", "random", "runs")
                 .build();

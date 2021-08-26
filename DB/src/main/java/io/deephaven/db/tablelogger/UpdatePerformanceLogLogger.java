@@ -82,7 +82,8 @@ public class UpdatePerformanceLogLogger
         }
 
         @Override
-        public void log(final Row.Flags flags, final IntervalLevelDetails intervalLevelDetails, final Entry performanceEntry) throws IOException {
+        public void log(final Row.Flags flags, final IntervalLevelDetails intervalLevelDetails,
+                final Entry performanceEntry) throws IOException {
             setRowFlags(flags);
             this.ProcessUniqueId.set(processUniqueId);
             this.EntryId.setInt(performanceEntry.getId());
@@ -143,7 +144,7 @@ public class UpdatePerformanceLogLogger
                 .add("EntryIntervalAllocatedBytes", long.class)
                 .add("EntryIntervalPoolAllocatedBytes", long.class)
 
-                ;
+        ;
 
         columnNames = cols.getColumnNames();
         columnDbTypes = cols.getDbTypes();
@@ -156,14 +157,13 @@ public class UpdatePerformanceLogLogger
     }
 
     public void log(
-            final IntervalLevelDetails intervalLevelDetails, final Entry performanceEntry
-    ) throws IOException {
+            final IntervalLevelDetails intervalLevelDetails, final Entry performanceEntry) throws IOException {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS, intervalLevelDetails, performanceEntry);
     }
 
     public void log(
-            final Row.Flags flags, final IntervalLevelDetails intervalLevelDetails, final Entry performanceEntry
-    ) throws IOException {
+            final Row.Flags flags, final IntervalLevelDetails intervalLevelDetails, final Entry performanceEntry)
+            throws IOException {
         verifyCondition(isInitialized(), "init() must be called before calling log()");
         verifyCondition(!isClosed, "cannot call log() after the logger is closed");
         verifyCondition(!isShuttingDown, "cannot call log() while the logger is shutting down");

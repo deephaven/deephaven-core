@@ -61,7 +61,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         if (!connection.isAvailable() || connection.get().isUsable()) {
             return Promise.resolve(this);
         } else {
-            return (Promise)Promise.reject("Cannot connect, session is dead.");
+            return (Promise) Promise.reject("Cannot connect, session is dead.");
         }
     }
 

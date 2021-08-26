@@ -62,7 +62,7 @@ public class SnapshotTableGrpcImpl extends GrpcTableOperation<SnapshotTableReque
         final Table result;
         if (!lhs.isLive() && !rhs.isLive()) {
             result = doSnapshot.get();
-        }  else {
+        } else {
             result = liveTableMonitor.sharedLock().computeLocked(doSnapshot);
         }
         return result;

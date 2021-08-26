@@ -39,25 +39,31 @@ public class ToMapListener<K, V> extends InstrumentedShiftAwareListenerAdapter i
     private final LongFunction<V> prevValueProducer;
 
     public static ToMapListener make(DynamicTable source, String keySourceName) {
-        return QueryPerformanceRecorder.withNugget("ToMapListener(" + keySourceName + ")", () -> new ToMapListener(source, keySourceName, keySourceName));
+        return QueryPerformanceRecorder.withNugget("ToMapListener(" + keySourceName + ")",
+                () -> new ToMapListener(source, keySourceName, keySourceName));
     }
 
     public static ToMapListener make(DynamicTable source, String keySourceName, String valueSourceName) {
-        return QueryPerformanceRecorder.withNugget("ToMapListener(" + keySourceName + ", " + valueSourceName + ")", () -> new ToMapListener(source, keySourceName, valueSourceName));
+        return QueryPerformanceRecorder.withNugget("ToMapListener(" + keySourceName + ", " + valueSourceName + ")",
+                () -> new ToMapListener(source, keySourceName, valueSourceName));
     }
 
-    public static <K1, V1> ToMapListener<K1, V1> make(DynamicTable source, ColumnSource<K1> keySource, ColumnSource<V1> valueSource) {
-        //noinspection unchecked
-        return QueryPerformanceRecorder.withNugget("ToMapListener", () -> new ToMapListener<>(source, keySource, valueSource));
+    public static <K1, V1> ToMapListener<K1, V1> make(DynamicTable source, ColumnSource<K1> keySource,
+            ColumnSource<V1> valueSource) {
+        // noinspection unchecked
+        return QueryPerformanceRecorder.withNugget("ToMapListener",
+                () -> new ToMapListener<>(source, keySource, valueSource));
     }
 
-    public static <K1, V1> ToMapListener<K1, V1> make(DynamicTable source, LongFunction<K1> keyProducer, LongFunction<K1> prevKeyProducer, LongFunction<V1> valueProducer, LongFunction<V1> prevValueProducer) {
-        //noinspection unchecked
-        return QueryPerformanceRecorder.withNugget("ToMapListener", () -> new ToMapListener<>(source, keyProducer, prevKeyProducer, valueProducer, prevValueProducer));
+    public static <K1, V1> ToMapListener<K1, V1> make(DynamicTable source, LongFunction<K1> keyProducer,
+            LongFunction<K1> prevKeyProducer, LongFunction<V1> valueProducer, LongFunction<V1> prevValueProducer) {
+        // noinspection unchecked
+        return QueryPerformanceRecorder.withNugget("ToMapListener",
+                () -> new ToMapListener<>(source, keyProducer, prevKeyProducer, valueProducer, prevValueProducer));
     }
 
     private ToMapListener(DynamicTable source, String keySourceName, String valueSourceName) {
-        //noinspection unchecked
+        // noinspection unchecked
         this(source, source.getColumnSource(keySourceName), source.getColumnSource(valueSourceName));
     }
 
@@ -65,14 +71,15 @@ public class ToMapListener<K, V> extends InstrumentedShiftAwareListenerAdapter i
         this(source, keySource::get, keySource::getPrev, valueSource::get, valueSource::getPrev);
     }
 
-    private ToMapListener(DynamicTable source, LongFunction<K> keyProducer, LongFunction<K> prevKeyProducer, LongFunction<V> valueProducer, LongFunction<V> prevValueProducer) {
+    private ToMapListener(DynamicTable source, LongFunction<K> keyProducer, LongFunction<K> prevKeyProducer,
+            LongFunction<V> valueProducer, LongFunction<V> prevValueProducer) {
         super(source, false);
         this.keyProducer = keyProducer;
         this.prevKeyProducer = prevKeyProducer;
         this.valueProducer = valueProducer;
         this.prevValueProducer = prevValueProducer;
 
-        for (final Index.Iterator it = source.getIndex().iterator(); it.hasNext(); ) {
+        for (final Index.Iterator it = source.getIndex().iterator(); it.hasNext();) {
             final long key = it.nextLong();
             baselineMap.put(keyProducer.apply(key), key);
         }
@@ -121,12 +128,12 @@ public class ToMapListener<K, V> extends InstrumentedShiftAwareListenerAdapter i
 
     @Override
     public V get(Object key) {
-        //noinspection unchecked
-        return get((K)key, valueProducer, prevValueProducer);
+        // noinspection unchecked
+        return get((K) key, valueProducer, prevValueProducer);
     }
 
     public <T> T get(K key, groovy.lang.Closure<T> valueProducer, groovy.lang.Closure<T> prevValueProducer) {
-        return get(key, (long row) -> (T)valueProducer.call(row), (long row) -> (T)prevValueProducer.call(row));
+        return get(key, (long row) -> (T) valueProducer.call(row), (long row) -> (T) prevValueProducer.call(row));
     }
 
     public <T> T get(K key, ColumnSource<T> cs) {

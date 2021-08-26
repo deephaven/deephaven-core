@@ -27,7 +27,7 @@ public class CompletionLookups {
 
     public CompletionLookups() {
         ql = new Lazy<>(QueryLibrary::getLibrary);
-        statics = new Lazy<>(()->{
+        statics = new Lazy<>(() -> {
             ql.get();
             return QueryLibrary.getStaticImports();
         });
@@ -39,7 +39,7 @@ public class CompletionLookups {
     }
 
     public static CompletionLookups preload(ScriptSession session) {
-        return lookups.computeIfAbsent(session, s->new CompletionLookups());
+        return lookups.computeIfAbsent(session, s -> new CompletionLookups());
     }
 
     public Collection<Class> getStatics() {

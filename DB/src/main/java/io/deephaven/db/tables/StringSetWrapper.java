@@ -17,8 +17,8 @@ import java.util.Iterator;
 import java.util.function.ToIntFunction;
 
 /**
-* {@link HashSet}-backed {@link StringSet} implementation.
-*/
+ * {@link HashSet}-backed {@link StringSet} implementation.
+ */
 public class StringSetWrapper implements StringSet, Serializable {
 
     private static final long serialVersionUID = 6033718768047284093L;
@@ -38,12 +38,12 @@ public class StringSetWrapper implements StringSet, Serializable {
         }
     }
 
-    public StringSetWrapper(String... values){
+    public StringSetWrapper(String... values) {
         innerSet = new HashSet<>(values.length);
         innerSet.addAll(Arrays.asList(values));
     }
 
-    public StringSetWrapper(Collection<String> values){
+    public StringSetWrapper(Collection<String> values) {
         innerSet = new HashSet<>(values);
     }
 
@@ -122,7 +122,7 @@ public class StringSetWrapper implements StringSet, Serializable {
 
     @Override
     public final int hashCode() {
-       return defaultHashCode();
+        return defaultHashCode();
     }
 
     @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")

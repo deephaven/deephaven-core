@@ -14,11 +14,11 @@ import java.lang.ref.WeakReference;
 
 /**
  * An object canonicalization cache, suitable for use with objects that define equals(...) in such a way as to identify
- * objects that can be mutually substituted in a manner appropriate for the application using the cache.  Objects with
- * an improper hashCode() implementation will cause undefined behavior.
+ * objects that can be mutually substituted in a manner appropriate for the application using the cache. Objects with an
+ * improper hashCode() implementation will cause undefined behavior.
  *
- * See KeyedObjectHashMap and its parent classes for many of the ideas I'm working from.
- * The implementation is (loosely) based on an open-addressed hash map.
+ * See KeyedObjectHashMap and its parent classes for many of the ideas I'm working from. The implementation is (loosely)
+ * based on an open-addressed hash map.
  *
  * The intended problem domain is effectively single-threaded, so I've optimized on single-threaded efficiency and used
  * coarse synchronization instead of optimizing for concurrency.
@@ -28,12 +28,14 @@ public class OpenAddressedCanonicalizationCache {
     /**
      * Allows cache users to supercede the equals() and hashCode() methods of their input items, and supply an
      * alternative object to cache.
+     * 
      * @param <INPUT_TYPE>
      * @param <OUTPUT_TYPE>
      */
     public interface Adapter<INPUT_TYPE, OUTPUT_TYPE> {
         /**
          * Note: equals(inputItem, cachedItem) implies hashCode(inputItem) == cachedItem.hashCode() must be true.
+         * 
          * @param inputItem The input item
          * @param cachedItem The cached item
          * @return True if inputItem is equal to cachedItem for the cache's purposes.
@@ -47,7 +49,9 @@ public class OpenAddressedCanonicalizationCache {
         int hashCode(@NotNull final INPUT_TYPE inputItem);
 
         /**
-         * Note: The following must be true: hashCode(inputItem) == outputItem.hashCode() && equals(inputItem, outputItem)
+         * Note: The following must be true: hashCode(inputItem) == outputItem.hashCode() && equals(inputItem,
+         * outputItem)
+         * 
          * @param inputItem The input item
          * @return A cacheable version of inputItem.
          */
@@ -124,6 +128,7 @@ public class OpenAddressedCanonicalizationCache {
 
     /**
      * Note: Intended for unit test use only.
+     * 
      * @return The threshold that occupancy must exceed to trigger a rehash
      */
     int getOccupancyThreshold() {
@@ -132,6 +137,7 @@ public class OpenAddressedCanonicalizationCache {
 
     /**
      * Note: Intended for unit test use only.
+     * 
      * @return The number of items in the cache (may be briefly larger, if the cleanupQueue needs to be drained)
      */
     int getOccupiedSlots() {
@@ -139,18 +145,19 @@ public class OpenAddressedCanonicalizationCache {
     }
 
     public synchronized <INPUT_OUTPUT_TYPE> INPUT_OUTPUT_TYPE getCachedItem(@NotNull final INPUT_OUTPUT_TYPE item) {
-        //noinspection unchecked
-        return getCachedItem(item, (Adapter<INPUT_OUTPUT_TYPE, INPUT_OUTPUT_TYPE>)DEFAULT_ADAPTER);
+        // noinspection unchecked
+        return getCachedItem(item, (Adapter<INPUT_OUTPUT_TYPE, INPUT_OUTPUT_TYPE>) DEFAULT_ADAPTER);
     }
 
-    public synchronized <INPUT_TYPE, OUTPUT_TYPE> OUTPUT_TYPE getCachedItem(@NotNull final INPUT_TYPE item, @NotNull final Adapter<INPUT_TYPE, OUTPUT_TYPE> adapter) {
+    public synchronized <INPUT_TYPE, OUTPUT_TYPE> OUTPUT_TYPE getCachedItem(@NotNull final INPUT_TYPE item,
+            @NotNull final Adapter<INPUT_TYPE, OUTPUT_TYPE> adapter) {
         cleanup();
         return getOrInsertCachedItem(item, adapter);
     }
 
     private void cleanup() {
         ItemReference<?> itemReference;
-        while ((itemReference = (ItemReference<?>)cleanupQueue.poll()) != null) {
+        while ((itemReference = (ItemReference<?>) cleanupQueue.poll()) != null) {
             Assert.eqNull(itemReference.get(), "itemReference.get()");
             maybeReclaim(itemReference);
         }
@@ -163,7 +170,8 @@ public class OpenAddressedCanonicalizationCache {
         }
     }
 
-    private <INPUT_TYPE, OUTPUT_TYPE> OUTPUT_TYPE getOrInsertCachedItem(@NotNull final INPUT_TYPE item, @NotNull final Adapter<INPUT_TYPE, OUTPUT_TYPE> adapter) {
+    private <INPUT_TYPE, OUTPUT_TYPE> OUTPUT_TYPE getOrInsertCachedItem(@NotNull final INPUT_TYPE item,
+            @NotNull final Adapter<INPUT_TYPE, OUTPUT_TYPE> adapter) {
         final int length = storage.length;
         final int hashCode = adapter.hashCode(item) & 0x7FFFFFFF;
         final int probeInterval = computeProbeInterval(hashCode, length);
@@ -179,8 +187,7 @@ public class OpenAddressedCanonicalizationCache {
                 if (firstDeletedSlot == -1) {
                     --emptySlots;
                     storage[slot] = new ItemReference<>(cacheableItem, cleanupQueue);
-                }
-                else {
+                } else {
                     storage[firstDeletedSlot] = new ItemReference<>(cacheableItem, cleanupQueue);
                 }
                 ++occupiedSlots;
@@ -194,13 +201,12 @@ public class OpenAddressedCanonicalizationCache {
                     firstDeletedSlot = slot;
                 }
                 maybeReclaim(candidateReference);
-            }
-            else if (adapter.equals(item, candidate)) {
-                //noinspection unchecked
-                return (OUTPUT_TYPE)candidate;
+            } else if (adapter.equals(item, candidate)) {
+                // noinspection unchecked
+                return (OUTPUT_TYPE) candidate;
             }
 
-            if ((slot -= probeInterval) < 0 ) {
+            if ((slot -= probeInterval) < 0) {
                 slot += length;
             }
         } while (true);
@@ -212,10 +218,9 @@ public class OpenAddressedCanonicalizationCache {
             newCapacity = computeNextCapacity(storage.length);
         }
         // Can go all the way to 0, since we don't have concurrent gets to worry about.
-        else if(emptySlots == 0) {
+        else if (emptySlots == 0) {
             newCapacity = storage.length;
-        }
-        else {
+        } else {
             return;
         }
         rehash(newCapacity);
@@ -234,8 +239,7 @@ public class OpenAddressedCanonicalizationCache {
             final Object item = itemReference.get();
             if (item != null) {
                 insertReferenceForRehash(itemReference, item);
-            }
-            else if (!itemReference.reclaimed()) {
+            } else if (!itemReference.reclaimed()) {
                 // NB: We don't need to decrement occupiedSlots here - we're instead not incrementing it.
                 itemReference.markReclaimed();
             }
@@ -255,8 +259,7 @@ public class OpenAddressedCanonicalizationCache {
                 if (firstDeletedSlot == -1) {
                     --emptySlots;
                     storage[slot] = itemReference;
-                }
-                else {
+                } else {
                     storage[firstDeletedSlot] = itemReference;
                 }
                 ++occupiedSlots;
@@ -271,7 +274,7 @@ public class OpenAddressedCanonicalizationCache {
             }
             // NB: No need to test if item.equals(candidate) here - should be impossible during a rehash.
 
-            if ((slot -= probeInterval) < 0 ) {
+            if ((slot -= probeInterval) < 0) {
                 slot += length;
             }
         } while (true);
@@ -287,7 +290,7 @@ public class OpenAddressedCanonicalizationCache {
     }
 
     private static int computeOccupancyThreshold(final int capacity, final float loadFactor) {
-        return Math.min(capacity - 1, (int)Math.floor(capacity * loadFactor));
+        return Math.min(capacity - 1, (int) Math.floor(capacity * loadFactor));
     }
 
     private static int computeProbeInterval(final int hashCode, final int length) {

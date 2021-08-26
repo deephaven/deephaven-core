@@ -21,7 +21,8 @@ abstract class TstColumnRegionPrimative<REGION_TYPE extends ColumnRegion<Attribu
     @Test
     public abstract void testGet();
 
-    static abstract class Deferred<REGION_TYPE extends ColumnRegion<Attributes.Values>> extends TstColumnRegionPrimative<REGION_TYPE> {
+    static abstract class Deferred<REGION_TYPE extends ColumnRegion<Attributes.Values>>
+            extends TstColumnRegionPrimative<REGION_TYPE> {
 
         Supplier<REGION_TYPE> regionSupplier;
     }

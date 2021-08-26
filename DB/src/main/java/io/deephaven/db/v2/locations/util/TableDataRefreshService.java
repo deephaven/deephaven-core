@@ -34,7 +34,8 @@ public interface TableDataRefreshService {
      * @param tableLocationProvider The table location provider
      * @return A subscription token to be used for matching, which also supports cancellation
      */
-    CancellableSubscriptionToken scheduleTableLocationProviderRefresh(@NotNull AbstractTableLocationProvider tableLocationProvider);
+    CancellableSubscriptionToken scheduleTableLocationProviderRefresh(
+            @NotNull AbstractTableLocationProvider tableLocationProvider);
 
     /**
      * Schedule refresh for an AbstractTableLocation.
@@ -65,9 +66,12 @@ public interface TableDataRefreshService {
         // endregion
 
         // region Global properties retrieved from Configuration; used only for static TableDataRefreshService uses
-        private static final String GLOBAL_TABLE_LOCATION_REFRESH_MILLIS_PROP = "TableDataRefreshService." + TABLE_LOCATION_REFRESH_MILLIS_PROP;
-        private static final String GLOBAL_TABLE_SIZE_REFRESH_MILLIS_PROP = "TableDataRefreshService." + TABLE_SIZE_REFRESH_MILLIS_PROP;
-        private static final String GLOBAL_REFRESH_THREAD_POOL_SIZE_PROP = "TableDataRefreshService." + REFRESH_THREAD_POOL_SIZE_PROP;
+        private static final String GLOBAL_TABLE_LOCATION_REFRESH_MILLIS_PROP =
+                "TableDataRefreshService." + TABLE_LOCATION_REFRESH_MILLIS_PROP;
+        private static final String GLOBAL_TABLE_SIZE_REFRESH_MILLIS_PROP =
+                "TableDataRefreshService." + TABLE_SIZE_REFRESH_MILLIS_PROP;
+        private static final String GLOBAL_REFRESH_THREAD_POOL_SIZE_PROP =
+                "TableDataRefreshService." + REFRESH_THREAD_POOL_SIZE_PROP;
         // endregion
 
         // region Shared property default values
@@ -78,18 +82,20 @@ public interface TableDataRefreshService {
 
         private static volatile TableDataRefreshService sharedRefreshService;
 
-        private Helper() {
-        }
+        private Helper() {}
 
         private static TableDataRefreshService getSharedRefreshService() {
             if (sharedRefreshService == null) {
                 synchronized (Helper.class) {
                     if (sharedRefreshService == null) {
                         sharedRefreshService = new ExecutorTableDataRefreshService("Local",
-                                Configuration.getInstance().getLongWithDefault(GLOBAL_TABLE_LOCATION_REFRESH_MILLIS_PROP, DEFAULT_TABLE_LOCATION_REFRESH_MILLIS),
-                                Configuration.getInstance().getLongWithDefault(GLOBAL_TABLE_SIZE_REFRESH_MILLIS_PROP, DEFAULT_TABLE_SIZE_REFRESH_MILLIS),
-                                Configuration.getInstance().getIntegerWithDefault(GLOBAL_REFRESH_THREAD_POOL_SIZE_PROP, DEFAULT_REFRESH_THREAD_POOL_SIZE)
-                        );
+                                Configuration.getInstance().getLongWithDefault(
+                                        GLOBAL_TABLE_LOCATION_REFRESH_MILLIS_PROP,
+                                        DEFAULT_TABLE_LOCATION_REFRESH_MILLIS),
+                                Configuration.getInstance().getLongWithDefault(GLOBAL_TABLE_SIZE_REFRESH_MILLIS_PROP,
+                                        DEFAULT_TABLE_SIZE_REFRESH_MILLIS),
+                                Configuration.getInstance().getIntegerWithDefault(GLOBAL_REFRESH_THREAD_POOL_SIZE_PROP,
+                                        DEFAULT_REFRESH_THREAD_POOL_SIZE));
                     }
                 }
             }
@@ -104,8 +110,7 @@ public interface TableDataRefreshService {
 
         public static final TableDataRefreshService INSTANCE = new Null();
 
-        private Null() {
-        }
+        private Null() {}
 
         @Override
         public void submitOneTimeAsyncTask(@NotNull final Runnable task) {
@@ -113,12 +118,14 @@ public interface TableDataRefreshService {
         }
 
         @Override
-        public CancellableSubscriptionToken scheduleTableLocationProviderRefresh(@NotNull final AbstractTableLocationProvider tableLocationProvider) {
+        public CancellableSubscriptionToken scheduleTableLocationProviderRefresh(
+                @NotNull final AbstractTableLocationProvider tableLocationProvider) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public CancellableSubscriptionToken scheduleTableLocationRefresh(@NotNull final AbstractTableLocation tableLocation) {
+        public CancellableSubscriptionToken scheduleTableLocationRefresh(
+                @NotNull final AbstractTableLocation tableLocation) {
             throw new UnsupportedOperationException();
         }
     }

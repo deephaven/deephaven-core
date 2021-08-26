@@ -33,7 +33,7 @@ public class RedirectionIndexLockFreeTest extends LiveTableTestCase {
         // Run one iteration of the writer so the prev values exist.
         writer.doOneIteration();
 
-        RWBase[] participants = { writer, r0, r1 };
+        RWBase[] participants = {writer, r0, r1};
         Thread[] threads = Arrays.stream(participants).map(Thread::new).toArray(Thread[]::new);
         for (Thread thread : threads) {
             thread.start();
@@ -88,6 +88,7 @@ public class RedirectionIndexLockFreeTest extends LiveTableTestCase {
         }
 
         protected abstract void doOneIteration();
+
         public abstract boolean hasFailed();
 
     }
@@ -116,7 +117,7 @@ public class RedirectionIndexLockFreeTest extends LiveTableTestCase {
             final LogicalClock.State state = LogicalClock.getState(logicalClockStartValue);
             final long step = state == LogicalClock.State.Updating ? stepFromCycle - 1 : stepFromCycle;
 
-            final int keysInThisGeneration = (int)((step - initialStep) * 1000 + 1000);
+            final int keysInThisGeneration = (int) ((step - initialStep) * 1000 + 1000);
             final Random rng = new Random(step);
             final int numKeysToInsert = rng.nextInt(keysInThisGeneration);
             long[] keys = fillAndShuffle(rng, keysInThisGeneration);
@@ -179,8 +180,10 @@ public class RedirectionIndexLockFreeTest extends LiveTableTestCase {
 
         @Override
         public String toString() {
-            return String.format("--- %s: iterations: %d, good update: %d, good idle: %d, bad update: %d, bad idle: %d, incoherent (no judgment): %d ---",
-              name, numIterations, goodUpdateCycles, goodIdleCycles, badUpdateCycles, badIdleCycles, incoherentCycles);
+            return String.format(
+                    "--- %s: iterations: %d, good update: %d, good idle: %d, bad update: %d, bad idle: %d, incoherent (no judgment): %d ---",
+                    name, numIterations, goodUpdateCycles, goodIdleCycles, badUpdateCycles, badIdleCycles,
+                    incoherentCycles);
         }
     }
 
@@ -212,7 +215,8 @@ public class RedirectionIndexLockFreeTest extends LiveTableTestCase {
             });
 
             // waste some time doing something else
-            final RedirectionIndexLockFreeImpl privateIndex = new RedirectionIndexLockFreeFactory().createRedirectionIndex(10);
+            final RedirectionIndexLockFreeImpl privateIndex =
+                    new RedirectionIndexLockFreeFactory().createRedirectionIndex(10);
             for (long ii = 0; ii < keysInThisGeneration.getValue() * 4; ++ii) {
                 privateIndex.put(ii, ii);
             }

@@ -51,7 +51,7 @@ public class FunctionConsistencyMonitor {
             return false;
         }
         if (currentValues.get() == null) {
-            Object [] preparedValue = preparedValues.get();
+            Object[] preparedValue = preparedValues.get();
             if (preparedValue == null || preparedValue.length < currentCount) {
                 preparedValue = new Object[currentCount];
             }
@@ -68,7 +68,7 @@ public class FunctionConsistencyMonitor {
         if (functionCount.get() == 0) {
             return;
         }
-        final Object [] values = currentValues.get();
+        final Object[] values = currentValues.get();
         if (values == null) {
             return;
         }
@@ -78,7 +78,7 @@ public class FunctionConsistencyMonitor {
     }
 
     /**
-     * Compute the value for the function at location.  If are outside a consistent block, just return the function.
+     * Compute the value for the function at location. If are outside a consistent block, just return the function.
      *
      * The first time we compute a function within a consistent block, call function; otherwise return the previously
      * computed value.
@@ -90,7 +90,7 @@ public class FunctionConsistencyMonitor {
      * @return the first return value of function within a consistent block
      */
     private <T> T computeValue(int location, Supplier<T> function) {
-        Object [] values = currentValues.get();
+        Object[] values = currentValues.get();
         if (values == null) {
             // we are not in a consistent block
             return function.get();
@@ -101,7 +101,8 @@ public class FunctionConsistencyMonitor {
             if (location >= currentCount) {
                 throw new IllegalStateException("Location was not registered with this monitor " + location);
             }
-            // we registered the function after creating the array for consistent invocation, update the size of our slots array
+            // we registered the function after creating the array for consistent invocation, update the size of our
+            // slots array
             values = Arrays.copyOf(values, currentCount);
             currentValues.set(values);
         }
@@ -111,8 +112,8 @@ public class FunctionConsistencyMonitor {
             return null;
         }
         if (savedResult != null) {
-            //noinspection unchecked
-            return (T)savedResult;
+            // noinspection unchecked
+            return (T) savedResult;
         }
         // we haven't previously computed the function, so we must compute it now
         final T computedValue = function.get();
@@ -129,6 +130,7 @@ public class FunctionConsistencyMonitor {
 
     private class CloseBlock implements SafeCloseable {
         private final boolean doClose;
+
         CloseBlock() {
             doClose = startConsistentBlock();
         }
@@ -142,8 +144,8 @@ public class FunctionConsistencyMonitor {
     }
 
     /**
-     * A supplier that uses a FunctionConsistencyMonitor to ensure that multiple invocations to the same function
-     * always return the same value, even if underlying conditions (like the date) change.
+     * A supplier that uses a FunctionConsistencyMonitor to ensure that multiple invocations to the same function always
+     * return the same value, even if underlying conditions (like the date) change.
      *
      * @param <T> the return type of this supplier
      */

@@ -23,7 +23,8 @@ public abstract class InstrumentedListener extends InstrumentedListenerBase impl
     }
 
     @Override
-    public AbstractIndexUpdateNotification getNotification(final Index added, final Index removed, final Index modified) {
+    public AbstractIndexUpdateNotification getNotification(final Index added, final Index removed,
+            final Index modified) {
         return new Notification(added, removed, modified);
     }
 

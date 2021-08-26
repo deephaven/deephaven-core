@@ -13,8 +13,14 @@ public class IndexSequentialBuilderPerfTest {
         secsFormat.setGroupingSize(3);
     }
 
-    private static String sizeFormat(final long v) { return sizeFormat.format(v); }
-    private static String secondsFormat(final double v) { return secsFormat.format(v); }
+    private static String sizeFormat(final long v) {
+        return sizeFormat.format(v);
+    }
+
+    private static String secondsFormat(final double v) {
+        return secsFormat.format(v);
+    }
+
     private static final int sz = 10 * 1000 * 1000;
     private static final Index.SequentialBuilder[] sbs = new Index.SequentialBuilder[sz];
 
@@ -35,6 +41,7 @@ public class IndexSequentialBuilderPerfTest {
         }
         return bh;
     }
+
     private static long runAndGetSamples(final int runs, final PerfStats stats, final LongSupplier runner) {
         long trick = 0; // to prevent the optimizer from eliminating unused steps.
         final PerfMeasure pm = new PerfMeasure(false);
@@ -54,6 +61,7 @@ public class IndexSequentialBuilderPerfTest {
     private static class PerfTest {
         public final LongSupplier runner;
         public final String name;
+
         public PerfTest(final LongSupplier runner, final String name) {
             this.runner = runner;
             this.name = name;
@@ -66,7 +74,7 @@ public class IndexSequentialBuilderPerfTest {
         final PerfTest[] ts = {
                 new PerfTest(IndexSequentialBuilderPerfTest::doRspRun, "Rsp"),
         };
-        final int runs[] = { warmupRuns, fullRuns };
+        final int runs[] = {warmupRuns, fullRuns};
         for (PerfTest t : ts) {
             clear();
             for (int r = 0; r < runs.length; ++r) {
@@ -80,10 +88,11 @@ public class IndexSequentialBuilderPerfTest {
                 }
                 final long res = runAndGetSamples(count, stats, t.runner);
                 final long ts1 = System.nanoTime();
-                System.out.println(tname + " ran in " + secondsFormat((ts1 - ts0) / s2ns) + ", optimizer trick result = " + res);
+                System.out.println(
+                        tname + " ran in " + secondsFormat((ts1 - ts0) / s2ns) + ", optimizer trick result = " + res);
                 if (stats != null) {
                     stats.compute();
-                    final double factor = 1/s2ns;
+                    final double factor = 1 / s2ns;
                     stats.print(tname + " stats in seconds: ", factor);
                 }
             }
@@ -91,6 +100,7 @@ public class IndexSequentialBuilderPerfTest {
     }
 
     private static final String me = IndexSequentialBuilderPerfTest.class.getSimpleName();
+
     public static void main(String[] args) {
         System.out.println(me + " PerfMeasure.conf() = " + PerfMeasure.conf());
         final int warmupRuns = 1;

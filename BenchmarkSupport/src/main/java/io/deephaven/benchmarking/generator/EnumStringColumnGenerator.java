@@ -13,8 +13,7 @@ import java.util.Set;
  */
 public class EnumStringColumnGenerator extends AbstractStringColumnGenerator {
     public enum Mode {
-        Random,
-        Rotate,
+        Random, Rotate,
     }
 
     private ExtendedRandom random;
@@ -41,9 +40,11 @@ public class EnumStringColumnGenerator extends AbstractStringColumnGenerator {
 
         final Set<String> enums = new HashSet<>(nVals);
 
-        // We need to use a different random to generate the enum otherwise it's difficult to generate consistent enums between different tables.
-        final StringGenerator sg = new StringGenerator(getMinLength(), getMaxLength(), new NormalExtendedRandom(new Random(enumSeed)));
-        while(enums.size() < nVals) {
+        // We need to use a different random to generate the enum otherwise it's difficult to generate consistent enums
+        // between different tables.
+        final StringGenerator sg =
+                new StringGenerator(getMinLength(), getMaxLength(), new NormalExtendedRandom(new Random(enumSeed)));
+        while (enums.size() < nVals) {
             enums.add(sg.get());
         }
 
@@ -51,15 +52,16 @@ public class EnumStringColumnGenerator extends AbstractStringColumnGenerator {
     }
 
     public String get() {
-        switch(mode) {
-            case Random: return enumVals[random.nextInt(0, nVals)];
+        switch (mode) {
+            case Random:
+                return enumVals[random.nextInt(0, nVals)];
             case Rotate:
                 final int cIdx = enumIndex;
-                enumIndex =  (enumIndex + 1) % nVals;
+                enumIndex = (enumIndex + 1) % nVals;
                 return enumVals[cIdx];
         }
 
-        throw new IllegalStateException("Unsupported mode: "+mode);
+        throw new IllegalStateException("Unsupported mode: " + mode);
     }
 
     public String[] getEnumVals() {

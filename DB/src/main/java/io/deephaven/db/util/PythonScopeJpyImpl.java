@@ -24,7 +24,7 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     }
 
     public static PythonScopeJpyImpl ofMainGlobals() {
-         return new PythonScopeJpyImpl(PyLib.getMainGlobals().asDict());
+        return new PythonScopeJpyImpl(PyLib.getMainGlobals().asDict());
     }
 
     public PythonScopeJpyImpl(PyDictWrapper dict) {
@@ -138,13 +138,15 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
     }
 
     private static CallableWrapper parseNumbaVectorized(PyObject pyObject, String numbaFuncTypes) {
-        // the 'types' field of a numba vectorized function takes the form of '[parameter-type-char*]->[return-type-char]',
+        // the 'types' field of a numba vectorized function takes the form of
+        // '[parameter-type-char*]->[return-type-char]',
         // eg. [ll->d] defines two int64 (long) arguments and a double return type.
 
         char numpyTypeCode = numbaFuncTypes.charAt(numbaFuncTypes.length() - 1);
         Class returnType = numpyType2JavaClass.get(numpyTypeCode);
         if (returnType == null) {
-            throw new IllegalArgumentException("numba vectorized functions must have an integral, floating point, or boolean return type.");
+            throw new IllegalArgumentException(
+                    "numba vectorized functions must have an integral, floating point, or boolean return type.");
         }
 
         List<Class> paramTypes = new ArrayList<>();
@@ -152,7 +154,8 @@ public class PythonScopeJpyImpl implements PythonScope<PyObject> {
             if (numpyTypeChar != '-') {
                 Class paramType = numpyType2JavaClass.get(numpyTypeChar);
                 if (paramType == null) {
-                    throw new IllegalArgumentException("parameters of numba vectorized functions must be of integral, floating point, or boolean type.");
+                    throw new IllegalArgumentException(
+                            "parameters of numba vectorized functions must be of integral, floating point, or boolean type.");
                 }
                 paramTypes.add(numpyType2JavaClass.get(numpyTypeChar));
             } else {

@@ -61,8 +61,7 @@ import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
 @SuppressWarnings("WeakerAccess")
 public class ParquetTools {
 
-    private ParquetTools() {
-    }
+    private ParquetTools() {}
 
     private static final Logger log = LoggerFactory.getLogger(ParquetTools.class);
 
@@ -83,7 +82,7 @@ public class ParquetTools {
     /**
      * Reads in a table from a single parquet, metadata file, or directory with recognized layout.
      *
-     * @param sourceFilePath   The file or directory to examine
+     * @param sourceFilePath The file or directory to examine
      * @param readInstructions Instructions for customizations while reading
      * @return table
      * @see SingleParquetFileLayout
@@ -114,7 +113,7 @@ public class ParquetTools {
     /**
      * Reads in a table from a single parquet, metadata file, or directory with recognized layout.
      *
-     * @param sourceFile       The file or directory to examine
+     * @param sourceFile The file or directory to examine
      * @param readInstructions Instructions for customizations while reading
      * @return table
      * @see SingleParquetFileLayout
@@ -132,10 +131,9 @@ public class ParquetTools {
      * Write a table to a file.
      *
      * @param sourceTable source table
-     * @param destPath    destination file path; the file name should end in ".parquet" extension
-     *                    If the path includes non-existing directories they are created
-     *                    If there is an error any intermediate directories previously created are removed;
-     *                    note this makes this method unsafe for concurrent use
+     * @param destPath destination file path; the file name should end in ".parquet" extension If the path includes
+     *        non-existing directories they are created If there is an error any intermediate directories previously
+     *        created are removed; note this makes this method unsafe for concurrent use
      */
     public static void writeTable(
             @NotNull final Table sourceTable,
@@ -147,8 +145,8 @@ public class ParquetTools {
      * Write a table to a file.
      *
      * @param sourceTable source table
-     * @param destFile    destination file; the file name should end in ".parquet" extension
-     *                    If the path includes non-existing directories they are created
+     * @param destFile destination file; the file name should end in ".parquet" extension If the path includes
+     *        non-existing directories they are created
      */
     public static void writeTable(
             @NotNull final Table sourceTable,
@@ -160,10 +158,10 @@ public class ParquetTools {
      * Write a table to a file.
      *
      * @param sourceTable source table
-     * @param destFile    destination file; its path must end in ".parquet".  Any non existing directories in the path are created
-     *                    If there is an error any intermediate directories previously created are removed;
-     *                    note this makes this method unsafe for concurrent use
-     * @param definition  table definition to use (instead of the one implied by the table itself)
+     * @param destFile destination file; its path must end in ".parquet". Any non existing directories in the path are
+     *        created If there is an error any intermediate directories previously created are removed; note this makes
+     *        this method unsafe for concurrent use
+     * @param definition table definition to use (instead of the one implied by the table itself)
      */
     public static void writeTable(
             @NotNull final Table sourceTable,
@@ -175,10 +173,10 @@ public class ParquetTools {
     /**
      * Write a table to a file.
      *
-     * @param sourceTable       source table
-     * @param destFile          destination file; its path must end in ".parquet".  Any non existing directories in the path are created
-     *                          If there is an error any intermediate directories previously created are removed;
-     *                          note this makes this method unsafe for concurrent use
+     * @param sourceTable source table
+     * @param destFile destination file; its path must end in ".parquet". Any non existing directories in the path are
+     *        created If there is an error any intermediate directories previously created are removed; note this makes
+     *        this method unsafe for concurrent use
      * @param writeInstructions instructions for customizations while writing
      */
     public static void writeTable(
@@ -191,34 +189,34 @@ public class ParquetTools {
     /**
      * Write a table to a file.
      *
-     * @param sourceTable       source table
-     * @param destPath          destination path; it must end in ".parquet".  Any non existing directories in the path are created
-     *                          If there is an error any intermediate directories previously created are removed;
-     *                          note this makes this method unsafe for concurrent use
-     * @param definition        table definition to use (instead of the one implied by the table itself)
+     * @param sourceTable source table
+     * @param destPath destination path; it must end in ".parquet". Any non existing directories in the path are created
+     *        If there is an error any intermediate directories previously created are removed; note this makes this
+     *        method unsafe for concurrent use
+     * @param definition table definition to use (instead of the one implied by the table itself)
      * @param writeInstructions instructions for customizations while writing
      */
     public static void writeTable(@NotNull final Table sourceTable,
-                                  @NotNull final String destPath,
-                                  @NotNull final TableDefinition definition,
-                                  @NotNull final ParquetInstructions writeInstructions) {
+            @NotNull final String destPath,
+            @NotNull final TableDefinition definition,
+            @NotNull final ParquetInstructions writeInstructions) {
         writeTable(sourceTable, new File(destPath), definition, writeInstructions);
     }
 
     /**
      * Write a table to a file.
      *
-     * @param sourceTable       source table
-     * @param definition        table definition to use (instead of the one implied by the table itself)
+     * @param sourceTable source table
+     * @param definition table definition to use (instead of the one implied by the table itself)
      * @param writeInstructions instructions for customizations while writing
-     * @param destFile          destination file; its path must end in ".parquet".  Any non existing directories in the path are created
-     *                          If there is an error any intermediate directories previously created are removed;
-     *                          note this makes this method unsafe for concurrent use
+     * @param destFile destination file; its path must end in ".parquet". Any non existing directories in the path are
+     *        created If there is an error any intermediate directories previously created are removed; note this makes
+     *        this method unsafe for concurrent use
      */
     public static void writeTable(@NotNull final Table sourceTable,
-                                  @NotNull final File destFile,
-                                  @NotNull final TableDefinition definition,
-                                  @NotNull final ParquetInstructions writeInstructions) {
+            @NotNull final File destFile,
+            @NotNull final TableDefinition definition,
+            @NotNull final ParquetInstructions writeInstructions) {
         if (definition.getColumns().length == 0) {
             throw new TableDataException("Cannot write a parquet table with zero columns");
         }
@@ -245,7 +243,8 @@ public class ParquetTools {
     private static File prepareDestinationFileLocation(@NotNull File destination) {
         destination = destination.getAbsoluteFile();
         if (!destination.getPath().endsWith(PARQUET_FILE_EXTENSION)) {
-            throw new UncheckedDeephavenException("Destination " + destination + " does not end in " + PARQUET_FILE_EXTENSION + " extension");
+            throw new UncheckedDeephavenException(
+                    "Destination " + destination + " does not end in " + PARQUET_FILE_EXTENSION + " extension");
         }
         if (destination.exists()) {
             if (destination.isDirectory()) {
@@ -265,14 +264,17 @@ public class ParquetTools {
         }
         File firstCreated = firstParent;
         File parent;
-        for (parent = destination.getParentFile(); parent != null && !parent.exists(); parent = parent.getParentFile()) {
+        for (parent = destination.getParentFile(); parent != null && !parent.exists(); parent =
+                parent.getParentFile()) {
             firstCreated = parent;
         }
         if (parent == null) {
-            throw new IllegalArgumentException("Can't find any existing parent directory for destination path: " + destination);
+            throw new IllegalArgumentException(
+                    "Can't find any existing parent directory for destination path: " + destination);
         }
         if (!parent.isDirectory()) {
-            throw new IllegalArgumentException("Existing parent file " + parent + " of " + destination + " is not a directory");
+            throw new IllegalArgumentException(
+                    "Existing parent file " + parent + " of " + destination + " is not a directory");
         }
         if (!firstParent.mkdirs()) {
             throw new UncheckedDeephavenException("Couldn't (re)create destination directory " + firstParent);
@@ -281,23 +283,24 @@ public class ParquetTools {
     }
 
     /**
-     * Writes tables to disk in parquet format to a supplied set of destinations.  If you specify grouping columns, there
-     * must already be grouping information for those columns in the sources.  This can be accomplished with
+     * Writes tables to disk in parquet format to a supplied set of destinations. If you specify grouping columns, there
+     * must already be grouping information for those columns in the sources. This can be accomplished with
      * {@code .by(<grouping columns>).ungroup()} or {@code .sort(<grouping column>)}.
      *
-     * @param sources           The tables to write
-     * @param tableDefinition   The common schema for all the tables to write
+     * @param sources The tables to write
+     * @param tableDefinition The common schema for all the tables to write
      * @param writeInstructions Write instructions for customizations while writing
-     * @param destinations      The destinations paths.    Any non existing directories in the paths provided are created.
-     *                          If there is an error any intermediate directories previously created are removed;
-     *                          note this makes this method unsafe for concurrent use
-     * @param groupingColumns   List of columns the tables are grouped by (the write operation will store the grouping info)
+     * @param destinations The destinations paths. Any non existing directories in the paths provided are created. If
+     *        there is an error any intermediate directories previously created are removed; note this makes this method
+     *        unsafe for concurrent use
+     * @param groupingColumns List of columns the tables are grouped by (the write operation will store the grouping
+     *        info)
      */
     public static void writeParquetTables(@NotNull final Table[] sources,
-                                          @NotNull final TableDefinition tableDefinition,
-                                          @NotNull final ParquetInstructions writeInstructions,
-                                          @NotNull final File[] destinations,
-                                          @NotNull final String[] groupingColumns) {
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final ParquetInstructions writeInstructions,
+            @NotNull final File[] destinations,
+            @NotNull final String[] groupingColumns) {
         Require.eq(sources.length, "sources.length", destinations.length, "destinations.length");
         if (tableDefinition.getColumns().length == 0) {
             throw new TableDataException("Cannot write a parquet table with zero columns");
@@ -322,7 +325,8 @@ public class ParquetTools {
                     if (firstCreatedDir == null) {
                         continue;
                     }
-                    log.error().append("Error in table writing, cleaning up potentially incomplete table destination path starting from ")
+                    log.error().append(
+                            "Error in table writing, cleaning up potentially incomplete table destination path starting from ")
                             .append(firstCreatedDir.getAbsolutePath())
                             .append(e);
                     FileUtils.deleteRecursivelyOnNFS(firstCreatedDir);
@@ -335,13 +339,13 @@ public class ParquetTools {
     /**
      * Write out tables to disk.
      *
-     * @param sources         source tables
+     * @param sources source tables
      * @param tableDefinition table definition
-     * @param destinations    destinations
+     * @param destinations destinations
      */
     public static void writeTables(@NotNull final Table[] sources,
-                                   @NotNull final TableDefinition tableDefinition,
-                                   @NotNull final File[] destinations) {
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final File[] destinations) {
         writeParquetTables(sources, tableDefinition, ParquetInstructions.EMPTY, destinations,
                 tableDefinition.getGroupingColumnNamesArray());
     }
@@ -358,16 +362,16 @@ public class ParquetTools {
 
     /**
      * This method attempts to "do the right thing." It examines the source to determine if it's a single parquet file,
-     * a metadata file, or a directory. If it's a directory, it additionally tries to guess the layout to use. Unless
-     * a metadata file is supplied or discovered in the directory, the first found parquet file will be used to infer
+     * a metadata file, or a directory. If it's a directory, it additionally tries to guess the layout to use. Unless a
+     * metadata file is supplied or discovered in the directory, the first found parquet file will be used to infer
      * schema.
      *
-     * @param source       The source file or directory
+     * @param source The source file or directory
      * @param instructions Instructions for reading
      * @return A {@link Table}
      */
     private static Table readTableInternal(@NotNull final File source,
-                                           @NotNull final ParquetInstructions instructions) {
+            @NotNull final ParquetInstructions instructions) {
         final Path sourcePath = source.toPath();
         if (!Files.exists(sourcePath)) {
             throw new TableDataException("Source file " + source + " does not exist");
@@ -381,7 +385,8 @@ public class ParquetTools {
                         tableLocationKey.getFileReader().getSchema(),
                         tableLocationKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
                         instructions);
-                return readSingleFileTable(tableLocationKey, schemaInfo.getSecond(), new TableDefinition(schemaInfo.getFirst()));
+                return readSingleFileTable(tableLocationKey, schemaInfo.getSecond(),
+                        new TableDefinition(schemaInfo.getFirst()));
             }
             if (sourceFileName.equals(ParquetMetadataFileLayout.METADATA_FILE_NAME)) {
                 return readPartitionedTableWithMetadata(source.getParentFile(), instructions);
@@ -389,7 +394,8 @@ public class ParquetTools {
             if (sourceFileName.equals(ParquetMetadataFileLayout.COMMON_METADATA_FILE_NAME)) {
                 return readPartitionedTableWithMetadata(source.getParentFile(), instructions);
             }
-            throw new TableDataException("Source file " + source + " does not appear to be a parquet file or metadata file");
+            throw new TableDataException(
+                    "Source file " + source + " does not appear to be a parquet file or metadata file");
         }
         if (sourceAttr.isDirectory()) {
             final Path metadataPath = sourcePath.resolve(ParquetMetadataFileLayout.METADATA_FILE_NAME);
@@ -432,7 +438,7 @@ public class ParquetTools {
      *
      * @param tableLocationKey The {@link ParquetTableLocationKey location keys} to include
      * @param readInstructions Instructions for customizations while reading
-     * @param tableDefinition  The table's {@link TableDefinition definition}
+     * @param tableDefinition The table's {@link TableDefinition definition}
      * @return The table
      */
     public static Table readSingleFileTable(
@@ -444,7 +450,8 @@ public class ParquetTools {
                 new KnownLocationKeyFinder<>(tableLocationKey),
                 new ParquetTableLocationFactory(readInstructions),
                 null);
-        return new SimpleSourceTable(tableDefinition.getWritable(), "Read single parquet file from " + tableLocationKey.getFile(),
+        return new SimpleSourceTable(tableDefinition.getWritable(),
+                "Read single parquet file from " + tableLocationKey.getFile(),
                 RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
     }
 
@@ -452,8 +459,8 @@ public class ParquetTools {
      * Reads in a table from files discovered with {@code locationKeyFinder} using the provided table definition.
      *
      * @param locationKeyFinder The source of {@link ParquetTableLocationKey location keys} to include
-     * @param readInstructions  Instructions for customizations while reading
-     * @param tableDefinition   The table's {@link TableDefinition definition}
+     * @param readInstructions Instructions for customizations while reading
+     * @param tableDefinition The table's {@link TableDefinition definition}
      * @return The table
      */
     public static Table readPartitionedTable(
@@ -470,45 +477,51 @@ public class ParquetTools {
     }
 
     /**
-     * Reads in a table from files discovered with {@code locationKeyFinder} using a definition built from the
-     * first location found, which must have non-null partition values for all partition keys.
+     * Reads in a table from files discovered with {@code locationKeyFinder} using a definition built from the first
+     * location found, which must have non-null partition values for all partition keys.
      *
      * @param locationKeyFinder The source of {@link ParquetTableLocationKey location keys} to include
-     * @param readInstructions  Instructions for customizations while reading
+     * @param readInstructions Instructions for customizations while reading
      * @return The table
      */
     public static Table readPartitionedTableInferSchema(
             @NotNull final TableLocationKeyFinder<ParquetTableLocationKey> locationKeyFinder,
             @NotNull final ParquetInstructions readInstructions) {
-        final RecordingLocationKeyFinder<ParquetTableLocationKey> recordingLocationKeyFinder = new RecordingLocationKeyFinder<>();
+        final RecordingLocationKeyFinder<ParquetTableLocationKey> recordingLocationKeyFinder =
+                new RecordingLocationKeyFinder<>();
         locationKeyFinder.findKeys(recordingLocationKeyFinder);
         final List<ParquetTableLocationKey> foundKeys = recordingLocationKeyFinder.getRecordedKeys();
         if (foundKeys.isEmpty()) {
             return TableTools.emptyTable(0);
         }
-        // TODO (https://github.com/deephaven/deephaven-core/issues/877): Support schema merge when discovering multiple parquet files
+        // TODO (https://github.com/deephaven/deephaven-core/issues/877): Support schema merge when discovering multiple
+        // parquet files
         final ParquetTableLocationKey firstKey = foundKeys.get(0);
         final Pair<List<ColumnDefinition>, ParquetInstructions> schemaInfo = convertSchema(
                 firstKey.getFileReader().getSchema(),
                 firstKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
                 readInstructions);
-        final List<ColumnDefinition> allColumns = new ArrayList<>(firstKey.getPartitionKeys().size() + schemaInfo.getFirst().size());
+        final List<ColumnDefinition> allColumns =
+                new ArrayList<>(firstKey.getPartitionKeys().size() + schemaInfo.getFirst().size());
         for (final String partitionKey : firstKey.getPartitionKeys()) {
             final Comparable<?> partitionValue = firstKey.getPartitionValue(partitionKey);
             if (partitionValue == null) {
-                throw new IllegalArgumentException("First location key " + firstKey + " has null partition value at partition key " + partitionKey);
+                throw new IllegalArgumentException("First location key " + firstKey
+                        + " has null partition value at partition key " + partitionKey);
             }
-            //noinspection unchecked
-            allColumns.add(ColumnDefinition.fromGenericType(partitionKey, getUnboxedTypeIfBoxed(partitionValue.getClass()), ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
+            // noinspection unchecked
+            allColumns.add(ColumnDefinition.fromGenericType(partitionKey,
+                    getUnboxedTypeIfBoxed(partitionValue.getClass()), ColumnDefinition.COLUMNTYPE_PARTITIONING, null));
         }
         allColumns.addAll(schemaInfo.getFirst());
-        return readPartitionedTable(recordingLocationKeyFinder, schemaInfo.getSecond(), new TableDefinition(allColumns));
+        return readPartitionedTable(recordingLocationKeyFinder, schemaInfo.getSecond(),
+                new TableDefinition(allColumns));
     }
 
     /**
      * Reads in a table using metadata files found in the supplied directory.
      *
-     * @param directory        The source of {@link ParquetTableLocationKey location keys} to include
+     * @param directory The source of {@link ParquetTableLocationKey location keys} to include
      * @param readInstructions Instructions for customizations while reading
      * @return The table
      */
@@ -532,8 +545,8 @@ public class ParquetTools {
         }
     }
 
-    private static ParquetSchemaReader.ColumnDefinitionConsumer
-    makeSchemaReaderConsumer(final ArrayList<ColumnDefinition> colsOut) {
+    private static ParquetSchemaReader.ColumnDefinitionConsumer makeSchemaReaderConsumer(
+            final ArrayList<ColumnDefinition> colsOut) {
         return (final ParquetSchemaReader.ParquetMessageDefinition parquetColDef) -> {
             Class<?> baseType;
             if (parquetColDef.baseType == boolean.class) {
@@ -569,7 +582,7 @@ public class ParquetTools {
                     } else {
                         // TODO: ParquetInstruction.loadAsDbArray
                         final Class<?> componentType = baseType;
-                        // On Java 12, replace by:  dataType = componentType.arrayType();
+                        // On Java 12, replace by: dataType = componentType.arrayType();
                         final Class<?> dataType = java.lang.reflect.Array.newInstance(componentType, 0).getClass();
                         colDef = ColumnDefinition.fromGenericType(parquetColDef.name, dataType, componentType);
                     }
@@ -594,7 +607,8 @@ public class ParquetTools {
         try {
             return new ParquetFileReader(
                     parquetFile.getAbsolutePath(),
-                    new CachedChannelProvider(new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance()), 1 << 7),
+                    new CachedChannelProvider(
+                            new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance()), 1 << 7),
                     0);
         } catch (IOException e) {
             throw new TableDataException("Failed to create Parquet file reader: " + parquetFile, e);
@@ -603,7 +617,8 @@ public class ParquetTools {
 
     @VisibleForTesting
     public static Table readParquetSchemaAndTable(
-            @NotNull final File source, @NotNull final ParquetInstructions readInstructionsIn, MutableObject<ParquetInstructions> instructionsOut) {
+            @NotNull final File source, @NotNull final ParquetInstructions readInstructionsIn,
+            MutableObject<ParquetInstructions> instructionsOut) {
         final ParquetTableLocationKey tableLocationKey = new ParquetTableLocationKey(source, 0, null);
         final Pair<List<ColumnDefinition>, ParquetInstructions> schemaInfo = convertSchema(
                 tableLocationKey.getFileReader().getSchema(),
@@ -619,9 +634,9 @@ public class ParquetTools {
     /**
      * Convert schema information from a {@link ParquetMetadata} into {@link ColumnDefinition ColumnDefinitions}.
      *
-     * @param schema             Parquet schema.
-     *                           DO NOT RELY ON {@link ParquetMetadataConverter} FOR THIS! USE {@link ParquetFileReader}!
-     * @param keyValueMetadata   Parquet key-value metadata map
+     * @param schema Parquet schema. DO NOT RELY ON {@link ParquetMetadataConverter} FOR THIS! USE
+     *        {@link ParquetFileReader}!
+     * @param keyValueMetadata Parquet key-value metadata map
      * @param readInstructionsIn Input conversion {@link ParquetInstructions}
      * @return A {@link Pair} with {@link ColumnDefinition ColumnDefinitions} and adjusted {@link ParquetInstructions}
      */
@@ -637,8 +652,8 @@ public class ParquetTools {
                 keyValueMetadata,
                 readInstructionsIn,
                 colConsumer,
-                (final String colName, final Set<String> takenNames) ->
-                        NameValidator.legalizeColumnName(colName, s -> s.replace(" ", "_"), takenNames)));
+                (final String colName, final Set<String> takenNames) -> NameValidator.legalizeColumnName(colName,
+                        s -> s.replace(" ", "_"), takenNames)));
     }
 
     private static void writeParquetTableImpl(
@@ -664,8 +679,10 @@ public class ParquetTools {
 
     public static final ParquetInstructions LZ4 = ParquetInstructions.builder().setCompressionCodecName("LZ4").build();
     public static final ParquetInstructions LZO = ParquetInstructions.builder().setCompressionCodecName("LZO").build();
-    public static final ParquetInstructions GZIP = ParquetInstructions.builder().setCompressionCodecName("GZIP").build();
-    public static final ParquetInstructions ZSTD = ParquetInstructions.builder().setCompressionCodecName("ZSTD").build();
+    public static final ParquetInstructions GZIP =
+            ParquetInstructions.builder().setCompressionCodecName("GZIP").build();
+    public static final ParquetInstructions ZSTD =
+            ParquetInstructions.builder().setCompressionCodecName("ZSTD").build();
     public static final ParquetInstructions LEGACY = ParquetInstructions.builder().setIsLegacyParquet(true).build();
 
     public static void setDefaultCompressionCodecName(final String compressionCodecName) {

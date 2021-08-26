@@ -1,3 +1,7 @@
+# Note: to ensure that new rules don't mask already committed files, run:
+# git ls-files -i --exclude-standard
+#
+# TODO (deephaven-core#1114): Check valid .gitignore rules
 .idea/
 build/
 buildTest/
@@ -6,7 +10,6 @@ out/
 *.ipr
 *.iws
 *.iml
-data/
 tmp/
 target/
 IRIS_GRADLE_VERSION

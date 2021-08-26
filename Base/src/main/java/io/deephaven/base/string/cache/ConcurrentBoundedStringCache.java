@@ -17,7 +17,8 @@ import java.util.Random;
  *
  * This implementation is thread-safe, and lock-free except for the insertion of new cached Strings on a cache miss.
  */
-public class ConcurrentBoundedStringCache<STRING_LIKE_TYPE extends CharSequence> implements StringCache<STRING_LIKE_TYPE> {
+public class ConcurrentBoundedStringCache<STRING_LIKE_TYPE extends CharSequence>
+        implements StringCache<STRING_LIKE_TYPE> {
 
     /**
      * Adapter to make and compare cache members.
@@ -34,7 +35,8 @@ public class ConcurrentBoundedStringCache<STRING_LIKE_TYPE extends CharSequence>
      * @param capacity Minimum capacity of the storage backing this cache.
      * @param collisionFactor Number of possible storage slots a given element might be stored in.
      */
-    public ConcurrentBoundedStringCache(final StringCacheTypeAdapter<STRING_LIKE_TYPE> typeAdapter, final int capacity, final int collisionFactor) {
+    public ConcurrentBoundedStringCache(final StringCacheTypeAdapter<STRING_LIKE_TYPE> typeAdapter, final int capacity,
+            final int collisionFactor) {
         this.typeAdapter = Require.neqNull(typeAdapter, "typeAdapter");
         cache = new KeyedObjectCache<>(capacity, collisionFactor, new KeyImpl(), null, new Random());
     }

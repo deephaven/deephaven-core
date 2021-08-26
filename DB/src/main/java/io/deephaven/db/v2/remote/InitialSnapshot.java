@@ -11,7 +11,7 @@ import io.deephaven.db.v2.utils.Index;
 import java.io.Serializable;
 
 /**
- * A Raw table snapshot.  Users may use {@link InitialSnapshotTable#setupInitialSnapshotTable(Table, InitialSnapshot)} to
+ * A Raw table snapshot. Users may use {@link InitialSnapshotTable#setupInitialSnapshotTable(Table, InitialSnapshot)} to
  * convert this into a {@link io.deephaven.db.v2.QueryTable}
  */
 public class InitialSnapshot implements Serializable, Cloneable {

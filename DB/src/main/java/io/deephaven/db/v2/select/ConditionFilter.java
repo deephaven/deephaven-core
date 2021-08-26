@@ -44,7 +44,7 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     public static final int CHUNK_SIZE = 4096;
     private Class<?> filterKernelClass = null;
-    private List<Pair<String, Class>> usedInputs; //that is columns and special variables
+    private List<Pair<String, Class>> usedInputs; // that is columns and special variables
     private String classBody;
     private Filter filter = null;
 
@@ -68,7 +68,7 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     public static SelectFilter createConditionFilter(@NotNull String formula) {
-        return createConditionFilter(formula,FormulaParserConfiguration.parser);
+        return createConditionFilter(formula, FormulaParserConfiguration.parser);
     }
 
     String getClassBodyStr() {
@@ -92,7 +92,8 @@ public class ConditionFilter extends AbstractConditionFilter {
 
         CONTEXT getContext(int maxChunkSize);
 
-        LongChunk<OrderedKeyIndices> filter(CONTEXT context, LongChunk<OrderedKeyIndices> indices, Chunk... inputChunks);
+        LongChunk<OrderedKeyIndices> filter(CONTEXT context, LongChunk<OrderedKeyIndices> indices,
+                Chunk... inputChunks);
     }
 
 
@@ -137,7 +138,8 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         @Override
-        public Chunk getChunk(@NotNull io.deephaven.db.v2.sources.chunk.Context context, @NotNull OrderedKeys orderedKeys) {
+        public Chunk getChunk(@NotNull io.deephaven.db.v2.sources.chunk.Context context,
+                @NotNull OrderedKeys orderedKeys) {
             final WritableLongChunk<OrderedKeyIndices> wlc = ((Context) context).chunk;
             final OrderedKeys valuesForChunk = invertedIterator.getNextOrderedKeysWithLength(orderedKeys.size());
             valuesForChunk.fillKeyIndicesChunk(wlc);
@@ -172,7 +174,8 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         @Override
-        public Chunk getChunk(@NotNull io.deephaven.db.v2.sources.chunk.Context context, @NotNull OrderedKeys orderedKeys) {
+        public Chunk getChunk(@NotNull io.deephaven.db.v2.sources.chunk.Context context,
+                @NotNull OrderedKeys orderedKeys) {
             final LongChunk lc = super.getChunk(context, orderedKeys).asLongChunk();
             final WritableIntChunk<Attributes.Any> wic = ((IntegerContext) context).intChunk;
             wic.setSize(lc.size());
@@ -217,7 +220,8 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         @Override
-        public Chunk getChunk(@NotNull io.deephaven.db.v2.sources.chunk.Context context, @NotNull OrderedKeys orderedKeys) {
+        public Chunk getChunk(@NotNull io.deephaven.db.v2.sources.chunk.Context context,
+                @NotNull OrderedKeys orderedKeys) {
             final Context ctx = (Context) context;
             final WritableLongChunk wlc = ctx.chunk.asWritableLongChunk();
             for (int i = 0; i < orderedKeys.size(); i++) {
@@ -234,7 +238,8 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         @Override
-        public Chunk getChunk(@NotNull io.deephaven.db.v2.sources.chunk.Context context, @NotNull OrderedKeys orderedKeys) {
+        public Chunk getChunk(@NotNull io.deephaven.db.v2.sources.chunk.Context context,
+                @NotNull OrderedKeys orderedKeys) {
             final Context ctx = (Context) context;
             final WritableIntChunk wic = ctx.chunk.asWritableIntChunk();
             for (int ii = 0; ii < orderedKeys.size(); ii++) {
@@ -245,8 +250,7 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     static class OrderedKeysChunkGetter implements ChunkGetterWithContext {
-        private static final Context nullContext = new Context() {
-        };
+        private static final Context nullContext = new Context() {};
 
         @Override
         public Chunk getChunk(@NotNull Context context, @NotNull OrderedKeys orderedKeys) {
@@ -280,12 +284,14 @@ public class ConditionFilter extends AbstractConditionFilter {
                 final ChunkGetterWithContext chunkGetterWithContext;
                 switch (columnName) {
                     case "i":
-                        chunkGetterWithContext = (selection == fullSet ? new ColumnICount() : new ColumnILookup(fullSet, selection));
+                        chunkGetterWithContext =
+                                (selection == fullSet ? new ColumnICount() : new ColumnILookup(fullSet, selection));
                         chunkGetters[i] = chunkGetterWithContext;
                         sourceContexts[i] = chunkGetterWithContext.getContext(chunkSize);
                         break;
                     case "ii":
-                        chunkGetterWithContext = (selection == fullSet ? new ColumnIICount() : new IndexLookup(fullSet, selection));
+                        chunkGetterWithContext =
+                                (selection == fullSet ? new ColumnIICount() : new IndexLookup(fullSet, selection));
                         chunkGetters[i] = chunkGetterWithContext;
                         sourceContexts[i] = chunkGetterWithContext.getContext(chunkSize);
                         break;
@@ -297,8 +303,10 @@ public class ConditionFilter extends AbstractConditionFilter {
                     default: {
                         final ColumnSource columnSource = table.getColumnSource(columnName);
                         chunkGetters[i] = usePrev
-                                ? (context, orderedKeys) -> columnSource.getPrevChunk((ColumnSource.GetContext) context, orderedKeys)
-                                : (context, orderedKeys) -> columnSource.getChunk((ColumnSource.GetContext) context, orderedKeys);
+                                ? (context, orderedKeys) -> columnSource.getPrevChunk((ColumnSource.GetContext) context,
+                                        orderedKeys)
+                                : (context, orderedKeys) -> columnSource.getChunk((ColumnSource.GetContext) context,
+                                        orderedKeys);
                         sourceContexts[i] = columnSource.makeGetContext(chunkSize, sharedContext);
                     }
                 }
@@ -307,12 +315,14 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         @Override
-        public Index filter(final Index selection, final Index fullSet, final Table table, final boolean usePrev, String formula, final Param... params) {
+        public Index filter(final Index selection, final Index fullSet, final Table table, final boolean usePrev,
+                String formula, final Param... params) {
             try (final FilterKernel.Context context = filterKernel.getContext(chunkSize);
-                 final OrderedKeys.Iterator okIterator = selection.getOrderedKeysIterator()) {
+                    final OrderedKeys.Iterator okIterator = selection.getOrderedKeysIterator()) {
                 final ChunkGetter[] chunkGetters = new ChunkGetter[columnNames.length];
                 final Context sourceContexts[] = new Context[columnNames.length];
-                final SharedContext sharedContext = populateChunkGettersAndContexts(selection, fullSet, table, usePrev, chunkGetters, sourceContexts);
+                final SharedContext sharedContext = populateChunkGettersAndContexts(selection, fullSet, table, usePrev,
+                        chunkGetters, sourceContexts);
                 final SequentialBuilder resultBuilder = Index.FACTORY.getSequentialBuilder();
                 final Chunk inputChunks[] = new Chunk[columnNames.length];
                 while (okIterator.hasMore()) {
@@ -325,10 +335,12 @@ public class ConditionFilter extends AbstractConditionFilter {
                         sharedContext.reset();
                     }
                     try {
-                        final LongChunk<OrderedKeyIndices> matchedIndices = filterKernel.filter(context, currentChunkOrderedKeys.asKeyIndicesChunk(), inputChunks);
+                        final LongChunk<OrderedKeyIndices> matchedIndices =
+                                filterKernel.filter(context, currentChunkOrderedKeys.asKeyIndicesChunk(), inputChunks);
                         resultBuilder.appendOrderedKeyIndicesChunk(matchedIndices);
                     } catch (Exception e) {
-                        throw new FormulaEvaluationException(e.getClass().getName() + " encountered in filter={ " + StringEscapeUtils.escapeJava(truncateLongFormula(formula)) + " }", e);
+                        throw new FormulaEvaluationException(e.getClass().getName() + " encountered in filter={ "
+                                + StringEscapeUtils.escapeJava(truncateLongFormula(formula)) + " }", e);
                     }
                 }
                 SafeCloseable.closeArray(sourceContexts);
@@ -347,9 +359,11 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     @Override
-    protected void generateFilterCode(TableDefinition tableDefinition, DBTimeUtils.Result timeConversionResult, DBLanguageParser.Result result) throws MalformedURLException, ClassNotFoundException {
+    protected void generateFilterCode(TableDefinition tableDefinition, DBTimeUtils.Result timeConversionResult,
+            DBLanguageParser.Result result) throws MalformedURLException, ClassNotFoundException {
         final StringBuilder classBody = getClassBody(tableDefinition, timeConversionResult, result);
-        if (classBody == null) return;
+        if (classBody == null)
+            return;
         final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance().getNugget("Compile:" + formula);
         try {
             final List<Class<?>> paramClasses = new ArrayList<>();
@@ -372,14 +386,16 @@ public class ConditionFilter extends AbstractConditionFilter {
                 addParamClass.accept(param.getDeclaredType());
             }
 
-            filterKernelClass = CompilerTools.compile("GeneratedFilterKernel", this.classBody = classBody.toString(), CompilerTools.FORMULA_PREFIX, Param.expandParameterClasses(paramClasses));
+            filterKernelClass = CompilerTools.compile("GeneratedFilterKernel", this.classBody = classBody.toString(),
+                    CompilerTools.FORMULA_PREFIX, Param.expandParameterClasses(paramClasses));
         } finally {
             nugget.done();
         }
     }
 
     @Nullable
-    private StringBuilder getClassBody(TableDefinition tableDefinition, DBTimeUtils.Result timeConversionResult, DBLanguageParser.Result result) {
+    private StringBuilder getClassBody(TableDefinition tableDefinition, DBTimeUtils.Result timeConversionResult,
+            DBLanguageParser.Result result) {
         if (filterKernelClass != null) {
             return null;
         }
@@ -402,19 +418,17 @@ public class ConditionFilter extends AbstractConditionFilter {
         final StringBuilder classBody = new StringBuilder();
         classBody.append(QueryLibrary.getImportStatement().build()).append(
                 "\n\n" +
-                        "public class $CLASSNAME$ implements ").append(FilterKernel.class.getCanonicalName()).append("<FilterKernel.Context>{\n");
-        classBody.append("\n").
-                append(timeConversionResult.getInstanceVariablesString()).
-                append("\n");
+                        "public class $CLASSNAME$ implements ")
+                .append(FilterKernel.class.getCanonicalName()).append("<FilterKernel.Context>{\n");
+        classBody.append("\n").append(timeConversionResult.getInstanceVariablesString()).append("\n");
         final Indenter indenter = new Indenter();
         for (Param param : params) {
             /*
-            adding context param fields like:
-                "            final int p1;\n" +
-                "            final float p2;\n" +
-                "            final String p3;\n" +
+             * adding context param fields like: "            final int p1;\n" + "            final float p2;\n" +
+             * "            final String p3;\n" +
              */
-            classBody.append(indenter).append("private final ").append(param.getPrimitiveTypeNameIfAvailable()).append(" ").append(param.getName()).append(";\n");
+            classBody.append(indenter).append("private final ").append(param.getPrimitiveTypeNameIfAvailable())
+                    .append(" ").append(param.getName()).append(";\n");
         }
         if (!usedColumnArrays.isEmpty()) {
             classBody.append(indenter).append("// Array Column Variables\n");
@@ -429,23 +443,26 @@ public class ConditionFilter extends AbstractConditionFilter {
                 /*
                  * Adding array column fields.
                  */
-                classBody.append(indenter).append("private final ").append(columnType.getCanonicalName()).append(TypeUtils.isConvertibleToPrimitive(dataType) ? "" : "<" + dataType.getCanonicalName() + ">").append(" ").append(column.getName()).append(COLUMN_SUFFIX).append(";\n");
+                classBody.append(indenter).append("private final ").append(columnType.getCanonicalName())
+                        .append(TypeUtils.isConvertibleToPrimitive(dataType) ? ""
+                                : "<" + dataType.getCanonicalName() + ">")
+                        .append(" ").append(column.getName()).append(COLUMN_SUFFIX).append(";\n");
             }
             classBody.append("\n");
         }
 
-        classBody.append("\n").append(indenter).append("public $CLASSNAME$(Table table, Index fullSet, Param... params) {\n");
+        classBody.append("\n").append(indenter)
+                .append("public $CLASSNAME$(Table table, Index fullSet, Param... params) {\n");
         indenter.increaseLevel();
         for (int i = 0; i < params.length; i++) {
             final Param param = params[i];
             /*
-            Initializing context parameters
-                this.p1 = (Integer) params[0].getValue();
-                this.p2 = (Float) params[1].getValue();
-                this.p3 = (String) params[2].getValue();
+             * Initializing context parameters this.p1 = (Integer) params[0].getValue(); this.p2 = (Float)
+             * params[1].getValue(); this.p3 = (String) params[2].getValue();
              */
             final String name = param.getName();
-            classBody.append(indenter).append("this.").append(name).append(" = (").append(param.getDeclaredTypeName()).append(") params[").append(i).append("].getValue();\n");
+            classBody.append(indenter).append("this.").append(name).append(" = (").append(param.getDeclaredTypeName())
+                    .append(") params[").append(i).append("].getValue();\n");
         }
 
         if (!usedColumnArrays.isEmpty()) {
@@ -461,13 +478,14 @@ public class ConditionFilter extends AbstractConditionFilter {
 
                 final String arrayType = columnType.getCanonicalName().replace(
                         "io.deephaven.db.tables.dbarrays",
-                        "io.deephaven.db.v2.dbarrays"
-                ) + "ColumnWrapper";
+                        "io.deephaven.db.v2.dbarrays") + "ColumnWrapper";
 
                 /*
                  * Adding array column fields.
                  */
-                classBody.append(indenter).append(column.getName()).append(COLUMN_SUFFIX).append(" = new ").append(arrayType).append("(table.getColumnSource(\"").append(columnName).append("\"), fullSet);\n");
+                classBody.append(indenter).append(column.getName()).append(COLUMN_SUFFIX).append(" = new ")
+                        .append(arrayType).append("(table.getColumnSource(\"").append(columnName)
+                        .append("\"), fullSet);\n");
             }
         }
 
@@ -491,7 +509,8 @@ public class ConditionFilter extends AbstractConditionFilter {
                 // TODO: Reinterpret Boolean and DBDateTime to byte and long
                 chunkType = "ObjectChunk";
             }
-            classBody.append(indenter).append("final ").append(chunkType).append(" __columnChunk").append(i).append(" = inputChunks[").append(i).append("].as").append(chunkType).append("();\n");
+            classBody.append(indenter).append("final ").append(chunkType).append(" __columnChunk").append(i)
+                    .append(" = inputChunks[").append(i).append("].as").append(chunkType).append("();\n");
         }
         indenter.indent(classBody, "final int size = indices.size();\n" +
                 "context.resultChunk.setSize(0);\n" +
@@ -501,25 +520,29 @@ public class ConditionFilter extends AbstractConditionFilter {
             final Pair<String, Class> usedInput = usedInputs.get(i);
             final Class columnType = usedInput.second;
             final String canonicalName = columnType.getCanonicalName();
-            classBody.append(indenter).append("final ").append(canonicalName).append(" ").append(usedInput.first).append(" =  (").append(canonicalName).append(")__columnChunk").append(i).append(".get(__my_i__);\n");
+            classBody.append(indenter).append("final ").append(canonicalName).append(" ").append(usedInput.first)
+                    .append(" =  (").append(canonicalName).append(")__columnChunk").append(i)
+                    .append(".get(__my_i__);\n");
         }
         classBody.append(
                 "            if (").append(result.getConvertedExpression()).append(") {\n" +
-                "                context.resultChunk.add(indices.get(__my_i__));\n" +
-                "            }\n" +
-                "        }\n" +
-                "        return context.resultChunk;\n" +
-                "    }\n" +
-                "}");
+                        "                context.resultChunk.add(indices.get(__my_i__));\n" +
+                        "            }\n" +
+                        "        }\n" +
+                        "        return context.resultChunk;\n" +
+                        "    }\n" +
+                        "}");
         return classBody;
     }
 
     @Override
-    protected Filter getFilter(Table table, Index fullSet) throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+    protected Filter getFilter(Table table, Index fullSet)
+            throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         if (filter != null) {
             return filter;
         }
-        final FilterKernel filterKernel = (FilterKernel) filterKernelClass.getConstructor(Table.class, Index.class, Param[].class).newInstance(table, fullSet, (Object) params);
+        final FilterKernel filterKernel = (FilterKernel) filterKernelClass
+                .getConstructor(Table.class, Index.class, Param[].class).newInstance(table, fullSet, (Object) params);
         final String[] columnNames = usedInputs.stream().map(p -> p.first).toArray(String[]::new);
         return new ChunkFilter(filterKernel, columnNames, CHUNK_SIZE);
     }

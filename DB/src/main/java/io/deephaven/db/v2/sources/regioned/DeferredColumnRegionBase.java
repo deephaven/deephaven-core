@@ -62,12 +62,14 @@ public abstract class DeferredColumnRegionBase<ATTR extends Attributes.Any, REGI
     }
 
     @Override
-    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, @NotNull OrderedKeys orderedKeys) {
+    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination,
+            @NotNull OrderedKeys orderedKeys) {
         getResultRegion().fillChunk(context, destination, orderedKeys);
     }
 
     @Override
-    public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, @NotNull OrderedKeys.Iterator orderedKeysIterator) {
+    public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination,
+            @NotNull OrderedKeys.Iterator orderedKeysIterator) {
         getResultRegion().fillChunkAppend(context, destination, orderedKeysIterator);
     }
 

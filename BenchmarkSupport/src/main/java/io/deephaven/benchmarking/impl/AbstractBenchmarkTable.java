@@ -11,8 +11,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
 /**
- * The base implementation of {@link BenchmarkTable}.  This includes all of the common things that the other specializations
- * require.
+ * The base implementation of {@link BenchmarkTable}. This includes all of the common things that the other
+ * specializations require.
  */
 public abstract class AbstractBenchmarkTable implements BenchmarkTable {
     private final String name;
@@ -37,8 +37,8 @@ public abstract class AbstractBenchmarkTable implements BenchmarkTable {
         this.generatorMap = generators.isEmpty() ? Collections.emptyMap() : new LinkedHashMap<>();
 
         // Build a mapping, as well as a tableDef to use.
-        for(final ColumnGenerator gen : generators) {
-            final String varName = "_gen_"+ getName() +"_"+gen.getName();
+        for (final ColumnGenerator gen : generators) {
+            final String varName = "_gen_" + getName() + "_" + gen.getName();
             generatorMap.put(varName, gen);
             QueryScope.addParam(varName, gen);
         }

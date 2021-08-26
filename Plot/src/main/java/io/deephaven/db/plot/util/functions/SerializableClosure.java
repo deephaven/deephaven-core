@@ -63,7 +63,8 @@ public class SerializableClosure<T> implements Serializable {
 
         final MapBackedClassLoader cl = new MapBackedClassLoader();
         cl.addClassData(closureClassName, closureCode);
-        final ObjectInputStream objectStream = new CustomClassLoaderObjectInputStream<>(new ByteArrayInputStream(closureData), cl);
+        final ObjectInputStream objectStream =
+                new CustomClassLoaderObjectInputStream<>(new ByteArrayInputStream(closureData), cl);
         closure = (Closure) objectStream.readObject();
     }
 
@@ -82,9 +83,11 @@ public class SerializableClosure<T> implements Serializable {
                 try {
                     return Class.forName(desc.getName(), false, classLoader);
                 } catch (ClassNotFoundException cnfe) {
-                    /* The default implementation in ObjectInputStream handles primitive types with a map from name to class.
-                     * Rather than duplicate the functionality, we are delegating to the super method for all failures that
-                     * may be of this kind, as well as any case where the passed in ClassLoader fails to find the class.
+                    /*
+                     * The default implementation in ObjectInputStream handles primitive types with a map from name to
+                     * class. Rather than duplicate the functionality, we are delegating to the super method for all
+                     * failures that may be of this kind, as well as any case where the passed in ClassLoader fails to
+                     * find the class.
                      */
                 }
             }

@@ -15,8 +15,13 @@ public abstract class DoubleType extends PrimitiveTypeBase<Double> {
     }
 
     @Override
-    public final Class<Double> primitiveClass() {
+    public final Class<Double> clazz() {
         return double.class;
+    }
+
+    @Override
+    public final NativeArrayType<double[], Double> arrayType() {
+        return NativeArrayType.of(double[].class, this);
     }
 
     @Override

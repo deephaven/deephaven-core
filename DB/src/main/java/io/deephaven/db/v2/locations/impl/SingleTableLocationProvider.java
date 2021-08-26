@@ -49,8 +49,7 @@ public final class SingleTableLocationProvider implements TableLocationProvider 
     }
 
     @Override
-    public void refresh() {
-    }
+    public void refresh() {}
 
     @Override
     public TableLocationProvider ensureInitialized() {

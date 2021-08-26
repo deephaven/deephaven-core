@@ -13,25 +13,33 @@ import java.util.function.LongConsumer;
 
 public abstract class SingleRange implements TreeIndexImpl {
     public abstract long rangeStart();
+
     public abstract long rangeEnd();
+
     public abstract long getCardinality();
+
     public abstract SingleRange copy();
 
     protected static long unsignedIntToLong(final int unsignedInt) {
         return maxUnsignedInt() & unsignedInt;
     }
+
     protected static long maxUnsignedInt() {
         return 0xFFFF_FFFFL;
     }
+
     protected static int lowBitsAsUnsignedInt(final long v) {
         return (int) v;
     }
+
     protected static long maxUnsignedShort() {
         return 0xFFFFL;
     }
+
     protected static long unsignedShortToLong(final short unsignedShort) {
         return maxUnsignedShort() & unsignedShort;
     }
+
     protected static short lowBitsAsUnsignedShort(final long v) {
         return (short) v;
     }
@@ -102,8 +110,7 @@ public abstract class SingleRange implements TreeIndexImpl {
     }
 
     @Override
-    public final void ixRelease() {
-    }
+    public final void ixRelease() {}
 
     @Override
     public final int ixRefCount() {
@@ -151,12 +158,14 @@ public abstract class SingleRange implements TreeIndexImpl {
     }
 
     @Override
-    public final TreeIndexImpl ixInsertSecondHalf(final LongChunk<Attributes.OrderedKeyIndices> keys, final int offset, final int length) {
+    public final TreeIndexImpl ixInsertSecondHalf(final LongChunk<Attributes.OrderedKeyIndices> keys, final int offset,
+            final int length) {
         return TreeIndexImpl.fromChunk(keys, offset, length, false).ixInsertRange(rangeStart(), rangeEnd());
     }
 
     @Override
-    public final TreeIndexImpl ixRemoveSecondHalf(final LongChunk<Attributes.OrderedKeyIndices> keys, final int offset, final int length) {
+    public final TreeIndexImpl ixRemoveSecondHalf(final LongChunk<Attributes.OrderedKeyIndices> keys, final int offset,
+            final int length) {
         return ixRemove(TreeIndexImpl.fromChunk(keys, offset, length, true));
     }
 
@@ -190,7 +199,7 @@ public abstract class SingleRange implements TreeIndexImpl {
 
     @Override
     public final TreeIndexImpl ixSubindexByPosOnNew(final long startPos, final long endPosExclusive) {
-        final long endPos = endPosExclusive - 1;  // make inclusive.
+        final long endPos = endPosExclusive - 1; // make inclusive.
         if (endPos < startPos || endPos < 0) {
             return TreeIndexImpl.EMPTY;
         }
@@ -229,7 +238,8 @@ public abstract class SingleRange implements TreeIndexImpl {
     }
 
     @Override
-    public final void ixGetKeysForPositions(final PrimitiveIterator.OfLong inputPositions, final LongConsumer outputKeys) {
+    public final void ixGetKeysForPositions(final PrimitiveIterator.OfLong inputPositions,
+            final LongConsumer outputKeys) {
         final long sz = ixCardinality();
         while (inputPositions.hasNext()) {
             final long pos = inputPositions.nextLong();
@@ -282,6 +292,7 @@ public abstract class SingleRange implements TreeIndexImpl {
 
     private static final class SearchIterator extends Iterator implements Index.SearchIterator {
         private final long rangeStart;
+
         public SearchIterator(final SingleRange ix) {
             super(ix);
             rangeStart = ix.rangeStart();
@@ -331,25 +342,41 @@ public abstract class SingleRange implements TreeIndexImpl {
         private final long start;
         private final long end;
         private long curr;
+
         public ReverseIter(final long rangeStart, final long rangeEnd) {
             start = rangeStart;
             end = rangeEnd;
             curr = rangeEnd + 1;
         }
 
-        @Override public void close() { }
-        @Override public boolean hasNext() { return start < curr; }
-        @Override public long currentValue() { return curr; }
-        @Override public long nextLong() { return --curr; }
+        @Override
+        public void close() {}
+
+        @Override
+        public boolean hasNext() {
+            return start < curr;
+        }
+
+        @Override
+        public long currentValue() {
+            return curr;
+        }
+
+        @Override
+        public long nextLong() {
+            return --curr;
+        }
+
         @Override
         public boolean advance(long v) {
             if (v < start) {
                 curr = start;
                 return false;
             }
-            curr = Math.min(v, Math.min(curr, end));  // it might not have been started yet.
+            curr = Math.min(v, Math.min(curr, end)); // it might not have been started yet.
             return true;
         }
+
         @Override
         public long binarySearchValue(Index.TargetComparator targetComparator, int direction) {
             throw new UnsupportedOperationException("Reverse iterator does not support binary search.");
@@ -365,14 +392,23 @@ public abstract class SingleRange implements TreeIndexImpl {
         private long start;
         private final long end;
         private boolean hasNext;
+
         public RangeIter(final long rangeStart, final long rangeEnd) {
             start = rangeStart;
             end = rangeEnd;
             hasNext = true;
         }
-        @Override public void close() { }
-        @Override public boolean hasNext() { return hasNext; }
-        @Override public boolean advance(long v) {
+
+        @Override
+        public void close() {}
+
+        @Override
+        public boolean hasNext() {
+            return hasNext;
+        }
+
+        @Override
+        public boolean advance(long v) {
             hasNext = false;
             if (v <= start) {
                 return true;
@@ -383,12 +419,24 @@ public abstract class SingleRange implements TreeIndexImpl {
             start = v;
             return true;
         }
-        @Override public void postpone(final long v) {
+
+        @Override
+        public void postpone(final long v) {
             start = v;
         }
-        @Override public long currentRangeStart() { return start; }
-        @Override public long currentRangeEnd() { return end; }
-        @Override public long next() {
+
+        @Override
+        public long currentRangeStart() {
+            return start;
+        }
+
+        @Override
+        public long currentRangeEnd() {
+            return end;
+        }
+
+        @Override
+        public long next() {
             hasNext = false;
             return start;
         }
@@ -585,7 +633,7 @@ public abstract class SingleRange implements TreeIndexImpl {
         final RspBitmap rspSet;
         if (set instanceof SortedRanges) {
             final SortedRanges sr = (SortedRanges) set;
-            final SortedRanges ans =  sr.deepCopy().addRange(rangeStart(), rangeEnd());
+            final SortedRanges ans = sr.deepCopy().addRange(rangeStart(), rangeEnd());
             if (ans != null) {
                 return ans;
             }
@@ -628,7 +676,7 @@ public abstract class SingleRange implements TreeIndexImpl {
             return this;
         }
         final long ansFirst = other.ixFirstKey() + shiftAmount;
-        final long ansLast =  other.ixLastKey() + shiftAmount;
+        final long ansLast = other.ixLastKey() + shiftAmount;
         if (rangeStart() <= ansFirst && ansLast <= rangeEnd()) {
             return this;
         }

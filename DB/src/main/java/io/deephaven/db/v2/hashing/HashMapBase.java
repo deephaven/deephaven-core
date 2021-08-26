@@ -30,7 +30,7 @@ public abstract class HashMapBase implements TNullableLongLongMap {
     // states:
     // 1. SPECIAL_KEY_FOR_EMPTY_SLOT is used to represent a slot that has never been used.
     // 2. SPECIAL_KEY_FOR_DELETED_SLOT is used to represent a slot that was once in use, but the key that was formerly
-    //    present there has been deleted.
+    // present there has been deleted.
     // 3. NULL_LONG is used to represent the null key.
     //
     // These values must all be distinct.
@@ -52,20 +52,20 @@ public abstract class HashMapBase implements TNullableLongLongMap {
     /**
      * This is the fraction of the maximum possible size at which we just give up and throw an exception. It is kept
      * slightly smaller than the NEARLY_FULL_LOAD_FACTOR (otherwise, we might end up in a situation where every put
-     * caused a rehash). Additionally, for some reason K2V2 is much less tolerant of getting full than the other two
-     * (it gets very slow as it approaches the max). For this reason, until we figure it out, we maintain individual
-     * size factors for each KnVn.
+     * caused a rehash). Additionally, for some reason K2V2 is much less tolerant of getting full than the other two (it
+     * gets very slow as it approaches the max). For this reason, until we figure it out, we maintain individual size
+     * factors for each KnVn.
      */
     private static final float SIZE_LIMIT_FACTOR1 = 0.85f;
     private static final float SIZE_LIMIT_FACTOR2 = 0.75f;
     private static final float SIZE_LIMIT_FACTOR4 = 0.85f;
     /**
-     * This is the size at which we just give up and throw an exception rather than do a new put.
-     * It is number of entries (aka number of longs / 2) * SIZE_LIMIT_FACTORn.
+     * This is the size at which we just give up and throw an exception rather than do a new put. It is number of
+     * entries (aka number of longs / 2) * SIZE_LIMIT_FACTORn.
      */
-    static final int SIZE_LIMIT1 = (int)(Integer.MAX_VALUE / 2 * SIZE_LIMIT_FACTOR1);
-    static final int SIZE_LIMIT2 = (int)(Integer.MAX_VALUE / 2 * SIZE_LIMIT_FACTOR2);
-    static final int SIZE_LIMIT4 = (int)(Integer.MAX_VALUE / 2 * SIZE_LIMIT_FACTOR4);
+    static final int SIZE_LIMIT1 = (int) (Integer.MAX_VALUE / 2 * SIZE_LIMIT_FACTOR1);
+    static final int SIZE_LIMIT2 = (int) (Integer.MAX_VALUE / 2 * SIZE_LIMIT_FACTOR2);
+    static final int SIZE_LIMIT4 = (int) (Integer.MAX_VALUE / 2 * SIZE_LIMIT_FACTOR4);
 
     static {
         // All the "SPECIAL_" values need to be unique. This is one way to check this easily.
@@ -119,11 +119,11 @@ public abstract class HashMapBase implements TNullableLongLongMap {
         final int proposedBucketCapacity = PrimeFinder.nextPrime(desiredNumBuckets);
         final int maxBucketCapacity = getMaxBucketCapacity(entriesPerBucket);
         final int newBucketCapacity = Math.min(proposedBucketCapacity, maxBucketCapacity);
-        Assert.leq((long)newBucketCapacity * entriesPerBucket * 2, "(long)newBucketCapacity * entriesPerBucket * 2",
+        Assert.leq((long) newBucketCapacity * entriesPerBucket * 2, "(long)newBucketCapacity * entriesPerBucket * 2",
                 Integer.MAX_VALUE, "Integer.MAX_VALUE");
         final int entryCapacity = newBucketCapacity * entriesPerBucket;
         final int longCapacity = entryCapacity * 2;
-        rehashThreshold = (int)(entryCapacity * loadFactor);
+        rehashThreshold = (int) (entryCapacity * loadFactor);
         final long[] keysAndValues = new long[longCapacity];
         setKeysAndValues(keysAndValues);
         return keysAndValues;
@@ -138,14 +138,15 @@ public abstract class HashMapBase implements TNullableLongLongMap {
             final int proposedBucketCapacity = PrimeFinder.nextPrime(oldBucketCapacity * 2);
             final int maxBucketCapacity = getMaxBucketCapacity(entriesPerBucket);
             final int newBucketCapacity = Math.min(proposedBucketCapacity, maxBucketCapacity);
-            Assert.leq((long)newBucketCapacity * entriesPerBucket * 2, "(long)newBucketCapacity * entriesPerBucket * 2",
+            Assert.leq((long) newBucketCapacity * entriesPerBucket * 2,
+                    "(long)newBucketCapacity * entriesPerBucket * 2",
                     Integer.MAX_VALUE, "Integer.MAX_VALUE");
             final int newEntryCapacity = newBucketCapacity * entriesPerBucket;
             newNumLongs = newEntryCapacity * 2;
 
             // If we reach the max bucket capacity, then force the rehash threshold to a high number like 90%.
             final float loadFactorToUse = newBucketCapacity < maxBucketCapacity ? loadFactor : NEARLY_FULL_LOAD_FACTOR;
-            rehashThreshold = (int)(newEntryCapacity * loadFactorToUse);
+            rehashThreshold = (int) (newEntryCapacity * loadFactorToUse);
         } else {
             newNumLongs = oldNumLongs;
         }
@@ -169,7 +170,8 @@ public abstract class HashMapBase implements TNullableLongLongMap {
         // If the size reaches the max allowed value, then throw an exception.
         if (size >= sizeLimit) {
             throw new UnsupportedOperationException(
-                    String.format("The Hashtable has exceeded its maximum capacity of %d elements. To get more space you can use the other hashtable implementation by setting the property %s to false",
+                    String.format(
+                            "The Hashtable has exceeded its maximum capacity of %d elements. To get more space you can use the other hashtable implementation by setting the property %s to false",
                             sizeLimit, RedirectionIndex.USE_LOCK_FREE_IMPL_PROPERTY_NAME));
         }
     }
@@ -218,7 +220,8 @@ public abstract class HashMapBase implements TNullableLongLongMap {
 
     /**
      * @param kv Our keys and values array
-     * @param space The array to populate (if {@code array} is not null and {@code array.length} >= {@link HashMapBase#size()}, otherwise an array of length {@link HashMapBase#size()} will be allocated.
+     * @param space The array to populate (if {@code array} is not null and {@code array.length} >=
+     *        {@link HashMapBase#size()}, otherwise an array of length {@link HashMapBase#size()} will be allocated.
      * @param wantValues false to return keys; true to return values
      * @return The passed-in or newly-allocated array of (keys or values).
      */
@@ -282,11 +285,10 @@ public abstract class HashMapBase implements TNullableLongLongMap {
     }
 
     /*
-     * The strategy used in this class is to keep track of:
-     * - The current position (which could be any valid position as well as one before the start)
-     * - The next position (which could be any valid position as well as one after the end).
-     * Java iterator semantics makes this annoying. Because it's Java!™
-     * We also have to make sure we un-redirect the REDIRECTED_KEY_FOR_EMPTY_SLOT back to 0.
+     * The strategy used in this class is to keep track of: - The current position (which could be any valid position as
+     * well as one before the start) - The next position (which could be any valid position as well as one after the
+     * end). Java iterator semantics makes this annoying. Because it's Java!™ We also have to make sure we un-redirect
+     * the REDIRECTED_KEY_FOR_EMPTY_SLOT back to 0.
      */
     private static class Iterator implements TLongLongIterator {
         // We keep a local reference to this array so we can avoid crashing if there's an unprotected concurrent write
@@ -295,8 +297,8 @@ public abstract class HashMapBase implements TNullableLongLongMap {
         private long currentKey;
         private long currentValue;
         /**
-         * nextIndex points to the next occupied slot (or the first occupied slot if we have just been constructed),
-         * or keysAndValues.length if there is no next occupied slot.
+         * nextIndex points to the next occupied slot (or the first occupied slot if we have just been constructed), or
+         * keysAndValues.length if there is no next occupied slot.
          */
         private int nextIndex;
 
@@ -324,6 +326,7 @@ public abstract class HashMapBase implements TNullableLongLongMap {
 
         /**
          * Find next occupied slot starting at {@code beginSlot}.
+         * 
          * @param beginSlot The inclusive position from where to start looking.
          * @return The slot containing the next occupied key, or keysAndValues.length if none.
          */

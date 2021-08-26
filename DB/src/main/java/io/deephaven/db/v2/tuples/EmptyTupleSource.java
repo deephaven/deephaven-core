@@ -12,7 +12,8 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * <p>{@link TupleSource} that produces only the {@link EmptyTuple}.
+ * <p>
+ * {@link TupleSource} that produces only the {@link EmptyTuple}.
  */
 enum EmptyTupleSource implements TupleSource<EmptyTuple>, DefaultChunkSource.WithPrev<Attributes.Values> {
 
@@ -39,7 +40,8 @@ enum EmptyTupleSource implements TupleSource<EmptyTuple>, DefaultChunkSource.Wit
     }
 
     @Override
-    public void exportElement(@NotNull final EmptyTuple tuple, final int elementIndex, @NotNull final WritableSource writableSource, final long destinationIndexKey) {
+    public void exportElement(@NotNull final EmptyTuple tuple, final int elementIndex,
+            @NotNull final WritableSource writableSource, final long destinationIndexKey) {
         throw new UnsupportedOperationException("EmptyTuple does not contain any elements to export");
     }
 
@@ -59,13 +61,15 @@ enum EmptyTupleSource implements TupleSource<EmptyTuple>, DefaultChunkSource.Wit
     }
 
     @Override
-    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
+    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination,
+            @NotNull OrderedKeys orderedKeys) {
         destination.asWritableObjectChunk().fillWithValue(0, orderedKeys.intSize(), EmptyTuple.INSTANCE);
         destination.setSize(orderedKeys.intSize());
     }
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
+    public void fillPrevChunk(@NotNull FillContext context,
+            @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
         fillChunk(context, destination, orderedKeys);
     }
 }

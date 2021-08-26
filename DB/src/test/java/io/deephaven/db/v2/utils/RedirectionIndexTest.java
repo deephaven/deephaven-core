@@ -12,18 +12,18 @@ import io.deephaven.internal.log.LoggerFactory;
 public class RedirectionIndexTest extends LiveTableTestCase {
     private final Logger log = LoggerFactory.getLogger(RedirectionIndexTest.class);
 
-    public void testBasic(){
+    public void testBasic() {
         final RedirectionIndex redirectionIndex = RedirectionIndex.FACTORY.createRedirectionIndex(8);
-        for (int i = 0;i < 3;i++) {
-            redirectionIndex.put(i,i*2);
+        for (int i = 0; i < 3; i++) {
+            redirectionIndex.put(i, i * 2);
         }
         final RedirectionIndex redirectionIndex1 = RedirectionIndex.FACTORY.createRedirectionIndex(8);
-        for (int i = 0;i < 3;i++) {
-            redirectionIndex1.put(i*2,i*4);
+        for (int i = 0; i < 3; i++) {
+            redirectionIndex1.put(i * 2, i * 4);
         }
-        for (int i = 0;i<3;i++) {
-            assertEquals(redirectionIndex.get(i),i*2);
-            assertEquals(redirectionIndex1.get(i*2),i*4);
+        for (int i = 0; i < 3; i++) {
+            assertEquals(redirectionIndex.get(i), i * 2);
+            assertEquals(redirectionIndex1.get(i * 2), i * 4);
         }
         redirectionIndex.startTrackingPrevValues();
         redirectionIndex1.startTrackingPrevValues();
@@ -47,7 +47,7 @@ public class RedirectionIndexTest extends LiveTableTestCase {
         });
     }
 
-    public void testContiguous(){
+    public void testContiguous() {
         final RedirectionIndex redirectionIndex = new ContiguousRedirectionIndexImpl(10);
 
         // Fill redirection index with values 100 + ii * 2

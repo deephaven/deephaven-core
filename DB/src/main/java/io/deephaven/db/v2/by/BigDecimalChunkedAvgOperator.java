@@ -30,7 +30,10 @@ class BigDecimalChunkedAvgOperator implements IterativeChunkedAggregationOperato
     }
 
     @Override
-    public void addChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void addChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final ObjectChunk<BigDecimal, ? extends Values> asObjectChunk = values.asObjectChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -40,7 +43,10 @@ class BigDecimalChunkedAvgOperator implements IterativeChunkedAggregationOperato
     }
 
     @Override
-    public void removeChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final ObjectChunk<BigDecimal, ? extends Values> asObjectChunk = values.asObjectChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -50,18 +56,22 @@ class BigDecimalChunkedAvgOperator implements IterativeChunkedAggregationOperato
     }
 
     @Override
-    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, long destination) {
+    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends KeyIndices> inputIndices, long destination) {
         return addChunk(values.asObjectChunk(), destination, 0, values.size());
     }
 
     @Override
-    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices, long destination) {
+    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends KeyIndices> inputIndices, long destination) {
         return removeChunk(values.asObjectChunk(), destination, 0, values.size());
     }
 
-    public boolean addChunk(ObjectChunk<BigDecimal, ? extends Values> values, long destination, int chunkStart, int chunkSize) {
+    public boolean addChunk(ObjectChunk<BigDecimal, ? extends Values> values, long destination, int chunkStart,
+            int chunkSize) {
         final MutableInt chunkNonNullCount = new MutableInt();
-        final BigDecimal chunkSum = SumBigDecimalChunk.sumBigDecimalChunk(values, chunkStart, chunkSize, chunkNonNullCount);
+        final BigDecimal chunkSum =
+                SumBigDecimalChunk.sumBigDecimalChunk(values, chunkStart, chunkSize, chunkNonNullCount);
 
         if (chunkNonNullCount.intValue() <= 0) {
             return false;
@@ -81,9 +91,11 @@ class BigDecimalChunkedAvgOperator implements IterativeChunkedAggregationOperato
         return true;
     }
 
-    public boolean removeChunk(ObjectChunk<BigDecimal, ? extends Values> values, long destination, int chunkStart, int chunkSize) {
+    public boolean removeChunk(ObjectChunk<BigDecimal, ? extends Values> values, long destination, int chunkStart,
+            int chunkSize) {
         final MutableInt chunkNonNullCount = new MutableInt();
-        final BigDecimal chunkSum = SumBigDecimalChunk.sumBigDecimalChunk(values, chunkStart, chunkSize, chunkNonNullCount);
+        final BigDecimal chunkSum =
+                SumBigDecimalChunk.sumBigDecimalChunk(values, chunkStart, chunkSize, chunkNonNullCount);
 
         if (chunkNonNullCount.intValue() <= 0) {
             return false;

@@ -21,12 +21,13 @@ public abstract class FatalErrorReporterBase implements FatalErrorReporter {
     }
 
     /**
-     * Report a fatal error in an implementation specific way.  Implementations should invoke appropriate shutdown tasks
+     * Report a fatal error in an implementation specific way. Implementations should invoke appropriate shutdown tasks
      * and initiate process shutdown (e.g. via {@link System#exit(int)}).
      *
      * @param message the message
      * @param throwable the throwable
-     * @param isFromUncaught true iff called from {@link java.lang.Thread.UncaughtExceptionHandler#uncaughtException(Thread, Throwable)}.
+     * @param isFromUncaught true iff called from
+     *        {@link java.lang.Thread.UncaughtExceptionHandler#uncaughtException(Thread, Throwable)}.
      */
     protected abstract void reportImpl(@NotNull String message, @NotNull Throwable throwable, boolean isFromUncaught);
 
@@ -43,7 +44,8 @@ public abstract class FatalErrorReporterBase implements FatalErrorReporter {
 
     @Override
     public final void reportAsync(@NotNull final String message, @NotNull final Throwable throwable) {
-        new Thread(() -> report(message, throwable), Thread.currentThread().getName() + "-AsyncFatalErrorSignaller").start();
+        new Thread(() -> report(message, throwable), Thread.currentThread().getName() + "-AsyncFatalErrorSignaller")
+                .start();
     }
 
     @Override

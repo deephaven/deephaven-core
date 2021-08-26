@@ -15,7 +15,8 @@ import java.util.function.Function;
  */
 public class TableKeyStateRegistry<VALUE_TYPE> {
 
-    private final KeyedObjectHashMap<TableKey, State<VALUE_TYPE>> registeredTableMaps = new KeyedObjectHashMap<>(StateKey.getInstance());
+    private final KeyedObjectHashMap<TableKey, State<VALUE_TYPE>> registeredTableMaps =
+            new KeyedObjectHashMap<>(StateKey.getInstance());
 
     /**
      * Get (or create if none exists) a value for the supplied {@link TableKey}.
@@ -23,7 +24,8 @@ public class TableKeyStateRegistry<VALUE_TYPE> {
      * @param tableKey The table key
      * @return The associated value
      */
-    public VALUE_TYPE computeIfAbsent(@NotNull final TableKey tableKey, @NotNull final Function<TableKey, VALUE_TYPE> valueFactory) {
+    public VALUE_TYPE computeIfAbsent(@NotNull final TableKey tableKey,
+            @NotNull final Function<TableKey, VALUE_TYPE> valueFactory) {
         return registeredTableMaps.putIfAbsent(tableKey, State::new, valueFactory).value;
     }
 
@@ -53,12 +55,11 @@ public class TableKeyStateRegistry<VALUE_TYPE> {
         private static final StateKey INSTANCE = new StateKey();
 
         private static <VALUE_TYPE> KeyedObjectKey<TableKey, State<VALUE_TYPE>> getInstance() {
-            //noinspection unchecked
+            // noinspection unchecked
             return (KeyedObjectKey<TableKey, State<VALUE_TYPE>>) INSTANCE;
         }
 
-        private StateKey() {
-        }
+        private StateKey() {}
 
         @Override
         public TableKey getKey(@NotNull final State<VALUE_TYPE> state) {

@@ -20,7 +20,8 @@ import static io.deephaven.db.tables.select.SelectFactoryConstants.*;
 public class WouldMatchPairFactory {
     private static final ExpressionParser<WouldMatchPair> parser = new ExpressionParser<>();
     static {
-        parser.registerFactory(new AbstractExpressionFactory<WouldMatchPair>(START_PTRN + "(" + ID_PTRN + ")\\s*=\\s*(" + ANYTHING + ")" + END_PTRN) {
+        parser.registerFactory(new AbstractExpressionFactory<WouldMatchPair>(
+                START_PTRN + "(" + ID_PTRN + ")\\s*=\\s*(" + ANYTHING + ")" + END_PTRN) {
             @Override
             public WouldMatchPair getExpression(String expression, Matcher matcher, Object... args) {
                 return new WouldMatchPair(matcher.group(1), matcher.group(2));

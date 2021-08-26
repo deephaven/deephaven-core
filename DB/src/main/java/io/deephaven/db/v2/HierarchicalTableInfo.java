@@ -6,9 +6,9 @@ import io.deephaven.db.v2.select.SelectColumn;
 import java.io.Serializable;
 
 /**
- * A class that contains information required for a particular Hierarchical table type.
- * (i.e {@link io.deephaven.db.tables.Table#treeTable(String, String) tree tables} or
- *  {@link io.deephaven.db.tables.Table#rollup(ComboAggregateFactory, SelectColumn...) rollups})
+ * A class that contains information required for a particular Hierarchical table type. (i.e
+ * {@link io.deephaven.db.tables.Table#treeTable(String, String) tree tables} or
+ * {@link io.deephaven.db.tables.Table#rollup(ComboAggregateFactory, SelectColumn...) rollups})
  */
 public interface HierarchicalTableInfo extends Serializable {
     /**

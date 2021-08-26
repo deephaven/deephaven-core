@@ -29,7 +29,7 @@ class AvgState implements PreviousStateProvider<AvgState> {
     protected long nonNullCount;
 
     double currentValue() {
-        return runningSum/nonNullCount;
+        return runningSum / nonNullCount;
     }
 
     @Override

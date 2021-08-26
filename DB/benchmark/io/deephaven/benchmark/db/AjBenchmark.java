@@ -23,8 +23,8 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 1, time = 5)
 @Measurement(iterations = 5, time = 5)
-@Timeout(time=12)
-@Fork(value=1)
+@Timeout(time = 12)
+@Fork(value = 1)
 public class AjBenchmark {
     private TableBenchmarkState state;
 
@@ -62,7 +62,7 @@ public class AjBenchmark {
         final BenchmarkTableBuilder rightBuilder;
         final BenchmarkTableBuilder leftBuilder;
 
-        switch(tableType) {
+        switch (tableType) {
             case "Historical":
             case "HistoricalOrdered":
                 rightBuilder = BenchmarkTools.persistentTableBuilder("Carlos", rightSize)
@@ -100,14 +100,16 @@ public class AjBenchmark {
         final ColumnGenerator rightStampColumn = BenchmarkTools.seqNumberCol("RightStamp", int.class, 0, 10);
         final ColumnGenerator leftStampColumn;
         if (tableType.equals("HistoricalOrdered")) {
-            leftStampColumn = new FuzzyNumColumnGenerator<>(int.class, "LeftStamp", 0, (rightSize * 10) / (double)leftSize, rightSize * 10, 0.01, SequentialNumColumnGenerator.Mode.NoLimit);
+            leftStampColumn =
+                    new FuzzyNumColumnGenerator<>(int.class, "LeftStamp", 0, (rightSize * 10) / (double) leftSize,
+                            rightSize * 10, 0.01, SequentialNumColumnGenerator.Mode.NoLimit);
         } else {
             leftStampColumn = BenchmarkTools.numberCol("LeftStamp", int.class, 0, rightSize * 10);
         }
 
         if (grouped) {
-            ((PersistentBenchmarkTableBuilder)leftBuilder).addGroupingColumns(joinKeyName);
-            ((PersistentBenchmarkTableBuilder)rightBuilder).addGroupingColumns(joinKeyName);
+            ((PersistentBenchmarkTableBuilder) leftBuilder).addGroupingColumns(joinKeyName);
+            ((PersistentBenchmarkTableBuilder) rightBuilder).addGroupingColumns(joinKeyName);
         }
 
         bmRight = rightBuilder
@@ -164,7 +166,8 @@ public class AjBenchmark {
         if (buckets == 0) {
             throw new UnsupportedOperationException("Buckets must be positive!");
         }
-        final Table result = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> leftTable.aj(rightTable, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel"));
+        final Table result = LiveTableMonitor.DEFAULT.sharedLock()
+                .computeLocked(() -> leftTable.aj(rightTable, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel"));
         return doFingerPrint(result, bh);
     }
 
@@ -173,7 +176,10 @@ public class AjBenchmark {
         if (buckets == 0) {
             throw new UnsupportedOperationException("Buckets must be positive!");
         }
-        final Table result = IncrementalBenchmark.incrementalBenchmark((lt) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> lt.aj(rightTable, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel")), leftTable);
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (lt) -> LiveTableMonitor.DEFAULT.sharedLock()
+                        .computeLocked(() -> lt.aj(rightTable, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel")),
+                leftTable);
         return doFingerPrint(result, bh);
     }
 
@@ -182,7 +188,10 @@ public class AjBenchmark {
         if (buckets == 0) {
             throw new UnsupportedOperationException("Buckets must be positive!");
         }
-        final Table result = IncrementalBenchmark.incrementalBenchmark((lt) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> lt.aj(rightTable, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel")), leftTable, 100);
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (lt) -> LiveTableMonitor.DEFAULT.sharedLock()
+                        .computeLocked(() -> lt.aj(rightTable, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel")),
+                leftTable, 100);
         return doFingerPrint(result, bh);
     }
 
@@ -191,7 +200,10 @@ public class AjBenchmark {
         if (buckets == 0) {
             throw new UnsupportedOperationException("Buckets must be positive!");
         }
-        final Table result = IncrementalBenchmark.incrementalBenchmark((lt) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> lt.aj(rightTable, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel")), leftTable, 1000);
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (lt) -> LiveTableMonitor.DEFAULT.sharedLock()
+                        .computeLocked(() -> lt.aj(rightTable, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel")),
+                leftTable, 1000);
         return doFingerPrint(result, bh);
     }
 
@@ -200,7 +212,10 @@ public class AjBenchmark {
         if (buckets == 0) {
             throw new UnsupportedOperationException("Buckets must be positive!");
         }
-        final Table result = IncrementalBenchmark.incrementalBenchmark((rt) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> leftTable.aj(rt, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel")), rightTable);
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (rt) -> LiveTableMonitor.DEFAULT.sharedLock()
+                        .computeLocked(() -> leftTable.aj(rt, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel")),
+                rightTable);
         return doFingerPrint(result, bh);
     }
 
@@ -209,7 +224,8 @@ public class AjBenchmark {
         if (buckets != 0) {
             throw new UnsupportedOperationException("Zero key should have zero buckets!");
         }
-        final Table result = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> leftTable.aj(rightTable, "LeftStamp=RightStamp", "RightSentinel"));
+        final Table result = LiveTableMonitor.DEFAULT.sharedLock()
+                .computeLocked(() -> leftTable.aj(rightTable, "LeftStamp=RightStamp", "RightSentinel"));
         return doFingerPrint(result, bh);
     }
 
@@ -218,7 +234,11 @@ public class AjBenchmark {
         if (buckets != 0) {
             throw new UnsupportedOperationException("Zero key should have zero buckets!");
         }
-        final Table result = IncrementalBenchmark.incrementalBenchmark((lt) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> lt.aj(rightTable, "LeftStamp=RightStamp", "RightSentinel")), leftTable);
+        final Table result =
+                IncrementalBenchmark.incrementalBenchmark(
+                        (lt) -> LiveTableMonitor.DEFAULT.sharedLock()
+                                .computeLocked(() -> lt.aj(rightTable, "LeftStamp=RightStamp", "RightSentinel")),
+                        leftTable);
         return doFingerPrint(result, bh);
     }
 
@@ -227,7 +247,11 @@ public class AjBenchmark {
         if (buckets != 0) {
             throw new UnsupportedOperationException("Zero key should have zero buckets!");
         }
-        final Table result = IncrementalBenchmark.incrementalBenchmark((rt) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> leftTable.aj(rt, "LeftStamp=RightStamp", "RightSentinel")), rightTable);
+        final Table result =
+                IncrementalBenchmark.incrementalBenchmark(
+                        (rt) -> LiveTableMonitor.DEFAULT.sharedLock()
+                                .computeLocked(() -> leftTable.aj(rt, "LeftStamp=RightStamp", "RightSentinel")),
+                        rightTable);
         return doFingerPrint(result, bh);
     }
 
@@ -236,7 +260,10 @@ public class AjBenchmark {
         if (buckets != 0) {
             throw new UnsupportedOperationException("Zero key should have zero buckets!");
         }
-        final Table result = IncrementalBenchmark.incrementalBenchmark((lt, rt) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> lt.aj(rt, "LeftStamp=RightStamp", "RightSentinel")), leftTable, rightTable);
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (lt, rt) -> LiveTableMonitor.DEFAULT.sharedLock()
+                        .computeLocked(() -> lt.aj(rt, "LeftStamp=RightStamp", "RightSentinel")),
+                leftTable, rightTable);
         return doFingerPrint(result, bh);
     }
 
@@ -245,7 +272,10 @@ public class AjBenchmark {
         if (buckets != 0) {
             throw new UnsupportedOperationException("Zero key should have zero buckets!");
         }
-        final Table result = IncrementalBenchmark.incrementalBenchmark((lt, rt) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> lt.aj(rt, "LeftStamp=RightStamp", "RightSentinel")), leftTable, rightTable, 0.95, 1);
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (lt, rt) -> LiveTableMonitor.DEFAULT.sharedLock()
+                        .computeLocked(() -> lt.aj(rt, "LeftStamp=RightStamp", "RightSentinel")),
+                leftTable, rightTable, 0.95, 1);
         return doFingerPrint(result, bh);
     }
 
@@ -254,7 +284,10 @@ public class AjBenchmark {
         if (buckets != 0) {
             throw new UnsupportedOperationException("Zero key should have zero buckets!");
         }
-        final Table result = IncrementalBenchmark.incrementalBenchmark((lt, rt) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> lt.aj(rt, "LeftStamp=RightStamp", "RightSentinel")), leftTable, rightTable, 0.1, 100);
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (lt, rt) -> LiveTableMonitor.DEFAULT.sharedLock()
+                        .computeLocked(() -> lt.aj(rt, "LeftStamp=RightStamp", "RightSentinel")),
+                leftTable, rightTable, 0.1, 100);
         return doFingerPrint(result, bh);
     }
 
@@ -264,7 +297,10 @@ public class AjBenchmark {
         if (buckets == 0) {
             throw new UnsupportedOperationException("Buckets must be positive!");
         }
-        final Table result = IncrementalBenchmark.incrementalBenchmark((lt, rt) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> lt.aj(rt, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel")), leftTable, rightTable, 0.1, 100);
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (lt, rt) -> LiveTableMonitor.DEFAULT.sharedLock()
+                        .computeLocked(() -> lt.aj(rt, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel")),
+                leftTable, rightTable, 0.1, 100);
         return doFingerPrint(result, bh);
     }
 
@@ -273,7 +309,10 @@ public class AjBenchmark {
         if (buckets == 0) {
             throw new UnsupportedOperationException("Buckets must be positive!");
         }
-        final Table result = IncrementalBenchmark.incrementalBenchmark((lt, rt) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> lt.aj(rt, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel")), leftTable, rightTable);
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (lt, rt) -> LiveTableMonitor.DEFAULT.sharedLock()
+                        .computeLocked(() -> lt.aj(rt, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel")),
+                leftTable, rightTable);
         return doFingerPrint(result, bh);
     }
 
@@ -286,7 +325,7 @@ public class AjBenchmark {
         }
     }
 
-    public static void main(String [] args) {
+    public static void main(String[] args) {
         final int heapGb = 7;
         BenchUtil.run(heapGb, AjBenchmark.class);
     }

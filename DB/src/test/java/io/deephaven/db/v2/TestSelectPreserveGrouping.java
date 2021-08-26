@@ -43,7 +43,7 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
             try {
                 FileUtils.deleteRecursively(new File(root));
                 success = true;
-            }catch(Exception e) {
+            } catch (Exception e) {
                 System.gc();
                 tries++;
             }
@@ -51,7 +51,8 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
     }
 
     public void testPreserveGrouping() {
-        final Table x = TstUtils.testTable(TstUtils.cG("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"), intCol("Sentinel", 1, 2, 3, 4, 5, 6));
+        final Table x = TstUtils.testTable(TstUtils.cG("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
+                intCol("Sentinel", 1, 2, 3, 4, 5, 6));
         assertTrue(x.getIndex().hasGrouping(x.getColumnSource("Sym")));
         assertFalse(x.getIndex().hasGrouping(x.getColumnSource("Sentinel")));
 
@@ -77,8 +78,8 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
             columns.put("Sym", TstUtils.getTreeMapColumnSource(index, symHolder));
             columns.put("Sentinel", TstUtils.getTreeMapColumnSource(index, sentinelHolder));
             final TableDefinition definition = TableDefinition.of(
-                ColumnDefinition.ofString("Sym").withGrouping(),
-                ColumnDefinition.ofInt("Sentinel"));
+                    ColumnDefinition.ofString("Sym").withGrouping(),
+                    ColumnDefinition.ofInt("Sentinel"));
             final Table x = new QueryTable(definition, index, columns);
 
             assertTrue(x.getDefinition().getColumn("Sym").isGrouping());

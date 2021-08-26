@@ -8,11 +8,10 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
- * Any AND nested within another AND or OR nested within another OR should be flattened
- * into just a single level.
+ * Any AND nested within another AND or OR nested within another OR should be flattened into just a single level.
  *
- * This should be run after NOTs are distributed (so that (A AND B AND !(C OR D)) is first
- * normalized to (A AND B AND (!C AND !D))).
+ * This should be run after NOTs are distributed (so that (A AND B AND !(C OR D)) is first normalized to (A AND B AND
+ * (!C AND !D))).
  */
 public class MergeNestedBinaryOperations extends AbstractNormalizeFilters {
     private static final MergeNestedBinaryOperations INSTANCE = new MergeNestedBinaryOperations();
@@ -31,10 +30,11 @@ public class MergeNestedBinaryOperations extends AbstractNormalizeFilters {
         return NormalizeFilterUtil.doAnd(visited, this);
     }
 
-    private void collect(List<Condition> filtersList, List<Condition> visited, Predicate<Condition> matches, Function<Condition, List<Condition>> getChildren) {
+    private void collect(List<Condition> filtersList, List<Condition> visited, Predicate<Condition> matches,
+            Function<Condition, List<Condition>> getChildren) {
         for (Condition condition : filtersList) {
             if (matches.test(condition)) {
-                //recurse, find more
+                // recurse, find more
                 collect(getChildren.apply(condition), visited, matches, getChildren);
             } else {
                 visited.add(condition);

@@ -16,7 +16,7 @@ public class TestDBDateTimeFormatter extends BaseArrayTestCase {
         t = DBTimeUtils.convertDateTime("2015-06-13T13:12:11.123456789 MT");
     }
 
-    public void test1(){
+    public void test1() {
         final boolean isISO = true;
         final boolean hasDate = true;
         final boolean hasTime = true;
@@ -28,7 +28,7 @@ public class TestDBDateTimeFormatter extends BaseArrayTestCase {
         assertEquals("2015-06-13T14:12:11.123456789 MN", dtf.format(t, DBTimeZone.TZ_MN));
     }
 
-    public void test2(){
+    public void test2() {
         final boolean isISO = false;
         final boolean hasDate = true;
         final boolean hasTime = true;
@@ -40,7 +40,7 @@ public class TestDBDateTimeFormatter extends BaseArrayTestCase {
         assertEquals("2015-06-13 14:12:11.123456789 MN", dtf.format(t, DBTimeZone.TZ_MN));
     }
 
-    public void test3(){
+    public void test3() {
         final boolean isISO = true;
         final boolean hasDate = false;
         final boolean hasTime = true;
@@ -52,7 +52,7 @@ public class TestDBDateTimeFormatter extends BaseArrayTestCase {
         assertEquals("14:12:11.123456789 MN", dtf.format(t, DBTimeZone.TZ_MN));
     }
 
-    public void test4(){
+    public void test4() {
         final boolean isISO = true;
         final boolean hasDate = true;
         final boolean hasTime = false;
@@ -64,7 +64,7 @@ public class TestDBDateTimeFormatter extends BaseArrayTestCase {
         assertEquals("2015-06-13 MN", dtf.format(t, DBTimeZone.TZ_MN));
     }
 
-    public void test5(){
+    public void test5() {
         final boolean isISO = true;
         final boolean hasDate = true;
         final boolean hasTime = true;
@@ -76,7 +76,7 @@ public class TestDBDateTimeFormatter extends BaseArrayTestCase {
         assertEquals("2015-06-13T14:12:11.1234 MN", dtf.format(t, DBTimeZone.TZ_MN));
     }
 
-    public void test6(){
+    public void test6() {
         final boolean isISO = true;
         final boolean hasDate = true;
         final boolean hasTime = true;
@@ -88,7 +88,7 @@ public class TestDBDateTimeFormatter extends BaseArrayTestCase {
         assertEquals("2015-06-13T14:12:11.12 MN", dtf.format(t, DBTimeZone.TZ_MN));
     }
 
-    public void test7(){
+    public void test7() {
         final boolean isISO = true;
         final boolean hasDate = true;
         final boolean hasTime = true;

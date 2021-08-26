@@ -28,7 +28,7 @@ public abstract class CompletionBuilder {
         return completer;
     }
 
-    protected void addTokens(StringBuilder b, Token tok, String ... suffix) {
+    protected void addTokens(StringBuilder b, Token tok, String... suffix) {
         for (int ind = 0; ind < suffix.length; ind++) {
             final String nextToken = suffix[ind];
             String check = nextToken.trim();
@@ -65,7 +65,8 @@ public abstract class CompletionBuilder {
 
     }
 
-    protected io.deephaven.proto.backplane.script.grpc.DocumentRange.Builder replaceNode(Node node, CompletionRequest request) {
+    protected io.deephaven.proto.backplane.script.grpc.DocumentRange.Builder replaceNode(Node node,
+            CompletionRequest request) {
         start = node.getStartIndex();
         len = node.getEndIndex() - node.getStartIndex();
         return node.asRange();
@@ -98,7 +99,8 @@ public abstract class CompletionBuilder {
         return range;
     }
 
-    protected void addMatch(Collection<CompletionItem.Builder> results, Token startToken, Token endToken, String match, CompletionRequest index, CompletionOptions options) {
+    protected void addMatch(Collection<CompletionItem.Builder> results, Token startToken, Token endToken, String match,
+            CompletionRequest index, CompletionOptions options) {
         if (endToken == null) {
             endToken = startToken;
         }
@@ -135,11 +137,11 @@ public abstract class CompletionBuilder {
                     break;
                 }
                 if (!missing && tokenCheck.equals(check)) {
-                    // the end token matches the suffix.  Use the user's image.
+                    // the end token matches the suffix. Use the user's image.
                     completion.append(endToken.image);
                     endToken = endToken.next;
                 } else {
-                    // the suffix is missing.  simply add it.
+                    // the suffix is missing. simply add it.
                     missing = true;
                     completion.append(suffix);
                 }
@@ -153,8 +155,8 @@ public abstract class CompletionBuilder {
                 .setLength(len)
                 .setLabel(displayed)
                 .getTextEditBuilder()
-                        .setText(displayed)
-                        .setRange(replacement.build());
+                .setText(displayed)
+                .setRange(replacement.build());
         results.add(result);
     }
 }

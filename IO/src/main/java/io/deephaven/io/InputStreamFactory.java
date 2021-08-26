@@ -7,8 +7,9 @@ package io.deephaven.io;
 import java.io.IOException;
 import java.io.InputStream;
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 public interface InputStreamFactory {
     InputStream createInputStream() throws IOException;
+
     String getDescription();
 }

@@ -23,10 +23,12 @@ public class MetricsManager {
     private static final boolean periodicUpdates = Configuration.getInstance().getBooleanForClassWithDefault(
             MetricsManager.class, "periodicUpdates", false);
 
-    private static final int maxMetricsPerType = Configuration.getInstance().getIntegerForClassWithDefault(MetricsManager.class, "maxMetricsPerType", 256);
+    private static final int maxMetricsPerType =
+            Configuration.getInstance().getIntegerForClassWithDefault(MetricsManager.class, "maxMetricsPerType", 256);
 
     // This class is a singleton.
     public static final MetricsManager instance = new MetricsManager();
+
     private MetricsManager() {}
 
     private static final Consumer<String> logger = (final String s) -> {
@@ -39,9 +41,13 @@ public class MetricsManager {
 
     private static abstract class MetricsFamily<ArrayType> {
         protected abstract ArrayType makeMetricsArray();
+
         protected abstract String familyName();
+
         protected abstract void clear(ArrayType dst, int size);
+
         protected abstract void accumulateSnapshot(ArrayType src, ArrayType dst, int size);
+
         protected abstract void log(String updateTag, Consumer<String> logger);
 
         // The member variables in the following block are accessed synchronized(this).
@@ -63,7 +69,7 @@ public class MetricsManager {
                 return null;
             }
             final ArrayType threadMetrics = makeMetricsArray();
-            synchronized(pendingPerThreadCounters) {
+            synchronized (pendingPerThreadCounters) {
                 pendingPerThreadCounters.add(threadMetrics);
             }
             return threadMetrics;
@@ -73,9 +79,10 @@ public class MetricsManager {
             if (!enabled) {
                 return 0;
             }
-            synchronized(this) {
+            synchronized (this) {
                 if (count == maxMetricsPerType) {
-                    throw new IllegalStateException("Max number of " + familyName() + " metrics (=" + maxMetricsPerType + ") already reached!");
+                    throw new IllegalStateException(
+                            "Max number of " + familyName() + " metrics (=" + maxMetricsPerType + ") already reached!");
                 }
                 if (nameToMetricId.containsKey(name)) {
                     throw new IllegalArgumentException(familyName() + " name=" + name + " already exists!");
@@ -90,12 +97,13 @@ public class MetricsManager {
         // The member variables in the block below are only accessed from the timer thread.
         protected final ArrayType countersSnapshot = makeMetricsArray();
         protected int snapshotCount;
-        protected final String[] namesSortedSnapshot = new String[maxMetricsPerType];  // we log in alphabetical metric name order.
+        protected final String[] namesSortedSnapshot = new String[maxMetricsPerType]; // we log in alphabetical metric
+                                                                                      // name order.
         protected final ArrayList<ArrayType> perThreadCounters = new ArrayList<>();
 
         void snapshotCounters() {
             boolean needsToSort = false;
-            synchronized(this) {
+            synchronized (this) {
                 if (count > snapshotCount) {
                     // get what we are missing from the previous go around.
                     System.arraycopy(
@@ -114,7 +122,7 @@ public class MetricsManager {
 
             // A new metric may be inserted after we snapshot above and before
             // we check/copy new per threads counters below; that's fine.
-            synchronized(pendingPerThreadCounters) {
+            synchronized (pendingPerThreadCounters) {
                 if (!pendingPerThreadCounters.isEmpty()) {
                     perThreadCounters.addAll(pendingPerThreadCounters);
                     pendingPerThreadCounters.clear();
@@ -126,7 +134,7 @@ public class MetricsManager {
             // Strictly speaking, in the Java Memory Model we are not guaranteed to see any updates.
             // We do know however that this code will see updates in an Intel x64 + HotSpot platform,
             // due to how that particular implementation is known to work.
-            for (final ArrayType threadCounters: perThreadCounters) {
+            for (final ArrayType threadCounters : perThreadCounters) {
                 accumulateSnapshot(threadCounters, countersSnapshot, snapshotCount);
             }
         }
@@ -142,10 +150,10 @@ public class MetricsManager {
         // counters at the moment.
         void bluntResetCounters() {
             final int size;
-            synchronized(this) {
+            synchronized (this) {
                 size = count;
             }
-            synchronized(pendingPerThreadCounters) {
+            synchronized (pendingPerThreadCounters) {
                 for (final ArrayType threadCounters : perThreadCounters) {
                     clear(threadCounters, size);
                 }
@@ -155,7 +163,9 @@ public class MetricsManager {
 
     private static abstract class MetricsCounterFamily<ArrayType> extends MetricsFamily<ArrayType> {
         protected abstract long get(ArrayType counters, final int i);
-        @Override protected void log(final String updateTag, final Consumer<String> logger) {
+
+        @Override
+        protected void log(final String updateTag, final Consumer<String> logger) {
             final String prefix = "Metrics " + familyName() + " " + updateTag + " update: ";
             if (snapshotCount == 0) {
                 logger.accept(prefix + "No counters defined.");
@@ -163,7 +173,7 @@ public class MetricsManager {
             }
             final StringBuilder sb = new StringBuilder(prefix);
             final TObjectIntMap<String> nameToMetricIdCopy;
-            synchronized(this) {
+            synchronized (this) {
                 nameToMetricIdCopy = new TObjectIntHashMap<>(nameToMetricId);
             }
             for (int i = 0; i < snapshotCount; ++i) {
@@ -180,15 +190,30 @@ public class MetricsManager {
     }
 
     private final MetricsFamily<int[]> intCounterMetrics = new MetricsCounterFamily<int[]>() {
-        @Override protected int[] makeMetricsArray() { return new int[maxMetricsPerType]; }
-        @Override protected long get(final int[] counters, final int i) { return counters[i]; }
-        @Override protected String familyName() { return "IntCounter"; }
-        @Override protected void clear(final int[] counters, final int size) {
+        @Override
+        protected int[] makeMetricsArray() {
+            return new int[maxMetricsPerType];
+        }
+
+        @Override
+        protected long get(final int[] counters, final int i) {
+            return counters[i];
+        }
+
+        @Override
+        protected String familyName() {
+            return "IntCounter";
+        }
+
+        @Override
+        protected void clear(final int[] counters, final int size) {
             for (int i = 0; i < size; ++i) {
                 counters[i] = 0;
             }
         }
-        @Override protected void accumulateSnapshot(final int[] src, final int[] dst, final int size) {
+
+        @Override
+        protected void accumulateSnapshot(final int[] src, final int[] dst, final int size) {
             for (int i = 0; i < size; ++i) {
                 dst[i] += src[i];
             }
@@ -196,15 +221,30 @@ public class MetricsManager {
     };
 
     private final MetricsFamily<long[]> longCounterMetrics = new MetricsCounterFamily<long[]>() {
-        @Override protected long[] makeMetricsArray() { return new long[maxMetricsPerType]; }
-        @Override protected long get(final long[] counters, final int i) { return counters[i]; }
-        @Override protected String familyName() { return "LongCounter"; }
-        @Override protected void clear(final long[] counters, final int size) {
+        @Override
+        protected long[] makeMetricsArray() {
+            return new long[maxMetricsPerType];
+        }
+
+        @Override
+        protected long get(final long[] counters, final int i) {
+            return counters[i];
+        }
+
+        @Override
+        protected String familyName() {
+            return "LongCounter";
+        }
+
+        @Override
+        protected void clear(final long[] counters, final int size) {
             for (int i = 0; i < size; ++i) {
                 counters[i] = 0;
             }
         }
-        @Override protected void accumulateSnapshot(final long[] src, final long[] dst, final int size) {
+
+        @Override
+        protected void accumulateSnapshot(final long[] src, final long[] dst, final int size) {
             for (int i = 0; i < size; ++i) {
                 dst[i] += src[i];
             }
@@ -212,23 +252,36 @@ public class MetricsManager {
     };
 
     private final MetricsFamily<int[][]> longCounterLog2HistogramMetrics = new MetricsFamily<int[][]>() {
-        @Override protected int[][] makeMetricsArray() { return new int[maxMetricsPerType][65]; }
-        @Override protected String familyName() { return "LongCounterLog2Histogram"; }
-        @Override protected void clear(final int[][] counters, final int size) {
+        @Override
+        protected int[][] makeMetricsArray() {
+            return new int[maxMetricsPerType][65];
+        }
+
+        @Override
+        protected String familyName() {
+            return "LongCounterLog2Histogram";
+        }
+
+        @Override
+        protected void clear(final int[][] counters, final int size) {
             for (int i = 0; i < size; ++i) {
                 for (int j = 0; j < 65; ++j) {
                     counters[i][j] = 0;
                 }
             }
         }
-        @Override protected void accumulateSnapshot(final int[][] src, final int[][] dst, final int size) {
+
+        @Override
+        protected void accumulateSnapshot(final int[][] src, final int[][] dst, final int size) {
             for (int i = 0; i < size; ++i) {
                 for (int j = 0; j < 65; ++j) {
                     dst[i][j] += src[i][j];
                 }
             }
         }
-        @Override protected void log(final String updateTag, final Consumer<String> logger) {
+
+        @Override
+        protected void log(final String updateTag, final Consumer<String> logger) {
             final String prefix = "Metrics " + familyName() + " " + updateTag + ": ";
             if (snapshotCount == 0) {
                 final String s = prefix + "No counters defined.";
@@ -236,7 +289,7 @@ public class MetricsManager {
                 return;
             }
             final TObjectIntHashMap nameToMetricIdCopy;
-            synchronized(this) {
+            synchronized (this) {
                 nameToMetricIdCopy = new TObjectIntHashMap<>(nameToMetricId);
             }
             for (int i = 0; i < snapshotCount; ++i) {
@@ -253,7 +306,7 @@ public class MetricsManager {
                 sb.append(key).append(name).append("={ ");
                 final int metricId = nameToMetricIdCopy.get(name);
                 boolean haveBefore = false;
-                for (int j = 64; j >=0 ; --j) {
+                for (int j = 64; j >= 0; --j) {
                     final int v = countersSnapshot[metricId][j];
                     if (v == 0) {
                         continue;
@@ -301,7 +354,7 @@ public class MetricsManager {
         return longCounterLog2HistogramMetrics.registerMetric(name);
     }
 
-    // This is part of the fast path.  We should avoid as much as possible holding up the calling thread.
+    // This is part of the fast path. We should avoid as much as possible holding up the calling thread.
     void sampleIntCounter(final int id, final long n) {
         if (!enabled) {
             return;
@@ -310,7 +363,7 @@ public class MetricsManager {
         threadMetrics[id] += n;
     }
 
-    // This is part of the fast path.  We should avoid as much as possible holding up the calling thread.
+    // This is part of the fast path. We should avoid as much as possible holding up the calling thread.
     void sampleLongCounter(final int id, final long n) {
         if (!enabled) {
             return;
@@ -319,7 +372,7 @@ public class MetricsManager {
         threadMetrics[id] += n;
     }
 
-    // This is part of the fast path.  We should avoid as much as possible holding up the calling thread.
+    // This is part of the fast path. We should avoid as much as possible holding up the calling thread.
     void sampleLongCounterLog2HistogramCount(final int id, final long v) {
         if (!enabled) {
             return;
@@ -388,7 +441,8 @@ public class MetricsManager {
                     final long sleepMillis = (nextUpdateNanos - nowNanos) / 1_000_000;
                     try {
                         Thread.sleep(sleepMillis);
-                    } catch (InterruptedException e) { /* Ignored, but forces us to recheck if we need to shutdown */ }
+                    } catch (InterruptedException e) {
+                        /* Ignored, but forces us to recheck if we need to shutdown */ }
                     nowNanos = System.nanoTime();
                     continue;
                 }
@@ -403,7 +457,7 @@ public class MetricsManager {
             if (!enabled || !periodicUpdates) {
                 return;
             }
-            synchronized(this) {
+            synchronized (this) {
                 if (shutdownRequested) {
                     return;
                 }
@@ -415,9 +469,8 @@ public class MetricsManager {
             try {
                 interrupt();
                 join();
-            }
-            catch (InterruptedException e) { /* Ignored */ }
-            finally {
+            } catch (InterruptedException e) {
+                /* Ignored */ } finally {
                 running = false;
             }
         }

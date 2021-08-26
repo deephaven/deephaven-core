@@ -26,7 +26,8 @@ class LiveTableMonitorLock {
 
     private static final Logger log = LoggerFactory.getLogger(LiveTableMonitorLock.class);
 
-    private static final boolean STACK_DUMP_LOCKS = Configuration.getInstance().getBooleanWithDefault("LiveTableMonitor.stackDumpLocks", false);
+    private static final boolean STACK_DUMP_LOCKS =
+            Configuration.getInstance().getBooleanWithDefault("LiveTableMonitor.stackDumpLocks", false);
 
     /**
      * The {@link LogicalClock} used for instrumentation and assertions.
@@ -78,7 +79,7 @@ class LiveTableMonitorLock {
     LiveTableMonitorLock(@NotNull final LogicalClock logicalClock, final boolean allowUnitTestMode) {
         this.logicalClock = logicalClock;
         // TODO: Consider whether using a fair lock causes unacceptable performance degradation under significant
-        //  contention, and determine an alternative policy (maybe relying on Thread.yield() if so.
+        // contention, and determine an alternative policy (maybe relying on Thread.yield() if so.
         rwLock = new ReentrantReadWriteLock(true);
         readLock = rwLock.readLock();
         writeLock = rwLock.writeLock();
@@ -112,7 +113,7 @@ class LiveTableMonitorLock {
         return exclusiveLock;
     }
 
-    //region Shared Lock Implementation
+    // region Shared Lock Implementation
 
     private class SharedLock implements AwareFunctionalLock {
 
@@ -190,9 +191,9 @@ class LiveTableMonitorLock {
         }
     }
 
-    //endregion Shared Lock Implementation
+    // endregion Shared Lock Implementation
 
-    //region Exclusive Lock Implementation
+    // region Exclusive Lock Implementation
 
     private class ExclusiveLock implements AwareFunctionalLock {
 
@@ -277,7 +278,7 @@ class LiveTableMonitorLock {
         }
     }
 
-    //endregion Exclusive Lock Implementation
+    // endregion Exclusive Lock Implementation
 
     // region DebugLock
     class DebugAwareFunctionalLock implements AwareFunctionalLock {
@@ -336,22 +337,29 @@ class LiveTableMonitorLock {
         }
 
         @Override
-        public <EXCEPTION_TYPE extends Exception> void doLocked(@NotNull FunctionalInterfaces.ThrowingRunnable<EXCEPTION_TYPE> runnable) throws EXCEPTION_TYPE {
+        public <EXCEPTION_TYPE extends Exception> void doLocked(
+                @NotNull FunctionalInterfaces.ThrowingRunnable<EXCEPTION_TYPE> runnable) throws EXCEPTION_TYPE {
             delegate.doLocked(runnable);
         }
 
         @Override
-        public <EXCEPTION_TYPE extends Exception> void doLockedInterruptibly(@NotNull FunctionalInterfaces.ThrowingRunnable<EXCEPTION_TYPE> runnable) throws InterruptedException, EXCEPTION_TYPE {
+        public <EXCEPTION_TYPE extends Exception> void doLockedInterruptibly(
+                @NotNull FunctionalInterfaces.ThrowingRunnable<EXCEPTION_TYPE> runnable)
+                throws InterruptedException, EXCEPTION_TYPE {
             delegate.doLockedInterruptibly(runnable);
         }
 
         @Override
-        public <RESULT_TYPE, EXCEPTION_TYPE extends Exception> RESULT_TYPE computeLocked(@NotNull FunctionalInterfaces.ThrowingSupplier<RESULT_TYPE, EXCEPTION_TYPE> supplier) throws EXCEPTION_TYPE {
+        public <RESULT_TYPE, EXCEPTION_TYPE extends Exception> RESULT_TYPE computeLocked(
+                @NotNull FunctionalInterfaces.ThrowingSupplier<RESULT_TYPE, EXCEPTION_TYPE> supplier)
+                throws EXCEPTION_TYPE {
             return delegate.computeLocked(supplier);
         }
 
         @Override
-        public <RESULT_TYPE, EXCEPTION_TYPE extends Exception> RESULT_TYPE computeLockedInterruptibly(@NotNull FunctionalInterfaces.ThrowingSupplier<RESULT_TYPE, EXCEPTION_TYPE> supplier) throws InterruptedException, EXCEPTION_TYPE {
+        public <RESULT_TYPE, EXCEPTION_TYPE extends Exception> RESULT_TYPE computeLockedInterruptibly(
+                @NotNull FunctionalInterfaces.ThrowingSupplier<RESULT_TYPE, EXCEPTION_TYPE> supplier)
+                throws InterruptedException, EXCEPTION_TYPE {
             return delegate.computeLockedInterruptibly(supplier);
         }
 
@@ -362,7 +370,7 @@ class LiveTableMonitorLock {
     }
     // endregion DebugLock
 
-    //region Validation Methods
+    // region Validation Methods
 
     private void checkForUpgradeAttempt() {
         if (sharedLock.isHeldByCurrentThread()) {
@@ -370,9 +378,9 @@ class LiveTableMonitorLock {
         }
     }
 
-    //endregion Validation Methods
+    // endregion Validation Methods
 
-    //region Debugging Tools
+    // region Debugging Tools
 
     private static final class LockDebugException extends Exception {
 
@@ -387,5 +395,5 @@ class LiveTableMonitorLock {
         }
     }
 
-    //endregion Debugging Tools
+    // endregion Debugging Tools
 }

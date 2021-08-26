@@ -8,18 +8,18 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.grpcWeb.client.ClientRpcOptions",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.grpcWeb.client.ClientRpcOptions",
+        namespace = JsPackage.GLOBAL)
 public interface ClientRpcOptions extends RpcOptions {
-  @JsOverlay
-  static ClientRpcOptions create() {
-    return Js.uncheckedCast(JsPropertyMap.of());
-  }
+    @JsOverlay
+    static ClientRpcOptions create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+    }
 
-  @JsProperty
-  String getHost();
+    @JsProperty
+    String getHost();
 
-  @JsProperty
-  void setHost(String host);
+    @JsProperty
+    void setHost(String host);
 }

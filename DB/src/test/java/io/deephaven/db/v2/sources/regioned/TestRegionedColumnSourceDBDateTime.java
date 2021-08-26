@@ -13,13 +13,14 @@ import io.deephaven.db.v2.sources.chunk.Attributes;
 import org.junit.Test;
 
 @SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
-public class TestRegionedColumnSourceDBDateTime extends TstRegionedColumnSourceReferencing<DBDateTime, Attributes.Values, ColumnRegionLong<Attributes.Values>> {
+public class TestRegionedColumnSourceDBDateTime
+        extends TstRegionedColumnSourceReferencing<DBDateTime, Attributes.Values, ColumnRegionLong<Attributes.Values>> {
 
     public TestRegionedColumnSourceDBDateTime() {
         super(ColumnRegionLong.class);
     }
 
-    private static final DBDateTime[] TEST_DATES = new DBDateTime[]{
+    private static final DBDateTime[] TEST_DATES = new DBDateTime[] {
             null,
             DBTimeUtils.currentTime(),
             DBTimeUtils.dateAtMidnight(DBTimeUtils.currentTime(), DBTimeZone.TZ_NY),
@@ -35,18 +36,21 @@ public class TestRegionedColumnSourceDBDateTime extends TstRegionedColumnSourceR
     private ColumnSource<Long> SUT_AS_LONG;
 
     private void assertLookup(final long elementIndex,
-                              final int expectedRegionIndex,
-                              final DBDateTime output,
-                              final boolean prev,
-                              final boolean reinterpreted) {
-        checking(new Expectations() {{
-            oneOf(cr[expectedRegionIndex]).getReferencedRegion();
-            will(returnValue(cr_n[expectedRegionIndex]));
-            oneOf(cr_n[expectedRegionIndex]).getLong(elementIndex);
-            will(returnValue(output == null ? QueryConstants.NULL_LONG : output.getNanos()));
-        }});
+            final int expectedRegionIndex,
+            final DBDateTime output,
+            final boolean prev,
+            final boolean reinterpreted) {
+        checking(new Expectations() {
+            {
+                oneOf(cr[expectedRegionIndex]).getReferencedRegion();
+                will(returnValue(cr_n[expectedRegionIndex]));
+                oneOf(cr_n[expectedRegionIndex]).getLong(elementIndex);
+                will(returnValue(output == null ? QueryConstants.NULL_LONG : output.getNanos()));
+            }
+        });
         if (reinterpreted) {
-            assertEquals(output == null ? QueryConstants.NULL_LONG : output.getNanos(), prev ? SUT_AS_LONG.getPrevLong(elementIndex) : SUT_AS_LONG.getLong(elementIndex));
+            assertEquals(output == null ? QueryConstants.NULL_LONG : output.getNanos(),
+                    prev ? SUT_AS_LONG.getPrevLong(elementIndex) : SUT_AS_LONG.getLong(elementIndex));
         } else {
             assertEquals(output, prev ? SUT.getPrev(elementIndex) : SUT.get(elementIndex));
         }
@@ -68,7 +72,7 @@ public class TestRegionedColumnSourceDBDateTime extends TstRegionedColumnSourceR
     public void testGet() {
         fillRegions();
 
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         assertLookup(0L, 0, TEST_DATES[0], false, false);
         assertLookup(RegionedColumnSource.getLastElementIndex(0), 0, TEST_DATES[1], false, false);
 
@@ -89,7 +93,7 @@ public class TestRegionedColumnSourceDBDateTime extends TstRegionedColumnSourceR
     public void testGetPrev() {
         fillRegions();
 
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         assertLookup(0L, 0, TEST_DATES[0], true, false);
         assertLookup(RegionedColumnSource.getLastElementIndex(0), 0, TEST_DATES[1], true, false);
 
@@ -110,7 +114,7 @@ public class TestRegionedColumnSourceDBDateTime extends TstRegionedColumnSourceR
     public void testGetReinterpreted() {
         fillRegions();
 
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         assertLookup(0L, 0, TEST_DATES[0], false, true);
         assertLookup(RegionedColumnSource.getLastElementIndex(0), 0, TEST_DATES[1], false, true);
 
@@ -131,7 +135,7 @@ public class TestRegionedColumnSourceDBDateTime extends TstRegionedColumnSourceR
     public void testGetPrevReinterpreted() {
         fillRegions();
 
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         assertLookup(0L, 0, TEST_DATES[0], true, true);
         assertLookup(RegionedColumnSource.getLastElementIndex(0), 0, TEST_DATES[1], true, true);
 

@@ -27,7 +27,7 @@ public class TestColumnDefinition extends TestCase {
         TestCase.assertEquals(0, in.available());
     }
 
-    static final byte MAGIC_NUMBER = (byte)0b10001111;
+    static final byte MAGIC_NUMBER = (byte) 0b10001111;
 
     @Test
     public void testUtfAssumptions2() throws IOException {

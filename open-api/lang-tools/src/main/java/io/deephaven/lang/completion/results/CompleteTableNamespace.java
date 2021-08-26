@@ -11,8 +11,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * A class specifically for completing table namespaces;
- * to be called after the completer has discovered the name of the namespace.
+ * A class specifically for completing table namespaces; to be called after the completer has discovered the name of the
+ * namespace.
  *
  */
 public class CompleteTableNamespace extends CompletionBuilder {
@@ -30,22 +30,22 @@ public class CompleteTableNamespace extends CompletionBuilder {
     }
 
     public void doCompletion(
-        Node replaced,
-        Set<CompletionItem.Builder> results,
-        CompletionRequest request
-    ) {
+            Node replaced,
+            Set<CompletionItem.Builder> results,
+            CompletionRequest request) {
         final int argInd = invoke.indexOfArgument(replaced);
         final String qt = getCompleter().getQuoteType(replaced);
-        // TODO: move the chunk of code below into constructor, since it's not necessary to repeat inside a loop.  IDS-1517-14
+        // TODO: move the chunk of code below into constructor, since it's not necessary to repeat inside a loop.
+        // IDS-1517-14
         if (argInd == 0 || argInd == -1) {
-            // The cursor is on the table namespace argument.  Replace the string node itself.
+            // The cursor is on the table namespace argument. Replace the string node itself.
             final DocumentRange.Builder range;
             if (replaced == null) {
                 range = placeAfter(invoke, request);
             } else {
                 range = replaceNode(replaced, request);
             }
-            matches.forEach(match->{
+            matches.forEach(match -> {
                 StringBuilder b = new StringBuilder();
                 b.append(qt);
                 b.append(match);
@@ -67,13 +67,14 @@ public class CompleteTableNamespace extends CompletionBuilder {
                         .setLength(len)
                         .setLabel(item)
                         .getTextEditBuilder()
-                            .setText(item)
-                            .setRange(range);
+                        .setText(item)
+                        .setRange(range);
                 results.add(result);
             });
         } else if (argInd == 1) {
-            // The cursor is on the table namespace argument.  We'll need to replace the whole thing, plus add a little suffix on
-            matches.forEach(match->{
+            // The cursor is on the table namespace argument. We'll need to replace the whole thing, plus add a little
+            // suffix on
+            matches.forEach(match -> {
                 getCompleter().addMatch(results, replaced, match, request, qt, ")");
             });
         }

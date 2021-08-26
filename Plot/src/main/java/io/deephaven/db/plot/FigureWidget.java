@@ -20,7 +20,7 @@ public class FigureWidget extends FigureImpl implements LiveWidget, LiveWidgetVi
     private static final long serialVersionUID = 763409998768966385L;
     private String[] validGroups;
 
-    @SuppressWarnings("WeakerAccess")   //this is used in the python integration
+    @SuppressWarnings("WeakerAccess") // this is used in the python integration
     public FigureWidget(final FigureImpl figure) {
         super(figure);
         figure.getFigure().consolidateTableMaps();

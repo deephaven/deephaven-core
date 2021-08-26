@@ -31,89 +31,145 @@ import io.grpc.BindableService;
     BatchTableRequest.Operation.OpCase value();
 }
 
+
 @Module
 public interface TableModule {
-    @Binds @IntoSet
+    @Binds
+    @IntoSet
     BindableService bindTableServiceGrpcImpl(TableServiceGrpcImpl tableService);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.EMPTY_TABLE)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.EMPTY_TABLE)
     GrpcTableOperation<?> bindOperationEmptyTable(EmptyTableGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.TIME_TABLE)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.TIME_TABLE)
     GrpcTableOperation<?> bindOperationTimeTable(TimeTableGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.MERGE)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.MERGE)
     GrpcTableOperation<?> bindOperationMergeTables(MergeTablesGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.SELECT_DISTINCT)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.SELECT_DISTINCT)
     GrpcTableOperation<?> bindOperationSelectDistinct(SelectDistinctGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.UPDATE)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.UPDATE)
     GrpcTableOperation<?> bindOperationUpdate(UpdateOrSelectGrpcImpl.UpdateGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.LAZY_UPDATE)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.LAZY_UPDATE)
     GrpcTableOperation<?> bindOperationLazyUpdate(UpdateOrSelectGrpcImpl.LazyUpdateGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.VIEW)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.VIEW)
     GrpcTableOperation<?> bindOperationView(UpdateOrSelectGrpcImpl.ViewGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.UPDATE_VIEW)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.UPDATE_VIEW)
     GrpcTableOperation<?> bindOperationUpdateView(UpdateOrSelectGrpcImpl.UpdateViewGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.SELECT)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.SELECT)
     GrpcTableOperation<?> bindOperationSelect(UpdateOrSelectGrpcImpl.SelectGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.HEAD_BY)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.HEAD_BY)
     GrpcTableOperation<?> bindOperationHeadBy(HeadOrTailByGrpcImpl.HeadByGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.TAIL_BY)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.TAIL_BY)
     GrpcTableOperation<?> bindOperationTailBy(HeadOrTailByGrpcImpl.TailByGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.HEAD)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.HEAD)
     GrpcTableOperation<?> bindOperationHead(HeadOrTailGrpcImpl.HeadGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.TAIL)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.TAIL)
     GrpcTableOperation<?> bindOperationTail(HeadOrTailGrpcImpl.TailGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.UNGROUP)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.UNGROUP)
     GrpcTableOperation<?> bindOperationUngroup(UngroupGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.COMBO_AGGREGATE)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.COMBO_AGGREGATE)
     GrpcTableOperation<?> bindOperationComboAgg(ComboAggregateGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.CROSS_JOIN)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.CROSS_JOIN)
     GrpcTableOperation<?> bindOperationCrossJoin(JoinTablesGrpcImpl.CrossJoinTablesGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.EXACT_JOIN)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.EXACT_JOIN)
     GrpcTableOperation<?> bindOperationExactJoin(JoinTablesGrpcImpl.ExactJoinTablesGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.LEFT_JOIN)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.LEFT_JOIN)
     GrpcTableOperation<?> bindOperationLeftJoin(JoinTablesGrpcImpl.LeftJoinTablesGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.NATURAL_JOIN)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.NATURAL_JOIN)
     GrpcTableOperation<?> bindOperationNaturalJoin(JoinTablesGrpcImpl.NaturalJoinTablesGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.FILTER)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.FILTER)
     GrpcTableOperation<?> bindOperationFilterTable(FilterTableGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.UNSTRUCTURED_FILTER)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.UNSTRUCTURED_FILTER)
     GrpcTableOperation<?> bindOperationUnstructuredFilterTable(UnstructuredFilterTableGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.SNAPSHOT)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.SNAPSHOT)
     GrpcTableOperation<?> bindOperationSnapshotTable(SnapshotTableGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.SORT)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.SORT)
     GrpcTableOperation<?> bindOperationSortTable(SortTableGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.DROP_COLUMNS)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.DROP_COLUMNS)
     GrpcTableOperation<?> bindOperationDropColumns(DropColumnsGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.FLATTEN)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.FLATTEN)
     GrpcTableOperation<?> bindOperationFlatten(FlattenTableGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.AS_OF_JOIN)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.AS_OF_JOIN)
     GrpcTableOperation<?> bindOperationAsOfJoin(JoinTablesGrpcImpl.AsOfJoinTablesGrpcImpl op);
 
-    @Binds @IntoMap @BatchOpCode(BatchTableRequest.Operation.OpCase.RUN_CHART_DOWNSAMPLE)
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.RUN_CHART_DOWNSAMPLE)
     GrpcTableOperation<?> bindOperationRunChartDownsample(RunChartDownsampleGrpcImpl op);
 }

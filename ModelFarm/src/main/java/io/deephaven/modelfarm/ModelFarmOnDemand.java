@@ -23,14 +23,19 @@ import java.util.Set;
  * single {@link LiveTableMonitor} lock.
  *
  * @param <KEYTYPE> The type of the keys (e.g. {@link io.deephaven.modelfarm.fitterfarm.FitScope}).
- * @param <DATATYPE> The type of the data (e.g. {@link io.deephaven.modelfarm.fitterfarm.futures.FuturesFitDataOptionPrices}.
- * @param <ROWDATAMANAGERTYPE> The type of the RowDataManager (e.g. {@link io.deephaven.modelfarm.fitterfarm.futures.FuturesFitDataManager}).
+ * @param <DATATYPE> The type of the data (e.g.
+ *        {@link io.deephaven.modelfarm.fitterfarm.futures.FuturesFitDataOptionPrices}.
+ * @param <ROWDATAMANAGERTYPE> The type of the RowDataManager (e.g.
+ *        {@link io.deephaven.modelfarm.fitterfarm.futures.FuturesFitDataManager}).
  */
-public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends RowDataManager<KEYTYPE, DATATYPE>> extends ModelFarmBase<DATATYPE> {
+public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends RowDataManager<KEYTYPE, DATATYPE>>
+        extends ModelFarmBase<DATATYPE> {
 
-    private static final boolean LOG_PERF = Configuration.getInstance().getBooleanWithDefault("ModelFarm.logModelFarmOnDemandPerformance", false);
+    private static final boolean LOG_PERF =
+            Configuration.getInstance().getBooleanWithDefault("ModelFarm.logModelFarmOnDemandPerformance", false);
     private static final Logger log = ProcessEnvironment.getDefaultLog(ModelFarmOnDemand.class);
-    private static final FunctionalInterfaces.ThrowingBiConsumer<QueryDataRetrievalOperation, NotificationStepSource, RuntimeException> DO_LOCKED_FUNCTION = getDoLockedConsumer(GetDataLockType.LTM_READ_LOCK);
+    private static final FunctionalInterfaces.ThrowingBiConsumer<QueryDataRetrievalOperation, NotificationStepSource, RuntimeException> DO_LOCKED_FUNCTION =
+            getDoLockedConsumer(GetDataLockType.LTM_READ_LOCK);
 
     private static class QueueAndCallback<DATATYPE> {
         private final Queue<DATATYPE> queue;
@@ -43,8 +48,9 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
     }
 
     /**
-     * A queue of queues. Each "inner queue" (the elements of the {@code execQueue} represents one on-demand pricing request. The {@link #execute()} method
-     * will drain each inner queue before removing that queue from the {@code execQueue}.
+     * A queue of queues. Each "inner queue" (the elements of the {@code execQueue} represents one on-demand pricing
+     * request. The {@link #execute()} method will drain each inner queue before removing that queue from the
+     * {@code execQueue}.
      *
      * Must always acquire lock on this object before using it.
      */
@@ -54,7 +60,7 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
      * Create a multithreaded resource to execute data driven models on demand.
      *
      * @param nThreads number of worker threads.
-     * @param model    model to execute.
+     * @param model model to execute.
      */
     @SuppressWarnings("unused")
     public ModelFarmOnDemand(int nThreads, Model<DATATYPE> model) {
@@ -62,12 +68,13 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
     }
 
     /**
-     * Submit a request to {@link Model#exec execute} the {@link #model}. Can be called either with or without a LiveTableMonitor lock -- the decision of whether/how to acquire a
-     * lock is left to the {@link #DO_LOCKED_FUNCTION}.  All keys represented by the data in the {@code dataManager} will be processed.
+     * Submit a request to {@link Model#exec execute} the {@link #model}. Can be called either with or without a
+     * LiveTableMonitor lock -- the decision of whether/how to acquire a lock is left to the
+     * {@link #DO_LOCKED_FUNCTION}. All keys represented by the data in the {@code dataManager} will be processed.
      *
      * @param dataManager The {@code RowDataManager} that will provide data for the pricing requests.
-     * @param callback    A callback function to run after all keys have been processed. Can be {@code null}, in which case
-     *                    it will be ignored.
+     * @param callback A callback function to run after all keys have been processed. Can be {@code null}, in which case
+     *        it will be ignored.
      */
     @SuppressWarnings("unused")
     public void requestUpdate(ROWDATAMANAGERTYPE dataManager, Runnable callback) {
@@ -75,14 +82,15 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
     }
 
     /**
-     * Submit a request to {@link Model#exec execute} the {@link #model}. Can be called either with or without a LiveTableMonitor lock -- the decision of whether/how to acquire a
-     * lock is left to the {@link #DO_LOCKED_FUNCTION}.
+     * Submit a request to {@link Model#exec execute} the {@link #model}. Can be called either with or without a
+     * LiveTableMonitor lock -- the decision of whether/how to acquire a lock is left to the
+     * {@link #DO_LOCKED_FUNCTION}.
      *
      * @param dataManager The {@code RowDataManager} that will provide data for the pricing requests.
      * @param callback A callback function to run after all keys have been processed. Can be {@code null}, in which case
-     *                 it will be ignored.
+     *        it will be ignored.
      * @param keys They keys for which data should be passed to the model. If {@code keys == null}, then all keys
-     *             represented by the data in the {@code dataManager} will be processed.
+     *        represented by the data in the {@code dataManager} will be processed.
      */
     @SuppressWarnings("WeakerAccess")
     public void requestUpdate(ROWDATAMANAGERTYPE dataManager, Runnable callback, Set<KEYTYPE> keys) {
@@ -98,17 +106,18 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
             final Index index = dataManagerTable.getIndex();
 
             if (index.empty()) {
-                log.warn().append(ModelFarmOnDemand.class.getSimpleName() + ": ").append("Table is empty. Nothing to price.").endl();
+                log.warn().append(ModelFarmOnDemand.class.getSimpleName() + ": ")
+                        .append("Table is empty. Nothing to price.").endl();
                 callback.run();
                 return;
             }
 
-            for (Index.Iterator iter = index.iterator(); iter.hasNext(); ) {
+            for (Index.Iterator iter = index.iterator(); iter.hasNext();) {
                 final long idx = iter.nextLong();
 
                 // if a `keys` set was provided, then only enqueue keys in the `dataManager` that are also in the set.
                 final boolean includeThisKey;
-                if(keys != null) {
+                if (keys != null) {
                     final KEYTYPE key = usePrev ? dataManager.uniqueIdPrev(idx) : dataManager.uniqueIdCurrent(idx);
                     includeThisKey = keys.contains(key);
                 } else {
@@ -124,7 +133,7 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
             }
         }, (NotificationStepSource) dataManagerTable);
 
-        if(dataToEval.isEmpty()) {
+        if (dataToEval.isEmpty()) {
             log.warn().append("ModelFarmOnDemand: dataToEval is empty!").endl();
             callback.run();
             return;
@@ -146,7 +155,7 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
         final long t0 = System.nanoTime();
 
         final DATATYPE data;
-        QueueAndCallback<DATATYPE> queueAndCallbackOneRequest;    // A queue of all data pertaining to one request
+        QueueAndCallback<DATATYPE> queueAndCallbackOneRequest; // A queue of all data pertaining to one request
         final boolean queueEmpty;
         synchronized (execQueue) {
 
@@ -161,7 +170,7 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
 
             // If `data` was the data for the last key in this request, then remove this request from the `execQueue`:
             queueEmpty = queueAndCallbackOneRequest.queue.isEmpty();
-            if(queueEmpty) {
+            if (queueEmpty) {
                 execQueue.remove();
             }
         }
@@ -179,17 +188,17 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
         }
 
         if (LOG_PERF) {
-            log.warn("ModelFarmOnDemand.execute PERFORMANCE: all=" + (t2 - t0) / 1000 + " take=" + (t1 - t0) / 100 + " exec=" + (t2 - t1) / 1000);
+            log.warn("ModelFarmOnDemand.execute PERFORMANCE: all=" + (t2 - t0) / 1000 + " take=" + (t1 - t0) / 100
+                    + " exec=" + (t2 - t1) / 1000);
         }
 
         if (queueEmpty && queueAndCallbackOneRequest.callback != null) {
-                queueAndCallbackOneRequest.callback.run();
+            queueAndCallbackOneRequest.callback.run();
         }
     }
 
     @Override
-    protected void modelFarmStarted() {
-    }
+    protected void modelFarmStarted() {}
 
     @Override
     protected boolean isQueueEmpty() {

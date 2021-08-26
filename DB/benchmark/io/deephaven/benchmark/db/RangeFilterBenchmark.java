@@ -21,7 +21,7 @@ import static io.deephaven.benchmarking.BenchmarkTools.applySparsity;
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Warmup(iterations = 1, time = 1)
 @Measurement(iterations = 3, time = 5)
-@Timeout(time=10)
+@Timeout(time = 10)
 @Fork(1)
 public class RangeFilterBenchmark {
     private TableBenchmarkState state;
@@ -51,7 +51,7 @@ public class RangeFilterBenchmark {
         final BenchmarkTableBuilder builder;
         final int actualSize = BenchmarkTools.sizeWithSparsity(tableSize, sparsity);
 
-        switch(tableType) {
+        switch (tableType) {
             case "Historical":
                 builder = BenchmarkTools.persistentTableBuilder("Carlos", actualSize)
                         .setPartitioningFormula("${autobalance_single}")
@@ -100,8 +100,8 @@ public class RangeFilterBenchmark {
             } else {
                 final long midpoint = (startTime.getNanos() + endTime.getNanos()) / 2;
                 final long range = (endTime.getNanos() - startTime.getNanos());
-                lowerBound = DBTimeUtils.nanosToTime(midpoint - (long)(range * (selectivity / 100.0)));
-                upperBound = DBTimeUtils.nanosToTime(midpoint + (long)(range * (selectivity / 100.0)));
+                lowerBound = DBTimeUtils.nanosToTime(midpoint - (long) (range * (selectivity / 100.0)));
+                upperBound = DBTimeUtils.nanosToTime(midpoint + (long) (range * (selectivity / 100.0)));
             }
 
             assert lowerBound != null;
@@ -126,7 +126,7 @@ public class RangeFilterBenchmark {
 
         final BenchmarkTable bmTable = builder.build();
         state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
-        inputTable = applySparsity(bmTable.getTable(),tableSize,sparsity,0).coalesce();
+        inputTable = applySparsity(bmTable.getTable(), tableSize, sparsity, 0).coalesce();
     }
 
     @TearDown(Level.Trial)
@@ -150,7 +150,8 @@ public class RangeFilterBenchmark {
 
     private <R> R incrementalBenchmark(Function<Table, R> function) {
         final long sizePerStep = Math.max(inputTable.size() / 10, 1);
-        final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(sizePerStep, sizePerStep);
+        final IncrementalReleaseFilter incrementalReleaseFilter =
+                new IncrementalReleaseFilter(sizePerStep, sizePerStep);
         final Table filtered = inputTable.where(incrementalReleaseFilter);
 
         final R result = function.apply(filtered);
@@ -175,7 +176,7 @@ public class RangeFilterBenchmark {
         return state.setResult(inputTable.where(rangeFilter)).coalesce();
     }
 
-    public static void main(String [] args) {
+    public static void main(String[] args) {
         BenchUtil.run(RangeFilterBenchmark.class);
     }
 }

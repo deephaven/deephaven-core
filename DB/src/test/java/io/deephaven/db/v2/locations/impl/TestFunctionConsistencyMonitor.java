@@ -40,13 +40,14 @@ public class TestFunctionConsistencyMonitor {
             DBTimeUtils.currentDateNyOverride = "Armadillo";
             TestCase.assertEquals("Aardvark", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
 
-            consistentInteger = new CompositeTableDataServiceConsistencyMonitor.ConsistentSupplier<>(atomicInteger::getAndIncrement);
-            TestCase.assertEquals((Integer)7, consistentInteger.get());
-            TestCase.assertEquals((Integer)7, consistentInteger.get());
-            TestCase.assertEquals((Integer)7, consistentInteger.get());
+            consistentInteger = new CompositeTableDataServiceConsistencyMonitor.ConsistentSupplier<>(
+                    atomicInteger::getAndIncrement);
+            TestCase.assertEquals((Integer) 7, consistentInteger.get());
+            TestCase.assertEquals((Integer) 7, consistentInteger.get());
+            TestCase.assertEquals((Integer) 7, consistentInteger.get());
         }
 
-        TestCase.assertEquals((Integer)8, consistentInteger.get());
+        TestCase.assertEquals((Integer) 8, consistentInteger.get());
 
         TestCase.assertEquals("Armadillo", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
 

@@ -77,13 +77,17 @@ public interface SelectColumn {
     Class getReturnedType();
 
     /**
-     * Get a list of the names of columns used in this SelectColumn.  Behavior is undefined if none of the init* methods have been called yet.
+     * Get a list of the names of columns used in this SelectColumn. Behavior is undefined if none of the init* methods
+     * have been called yet.
+     * 
      * @return the columns used in this SelectColumn
      */
     List<String> getColumns();
 
     /**
-     * Get a list of the names of column arrays used in this SelectColumn.  Behavior is undefined if none of the init* methods have been called yet.
+     * Get a list of the names of column arrays used in this SelectColumn. Behavior is undefined if none of the init*
+     * methods have been called yet.
+     * 
      * @return the list of column arrays used
      */
     List<String> getColumnArrays();
@@ -113,6 +117,7 @@ public interface SelectColumn {
 
     /**
      * Get a MatchPair for this column, if applicable.
+     * 
      * @return
      */
     MatchPair getMatchPair();
@@ -135,7 +140,8 @@ public interface SelectColumn {
     /**
      * Should we disallow use of this column for refreshing tables?
      *
-     * Some formulas can not be reliably computed with a refreshing table, therefore we will refuse to compute those values.
+     * Some formulas can not be reliably computed with a refreshing table, therefore we will refuse to compute those
+     * values.
      */
     boolean disallowRefresh();
 
@@ -160,7 +166,7 @@ public interface SelectColumn {
 
         @Override
         public void visit(Value rhs) {
-            rhs.walk((Value.Visitor)this);
+            rhs.walk((Value.Visitor) this);
         }
 
         @Override

@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.sources.SingleValueColumnSource",
  "methods": {
-  "ensureCapacity": ":param capacity: long",
+  "ensureCapacity": "Ensure that this WritableSource can accept index keys in range [0, capacity).\n\n:param capacity: (long) - The new minimum capacity\n:param nullFilled: (boolean) - Whether data should be \"null-filled\". If true, get operations at index keys that have not been\n                   set will return the appropriate null value; otherwise such gets produce undefined results.",
   "getSingleValueColumnSource": "Note: Java generics information - <T>\n\n:param type: java.lang.Class<T>\n:return: io.deephaven.db.v2.sources.SingleValueColumnSource",
   "isImmutable": "Determine if this column source is immutable, meaning that the values at a given index key never change.\n\n:return: (boolean) true if the values at a given index of the column source never change, false otherwise",
   "makeFillFromContext": "Provide a default, empty WritableChunkSink.FillFromContext for use with our default WritableSource.fillFromChunk(io.deephaven.db.v2.sources.WritableChunkSink.FillFromContext, io.deephaven.db.v2.sources.chunk.Chunk<? extends io.deephaven.db.v2.sources.chunk.Attributes.Values>, io.deephaven.db.v2.utils.OrderedKeys).\n\n:param chunkCapacity: int\n:return: io.deephaven.db.v2.sources.WritableChunkSink.FillFromContext",

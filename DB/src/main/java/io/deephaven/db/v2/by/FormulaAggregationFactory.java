@@ -33,19 +33,23 @@ public class FormulaAggregationFactory implements AggregationContextFactory {
     }
 
     @Override
-    public AggregationContext makeAggregationContext(@NotNull final Table inputTable, @NotNull final String... groupByColumnNames) {
+    public AggregationContext makeAggregationContext(@NotNull final Table inputTable,
+            @NotNull final String... groupByColumnNames) {
         final Set<String> groupByColumnNameSet = Arrays.stream(groupByColumnNames).collect(Collectors.toSet());
-        final MatchPair[] resultColumns = inputTable.getDefinition().getColumnNames().stream().filter(cn -> !groupByColumnNameSet.contains(cn)).map(MatchPairFactory::getExpression).toArray(MatchPair[]::new);
+        final MatchPair[] resultColumns =
+                inputTable.getDefinition().getColumnNames().stream().filter(cn -> !groupByColumnNameSet.contains(cn))
+                        .map(MatchPairFactory::getExpression).toArray(MatchPair[]::new);
 
-        final ByChunkedOperator byChunkedOperator = new ByChunkedOperator((QueryTable) inputTable, false, resultColumns);
-        final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(byChunkedOperator, true, formula, columnParamName, resultColumns);
+        final ByChunkedOperator byChunkedOperator =
+                new ByChunkedOperator((QueryTable) inputTable, false, resultColumns);
+        final FormulaChunkedOperator formulaChunkedOperator =
+                new FormulaChunkedOperator(byChunkedOperator, true, formula, columnParamName, resultColumns);
 
-        //noinspection unchecked
+        // noinspection unchecked
         return new AggregationContext(
-                new IterativeChunkedAggregationOperator[]{formulaChunkedOperator},
-                new String[][]{CollectionUtil.ZERO_LENGTH_STRING_ARRAY},
-                new ChunkSource.WithPrev[]{null}
-        );
+                new IterativeChunkedAggregationOperator[] {formulaChunkedOperator},
+                new String[][] {CollectionUtil.ZERO_LENGTH_STRING_ARRAY},
+                new ChunkSource.WithPrev[] {null});
     }
 
     @Override
@@ -54,32 +58,36 @@ public class FormulaAggregationFactory implements AggregationContextFactory {
     }
 
     public static QueryTable applyToAllBy(@NotNull final QueryTable inputTable,
-                                          @NotNull final String formula,
-                                          @NotNull final String columnParamName,
-                                          @NotNull final String... groupByColumnNames) {
-        return applyToAllBy(AggregationControl.DEFAULT_FOR_OPERATOR, inputTable, formula, columnParamName, groupByColumnNames);
+            @NotNull final String formula,
+            @NotNull final String columnParamName,
+            @NotNull final String... groupByColumnNames) {
+        return applyToAllBy(AggregationControl.DEFAULT_FOR_OPERATOR, inputTable, formula, columnParamName,
+                groupByColumnNames);
     }
 
     public static QueryTable applyToAllBy(@NotNull final QueryTable inputTable,
-                                          @NotNull final String formula,
-                                          @NotNull final String columnParamName,
-                                          @NotNull final SelectColumn[] groupByColumns) {
-        return applyToAllBy(AggregationControl.DEFAULT_FOR_OPERATOR, inputTable, formula, columnParamName, groupByColumns);
+            @NotNull final String formula,
+            @NotNull final String columnParamName,
+            @NotNull final SelectColumn[] groupByColumns) {
+        return applyToAllBy(AggregationControl.DEFAULT_FOR_OPERATOR, inputTable, formula, columnParamName,
+                groupByColumns);
     }
 
     public static QueryTable applyToAllBy(@NotNull final AggregationControl aggregationControl,
-                                          @NotNull final QueryTable inputTable,
-                                          @NotNull final String formula,
-                                          @NotNull final String columnParamName,
-                                          @NotNull final String... groupByColumnNames) {
-        return applyToAllBy(aggregationControl, inputTable, formula, columnParamName, SelectColumnFactory.getExpressions(groupByColumnNames));
+            @NotNull final QueryTable inputTable,
+            @NotNull final String formula,
+            @NotNull final String columnParamName,
+            @NotNull final String... groupByColumnNames) {
+        return applyToAllBy(aggregationControl, inputTable, formula, columnParamName,
+                SelectColumnFactory.getExpressions(groupByColumnNames));
     }
 
     public static QueryTable applyToAllBy(@NotNull final AggregationControl aggregationControl,
-                                          @NotNull final QueryTable inputTable,
-                                          @NotNull final String formula,
-                                          @NotNull final String columnParamName,
-                                          @NotNull final SelectColumn[] groupByColumns) {
-        return ChunkedOperatorAggregationHelper.aggregation(aggregationControl, new FormulaAggregationFactory(formula, columnParamName), inputTable, groupByColumns);
+            @NotNull final QueryTable inputTable,
+            @NotNull final String formula,
+            @NotNull final String columnParamName,
+            @NotNull final SelectColumn[] groupByColumns) {
+        return ChunkedOperatorAggregationHelper.aggregation(aggregationControl,
+                new FormulaAggregationFactory(formula, columnParamName), inputTable, groupByColumns);
     }
 }

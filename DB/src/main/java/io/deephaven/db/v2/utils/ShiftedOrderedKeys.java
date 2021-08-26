@@ -20,7 +20,8 @@ public class ShiftedOrderedKeys extends OrderedKeysAsChunkImpl implements Ordere
     private OrderedKeys wrappedOK;
 
     private ShiftedOrderedKeys(final OrderedKeys wrappedOK, final long shiftAmount) {
-        Assert.assertion(!(wrappedOK instanceof ShiftedOrderedKeys), "Wrapped Ordered Keys must not be a ShiftedOrderedKeys");
+        Assert.assertion(!(wrappedOK instanceof ShiftedOrderedKeys),
+                "Wrapped Ordered Keys must not be a ShiftedOrderedKeys");
         this.shiftAmount = shiftAmount;
         this.wrappedOK = wrappedOK;
     }
@@ -107,7 +108,8 @@ public class ShiftedOrderedKeys extends OrderedKeysAsChunkImpl implements Ordere
 
     @Override
     public OrderedKeys getOrderedKeysByKeyRange(long startKeyInclusive, long endKeyInclusive) {
-        return wrap(wrappedOK.getOrderedKeysByKeyRange(startKeyInclusive - shiftAmount, endKeyInclusive - shiftAmount), shiftAmount);
+        return wrap(wrappedOK.getOrderedKeysByKeyRange(startKeyInclusive - shiftAmount, endKeyInclusive - shiftAmount),
+                shiftAmount);
     }
 
     @Override

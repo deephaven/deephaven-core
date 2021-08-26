@@ -85,7 +85,8 @@ public class TestChunkColumnSource {
         }
 
         try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(2048)) {
-            final CharChunk<? extends Attributes.Values> values = columnSource.getChunk(getContext, OrderedKeys.forRange(0, 2047)).asCharChunk();
+            final CharChunk<? extends Attributes.Values> values =
+                    columnSource.getChunk(getContext, OrderedKeys.forRange(0, 2047)).asCharChunk();
             TestCase.assertEquals(2048, values.size());
             for (int ii = 0; ii < 1024; ++ii) {
                 TestCase.assertEquals(charChunk1.get(ii), values.get(ii));
@@ -94,7 +95,8 @@ public class TestChunkColumnSource {
         }
 
         try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(2048)) {
-            final CharChunk<? extends Attributes.Values> values = columnSource.getChunk(getContext, OrderedKeys.forRange(0, 1023)).asCharChunk();
+            final CharChunk<? extends Attributes.Values> values =
+                    columnSource.getChunk(getContext, OrderedKeys.forRange(0, 1023)).asCharChunk();
             TestCase.assertEquals(1024, values.size());
             for (int ii = 0; ii < 1024; ++ii) {
                 TestCase.assertEquals(charChunk1.get(ii), values.get(ii));
@@ -102,7 +104,8 @@ public class TestChunkColumnSource {
         }
 
         try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(2048)) {
-            final CharChunk<? extends Attributes.Values> values = columnSource.getChunk(getContext, OrderedKeys.forRange(1024, 2047)).asCharChunk();
+            final CharChunk<? extends Attributes.Values> values =
+                    columnSource.getChunk(getContext, OrderedKeys.forRange(1024, 2047)).asCharChunk();
             TestCase.assertEquals(1024, values.size());
             for (int ii = 0; ii < 1024; ++ii) {
                 TestCase.assertEquals(charChunk2.get(ii), values.get(ii));
@@ -110,13 +113,15 @@ public class TestChunkColumnSource {
         }
 
         try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(2048)) {
-            final CharChunk<? extends Attributes.Values> values = columnSource.getChunk(getContext, OrderedKeys.forRange(2047, 2047)).asCharChunk();
+            final CharChunk<? extends Attributes.Values> values =
+                    columnSource.getChunk(getContext, OrderedKeys.forRange(2047, 2047)).asCharChunk();
             TestCase.assertEquals(1, values.size());
             TestCase.assertEquals(charChunk2.get(1023), values.get(0));
         }
 
         try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(2048)) {
-            final CharChunk<? extends Attributes.Values> values = columnSource.getChunk(getContext, OrderedKeys.forRange(10, 20)).asCharChunk();
+            final CharChunk<? extends Attributes.Values> values =
+                    columnSource.getChunk(getContext, OrderedKeys.forRange(10, 20)).asCharChunk();
             TestCase.assertEquals(11, values.size());
             for (int ii = 0; ii <= 10; ++ii) {
                 TestCase.assertEquals(charChunk1.get(ii + 10), values.get(ii));
@@ -124,7 +129,8 @@ public class TestChunkColumnSource {
         }
 
         try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(2048)) {
-            final CharChunk<? extends Attributes.Values> values = columnSource.getChunk(getContext, OrderedKeys.forRange(1020, 1030)).asCharChunk();
+            final CharChunk<? extends Attributes.Values> values =
+                    columnSource.getChunk(getContext, OrderedKeys.forRange(1020, 1030)).asCharChunk();
             TestCase.assertEquals(11, values.size());
             for (int ii = 0; ii <= 3; ++ii) {
                 TestCase.assertEquals(charChunk1.get(ii + 1020), values.get(ii));
@@ -176,7 +182,8 @@ public class TestChunkColumnSource {
         checkLongs(longChunk1, longChunk2, longColumnSource);
     }
 
-    private void checkDoubles(WritableDoubleChunk<Attributes.Values> doubleChunk1, WritableDoubleChunk<Attributes.Values> doubleChunk2, ChunkColumnSource<?> doubleColumnSource) {
+    private void checkDoubles(WritableDoubleChunk<Attributes.Values> doubleChunk1,
+            WritableDoubleChunk<Attributes.Values> doubleChunk2, ChunkColumnSource<?> doubleColumnSource) {
         final WritableDoubleChunk<Attributes.Values> destChunk = WritableDoubleChunk.makeWritableChunk(2048);
         try (final ChunkSource.FillContext doubleFillContext = doubleColumnSource.makeFillContext(2048)) {
             doubleColumnSource.fillChunk(doubleFillContext, destChunk, OrderedKeys.forRange(0, 2047));
@@ -213,7 +220,8 @@ public class TestChunkColumnSource {
         }
 
         try (final ChunkSource.GetContext getContext = doubleColumnSource.makeGetContext(2048)) {
-            final DoubleChunk<? extends Attributes.Values> values = doubleColumnSource.getChunk(getContext, OrderedKeys.forRange(0, 2047)).asDoubleChunk();
+            final DoubleChunk<? extends Attributes.Values> values =
+                    doubleColumnSource.getChunk(getContext, OrderedKeys.forRange(0, 2047)).asDoubleChunk();
             TestCase.assertEquals(2048, values.size());
             for (int ii = 0; ii < 1024; ++ii) {
                 TestCase.assertEquals(doubleChunk1.get(ii), values.get(ii));
@@ -222,7 +230,8 @@ public class TestChunkColumnSource {
         }
 
         try (final ChunkSource.GetContext getContext = doubleColumnSource.makeGetContext(2048)) {
-            final DoubleChunk<? extends Attributes.Values> values = doubleColumnSource.getChunk(getContext, OrderedKeys.forRange(0, 1023)).asDoubleChunk();
+            final DoubleChunk<? extends Attributes.Values> values =
+                    doubleColumnSource.getChunk(getContext, OrderedKeys.forRange(0, 1023)).asDoubleChunk();
             TestCase.assertEquals(1024, values.size());
             for (int ii = 0; ii < 1024; ++ii) {
                 TestCase.assertEquals(doubleChunk1.get(ii), values.get(ii));
@@ -230,7 +239,8 @@ public class TestChunkColumnSource {
         }
 
         try (final ChunkSource.GetContext getContext = doubleColumnSource.makeGetContext(2048)) {
-            final DoubleChunk<? extends Attributes.Values> values = doubleColumnSource.getChunk(getContext, OrderedKeys.forRange(1024, 2047)).asDoubleChunk();
+            final DoubleChunk<? extends Attributes.Values> values =
+                    doubleColumnSource.getChunk(getContext, OrderedKeys.forRange(1024, 2047)).asDoubleChunk();
             TestCase.assertEquals(1024, values.size());
             for (int ii = 0; ii < 1024; ++ii) {
                 TestCase.assertEquals(doubleChunk2.get(ii), values.get(ii));
@@ -238,13 +248,15 @@ public class TestChunkColumnSource {
         }
 
         try (final ChunkSource.GetContext getContext = doubleColumnSource.makeGetContext(2048)) {
-            final DoubleChunk<? extends Attributes.Values> values = doubleColumnSource.getChunk(getContext, OrderedKeys.forRange(2047, 2047)).asDoubleChunk();
+            final DoubleChunk<? extends Attributes.Values> values =
+                    doubleColumnSource.getChunk(getContext, OrderedKeys.forRange(2047, 2047)).asDoubleChunk();
             TestCase.assertEquals(1, values.size());
             TestCase.assertEquals(doubleChunk2.get(1023), values.get(0));
         }
 
         try (final ChunkSource.GetContext getContext = doubleColumnSource.makeGetContext(2048)) {
-            final DoubleChunk<? extends Attributes.Values> values = doubleColumnSource.getChunk(getContext, OrderedKeys.forRange(10, 20)).asDoubleChunk();
+            final DoubleChunk<? extends Attributes.Values> values =
+                    doubleColumnSource.getChunk(getContext, OrderedKeys.forRange(10, 20)).asDoubleChunk();
             TestCase.assertEquals(11, values.size());
             for (int ii = 0; ii <= 10; ++ii) {
                 TestCase.assertEquals(doubleChunk1.get(ii + 10), values.get(ii));
@@ -252,7 +264,8 @@ public class TestChunkColumnSource {
         }
 
         try (final ChunkSource.GetContext getContext = doubleColumnSource.makeGetContext(2048)) {
-            final DoubleChunk<? extends Attributes.Values> values = doubleColumnSource.getChunk(getContext, OrderedKeys.forRange(1020, 1030)).asDoubleChunk();
+            final DoubleChunk<? extends Attributes.Values> values =
+                    doubleColumnSource.getChunk(getContext, OrderedKeys.forRange(1020, 1030)).asDoubleChunk();
             TestCase.assertEquals(11, values.size());
             for (int ii = 0; ii <= 3; ++ii) {
                 TestCase.assertEquals(doubleChunk1.get(ii + 1020), values.get(ii));
@@ -263,7 +276,8 @@ public class TestChunkColumnSource {
         }
     }
 
-    private void checkLongs(WritableLongChunk<Attributes.Values> longChunk1, WritableLongChunk<Attributes.Values> longChunk2, ChunkColumnSource<?> longColumnSource) {
+    private void checkLongs(WritableLongChunk<Attributes.Values> longChunk1,
+            WritableLongChunk<Attributes.Values> longChunk2, ChunkColumnSource<?> longColumnSource) {
         final WritableLongChunk<Attributes.Values> destChunk = WritableLongChunk.makeWritableChunk(2048);
         try (final ChunkSource.FillContext longFillContext = longColumnSource.makeFillContext(2048)) {
             longColumnSource.fillChunk(longFillContext, destChunk, OrderedKeys.forRange(0, 2047));
@@ -300,7 +314,8 @@ public class TestChunkColumnSource {
         }
 
         try (final ChunkSource.GetContext getContext = longColumnSource.makeGetContext(2048)) {
-            final LongChunk<? extends Attributes.Values> values = longColumnSource.getChunk(getContext, OrderedKeys.forRange(0, 2047)).asLongChunk();
+            final LongChunk<? extends Attributes.Values> values =
+                    longColumnSource.getChunk(getContext, OrderedKeys.forRange(0, 2047)).asLongChunk();
             TestCase.assertEquals(2048, values.size());
             for (int ii = 0; ii < 1024; ++ii) {
                 TestCase.assertEquals(longChunk1.get(ii), values.get(ii));
@@ -309,7 +324,8 @@ public class TestChunkColumnSource {
         }
 
         try (final ChunkSource.GetContext getContext = longColumnSource.makeGetContext(2048)) {
-            final LongChunk<? extends Attributes.Values> values = longColumnSource.getChunk(getContext, OrderedKeys.forRange(0, 1023)).asLongChunk();
+            final LongChunk<? extends Attributes.Values> values =
+                    longColumnSource.getChunk(getContext, OrderedKeys.forRange(0, 1023)).asLongChunk();
             TestCase.assertEquals(1024, values.size());
             for (int ii = 0; ii < 1024; ++ii) {
                 TestCase.assertEquals(longChunk1.get(ii), values.get(ii));
@@ -317,7 +333,8 @@ public class TestChunkColumnSource {
         }
 
         try (final ChunkSource.GetContext getContext = longColumnSource.makeGetContext(2048)) {
-            final LongChunk<? extends Attributes.Values> values = longColumnSource.getChunk(getContext, OrderedKeys.forRange(1024, 2047)).asLongChunk();
+            final LongChunk<? extends Attributes.Values> values =
+                    longColumnSource.getChunk(getContext, OrderedKeys.forRange(1024, 2047)).asLongChunk();
             TestCase.assertEquals(1024, values.size());
             for (int ii = 0; ii < 1024; ++ii) {
                 TestCase.assertEquals(longChunk2.get(ii), values.get(ii));
@@ -325,13 +342,15 @@ public class TestChunkColumnSource {
         }
 
         try (final ChunkSource.GetContext getContext = longColumnSource.makeGetContext(2048)) {
-            final LongChunk<? extends Attributes.Values> values = longColumnSource.getChunk(getContext, OrderedKeys.forRange(2047, 2047)).asLongChunk();
+            final LongChunk<? extends Attributes.Values> values =
+                    longColumnSource.getChunk(getContext, OrderedKeys.forRange(2047, 2047)).asLongChunk();
             TestCase.assertEquals(1, values.size());
             TestCase.assertEquals(longChunk2.get(1023), values.get(0));
         }
 
         try (final ChunkSource.GetContext getContext = longColumnSource.makeGetContext(2048)) {
-            final LongChunk<? extends Attributes.Values> values = longColumnSource.getChunk(getContext, OrderedKeys.forRange(10, 20)).asLongChunk();
+            final LongChunk<? extends Attributes.Values> values =
+                    longColumnSource.getChunk(getContext, OrderedKeys.forRange(10, 20)).asLongChunk();
             TestCase.assertEquals(11, values.size());
             for (int ii = 0; ii <= 10; ++ii) {
                 TestCase.assertEquals(longChunk1.get(ii + 10), values.get(ii));
@@ -339,7 +358,8 @@ public class TestChunkColumnSource {
         }
 
         try (final ChunkSource.GetContext getContext = longColumnSource.makeGetContext(2048)) {
-            final LongChunk<? extends Attributes.Values> values = longColumnSource.getChunk(getContext, OrderedKeys.forRange(1020, 1030)).asLongChunk();
+            final LongChunk<? extends Attributes.Values> values =
+                    longColumnSource.getChunk(getContext, OrderedKeys.forRange(1020, 1030)).asLongChunk();
             TestCase.assertEquals(11, values.size());
             for (int ii = 0; ii <= 3; ++ii) {
                 TestCase.assertEquals(longChunk1.get(ii + 1020), values.get(ii));
@@ -391,7 +411,8 @@ public class TestChunkColumnSource {
         }
 
         try (final ChunkSource.GetContext getContext = wrapped.makeGetContext(32)) {
-            final ObjectChunk<Boolean, ? extends Attributes.Values> values = wrapped.getChunk(getContext, OrderedKeys.forRange(1, 10)).asObjectChunk();
+            final ObjectChunk<Boolean, ? extends Attributes.Values> values =
+                    wrapped.getChunk(getContext, OrderedKeys.forRange(1, 10)).asObjectChunk();
             TestCase.assertEquals(10, values.size());
             for (int ii = 1; ii <= 10; ++ii) {
                 TestCase.assertEquals(makeExpectBoolean(ii), values.get(ii - 1));
@@ -432,7 +453,8 @@ public class TestChunkColumnSource {
         }
 
         try (final ChunkSource.GetContext getContext = wrapped.makeGetContext(32)) {
-            final ObjectChunk<Boolean, ? extends Attributes.Values> values = wrapped.getChunk(getContext, OrderedKeys.forRange(1, 10)).asObjectChunk();
+            final ObjectChunk<Boolean, ? extends Attributes.Values> values =
+                    wrapped.getChunk(getContext, OrderedKeys.forRange(1, 10)).asObjectChunk();
             TestCase.assertEquals(10, values.size());
             for (int ii = 1; ii <= 10; ++ii) {
                 TestCase.assertEquals(makeExpectDateTime(ii), values.get(ii - 1));

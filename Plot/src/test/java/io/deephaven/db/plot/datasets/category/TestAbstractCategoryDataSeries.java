@@ -33,7 +33,8 @@ public class TestAbstractCategoryDataSeries extends BaseArrayTestCase {
         }
 
         TestCat(AxesImpl axes) {
-            super(axes, 1, name, new IndexableDataArray<>(categories, null), new IndexableNumericDataArrayInt(values, null));
+            super(axes, 1, name, new IndexableDataArray<>(categories, null),
+                    new IndexableNumericDataArrayInt(values, null));
             assertEquals(name(), "test");
         }
     }

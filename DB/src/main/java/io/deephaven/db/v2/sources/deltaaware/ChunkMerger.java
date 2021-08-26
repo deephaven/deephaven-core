@@ -9,7 +9,7 @@ import io.deephaven.db.v2.utils.OrderedKeys;
 class ChunkMerger<ATTR extends Attributes.Any> {
     // Copy the data back into the positions where it needs to go.
     static <ATTR extends Attributes.Any> void merge(Chunk<ATTR> bChunk, Chunk<ATTR> dChunk, OrderedKeys bKeys,
-                                                    OrderedKeys dKeys, WritableChunk<? super ATTR> dest) {
+            OrderedKeys dKeys, WritableChunk<? super ATTR> dest) {
         final ChunkMerger<ATTR> bMerger = new ChunkMerger<>(bChunk, bKeys);
         final ChunkMerger<ATTR> dMerger = new ChunkMerger<>(dChunk, dKeys);
 
@@ -44,8 +44,8 @@ class ChunkMerger<ATTR extends Attributes.Any> {
     private int copyIfYouCan(WritableChunk<? super ATTR> dest, int destOffset, ChunkMerger other) {
         int contiguousSize = 0;
 
-        final long otherFirst = other.keyOffset == other.keyRanges.size() ?
-                Long.MAX_VALUE : other.keyRanges.get(other.keyOffset);
+        final long otherFirst =
+                other.keyOffset == other.keyRanges.size() ? Long.MAX_VALUE : other.keyRanges.get(other.keyOffset);
 
         while (true) {
             if (keyOffset == keyRanges.size()) {

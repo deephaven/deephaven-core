@@ -18,21 +18,22 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 /**
- * A set of multiple models where predicates determine which of the models execute on any iteration.
- * The predicates use input data and the most recent state for an underlying to determine which models should execute on an iteration.
- * For example, the state could be the most recent valid result from a numerical model.
+ * A set of multiple models where predicates determine which of the models execute on any iteration. The predicates use
+ * input data and the most recent state for an underlying to determine which models should execute on an iteration. For
+ * example, the state could be the most recent valid result from a numerical model.
  * <p>
  * Active models are executed in their input order.
  */
 public class ConditionalModels<DATA_TYPE, STATE_TYPE, KEY_TYPE> implements Models<DATA_TYPE> {
 
     private static final io.deephaven.io.logger.Logger log = ProcessEnvironment.getDefaultLog(ConditionalModels.class);
-    private static final boolean LOG_PERF = Configuration.getInstance().getBooleanWithDefault("ModelFarm.logConditionalModelsPerformance", false);
+    private static final boolean LOG_PERF =
+            Configuration.getInstance().getBooleanWithDefault("ModelFarm.logConditionalModelsPerformance", false);
 
     private final Map<KEY_TYPE, STATE_TYPE> stateMap;
     private final Model<DATA_TYPE>[] models;
     private final BiPredicate<DATA_TYPE, STATE_TYPE>[] predicates;
-    private final Function<DATA_TYPE,KEY_TYPE> dataToKey;
+    private final Function<DATA_TYPE, KEY_TYPE> dataToKey;
 
     private final Map<KEY_TYPE, Object> lockMap = new ConcurrentHashMap<>();
 
@@ -41,14 +42,14 @@ public class ConditionalModels<DATA_TYPE, STATE_TYPE, KEY_TYPE> implements Model
      * <p>
      * Active models are executed in their input order.
      *
-     * @param models     models to execute.
+     * @param models models to execute.
      * @param predicates predicates used to determine if each model should execute.
-     * @param stateMap   map of state by underlying id.  THIS MAP SHOULD BE THREAD SAFE, OR RESULTS WILL BE UNPREDICTABLE!
-     * @param dataToKey  function to get a key from data.
+     * @param stateMap map of state by underlying id. THIS MAP SHOULD BE THREAD SAFE, OR RESULTS WILL BE UNPREDICTABLE!
+     * @param dataToKey function to get a key from data.
      */
     public ConditionalModels(final Model<DATA_TYPE>[] models,
-                             final BiPredicate<DATA_TYPE, STATE_TYPE>[] predicates,
-                             final Map<KEY_TYPE, STATE_TYPE> stateMap, final Function<DATA_TYPE,KEY_TYPE> dataToKey) {
+            final BiPredicate<DATA_TYPE, STATE_TYPE>[] predicates,
+            final Map<KEY_TYPE, STATE_TYPE> stateMap, final Function<DATA_TYPE, KEY_TYPE> dataToKey) {
         Require.neqNull(stateMap, "stateMap");
         Require.neqNull(models, "models");
         Require.elementsNeqNull(models, "models");

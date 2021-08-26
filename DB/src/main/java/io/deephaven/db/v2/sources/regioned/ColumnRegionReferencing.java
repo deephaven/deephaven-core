@@ -26,7 +26,8 @@ public interface ColumnRegionReferencing<ATTR extends Any, REFERENCED_COLUMN_REG
          * Converts all the native source values represented by {@code orderedKeys} <em>from a single region</em> into
          * the {@code destination} chunk by appending.
          */
-        void convertRegion(WritableChunk<? super ATTR> destination, Chunk<? extends ATTR> source, OrderedKeys orderedKeys);
+        void convertRegion(WritableChunk<? super ATTR> destination, Chunk<? extends ATTR> source,
+                OrderedKeys orderedKeys);
     }
 
     class Null<ATTR extends Any, REFERENCED_COLUMN_REGION extends ColumnRegion<ATTR>>

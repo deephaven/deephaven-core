@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 /**
  * A consistency monitor for use in the CompositeTableDataService.
  */
-public class CompositeTableDataServiceConsistencyMonitor  {
+public class CompositeTableDataServiceConsistencyMonitor {
     /**
      * The default instance used by the CompositeTableDataServices.
      */
@@ -19,7 +19,8 @@ public class CompositeTableDataServiceConsistencyMonitor  {
         }
     }
 
-    private final static ConsistentSupplier<String> defaultCurrentDateNySupplier = new ConsistentSupplier<>(DBTimeUtils::currentDateNy);
+    private final static ConsistentSupplier<String> defaultCurrentDateNySupplier =
+            new ConsistentSupplier<>(DBTimeUtils::currentDateNy);
 
     /**
      * Get the consistent value of currentDateNy() as defined by {@link DBTimeUtils#currentDateNy()}.

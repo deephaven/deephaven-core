@@ -14,6 +14,7 @@ public class IndexCreationSeqPerfTest {
             this.seqOneIn2Pow = seqOneIn2Pow;
             this.singleOneInTwoPow = singleOneInTwoPow;
         }
+
         public final int seqOneIn2Pow;
         public final int singleOneInTwoPow;
         public final String name;
@@ -22,8 +23,10 @@ public class IndexCreationSeqPerfTest {
     public IndexCreationSeqPerfTest(final IndexLike.Factory f, final Config c, final int sz) {
         il = f.make();
         this.sz = sz;
-        if (c.seqOneIn2Pow < 0) throw new IllegalArgumentException("seqOneIn2Pow <= 0");
-        if (c.singleOneInTwoPow < 0) throw new IllegalArgumentException("singleOneInTwoPow <= 0");
+        if (c.seqOneIn2Pow < 0)
+            throw new IllegalArgumentException("seqOneIn2Pow <= 0");
+        if (c.singleOneInTwoPow < 0)
+            throw new IllegalArgumentException("singleOneInTwoPow <= 0");
         if (c.seqOneIn2Pow == 0) {
             seqMask = 0;
             startStep = 2;
@@ -96,11 +99,11 @@ public class IndexCreationSeqPerfTest {
         long lasts = 0;
         double sum = 0;
         for (IndexLike.Factory f : ilfs)
-        for (int i = 0; i < steps; ++i) {
-            final PerfStats s = new PerfStats(2);
-            lasts += runAndGetSamples(f, c, 8 * 32, 1, s, "", false);
-            sum += s.avg();
-        }
+            for (int i = 0; i < steps; ++i) {
+                final PerfStats s = new PerfStats(2);
+                lasts += runAndGetSamples(f, c, 8 * 32, 1, s, "", false);
+                sum += s.avg();
+            }
         return sum / steps / lasts;
     }
 
@@ -130,9 +133,9 @@ public class IndexCreationSeqPerfTest {
     private static final Config c10 = new Config("c10", 1, 0);
     private static final Config c11 = new Config("c11", 1, 1);
 
-    private static final Config[] configs = { c01, /* c10, c11 */ };
+    private static final Config[] configs = {c01, /* c10, c11 */ };
 
-    private static final IndexLike.Factory ilfs[] = { IndexLike.mixedf, IndexLike.pqf, IndexLike.rspf };
+    private static final IndexLike.Factory ilfs[] = {IndexLike.mixedf, IndexLike.pqf, IndexLike.rspf};
 
     public static void main(String[] args) {
         System.out.println(me + ": Running code warmup...");

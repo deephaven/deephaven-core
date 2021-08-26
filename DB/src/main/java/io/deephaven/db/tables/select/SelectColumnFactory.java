@@ -26,33 +26,38 @@ public class SelectColumnFactory {
 
     static {
 
-        // If you add more logic here, please kindly update io.deephaven.web.shared.data.CustomColumnDescriptor#extractColumnName
+        // If you add more logic here, please kindly update
+        // io.deephaven.web.shared.data.CustomColumnDescriptor#extractColumnName
 
         /*
          * SwitchColumn will explicitly check if <expression> is a column in the source table first, and use
          * FormulaColumn#createFormulaColumn(String, String, FormulaParserConfiguration) where appropriate.
          */
         // <ColumnName>=<expression>
-        parser.registerFactory(new AbstractExpressionFactory<SelectColumn>(START_PTRN + "(" + ID_PTRN + ")\\s*=\\s*(" + ANYTHING + ")" + END_PTRN) {
+        parser.registerFactory(new AbstractExpressionFactory<SelectColumn>(
+                START_PTRN + "(" + ID_PTRN + ")\\s*=\\s*(" + ANYTHING + ")" + END_PTRN) {
             @Override
             public SelectColumn getExpression(String expression, Matcher matcher, Object... args) {
                 return new SwitchColumn(matcher.group(1), matcher.group(2), (FormulaParserConfiguration) args[0]);
             }
         });
 
-        //<ColumnName>
-        parser.registerFactory(new AbstractExpressionFactory<SelectColumn>(START_PTRN + "(" + ID_PTRN + ")" + END_PTRN) {
-            @Override
-            public SelectColumn getExpression(String expression, Matcher matcher, Object... args) {
-                return new SourceColumn(matcher.group(1));
-            }
-        });
+        // <ColumnName>
+        parser.registerFactory(
+                new AbstractExpressionFactory<SelectColumn>(START_PTRN + "(" + ID_PTRN + ")" + END_PTRN) {
+                    @Override
+                    public SelectColumn getExpression(String expression, Matcher matcher, Object... args) {
+                        return new SourceColumn(matcher.group(1));
+                    }
+                });
 
-        // If you add more logic here, please kindly update io.deephaven.web.shared.data.CustomColumnDescriptor#extractColumnName
+        // If you add more logic here, please kindly update
+        // io.deephaven.web.shared.data.CustomColumnDescriptor#extractColumnName
     }
 
     public static SelectColumn getExpression(String expression) {
-        Pair<FormulaParserConfiguration, String> parserAndExpression = FormulaParserConfiguration.extractParserAndExpression(expression);
+        Pair<FormulaParserConfiguration, String> parserAndExpression =
+                FormulaParserConfiguration.extractParserAndExpression(expression);
         return parser.parse(parserAndExpression.second, parserAndExpression.first);
     }
 
@@ -64,7 +69,8 @@ public class SelectColumnFactory {
         return expressions.stream().map(SelectColumnFactory::getExpression).toArray(SelectColumn[]::new);
     }
 
-    private static final Pattern formatPattern = Pattern.compile(START_PTRN + "(" + ID_PTRN + "|\\*)\\s*=\\s*(.*\\S+)" + END_PTRN);
+    private static final Pattern formatPattern =
+            Pattern.compile(START_PTRN + "(" + ID_PTRN + "|\\*)\\s*=\\s*(.*\\S+)" + END_PTRN);
     private static final Pattern coloringPattern = Pattern.compile(START_PTRN + "Color\\((.*\\S+)\\)" + END_PTRN);
     private static final Pattern numberFormatPattern = Pattern.compile(START_PTRN + "Decimal\\((.*\\S+)\\)" + END_PTRN);
     private static final Pattern dateFormatPattern = Pattern.compile(START_PTRN + "Date\\((.*\\S+)\\)" + END_PTRN);
@@ -88,14 +94,16 @@ public class SelectColumnFactory {
         }
 
         if (numberMatcher.matches()) {
-            return FormulaColumn.createFormulaColumn(columnName + ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME, numberMatcher.group(1),
+            return FormulaColumn.createFormulaColumn(columnName + ColumnFormattingValues.TABLE_NUMERIC_FORMAT_NAME,
+                    numberMatcher.group(1),
                     FormulaParserConfiguration.Deephaven);
         } else if (dateMatcher.matches()) {
             return FormulaColumn.createFormulaColumn(columnName + ColumnFormattingValues.TABLE_DATE_FORMAT_NAME,
                     dateMatcher.group(1), FormulaParserConfiguration.Deephaven);
         } else {
             return FormulaColumn.createFormulaColumn(columnName + ColumnFormattingValues.TABLE_FORMAT_NAME,
-                    "io.deephaven.db.util.DBColorUtil.toLong(" + (colorMatcher.matches() ? colorMatcher.group(1) : topMatcher.group(2)) + ")",
+                    "io.deephaven.db.util.DBColorUtil.toLong("
+                            + (colorMatcher.matches() ? colorMatcher.group(1) : topMatcher.group(2)) + ")",
                     FormulaParserConfiguration.Deephaven);
         }
     }

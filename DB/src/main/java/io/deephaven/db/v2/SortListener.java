@@ -33,17 +33,21 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
     private static final Logger log = LoggerFactory.getLogger(SortListener.class);
 
     // We like this key because it's in the middle of the (positive 32 bit signed integer) space.
-    public static final long REBALANCE_MIDPOINT = Configuration.getInstance().getLongWithDefault("QueryTable.intradaySort.rebalance.midpoint", 1L << 30);
-    public static final int REBALANCE_RANGE_SIZE = Configuration.getInstance().getIntegerWithDefault("QueryTable.intradaySort.rebalance.rangeSize", 64);
-    public static final int REBALANCE_GAP_SIZE = Configuration.getInstance().getIntegerWithDefault("QueryTable.intradaySort.rebalance.gapSize", 64);
-    public static final boolean REBALANCE_EFFORT_TRACKER_ENABLED = Configuration.getInstance().getBooleanWithDefault("QueryTable.intradaySort.rebalance.effortTracker.enabled", false);
+    public static final long REBALANCE_MIDPOINT =
+            Configuration.getInstance().getLongWithDefault("QueryTable.intradaySort.rebalance.midpoint", 1L << 30);
+    public static final int REBALANCE_RANGE_SIZE =
+            Configuration.getInstance().getIntegerWithDefault("QueryTable.intradaySort.rebalance.rangeSize", 64);
+    public static final int REBALANCE_GAP_SIZE =
+            Configuration.getInstance().getIntegerWithDefault("QueryTable.intradaySort.rebalance.gapSize", 64);
+    public static final boolean REBALANCE_EFFORT_TRACKER_ENABLED = Configuration.getInstance()
+            .getBooleanWithDefault("QueryTable.intradaySort.rebalance.effortTracker.enabled", false);
 
     private final DynamicTable parent;
     private final QueryTable result;
     private final HashMapK4V4 reverseLookup;
     private final ColumnSource<Comparable<?>>[] columnsToSortBy;
     private final Index resultIndex;
-    private final SortingOrder [] order;
+    private final SortingOrder[] order;
     private final RedirectionIndex sortMapping;
     private final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy;
     private final EffortTracker effortTracker;
@@ -54,9 +58,9 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
     private final ModifiedColumnSet sortColumnSet;
 
     public SortListener(DynamicTable parent, QueryTable result, HashMapK4V4 reverseLookup,
-                        ColumnSource<Comparable<?>>[] columnsToSortBy, SortingOrder [] order,
-                        RedirectionIndex sortMapping, ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
-                        ModifiedColumnSet.Transformer mcsTransformer, ModifiedColumnSet sortColumnSet) {
+            ColumnSource<Comparable<?>>[] columnsToSortBy, SortingOrder[] order,
+            RedirectionIndex sortMapping, ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
+            ModifiedColumnSet.Transformer mcsTransformer, ModifiedColumnSet sortColumnSet) {
         super("sortInternal", parent, result);
         this.parent = parent;
         this.result = result;
@@ -88,7 +92,8 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
     //
     // Allocate an array of size (removed.size() + modified.size()) and fill it with indexes (in the output
     // coordinate space) of the 'removed' and 'reordered-modified' sets. We obtain these indexes by doing a reverse
-    // mapping lookup. Call this array 'removedOutputKeys'. Note that we must also maintain our redirection index states.
+    // mapping lookup. Call this array 'removedOutputKeys'. Note that we must also maintain our redirection index
+    // states.
     //
     // == Initialization for the added set ==
     //
@@ -111,14 +116,16 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
     // we want to operate in the reverse direction.
     //
     // Example of existing table:
-    //  output indexes:     10    20    21    40    50    51    52
-    //  input values:        C     E     I     I     I     O     U
+    // output indexes: 10 20 21 40 50 51 52
+    // input values: C E I I I O U
     //
     // Note that the median of this table is 40.
     //
     // Values to add (note these have already been sorted thanks to the code above):
-    // B: highest <= key doesn't exist (start of table is a special case), so at-key-index is 9 and direction is reverse (this will occupy an empty slot at 9)
-    // C: highest <= key is C at 10, before the median, so at-key-index is 10 and dir is reverse (this will push the existing C to the left)
+    // B: highest <= key doesn't exist (start of table is a special case), so at-key-index is 9 and direction is reverse
+    // (this will occupy an empty slot at 9)
+    // C: highest <= key is C at 10, before the median, so at-key-index is 10 and dir is reverse (this will push the
+    // existing C to the left)
     // D: highest <= key is C at 10, before median, at-key-index 10, reverse, pushes C to the left
     // E: highest <= key is E at 20, before median, at-key-index 20, reverse, pushes E to the left
     // I: highest <= key is I at 50, after median, at-key-index 51 (recall the +1 rule), forward, pushes O to the right
@@ -162,13 +169,15 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
     public void onUpdate(final Update upstream) {
         try (final SafeCloseableList closer = new SafeCloseableList()) {
             final Update downstream = new Update();
-            final boolean modifiedNeedsSorting = upstream.modifiedColumnSet.containsAny(sortColumnSet) && upstream.modified.nonempty();
+            final boolean modifiedNeedsSorting =
+                    upstream.modifiedColumnSet.containsAny(sortColumnSet) && upstream.modified.nonempty();
             final long REVERSE_LOOKUP_NO_ENTRY_VALUE = reverseLookup.getNoEntryValue();
 
             // We use these in enough places that we might as well just grab them (and check their sizes) here.
             upstream.added.intSize("validating added elements");
             final int removedSize = upstream.removed.intSize("allocating removed elements");
-            final int modifiedSize = modifiedNeedsSorting ? upstream.modified.intSize("allocating modified elements") : 0;
+            final int modifiedSize =
+                    modifiedNeedsSorting ? upstream.modified.intSize("allocating modified elements") : 0;
 
             Assert.assertion((long) removedSize + (long) modifiedSize <= Integer.MAX_VALUE,
                     "(long)removedSize + (long)modifiedSize <= Integer.MAX_VALUE");
@@ -200,7 +209,8 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
                 mappingChanges.flush();
             }
 
-            final long indexKeyForLeftmostInsert = resultIndex.empty() ? REBALANCE_MIDPOINT : resultIndex.firstKey() - 1;
+            final long indexKeyForLeftmostInsert =
+                    resultIndex.empty() ? REBALANCE_MIDPOINT : resultIndex.firstKey() - 1;
             if (indexKeyForLeftmostInsert <= 0) {
                 // Actually we "could", but we "don't" (yet).
                 throw new IllegalStateException("Table has filled to key index 0; need to rebalance but cannot.");
@@ -209,17 +219,21 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
             // Identify the location where each key needs to be inserted.
             int numAddedKeys = 0;
             int numPropagatedModdedKeys = 0;
-            final Index addedAndModified = modifiedNeedsSorting ? closer.add(upstream.added.union(upstream.modified)) : upstream.added;
-            final long [] addedInputKeys = SortHelpers.getSortedKeys(order, columnsToSortBy, addedAndModified, false, false).getArrayMapping();
+            final Index addedAndModified =
+                    modifiedNeedsSorting ? closer.add(upstream.added.union(upstream.modified)) : upstream.added;
+            final long[] addedInputKeys =
+                    SortHelpers.getSortedKeys(order, columnsToSortBy, addedAndModified, false, false).getArrayMapping();
             final long[] addedOutputKeys = new long[addedInputKeys.length];
-            final long[] propagatedModOutputKeys = modifiedNeedsSorting ? new long[upstream.modified.intSize()] : CollectionUtil.ZERO_LENGTH_LONG_ARRAY;
+            final long[] propagatedModOutputKeys = modifiedNeedsSorting ? new long[upstream.modified.intSize()]
+                    : CollectionUtil.ZERO_LENGTH_LONG_ARRAY;
 
             final Index.SearchIterator ait = resultIndex.searchIterator();
             for (int ii = 0; ii < addedInputKeys.length; ++ii) {
                 targetComparator.setTarget(addedInputKeys[ii]);
                 final long after = ait.binarySearchValue(targetComparator, SortingOrder.Ascending.direction);
                 final long outputKey = after == -1 ? indexKeyForLeftmostInsert : after;
-                final long curr = modifiedNeedsSorting ? reverseLookup.get(addedInputKeys[ii]) : REVERSE_LOOKUP_NO_ENTRY_VALUE;
+                final long curr =
+                        modifiedNeedsSorting ? reverseLookup.get(addedInputKeys[ii]) : REVERSE_LOOKUP_NO_ENTRY_VALUE;
 
                 // check if new location differs from current location or if the previous row needs to slot here
                 if (curr != outputKey || (numAddedKeys > 0 && addedOutputKeys[numAddedKeys - 1] == curr)) {
@@ -238,23 +252,26 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
                 }
             }
 
-            // Process downstream removed keys. Note that sortMapping cannot be modified until after the above loop completes
+            // Process downstream removed keys. Note that sortMapping cannot be modified until after the above loop
+            // completes
             // otherwise the algorithm will not be able to break ties by upstream keyspace.
             if (numRemovedKeys > removedSize) {
                 Arrays.sort(removedOutputKeys, removedSize, numRemovedKeys);
-                final LongChunk<OrderedKeyIndices> keyChunk = LongChunk.chunkWrap(removedOutputKeys, removedSize, numRemovedKeys - removedSize);
+                final LongChunk<OrderedKeyIndices> keyChunk =
+                        LongChunk.chunkWrap(removedOutputKeys, removedSize, numRemovedKeys - removedSize);
                 try (final OrderedKeys wrappedKeyChunk = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(keyChunk)) {
                     sortMapping.removeAll(wrappedKeyChunk);
                 }
-                try (final Index rmKeyIndex = sortedArrayToIndex(removedOutputKeys, removedSize, numRemovedKeys - removedSize)) {
+                try (final Index rmKeyIndex =
+                        sortedArrayToIndex(removedOutputKeys, removedSize, numRemovedKeys - removedSize)) {
                     resultIndex.remove(rmKeyIndex);
                 }
                 Arrays.sort(removedOutputKeys, 0, numRemovedKeys);
             }
             downstream.removed = sortedArrayToIndex(removedOutputKeys, 0, numRemovedKeys);
 
-            final long medianOutputKey = resultIndex.empty() ? REBALANCE_MIDPOINT :
-                    resultIndex.get(resultIndex.size() / 2);
+            final long medianOutputKey =
+                    resultIndex.empty() ? REBALANCE_MIDPOINT : resultIndex.get(resultIndex.size() / 2);
 
             int addedStart = findKeyStart(addedOutputKeys, medianOutputKey, numAddedKeys);
 
@@ -280,7 +297,8 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
             mappingChanges.flush();
 
             // Compute modified set in post-shift space.
-            if (modifiedNeedsSorting && numPropagatedModdedKeys == 0 || upstream.modified.empty() || upstream.modifiedColumnSet.empty()) {
+            if (modifiedNeedsSorting && numPropagatedModdedKeys == 0 || upstream.modified.empty()
+                    || upstream.modifiedColumnSet.empty()) {
                 downstream.modified = Index.FACTORY.getEmptyIndex();
             } else if (modifiedNeedsSorting) {
                 Arrays.sort(propagatedModOutputKeys, 0, numPropagatedModdedKeys);
@@ -337,13 +355,14 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
     }
 
     /**
-     * @param added     The resulting added index
-     * @param shifted   The resulting shift data
-     * @param start     Start position
-     * @param qs        Queue state -- containing the view on the various keys arrays, directions, etc.
+     * @param added The resulting added index
+     * @param shifted The resulting shift data
+     * @param start Start position
+     * @param qs Queue state -- containing the view on the various keys arrays, directions, etc.
      */
-    private void performUpdatesInDirection(final Index.SequentialBuilder added, final IndexShiftData.Builder shifted, final long start,
-                                           final QueueState qs, final SortMappingAggregator mappingChanges) {
+    private void performUpdatesInDirection(final Index.SequentialBuilder added, final IndexShiftData.Builder shifted,
+            final long start,
+            final QueueState qs, final SortMappingAggregator mappingChanges) {
         final long numRequestedAdds = (qs.addedEnd - qs.addedCurrent) * qs.direction;
 
         if (numRequestedAdds == 0) {
@@ -351,11 +370,15 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
         }
 
         long numWrites = 0;
-        final DirectionalResettableSequentialBuilder resultAdded = new DirectionalResettableSequentialBuilder(qs.direction);
-        final DirectionalResettableIndexShiftDataBuilder resultShifted = new DirectionalResettableIndexShiftDataBuilder(qs.direction);
+        final DirectionalResettableSequentialBuilder resultAdded =
+                new DirectionalResettableSequentialBuilder(qs.direction);
+        final DirectionalResettableIndexShiftDataBuilder resultShifted =
+                new DirectionalResettableIndexShiftDataBuilder(qs.direction);
 
-        final DirectionalResettableSequentialBuilder modRemoved = new DirectionalResettableSequentialBuilder(qs.direction);
-        final DirectionalResettableSequentialBuilder modAdded = new DirectionalResettableSequentialBuilder(qs.direction);
+        final DirectionalResettableSequentialBuilder modRemoved =
+                new DirectionalResettableSequentialBuilder(qs.direction);
+        final DirectionalResettableSequentialBuilder modAdded =
+                new DirectionalResettableSequentialBuilder(qs.direction);
 
         // When we notice that there is a long run length of contiguous mapping, we enter into spread mode which leaves
         // gaps for future incremental updates to use.
@@ -367,8 +390,10 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
         final int minimumRunLength = REBALANCE_RANGE_SIZE + REBALANCE_GAP_SIZE;
         final int maximumRunLength = Math.max(minimumRunLength, (int) Math.sqrt(resultIndex.size()));
 
-        final Index.SearchIterator gapEvictionIter = (qs.direction == -1) ? resultIndex.reverseIterator() : resultIndex.searchIterator();
-        final Index.SearchIterator backlogIter = (qs.direction == -1) ? resultIndex.reverseIterator() : resultIndex.searchIterator();
+        final Index.SearchIterator gapEvictionIter =
+                (qs.direction == -1) ? resultIndex.reverseIterator() : resultIndex.searchIterator();
+        final Index.SearchIterator backlogIter =
+                (qs.direction == -1) ? resultIndex.reverseIterator() : resultIndex.searchIterator();
 
         long destKey = qs.addedOutputKeys[qs.addedCurrent];
         while (qs.hasMoreToAdd()) {
@@ -406,13 +431,16 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
             // note: this is an (over) approximation of cardinality since binarySearch will give any index if exists
             long addedMaxIdx;
             if (qs.direction == -1) {
-                addedMaxIdx = qs.twiddleIfNegative(Arrays.binarySearch(qs.addedOutputKeys, 0, qs.addedCurrent, maxRunKey));
+                addedMaxIdx =
+                        qs.twiddleIfNegative(Arrays.binarySearch(qs.addedOutputKeys, 0, qs.addedCurrent, maxRunKey));
             } else {
-                addedMaxIdx = qs.twiddleIfNegative(Arrays.binarySearch(qs.addedOutputKeys, qs.addedCurrent, qs.addedEnd, maxRunKey));
+                addedMaxIdx = qs.twiddleIfNegative(
+                        Arrays.binarySearch(qs.addedOutputKeys, qs.addedCurrent, qs.addedEnd, maxRunKey));
             }
 
             // note: if Index.SearchIterator had an O(1) method to get pos we should prefer that over Index#find,
-            // turn maxRunKey into an advancing iterator (similar to gapEvictionIter), and also use that method to compute sizeToShift
+            // turn maxRunKey into an advancing iterator (similar to gapEvictionIter), and also use that method to
+            // compute sizeToShift
             final long backMaxIdx = qs.twiddleIfNegative(resultIndex.find(maxRunKey));
 
             long sizeToAdd = qs.direction * (addedMaxIdx - qs.addedCurrent);
@@ -423,8 +451,10 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
             long writesUntilGap = REBALANCE_RANGE_SIZE;
             boolean backlogged = false;
 
-            // stay in this loop until we might need to enable spreading; don't leave this loop while backlog is non-empty
-            while (!tableEmpty && (backlogged || sizeToAdd > 0 && (spreadMode || (sizeToAdd + sizeToShift) <= qs.direction * (maxRunKey - destKey)))) {
+            // stay in this loop until we might need to enable spreading; don't leave this loop while backlog is
+            // non-empty
+            while (!tableEmpty && (backlogged || sizeToAdd > 0
+                    && (spreadMode || (sizeToAdd + sizeToShift) <= qs.direction * (maxRunKey - destKey)))) {
                 // Add anything prior to the next possible backlog item.
                 while (qs.hasMoreToAdd() && qs.isBefore(desiredOutputKey, backlogIter.currentValue() + qs.direction)) {
                     if (spreadMode && --writesUntilGap == 0) {
@@ -449,7 +479,8 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
                 // Either, all items have been added, or next item comes after the backlog item(s) is(are) processed.
                 long backlogKey = backlogIter.currentValue();
                 final boolean writesPending = qs.hasMoreToAdd();
-                while (((!writesPending || qs.isBefore(backlogKey, desiredOutputKey)) && qs.isBefore(backlogKey, destKey))) {
+                while (((!writesPending || qs.isBefore(backlogKey, desiredOutputKey))
+                        && qs.isBefore(backlogKey, destKey))) {
                     if (spreadMode && --writesUntilGap == 0) {
                         destKey = insertAGap(destKey, qs, modRemoved, mappingChanges, gapEvictionIter);
                         writesUntilGap = REBALANCE_RANGE_SIZE;
@@ -499,10 +530,10 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
     }
 
     private long insertAGap(final long destinationSlot, final QueueState qs,
-                            final DirectionalResettableSequentialBuilder modRemoved,
-                            final SortMappingAggregator mappingChanges,
-                            final Index.SearchIterator gapEvictionIter) {
-        final long gapEnd = destinationSlot + REBALANCE_GAP_SIZE * qs.direction;  // exclusive
+            final DirectionalResettableSequentialBuilder modRemoved,
+            final SortMappingAggregator mappingChanges,
+            final Index.SearchIterator gapEvictionIter) {
+        final long gapEnd = destinationSlot + REBALANCE_GAP_SIZE * qs.direction; // exclusive
 
         checkDestinationSlotOk(gapEnd);
         modRemoved.appendRange(destinationSlot, gapEnd - qs.direction);
@@ -523,9 +554,8 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
     }
 
     /**
-     * The following may clarify what we are doing:
-     * lKey (the "target") is in input coordinates
-     * rKey (the "probe") is in output coordinates
+     * The following may clarify what we are doing: lKey (the "target") is in input coordinates rKey (the "probe") is in
+     * output coordinates
      */
     private class TargetComparator implements Index.TargetComparator {
         private long lKey;
@@ -536,7 +566,8 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
                     sortedColumnsToSortBy.length, "sortedColumnsToSortBy.length");
             this.comparators = new ColumnComparatorFactory.IComparator[columnsToSortBy.length];
             for (int ii = 0; ii < columnsToSortBy.length; ii++) {
-                comparators[ii] = ColumnComparatorFactory.createComparatorLeftCurrRightPrev(columnsToSortBy[ii], sortedColumnsToSortBy[ii]);
+                comparators[ii] = ColumnComparatorFactory.createComparatorLeftCurrRightPrev(columnsToSortBy[ii],
+                        sortedColumnsToSortBy[ii]);
             }
             setTarget(-1);
         }
@@ -559,8 +590,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
     }
 
     private static class ExposedTLongArrayList extends TLongArrayList {
-        public ExposedTLongArrayList() {
-        }
+        public ExposedTLongArrayList() {}
 
         public long[] peekDataArray() {
             return _data;
@@ -607,11 +637,11 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
                 keysChunk.setSize(thisSize);
                 valuesChunk.setSize(thisSize);
 
-                //noinspection unchecked
+                // noinspection unchecked
                 sortKernel.sort(valuesChunk, keysChunk);
 
                 try (final OrderedKeys orderedKeys = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(keysChunk)) {
-                    //noinspection unchecked
+                    // noinspection unchecked
                     sortMapping.fillFromChunk(fillFromContext, valuesChunk, orderedKeys);
                 }
 
@@ -680,8 +710,8 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
         }
 
         String summarize() {
-            final double workRatio = totalNumRequestedAdds == 0 ? 0 :
-                    (double) totalNumWrites / (double) totalNumRequestedAdds;
+            final double workRatio =
+                    totalNumRequestedAdds == 0 ? 0 : (double) totalNumWrites / (double) totalNumRequestedAdds;
             return String.format("Sort Effort Summary: samples=%d, writes=%d, requested=%d, ratio=%g",
                     writes.size(), totalNumWrites, totalNumRequestedAdds, workRatio);
         }
@@ -693,7 +723,8 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
         private final TLongArrayList lasts;
 
         private DirectionalResettableSequentialBuilder(int direction, long[] initialItems) {
-            this(direction, initialItems, direction > 0 ? 0 : initialItems.length - 1, direction > 0 ? initialItems.length : -1);
+            this(direction, initialItems, direction > 0 ? 0 : initialItems.length - 1,
+                    direction > 0 ? initialItems.length : -1);
         }
 
         private DirectionalResettableSequentialBuilder(int direction, long[] initialItems, int begin, int end) {
@@ -735,7 +766,8 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
             if (lSize > 0) {
                 final long lastLast = lasts.get(lSize - 1);
 
-                Assert.assertion(Long.compare(lastKey, lastLast) * direction > 0, "Long.compare(lastKey, lastLast) * direction > 0",
+                Assert.assertion(Long.compare(lastKey, lastLast) * direction > 0,
+                        "Long.compare(lastKey, lastLast) * direction > 0",
                         "New key not being added in the right direction");
                 if (lastLast + direction == firstKey) {
                     lasts.set(lSize - 1, lastKey);
@@ -811,16 +843,16 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
         }
 
         private void appendToBuilder(final IndexShiftData.Builder builder) {
-           int nr = firsts.size();
-           if (direction < 0) {
-               for (int ii = nr - 1; ii >= 0; --ii) {
-                   builder.shiftRange(lasts.get(ii), firsts.get(ii), deltas.get(ii));
-               }
-           } else {
-               for (int ii = 0; ii < nr; ++ii) {
-                   builder.shiftRange(firsts.get(ii), lasts.get(ii), deltas.get(ii));
-               }
-           }
+            int nr = firsts.size();
+            if (direction < 0) {
+                for (int ii = nr - 1; ii >= 0; --ii) {
+                    builder.shiftRange(lasts.get(ii), firsts.get(ii), deltas.get(ii));
+                }
+            } else {
+                for (int ii = 0; ii < nr; ++ii) {
+                    builder.shiftRange(firsts.get(ii), lasts.get(ii), deltas.get(ii));
+                }
+            }
         }
     }
 
@@ -865,12 +897,14 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
 
     private static void checkDestinationSlotOk(long destinationSlot) {
         if (destinationSlot <= 0 || destinationSlot == Long.MAX_VALUE) {
-            throw new IllegalStateException(String.format("While updating index, the destination slot %d reached its limit",
-                    destinationSlot));
+            throw new IllegalStateException(
+                    String.format("While updating index, the destination slot %d reached its limit",
+                            destinationSlot));
         }
     }
 
-    private static void fillArray(final long[] dest, final Index src, final int destIndex, final LongUnaryOperator transformer) {
+    private static void fillArray(final long[] dest, final Index src, final int destIndex,
+            final LongUnaryOperator transformer) {
         final MutableInt pos = new MutableInt(destIndex);
         src.forAllLongs((final long v) -> {
             dest[pos.intValue()] = transformer.applyAsLong(v);
@@ -880,7 +914,7 @@ public class SortListener extends BaseTable.ShiftAwareListenerImpl {
 
     private static void showGaps(Index index) {
         long freeStart = 0;
-        for (Index.RangeIterator i = index.rangeIterator(); i.hasNext(); ) {
+        for (Index.RangeIterator i = index.rangeIterator(); i.hasNext();) {
             i.next();
             long freeEnd = i.currentRangeStart() - 1;
             long freeSize = freeEnd - freeStart + 1;

@@ -14,10 +14,10 @@ public class ToArrayPage<ATTR extends Attributes.Any, RESULT, ARRAY_TYPE>
 
     private final Class<ARRAY_TYPE> nativeType;
 
-    public static <ATTR extends Attributes.Any, ARRAY_TYPE>
-    ToPage<ATTR, ARRAY_TYPE[]> create(@NotNull final Class<ARRAY_TYPE> nativeType,
-                                      @NotNull final Class<?> componentType,
-                                      @NotNull final ToPage<ATTR, ?> toPage) {
+    public static <ATTR extends Attributes.Any, ARRAY_TYPE> ToPage<ATTR, ARRAY_TYPE[]> create(
+            @NotNull final Class<ARRAY_TYPE> nativeType,
+            @NotNull final Class<?> componentType,
+            @NotNull final ToPage<ATTR, ?> toPage) {
         if (!nativeType.isArray()) {
             throw new IllegalArgumentException("Native type " + nativeType + " is not an array type.");
         }
@@ -57,7 +57,7 @@ public class ToArrayPage<ATTR extends Attributes.Any, RESULT, ARRAY_TYPE>
         final DbArrayBase<?> dataWrapper = toPage.makeDbArray(toPage.convertResult(dataWithOffsets.materializeResult));
         final IntBuffer offsets = dataWithOffsets.offsets;
 
-        //noinspection unchecked
+        // noinspection unchecked
         final ARRAY_TYPE[] to = (ARRAY_TYPE[]) Array.newInstance(nativeType, offsets.remaining());
 
         int lastOffset = 0;
@@ -66,7 +66,7 @@ public class ToArrayPage<ATTR extends Attributes.Any, RESULT, ARRAY_TYPE>
             if (nextOffset == DataWithOffsets.NULL_OFFSET) {
                 to[vi] = null;
             } else {
-                //noinspection unchecked
+                // noinspection unchecked
                 to[vi] = (ARRAY_TYPE) dataWrapper.subArray(lastOffset, nextOffset).toArray();
                 lastOffset = nextOffset;
             }

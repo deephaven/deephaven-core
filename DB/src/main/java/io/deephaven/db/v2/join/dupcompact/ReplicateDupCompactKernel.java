@@ -18,12 +18,15 @@ import java.util.stream.Collectors;
 import static io.deephaven.compilertools.ReplicateUtilities.*;
 
 public class ReplicateDupCompactKernel {
-    public static void main(String [] args) throws IOException {
-        final List<String> kernelsToInvert = ReplicatePrimitiveCode.charToAllButBoolean(CharDupCompactKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
-        final String objectDupCompact = ReplicatePrimitiveCode.charToObject(CharDupCompactKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
+    public static void main(String[] args) throws IOException {
+        final List<String> kernelsToInvert =
+                ReplicatePrimitiveCode.charToAllButBoolean(CharDupCompactKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String objectDupCompact =
+                ReplicatePrimitiveCode.charToObject(CharDupCompactKernel.class, ReplicatePrimitiveCode.MAIN_SRC);
         fixupObjectDupCompact(objectDupCompact);
 
-        kernelsToInvert.add(ReplicatePrimitiveCode.pathForClass(CharDupCompactKernel.class, ReplicatePrimitiveCode.MAIN_SRC));
+        kernelsToInvert
+                .add(ReplicatePrimitiveCode.pathForClass(CharDupCompactKernel.class, ReplicatePrimitiveCode.MAIN_SRC));
         kernelsToInvert.add(objectDupCompact);
         for (String kernel : kernelsToInvert) {
             final String dupCompactReversePath = kernel.replaceAll("DupCompactKernel", "ReverseDupCompactKernel");
@@ -31,10 +34,13 @@ public class ReplicateDupCompactKernel {
 
             if (kernel.contains("Char")) {
                 final String nullAwarePath = kernel.replace("CharDupCompactKernel", "NullAwareCharDupCompactKernel");
-                fixupCharNullComparisons(CharDupCompactKernel.class, kernel, nullAwarePath, "CharDupCompactKernel", "NullAwareCharDupCompactKernel", true);
+                fixupCharNullComparisons(CharDupCompactKernel.class, kernel, nullAwarePath, "CharDupCompactKernel",
+                        "NullAwareCharDupCompactKernel", true);
 
-                final String nullAwareDescendingPath = nullAwarePath.replaceAll("NullAwareCharDupCompact", "NullAwareCharReverseDupCompact");
-                fixupCharNullComparisons(CharDupCompactKernel.class, kernel, nullAwareDescendingPath, "CharDupCompactKernel", "NullAwareCharReverseDupCompactKernel", false);
+                final String nullAwareDescendingPath =
+                        nullAwarePath.replaceAll("NullAwareCharDupCompact", "NullAwareCharReverseDupCompact");
+                fixupCharNullComparisons(CharDupCompactKernel.class, kernel, nullAwareDescendingPath,
+                        "CharDupCompactKernel", "NullAwareCharReverseDupCompactKernel", false);
             } else if (kernel.contains("Float")) {
                 nanFixup(kernel, "Float", true);
                 nanFixup(dupCompactReversePath, "Float", false);
@@ -47,10 +53,12 @@ public class ReplicateDupCompactKernel {
 
     public static String fixupCharNullComparisons(Class sourceClass, String kernel) throws IOException {
         final String nullAwarePath = kernel.replace("Char", "NullAwareChar");
-        return fixupCharNullComparisons(sourceClass, kernel, nullAwarePath, sourceClass.getSimpleName(), sourceClass.getSimpleName().replace("Char", "NullAwareChar"), true);
+        return fixupCharNullComparisons(sourceClass, kernel, nullAwarePath, sourceClass.getSimpleName(),
+                sourceClass.getSimpleName().replace("Char", "NullAwareChar"), true);
     }
 
-    private static String fixupCharNullComparisons(Class sourceClass, String path, String newPath, String oldName, String newName, boolean ascending) throws IOException {
+    private static String fixupCharNullComparisons(Class sourceClass, String path, String newPath, String oldName,
+            String newName, boolean ascending) throws IOException {
         final File file = new File(path);
 
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
@@ -64,8 +72,10 @@ public class ReplicateDupCompactKernel {
             lines = ReplicateSortKernel.invertComparisons(lines);
         }
 
-        lines.addAll(0, Arrays.asList("/* ---------------------------------------------------------------------------------------------------------------------",
-                " * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit " + sourceClass.getSimpleName() + " and regenerate",
+        lines.addAll(0, Arrays.asList(
+                "/* ---------------------------------------------------------------------------------------------------------------------",
+                " * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit " + sourceClass.getSimpleName()
+                        + " and regenerate",
                 " * ------------------------------------------------------------------------------------------------------------------ */"));
 
         FileUtils.writeLines(new File(newPath), lines);
@@ -77,7 +87,9 @@ public class ReplicateDupCompactKernel {
     private static void invertSense(String path, String descendingPath) throws IOException {
         final File file = new File(path);
 
-        List<String> lines = simpleFixup(ascendingNameToDescendingName(path, FileUtils.readLines(file, Charset.defaultCharset())), "initialize last", "MIN_VALUE", "MAX_VALUE");
+        List<String> lines =
+                simpleFixup(ascendingNameToDescendingName(path, FileUtils.readLines(file, Charset.defaultCharset())),
+                        "initialize last", "MIN_VALUE", "MAX_VALUE");
 
         if (path.contains("Object")) {
             lines = ReplicateSortKernel.fixupObjectComparisons(lines, false);
@@ -116,7 +128,8 @@ public class ReplicateDupCompactKernel {
 
     @NotNull
     private static List<String> fixupChunkAttributes(List<String> lines) {
-        lines = lines.stream().map(x -> x.replaceAll("ObjectChunk<([^>]*)>", "ObjectChunk<Object, $1>")).collect(Collectors.toList());
+        lines = lines.stream().map(x -> x.replaceAll("ObjectChunk<([^>]*)>", "ObjectChunk<Object, $1>"))
+                .collect(Collectors.toList());
         return lines;
     }
 }

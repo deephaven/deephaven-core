@@ -11,15 +11,14 @@ import java.util.Spliterators;
 import java.util.stream.StreamSupport;
 
 /**
- * Simple wrapper to emulate RangeSet/Index in JS, with the caveat that LongWrappers may make
- * poor keys in plain JS.
+ * Simple wrapper to emulate RangeSet/Index in JS, with the caveat that LongWrappers may make poor keys in plain JS.
  */
 public class JsRangeSet {
     private final RangeSet range;
 
     @JsMethod(namespace = "dh.RangeSet", name = "ofRange")
     public static JsRangeSet ofRange(double first, double last) {
-        return new JsRangeSet(RangeSet.ofRange((long)first, (long)last));
+        return new JsRangeSet(RangeSet.ofRange((long) first, (long) last));
     }
 
     @JsMethod(namespace = "dh.RangeSet", name = "ofItems")
@@ -42,7 +41,9 @@ public class JsRangeSet {
 
     @JsMethod(namespace = "dh.RangeSet", name = "ofSortedRanges")
     public static JsRangeSet ofSortedRanges(JsRangeSet[] ranges) {
-        Range[] rangeArray = Arrays.stream(ranges).flatMap(r -> StreamSupport.stream(Spliterators.spliterator(r.range.rangeIterator(), Long.MAX_VALUE, 0), false)).toArray(Range[]::new);
+        Range[] rangeArray = Arrays.stream(ranges).flatMap(
+                r -> StreamSupport.stream(Spliterators.spliterator(r.range.rangeIterator(), Long.MAX_VALUE, 0), false))
+                .toArray(Range[]::new);
 
         return new JsRangeSet(RangeSet.fromSortedRanges(rangeArray));
     }
@@ -55,9 +56,8 @@ public class JsRangeSet {
     public JsIterator<LongWrapper> iterator() {
         return new JsIterator<>(
                 StreamSupport.longStream(Spliterators.spliterator(range.indexIterator(), Long.MAX_VALUE, 0), false)
-                .mapToObj(LongWrapper::of)
-                .iterator()
-        );
+                        .mapToObj(LongWrapper::of)
+                        .iterator());
     }
 
     @JsProperty

@@ -16,8 +16,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * A new table is a list of {@link Column columns} of equal size. Each column will have a distinct
- * name.
+ * A new table is a list of {@link Column columns} of equal size. Each column will have a distinct name.
  */
 @Immutable
 @LeafStyle
@@ -56,7 +55,7 @@ public abstract class NewTable extends TableBase implements Iterable<Column<?>> 
             Iterator<Column<?>> it = iterator();
             if (!it.hasNext()) {
                 throw new IllegalArgumentException(
-                    String.format("Unable to use %s without any columns", Buildable.class));
+                        String.format("Unable to use %s without any columns", Buildable.class));
             }
             Column<?> first = it.next();
             Builder builder = builder().size(first.size()).addColumns(first);
@@ -74,7 +73,7 @@ public abstract class NewTable extends TableBase implements Iterable<Column<?>> 
     public static NewTable empty(TableHeader header) {
         Builder builder = builder().size(0);
         for (ColumnHeader<?> columnHeader : header) {
-            builder.putColumns(columnHeader.name(), Array.empty(columnHeader.type()));
+            builder.putColumns(columnHeader.name(), Array.empty(columnHeader.componentType()));
         }
         return builder.build();
     }
@@ -89,6 +88,9 @@ public abstract class NewTable extends TableBase implements Iterable<Column<?>> 
         final int size = it.hasNext() ? it.next().size() : 0;
         return ImmutableNewTable.builder().addAllColumns(columns).size(size).build();
     }
+
+    // Note: if new "of(...)" static methods are added here, they should likely be added to
+    // TableCreator.
 
     abstract Map<String, Array<?>> columns();
 
@@ -107,7 +109,7 @@ public abstract class NewTable extends TableBase implements Iterable<Column<?>> 
     public final TableHeader header() {
         TableHeader.Builder builder = TableHeader.builder();
         for (Entry<String, Array<?>> e : columns().entrySet()) {
-            builder.putHeaders(e.getKey(), e.getValue().type());
+            builder.putHeaders(e.getKey(), e.getValue().componentType());
         }
         return builder.build();
     }
@@ -144,7 +146,7 @@ public abstract class NewTable extends TableBase implements Iterable<Column<?>> 
     @Override
     public final Spliterator<Column<?>> spliterator() {
         return columns().entrySet().stream()
-            .map((Function<Entry<String, Array<?>>, Column<?>>) NewTable::adapt).spliterator();
+                .map((Function<Entry<String, Array<?>>, Column<?>>) NewTable::adapt).spliterator();
     }
 
     private static Column<?> adapt(Entry<String, Array<?>> e) {

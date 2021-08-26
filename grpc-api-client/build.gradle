@@ -40,3 +40,12 @@ createMainExecTask('replicateBarrageUtils', 'io.deephaven.grpc_api_client.barrag
 task replicate {
     dependsOn 'replicateBarrageUtils'
 }
+
+spotless {
+    java {
+        targetExclude(
+                '**/*ChunkInputStreamGenerator.java',
+                '**/*ArrayExpansionKernel.java'
+        )
+    }
+}

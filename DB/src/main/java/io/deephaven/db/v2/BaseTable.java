@@ -58,13 +58,17 @@ import java.util.stream.Stream;
 /**
  * Base abstract class all standard table implementations.
  */
-public abstract class BaseTable extends LivenessArtifact implements DynamicTable, Serializable, NotificationStepReceiver, NotificationStepSource {
+public abstract class BaseTable extends LivenessArtifact
+        implements DynamicTable, Serializable, NotificationStepReceiver, NotificationStepSource {
 
     private static final long serialVersionUID = 1L;
 
-    private static final boolean VALIDATE_UPDATE_INDICES = Configuration.getInstance().getBooleanWithDefault("BaseTable.validateUpdateIndices", false);
-    private static final boolean VALIDATE_UPDATE_OVERLAPS = Configuration.getInstance().getBooleanWithDefault("BaseTable.validateUpdateOverlaps", true);
-    public static final boolean PRINT_SERIALIZED_UPDATE_OVERLAPS = Configuration.getInstance().getBooleanWithDefault("BaseTable.printSerializedUpdateOverlaps", false);
+    private static final boolean VALIDATE_UPDATE_INDICES =
+            Configuration.getInstance().getBooleanWithDefault("BaseTable.validateUpdateIndices", false);
+    private static final boolean VALIDATE_UPDATE_OVERLAPS =
+            Configuration.getInstance().getBooleanWithDefault("BaseTable.validateUpdateOverlaps", true);
+    public static final boolean PRINT_SERIALIZED_UPDATE_OVERLAPS =
+            Configuration.getInstance().getBooleanWithDefault("BaseTable.printSerializedUpdateOverlaps", false);
 
     private static final Logger log = LoggerFactory.getLogger(BaseTable.class);
 
@@ -79,7 +83,7 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
     protected final String description;
 
     // Attribute support
-    protected final ConcurrentHashMap<String,Object> attributes = new ConcurrentHashMap<>();
+    protected final ConcurrentHashMap<String, Object> attributes = new ConcurrentHashMap<>();
 
     // Fields for DynamicTable implementation
     private transient boolean refreshing;
@@ -121,9 +125,9 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
         initializeTransientFields();
     }
 
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // Metadata Operation Implementations
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
     @Override
     public TableDefinition getDefinition() {
@@ -145,9 +149,9 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
         return logOutput.append(description);
     }
 
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // Attribute Operation Implementations
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
     @Override
     public void setAttribute(@NotNull final String key, final Object object) {
@@ -176,12 +180,13 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
     @Override
     public Map<String, Object> getAttributes(Collection<String> excludedAttrs) {
         // If nothing is excluded, don't make more garbage
-        if(excludedAttrs == null || excludedAttrs.isEmpty()) {
+        if (excludedAttrs == null || excludedAttrs.isEmpty()) {
             return Collections.unmodifiableMap(attributes);
         }
 
-        return Collections.unmodifiableMap(attributes.entrySet().stream().filter(ent -> !excludedAttrs.contains(ent.getKey()))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+        return Collections
+                .unmodifiableMap(attributes.entrySet().stream().filter(ent -> !excludedAttrs.contains(ent.getKey()))
+                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 
     public enum CopyAttributeOperation {
@@ -195,11 +200,7 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
         /**
          * The result tables that go in a ByExternal TableMap
          */
-        ByExternal,
-        Coalesce,
-        WouldMatch,
-        LastBy,
-        FirstBy,
+        ByExternal, Coalesce, WouldMatch, LastBy, FirstBy,
 
         // Hierarchical attributes
         Rollup, Treetable,
@@ -216,8 +217,7 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
             CopyAttributeOperation.Sort,
             CopyAttributeOperation.UpdateView,
             CopyAttributeOperation.Join,
-            CopyAttributeOperation.Filter
-    );
+            CopyAttributeOperation.Filter);
     static {
         final HashMap<String, EnumSet<CopyAttributeOperation>> tempMap = new HashMap<>();
 
@@ -225,25 +225,24 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
         tempMap.put(INPUT_TABLE_ATTRIBUTE, LEGACY_COPY_ATTRIBUTES);
         tempMap.put(DO_NOT_MAKE_REMOTE_ATTRIBUTE, LEGACY_COPY_ATTRIBUTES);
 
-        // byExternal was creating the sub table with a bespoke ACL copy; we should copy ACLs there in addition to the legacy attributes
+        // byExternal was creating the sub table with a bespoke ACL copy; we should copy ACLs there in addition to the
+        // legacy attributes
         final EnumSet<CopyAttributeOperation> aclCopyAttributes = EnumSet.copyOf(LEGACY_COPY_ATTRIBUTES);
         aclCopyAttributes.addAll(EnumSet.of(
                 CopyAttributeOperation.FirstBy,
                 CopyAttributeOperation.LastBy,
                 CopyAttributeOperation.ByExternal,
-                CopyAttributeOperation.WouldMatch
-        ));
+                CopyAttributeOperation.WouldMatch));
 
-        // for a merged table, we'll allow operations that keep our Index + column sources the same to break us down into constituent tables
+        // for a merged table, we'll allow operations that keep our Index + column sources the same to break us down
+        // into constituent tables
         tempMap.put(MERGED_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.DropColumns,
-                CopyAttributeOperation.View
-        ));
+                CopyAttributeOperation.View));
 
         tempMap.put(EMPTY_SOURCE_TABLE_ATTRIBUTE, EnumSet.complementOf(EnumSet.of(
                 CopyAttributeOperation.Rollup,
-                CopyAttributeOperation.Treetable
-        )));
+                CopyAttributeOperation.Treetable)));
         tempMap.put(SORTABLE_COLUMNS_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.Sort,
@@ -253,8 +252,7 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
                 CopyAttributeOperation.Coalesce,
                 CopyAttributeOperation.ByExternal,
                 CopyAttributeOperation.WouldMatch,
-                CopyAttributeOperation.Preview
-        ));
+                CopyAttributeOperation.Preview));
 
         tempMap.put(FILTERABLE_COLUMNS_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Flatten,
@@ -265,8 +263,7 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
                 CopyAttributeOperation.Coalesce,
                 CopyAttributeOperation.ByExternal,
                 CopyAttributeOperation.WouldMatch,
-                CopyAttributeOperation.Preview
-        ));
+                CopyAttributeOperation.Preview));
 
         tempMap.put(LAYOUT_HINTS_ATTRIBUTE, EnumSet.allOf(CopyAttributeOperation.class));
 
@@ -276,8 +273,7 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
                 CopyAttributeOperation.Filter,
                 CopyAttributeOperation.Reverse,
                 CopyAttributeOperation.ByExternal,
-                CopyAttributeOperation.Coalesce
-        ));
+                CopyAttributeOperation.Coalesce));
 
         tempMap.put(SYSTEMIC_TABLE_ATTRIBUTE, EnumSet.of(CopyAttributeOperation.None));
 
@@ -292,8 +288,7 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
                 CopyAttributeOperation.LastBy,
                 CopyAttributeOperation.FirstBy,
                 CopyAttributeOperation.Treetable,
-                CopyAttributeOperation.Preview
-        ));
+                CopyAttributeOperation.Preview));
 
         // Tree table attributes
         tempMap.put(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, EnumSet.of(
@@ -305,8 +300,7 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
                 CopyAttributeOperation.UpdateView,
                 CopyAttributeOperation.ByExternal,
                 CopyAttributeOperation.Flatten,
-                CopyAttributeOperation.RollupCopy
-        ));
+                CopyAttributeOperation.RollupCopy));
 
         tempMap.put(ROLLUP_LEAF_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.DropColumns,
@@ -316,27 +310,23 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
                 CopyAttributeOperation.Coalesce,
                 CopyAttributeOperation.UpdateView,
                 CopyAttributeOperation.ByExternal,
-                CopyAttributeOperation.Flatten
-        ));
+                CopyAttributeOperation.Flatten));
 
         tempMap.put(TREE_TABLE_FILTER_REVERSE_LOOKUP_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.DropColumns,
-                CopyAttributeOperation.RollupCopy
-        ));
+                CopyAttributeOperation.RollupCopy));
 
         tempMap.put(HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Sort,
                 CopyAttributeOperation.UpdateView,
                 CopyAttributeOperation.DropColumns,
-                CopyAttributeOperation.RollupCopy
-        ));
+                CopyAttributeOperation.RollupCopy));
 
         tempMap.put(HIERARCHICAL_SOURCE_INFO_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Sort,
                 CopyAttributeOperation.DropColumns,
                 CopyAttributeOperation.UpdateView,
-                CopyAttributeOperation.RollupCopy
-        ));
+                CopyAttributeOperation.RollupCopy));
 
         tempMap.put(REVERSE_LOOKUP_ATTRIBUTE, EnumSet.of(CopyAttributeOperation.RollupCopy));
 
@@ -353,8 +343,7 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
                 CopyAttributeOperation.LastBy,
                 CopyAttributeOperation.Treetable,
                 CopyAttributeOperation.TreetableCopy,
-                CopyAttributeOperation.Preview
-        ));
+                CopyAttributeOperation.Preview));
 
         tempMap.put(TABLE_DESCRIPTION_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Flatten,
@@ -365,8 +354,7 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
                 CopyAttributeOperation.Coalesce,
                 CopyAttributeOperation.Treetable,
                 CopyAttributeOperation.TreetableCopy,
-                CopyAttributeOperation.Preview
-        ));
+                CopyAttributeOperation.Preview));
 
         tempMap.put(SNAPSHOT_VIEWPORT_TYPE, EnumSet.allOf(CopyAttributeOperation.class));
 
@@ -375,16 +363,14 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
                 CopyAttributeOperation.UpdateView,
                 CopyAttributeOperation.View,
                 CopyAttributeOperation.ByExternal,
-                CopyAttributeOperation.Coalesce
-        ));
+                CopyAttributeOperation.Coalesce));
 
         tempMap.put(PREDEFINED_ROLLUP_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.Sort,
                 CopyAttributeOperation.Filter,
                 CopyAttributeOperation.Reverse,
-                CopyAttributeOperation.Coalesce
-        ));
+                CopyAttributeOperation.Coalesce));
 
         tempMap.put(PREVIEW_PARENT_TABLE, EnumSet.of(CopyAttributeOperation.Flatten));
 
@@ -404,14 +390,12 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
                 CopyAttributeOperation.LastBy,
                 CopyAttributeOperation.FirstBy,
                 CopyAttributeOperation.ByExternal,
-                CopyAttributeOperation.Preview
-        ));
+                CopyAttributeOperation.Preview));
 
         tempMap.put(SORTED_COLUMNS_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Flatten,
-                 CopyAttributeOperation.Filter,
-                CopyAttributeOperation.ByExternal
-        ));
+                CopyAttributeOperation.Filter,
+                CopyAttributeOperation.ByExternal));
 
         tempMap.put(STREAM_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Coalesce,
@@ -421,12 +405,11 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.ByExternal,
                 CopyAttributeOperation.Preview,
-                CopyAttributeOperation.View,       // and Select, if added
+                CopyAttributeOperation.View, // and Select, if added
                 CopyAttributeOperation.UpdateView, // and Update, if added
                 CopyAttributeOperation.DropColumns,
                 CopyAttributeOperation.Join,
-                CopyAttributeOperation.WouldMatch
-        ));
+                CopyAttributeOperation.WouldMatch));
 
         attributeToCopySet = Collections.unmodifiableMap(tempMap);
     }
@@ -436,8 +419,8 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
     }
 
     /**
-     * Copy this table's attributes to the specified table.  Attributes will be copied based upon
-     * the input {@link CopyAttributeOperation}.
+     * Copy this table's attributes to the specified table. Attributes will be copied based upon the input
+     * {@link CopyAttributeOperation}.
      *
      * @param dest The table to copy attributes to
      * @param copyType The operation being performed that requires attributes to be copied.
@@ -447,7 +430,7 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
     }
 
     /**
-     * Copy this table's attributes to the specified table.  Attributes are copied based on a predicate.
+     * Copy this table's attributes to the specified table. Attributes are copied based on a predicate.
      *
      * @param dest The table to copy attributes to
      * @param shouldCopy should we copy this attribute?
@@ -457,8 +440,7 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
     }
 
     /**
-     * Copy attributes between tables.  Attributes will be copied based upon
-     * the input {@link CopyAttributeOperation}.
+     * Copy attributes between tables. Attributes will be copied based upon the input {@link CopyAttributeOperation}.
      *
      * @param dest The table to copy attributes to
      * @param copyType The operation being performed that requires attributes to be copied.
@@ -468,7 +450,7 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
     }
 
     /**
-     * Copy attributes between tables.  Attributes are copied based on a predicate.
+     * Copy attributes between tables. Attributes are copied based on a predicate.
      *
      * @param source The table to copy attributes from
      * @param dest The table to copy attributes to
@@ -484,7 +466,8 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
     }
 
     /**
-     * Returns true if this table is static, or has an attribute asserting that no modifies, shifts, or removals are generated.
+     * Returns true if this table is static, or has an attribute asserting that no modifies, shifts, or removals are
+     * generated.
      *
      * @return true if this table does not produce modifications, shifts, or removals
      */
@@ -516,9 +499,9 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
         return result;
     }
 
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // DynamicTable Implementation
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
     @Override
     public final void addParentReference(@NotNull final Object parent) {
@@ -537,9 +520,10 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
             return true;
         }
 
-        //noinspection SynchronizeOnNonFinalField
+        // noinspection SynchronizeOnNonFinalField
         synchronized (parents) {
-            // If we have no parents whatsoever then we are a source, and have no dependency chain other than the LTM itself
+            // If we have no parents whatsoever then we are a source, and have no dependency chain other than the LTM
+            // itself
             if (parents.isEmpty()) {
                 if (LiveTableMonitor.DEFAULT.satisfied(step)) {
                     LiveTableMonitor.DEFAULT.logDependencies().append("Root node satisfied ").append(this).endl();
@@ -551,7 +535,8 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
             for (Object parent : parents) {
                 if (parent instanceof NotificationQueue.Dependency) {
                     if (!((NotificationQueue.Dependency) parent).satisfied(step)) {
-                        LiveTableMonitor.DEFAULT.logDependencies().append("Parents dependencies not satisfied for ").append(this).append(", parent=").append((NotificationQueue.Dependency) parent).endl();
+                        LiveTableMonitor.DEFAULT.logDependencies().append("Parents dependencies not satisfied for ")
+                                .append(this).append(", parent=").append((NotificationQueue.Dependency) parent).endl();
                         return false;
                     }
                 }
@@ -573,7 +558,8 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
     @Override
     public boolean awaitUpdate(long timeout) throws InterruptedException {
         final MutableBoolean result = new MutableBoolean(false);
-        LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(() -> result.setValue(liveTableMonitorCondition.await(timeout, TimeUnit.MILLISECONDS)));
+        LiveTableMonitor.DEFAULT.exclusiveLock()
+                .doLocked(() -> result.setValue(liveTableMonitorCondition.await(timeout, TimeUnit.MILLISECONDS)));
 
         return result.booleanValue();
     }
@@ -628,7 +614,8 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
     }
 
     @Override
-    public final void notifyListenersOnError(final Throwable e, @Nullable final UpdatePerformanceTracker.Entry sourceEntry) {
+    public final void notifyListenersOnError(final Throwable e,
+            @Nullable final UpdatePerformanceTracker.Entry sourceEntry) {
         isFailed = true;
         LiveTableMonitor.DEFAULT.requestSignal(liveTableMonitorCondition);
 
@@ -640,12 +627,12 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
 
         lastNotificationStep = LogicalClock.DEFAULT.currentStep();
 
-        childListenerReferences.forEach((listenerRef, listener) ->
-                LiveTableMonitor.DEFAULT.addNotification(listener.getErrorNotification(e, sourceEntry)));
+        childListenerReferences.forEach((listenerRef, listener) -> LiveTableMonitor.DEFAULT
+                .addNotification(listener.getErrorNotification(e, sourceEntry)));
 
         // Notify ShiftAwareListeners
-        childShiftAwareListenerReferences.forEach((listenerRef, listener) ->
-                LiveTableMonitor.DEFAULT.addNotification(listener.getErrorNotification(e, sourceEntry)));
+        childShiftAwareListenerReferences.forEach((listenerRef, listener) -> LiveTableMonitor.DEFAULT
+                .addNotification(listener.getErrorNotification(e, sourceEntry)));
     }
 
     @Override
@@ -707,7 +694,8 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
             update.removed.validate();
             update.modified.validate();
             update.shifted.validate();
-            Assert.eq(update.modified.empty(), "update.modified.empty()", update.modifiedColumnSet.empty(), "update.modifiedColumnSet.empty()");
+            Assert.eq(update.modified.empty(), "update.modified.empty()", update.modifiedColumnSet.empty(),
+                    "update.modifiedColumnSet.empty()");
         }
 
         if (VALIDATE_UPDATE_OVERLAPS) {
@@ -715,7 +703,8 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
         }
 
         // Expand if we are testing or have children listening using old Listener API.
-        final boolean childNeedsExpansion = !directChildListenerReferences.isEmpty() || !childListenerReferences.isEmpty();
+        final boolean childNeedsExpansion =
+                !directChildListenerReferences.isEmpty() || !childListenerReferences.isEmpty();
         final IndexShiftDataExpander shiftExpander = childNeedsExpansion
                 ? new IndexShiftDataExpander(update, getIndex())
                 : IndexShiftDataExpander.EMPTY;
@@ -732,14 +721,15 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
         lastNotificationStep = currentStep;
 
         // notify direct children
-        directChildListenerReferences.forEach((listenerRef, listener) ->
-                listener.onUpdate(shiftExpander.getAdded(), shiftExpander.getRemoved(), shiftExpander.getModified()));
+        directChildListenerReferences.forEach((listenerRef, listener) -> listener.onUpdate(shiftExpander.getAdded(),
+                shiftExpander.getRemoved(), shiftExpander.getModified()));
 
         // notify non-direct children
         final NotificationQueue notificationQueue = getNotificationQueue();
         childListenerReferences.forEach((listenerRef, listener) -> {
             final NotificationQueue.IndexUpdateNotification notification =
-                    listener.getNotification(shiftExpander.getAdded(), shiftExpander.getRemoved(), shiftExpander.getModified());
+                    listener.getNotification(shiftExpander.getAdded(), shiftExpander.getRemoved(),
+                            shiftExpander.getModified());
             notificationQueue.addNotification(notification);
         });
         childShiftAwareListenerReferences.forEach((listenerRef, listener) -> {
@@ -781,8 +771,9 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
 
         String serializedIndices = null;
         if (PRINT_SERIALIZED_UPDATE_OVERLAPS) {
-            // The indices are really rather complicated, if we fail this check let's generate a serialized representation
-            // of them that can later be loaded into a debugger.  If this fails, we'll ignore it and continue with our
+            // The indices are really rather complicated, if we fail this check let's generate a serialized
+            // representation
+            // of them that can later be loaded into a debugger. If this fails, we'll ignore it and continue with our
             // regularly scheduled exception.
             try {
                 final StringBuilder outputBuffer = new StringBuilder();
@@ -796,7 +787,8 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
                         outputBuffer.append(Base64.byteArrayToBase64(byteArrayOutputStream.toByteArray()));
                         byteArrayOutputStream.reset();
                         objectOutputStream.reset();
-                    } catch (final Exception ignored) {}
+                    } catch (final Exception ignored) {
+                    }
                 };
 
                 append.accept("getIndex().getPrevIndex=", getIndex().getPrevIndex());
@@ -807,7 +799,8 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
                 append.accept("shifted=", update.shifted);
 
                 serializedIndices = outputBuffer.toString();
-            } catch (final Exception ignored) {}
+            } catch (final Exception ignored) {
+            }
         }
 
         // If we're still here, we know that things are off the rails, and we want to fire the assertion
@@ -842,13 +835,14 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
         }
 
         Assert.assertion(false, "!(previousMissingRemovals || currentMissingAdds || " +
-                "currentMissingModifications || (currentContainsRemovals && shifted.empty()))", indexUpdateErrorMessage);
+                "currentMissingModifications || (currentContainsRemovals && shifted.empty()))",
+                indexUpdateErrorMessage);
     }
 
     /**
      * Get the notification queue to insert notifications into as they are generated by listeners during
-     * {@link #notifyListeners(Index, Index, Index)}. This method may be overridden to provide a different notification queue
-     * than the {@link LiveTableMonitor#DEFAULT} instance for more complex behavior.
+     * {@link #notifyListeners(Index, Index, Index)}. This method may be overridden to provide a different notification
+     * queue than the {@link LiveTableMonitor#DEFAULT} instance for more complex behavior.
      *
      * @return The {@link NotificationQueue} to add to.
      */
@@ -877,9 +871,9 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
     }
 
     /**
-     * Simplest appropriate legacy InstrumentedListener implementation for BaseTable and descendants.
-     * It's expected that most use-cases will require overriding onUpdate() - the default implementation simply passes
-     * index updates through to the dependent's listeners.
+     * Simplest appropriate legacy InstrumentedListener implementation for BaseTable and descendants. It's expected that
+     * most use-cases will require overriding onUpdate() - the default implementation simply passes index updates
+     * through to the dependent's listeners.
      *
      * It is preferred to use {@link ShiftAwareListenerImpl} over {@link ListenerImpl}
      */
@@ -924,9 +918,9 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
     }
 
     /**
-     * Simplest appropriate InstrumentedShiftAwareListener implementation for BaseTable and descendants.
-     * It's expected that most use-cases will require overriding onUpdate() - the default implementation simply passes
-     * index updates through to the dependent's listeners.
+     * Simplest appropriate InstrumentedShiftAwareListener implementation for BaseTable and descendants. It's expected
+     * that most use-cases will require overriding onUpdate() - the default implementation simply passes index updates
+     * through to the dependent's listeners.
      */
     public static class ShiftAwareListenerImpl extends InstrumentedShiftAwareListener {
 
@@ -989,24 +983,25 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
 
     @Override
     public Table withKeys(String... columns) {
-        if(columns == null || columns.length == 0 ) {
+        if (columns == null || columns.length == 0) {
             throw new IllegalArgumentException("withKeys() must be called with at least one key column");
         }
 
-        if(getAttribute(Table.KEY_COLUMNS_ATTRIBUTE) != null) {
-            throw new IllegalStateException("This table already has a set of key columns.  You must create a new table in order to use different keys");
+        if (getAttribute(Table.KEY_COLUMNS_ATTRIBUTE) != null) {
+            throw new IllegalStateException(
+                    "This table already has a set of key columns.  You must create a new table in order to use different keys");
         }
 
         checkAvailableColumns(columns);
 
-        setAttribute(Table.KEY_COLUMNS_ATTRIBUTE, StringUtils.joinStrings(columns,","));
+        setAttribute(Table.KEY_COLUMNS_ATTRIBUTE, StringUtils.joinStrings(columns, ","));
         return this;
     }
 
     @Override
     public Table withUniqueKeys(String... columns) {
         final Table t = withKeys(columns);
-        setAttribute(Table.UNIQUE_KEYS_ATTRIBUTE,true);
+        setAttribute(Table.UNIQUE_KEYS_ATTRIBUTE, true);
 
         return t;
     }
@@ -1035,24 +1030,26 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
 
     private void checkAvailableColumns(String[] columns) {
         final Map<String, ? extends ColumnSource> sourceMap = getColumnSourceMap();
-        final String[] missingColumns = Arrays.stream(columns).filter(col -> !sourceMap.containsKey(col)).toArray(String[]::new);
+        final String[] missingColumns =
+                Arrays.stream(columns).filter(col -> !sourceMap.containsKey(col)).toArray(String[]::new);
 
-        if(missingColumns.length > 0) {
+        if (missingColumns.length > 0) {
             throw new NoSuchColumnException(sourceMap.keySet(), Arrays.asList(missingColumns));
         }
     }
 
     void maybeUpdateSortableColumns(Table destination) {
-        final String currentSortableColumns = (String)getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
+        final String currentSortableColumns = (String) getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
         if (currentSortableColumns == null) {
             return;
         }
 
-        destination.restrictSortTo(Arrays.stream(currentSortableColumns.split(",")).filter(destination.getColumnSourceMap()::containsKey).toArray(String[]::new));
+        destination.restrictSortTo(Arrays.stream(currentSortableColumns.split(","))
+                .filter(destination.getColumnSourceMap()::containsKey).toArray(String[]::new));
     }
 
     void maybeUpdateSortableColumns(Table destination, MatchPair[] renamedColumns) {
-        final String currentSortableColumns = (String)getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
+        final String currentSortableColumns = (String) getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
         if (currentSortableColumns == null) {
             return;
         }
@@ -1062,9 +1059,9 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
         // Create a bi-directional map of New -> Old column name so we can see if
         // a) A column that was sortable in the old table has been renamed & we should make the new column sortable
         // b) The original column exists, and has not been replaced by another. For example
-        //    T1 = [ Col1, Col2, Col3 ]; T1.renameColumns(Col1=Col3, Col2];
-        if(renamedColumns != null) {
-            for(MatchPair mp : renamedColumns) {
+        // T1 = [ Col1, Col2, Col3 ]; T1.renameColumns(Col1=Col3, Col2];
+        if (renamedColumns != null) {
+            for (MatchPair mp : renamedColumns) {
                 // Only the last grouping matters.
                 columnMapping.forcePut(mp.left(), mp.right());
             }
@@ -1073,17 +1070,17 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
         final Set<String> sortableColumns = new HashSet<>();
 
         // Process the original set of sortable columns, adding them to the new set if one of the below
-        //   1) The column exists in the new table and was not renamed in any way but the Identity (C1 = C1)
-        //   2) The column does not exist in the new table, but was renamed to another (C2 = C1)
+        // 1) The column exists in the new table and was not renamed in any way but the Identity (C1 = C1)
+        // 2) The column does not exist in the new table, but was renamed to another (C2 = C1)
         final Map<String, ? extends ColumnSource> sourceMap = destination.getColumnSourceMap();
-        for(String col : currentSortableColumns.split(",")) {
-            //Only add it to the set of sortable columns if it hasn't changed in an unknown way
+        for (String col : currentSortableColumns.split(",")) {
+            // Only add it to the set of sortable columns if it hasn't changed in an unknown way
             final String maybeRenamedColumn = columnMapping.get(col);
-            if(sourceMap.get(col) != null && (maybeRenamedColumn == null || maybeRenamedColumn.equals(col))) {
+            if (sourceMap.get(col) != null && (maybeRenamedColumn == null || maybeRenamedColumn.equals(col))) {
                 sortableColumns.add(col);
             } else {
                 final String newName = columnMapping.inverse().get(col);
-                if(newName != null) {
+                if (newName != null) {
                     sortableColumns.add(newName);
                 }
             }
@@ -1102,28 +1099,28 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
         final Set<String> currentSortableSet = CollectionUtil.setFromArray(currentSortableColumns.split(","));
         final Set<String> newSortableSet = new HashSet<>();
 
-        for(SelectColumn sc : selectCols) {
+        for (SelectColumn sc : selectCols) {
             final SourceColumn realColumn;
 
-            if(sc instanceof SourceColumn) {
-                realColumn = (SourceColumn)sc;
-            } else if(sc instanceof SwitchColumn && ((SwitchColumn) sc).getRealColumn() instanceof SourceColumn) {
-                realColumn = (SourceColumn)((SwitchColumn) sc).getRealColumn();
+            if (sc instanceof SourceColumn) {
+                realColumn = (SourceColumn) sc;
+            } else if (sc instanceof SwitchColumn && ((SwitchColumn) sc).getRealColumn() instanceof SourceColumn) {
+                realColumn = (SourceColumn) ((SwitchColumn) sc).getRealColumn();
             } else {
                 newSortableSet.remove(sc.getName());
                 currentSortableSet.remove(sc.getName());
                 continue;
             }
 
-            if(currentSortableSet.contains(realColumn.getSourceName())) {
+            if (currentSortableSet.contains(realColumn.getSourceName())) {
                 newSortableSet.add(sc.getName());
             }
         }
 
         // Now go through the other columns in the table and add them if they were unchanged
         final Map<String, ? extends ColumnSource> sourceMap = destination.getColumnSourceMap();
-        for(String col : currentSortableSet) {
-            if(sourceMap.containsKey(col)) {
+        for (String col : currentSortableSet) {
+            if (sourceMap.containsKey(col)) {
                 newSortableSet.add(col);
             }
         }
@@ -1140,29 +1137,30 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
         // Does this table actually have the requested columns?
         checkAvailableColumns(columns);
 
-        final String sortable = (String)getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
+        final String sortable = (String) getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
 
-        if(sortable == null) {
+        if (sortable == null) {
             return;
         }
 
         final List<String> sortableColSet;
-        if(sortable.isEmpty()) {
+        if (sortable.isEmpty()) {
             sortableColSet = Collections.emptyList();
         } else {
             sortableColSet = Arrays.asList(sortable.split(","));
         }
 
-        //TODO:  This is hacky. DbSortedFilteredTableModel will update the table with __ABS__ prefixed columns
-        //TODO:  when the user requests to sort absolute.
-        final Set<String> unsortable = Arrays.stream(columns).map(cn -> cn.startsWith("__ABS__") ? cn.replace("__ABS__","") : cn).collect(Collectors.toSet());
+        // TODO: This is hacky. DbSortedFilteredTableModel will update the table with __ABS__ prefixed columns
+        // TODO: when the user requests to sort absolute.
+        final Set<String> unsortable = Arrays.stream(columns)
+                .map(cn -> cn.startsWith("__ABS__") ? cn.replace("__ABS__", "") : cn).collect(Collectors.toSet());
         unsortable.removeAll(sortableColSet);
 
-        if(unsortable.isEmpty()) {
+        if (unsortable.isEmpty()) {
             return;
         }
 
-        //If this is null, we never should have gotten to this point because _all_ columns are sortable.
+        // If this is null, we never should have gotten to this point because _all_ columns are sortable.
         Assert.neqNull(sortable, "sortable");
 
         throw new NotSortableException(unsortable, sortableColSet);
@@ -1174,7 +1172,8 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
      * @param destination the table which shall possibly have a column-description attribute created
      */
     void maybeCopyColumnDescriptions(final Table destination) {
-        final Map<String, String> sourceDescriptions = (Map<String,String>)getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
+        final Map<String, String> sourceDescriptions =
+                (Map<String, String>) getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
         maybeCopyColumnDescriptions(destination, sourceDescriptions);
     }
 
@@ -1186,7 +1185,8 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
      * @param renamedColumns an array of the columns which have been renamed
      */
     void maybeCopyColumnDescriptions(final Table destination, final MatchPair[] renamedColumns) {
-        final Map<String, String> oldDescriptions = (Map<String,String>)getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
+        final Map<String, String> oldDescriptions =
+                (Map<String, String>) getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
 
         if (oldDescriptions == null || oldDescriptions.isEmpty()) {
             return; // short-circuit; there are no column-descriptions in this operation
@@ -1214,7 +1214,8 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
      * @param selectColumns columns which may be changed during this operation, and have their descriptions invalidated
      */
     void maybeCopyColumnDescriptions(final Table destination, final SelectColumn[] selectColumns) {
-        final Map<String, String> oldDescriptions = (Map<String,String>)getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
+        final Map<String, String> oldDescriptions =
+                (Map<String, String>) getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
 
         if (oldDescriptions == null || oldDescriptions.isEmpty()) {
             return; // short-circuit; there are no column-descriptions in this operation
@@ -1241,27 +1242,32 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
      * @param joinedColumns the columns on which this table is being joined
      * @param addColumns the right-table's columns which are being added by the join operation
      */
-    void maybeCopyColumnDescriptions(final Table destination, final Table rightTable, final MatchPair[] joinedColumns, final MatchPair[] addColumns) {
-        final Map<String, String> leftDescriptions = (Map<String,String>)getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
-        final Map<String, String> rightDescriptions = (Map<String,String>)rightTable.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
+    void maybeCopyColumnDescriptions(final Table destination, final Table rightTable, final MatchPair[] joinedColumns,
+            final MatchPair[] addColumns) {
+        final Map<String, String> leftDescriptions =
+                (Map<String, String>) getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
+        final Map<String, String> rightDescriptions =
+                (Map<String, String>) rightTable.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
 
-        if ((leftDescriptions == null || leftDescriptions.isEmpty()) && (rightDescriptions == null || rightDescriptions.isEmpty())) {
+        if ((leftDescriptions == null || leftDescriptions.isEmpty())
+                && (rightDescriptions == null || rightDescriptions.isEmpty())) {
             return; // short-circuit; there are no column-descriptions in this operation
         }
 
         // start with the left-table descriptions, if any
-        final Map<String, String> sourceDescriptions = leftDescriptions == null ? new HashMap<>() : new HashMap<>(leftDescriptions);
+        final Map<String, String> sourceDescriptions =
+                leftDescriptions == null ? new HashMap<>() : new HashMap<>(leftDescriptions);
 
         // and join the right-table descriptions, if any
         if (rightDescriptions != null && !rightDescriptions.isEmpty()) {
             Stream.concat(joinedColumns == null ? Stream.empty() : Arrays.stream(joinedColumns),
-                          addColumns    == null ? Stream.empty() : Arrays.stream(addColumns))
-                .forEach(mp -> {
-                    final String desc = rightDescriptions.get(mp.right());
-                    if (desc != null) {
-                        sourceDescriptions.putIfAbsent(mp.left(), desc);
-                    }
-                });
+                    addColumns == null ? Stream.empty() : Arrays.stream(addColumns))
+                    .forEach(mp -> {
+                        final String desc = rightDescriptions.get(mp.right());
+                        if (desc != null) {
+                            sourceDescriptions.putIfAbsent(mp.left(), desc);
+                        }
+                    });
         }
 
         maybeCopyColumnDescriptions(destination, sourceDescriptions);
@@ -1273,7 +1279,8 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
      * @param destination the table which shall possibly have a column-description attribute created
      * @param sourceDescriptions column name->description mapping
      */
-    private static void maybeCopyColumnDescriptions(final Table destination, final Map<String, String> sourceDescriptions) {
+    private static void maybeCopyColumnDescriptions(final Table destination,
+            final Map<String, String> sourceDescriptions) {
         if (sourceDescriptions == null || sourceDescriptions.isEmpty()) {
             return; // short-circuit; there are no column-descriptions in this operation
         }
@@ -1345,7 +1352,8 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
                 .toArray(String[]::new);
 
         if (unknownColumns.length > 0) {
-            throw new RuntimeException("Unknown columns: " + Arrays.toString(unknownColumns) + ", available columns = " + existingColumns);
+            throw new RuntimeException(
+                    "Unknown columns: " + Arrays.toString(unknownColumns) + ", available columns = " + existingColumns);
         }
 
         final Table result = copy();
@@ -1363,7 +1371,7 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
         ConstructSnapshot.callDataSnapshotFunction(logPrefix, swapListener.makeSnapshotControl(), snapshotFunction);
     }
 
-    public interface SwapListenerFactory <T extends SwapListenerBase> {
+    public interface SwapListenerFactory<T extends SwapListenerBase> {
         T newListener(BaseTable sourceTable);
     }
 
@@ -1386,10 +1394,14 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
     }
 
     /**
-     * <p>If this table is flat, then set the result table flat.</p>
+     * <p>
+     * If this table is flat, then set the result table flat.
+     * </p>
      *
-     * <p>This function is for use when the result table shares an Index; such that if this table is flat, the result
-     * table must also be flat.</p>
+     * <p>
+     * This function is for use when the result table shares an Index; such that if this table is flat, the result table
+     * must also be flat.
+     * </p>
      *
      * @param result the table derived from this table
      */
@@ -1399,15 +1411,15 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
         }
     }
 
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // Reference Counting
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
     @Override
     protected void destroy() {
         super.destroy();
         // NB: We should not assert things about empty listener lists, here, given that listener cleanup might never
-        //     happen or happen out of order if the listeners were GC'd and not explicitly left unmanaged.
+        // happen or happen out of order if the listeners were GC'd and not explicitly left unmanaged.
         childListenerReferences.clear();
         directChildListenerReferences.clear();
         parents.clear();
@@ -1422,19 +1434,22 @@ public abstract class BaseTable extends LivenessArtifact implements DynamicTable
 
     @Override
     public Table withColumnDescription(Map<String, String> descriptions) {
-        if(!hasColumns(descriptions.keySet())) {
+        if (!hasColumns(descriptions.keySet())) {
             final Map<String, ColumnDefinition> existingColumns = getDefinition().getColumnNameMap();
-            throw new IllegalArgumentException("Cannot set column descriptions.  The table does not contain the following columns [ " +
-                    descriptions.keySet().stream()
-                            .filter(col -> !existingColumns.containsKey(col))
-                            .collect(Collectors.joining(", ")) + " ]");
+            throw new IllegalArgumentException(
+                    "Cannot set column descriptions.  The table does not contain the following columns [ " +
+                            descriptions.keySet().stream()
+                                    .filter(col -> !existingColumns.containsKey(col))
+                                    .collect(Collectors.joining(", "))
+                            + " ]");
         }
 
         final Table result = copy();
 
-        //noinspection unchecked
-        Map<String, String> existingDescriptions = (Map<String,String>) result.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
-        if(existingDescriptions == null) {
+        // noinspection unchecked
+        Map<String, String> existingDescriptions =
+                (Map<String, String>) result.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
+        if (existingDescriptions == null) {
             existingDescriptions = new HashMap<>();
             result.setAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE, existingDescriptions);
         }

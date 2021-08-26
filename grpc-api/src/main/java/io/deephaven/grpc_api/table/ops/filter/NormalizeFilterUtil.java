@@ -50,7 +50,8 @@ public class NormalizeFilterUtil {
                 .build()).build();
     }
 
-    public static Condition doComparison(CompareCondition.CompareOperation operation, CaseSensitivity caseSensitivity, Value lhs, Value rhs) {
+    public static Condition doComparison(CompareCondition.CompareOperation operation, CaseSensitivity caseSensitivity,
+            Value lhs, Value rhs) {
         return Condition.newBuilder().setCompare(CompareCondition.newBuilder()
                 .setOperation(operation)
                 .setCaseSensitivity(caseSensitivity)
@@ -59,7 +60,8 @@ public class NormalizeFilterUtil {
                 .build()).build();
     }
 
-    public static Condition doIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType) {
+    public static Condition doIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity,
+            MatchType matchType) {
         return Condition.newBuilder().setIn(InCondition.newBuilder()
                 .setTarget(target)
                 .addAllCandidates(candidatesList)
@@ -82,7 +84,8 @@ public class NormalizeFilterUtil {
                 .build()).build();
     }
 
-    public static Condition doContains(Reference reference, String searchString, CaseSensitivity caseSensitivity, MatchType matchType) {
+    public static Condition doContains(Reference reference, String searchString, CaseSensitivity caseSensitivity,
+            MatchType matchType) {
         return Condition.newBuilder().setContains(ContainsCondition.newBuilder()
                 .setReference(reference)
                 .setSearchString(searchString)
@@ -91,7 +94,8 @@ public class NormalizeFilterUtil {
                 .build()).build();
     }
 
-    public static Condition doMatches(Reference reference, String regex, CaseSensitivity caseSensitivity, MatchType matchType) {
+    public static Condition doMatches(Reference reference, String regex, CaseSensitivity caseSensitivity,
+            MatchType matchType) {
         return Condition.newBuilder().setMatches(MatchesCondition.newBuilder()
                 .setReference(reference)
                 .setRegex(regex)

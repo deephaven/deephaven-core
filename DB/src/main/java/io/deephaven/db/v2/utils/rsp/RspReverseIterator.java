@@ -99,17 +99,15 @@ public class RspReverseIterator implements SafeCloseable {
 
     /**
      * @return current iterator value, without advancing it. A valid call to next() should have happened before calling
-     * this method.
+     *         this method.
      */
     public long current() {
         return current;
     }
 
     /**
-     * This method should be called:
-     * * After the iterator is created and before calling any other methods;
-     *   if it returns false, calling any other methods results in undefined behavior.
-     * * Right after a call to next, similar to above.
+     * This method should be called: * After the iterator is created and before calling any other methods; if it returns
+     * false, calling any other methods results in undefined behavior. * Right after a call to next, similar to above.
      *
      * @return true if a call to next leads to a valid next iterator value.
      */

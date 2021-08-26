@@ -38,7 +38,7 @@ public class ColumnIterator<TYPE> implements Iterator<TYPE> {
      * @param columnName column name for iteration
      */
     public ColumnIterator(@NotNull final Table table, @NotNull final String columnName) {
-        //noinspection unchecked
+        // noinspection unchecked
         this(table.getIndex(), table.getColumnSource(columnName));
     }
 

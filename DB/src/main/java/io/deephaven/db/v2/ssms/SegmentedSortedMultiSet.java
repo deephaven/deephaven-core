@@ -11,12 +11,13 @@ import java.util.Arrays;
 import java.util.function.Supplier;
 
 /**
- * MultiSet of primitive or object values stored as parallel arrays of counts and values.  Nulls disallowed.
+ * MultiSet of primitive or object values stored as parallel arrays of counts and values. Nulls disallowed.
  *
  * @param <T>
  */
-public interface SegmentedSortedMultiSet<T> extends LongSizedDataStructure  {
-    boolean SEGMENTED_SORTED_MULTISET_VALIDATION = Configuration.getInstance().getBooleanWithDefault("SegmentedSortedMultiSet.validation", false);
+public interface SegmentedSortedMultiSet<T> extends LongSizedDataStructure {
+    boolean SEGMENTED_SORTED_MULTISET_VALIDATION =
+            Configuration.getInstance().getBooleanWithDefault("SegmentedSortedMultiSet.validation", false);
 
     static SegmentedSortedMultiSet make(ChunkType chunkType, int nodeSize, Class<?> objectType) {
         return makeFactory(chunkType, nodeSize, objectType).get();
@@ -55,10 +56,9 @@ public interface SegmentedSortedMultiSet<T> extends LongSizedDataStructure  {
     }
 
     /**
-     * Insert new valuesToInsert into this SSMS.  The valuesToInsert to insert must be sorted, without duplicates.
+     * Insert new valuesToInsert into this SSMS. The valuesToInsert to insert must be sorted, without duplicates.
      *
-     * The valuesToInsert and counts chunks will be modified during this call, and the resulting chunks are
-     * undefined.
+     * The valuesToInsert and counts chunks will be modified during this call, and the resulting chunks are undefined.
      *
      * @param valuesToInsert the valuesToInsert to insert
      * @param counts the number of times each value occurs
@@ -67,21 +67,26 @@ public interface SegmentedSortedMultiSet<T> extends LongSizedDataStructure  {
     boolean insert(WritableChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts);
 
     /**
-     * Remove valuesToRemove from this SSMS.  The valuesToRemove to remove must be sorted.
+     * Remove valuesToRemove from this SSMS. The valuesToRemove to remove must be sorted.
      *
      * @param removeContext removalContext
      * @param valuesToRemove the valuesToRemove to remove
      * @return true if any values were removed.
      */
-    boolean remove(RemoveContext removeContext, WritableChunk<? extends Values> valuesToRemove, WritableIntChunk<ChunkLengths> lengths);
+    boolean remove(RemoveContext removeContext, WritableChunk<? extends Values> valuesToRemove,
+            WritableIntChunk<ChunkLengths> lengths);
 
     @NotNull
-    default Chunk<?> keyChunk() { return null; }
+    default Chunk<?> keyChunk() {
+        return null;
+    }
 
-    default void fillKeyChunk(WritableChunk<?> keyChunk, int offset) { }
+    default void fillKeyChunk(WritableChunk<?> keyChunk, int offset) {}
 
     @NotNull
-    default LongChunk<?> countChunk() { return null; }
+    default LongChunk<?> countChunk() {
+        return null;
+    }
 
     class RemoveContext {
         RemoveContext(int leafSize) {
@@ -123,8 +128,9 @@ public interface SegmentedSortedMultiSet<T> extends LongSizedDataStructure  {
      * Remove count elements from the front of this SSM and add them to the back of the destination SSM.
      * <p>
      * The minimum element of this SSM must be greater than or equal to the maximum of destination.
-     *  @param destination the SegmentedSortedMultiSet to append count elements to
-     * @param count       how many elements to move to the destination
+     * 
+     * @param destination the SegmentedSortedMultiSet to append count elements to
+     * @param count how many elements to move to the destination
      */
     void moveFrontToBack(SegmentedSortedMultiSet destination, long count);
 
@@ -132,8 +138,9 @@ public interface SegmentedSortedMultiSet<T> extends LongSizedDataStructure  {
      * Remove count elements from the back of this SSM and add them to the front of the destination SSM.
      * <p>
      * The minimum element of this SSM must be less than or equal to the maximum of destination.
-     *  @param destination the SegmentedSortedMultiSet to prepend count elements to
-     * @param count       how many elements to move to the destination
+     * 
+     * @param destination the SegmentedSortedMultiSet to prepend count elements to
+     * @param count how many elements to move to the destination
      */
     void moveBackToFront(SegmentedSortedMultiSet destination, long count);
 
@@ -148,11 +155,15 @@ public interface SegmentedSortedMultiSet<T> extends LongSizedDataStructure  {
     long getMaxCount();
 
     T getMin();
+
     T getMax();
 
 
     void setTrackDeltas(boolean shouldTrackDeltas);
+
     void clearDeltas();
+
     int getAddedSize();
+
     int getRemovedSize();
 }

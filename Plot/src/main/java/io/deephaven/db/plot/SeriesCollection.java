@@ -33,12 +33,7 @@ public class SeriesCollection implements Serializable, PlotExceptionCause {
      * Type of data series.
      */
     public enum SeriesType {
-        CATEGORY,
-        XY,
-        UNARY_FUNCTION,
-        BINARY_FUNCTION,
-        INTERVAL,
-        OHLC
+        CATEGORY, XY, UNARY_FUNCTION, BINARY_FUNCTION, INTERVAL, OHLC
     }
 
     /**
@@ -67,9 +62,9 @@ public class SeriesCollection implements Serializable, PlotExceptionCause {
         }
 
         /**
-         * True if the series is a multiseries.  False otherwise.
+         * True if the series is a multiseries. False otherwise.
          *
-         * @return true if the series is a multiseries.  False otherwise.
+         * @return true if the series is a multiseries. False otherwise.
          */
         public boolean isMultiSeries() {
             return isMultiSeries;
@@ -111,7 +106,7 @@ public class SeriesCollection implements Serializable, PlotExceptionCause {
     }
 
     /**
-     * Gets the descriptions of the series in the collection.  The result is a map between series name and description.
+     * Gets the descriptions of the series in the collection. The result is a map between series name and description.
      *
      * @return descriptions of the series in the collection
      */
@@ -146,7 +141,7 @@ public class SeriesCollection implements Serializable, PlotExceptionCause {
      */
     public synchronized SeriesInternal series(Comparable name) {
         final SeriesDescription seriesDescription = seriesDescriptions.get(name);
-        if(seriesDescription == null) {
+        if (seriesDescription == null) {
             throw new PlotIllegalArgumentException("Series " + name + " not found", this);
         }
 
@@ -181,13 +176,14 @@ public class SeriesCollection implements Serializable, PlotExceptionCause {
     /**
      * Add a new Series.
      *
-     * @param type          type of series
+     * @param type type of series
      * @param isMultiSeries true for multi-series; false for standard mono-series.
-     * @param series        series
+     * @param series series
      */
     public synchronized void add(final SeriesType type, final boolean isMultiSeries, final SeriesInternal series) {
         if (seriesDescriptions.containsKey(series.name())) {
-            throw new PlotUnsupportedOperationException("Series with the same name already exists in the collection.  name=" + series.name(), this);
+            throw new PlotUnsupportedOperationException(
+                    "Series with the same name already exists in the collection.  name=" + series.name(), this);
         }
 
         seriesDescriptions.put(series.name(), new SeriesDescription(type, isMultiSeries, series));

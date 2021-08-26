@@ -33,7 +33,8 @@ public class ChartImpl implements Chart, PlotExceptionCause {
 
     private final BaseFigureImpl figure;
     @SuppressWarnings("unchecked")
-    private final List<AxisImpl>[] axis = new List[]{new ArrayList<Axis>(), new ArrayList<Axis>(), new ArrayList<Axis>()};
+    private final List<AxisImpl>[] axis =
+            new List[] {new ArrayList<Axis>(), new ArrayList<Axis>(), new ArrayList<Axis>()};
     private final List<AxesImpl> axes = new ArrayList<>();
     private ChartType chartType;
     private Font titleFont;
@@ -63,7 +64,7 @@ public class ChartImpl implements Chart, PlotExceptionCause {
     /**
      * Creates a copy of a Chart using a different figure.
      *
-     * @param chart  chart to copy.
+     * @param chart chart to copy.
      * @param figure new figure.
      */
     private ChartImpl(final ChartImpl chart, final BaseFigureImpl figure) {
@@ -85,18 +86,18 @@ public class ChartImpl implements Chart, PlotExceptionCause {
         this.displayYGridLines = chart.displayYGridLines;
 
 
-        //copy axis
-        for(int i = 0; i < chart.axis.length; i++) {
+        // copy axis
+        for (int i = 0; i < chart.axis.length; i++) {
             final List<AxisImpl> axisList = chart.axis[i];
             final List<AxisImpl> copyAxisList = this.axis[i];
 
-            for(int j = 0; j < axisList.size(); j++) {
+            for (int j = 0; j < axisList.size(); j++) {
                 copyAxisList.add(axisList.get(j).copy(this));
             }
         }
 
-        //copy axes
-        for(int i = 0; i < chart.axes.size(); i++) {
+        // copy axes
+        for (int i = 0; i < chart.axes.size(); i++) {
             this.axes.add(chart.axes.get(i).copy(this));
         }
     }
@@ -107,7 +108,7 @@ public class ChartImpl implements Chart, PlotExceptionCause {
      * @param figure new figure.
      * @return chart copy
      */
-    ChartImpl copy(final BaseFigureImpl figure){
+    ChartImpl copy(final BaseFigureImpl figure) {
         return new ChartImpl(this, figure);
     }
 
@@ -119,7 +120,7 @@ public class ChartImpl implements Chart, PlotExceptionCause {
      *
      * @return the {@link BaseFigure} containing this Chart
      */
-    public BaseFigureImpl figure(){
+    public BaseFigureImpl figure() {
         return figure;
     }
 
@@ -142,8 +143,9 @@ public class ChartImpl implements Chart, PlotExceptionCause {
     }
 
     private void resize(int rowspan, int colspan) {
-        if(rowspan < 1 || colspan < 1) {
-            throw new PlotIllegalArgumentException("Row and column span must be at least one! rowspan=" + rowspan + ", colspan=" + colspan, this);
+        if (rowspan < 1 || colspan < 1) {
+            throw new PlotIllegalArgumentException(
+                    "Row and column span must be at least one! rowspan=" + rowspan + ", colspan=" + colspan, this);
         }
         figure.resizePlot(row, column, rowspan, colspan);
         this.rowspan = rowspan;
@@ -158,11 +160,12 @@ public class ChartImpl implements Chart, PlotExceptionCause {
         return this.row;
     }
 
-    void setChartType(final ChartType chartType){
-        if(this.chartType == null){
+    void setChartType(final ChartType chartType) {
+        if (this.chartType == null) {
             this.chartType = chartType;
-        } else if(this.chartType != chartType) {
-            throw new PlotUnsupportedOperationException("Attempting to create inconsistent plot types: " + this.chartType + ", " + chartType, this);
+        } else if (this.chartType != chartType) {
+            throw new PlotUnsupportedOperationException(
+                    "Attempting to create inconsistent plot types: " + this.chartType + ", " + chartType, this);
         }
     }
 
@@ -198,7 +201,8 @@ public class ChartImpl implements Chart, PlotExceptionCause {
                 continue;
             }
             if (d != -1 && d != dd) {
-                throw new PlotRuntimeException("Inconsistent axis dimensions in chart: dim1=" + d + " dim2=" + dd, this);
+                throw new PlotRuntimeException("Inconsistent axis dimensions in chart: dim1=" + d + " dim2=" + dd,
+                        this);
             }
 
             d = dd;
@@ -331,33 +335,35 @@ public class ChartImpl implements Chart, PlotExceptionCause {
     /**
      * @return table handles associated with this figure.
      */
-    private Set<TableHandle> getTableHandles(){
+    private Set<TableHandle> getTableHandles() {
         final Set<TableHandle> result = new HashSet<>();
 
         for (AxesImpl axes : getAxes()) {
-            for (SeriesCollection.SeriesDescription seriesDescription : axes.dataSeries().getSeriesDescriptions().values()) {
+            for (SeriesCollection.SeriesDescription seriesDescription : axes.dataSeries().getSeriesDescriptions()
+                    .values()) {
                 result.addAll(seriesDescription.getSeries().getTableHandles());
             }
         }
 
-        if(getChartTitle() instanceof DynamicChartTitle.ChartTitleTable){
-            result.add(((DynamicChartTitle.ChartTitleTable)getChartTitle()).getTableHandle());
+        if (getChartTitle() instanceof DynamicChartTitle.ChartTitleTable) {
+            result.add(((DynamicChartTitle.ChartTitleTable) getChartTitle()).getTableHandle());
         }
 
         return result;
     }
 
-    private Set<SwappableTable> getSwappableTables(){
+    private Set<SwappableTable> getSwappableTables() {
         final Set<SwappableTable> result = new HashSet<>();
 
         for (AxesImpl axes : getAxes()) {
-            for (SeriesCollection.SeriesDescription seriesDescription : axes.dataSeries().getSeriesDescriptions().values()) {
+            for (SeriesCollection.SeriesDescription seriesDescription : axes.dataSeries().getSeriesDescriptions()
+                    .values()) {
                 result.addAll(seriesDescription.getSeries().getSwappableTables());
             }
         }
 
-        if(getChartTitle() instanceof DynamicChartTitle.ChartTitleSwappableTable){
-            result.add(((DynamicChartTitle.ChartTitleSwappableTable)getChartTitle()).getSwappableTable());
+        if (getChartTitle() instanceof DynamicChartTitle.ChartTitleSwappableTable) {
+            result.add(((DynamicChartTitle.ChartTitleSwappableTable) getChartTitle()).getSwappableTable());
         }
 
         return result;
@@ -367,12 +373,13 @@ public class ChartImpl implements Chart, PlotExceptionCause {
     ////////////////////////// convenience //////////////////////////
     /**
      * Gets the ChartTitle instance
+     * 
      * @return ChartTitle instance
      */
     public ChartTitle getChartTitle() {
         return chartTitle;
     }
-////////////////////////// convenience //////////////////////////
+    ////////////////////////// convenience //////////////////////////
 
 
     @Override
@@ -404,14 +411,16 @@ public class ChartImpl implements Chart, PlotExceptionCause {
         ArgumentValidations.assertNotNull(titleColumns, "titleColumns", getPlotInfo());
         ArgumentValidations.assertGreaterThan0(titleColumns.length, "titleColumns size", getPlotInfo());
 
-        IntStream.range(0, titleColumns.length).forEachOrdered(i -> ArgumentValidations.assertNotNull(titleColumns[i], "titleColumn[" + i + "]", getPlotInfo()));
+        IntStream.range(0, titleColumns.length).forEachOrdered(
+                i -> ArgumentValidations.assertNotNull(titleColumns[i], "titleColumn[" + i + "]", getPlotInfo()));
 
         ArgumentValidations.assertColumnsInTable(t, getPlotInfo(), titleColumns);
 
         final TableHandle tableHandle = new TableHandle(t, titleColumns);
 
-        //set dynamicTitle for table
-        this.chartTitle = new DynamicChartTitle.ChartTitleTable(titleFormat, tableHandle, getPlotInfo(), maxVisibleRowsCount, titleColumns);
+        // set dynamicTitle for table
+        this.chartTitle = new DynamicChartTitle.ChartTitleTable(titleFormat, tableHandle, getPlotInfo(),
+                maxVisibleRowsCount, titleColumns);
 
         return this;
     }
@@ -428,22 +437,24 @@ public class ChartImpl implements Chart, PlotExceptionCause {
             ArgumentValidations.assertNotNull(titleColumn, "titleColumn[" + i + "]", getPlotInfo());
         }
 
-        final SwappableTable swappableTable = sds.getSwappableTable("ChartTitle", this, (Function<Table, Table> & Serializable) table -> table, titleColumns);
+        final SwappableTable swappableTable = sds.getSwappableTable("ChartTitle", this,
+                (Function<Table, Table> & Serializable) table -> table, titleColumns);
 
         ArgumentValidations.assertColumnsInTable(swappableTable.getTableDefinition(), getPlotInfo(), titleColumns);
 
-        //set dynamicTitle for Swappable table
-        this.chartTitle = new DynamicChartTitle.ChartTitleSwappableTable(titleFormat, swappableTable, getPlotInfo(), maxVisibleRowsCount, titleColumns);
+        // set dynamicTitle for Swappable table
+        this.chartTitle = new DynamicChartTitle.ChartTitleSwappableTable(titleFormat, swappableTable, getPlotInfo(),
+                maxVisibleRowsCount, titleColumns);
         return this;
     }
 
     @Override
     public Chart maxRowsInTitle(final int maxRowsCount) {
-        if(chartTitle == null){
+        if (chartTitle == null) {
             chartTitle = new ChartTitle(getPlotInfo());
         }
 
-        //we're setting at both places since user can call chartTitle() and maxRowsInTitle() in any order.
+        // we're setting at both places since user can call chartTitle() and maxRowsInTitle() in any order.
         this.maxVisibleRowsCount = maxRowsCount;
         chartTitle.maxVisibleRowsCount = maxRowsCount;
         return this;
@@ -497,7 +508,7 @@ public class ChartImpl implements Chart, PlotExceptionCause {
 
 
     @Override
-    public ChartImpl legendVisible(final boolean visible){
+    public ChartImpl legendVisible(final boolean visible) {
         showLegend = visible;
         return this;
     }
@@ -533,7 +544,7 @@ public class ChartImpl implements Chart, PlotExceptionCause {
 
 
     @Override
-    public ChartImpl span(final int rowSpan, final int colSpan){
+    public ChartImpl span(final int rowSpan, final int colSpan) {
         rowSpan(rowSpan);
         colSpan(colSpan);
         return this;
@@ -590,8 +601,9 @@ public class ChartImpl implements Chart, PlotExceptionCause {
     public Axes axes(int id) {
         final List<AxesImpl> axes = getAxes();
         final int size = axes.size();
-        if(id < 0 || id >= size) {
-            throw new PlotIllegalArgumentException("Axes not in chart: index=" + id + ", required in range = [0," + (size - 1) + "]", this);
+        if (id < 0 || id >= size) {
+            throw new PlotIllegalArgumentException(
+                    "Axes not in chart: index=" + id + ", required in range = [0," + (size - 1) + "]", this);
         }
         return axes.get(id);
     }
@@ -599,7 +611,7 @@ public class ChartImpl implements Chart, PlotExceptionCause {
     @Override
     public Axes axes(String name) {
         for (final AxesImpl a : getAxes()) {
-            if(a.name().equals(name)){
+            if (a.name().equals(name)) {
                 return a;
             }
         }
@@ -621,7 +633,7 @@ public class ChartImpl implements Chart, PlotExceptionCause {
         final PlotOrientation plotOrientation;
         try {
             plotOrientation = PlotOrientation.fromString(orientation);
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             throw new PlotIllegalArgumentException(e.getMessage(), this);
         }
 
@@ -632,11 +644,10 @@ public class ChartImpl implements Chart, PlotExceptionCause {
      * Possible plot orientations.
      */
     public enum PlotOrientation {
-        HORIZONTAL,
-        VERTICAL;
+        HORIZONTAL, VERTICAL;
 
         public static PlotOrientation fromString(String s) {
-            if(s == null) {
+            if (s == null) {
                 throw new IllegalArgumentException("Orientation can't be null");
             }
 
@@ -644,7 +655,7 @@ public class ChartImpl implements Chart, PlotExceptionCause {
             final String vertical = "VERTICAL";
 
             s = s.toUpperCase();
-            if(!s.isEmpty()) {
+            if (!s.isEmpty()) {
                 s = horizontal.startsWith(s) ? horizontal : vertical.startsWith(s) ? vertical : s;
             }
 

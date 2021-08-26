@@ -29,7 +29,7 @@ public class SimpleXYTicks {
                 .yLabel("Y")
                 .plot("Test1", x1, y1)
                 .plot("Test2", x2, y2)
-                .plot("TestF", x -> x * x / 5).funcRange(5, 10) //.npoints(5); //.range(-10,10);
+                .plot("TestF", x -> x * x / 5).funcRange(5, 10) // .npoints(5); //.range(-10,10);
                 .xAxis().axisColor(new Color(0, 255, 255))
                 .axis(0).axisLabelFont("Courier", "BOLD_ITALIC", 25);
 

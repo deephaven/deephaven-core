@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 1, time = 1)
 @Measurement(iterations = 5, time = 1)
-@Timeout(time=12)
+@Timeout(time = 12)
 @Fork(1)
 public class ByBenchmark {
     private TableBenchmarkState state;
@@ -59,7 +59,7 @@ public class ByBenchmark {
 
         final BenchmarkTableBuilder builder;
 
-        switch(tableType) {
+        switch (tableType) {
             case "Historical":
                 builder = BenchmarkTools.persistentTableBuilder("Karl", size)
                         .setPartitioningFormula("${autobalance_single}")
@@ -78,8 +78,10 @@ public class ByBenchmark {
 
         builder.setSeed(0xDEADBEEF).addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
 
-        final EnumStringColumnGenerator stringKey = (EnumStringColumnGenerator) BenchmarkTools.stringCol("KeyString", keyCount, 6, 6, 0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
-        final ColumnGenerator intKey = BenchmarkTools.seqNumberCol("KeyInt", int.class, 0, 1, keyCount, SequentialNumColumnGenerator.Mode.RollAtLimit);
+        final EnumStringColumnGenerator stringKey = (EnumStringColumnGenerator) BenchmarkTools.stringCol("KeyString",
+                keyCount, 6, 6, 0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
+        final ColumnGenerator intKey = BenchmarkTools.seqNumberCol("KeyInt", int.class, 0, 1, keyCount,
+                SequentialNumColumnGenerator.Mode.RollAtLimit);
 
         System.out.println("Key type: " + keyType);
         switch (keyType) {
@@ -104,7 +106,7 @@ public class ByBenchmark {
         }
 
         if (grouped) {
-            ((PersistentBenchmarkTableBuilder)builder).addGroupingColumns(keyName);
+            ((PersistentBenchmarkTableBuilder) builder).addGroupingColumns(keyName);
         }
 
         final BenchmarkTable bmt = builder
@@ -117,9 +119,11 @@ public class ByBenchmark {
 
         switch (mode) {
             case "chunked":
-                QueryTable.USE_OLDER_CHUNKED_BY = true; break;
+                QueryTable.USE_OLDER_CHUNKED_BY = true;
+                break;
             case "operator":
-                QueryTable.USE_OLDER_CHUNKED_BY = false; break;
+                QueryTable.USE_OLDER_CHUNKED_BY = false;
+                break;
             default:
                 throw new IllegalArgumentException("Unknown mode " + mode);
         }
@@ -146,33 +150,38 @@ public class ByBenchmark {
 
     @Benchmark
     public Table byStatic(@NotNull final Blackhole bh) {
-        final Table result = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> table.by(keyName.split("[, ]+")));
+        final Table result =
+                LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> table.by(keyName.split("[, ]+")));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table byIncremental(@NotNull final Blackhole bh) {
-        final Table result = IncrementalBenchmark.incrementalBenchmark((t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(keyName.split("[, ]+"))), table);
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(keyName.split("[, ]+"))), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table byExternalStatic(@NotNull final Blackhole bh) {
-        final TableMap result = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> table.byExternal(keyName.split("[, ]+")));
+        final TableMap result =
+                LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> table.byExternal(keyName.split("[, ]+")));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table byExternalIncremental(@NotNull final Blackhole bh) {
-        final TableMap result = IncrementalBenchmark.incrementalBenchmark((t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.byExternal(keyName.split("[, ]+"))), table);
+        final TableMap result = IncrementalBenchmark.incrementalBenchmark(
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.byExternal(keyName.split("[, ]+"))),
+                table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
-    public static void main(String [] args) {
+    public static void main(String[] args) {
         final int heapGb = 12;
         BenchUtil.run(heapGb, ByBenchmark.class);
     }

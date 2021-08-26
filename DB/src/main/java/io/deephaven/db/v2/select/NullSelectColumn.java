@@ -92,7 +92,7 @@ public class NullSelectColumn<T> implements SelectColumn {
 
     @Override
     public SelectColumn copy() {
-        //noinspection unchecked
+        // noinspection unchecked
         return new NullSelectColumn<>(getReturnedType(), nvcs.getComponentType(), name);
     }
 }

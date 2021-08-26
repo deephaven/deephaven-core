@@ -15,7 +15,8 @@ public class DropColumnsGrpcImpl extends GrpcTableOperation<DropColumnsRequest> 
 
     @Inject
     public DropColumnsGrpcImpl() {
-        super(BatchTableRequest.Operation::getDropColumns, DropColumnsRequest::getResultId, DropColumnsRequest::getSourceId);
+        super(BatchTableRequest.Operation::getDropColumns, DropColumnsRequest::getResultId,
+                DropColumnsRequest::getSourceId);
     }
 
     @Override

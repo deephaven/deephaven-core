@@ -21,7 +21,8 @@ import java.util.PrimitiveIterator;
 import java.util.Set;
 import java.util.function.LongConsumer;
 
-public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl implements ImplementedByTreeIndexImpl, Index, Externalizable {
+public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl
+        implements ImplementedByTreeIndexImpl, Index, Externalizable {
 
     private static final long serialVersionUID = 1L;
 
@@ -229,8 +230,7 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl implements Implemen
     }
 
     @Override
-    public void copyImmutableGroupings(TupleSource source, TupleSource dest) {
-    }
+    public void copyImmutableGroupings(TupleSource source, TupleSource dest) {}
 
     @Override
     public Map<Object, Index> getGroupingForKeySet(final Set<Object> keys, final TupleSource tupleSource) {
@@ -277,7 +277,8 @@ public class CurrentOnlyIndex extends OrderedKeysAsChunkImpl implements Implemen
         return impl.ixGet(pos);
     }
 
-    @Override public void getKeysForPositions(PrimitiveIterator.OfLong positions, LongConsumer outputKeys) {
+    @Override
+    public void getKeysForPositions(PrimitiveIterator.OfLong positions, LongConsumer outputKeys) {
         impl.ixGetKeysForPositions(positions, outputKeys);
     }
 

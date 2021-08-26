@@ -29,12 +29,15 @@ import java.util.function.*;
 /**
  * A set of sorted long keys between 0 and Long.MAX_VALUE
  */
-public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long>, LongSizedDataStructure{
-    boolean USE_PRIORITY_QUEUE_RANDOM_BUILDER = Configuration.getInstance().getBooleanWithDefault("Index.usePriorityQueueRandomBuilder", true);
+public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long>, LongSizedDataStructure {
+    boolean USE_PRIORITY_QUEUE_RANDOM_BUILDER =
+            Configuration.getInstance().getBooleanWithDefault("Index.usePriorityQueueRandomBuilder", true);
 
-    boolean VALIDATE_COALESCED_UPDATES = Configuration.getInstance().getBooleanWithDefault("Index.validateCoalescedUpdates", true);
+    boolean VALIDATE_COALESCED_UPDATES =
+            Configuration.getInstance().getBooleanWithDefault("Index.validateCoalescedUpdates", true);
 
-    boolean BAD_RANGES_AS_ERROR = Configuration.getInstance().getBooleanForClassWithDefault(Index.class, "badRangeAsError", true);
+    boolean BAD_RANGES_AS_ERROR =
+            Configuration.getInstance().getBooleanForClassWithDefault(Index.class, "badRangeAsError", true);
 
     /**
      * Add a single key to this index if it's not already present.
@@ -47,14 +50,14 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
      * Add all keys in a closed range to this index if they are not already present.
      *
      * @param startKey The first key to add
-     * @param endKey   The last key to add (inclusive)
+     * @param endKey The last key to add (inclusive)
      */
     void insertRange(long startKey, long endKey);
 
     /**
      * Add all of the (ordered) keys in a slice of {@code keys} to this index if they are not already present.
      *
-     * @param keys   The {@link LongChunk} of {@link OrderedKeyIndices} to insert
+     * @param keys The {@link LongChunk} of {@link OrderedKeyIndices} to insert
      * @param offset The offset in {@code keys} to begin inserting keys from
      * @param length The number of keys to insert
      */
@@ -78,14 +81,14 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
      * Remove all keys in a closed range from this index if they are present.
      *
      * @param startKey The first key to remove
-     * @param endKey   The last key to remove (inclusive)
+     * @param endKey The last key to remove (inclusive)
      */
     void removeRange(long startKey, long endKey);
 
     /**
      * Remove all of the (ordered) keys in a slice of {@code keys} from this index if they are present.
      *
-     * @param keys   The {@link LongChunk} of {@link OrderedKeyIndices} to remove
+     * @param keys The {@link LongChunk} of {@link OrderedKeyIndices} to remove
      * @param offset The offset in {@code keys} to begin removing keys from
      * @param length The number of keys to remove
      */
@@ -99,13 +102,14 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
     void remove(ReadOnlyIndex removed);
 
     /**
-     * Simultaneously adds the keys from the first index and removes the keys from the second one.
-     * API assumption: the intersection of added and removed is empty.
+     * Simultaneously adds the keys from the first index and removes the keys from the second one. API assumption: the
+     * intersection of added and removed is empty.
      */
     void update(ReadOnlyIndex added, ReadOnlyIndex removed);
 
     /**
      * Removes all the keys from <i>other</i> index that are present in the current set.
+     * 
      * @return a new index representing the keys removed
      */
     @NotNull
@@ -124,6 +128,7 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
 
     /**
      * Modifies the index by keeping only keys in the interval [start, end]
+     * 
      * @param start beginning of interval of keys to keep.
      * @param end end of interval of keys to keep (inclusive).
      */
@@ -156,24 +161,25 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
      */
     void initializePreviousValue();
 
-    interface RandomBuilder extends IndexBuilder { }
+    interface RandomBuilder extends IndexBuilder {
+    }
 
     interface SequentialBuilder extends TLongProcedure, LongRangeConsumer {
         /**
-         * No obligation to call, but if called,
-         *  (a) should be called before providing any values, and
-         *  (b) no value should be provided outside of the domain.
-         * Implementations may be able to use this information to
-         * improve memory utilization.
-         * Either of the arguments may be given as Index.NULL_KEY,
-         * indicating that the respective value is not known.
+         * No obligation to call, but if called, (a) should be called before providing any values, and (b) no value
+         * should be provided outside of the domain. Implementations may be able to use this information to improve
+         * memory utilization. Either of the arguments may be given as Index.NULL_KEY, indicating that the respective
+         * value is not known.
          *
          * @param minKey the minimum key to be provided, or Index.NULL_KEY if not known.
          * @param maxKey the maximum key to be provided, or Index.NULL_KEY if not known.
          */
-        default void setDomain(final long minKey, final long maxKey) { }
+        default void setDomain(final long minKey, final long maxKey) {}
+
         Index getIndex();
+
         void appendKey(long key);
+
         void appendRange(long rangeFirstKey, long rangeLastKey);
 
         default void appendKeys(PrimitiveIterator.OfLong it) {
@@ -181,15 +187,18 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
                 appendKey(it.nextLong());
             }
         }
+
         default void appendOrderedKeyIndicesChunk(final LongChunk<OrderedKeyIndices> chunk) {
             appendKeys(new LongChunkIterator(chunk));
         }
+
         default void appendRanges(final LongRangeIterator it) {
             while (it.hasNext()) {
                 it.next();
                 appendRange(it.start(), it.end());
             }
         }
+
         default void appendOrderedKeyRangesChunk(final LongChunk<OrderedKeyRanges> chunk) {
             appendRanges(new LongChunkRangeIterator(chunk));
         }
@@ -206,6 +215,7 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
 
         /**
          * Appends the index shifted by the provided offset to this builder.
+         * 
          * @param idx The index to append.
          * @param offset An offset to apply to every range in the index.
          */
@@ -226,6 +236,7 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
          * @return An index containing the specified keys
          */
         Index getIndexByValues(long... keys);
+
         Index getEmptyIndex();
 
         /**
@@ -254,7 +265,7 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
          *
          * @return An index containing the specified range
          */
-        Index getIndexByRange(long firstKey,long lastKey);
+        Index getIndexByRange(long firstKey, long lastKey);
 
         /**
          * Get a flat {@link Index} containing the range [0, size), or an {@link #getEmptyIndex() empty index} if the
@@ -280,6 +291,7 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
 
     abstract class AbstractRandomBuilder implements Index.RandomBuilder {
         protected AdaptiveBuilder builder = new AdaptiveBuilder();
+
         @Override
         public void addKey(final long key) {
             builder.addKey(key);
@@ -302,23 +314,29 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
         @Override
         public RandomBuilder getRandomBuilder() {
             if (USE_PRIORITY_QUEUE_RANDOM_BUILDER) {
-                return new AdaptiveIndexBuilder() {
-                };
+                return new AdaptiveIndexBuilder() {};
             } else {
                 return TreeIndex.makeRandomBuilder();
             }
         }
+
         @Override
         public SequentialBuilder getSequentialBuilder() {
             return TreeIndex.makeSequentialBuilder();
         }
-        @Override public Index getEmptyIndex() { return TreeIndex.getEmptyIndex(); }
+
+        @Override
+        public Index getEmptyIndex() {
+            return TreeIndex.getEmptyIndex();
+        }
 
         // For backwards compatibility.
         /**
          * @return {@link #getRandomBuilder()}
          */
-        public RandomBuilder getBuilder() { return getRandomBuilder(); }
+        public RandomBuilder getBuilder() {
+            return getRandomBuilder();
+        }
     };
 
     Factory CURRENT_FACTORY = new AbstractFactory() {
@@ -335,11 +353,16 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
                 return TreeIndex.makeCurrentRandomBuilder();
             }
         }
+
         @Override
         public SequentialBuilder getSequentialBuilder() {
             return TreeIndex.makeCurrentSequentialBuilder();
         }
-        @Override public Index getEmptyIndex() { return new CurrentOnlyIndex(); }
+
+        @Override
+        public Index getEmptyIndex() {
+            return new CurrentOnlyIndex();
+        }
 
         @Override
         public Index getIndexByRange(final long firstKey, final long lastKey) {
@@ -350,7 +373,9 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
         /**
          * @return {@link #getRandomBuilder()}
          */
-        public RandomBuilder getBuilder() { return getRandomBuilder(); }
+        public RandomBuilder getBuilder() {
+            return getRandomBuilder();
+        }
     };
 
     class LegacyIndexUpdateCoalescer {
@@ -361,8 +386,8 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
         }
 
         /**
-         * The class assumes ownership of one reference to the indices passed;
-         * the caller should ensure to Index.clone() them before passing them if they are shared.
+         * The class assumes ownership of one reference to the indices passed; the caller should ensure to Index.clone()
+         * them before passing them if they are shared.
          */
         public LegacyIndexUpdateCoalescer(Index added, Index removed, Index modified) {
             this.added = added;
@@ -373,14 +398,14 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
         public void update(final Index addedOnUpdate, final Index removedOnUpdate, final Index modifiedOnUpdate) {
             // Note: extract removes matching ranges from the source index
             try (final Index addedBack = this.removed.extract(addedOnUpdate);
-                 final Index actuallyAdded = addedOnUpdate.minus(addedBack)) {
+                    final Index actuallyAdded = addedOnUpdate.minus(addedBack)) {
                 this.added.insert(actuallyAdded);
                 this.modified.insert(addedBack);
             }
 
             // Things we've added, but are now removing. Do not aggregate these as removed since client never saw them.
             try (final Index additionsRemoved = this.added.extract(removedOnUpdate);
-                 final Index actuallyRemoved = removedOnUpdate.minus(additionsRemoved)) {
+                    final Index actuallyRemoved = removedOnUpdate.minus(additionsRemoved)) {
                 this.removed.insert(actuallyRemoved);
             }
 
@@ -392,7 +417,8 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
                 this.modified.insert(actuallyModified);
             }
 
-            if (VALIDATE_COALESCED_UPDATES && (this.added.overlaps(this.modified) || this.added.overlaps(this.removed) || this.removed.overlaps(modified))) {
+            if (VALIDATE_COALESCED_UPDATES && (this.added.overlaps(this.modified) || this.added.overlaps(this.removed)
+                    || this.removed.overlaps(modified))) {
                 final String assertionMessage = "Coalesced overlaps detected: " +
                         "added=" + added.toString() +
                         ", removed=" + removed.toString() +
@@ -529,7 +555,8 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
                 long minBegin = newShifts.getMinimumValidBeginForNextDelta(ttlDelta);
                 if (ttlDelta < 0) {
                     final Index.SearchIterator revIter = index.reverseIterator();
-                    if (revIter.advance(watermarkKey.longValue() - 1) && revIter.currentValue() > newShifts.lastShiftEnd()) {
+                    if (revIter.advance(watermarkKey.longValue() - 1)
+                            && revIter.currentValue() > newShifts.lastShiftEnd()) {
                         minBegin = Math.max(minBegin, revIter.currentValue() + 1 - ttlDelta);
                     }
                 }
@@ -551,7 +578,8 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
 
             final BiConsumer<Long, Long> consumeUntilWithExtraDelta = (endRange, extraDelta) -> {
                 while (outerIdx.intValue() < shifted.size() && watermarkKey.longValue() <= endRange) {
-                    final long outerBegin = Math.max(watermarkKey.longValue(), shifted.getBeginRange(outerIdx.intValue()));
+                    final long outerBegin =
+                            Math.max(watermarkKey.longValue(), shifted.getBeginRange(outerIdx.intValue()));
                     final long outerEnd = shifted.getEndRange(outerIdx.intValue());
                     final long outerDelta = shifted.getShiftDelta(outerIdx.intValue());
 
@@ -561,7 +589,8 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
                         fixShiftIfOverlap.accept(headerEnd, extraDelta);
                         newShifts.shiftRange(watermarkKey.longValue(), headerEnd, extraDelta);
                     }
-                    final long maxWatermark = endRange == Long.MAX_VALUE ? outerBegin : Math.min(endRange + 1, outerBegin);
+                    final long maxWatermark =
+                            endRange == Long.MAX_VALUE ? outerBegin : Math.min(endRange + 1, outerBegin);
                     watermarkKey.setValue(Math.max(watermarkKey.longValue(), maxWatermark));
 
                     // Does endRange occur before this outerIdx shift? If so pop-out we need to change extraDelta.
@@ -651,7 +680,7 @@ public interface Index extends ReadOnlyIndex, LogOutputAppendable, Iterable<Long
                 final long res = evaluate.applyAsLong(mid);
                 if (res < 0) {
                     low = mid + 1;
-                } else if (res > 0){
+                } else if (res > 0) {
                     high = mid;
                 } else {
                     return mid;

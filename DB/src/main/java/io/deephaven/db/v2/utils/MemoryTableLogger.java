@@ -15,7 +15,8 @@ public class MemoryTableLogger<T extends TableLogger> {
     private final T tableLogger;
     private final TableDefinition tableDefinition;
 
-    public MemoryTableLogger(@NotNull Logger logger, @NotNull T tableLogger, @NotNull TableDefinition tableDefinition, final int initialSizeArg) {
+    public MemoryTableLogger(@NotNull Logger logger, @NotNull T tableLogger, @NotNull TableDefinition tableDefinition,
+            final int initialSizeArg) {
         this.tableLogger = tableLogger;
         this.tableDefinition = tableDefinition;
 
@@ -25,8 +26,7 @@ public class MemoryTableLogger<T extends TableLogger> {
                         MemoryTableLogger.class,
                         loggerClass.getSimpleName() + ".logQueueSize",
                         10000)
-                : initialSizeArg
-                ;
+                : initialSizeArg;
         try {
             tableWriter = new DynamicTableWriter(tableDefinition);
             tableLogger.init(tableWriter, initialSize);

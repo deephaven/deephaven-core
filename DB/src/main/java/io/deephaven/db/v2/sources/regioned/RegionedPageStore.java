@@ -27,8 +27,8 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
     }
 
     /**
-     * @return The mask that should be applied to {@link io.deephaven.db.v2.utils.OrderedKeys} indices when
-     * calculating their address within a region
+     * @return The mask that should be applied to {@link io.deephaven.db.v2.utils.OrderedKeys} indices when calculating
+     *         their address within a region
      */
     @FinalDefault
     default long regionMask() {
@@ -137,13 +137,14 @@ public interface RegionedPageStore<ATTR extends Any, INNER_ATTR extends ATTR, RE
 
         /**
          * @param parameters Mask and shift parameters
-         * @param regions    Array of all regions in this page store. Array becomes property of the page store.
+         * @param regions Array of all regions in this page store. Array becomes property of the page store.
          */
         public Static(@NotNull final Parameters parameters,
-                      @NotNull final REGION_TYPE[] regions) {
+                @NotNull final REGION_TYPE[] regions) {
             this.parameters = parameters;
             this.regions = Require.elementsNeqNull(regions, "regions");
-            Require.leq(regions.length, "regions.length", parameters.maximumRegionCount, "parameters.maximumRegionCount");
+            Require.leq(regions.length, "regions.length", parameters.maximumRegionCount,
+                    "parameters.maximumRegionCount");
             for (final REGION_TYPE region : regions) {
                 Require.eq(region.mask(), "region.mask()", parameters.regionMask, "parameters.regionMask");
             }

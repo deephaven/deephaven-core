@@ -34,18 +34,21 @@ public class ConsoleClient {
 
     public static class RemoteStdout {
         private static final Logger log = LoggerFactory.getLogger(RemoteStdout.class);
-        private RemoteStdout() { }
+
+        private RemoteStdout() {}
     }
 
     public static class RemoteStderr {
         private static final Logger log = LoggerFactory.getLogger(RemoteStderr.class);
-        private RemoteStderr() { }
+
+        private RemoteStderr() {}
     }
 
     public static void main(final String[] args) throws Exception {
         // Assign properties that need to be set to even turn on
         System.setProperty("Configuration.rootFile", "grpc-api.prop");
-        System.setProperty("io.deephaven.configuration.PropertyInputStreamLoader.override", "io.deephaven.configuration.PropertyInputStreamLoaderTraditional");
+        System.setProperty("io.deephaven.configuration.PropertyInputStreamLoader.override",
+                "io.deephaven.configuration.PropertyInputStreamLoaderTraditional");
 
         final String sessionType = System.getProperty("console.sessionType", "groovy");
         log.info().append("Session type ").append(sessionType).endl();
@@ -115,14 +118,16 @@ public class ConsoleClient {
         consoleServiceGrpc.startConsole(StartConsoleRequest.newBuilder()
                 .setResultId(consoleTicket)
                 .setSessionType(sessionType)
-                .build(), new ResponseBuilder<StartConsoleResponse>()
-                .onNext(response -> scheduler.runImmediately(this::awaitCommand))
-                .build());
+                .build(),
+                new ResponseBuilder<StartConsoleResponse>()
+                        .onNext(response -> scheduler.runImmediately(this::awaitCommand))
+                        .build());
         LogSubscriptionRequest request = LogSubscriptionRequest.newBuilder()
-            .addLevels("STDOUT")
-            .addLevels("STDERR")
-            .setLastSeenLogTimestamp(System.currentTimeMillis() * 1000) // don't replay any logs that came before now
-            .build();
+                .addLevels("STDOUT")
+                .addLevels("STDERR")
+                .setLastSeenLogTimestamp(System.currentTimeMillis() * 1000) // don't replay any logs that came before
+                                                                            // now
+                .build();
         consoleServiceGrpc.subscribeToLogs(request,
                 new StreamObserver<LogSubscriptionData>() {
                     private String stripLastNewline(String msg) {
@@ -136,12 +141,12 @@ public class ConsoleClient {
                     public void onNext(LogSubscriptionData value) {
                         if ("STDOUT".equals(value.getLogLevel())) {
                             RemoteStdout.log.info()
-                                .append(stripLastNewline(value.getMessage()))
-                                .endl();
+                                    .append(stripLastNewline(value.getMessage()))
+                                    .endl();
                         } else if ("STDERR".equals(value.getLogLevel())) {
                             RemoteStderr.log.info()
-                                .append(stripLastNewline(value.getMessage()))
-                                .endl();
+                                    .append(stripLastNewline(value.getMessage()))
+                                    .endl();
                         }
                     }
 
@@ -153,7 +158,7 @@ public class ConsoleClient {
 
                     @Override
                     public void onCompleted() {
-                        //TODO reconnect
+                        // TODO reconnect
                     }
                 });
     }
@@ -179,26 +184,27 @@ public class ConsoleClient {
                 new ResponseBuilder<ExecuteCommandResponse>()
                         .onNext(response -> {
                             log.debug().append("command completed successfully: ").append(response.toString()).endl();
-                            Optional<VariableDefinition> firstTable = response.getCreatedList().stream().filter(var -> var.getType().equals("Table")).findAny();
+                            Optional<VariableDefinition> firstTable = response.getCreatedList().stream()
+                                    .filter(var -> var.getType().equals("Table")).findAny();
                             firstTable.ifPresent(table -> {
                                 log.debug().append("A table was created: ").append(table.toString()).endl();
-                                 consoleServiceGrpc.fetchTable(FetchTableRequest.newBuilder()
-                                         .setConsoleId(consoleTicket)
-                                         .setTableId(ExportTicketHelper.exportIdToTicket(nextId++))
-                                         .setTableName(table.getName())
-                                         .build(),
-                                         new ResponseBuilder<ExportedTableCreationResponse>()
-                                                 .onNext(this::onExportedTableCreationResponse)
-                                                 .onError(err -> {
-                                                     log.error(err).append("onError").endl();
-                                                     scheduler.runImmediately(this::awaitCommand);
-                                                 })
-                                                 .onComplete(() -> {
-                                                     log.debug().append("fetch complete").endl();
-                                                 })
-                                                 .build());
+                                consoleServiceGrpc.fetchTable(FetchTableRequest.newBuilder()
+                                        .setConsoleId(consoleTicket)
+                                        .setTableId(ExportTicketHelper.exportIdToTicket(nextId++))
+                                        .setTableName(table.getName())
+                                        .build(),
+                                        new ResponseBuilder<ExportedTableCreationResponse>()
+                                                .onNext(this::onExportedTableCreationResponse)
+                                                .onError(err -> {
+                                                    log.error(err).append("onError").endl();
+                                                    scheduler.runImmediately(this::awaitCommand);
+                                                })
+                                                .onComplete(() -> {
+                                                    log.debug().append("fetch complete").endl();
+                                                })
+                                                .build());
                             });
-                            //otherwise go for another query
+                            // otherwise go for another query
                             if (!firstTable.isPresent()) {
                                 // let's give the just-executed command a little bit of time to print so we reduce
                                 // the chance of clobbering our stdin prompt.
@@ -209,8 +215,7 @@ public class ConsoleClient {
                             log.error(err).append("onError").endl();
                             scheduler.runImmediately(this::awaitCommand);
                         })
-                        .build()
-        );
+                        .build());
     }
 
     private void onNewHandshakeResponse(final HandshakeResponse result) {
@@ -234,8 +239,8 @@ public class ConsoleClient {
 
     private void refreshToken() {
         sessionService.refreshSessionToken(HandshakeRequest.newBuilder()
-                        .setAuthProtocol(0)
-                        .setPayload(ByteString.copyFromUtf8(session.toString())).build(),
+                .setAuthProtocol(0)
+                .setPayload(ByteString.copyFromUtf8(session.toString())).build(),
                 new ResponseBuilder<HandshakeResponse>()
                         .onError(this::onError)
                         .onNext(this::onNewHandshakeResponse)
@@ -307,17 +312,20 @@ public class ConsoleClient {
             return new StreamObserver<T>() {
                 @Override
                 public void onNext(final T value) {
-                    if (_onNext != null) _onNext.accept(value);
+                    if (_onNext != null)
+                        _onNext.accept(value);
                 }
 
                 @Override
                 public void onError(final Throwable t) {
-                    if (_onError != null) _onError.accept(t);
+                    if (_onError != null)
+                        _onError.accept(t);
                 }
 
                 @Override
                 public void onCompleted() {
-                    if (_onComplete != null) _onComplete.run();
+                    if (_onComplete != null)
+                        _onComplete.run();
                 }
             };
         }
@@ -326,8 +334,10 @@ public class ConsoleClient {
     private class AuthInterceptor implements ClientInterceptor {
         @Override
         public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
-                final MethodDescriptor<ReqT, RespT> methodDescriptor, final CallOptions callOptions, final Channel channel) {
-            return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(channel.newCall(methodDescriptor, callOptions)) {
+                final MethodDescriptor<ReqT, RespT> methodDescriptor, final CallOptions callOptions,
+                final Channel channel) {
+            return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(
+                    channel.newCall(methodDescriptor, callOptions)) {
                 @Override
                 public void start(final Listener<RespT> responseListener, final Metadata headers) {
                     if (session != null) {

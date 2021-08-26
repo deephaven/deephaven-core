@@ -16,7 +16,8 @@ public class TestCompileSimpleFunction extends TestCase {
     }
 
     public void testImport() {
-        String res = DynamicCompileUtils.compileSimpleFunction(String.class, "return currentDateNy()", Collections.emptyList(), Collections.singleton(DBTimeUtils.class)).get();
+        String res = DynamicCompileUtils.compileSimpleFunction(String.class, "return currentDateNy()",
+                Collections.emptyList(), Collections.singleton(DBTimeUtils.class)).get();
         TestCase.assertEquals(DBTimeUtils.currentDateNy(), res);
     }
 

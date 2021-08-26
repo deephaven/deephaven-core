@@ -5,7 +5,8 @@ import io.deephaven.db.v2.sources.LongArraySource;
 /**
  * A tracker for modified join hash table slots.
  *
- * After adding an entry, you get back a cookie, which must be passed in on future modification operations for that slot.
+ * After adding an entry, you get back a cookie, which must be passed in on future modification operations for that
+ * slot.
  *
  * To process the entries after modifications are complete, call {@link #forAllModifiedSlots(ModifiedSlotConsumer)}.
  */
@@ -14,8 +15,10 @@ class NaturalJoinModifiedSlotTracker {
     private final LongArraySource modifiedSlots = new LongArraySource();
     /** the original right values, parallel to modifiedSlots. */
     private final LongArraySource originalRightValues = new LongArraySource();
-    /** the location that we must write to in modified slots; also if we have a pointer that falls outside
-     * the range [0, pointer); then we know it is invalid */
+    /**
+     * the location that we must write to in modified slots; also if we have a pointer that falls outside the range [0,
+     * pointer); then we know it is invalid
+     */
     private long pointer;
     /** how many slots we have allocated */
     private long allocated;
@@ -41,8 +44,8 @@ class NaturalJoinModifiedSlotTracker {
     }
 
     /**
-     * Is this cookie within our valid range (greater than or equal to our generation, but less than the pointer
-     * after adjustment?
+     * Is this cookie within our valid range (greater than or equal to our generation, but less than the pointer after
+     * adjustment?
      *
      * @param cookie the cookie to check for validity
      *
@@ -76,7 +79,8 @@ class NaturalJoinModifiedSlotTracker {
      * Add a slot in the main table.
      *
      * @param slot the slot to add.
-     * @param originalRightValue if we are the addition of the slot, what the right value was before our modification (otherwise ignored)
+     * @param originalRightValue if we are the addition of the slot, what the right value was before our modification
+     *        (otherwise ignored)
      * @param flags the flags to or into our state
      *
      * @return the cookie for future access
@@ -97,7 +101,8 @@ class NaturalJoinModifiedSlotTracker {
      * Add a slot in the overflow table.
      *
      * @param overflow the slot to add (0...n in the overflow table).
-     * @param originalRightValue if we are the addition of the slot, what the right value was before our modification (otherwise ignored)
+     * @param originalRightValue if we are the addition of the slot, what the right value was before our modification
+     *        (otherwise ignored)
      *
      * @return the cookie for future access
      */
@@ -134,7 +139,7 @@ class NaturalJoinModifiedSlotTracker {
     /**
      * For each main and overflow value, call slotConsumer.
      *
-     * Main values are represented as values >= 0.  Overflow values are represented as negative values according to
+     * Main values are represented as values >= 0. Overflow values are represented as negative values according to
      * {@link IncrementalChunkedNaturalJoinStateManager#overflowToSlot(long)}.
      *
      * @param slotConsumer the consumer of our values
@@ -143,7 +148,7 @@ class NaturalJoinModifiedSlotTracker {
         for (int ii = 0; ii < pointer; ++ii) {
             final long slotAndFlag = modifiedSlots.getLong(ii);
             final long slot = slotAndFlag >> FLAG_SHIFT;
-            final byte flag = (byte)(slotAndFlag & FLAG_MASK);
+            final byte flag = (byte) (slotAndFlag & FLAG_MASK);
             slotConsumer.accept(slot, originalRightValues.getLong(ii), flag);
         }
     }
@@ -158,7 +163,7 @@ class NaturalJoinModifiedSlotTracker {
         if (isValidCookie(cookie)) {
             final long pointer = getPointerFromCookie(cookie);
             final long existingSlotAndFlag = modifiedSlots.getLong(pointer);
-            final byte flag = (byte)(existingSlotAndFlag & FLAG_MASK);
+            final byte flag = (byte) (existingSlotAndFlag & FLAG_MASK);
             final long newSlotAndFlag = (newTableLocation << FLAG_SHIFT) | flag;
             modifiedSlots.set(pointer, newSlotAndFlag);
         }
@@ -174,7 +179,7 @@ class NaturalJoinModifiedSlotTracker {
         if (isValidCookie(cookie)) {
             final long pointer = getPointerFromCookie(cookie);
             final long existingSlotAndFlag = modifiedSlots.getLong(pointer);
-            final byte flag = (byte)(existingSlotAndFlag & FLAG_MASK);
+            final byte flag = (byte) (existingSlotAndFlag & FLAG_MASK);
             final long newSlotAndFlag = (tableLocation << FLAG_SHIFT) | flag;
             modifiedSlots.set(pointer, newSlotAndFlag);
         }

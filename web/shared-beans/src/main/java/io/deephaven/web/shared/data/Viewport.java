@@ -11,6 +11,7 @@ public class Viewport implements Serializable {
     public Viewport() {
         this(new RangeSet(), new BitSet());
     }
+
     public Viewport(RangeSet rows, BitSet columns) {
         this.rows = rows;
         this.columns = columns;

@@ -121,7 +121,7 @@ public class BusinessSchedule implements Serializable {
     }
 
     /**
-     * Gets the length of the business day in nanoseconds.  If the business day has multiple periods, only the time
+     * Gets the length of the business day in nanoseconds. If the business day has multiple periods, only the time
      * during the periods is counted.
      *
      * @return length of the day in nanoseconds
@@ -131,7 +131,7 @@ public class BusinessSchedule implements Serializable {
     }
 
     /**
-     * Gets the length of the business day in nanoseconds.  If the business day has multiple periods, only the time
+     * Gets the length of the business day in nanoseconds. If the business day has multiple periods, only the time
      * during the periods is counted.
      *
      * @return length of the day in nanoseconds

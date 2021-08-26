@@ -8,8 +8,8 @@ public class TimsortUtilities {
     public static final int INITIAL_GALLOP = 7;
 
     /**
-     * Given a length of our input, we should pick a number that is between 32 and 64; ideally such that
-     * (length / run) is just under 2^n < length, but only by a little bit.
+     * Given a length of our input, we should pick a number that is between 32 and 64; ideally such that (length / run)
+     * is just under 2^n < length, but only by a little bit.
      *
      * Take the six most significant bits of length; if the remaining bits have any ones, then add one.
      *

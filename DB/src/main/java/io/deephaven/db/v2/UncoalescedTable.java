@@ -23,8 +23,8 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * Abstract class for uncoalesced tables.  These tables have deferred work that must be done before data can be
- * operated on.
+ * Abstract class for uncoalesced tables. These tables have deferred work that must be done before data can be operated
+ * on.
  */
 public abstract class UncoalescedTable extends BaseTable implements Table {
 
@@ -63,8 +63,8 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     /**
-     * Proactively set the coalesced result table. See {@link #doCoalesce()} for the caller's responsibilities.
-     * Note that it is an error to call this more than once with a non-null input.
+     * Proactively set the coalesced result table. See {@link #doCoalesce()} for the caller's responsibilities. Note
+     * that it is an error to call this more than once with a non-null input.
      *
      * @param coalesced The coalesced result table, suitable for caching
      */
@@ -81,17 +81,17 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
 
     @Override
     public void listenForUpdates(Listener listener) {
-        ((DynamicTable)coalesce()).listenForUpdates(listener);
+        ((DynamicTable) coalesce()).listenForUpdates(listener);
     }
 
     @Override
     public void listenForUpdates(Listener listener, boolean replayInitialImage) {
-        ((DynamicTable)coalesce()).listenForUpdates(listener, replayInitialImage);
+        ((DynamicTable) coalesce()).listenForUpdates(listener, replayInitialImage);
     }
 
     @Override
     public void listenForUpdates(ShiftAwareListener listener) {
-        ((DynamicTable)coalesce()).listenForUpdates(listener);
+        ((DynamicTable) coalesce()).listenForUpdates(listener);
     }
 
     protected final void listenForUpdatesUncoalesced(@NotNull final ShiftAwareListener listener) {
@@ -100,12 +100,12 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
 
     @Override
     public void removeUpdateListener(Listener listener) {
-        ((DynamicTable)coalesce()).removeUpdateListener(listener);
+        ((DynamicTable) coalesce()).removeUpdateListener(listener);
     }
 
     @Override
     public void removeUpdateListener(ShiftAwareListener listener) {
-        ((DynamicTable)coalesce()).removeUpdateListener(listener);
+        ((DynamicTable) coalesce()).removeUpdateListener(listener);
     }
 
     protected final void removeUpdateListenerUncoalesced(@NotNull final ShiftAwareListener listener) {
@@ -114,12 +114,12 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
 
     @Override
     public void listenForDirectUpdates(Listener listener) {
-        ((DynamicTable)coalesce()).listenForDirectUpdates(listener);
+        ((DynamicTable) coalesce()).listenForDirectUpdates(listener);
     }
 
     @Override
     public void removeDirectUpdateListener(Listener listener) {
-        ((DynamicTable)coalesce()).removeUpdateListener(listener);
+        ((DynamicTable) coalesce()).removeUpdateListener(listener);
     }
 
     @Override
@@ -168,7 +168,8 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     @Override
-    public Table whereIn(GroupStrategy groupStrategy, Table rightTable, boolean inclusion, MatchPair... columnsToMatch) {
+    public Table whereIn(GroupStrategy groupStrategy, Table rightTable, boolean inclusion,
+            MatchPair... columnsToMatch) {
         return coalesce().whereIn(groupStrategy, rightTable, inclusion, columnsToMatch);
     }
 
@@ -228,12 +229,12 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     @Override
-    public Table head(long  size) {
+    public Table head(long size) {
         return coalesce().head(size);
     }
 
     @Override
-    public Table tail(long  size) {
+    public Table tail(long size) {
         return coalesce().tail(size);
     }
 
@@ -258,12 +259,14 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     @Override
-    public Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, AsOfMatchRule asOfMatchRule) {
+    public Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+            AsOfMatchRule asOfMatchRule) {
         return coalesce().aj(rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
     }
 
     @Override
-    public Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, AsOfMatchRule asOfMatchRule) {
+    public Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+            AsOfMatchRule asOfMatchRule) {
         return coalesce().raj(rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
     }
 
@@ -273,7 +276,8 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     @Override
-    public Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, int numRightBitsToReserve) {
+    public Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+            int numRightBitsToReserve) {
         return coalesce().join(rightTable, columnsToMatch, columnsToAdd, numRightBitsToReserve);
     }
 
@@ -283,12 +287,12 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     @Override
-    public Table headBy(long  nRows, String... groupByColumns) {
+    public Table headBy(long nRows, String... groupByColumns) {
         return coalesce().headBy(nRows, groupByColumns);
     }
 
     @Override
-    public Table tailBy(long  nRows, String... groupByColumns) {
+    public Table tailBy(long nRows, String... groupByColumns) {
         return coalesce().tailBy(nRows, groupByColumns);
     }
 
@@ -373,7 +377,8 @@ public abstract class UncoalescedTable extends BaseTable implements Table {
     }
 
     @Override
-    public Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents, SelectColumn... columns) {
+    public Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents,
+            SelectColumn... columns) {
         return coalesce().rollup(comboAggregateFactory, includeConstituents, columns);
     }
 

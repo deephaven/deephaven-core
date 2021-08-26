@@ -29,10 +29,10 @@ public abstract class TstRegionedColumnSourceReferencing<DATA_TYPE, ATTR extends
     public void setUp() throws Exception {
         super.setUp();
 
-        //noinspection unchecked
+        // noinspection unchecked
         cr_n = (NATIVE_REGION_TYPE[]) Array.newInstance(nativeRegionTypeClass, 10);
         for (int cri = 0; cri < cr.length; ++cri) {
-            //noinspection unchecked
+            // noinspection unchecked
             cr_n[cri] = (NATIVE_REGION_TYPE) mock(nativeRegionTypeClass, "CR_N_" + cri);
         }
 

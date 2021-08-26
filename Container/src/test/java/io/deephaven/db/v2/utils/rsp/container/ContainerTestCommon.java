@@ -34,26 +34,27 @@ class ContainerTestCommon {
         return populate("", vs, container, name, ranges);
     }
 
-    static int[][] vss = new int[][]{
-            // A negative number marks the end of a range starting int he previous element, for its absolute value (inclusive).
-            new int[]{10, 20, 30, 40, 50, 32767, -32768, 65535},
-            new int[]{1, -3, 27, -28, 111, 345, 347, 349, 360, 16000, 32767, 65535},
-            new int[]{0, 65, 129, -132, 255, -257, 32768, 65533, -65534},
-            new int[]{0, -1},
-            new int[]{0, -1, 63, -65, 128, 255, 513, 1024, -1025, 2047, 4191, 8192, -(8192 + 64 * 4 - 1)},
-            new int[]{0},
-            new int[]{1},
-            new int[]{65534},
-            new int[]{65535},
-            new int[]{0, -1, 62, -64, 127, -128, 188, -190, 193, 300, 639, -640},
-            new int[]{1, -2, 4, -11, 13, -26},
-            new int[]{1, -1000, 1002, -2000, 2002, -3000, 3002, -4000, 4002},
-            new int[]{1, 3, 5, 7, 9, 11, 15, 17, 19},
-            new int[]{1, -100, 102, 104, 106, 108, 110, -200, 202, 204, 206, 208, 210, -300},
-            new int[]{1, -2, 4, -5, 7, -8, 10, -11, 13, -15, 17, -19},
-            new int[]{0, 2, 4, 6, 65534, -65535},
-            new int[]{0, -1, 3, 5, 7, -100, 65535},
-            new int[]{0, 3, -5},
+    static int[][] vss = new int[][] {
+            // A negative number marks the end of a range starting int he previous element, for its absolute value
+            // (inclusive).
+            new int[] {10, 20, 30, 40, 50, 32767, -32768, 65535},
+            new int[] {1, -3, 27, -28, 111, 345, 347, 349, 360, 16000, 32767, 65535},
+            new int[] {0, 65, 129, -132, 255, -257, 32768, 65533, -65534},
+            new int[] {0, -1},
+            new int[] {0, -1, 63, -65, 128, 255, 513, 1024, -1025, 2047, 4191, 8192, -(8192 + 64 * 4 - 1)},
+            new int[] {0},
+            new int[] {1},
+            new int[] {65534},
+            new int[] {65535},
+            new int[] {0, -1, 62, -64, 127, -128, 188, -190, 193, 300, 639, -640},
+            new int[] {1, -2, 4, -11, 13, -26},
+            new int[] {1, -1000, 1002, -2000, 2002, -3000, 3002, -4000, 4002},
+            new int[] {1, 3, 5, 7, 9, 11, 15, 17, 19},
+            new int[] {1, -100, 102, 104, 106, 108, 110, -200, 202, 204, 206, 208, 210, -300},
+            new int[] {1, -2, 4, -5, 7, -8, 10, -11, 13, -15, 17, -19},
+            new int[] {0, 2, 4, 6, 65534, -65535},
+            new int[] {0, -1, 3, 5, 7, -100, 65535},
+            new int[] {0, 3, -5},
     };
 
     static void doTestFind(Supplier<Container> containerFactory, String containerName) {
@@ -74,7 +75,8 @@ class ContainerTestCommon {
             final int end = it.next();
             for (i = start; i < end; ++i) {
                 while (preNon < i) {
-                    assertEquals("prenNon=" + preNon + ", i=" + i, -offset - 1, container.find(ContainerUtil.lowbits(preNon)));
+                    assertEquals("prenNon=" + preNon + ", i=" + i, -offset - 1,
+                            container.find(ContainerUtil.lowbits(preNon)));
                     ++preNon;
                 }
                 assertEquals("i=" + i, offset, container.find(ContainerUtil.lowbits(i)));
@@ -402,8 +404,8 @@ class ContainerTestCommon {
 
     // expectedEnd is inclusive.
     private static void doSingleSearch(final String m, final Container compContainer,
-                                       final SearchRangeIterator cit, final int v,
-                                       final boolean expectedResult, final int expectedStart, final int expectedEnd) {
+            final SearchRangeIterator cit, final int v,
+            final boolean expectedResult, final int expectedStart, final int expectedEnd) {
         ContainerUtil.TargetComparator comp = (k) -> {
             final boolean check = compContainer.contains((short) k);
             assertTrue(check);
@@ -438,7 +440,7 @@ class ContainerTestCommon {
                 continue;
             }
             final int astart = ait.next();
-            final int aend = ait.next() - 1;  // inclusive.
+            final int aend = ait.next() - 1; // inclusive.
             final String m2 = m1 + ", range=" + range + ", astart=" + astart + ", aend=" + aend;
             if (lastEnd + 1 < astart) {
                 doSingleSearch(m2, container, cit, lastEnd + 1, lastEnd != -1, lastEnd, lastEnd);
@@ -474,22 +476,24 @@ class ContainerTestCommon {
         int prevLast = -1;
         while (ait.hasNext()) {
             final int astart = ait.next();
-            final int alast = ait.next() - 1;  // inclusive.
+            final int alast = ait.next() - 1; // inclusive.
             final String m2 = m1 + ", range=" + range + ", astart=" + astart + ", alast=" + alast;
             final int[] searches;
             if (alast != astart) {
-                searches = new int[]{astart - 1, astart, astart + 1, alast - 1, alast};
+                searches = new int[] {astart - 1, astart, astart + 1, alast - 1, alast};
             } else {
-                searches = new int[]{astart - 1, astart};
+                searches = new int[] {astart - 1, astart};
             }
             for (int j = 0; j < searches.length; ++j) {
                 final int v = searches[j];
-                if (v < 0) continue;
+                if (v < 0)
+                    continue;
                 final String m3 = m2 + ", j=" + j;
                 if (container.contains((short) v) && cit.start() <= v) {
                     doSingleSearch(m3, container, cit, v, true, v, alast);
                 } else {
-                    doSingleSearch(m3, container, cit, v, cit.start() <= v && !(prevLast == -1 && j == 0), prevLast, prevLast);
+                    doSingleSearch(m3, container, cit, v, cit.start() <= v && !(prevLast == -1 && j == 0), prevLast,
+                            prevLast);
                 }
                 prevLast = cit.end() - 1;
             }
@@ -632,7 +636,7 @@ class ContainerTestCommon {
             int start = it.next();
             int end = it.next();
             for (int key = start; key < end; ++key) {
-                final RangeIterator in = makeRangeIterator(new int[]{offset});
+                final RangeIterator in = makeRangeIterator(new int[] {offset});
                 final ToArrayRangeConsumer out = new ToArrayRangeConsumer();
                 container.selectRanges(out, in);
                 final ArrayList<Integer> oranges = out.getRanges();
@@ -648,7 +652,7 @@ class ContainerTestCommon {
             return;
         }
         // Now select all the ranges.
-        final RangeIterator in = makeRangeIterator(new int[]{0, -(container.getCardinality() - 1)});
+        final RangeIterator in = makeRangeIterator(new int[] {0, -(container.getCardinality() - 1)});
         final ToArrayRangeConsumer out = new ToArrayRangeConsumer();
         container.selectRanges(out, in);
         final ArrayList<Integer> oranges = out.getRanges();
@@ -673,7 +677,7 @@ class ContainerTestCommon {
             int start = it.next();
             int end = it.next();
             for (int i = start; i < end; ++i) {
-                final RangeIterator in = makeRangeIterator(new int[]{i});
+                final RangeIterator in = makeRangeIterator(new int[] {i});
                 final ToArrayRangeConsumer out = new ToArrayRangeConsumer();
                 container.findRanges(out, in, 0xFFFF);
                 final ArrayList<Integer> oranges = out.getRanges();
@@ -739,20 +743,20 @@ class ContainerTestCommon {
                 vs.add(i);
             }
         };
-        ac.findRanges(rc, new RangeIterator.ArrayBacked(new int[]{4, 5, 7, 8, 10, 11}), 3);
+        ac.findRanges(rc, new RangeIterator.ArrayBacked(new int[] {4, 5, 7, 8, 10, 11}), 3);
         assertEquals(vs.size(), 2);
         Assert.assertTrue(vs.contains(1));
         Assert.assertTrue(vs.contains(2));
     }
 
-    static int[][] vss2 = new int[][]{
-            new int[]{0, -2, 4, -10, 64, -68, 127, -128, 65500, -65535},
-            new int[]{3, 11, -63, 69, -126, 129, 59900, -59999, 65535},
-            new int[]{0, -2, 4, -10, 65300, -65535},
-            new int[]{0, -2, 4, -10, 64, -68, 127, -128, 65499, -65535},
-            new int[]{0},
-            new int[]{65535},
-            new int[]{},
+    static int[][] vss2 = new int[][] {
+            new int[] {0, -2, 4, -10, 64, -68, 127, -128, 65500, -65535},
+            new int[] {3, 11, -63, 69, -126, 129, 59900, -59999, 65535},
+            new int[] {0, -2, 4, -10, 65300, -65535},
+            new int[] {0, -2, 4, -10, 64, -68, 127, -128, 65499, -65535},
+            new int[] {0},
+            new int[] {65535},
+            new int[] {},
     };
 
     interface BoolContainerOp {
@@ -767,10 +771,10 @@ class ContainerTestCommon {
         String pfx = "vi=" + vi + ", vj=" + vj;
         final ArrayList<Integer> r1 = new ArrayList<>(2 * vs1.length);
         final ArrayList<Integer> r2 = new ArrayList<>(2 * vs2.length);
-        Container[] cs = new Container[]{
+        Container[] cs = new Container[] {
                 new ArrayContainer(), new BitmapContainer(), new RunContainer(),
         };
-        String[] cNames = new String[]{"array", "bitmap", "run"};
+        String[] cNames = new String[] {"array", "bitmap", "run"};
         for (int ci = 0; ci < cs.length; ++ci) {
             for (int cj = 0; cj < cs.length; ++cj) {
                 String s = pfx + ", ci=" + ci + ", cj=" + cj;
@@ -946,7 +950,7 @@ class ContainerTestCommon {
                     if (k3 < 0 || k4 < 0 || k4 > 0xFFFF || k4 < k3) {
                         continue;
                     }
-                    for (int start : new int[]{k3, k4}) {
+                    for (int start : new int[] {k3, k4}) {
                         final int end = k4 + 1;
                         final String m2 = m + " && start==" + start + " && end==" + end;
                         final boolean r = container.overlapsRange(start, end);
@@ -1025,7 +1029,8 @@ class ContainerTestCommon {
         doTestReverseIteratorAdvanceEmpty(containerFactory.get(), containerName);
     }
 
-    private static void doTestReverseIteratorAdvance(final int vi, final Container container, final String containerName) {
+    private static void doTestReverseIteratorAdvance(final int vi, final Container container,
+            final String containerName) {
         final int[] vs = vss[vi];
         final String m = "vi==" + vi;
         ArrayList<Integer> ranges = new ArrayList<>(2 * vs.length);

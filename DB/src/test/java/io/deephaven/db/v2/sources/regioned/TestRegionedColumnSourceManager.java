@@ -31,7 +31,8 @@ import static io.deephaven.db.v2.sources.regioned.RegionedColumnSource.REGION_CA
 /**
  * Tests for {@link RegionedColumnSourceManager}.
  */
-@SuppressWarnings({"JUnit4AnnotatedMethodInJUnit3TestCase", "AutoBoxing", "unchecked", "AnonymousInnerClassMayBeStatic"})
+@SuppressWarnings({"JUnit4AnnotatedMethodInJUnit3TestCase", "AutoBoxing", "unchecked",
+        "AnonymousInnerClassMayBeStatic"})
 public class TestRegionedColumnSourceManager extends LiveTableTestCase {
 
     private static final int NUM_COLUMNS = 3;
@@ -89,33 +90,43 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         groupingColumnDefinition = ColumnDefinition.ofString("RCS_1").withGrouping();
         normalColumnDefinition = ColumnDefinition.ofString("RCS_2");
 
-        columnDefinitions = new ColumnDefinition[] { partitioningColumnDefinition, groupingColumnDefinition, normalColumnDefinition };
+        columnDefinitions =
+                new ColumnDefinition[] {partitioningColumnDefinition, groupingColumnDefinition, normalColumnDefinition};
 
-        columnSources = IntStream.range(0, NUM_COLUMNS).mapToObj(ci -> mock(RegionedColumnSource.class, columnDefinitions[ci].getName())).toArray(RegionedColumnSource[]::new);
+        columnSources = IntStream.range(0, NUM_COLUMNS)
+                .mapToObj(ci -> mock(RegionedColumnSource.class, columnDefinitions[ci].getName()))
+                .toArray(RegionedColumnSource[]::new);
         partitioningColumnSource = columnSources[PARTITIONING_INDEX];
         groupingColumnSource = columnSources[GROUPING_INDEX];
         normalColumnSource = columnSources[NORMAL_INDEX];
 
-        checking(new Expectations() {{
-            oneOf(componentFactory).createRegionedColumnSource(with(same(partitioningColumnDefinition)), with(ColumnToCodecMappings.EMPTY));
-            will(returnValue(partitioningColumnSource));
-            oneOf(componentFactory).createRegionedColumnSource(with(same(groupingColumnDefinition)), with(ColumnToCodecMappings.EMPTY));
-            will(returnValue(groupingColumnSource));
-            oneOf(componentFactory).createRegionedColumnSource(with(same(normalColumnDefinition)), with(ColumnToCodecMappings.EMPTY));
-            will(returnValue(normalColumnSource));
-        }});
+        checking(new Expectations() {
+            {
+                oneOf(componentFactory).createRegionedColumnSource(with(same(partitioningColumnDefinition)),
+                        with(ColumnToCodecMappings.EMPTY));
+                will(returnValue(partitioningColumnSource));
+                oneOf(componentFactory).createRegionedColumnSource(with(same(groupingColumnDefinition)),
+                        with(ColumnToCodecMappings.EMPTY));
+                will(returnValue(groupingColumnSource));
+                oneOf(componentFactory).createRegionedColumnSource(with(same(normalColumnDefinition)),
+                        with(ColumnToCodecMappings.EMPTY));
+                will(returnValue(normalColumnSource));
+            }
+        });
 
         columnLocations = new ColumnLocation[NUM_LOCATIONS][NUM_COLUMNS];
-        IntStream.range(0, NUM_LOCATIONS).forEach(li ->
-                IntStream.range(0, NUM_COLUMNS).forEach(ci -> {
-                    final ColumnLocation cl = columnLocations[li][ci] = mock(ColumnLocation.class, "CL_" + li + '_' + ci);
-                    checking(new Expectations() {{
-                        allowing((cl)).getName();
-                        will(returnValue(columnDefinitions[ci].getName()));
-                    }});
-                }));
+        IntStream.range(0, NUM_LOCATIONS).forEach(li -> IntStream.range(0, NUM_COLUMNS).forEach(ci -> {
+            final ColumnLocation cl = columnLocations[li][ci] = mock(ColumnLocation.class, "CL_" + li + '_' + ci);
+            checking(new Expectations() {
+                {
+                    allowing((cl)).getName();
+                    will(returnValue(columnDefinitions[ci].getName()));
+                }
+            });
+        }));
 
-        tableLocations = IntStream.range(0, NUM_LOCATIONS).mapToObj(li -> setUpTableLocation(li, "")).toArray(TableLocation[]::new);
+        tableLocations = IntStream.range(0, NUM_LOCATIONS).mapToObj(li -> setUpTableLocation(li, ""))
+                .toArray(TableLocation[]::new);
         tableLocation0A = tableLocations[0];
         tableLocation1A = tableLocations[1];
         tableLocation0B = tableLocations[2];
@@ -133,7 +144,8 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         expectedPartitioningColumnGrouping = new LinkedHashMap<>();
     }
 
-    private ImmutableTableLocationKey makeTableKey(@NotNull final String internalPartitionValue, @NotNull final String columnPartitionValue) {
+    private ImmutableTableLocationKey makeTableKey(@NotNull final String internalPartitionValue,
+            @NotNull final String columnPartitionValue) {
         final Map<String, Comparable<?>> partitions = new LinkedHashMap<>();
         partitions.put(partitioningColumnDefinition.getName(), columnPartitionValue);
         partitions.put("__IP__", internalPartitionValue);
@@ -145,84 +157,93 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         final String cp = Character.toString((li / 2) == 0 ? 'A' : 'B');
         final TableLocation tl = mock(TableLocation.class, "TL_" + ip + '_' + cp + mockSuffix);
         final ImmutableTableLocationKey tlk = makeTableKey(ip, cp);
-        checking(new Expectations() {{
-            allowing(tl).getKey();
-            will(returnValue(tlk));
-            allowing(tl).toStringDetailed();
-            will(returnValue("mocked TL_" + ip + '_' + cp + mockSuffix));
-            allowing(tl).getSize();
-            will(new CustomAction("Return last size") {
-                @Override
-                public Object invoke(Invocation invocation) {
-                    return lastSizes[li];
-                }
-            });
-            allowing(tl).getIndex();
-            will(new CustomAction("Return last size") {
-                @Override
-                public Object invoke(Invocation invocation) {
-                    return Index.CURRENT_FACTORY.getFlatIndex(lastSizes[li]);
-                }
-            });
-        }});
+        checking(new Expectations() {
+            {
+                allowing(tl).getKey();
+                will(returnValue(tlk));
+                allowing(tl).toStringDetailed();
+                will(returnValue("mocked TL_" + ip + '_' + cp + mockSuffix));
+                allowing(tl).getSize();
+                will(new CustomAction("Return last size") {
+                    @Override
+                    public Object invoke(Invocation invocation) {
+                        return lastSizes[li];
+                    }
+                });
+                allowing(tl).getIndex();
+                will(new CustomAction("Return last size") {
+                    @Override
+                    public Object invoke(Invocation invocation) {
+                        return Index.CURRENT_FACTORY.getFlatIndex(lastSizes[li]);
+                    }
+                });
+            }
+        });
         IntStream.range(0, NUM_COLUMNS).forEach(ci -> {
             final ColumnLocation cl = columnLocations[li][ci];
-            checking(new Expectations() {{
-                allowing((tl)).getColumnLocation(with(columnDefinitions[ci].getName()));
-                will(returnValue(cl));
-                allowing(cl).getTableLocation();
-                will(returnValue(tl));
-            }});
+            checking(new Expectations() {
+                {
+                    allowing((tl)).getColumnLocation(with(columnDefinitions[ci].getName()));
+                    will(returnValue(cl));
+                    allowing(cl).getTableLocation();
+                    will(returnValue(tl));
+                }
+            });
         });
         return tl;
     }
 
     private Map<String, ColumnSource> makeColumnSourceMap() {
         final Map<String, ColumnSource> result = new LinkedHashMap<>();
-        IntStream.range(0, columnDefinitions.length).forEachOrdered(ci -> result.put(columnDefinitions[ci].getName(), columnSources[ci]));
+        IntStream.range(0, columnDefinitions.length)
+                .forEachOrdered(ci -> result.put(columnDefinitions[ci].getName(), columnSources[ci]));
         return result;
     }
 
     private void expectPartitioningColumnInitialGrouping() {
         partitioningColumnGrouping = null;
-        checking(new Expectations() {{
-            allowing(partitioningColumnSource).getGroupToRange();
-            will(new CustomAction("Return previously set partitioning column grouping") {
-                @Override
-                public Object invoke(Invocation invocation) {
-                    return partitioningColumnGrouping;
-                }
-            });
-            oneOf(partitioningColumnSource).setGroupToRange(with(any(Map.class)));
-            will(new CustomAction("Capture partitioning column grouping") {
-                @Override
-                public Object invoke(Invocation invocation) {
-                    partitioningColumnGrouping = (Map) invocation.getParameter(0);
-                    return null;
-                }
-            });
-        }});
+        checking(new Expectations() {
+            {
+                allowing(partitioningColumnSource).getGroupToRange();
+                will(new CustomAction("Return previously set partitioning column grouping") {
+                    @Override
+                    public Object invoke(Invocation invocation) {
+                        return partitioningColumnGrouping;
+                    }
+                });
+                oneOf(partitioningColumnSource).setGroupToRange(with(any(Map.class)));
+                will(new CustomAction("Capture partitioning column grouping") {
+                    @Override
+                    public Object invoke(Invocation invocation) {
+                        partitioningColumnGrouping = (Map) invocation.getParameter(0);
+                        return null;
+                    }
+                });
+            }
+        });
     }
 
     private void expectGroupingColumnInitialGrouping() {
         groupingColumnGroupingProvider = null;
-        checking(new Expectations() {{
-            allowing(groupingColumnSource).getGroupingProvider();
-            will(new CustomAction("Return previously set grouping column grouping provider") {
-                @Override
-                public Object invoke(Invocation invocation) {
-                    return groupingColumnGroupingProvider;
-                }
-            });
-            oneOf(groupingColumnSource).setGroupingProvider(with(any(GroupingProvider.class)));
-            will(new CustomAction("Capture grouping column grouping provider") {
-                @Override
-                public Object invoke(Invocation invocation) {
-                    groupingColumnGroupingProvider = (KeyRangeGroupingProvider) invocation.getParameter(0);
-                    return null;
-                }
-            });
-        }});
+        checking(new Expectations() {
+            {
+                allowing(groupingColumnSource).getGroupingProvider();
+                will(new CustomAction("Return previously set grouping column grouping provider") {
+                    @Override
+                    public Object invoke(Invocation invocation) {
+                        return groupingColumnGroupingProvider;
+                    }
+                });
+                oneOf(groupingColumnSource).setGroupingProvider(with(any(GroupingProvider.class)));
+                will(new CustomAction("Capture grouping column grouping provider") {
+                    @Override
+                    public Object invoke(Invocation invocation) {
+                        groupingColumnGroupingProvider = (KeyRangeGroupingProvider) invocation.getParameter(0);
+                        return null;
+                    }
+                });
+            }
+        });
     }
 
     private void setSizeExpectations(final boolean refreshing, final long... sizes) {
@@ -241,38 +262,45 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
                 if (li % 2 == 0) {
                     // Even locations don't support subscriptions
                     if (newLocation) {
-                        checking(new Expectations() {{
-                            oneOf(tl).supportsSubscriptions();
-                            will(returnValue(false));
-                            oneOf(tl).refresh();
-                        }});
+                        checking(new Expectations() {
+                            {
+                                oneOf(tl).supportsSubscriptions();
+                                will(returnValue(false));
+                                oneOf(tl).refresh();
+                            }
+                        });
                     }
                 } else {
                     // Odd locations do
                     if (subscriptionBuffers[li] == null) {
                         assertTrue(newLocation);
-                        checking(new Expectations() {{
-                            oneOf(tl).supportsSubscriptions();
-                            will(returnValue(true));
-                            oneOf(tl).subscribe(with(any(TableLocationUpdateSubscriptionBuffer.class)));
-                            will(new CustomAction("Capture subscription buffer") {
-                                @Override
-                                public Object invoke(Invocation invocation) {
-                                    subscriptionBuffers[li] = (TableLocationUpdateSubscriptionBuffer) invocation.getParameter(0);
-                                    subscriptionBuffers[li].handleUpdate();
-                                    return null;
-                                }
-                            });
-                        }});
+                        checking(new Expectations() {
+                            {
+                                oneOf(tl).supportsSubscriptions();
+                                will(returnValue(true));
+                                oneOf(tl).subscribe(with(any(TableLocationUpdateSubscriptionBuffer.class)));
+                                will(new CustomAction("Capture subscription buffer") {
+                                    @Override
+                                    public Object invoke(Invocation invocation) {
+                                        subscriptionBuffers[li] =
+                                                (TableLocationUpdateSubscriptionBuffer) invocation.getParameter(0);
+                                        subscriptionBuffers[li].handleUpdate();
+                                        return null;
+                                    }
+                                });
+                            }
+                        });
                     } else if (lastSize != size) {
                         subscriptionBuffers[li].handleUpdate();
                     }
                 }
             } else {
                 if (newLocation) {
-                    checking(new Expectations() {{
-                        oneOf(tl).refresh();
-                    }});
+                    checking(new Expectations() {
+                        {
+                            oneOf(tl).refresh();
+                        }
+                    });
                 }
             }
 
@@ -284,20 +312,21 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
                 } else {
                     regionIndex = regionCount++;
                     locationIndexToRegionIndex.put(li, regionIndex);
-                    IntStream.range(0, NUM_COLUMNS).forEach(ci ->
-                            checking(new Expectations() {{
-                                oneOf(columnSources[ci]).addRegion(with(columnDefinitions[ci]), with(columnLocations[li][ci]));
-                                will(returnValue(regionIndex));
-                            }}));
+                    IntStream.range(0, NUM_COLUMNS).forEach(ci -> checking(new Expectations() {
+                        {
+                            oneOf(columnSources[ci]).addRegion(with(columnDefinitions[ci]),
+                                    with(columnLocations[li][ci]));
+                            will(returnValue(regionIndex));
+                        }
+                    }));
                 }
                 newExpectedIndex.insertRange(
                         RegionedColumnSource.getFirstElementIndex(regionIndex),
-                        RegionedColumnSource.getFirstElementIndex(regionIndex) + size - 1
-                );
-                expectedPartitioningColumnGrouping.computeIfAbsent(cp, cpk -> Index.FACTORY.getEmptyIndex()).insertRange(
-                        RegionedColumnSource.getFirstElementIndex(regionIndex),
-                        RegionedColumnSource.getFirstElementIndex(regionIndex) + size - 1
-                );
+                        RegionedColumnSource.getFirstElementIndex(regionIndex) + size - 1);
+                expectedPartitioningColumnGrouping.computeIfAbsent(cp, cpk -> Index.FACTORY.getEmptyIndex())
+                        .insertRange(
+                                RegionedColumnSource.getFirstElementIndex(regionIndex),
+                                RegionedColumnSource.getFirstElementIndex(regionIndex) + size - 1);
             }
         });
         expectedAddedIndex = newExpectedIndex.minus(expectedIndex);
@@ -377,9 +406,11 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
 
         // Test refresh with an overflow
         lastSizes[0] = REGION_CAPACITY_IN_ELEMENTS + 1;
-        checking(new Expectations() {{
-            oneOf(tableLocation0A).refresh();
-        }});
+        checking(new Expectations() {
+            {
+                oneOf(tableLocation0A).refresh();
+            }
+        });
         try {
             SUT.refresh();
             fail("Expected exception");
@@ -398,10 +429,12 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         assertTrue(SUT.includedLocations().isEmpty());
 
         // Disable grouping, as we don't maintain it for refreshing instances
-        checking(new Expectations() {{
-            oneOf(groupingColumnSource).setGroupingProvider(null);
-            oneOf(groupingColumnSource).setGroupToRange(null);
-        }});
+        checking(new Expectations() {
+            {
+                oneOf(groupingColumnSource).setGroupingProvider(null);
+                oneOf(groupingColumnSource).setGroupToRange(null);
+            }
+        });
         SUT.disableGrouping();
         assertIsSatisfied();
 
@@ -471,12 +504,14 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         // Test refresh with a location updated from null to not
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 2);
         checkIndexes(SUT.refresh());
-        assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B), SUT.includedLocations());
+        assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
+                SUT.includedLocations());
 
         // Test refresh with a location updated
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 10000002);
         checkIndexes(SUT.refresh());
-        assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B), SUT.includedLocations());
+        assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
+                SUT.includedLocations());
 
         // Test refresh with a size decrease
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 2);
@@ -486,7 +521,8 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         } catch (AssertionFailure expected) {
             maybePrintStackTrace(expected);
         }
-        assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B), SUT.includedLocations());
+        assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
+                SUT.includedLocations());
 
         // Test refresh with a location truncated
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
@@ -496,7 +532,8 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         } catch (TableDataException expected) {
             maybePrintStackTrace(expected);
         }
-        assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B), SUT.includedLocations());
+        assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
+                SUT.includedLocations());
 
         // Test refresh with an overflow
         setSizeExpectations(true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, REGION_CAPACITY_IN_ELEMENTS + 1);
@@ -506,7 +543,8 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         } catch (TableDataException expected) {
             maybePrintStackTrace(expected);
         }
-        assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B), SUT.includedLocations());
+        assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
+                SUT.includedLocations());
 
         // Test refresh with an exception
         subscriptionBuffers[3].handleException(new TableDataException("TEST"));
@@ -516,7 +554,8 @@ public class TestRegionedColumnSourceManager extends LiveTableTestCase {
         } catch (TableDataException expected) {
             assertEquals("TEST", expected.getCause().getMessage());
         }
-        assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B), SUT.includedLocations());
+        assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
+                SUT.includedLocations());
     }
 
     private static void maybePrintStackTrace(@NotNull final Exception e) {

@@ -14,9 +14,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 /*
-    Collects resource utilization stats using a separate thread and StatsGatherer class. Since CPU Load is averaged
-    over the last minute (by Java), this profiler doesn't provide much different CPU information than sampling in
-    afterIteration; but memory and thread stats may be more accurate with this approach.
+ * Collects resource utilization stats using a separate thread and StatsGatherer class. Since CPU Load is averaged over
+ * the last minute (by Java), this profiler doesn't provide much different CPU information than sampling in
+ * afterIteration; but memory and thread stats may be more accurate with this approach.
  */
 public class ConcurrentResourceProfiler implements InternalProfiler {
 
@@ -36,7 +36,7 @@ public class ConcurrentResourceProfiler implements InternalProfiler {
 
     @Override
     public Collection<? extends Result> afterIteration(BenchmarkParams benchmarkParams, IterationParams iterationParams,
-                                                       IterationResult result) {
+            IterationResult result) {
 
         gatherer.interrupt();
 

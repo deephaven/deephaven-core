@@ -31,7 +31,8 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
     protected final ColumnSource<T> innerSource;
 
 
-    public CrossJoinRightColumnSource(@NotNull final CrossJoinStateManager crossJoinManager, @NotNull final ColumnSource<T> innerSource, boolean rightIsLive) {
+    public CrossJoinRightColumnSource(@NotNull final CrossJoinStateManager crossJoinManager,
+            @NotNull final ColumnSource<T> innerSource, boolean rightIsLive) {
         super(innerSource.getType());
         this.rightIsLive = rightIsLive;
         this.crossJoinManager = crossJoinManager;
@@ -44,8 +45,7 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
     }
 
     @Override
-    public void startTrackingPrevValues() {
-    }
+    public void startTrackingPrevValues() {}
 
     @Override
     public T get(long index) {
@@ -198,109 +198,110 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
 
     @Override
     public boolean isUngroupable() {
-        return innerSource instanceof UngroupableColumnSource && ((UngroupableColumnSource) innerSource).isUngroupable();
+        return innerSource instanceof UngroupableColumnSource
+                && ((UngroupableColumnSource) innerSource).isUngroupable();
     }
 
     @Override
     public long getUngroupedSize(long columnIndex) {
-        return ((UngroupableColumnSource)innerSource).getUngroupedSize(redirect(columnIndex));
+        return ((UngroupableColumnSource) innerSource).getUngroupedSize(redirect(columnIndex));
     }
 
     @Override
     public long getUngroupedPrevSize(long columnIndex) {
-        return ((UngroupableColumnSource)innerSource).getUngroupedPrevSize(redirectPrev(columnIndex));
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevSize(redirectPrev(columnIndex));
     }
 
     @Override
     public T getUngrouped(long columnIndex, int arrayIndex) {
-        //noinspection unchecked
-        return (T)((UngroupableColumnSource)innerSource).getUngrouped(redirect(columnIndex), arrayIndex);
+        // noinspection unchecked
+        return (T) ((UngroupableColumnSource) innerSource).getUngrouped(redirect(columnIndex), arrayIndex);
     }
 
     @Override
     public T getUngroupedPrev(long columnIndex, int arrayIndex) {
-        //noinspection unchecked
-        return (T)((UngroupableColumnSource)innerSource).getUngroupedPrev(redirectPrev(columnIndex), arrayIndex);
+        // noinspection unchecked
+        return (T) ((UngroupableColumnSource) innerSource).getUngroupedPrev(redirectPrev(columnIndex), arrayIndex);
     }
 
     @Override
     public Boolean getUngroupedBoolean(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource)innerSource).getUngroupedBoolean(redirect(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedBoolean(redirect(columnIndex), arrayIndex);
     }
 
     @Override
     public Boolean getUngroupedPrevBoolean(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource)innerSource).getUngroupedPrevBoolean(redirectPrev(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevBoolean(redirectPrev(columnIndex), arrayIndex);
     }
 
     @Override
     public double getUngroupedDouble(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource)innerSource).getUngroupedDouble(redirect(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedDouble(redirect(columnIndex), arrayIndex);
     }
 
     @Override
     public double getUngroupedPrevDouble(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource)innerSource).getUngroupedPrevDouble(redirectPrev(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevDouble(redirectPrev(columnIndex), arrayIndex);
     }
 
     @Override
     public float getUngroupedFloat(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource)innerSource).getUngroupedFloat(redirect(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedFloat(redirect(columnIndex), arrayIndex);
     }
 
     @Override
     public float getUngroupedPrevFloat(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource)innerSource).getUngroupedPrevFloat(redirectPrev(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevFloat(redirectPrev(columnIndex), arrayIndex);
     }
 
     @Override
     public byte getUngroupedByte(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource)innerSource).getUngroupedByte(redirect(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedByte(redirect(columnIndex), arrayIndex);
     }
 
     @Override
     public byte getUngroupedPrevByte(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource)innerSource).getUngroupedPrevByte(redirectPrev(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevByte(redirectPrev(columnIndex), arrayIndex);
     }
 
     @Override
     public char getUngroupedChar(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource)innerSource).getUngroupedChar(redirect(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedChar(redirect(columnIndex), arrayIndex);
     }
 
     @Override
     public char getUngroupedPrevChar(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource)innerSource).getUngroupedPrevChar(redirectPrev(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevChar(redirectPrev(columnIndex), arrayIndex);
     }
 
     @Override
     public short getUngroupedShort(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource)innerSource).getUngroupedShort(redirect(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedShort(redirect(columnIndex), arrayIndex);
     }
 
     @Override
     public short getUngroupedPrevShort(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource)innerSource).getUngroupedPrevShort(redirectPrev(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevShort(redirectPrev(columnIndex), arrayIndex);
     }
 
     @Override
     public int getUngroupedInt(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource)innerSource).getUngroupedInt(redirect(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedInt(redirect(columnIndex), arrayIndex);
     }
 
     @Override
     public int getUngroupedPrevInt(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource)innerSource).getUngroupedPrevInt(redirectPrev(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevInt(redirectPrev(columnIndex), arrayIndex);
     }
 
     @Override
     public long getUngroupedLong(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource)innerSource).getUngroupedLong(redirect(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedLong(redirect(columnIndex), arrayIndex);
     }
 
     @Override
     public long getUngroupedPrevLong(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource)innerSource).getUngroupedPrevLong(redirectPrev(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevLong(redirectPrev(columnIndex), arrayIndex);
     }
 
     @Override
@@ -310,19 +311,22 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
     }
 
     @Override
-    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
+            @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         return innerSource.allowsReinterpret(alternateDataType);
     }
 
     @Override
-    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        //noinspection unchecked
+    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
+            @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        // noinspection unchecked
         return new ReinterpretToOriginal(alternateDataType);
     }
 
     private class ReinterpretToOriginal<ALTERNATE_DATA_TYPE> extends CrossJoinRightColumnSource<ALTERNATE_DATA_TYPE> {
         private ReinterpretToOriginal(Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-            super(CrossJoinRightColumnSource.this.crossJoinManager, CrossJoinRightColumnSource.this.innerSource.reinterpret(alternateDataType), rightIsLive);
+            super(CrossJoinRightColumnSource.this.crossJoinManager,
+                    CrossJoinRightColumnSource.this.innerSource.reinterpret(alternateDataType), rightIsLive);
         }
 
         @Override
@@ -331,8 +335,9 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
         }
 
         @Override
-        protected <ORIGINAL_TYPE> ColumnSource<ORIGINAL_TYPE> doReinterpret(@NotNull Class<ORIGINAL_TYPE> alternateDataType) {
-            //noinspection unchecked
+        protected <ORIGINAL_TYPE> ColumnSource<ORIGINAL_TYPE> doReinterpret(
+                @NotNull Class<ORIGINAL_TYPE> alternateDataType) {
+            // noinspection unchecked
             return (ColumnSource<ORIGINAL_TYPE>) CrossJoinRightColumnSource.this;
         }
     }
@@ -344,15 +349,15 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
 
     @Override
     public void fillChunk(@NotNull final ColumnSource.FillContext context,
-                          @NotNull final WritableChunk<? super Values> destination,
-                          @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final OrderedKeys orderedKeys) {
         doFillChunk(context, destination, orderedKeys, false);
     }
 
     @Override
     public void fillPrevChunk(@NotNull final ColumnSource.FillContext context,
-                              @NotNull final WritableChunk<? super Values> destination,
-                              @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final OrderedKeys orderedKeys) {
         doFillChunk(context, destination, orderedKeys, true);
     }
 
@@ -371,9 +376,9 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
     }
 
     private void doFillChunk(@NotNull final ColumnSource.FillContext context,
-                             @NotNull final WritableChunk<? super Values> destination,
-                             @NotNull final OrderedKeys orderedKeys,
-                             final boolean usePrev) {
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final OrderedKeys orderedKeys,
+            final boolean usePrev) {
         final int size = orderedKeys.intSize();
         if (size <= 0) {
             destination.setSize(0);
@@ -405,7 +410,8 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
             if (sharedContext == null) {
                 shareable = new Shareable(cs.rightIsLive, false, chunkCapacity);
             } else {
-                shareable = sharedContext.getOrCreate(new SharingKey(cs.crossJoinManager), () -> new Shareable(cs.rightIsLive, true, chunkCapacity));
+                shareable = sharedContext.getOrCreate(new SharingKey(cs.crossJoinManager),
+                        () -> new Shareable(cs.rightIsLive, true, chunkCapacity));
             }
             innerFillContext = cs.innerSource.makeFillContext(chunkCapacity, shareable);
 
@@ -481,7 +487,8 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
                 runLengths = WritableIntChunk.makeWritableChunk(chunkCapacity);
             }
 
-            private void ensureMappedKeysInitialized(@NotNull final CrossJoinStateManager crossJoinManager, final boolean usePrev, @NotNull final OrderedKeys orderedKeys) {
+            private void ensureMappedKeysInitialized(@NotNull final CrossJoinStateManager crossJoinManager,
+                    final boolean usePrev, @NotNull final OrderedKeys orderedKeys) {
                 if (mappedKeysReusable) {
                     return;
                 }
@@ -526,12 +533,14 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
                 };
 
                 orderedKeys.forAllLongs(ii -> {
-                    final long leftIndex = usePrev ? crossJoinManager.getPrevShifted(ii) : crossJoinManager.getShifted(ii);
+                    final long leftIndex =
+                            usePrev ? crossJoinManager.getPrevShifted(ii) : crossJoinManager.getShifted(ii);
                     if (leftIndex != lastLeftIndex.longValue()) {
                         flush.run();
                         lastLeftIndex.setValue(leftIndex);
                     }
-                    mappedKeys.set(preMapOffset.intValue(), usePrev ? crossJoinManager.getPrevMasked(ii) : crossJoinManager.getMasked(ii));
+                    mappedKeys.set(preMapOffset.intValue(),
+                            usePrev ? crossJoinManager.getPrevMasked(ii) : crossJoinManager.getMasked(ii));
                     preMapOffset.increment();
                 });
                 flush.run();
@@ -580,8 +589,8 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
                 hasNulls = compactedMappedKeys.get(0) == Index.NULL_KEY;
                 final int keysToSkip = hasNulls ? 1 : 0;
                 innerOrderedKeys = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(
-                        LongChunk.downcast(nonNullCompactedMappedKeys.resetFromTypedChunk(compactedMappedKeys, keysToSkip, uniqueKeyCount - keysToSkip))
-                );
+                        LongChunk.downcast(nonNullCompactedMappedKeys.resetFromTypedChunk(compactedMappedKeys,
+                                keysToSkip, uniqueKeyCount - keysToSkip)));
 
                 sortedFillContextReusable = shared;
             }
@@ -624,7 +633,8 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
             }
         }
 
-        private void doUnorderedFill(@NotNull final FillUnordered innerSource, final boolean usePrev, @NotNull final WritableChunk<? super Values> destination) {
+        private void doUnorderedFill(@NotNull final FillUnordered innerSource, final boolean usePrev,
+                @NotNull final WritableChunk<? super Values> destination) {
             if (usePrev) {
                 innerSource.fillPrevChunkUnordered(innerFillContext, destination, shareable.mappedKeys);
             } else {
@@ -633,7 +643,8 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
             destination.setSize(shareable.totalKeyCount);
         }
 
-        private void doOrderedFillAndPermute(@NotNull final ColumnSource<?> innerSource, final boolean usePrev, @NotNull final WritableChunk<? super Values> destination) {
+        private void doOrderedFillAndPermute(@NotNull final ColumnSource<?> innerSource, final boolean usePrev,
+                @NotNull final WritableChunk<? super Values> destination) {
             shareable.ensureSortedFillContextInitialized();
 
             innerOrderedValues.setSize(shareable.uniqueKeyCount);
@@ -641,14 +652,16 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
             final WritableChunk<Values> compactedOrderedValuesDestination;
             if (shareable.hasNulls) {
                 innerOrderedValues.fillWithNullValue(0, 1);
-                compactedOrderedValuesDestination = innerOrderedValuesSlice.resetFromChunk(innerOrderedValues, 1, shareable.uniqueKeyCount - 1);
+                compactedOrderedValuesDestination =
+                        innerOrderedValuesSlice.resetFromChunk(innerOrderedValues, 1, shareable.uniqueKeyCount - 1);
             } else {
                 compactedOrderedValuesDestination = innerOrderedValues;
             }
 
             // Read compacted, ordered keys
             if (usePrev) {
-                innerSource.fillPrevChunk(innerFillContext, compactedOrderedValuesDestination, shareable.innerOrderedKeys);
+                innerSource.fillPrevChunk(innerFillContext, compactedOrderedValuesDestination,
+                        shareable.innerOrderedKeys);
             } else {
                 innerSource.fillChunk(innerFillContext, compactedOrderedValuesDestination, shareable.innerOrderedKeys);
             }

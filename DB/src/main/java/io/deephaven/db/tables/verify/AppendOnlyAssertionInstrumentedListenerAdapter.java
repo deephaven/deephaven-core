@@ -7,11 +7,11 @@ public class AppendOnlyAssertionInstrumentedListenerAdapter extends BaseTable.Sh
 
     private final String description;
 
-    public AppendOnlyAssertionInstrumentedListenerAdapter(String description, DynamicTable parent, DynamicTable dependent) {
+    public AppendOnlyAssertionInstrumentedListenerAdapter(String description, DynamicTable parent,
+            DynamicTable dependent) {
         super(
                 "assertAppendOnly(" + (description == null ? "" : description) + ')',
-                parent, dependent
-        );
+                parent, dependent);
         this.description = description;
     }
 

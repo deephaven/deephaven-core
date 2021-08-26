@@ -30,7 +30,8 @@ public class ExportTicketResolver extends TicketResolverBase {
     }
 
     @Override
-    public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(@Nullable final SessionState session, final Flight.FlightDescriptor descriptor) {
+    public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(@Nullable final SessionState session,
+            final Flight.FlightDescriptor descriptor) {
         if (session == null) {
             throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "No session to search");
         }
@@ -40,7 +41,8 @@ public class ExportTicketResolver extends TicketResolverBase {
                 .require(export)
                 .submit(() -> {
                     if (export.get() instanceof Table) {
-                        return TicketRouter.getFlightInfo((Table) export.get(), descriptor, ExportTicketHelper.descriptorToArrowTicket(descriptor));
+                        return TicketRouter.getFlightInfo((Table) export.get(), descriptor,
+                                ExportTicketHelper.descriptorToArrowTicket(descriptor));
                     }
 
                     throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No such flight exists");
@@ -62,7 +64,8 @@ public class ExportTicketResolver extends TicketResolverBase {
     }
 
     @Override
-    public <T> SessionState.ExportObject<T> resolve(@Nullable final SessionState session, final Flight.FlightDescriptor descriptor) {
+    public <T> SessionState.ExportObject<T> resolve(@Nullable final SessionState session,
+            final Flight.FlightDescriptor descriptor) {
         if (session == null) {
             throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "No session to resolve from");
         }
@@ -76,7 +79,8 @@ public class ExportTicketResolver extends TicketResolverBase {
     }
 
     @Override
-    public <T> SessionState.ExportBuilder<T> publish(final SessionState session, final Flight.FlightDescriptor descriptor) {
+    public <T> SessionState.ExportBuilder<T> publish(final SessionState session,
+            final Flight.FlightDescriptor descriptor) {
         return session.newExport(ExportTicketHelper.descriptorToExportId(descriptor));
     }
 }

@@ -6,8 +6,8 @@ import java.util.Arrays;
 
 public class FindExceptionCause {
     /**
-     * Given an exception and a list of expected exception types, traverse the cause tree and return the first
-     * exception that matches the list of expected cause types.
+     * Given an exception and a list of expected exception types, traverse the cause tree and return the first exception
+     * that matches the list of expected cause types.
      */
     @SafeVarargs
     public static Exception findCause(Exception original, Class<? extends Exception>... expectedTypes) {
@@ -15,7 +15,7 @@ public class FindExceptionCause {
         while (cause != null) {
             final Throwable checkCause = cause;
             if (Arrays.stream(expectedTypes).anyMatch(type -> type.isAssignableFrom(checkCause.getClass()))) {
-                return (Exception)cause;
+                return (Exception) cause;
             }
             cause = cause.getCause();
         }
@@ -23,8 +23,8 @@ public class FindExceptionCause {
     }
 
     /**
-     * Given a throwable and a list of expected throwable types, traverse the cause tree and return the first
-     * exception that matches the list of expected cause types.
+     * Given a throwable and a list of expected throwable types, traverse the cause tree and return the first exception
+     * that matches the list of expected cause types.
      */
     @SafeVarargs
     public static Throwable findCause(Throwable original, Class<? extends Throwable>... expectedTypes) {
@@ -67,10 +67,10 @@ public class FindExceptionCause {
     }
 
     /**
-     * Given a throwable and a list of expected throwable types, traverse the cause tree and return the last
-     * exception that matches the list of expected cause types.
+     * Given a throwable and a list of expected throwable types, traverse the cause tree and return the last exception
+     * that matches the list of expected cause types.
      *
-     * @param original      the original Throwable
+     * @param original the original Throwable
      * @param expectedTypes the list of expected types
      * @return the last Throwable of one of the defined types, or the original Throwable if none were found
      */

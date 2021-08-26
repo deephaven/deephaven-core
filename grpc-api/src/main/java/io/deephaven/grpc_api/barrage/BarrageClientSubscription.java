@@ -73,19 +73,21 @@ public class BarrageClientSubscription implements LogOutputAppendable {
         this.logName = logName;
         this.isViewport = initialRequest.viewportVector() != null;
 
-//        final Channel channel = authClientManager.getAuthChannel();
+        // final Channel channel = authClientManager.getAuthChannel();
 
         final BarrageMessage.Listener rt = weakListener.get();
         if (rt == null) {
             this.call = null;
-            log.error().append(this).append(": replicated table already garbage collected not requesting subscription").endl();
+            log.error().append(this).append(": replicated table already garbage collected not requesting subscription")
+                    .endl();
             return;
         }
 
         final ChunkInputStreamGenerator.Options options = ChunkInputStreamGenerator.Options.of(initialRequest);
 
         final MethodDescriptor<Flight.FlightData, BarrageMessage> subscribeDescriptor =
-                FlightServiceGrpcBinding.getClientDoExchangeDescriptor(options, wireChunkTypes, wireTypes, wireComponentTypes, streamReader);
+                FlightServiceGrpcBinding.getClientDoExchangeDescriptor(options, wireChunkTypes, wireTypes,
+                        wireComponentTypes, streamReader);
         this.call = channel.newCall(subscribeDescriptor, CallOptions.DEFAULT);
 
         ClientCalls.asyncBidiStreamingCall(call, new ClientResponseObserver<Flight.FlightData, BarrageMessage>() {
@@ -206,7 +208,8 @@ public class BarrageClientSubscription implements LogOutputAppendable {
         }
         int vpOffset = 0;
         if (viewport != null) {
-            vpOffset = BarrageSubscriptionRequest.createViewportVector(metadata, BarrageProtoUtil.toByteBuffer(viewport));
+            vpOffset =
+                    BarrageSubscriptionRequest.createViewportVector(metadata, BarrageProtoUtil.toByteBuffer(viewport));
         }
 
         BarrageSubscriptionRequest.startBarrageSubscriptionRequest(metadata);

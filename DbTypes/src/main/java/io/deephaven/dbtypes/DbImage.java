@@ -19,33 +19,28 @@ public interface DbImage extends DbFile {
         DEFAULT(java.awt.Image.SCALE_DEFAULT),
 
         /**
-         * Image-scaling algorithm that gives higher priority
-         * to scaling speed than smoothness of the scaled image.
+         * Image-scaling algorithm that gives higher priority to scaling speed than smoothness of the scaled image.
          */
         FAST(java.awt.Image.SCALE_FAST),
 
         /**
-         * Image-scaling algorithm that gives higher priority
-         * to image smoothness than scaling speed.
+         * Image-scaling algorithm that gives higher priority to image smoothness than scaling speed.
          */
         SMOOTH(java.awt.Image.SCALE_SMOOTH),
 
         /**
-         * Image scaling algorithm embodied in the
-         * <code>ReplicateScaleFilter</code> class.
-         * The <code>Image</code> object is free to substitute a different filter
-         * that performs the same algorithm yet integrates more efficiently
-         * into the imaging infrastructure supplied by the toolkit.
+         * Image scaling algorithm embodied in the <code>ReplicateScaleFilter</code> class. The <code>Image</code>
+         * object is free to substitute a different filter that performs the same algorithm yet integrates more
+         * efficiently into the imaging infrastructure supplied by the toolkit.
          *
          * @see java.awt.image.ReplicateScaleFilter
          */
         REPLICATE(java.awt.Image.SCALE_REPLICATE),
 
         /**
-         * Area Averaging image scaling algorithm.  The
-         * image object is free to substitute a different filter that
-         * performs the same algorithm yet integrates more efficiently
-         * into the image infrastructure supplied by the toolkit.
+         * Area Averaging image scaling algorithm. The image object is free to substitute a different filter that
+         * performs the same algorithm yet integrates more efficiently into the image infrastructure supplied by the
+         * toolkit.
          *
          * @see java.awt.image.AreaAveragingScaleFilter
          */
@@ -144,7 +139,7 @@ public interface DbImage extends DbFile {
      * Writes the image to file.
      *
      * @param formatName output format name (e.g. "JPEG")
-     * @param file       output file
+     * @param file output file
      * @throws IOException problem writing out the image.
      */
     void write(final String formatName, final String file) throws IOException;
@@ -152,10 +147,8 @@ public interface DbImage extends DbFile {
     /**
      * Creates a sub-image of this image.
      *
-     * @param x the X coordinate of the upper-left corner of the
-     *          specified rectangular region
-     * @param y the Y coordinate of the upper-left corner of the
-     *          specified rectangular region
+     * @param x the X coordinate of the upper-left corner of the specified rectangular region
+     * @param y the Y coordinate of the upper-left corner of the specified rectangular region
      * @param w the width of the specified rectangular region
      * @param h the height of the specified rectangular region
      * @return sub-image
@@ -165,7 +158,7 @@ public interface DbImage extends DbFile {
     /**
      * Creates a new resized image.
      *
-     * @param width  new image width in pixels.
+     * @param width new image width in pixels.
      * @param height new image height in pixels.
      * @return resized image.
      */
@@ -176,9 +169,9 @@ public interface DbImage extends DbFile {
     /**
      * Creates a new resized image.
      *
-     * @param width  new image width in pixels.
+     * @param width new image width in pixels.
      * @param height new image height in pixels.
-     * @param algo   algorithm used to rescale the image.  <code>null</code> causes the default to be usedl.
+     * @param algo algorithm used to rescale the image. <code>null</code> causes the default to be usedl.
      * @return resized image.
      */
     DbImage resize(final int width, final int height, final ImageScalingAlgorithm algo);

@@ -17,7 +17,8 @@ public class PercentileIterativeOperatorFactory implements IterativeChunkedOpera
     }
 
     @Override
-    public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name, boolean exposeInternalColumns) {
+    public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name,
+            boolean exposeInternalColumns) {
         return IterativeOperatorStateFactory.getPercentileChunked(type, percentile, averageMedian, name);
     }
 

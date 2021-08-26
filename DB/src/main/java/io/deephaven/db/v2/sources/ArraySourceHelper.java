@@ -60,8 +60,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
     public void fillPrevChunk(
             @NotNull final ColumnSource.FillContext context,
             @NotNull final WritableChunk<? super Attributes.Values> destination,
-            @NotNull final OrderedKeys orderedKeys)
-    {
+            @NotNull final OrderedKeys orderedKeys) {
         if (prevFlusher == null) {
             fillChunk(context, destination, orderedKeys);
             return;
@@ -78,7 +77,8 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
         CopyFromBlockFunctor lambda = (blockNo, srcOffset, length) -> {
             final long[] inUse = prevInUse[blockNo];
             if (inUse != null) {
-                effectiveContext.copyKernel.conditionalCopy(destination, getBlock(blockNo), getPrevBlock(blockNo), inUse, srcOffset, destOffset.intValue(), length);
+                effectiveContext.copyKernel.conditionalCopy(destination, getBlock(blockNo), getPrevBlock(blockNo),
+                        inUse, srcOffset, destOffset.intValue(), length);
             } else {
                 destination.copyFromArray(getBlock(blockNo), srcOffset, destOffset.intValue(), length);
             }
@@ -108,8 +108,8 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
     }
 
     /**
-     * Get the capacity of this column source. This number is one higher than the highest key that
-     * may be accessed (read or written).
+     * Get the capacity of this column source. This number is one higher than the highest key that may be accessed (read
+     * or written).
      *
      * @return The capacity of this column source
      */
@@ -129,13 +129,14 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
         // maxIndex is <= the current maxIndex.
         //
         // Rationale for this formula:
-        //   capacity, rounded up to the next blockSize, then -1 to form a max
+        // capacity, rounded up to the next blockSize, then -1 to form a max
         final long requestedMaxIndex = ((capacity + BLOCK_SIZE - 1) & ~INDEX_MASK) - 1;
         if (requestedMaxIndex <= maxIndex) {
             return;
         }
         final long requestedNumBlocksLong = (requestedMaxIndex + 1) >> LOG_BLOCK_SIZE;
-        final int requestedNumBlocks = LongSizedDataStructure.intSize("ArrayBackedColumnSource block allocation", requestedNumBlocksLong);
+        final int requestedNumBlocks =
+                LongSizedDataStructure.intSize("ArrayBackedColumnSource block allocation", requestedNumBlocksLong);
 
         // If we don't have enough blocks, reallocate the array
         if (blocks.length < requestedNumBlocks) {
@@ -170,13 +171,14 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
     }
 
     /**
-    * This method supports the 'set' method for its inheritors, doing some of the 'inUse' housekeeping that is
-    * common to all inheritors.
-    * @return true if the inheritor should copy a value from current to prev before setting current; false if it should
-    * just set a current value without touching prev.
-    */
+     * This method supports the 'set' method for its inheritors, doing some of the 'inUse' housekeeping that is common
+     * to all inheritors.
+     * 
+     * @return true if the inheritor should copy a value from current to prev before setting current; false if it should
+     *         just set a current value without touching prev.
+     */
     final boolean shouldRecordPrevious(final long key, final UArray[] prevBlocks,
-                                                 final SoftRecycler<UArray> recycler) {
+            final SoftRecycler<UArray> recycler) {
         if (prevFlusher == null) {
             return false;
         }
@@ -229,8 +231,9 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
     /**
      * This method supports the 'getPrev' method for its inheritors, doing some of the 'inUse' housekeeping that is
      * common to all inheritors.
+     * 
      * @return true if the inheritor should return a value from its "prev" data structure; false if it should return a
-     * value from its "current" data structure.
+     *         value from its "current" data structure.
      */
     final boolean shouldUsePrevious(final long index) {
         if (prevFlusher == null) {
@@ -287,12 +290,17 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
     }
 
     abstract void fillFromChunkByRanges(@NotNull OrderedKeys orderedKeys, Chunk<? extends Attributes.Values> src);
+
     abstract void fillFromChunkByKeys(@NotNull OrderedKeys orderedKeys, Chunk<? extends Attributes.Values> src);
 
     abstract UArray allocateNullFilledBlock(int size);
+
     abstract UArray allocateBlock(int size);
+
     abstract void resetBlocks(UArray[] newBlocks, UArray[] newPrev);
+
     abstract UArray[] getPrevBlocks();
+
     abstract SoftRecycler<UArray> getRecycler();
 
     protected static class FillSparseChunkContext<UArray> {

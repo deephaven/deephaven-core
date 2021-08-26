@@ -25,8 +25,10 @@ public class SnapshotIncrementalListener extends MergedListener {
     private final Index lastRightIndex;
     private boolean firstSnapshot = true;
 
-    public SnapshotIncrementalListener(QueryTable triggerTable, QueryTable resultTable, Map<String, SparseArrayColumnSource> resultColumns,
-                                       ListenerRecorder rightListener, ListenerRecorder leftListener, QueryTable rightTable, Map<String, ? extends ColumnSource> leftColumns) {
+    public SnapshotIncrementalListener(QueryTable triggerTable, QueryTable resultTable,
+            Map<String, SparseArrayColumnSource> resultColumns,
+            ListenerRecorder rightListener, ListenerRecorder leftListener, QueryTable rightTable,
+            Map<String, ? extends ColumnSource> leftColumns) {
         super(Arrays.asList(rightListener, leftListener), Collections.emptyList(), "snapshotIncremental", resultTable);
         this.triggerTable = triggerTable;
         this.resultTable = resultTable;
@@ -62,7 +64,8 @@ public class SnapshotIncrementalListener extends MergedListener {
         doRowCopy(rightTable.getIndex());
         resultTable.getIndex().insert(rightTable.getIndex());
         if (!initial) {
-            resultTable.notifyListeners(resultTable.getIndex(), Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());
+            resultTable.notifyListeners(resultTable.getIndex(), Index.FACTORY.getEmptyIndex(),
+                    Index.FACTORY.getEmptyIndex());
         }
         firstSnapshot = false;
     }
@@ -70,7 +73,8 @@ public class SnapshotIncrementalListener extends MergedListener {
     public void doSnapshot() {
         lastRightIndex.clear();
         lastRightIndex.insert(rightTable.getIndex());
-        try (final IndexShiftDataExpander expander = new IndexShiftDataExpander(rightUpdates.coalesce(), lastRightIndex)) {
+        try (final IndexShiftDataExpander expander =
+                new IndexShiftDataExpander(rightUpdates.coalesce(), lastRightIndex)) {
             final Index rightAdded = expander.getAdded();
             final Index rightModified = expander.getModified();
             final Index rightRemoved = expander.getRemoved();
@@ -87,7 +91,8 @@ public class SnapshotIncrementalListener extends MergedListener {
         copyRowsToResult(index, triggerTable, rightTable, leftColumns, resultColumns);
     }
 
-    public static void copyRowsToResult(Index rowsToCopy, QueryTable triggerTable, QueryTable rightTable, Map<String, ? extends ColumnSource> leftColumns, Map<String, SparseArrayColumnSource> resultColumns) {
+    public static void copyRowsToResult(Index rowsToCopy, QueryTable triggerTable, QueryTable rightTable,
+            Map<String, ? extends ColumnSource> leftColumns, Map<String, SparseArrayColumnSource> resultColumns) {
         final Index qtIndex = triggerTable.getIndex();
         if (!qtIndex.empty()) {
             SnapshotUtils.copyStampColumns(leftColumns, qtIndex.lastKey(), resultColumns, rowsToCopy);

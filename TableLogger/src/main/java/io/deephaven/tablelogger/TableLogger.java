@@ -21,7 +21,7 @@ public interface TableLogger {
     boolean isClosed();
 
     /**
-     * Close the logger and any writer in use.  Users should quiesce all logging threads and invoke {@link #shutdown()}
+     * Close the logger and any writer in use. Users should quiesce all logging threads and invoke {@link #shutdown()}
      * first in order to guarantee that all pending rows have been written to storage.
      *
      * @throws IOException if an error occurred closing the logger.
@@ -29,8 +29,8 @@ public interface TableLogger {
     void close() throws IOException;
 
     /**
-     * Write all enqueued elements to the {@link TableWriter} and prevent further writes.  This should be invoked
-     * before {@link #close()}. This must not be invoked if any threads might still try to log additional items.
+     * Write all enqueued elements to the {@link TableWriter} and prevent further writes. This should be invoked before
+     * {@link #close()}. This must not be invoked if any threads might still try to log additional items.
      */
     void shutdown();
 }

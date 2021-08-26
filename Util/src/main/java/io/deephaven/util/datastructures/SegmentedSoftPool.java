@@ -11,9 +11,11 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * <p>Re-usable data structure for a segmented stack of pooled elements which tries to strike a balance between
+ * <p>
+ * Re-usable data structure for a segmented stack of pooled elements which tries to strike a balance between
  * GC-sensitivity and element reuse.
- * <p>The pool is safe for multi-threaded use, but not highly-concurrent.
+ * <p>
+ * The pool is safe for multi-threaded use, but not highly-concurrent.
  */
 public class SegmentedSoftPool<ELEMENT_TYPE> {
 
@@ -40,16 +42,16 @@ public class SegmentedSoftPool<ELEMENT_TYPE> {
     /**
      * Create a new pool with the supplied creation and cleanup procedures.
      *
-     * @param segmentCapacity   The capacity of each segment of this pool. This is the unit of cleanup for the garbage
-     *                          collector.
+     * @param segmentCapacity The capacity of each segment of this pool. This is the unit of cleanup for the garbage
+     *        collector.
      * @param creationProcedure Creation procedure for new elements. If null, all elements must supplied via
-     *                          {@link #give(java.lang.Object)}.
-     * @param cleanupProcedure  Cleanup procedure for returned elements. If null, no cleanup will be performed in
-     *                          {@link #give(java.lang.Object)}.
+     *        {@link #give(java.lang.Object)}.
+     * @param cleanupProcedure Cleanup procedure for returned elements. If null, no cleanup will be performed in
+     *        {@link #give(java.lang.Object)}.
      */
     public SegmentedSoftPool(final int segmentCapacity,
-                             @Nullable final Supplier<ELEMENT_TYPE> creationProcedure,
-                             @Nullable final Consumer<ELEMENT_TYPE> cleanupProcedure) {
+            @Nullable final Supplier<ELEMENT_TYPE> creationProcedure,
+            @Nullable final Consumer<ELEMENT_TYPE> cleanupProcedure) {
         this.segmentCapacity = Require.gtZero(segmentCapacity, "segmentCapacity");
         this.creationProcedure = creationProcedure;
         this.cleanupProcedure = cleanupProcedure;
@@ -57,8 +59,8 @@ public class SegmentedSoftPool<ELEMENT_TYPE> {
 
     /**
      * Take an element from the pool, or make a new one if the pool is exhausted and a creation procedure was supplied
-     * at pool construction time. The element belongs to the caller, and the caller may keep it rather than return it
-     * to the pool if desired.
+     * at pool construction time. The element belongs to the caller, and the caller may keep it rather than return it to
+     * the pool if desired.
      *
      * @return An element from the pool, possibly newly-constructed
      */
@@ -82,9 +84,9 @@ public class SegmentedSoftPool<ELEMENT_TYPE> {
     }
 
     /**
-     * Give an element to the pool. Neither the caller nor any other thread may interact with the element again until
-     * it has been returned by a subsequent call to {@link #take()}. The element will be cleaned if a cleanup procedure
-     * was provided at pool construction time.
+     * Give an element to the pool. Neither the caller nor any other thread may interact with the element again until it
+     * has been returned by a subsequent call to {@link #take()}. The element will be cleaned if a cleanup procedure was
+     * provided at pool construction time.
      *
      * @param element The element to give to the pool
      */
@@ -151,8 +153,8 @@ public class SegmentedSoftPool<ELEMENT_TYPE> {
 
     /**
      * A Segment holds a very simple array-backed stack of available elements. It refers softly to the previous segment
-     * (if such exists and has not been collected), and strongly to the next segment (if such exists).
-     * The main pool structure only keeps a hard reference to the segment while operating on it - otherwise it
+     * (if such exists and has not been collected), and strongly to the next segment (if such exists). The main pool
+     * structure only keeps a hard reference to the segment while operating on it - otherwise it
      */
     private static class Segment<ELEMENT_TYPE> extends SoftReference<Segment<ELEMENT_TYPE>> {
 
@@ -185,7 +187,7 @@ public class SegmentedSoftPool<ELEMENT_TYPE> {
          */
         private Segment(final int capacity, @Nullable final Segment<ELEMENT_TYPE> previous) {
             super(previous);
-            //noinspection unchecked
+            // noinspection unchecked
             storage = (ELEMENT_TYPE[]) new Object[capacity];
             selfReference = new SoftReference<>(this);
         }
@@ -255,8 +257,8 @@ public class SegmentedSoftPool<ELEMENT_TYPE> {
         }
 
         /**
-         * Get the previous segment. This may return null either because there was no previous segment, or because
-         * all previous segments have been garbage collected.
+         * Get the previous segment. This may return null either because there was no previous segment, or because all
+         * previous segments have been garbage collected.
          *
          * @return The previous segment, or null if none such exists
          */

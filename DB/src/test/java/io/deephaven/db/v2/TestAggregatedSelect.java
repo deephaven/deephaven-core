@@ -55,14 +55,14 @@ public class TestAggregatedSelect extends TestCase {
 
         final int size = 40;
 
-        String [] symbol = new String[size];
-        double [] bid = new double[size];
-        double [] bidSize = new double[size];
+        String[] symbol = new String[size];
+        double[] bid = new double[size];
+        double[] bidSize = new double[size];
 
         for (int ii = 0; ii < size; ++ii) {
-            symbol[ii] =  (ii < 8) ? "ABC" : "XYZ";
-            bid[ii] =  (ii < 15) ? 98 : 99;
-            bidSize[ii] =  ii;
+            symbol[ii] = (ii < 8) ? "ABC" : "XYZ";
+            bid[ii] = (ii < 15) ? 98 : 99;
+            bidSize[ii] = ii;
         }
 
         tableDirectory.mkdirs();
@@ -82,8 +82,8 @@ public class TestAggregatedSelect extends TestCase {
 
     double avgConsecutive(int start, int end) {
         double count = (end - start) + 1;
-        double sumEnd = (end*(end+1)) / 2;
-        double sumStart = (start*(start+1)) / 2;
+        double sumEnd = (end * (end + 1)) / 2;
+        double sumStart = (start * (start + 1)) / 2;
         return (sumEnd - sumStart) / count;
     }
 
@@ -91,9 +91,8 @@ public class TestAggregatedSelect extends TestCase {
         Table table = createTestTable();
         Table selectedTable = table.select();
 
-        String [] colNames = {"USym", "Bid", "BidSize"};
-        for (String colName : colNames)
-        {
+        String[] colNames = {"USym", "Bid", "BidSize"};
+        for (String colName : colNames) {
             DataColumn dcFresh = table.getColumn(colName);
             DataColumn dcSelected = selectedTable.getColumn(colName);
             TestCase.assertEquals(dcFresh.getType(), dcSelected.getType());
@@ -119,8 +118,7 @@ public class TestAggregatedSelect extends TestCase {
         t2 = t1.select();
 
         String[] colNames = {"Bid", "USym"};
-        for (String colName : colNames)
-        {
+        for (String colName : colNames) {
             DataColumn dcFresh = t1.getColumn(colName);
             DataColumn dcSelected = t2.getColumn(colName);
             TestCase.assertEquals(dcFresh.getType(), dcSelected.getType());
@@ -135,8 +133,7 @@ public class TestAggregatedSelect extends TestCase {
 
         Table s1s = s1.select();
         colNames[0] = "BidSize";
-        for (String colName : colNames)
-        {
+        for (String colName : colNames) {
             DataColumn dcFresh = s1.getColumn(colName);
             DataColumn dcSelected = s1s.getColumn(colName);
             TestCase.assertEquals(dcFresh.getType(), dcSelected.getType());
@@ -181,16 +178,16 @@ public class TestAggregatedSelect extends TestCase {
 
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
         ObjectInputStream objectInputStream = new ObjectInputStream(byteArrayInputStream);
-        Table result = (Table)objectInputStream.readObject();
+        Table result = (Table) objectInputStream.readObject();
 
         TableTools.show(result);
 
         dumpColumn(result.getColumn("Bid"));
         dumpColumn(result.getColumn("BidSize"));
 
-        //noinspection unchecked
+        // noinspection unchecked
         DataColumn<DbDoubleArray> bidColumn = result.getColumn("Bid");
-        //noinspection unchecked
+        // noinspection unchecked
         DataColumn<DbArray<DbDoubleArray>> bidSizeColumn = result.getColumn("BidSize");
 
         TestCase.assertTrue(DbDoubleArray.class.isAssignableFrom(bidColumn.getType()));
@@ -202,8 +199,8 @@ public class TestAggregatedSelect extends TestCase {
         TestCase.assertTrue(DbDoubleArray.class.isAssignableFrom(bidSizeColumn.getComponentType()));
         TestCase.assertEquals(2, bidSizeColumn.size());
 
-        int [] expectedSize = { 1, 2 };
-        for (int ii = 0; ii < bidColumn.size(); ++ii)  {
+        int[] expectedSize = {1, 2};
+        for (int ii = 0; ii < bidColumn.size(); ++ii) {
             DbDoubleArray bidArray = bidColumn.get(ii);
             DbArray<DbDoubleArray> bidSizeArray = bidSizeColumn.get(ii);
 
@@ -229,18 +226,15 @@ public class TestAggregatedSelect extends TestCase {
 
     private void dumpColumn(DataColumn dc) {
         boolean isArray = DbArrayBase.class.isAssignableFrom(dc.getType());
-        System.out.println("Column Type: " + dc.getType().toString() + (isArray ? " (Array)" : "") + ", ComponentType: " + dc.getComponentType());
+        System.out.println("Column Type: " + dc.getType().toString() + (isArray ? " (Array)" : "") + ", ComponentType: "
+                + dc.getComponentType());
 
-        for (int ii = 0; ii < dc.size(); ++ii)
-        {
+        for (int ii = 0; ii < dc.size(); ++ii) {
             String prefix = dc.getName() + "[" + ii + "]";
-            if (isArray)
-            {
-                DbArrayBase dbArrayBase = (DbArrayBase)dc.get(ii);
+            if (isArray) {
+                DbArrayBase dbArrayBase = (DbArrayBase) dc.get(ii);
                 dumpArray(prefix, dbArrayBase);
-            }
-            else
-            {
+            } else {
                 System.out.println(prefix + ":" + dc.get(ii).toString());
             }
         }

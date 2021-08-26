@@ -5,16 +5,16 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.grpcWeb.transports.http.xhr.MozChunkedArrayBufferXHR",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.grpcWeb.transports.http.xhr.MozChunkedArrayBufferXHR",
+        namespace = JsPackage.GLOBAL)
 public class MozChunkedArrayBufferXHR extends XHR {
-  public MozChunkedArrayBufferXHR() {
-    // This super call is here only for the code to compile; it is never executed.
-    super((TransportOptions) null, (XhrTransportInit) null);
-  }
+    public MozChunkedArrayBufferXHR() {
+        // This super call is here only for the code to compile; it is never executed.
+        super((TransportOptions) null, (XhrTransportInit) null);
+    }
 
-  public native void configureXhr();
+    public native void configureXhr();
 
-  public native void onProgressEvent();
+    public native void onProgressEvent();
 }

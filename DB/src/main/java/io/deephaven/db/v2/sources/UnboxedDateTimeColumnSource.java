@@ -12,7 +12,8 @@ import org.jetbrains.annotations.NotNull;
  * as {@code long} values.
  */
 @AbstractColumnSource.IsSerializable(value = true)
-public class UnboxedDateTimeColumnSource extends AbstractColumnSource<Long> implements MutableColumnSourceGetDefaults.ForLong {
+public class UnboxedDateTimeColumnSource extends AbstractColumnSource<Long>
+        implements MutableColumnSourceGetDefaults.ForLong {
 
     private final ColumnSource<DBDateTime> alternateColumnSource;
 
@@ -37,13 +38,15 @@ public class UnboxedDateTimeColumnSource extends AbstractColumnSource<Long> impl
     }
 
     @Override
-    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
+            @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         return alternateDataType == DBDateTime.class;
     }
 
     @Override
-    public <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) throws IllegalArgumentException {
-        //noinspection unchecked
+    public <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
+            @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) throws IllegalArgumentException {
+        // noinspection unchecked
         return (ColumnSource<ALTERNATE_DATA_TYPE>) alternateColumnSource;
     }
 }

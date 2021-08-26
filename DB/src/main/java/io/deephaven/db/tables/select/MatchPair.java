@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 public class MatchPair implements Serializable {
     private static final long serialVersionUID = 20180822L;
 
-    public static final MatchPair [] ZERO_LENGTH_MATCH_PAIR_ARRAY = new MatchPair[0];
+    public static final MatchPair[] ZERO_LENGTH_MATCH_PAIR_ARRAY = new MatchPair[0];
 
     public static MatchPair of(Pair pair) {
         return new MatchPair(pair.output().name(), pair.input().name());
@@ -68,7 +68,7 @@ public class MatchPair implements Serializable {
      * @param leftColumn LHS of the pair
      * @param rightColumn RHS of the pair
      */
-    public MatchPair(String leftColumn,String rightColumn){
+    public MatchPair(String leftColumn, String rightColumn) {
         this.leftColumn = NameValidator.validateColumnName(leftColumn);
         this.rightColumn = NameValidator.validateColumnName(rightColumn);
     }
@@ -90,10 +90,9 @@ public class MatchPair implements Serializable {
     }
 
     public static final LogOutput.ObjFormatter<MatchPair[]> MATCH_PAIR_ARRAY_FORMATTER = (logOutput, matchPairs) -> {
-        if ( matchPairs == null ) {
+        if (matchPairs == null) {
             logOutput.append("null");
-        }
-        else {
+        } else {
             boolean first = true;
             logOutput.append('[');
             for (MatchPair mp : matchPairs) {
@@ -112,10 +111,9 @@ public class MatchPair implements Serializable {
     };
 
     public static final LogOutput.ObjFormatter<MatchPair> MATCH_PAIR_FORMATTER = (logOutput, mp) -> {
-        if ( mp == null ) {
+        if (mp == null) {
             logOutput.append("null");
-        }
-        else {
+        } else {
             if (mp.left().equals(mp.right())) {
                 logOutput.append(mp.left());
             } else {
@@ -134,8 +132,10 @@ public class MatchPair implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         final MatchPair matchPair = (MatchPair) o;
         return Objects.equals(leftColumn, matchPair.leftColumn) &&
                 Objects.equals(rightColumn, matchPair.rightColumn);

@@ -16,7 +16,8 @@ public class TableAttributesDefinition implements Serializable {
 
     // special cased attributes that have a complex type yet are always sent
     private RollupDefinition rollupDefinition;// rollup subtype of "HierarchicalSourceTableInfo"
-    private String treeHierarchicalColumnName;// technically a part of "HierarchicalSourceTableInfo", won't be copied separately
+    private String treeHierarchicalColumnName;// technically a part of "HierarchicalSourceTableInfo", won't be copied
+                                              // separately
     private String[][] columnDescriptions;// "ColumnDescriptions"
 
     // enumerate the plain keys/values

@@ -11,13 +11,13 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 public class SingletonLivenessManager implements ReleasableLivenessManager {
 
     private static final AtomicReferenceFieldUpdater<SingletonLivenessManager, WeakReference> RETAINED_REFERENCE_UPDATER =
-            AtomicReferenceFieldUpdater.newUpdater(SingletonLivenessManager.class, WeakReference.class, "retainedReference");
+            AtomicReferenceFieldUpdater.newUpdater(SingletonLivenessManager.class, WeakReference.class,
+                    "retainedReference");
 
     private volatile WeakReference<? extends LivenessReferent> retainedReference;
 
     @SuppressWarnings("WeakerAccess")
-    public SingletonLivenessManager() {
-    }
+    public SingletonLivenessManager() {}
 
     public SingletonLivenessManager(@NotNull final LivenessReferent referent) {
         if (Liveness.REFERENCE_TRACKING_DISABLED) {
@@ -27,7 +27,8 @@ public class SingletonLivenessManager implements ReleasableLivenessManager {
         initializeRetainedReference(referent.getWeakReference());
     }
 
-    private void initializeRetainedReference(@NotNull final WeakReference<? extends LivenessReferent> retainedReference) {
+    private void initializeRetainedReference(
+            @NotNull final WeakReference<? extends LivenessReferent> retainedReference) {
         this.retainedReference = retainedReference;
     }
 
@@ -36,7 +37,7 @@ public class SingletonLivenessManager implements ReleasableLivenessManager {
     }
 
     private WeakReference<? extends LivenessReferent> getRetainedReference() {
-        //noinspection unchecked
+        // noinspection unchecked
         return (WeakReference<? extends LivenessReferent>) RETAINED_REFERENCE_UPDATER.getAndSet(this, null);
     }
 

@@ -9,13 +9,21 @@ package io.deephaven.tablelogger;
  */
 public interface RowSetter<T> {
     void set(T value);
+
     void setBoolean(Boolean value);
+
     void setByte(byte value);
+
     void setChar(char value);
+
     void setDouble(double value);
+
     void setFloat(float value);
+
     void setInt(int value);
+
     void setLong(long value);
+
     void setShort(short value);
 
     Class getType();

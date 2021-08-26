@@ -30,10 +30,12 @@ import static io.deephaven.db.v2.by.ComboAggregateFactory.AggSortedLast;
 @Category(OutOfBandTest.class)
 public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
 
-    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance().getBooleanForClassWithDefault(TestSortedFirstOrLastByFactory.class, "CompilerTools.logEnabled", false);
+    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
+            .getBooleanForClassWithDefault(TestSortedFirstOrLastByFactory.class, "CompilerTools.logEnabled", false);
 
-    private static final String[] colNames = new String[]{"Sym", "intCol", "doubleCol", "Keys"};
-    private static final boolean printTableUpdates = Configuration.getInstance().getBooleanForClassWithDefault(LiveTableTestCase.class, "printTableUpdates", false);
+    private static final String[] colNames = new String[] {"Sym", "intCol", "doubleCol", "Keys"};
+    private static final boolean printTableUpdates = Configuration.getInstance()
+            .getBooleanForClassWithDefault(LiveTableTestCase.class, "printTableUpdates", false);
 
     private boolean oldLogEnabled;
     private boolean oldCheckLtm;
@@ -83,7 +85,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         if (printTableUpdates) {
             showWithIndex(queryTable);
         }
-        final EvalNuggetInterface [] en = new EvalNuggetInterface[]{
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.from(() -> SortedBy.sortedFirstBy(queryTable.update("x=Keys"), sortColumns)),
                 EvalNugget.from(() -> SortedBy.sortedLastBy(queryTable.update("x=Keys"), sortColumns)),
                 new QueryTableTest.TableComparator(
@@ -91,20 +93,23 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
                         SortedBy.sortedFirstBy(queryTable, sortColumns)),
                 new QueryTableTest.TableComparator(
                         SortedBy.sortedLastBy(queryTable, sortColumns),
-                        queryTable.sort(sortColumns).tail(1)
-                        ),
-                EvalNugget.Sorted.from(() -> SortedBy.sortedFirstBy(queryTable.update("x=Keys"), sortColumns, "Sym"), "Sym"),
-                EvalNugget.Sorted.from(() -> SortedBy.sortedLastBy(queryTable.update("x=Keys"), sortColumns, "Sym"), "Sym"),
+                        queryTable.sort(sortColumns).tail(1)),
+                EvalNugget.Sorted.from(() -> SortedBy.sortedFirstBy(queryTable.update("x=Keys"), sortColumns, "Sym"),
+                        "Sym"),
+                EvalNugget.Sorted.from(() -> SortedBy.sortedLastBy(queryTable.update("x=Keys"), sortColumns, "Sym"),
+                        "Sym"),
                 new QueryTableTest.TableComparator(
                         queryTable.sort(sortColumns).firstBy("Sym").sort("Sym"),
                         SortedBy.sortedFirstBy(queryTable, sortColumns, "Sym").sort("Sym")),
                 new QueryTableTest.TableComparator(
                         queryTable.sort(sortColumns).lastBy("Sym").sort("Sym"),
-                        queryTable.by(AggCombo(AggSortedLast(sortColumns, "intCol", "doubleCol", "Keys")), "Sym").sort("Sym"))
+                        queryTable.by(AggCombo(AggSortedLast(sortColumns, "intCol", "doubleCol", "Keys")), "Sym")
+                                .sort("Sym"))
         };
         for (int step = 0; step < 100; step++) {
             if (LiveTableTestCase.printTableUpdates) {
-                System.out.println("Size = " + size + ", Seed = " + seed + ", Step = " + step + ", sortColumns=" + Arrays.toString(sortColumns));
+                System.out.println("Size = " + size + ", Seed = " + seed + ", Step = " + step + ", sortColumns="
+                        + Arrays.toString(sortColumns));
             }
             simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
@@ -112,14 +117,16 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
 
 
     public void testIds6445() {
-        final QueryTable source = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(5), intCol("SFB", 2, 1, 2, 1, 2), intCol("Sentinel", 1, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A"));
-//        final FuzzerPrintListener pl = new FuzzerPrintListener("source", source);
-//        source.listenForUpdates(pl);
+        final QueryTable source =
+                TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(5), intCol("SFB", 2, 1, 2, 1, 2),
+                        intCol("Sentinel", 1, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A"));
+        // final FuzzerPrintListener pl = new FuzzerPrintListener("source", source);
+        // source.listenForUpdates(pl);
 
-        final QueryTable sfb = (QueryTable)source.by(new SortedFirstBy("SFB"));
-        final QueryTable bucketed = (QueryTable)source.by(new SortedFirstBy("SFB"), "DummyBucket");
-//        final FuzzerPrintListener plsfb = new FuzzerPrintListener("sfb", sfb);
-//        sfb.listenForUpdates(plsfb);
+        final QueryTable sfb = (QueryTable) source.by(new SortedFirstBy("SFB"));
+        final QueryTable bucketed = (QueryTable) source.by(new SortedFirstBy("SFB"), "DummyBucket");
+        // final FuzzerPrintListener plsfb = new FuzzerPrintListener("sfb", sfb);
+        // sfb.listenForUpdates(plsfb);
 
         final TableUpdateValidator tuv = TableUpdateValidator.make("source validator", source);
         final FailureListener failureListener = new FailureListener();
@@ -147,7 +154,8 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
             update.modifiedColumnSet.clear();
             update.modifiedColumnSet.setAll("SFB");
 
-            addToTable(source, Index.FACTORY.getFlatIndex(6), intCol("SFB", 3, 2, 3, 2, 3, 2), intCol("Sentinel", 6, 1, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A", "A"));
+            addToTable(source, Index.FACTORY.getFlatIndex(6), intCol("SFB", 3, 2, 3, 2, 3, 2),
+                    intCol("Sentinel", 6, 1, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A", "A"));
 
             final IndexShiftData.Builder sb = new IndexShiftData.Builder();
             sb.shiftRange(0, 4, 1);
@@ -160,7 +168,8 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         tuvsfb.deepValidation();
         tuvbuck.deepValidation();
 
-        // i'm concerned that if we really modify a row, but we don't detect it in the shift, so here we are just shifting without modifications
+        // i'm concerned that if we really modify a row, but we don't detect it in the shift, so here we are just
+        // shifting without modifications
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
             update.added = Index.FACTORY.getIndexByValues(0);
@@ -170,7 +179,8 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
             update.modifiedColumnSet.clear();
             update.modifiedColumnSet.setAll("SFB");
 
-            addToTable(source, Index.FACTORY.getFlatIndex(7), intCol("SFB", 4, 3, 2, 3, 2, 3, 2), intCol("Sentinel", 7, 6, 1, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A", "A", "A"));
+            addToTable(source, Index.FACTORY.getFlatIndex(7), intCol("SFB", 4, 3, 2, 3, 2, 3, 2),
+                    intCol("Sentinel", 7, 6, 1, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A", "A", "A"));
 
             final IndexShiftData.Builder sb = new IndexShiftData.Builder();
             sb.shiftRange(0, 5, 1);
@@ -195,7 +205,9 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
             update.modifiedColumnSet.clear();
             update.modifiedColumnSet.setAll("Sentinel");
 
-            addToTable(source, Index.FACTORY.getFlatIndex(8), intCol("SFB", 4, 4, 3, 2, 3, 2, 3, 2), intCol("Sentinel", 8, 7, 6, 9, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A"));
+            addToTable(source, Index.FACTORY.getFlatIndex(8), intCol("SFB", 4, 4, 3, 2, 3, 2, 3, 2),
+                    intCol("Sentinel", 8, 7, 6, 9, 2, 3, 4, 5),
+                    col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A"));
 
             final IndexShiftData.Builder sb = new IndexShiftData.Builder();
             sb.shiftRange(0, 6, 1);
@@ -220,7 +232,9 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
             update.modifiedColumnSet.clear();
             update.modifiedColumnSet.setAll("SFB");
 
-            addToTable(source, Index.FACTORY.getFlatIndex(9), intCol("SFB", 4, 4, 4, 3, 2, 3, 2, 3, 2), intCol("Sentinel", 10, 8, 7, 6, 9, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A", "A"));
+            addToTable(source, Index.FACTORY.getFlatIndex(9), intCol("SFB", 4, 4, 4, 3, 2, 3, 2, 3, 2),
+                    intCol("Sentinel", 10, 8, 7, 6, 9, 2, 3, 4, 5),
+                    col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A", "A"));
 
             final IndexShiftData.Builder sb = new IndexShiftData.Builder();
             sb.shiftRange(0, 7, 1);
@@ -245,7 +259,9 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
             update.modifiedColumnSet.clear();
             update.modifiedColumnSet.setAll("SFB");
 
-            addToTable(source, Index.FACTORY.getFlatIndex(10), intCol("SFB", 4, 4, 4, 4, 1, 2, 3, 2, 3, 2), intCol("Sentinel", 11, 10, 8, 7, 6, 9, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A"));
+            addToTable(source, Index.FACTORY.getFlatIndex(10), intCol("SFB", 4, 4, 4, 4, 1, 2, 3, 2, 3, 2),
+                    intCol("Sentinel", 11, 10, 8, 7, 6, 9, 2, 3, 4, 5),
+                    col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A"));
 
             final IndexShiftData.Builder sb = new IndexShiftData.Builder();
             sb.shiftRange(0, 8, 1);
@@ -260,7 +276,7 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
         tuvbuck.deepValidation();
         TestCase.assertEquals(6, bucketed.getColumn("Sentinel").get(0));
 
-        // claim to modify sfb, but don't really.  Actually modify sentinel.
+        // claim to modify sfb, but don't really. Actually modify sentinel.
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
             update.added = Index.FACTORY.getIndexByValues(0);
@@ -270,7 +286,9 @@ public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
             update.modifiedColumnSet.clear();
             update.modifiedColumnSet.setAll("SFB", "Sentinel");
 
-            addToTable(source, Index.FACTORY.getFlatIndex(11), intCol("SFB", 4, 4, 4, 4, 4, 1, 2, 3, 2, 3, 2), intCol("Sentinel", 12, 11, 10, 8, 7, 13, 9, 2, 3, 4, 5), col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A"));
+            addToTable(source, Index.FACTORY.getFlatIndex(11), intCol("SFB", 4, 4, 4, 4, 4, 1, 2, 3, 2, 3, 2),
+                    intCol("Sentinel", 12, 11, 10, 8, 7, 13, 9, 2, 3, 4, 5),
+                    col("DummyBucket", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A"));
 
             final IndexShiftData.Builder sb = new IndexShiftData.Builder();
             sb.shiftRange(0, 9, 1);

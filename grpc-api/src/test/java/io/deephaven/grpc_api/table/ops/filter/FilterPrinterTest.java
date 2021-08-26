@@ -12,7 +12,8 @@ public class FilterPrinterTest {
         // simple double -> string and back again
         assertSameValue(1.5);
 
-        // make sure that if a "double" is passed instead of a more correct integer type, we still print something that matches
+        // make sure that if a "double" is passed instead of a more correct integer type, we still print something that
+        // matches
         assertSameValue(2.0);
 
         // other cases, make sure we match plain java expectations
@@ -63,8 +64,9 @@ public class FilterPrinterTest {
             if (str.contains(".")) {
                 assertEquals(Double.toString(expected), str);
             } else {
-                assertEquals("Provided value should have no decimal component " + expected, 0, expected - (long)expected, 0);
-                assertEquals(Long.toString((long)expected), str);
+                assertEquals("Provided value should have no decimal component " + expected, 0,
+                        expected - (long) expected, 0);
+                assertEquals(Long.toString((long) expected), str);
             }
         }
     }

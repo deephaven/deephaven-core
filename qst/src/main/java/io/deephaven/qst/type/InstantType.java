@@ -17,6 +17,11 @@ public abstract class InstantType extends GenericTypeBase<Instant> {
     }
 
     @Override
+    public final Class<Instant> clazz() {
+        return Instant.class;
+    }
+
+    @Override
     public final <V extends GenericType.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

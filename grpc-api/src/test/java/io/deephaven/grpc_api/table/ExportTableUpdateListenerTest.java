@@ -304,7 +304,8 @@ public class ExportTableUpdateListenerTest {
     private void addRowsToSource(final QueryTable src, final long nRows) {
         liveTableMonitor.runWithinUnitTestCycle(() -> {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-            update.added = Index.FACTORY.getIndexByRange(src.getIndex().lastKey() + 1, src.getIndex().lastKey() + nRows);
+            update.added =
+                    Index.FACTORY.getIndexByRange(src.getIndex().lastKey() + 1, src.getIndex().lastKey() + nRows);
             update.removed = update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             update.shifted = IndexShiftData.EMPTY;
@@ -324,7 +325,8 @@ public class ExportTableUpdateListenerTest {
     }
 
     private void expectNoMessage() {
-        liveTableMonitor.runWithinUnitTestCycle(() -> {}); // flush our terminal notification
+        liveTableMonitor.runWithinUnitTestCycle(() -> {
+        }); // flush our terminal notification
         final ExportedTableUpdateMessage batch = observer.msgQueue.poll();
         Assert.eqNull(batch, "batch");
     }
@@ -332,7 +334,8 @@ public class ExportTableUpdateListenerTest {
     public class TestSessionState extends SessionState {
         public TestSessionState() {
             super(scheduler, AUTH_CONTEXT);
-            initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), this));
+            initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
+                    DBTimeUtils.nanosToTime(Long.MAX_VALUE), this));
         }
     }
 

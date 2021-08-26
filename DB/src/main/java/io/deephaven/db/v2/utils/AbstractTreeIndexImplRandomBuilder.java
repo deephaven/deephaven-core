@@ -15,8 +15,11 @@ public abstract class AbstractTreeIndexImplRandomBuilder implements TreeIndexImp
     private long pendingRangeEnd = -1;
 
     protected abstract TreeIndexImpl.RandomBuilder innerBuilder();
+
     protected abstract void setupInnerBuilderForRange(final long start, final long end);
+
     protected abstract void setupInnerBuilderEmpty();
+
     protected abstract void setInnerBuilderNull();
 
     protected boolean flushPendingRange() {

@@ -19,12 +19,13 @@ public class CsvResultWriter {
 
     public static void recordResults(final Collection<RunResult> results, final Class c) {
         final String className = c.getSimpleName();
-        final String timeString = new SimpleDateFormat("yyyy-MM-dd-HHmmss").format(new Date(System.currentTimeMillis()));
+        final String timeString =
+                new SimpleDateFormat("yyyy-MM-dd-HHmmss").format(new Date(System.currentTimeMillis()));
         recordResults(results, new File(TEST_OUTPUT_DIR_PATH + File.separator + className + "-" + timeString + ".csv"));
     }
 
     public static void recordResults(final Collection<RunResult> results, final File file) {
-        if(results.isEmpty()) {
+        if (results.isEmpty()) {
             return;
         }
 
@@ -37,7 +38,7 @@ public class CsvResultWriter {
         headers.add("Iteration");
         headers.add("Score");
 
-        for(final RunResult runResult : results) {
+        for (final RunResult runResult : results) {
             final BenchmarkParams runParams = runResult.getParams();
             headers.addAll(runParams.getParamsKeys());
         }
@@ -47,10 +48,10 @@ public class CsvResultWriter {
         final DecimalFormat decimalFormat = new DecimalFormat("#0.000");
 
         int runNo = 0;
-        for(final RunResult runResult : results) {
+        for (final RunResult runResult : results) {
             final BenchmarkParams runParams = runResult.getParams();
 
-            for(final BenchmarkResult benchResult : runResult.getBenchmarkResults()) {
+            for (final BenchmarkResult benchResult : runResult.getBenchmarkResults()) {
                 runNo++;
                 int itNo = 0;
                 for (final IterationResult itResult : benchResult.getIterationResults()) {

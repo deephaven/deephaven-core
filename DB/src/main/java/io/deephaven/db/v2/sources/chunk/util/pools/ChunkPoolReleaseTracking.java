@@ -33,7 +33,7 @@ public final class ChunkPoolReleaseTracking {
         if (preCheck) {
             try {
                 releaseTracker.check();
-            } catch (ReleaseTracker.LeakedException|ReleaseTracker.MissedReleaseException checkException) {
+            } catch (ReleaseTracker.LeakedException | ReleaseTracker.MissedReleaseException checkException) {
                 throw new IllegalStateException("Release tracker had errors on enable", checkException);
             }
         }
@@ -74,6 +74,5 @@ public final class ChunkPoolReleaseTracking {
         }
     }
 
-    private ChunkPoolReleaseTracking() {
-    }
+    private ChunkPoolReleaseTracking() {}
 }

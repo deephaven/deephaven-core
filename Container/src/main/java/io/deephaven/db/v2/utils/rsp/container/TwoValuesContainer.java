@@ -813,7 +813,7 @@ public final class TwoValuesContainer extends ImmutableContainer {
         int end = -1;
         boolean doThrow = false;
         boolean accept1 = false;
-        boolean accept2 = false;  // won't become true if maxPos == 0.
+        boolean accept2 = false; // won't become true if maxPos == 0.
         while (inValues.hasNext()) {
             inValues.next();
             start = inValues.start();
@@ -868,8 +868,7 @@ public final class TwoValuesContainer extends ImmutableContainer {
     }
 
     @Override
-    public void trim() {
-    }
+    public void trim() {}
 
     private Container xorImpl(final Container c) {
         return c.deepCopy().iflip(v1).iflip(v2);
@@ -970,8 +969,7 @@ public final class TwoValuesContainer extends ImmutableContainer {
     }
 
     @Override
-    public void setCopyOnWrite() {
-    }
+    public void setCopyOnWrite() {}
 
     @Override
     public int bytesAllocated() {
@@ -990,7 +988,7 @@ public final class TwoValuesContainer extends ImmutableContainer {
 
     @Override
     public Container toLargeContainer() {
-        return new ArrayContainer(new short[]{v1, v2});
+        return new ArrayContainer(new short[] {v1, v2});
     }
 
     @Override

@@ -25,16 +25,17 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
     private volatile ColumnPageReader[] columnPageReaders;
     private volatile WeakReference<IntrusivePage<ATTR>>[] pages;
 
-    VariablePageSizeColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader, final long mask, @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
+    VariablePageSizeColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader, final long mask,
+            @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
         super(columnChunkReader, mask, toPage);
 
         final int INIT_ARRAY_SIZE = 15;
-        pageRowOffsets = new long[INIT_ARRAY_SIZE +1];
+        pageRowOffsets = new long[INIT_ARRAY_SIZE + 1];
         pageRowOffsets[0] = 0;
         columnPageReaders = new ColumnPageReader[INIT_ARRAY_SIZE];
 
-        //noinspection unchecked
-        pages = (WeakReference<IntrusivePage<ATTR>>[])new WeakReference[INIT_ARRAY_SIZE];
+        // noinspection unchecked
+        pages = (WeakReference<IntrusivePage<ATTR>>[]) new WeakReference[INIT_ARRAY_SIZE];
     }
 
     private void extendOnePage(final int prevNumPages) {
@@ -134,7 +135,7 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
         int pageNum = Arrays.binarySearch(pageRowOffsets, 1, localNumPages + 1, row);
 
         if (pageNum < 0) {
-            pageNum = -2-pageNum;
+            pageNum = -2 - pageNum;
         }
 
         if (pageNum >= localNumPages) {
@@ -143,7 +144,7 @@ class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunk
             pageNum = Arrays.binarySearch(pageRowOffsets, minPageNum + 1, localNumPages + 1, row);
 
             if (pageNum < 0) {
-                pageNum = -2-pageNum;
+                pageNum = -2 - pageNum;
             }
         }
 

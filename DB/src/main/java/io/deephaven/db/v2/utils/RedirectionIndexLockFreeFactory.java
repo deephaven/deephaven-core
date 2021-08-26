@@ -16,6 +16,6 @@ class RedirectionIndexLockFreeFactory implements RedirectionIndex.Factory {
 
     @Override
     public RedirectionIndexLockFreeImpl createRedirectionIndex(TLongLongMap map) {
-        return new RedirectionIndexLockFreeImpl((TNullableLongLongMap)map);
+        return new RedirectionIndexLockFreeImpl((TNullableLongLongMap) map);
     }
 }

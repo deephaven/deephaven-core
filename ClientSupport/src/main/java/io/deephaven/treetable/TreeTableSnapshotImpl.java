@@ -17,8 +17,10 @@ import java.util.Set;
 import static io.deephaven.treetable.TreeTableConstants.RE_TREE_KEY;
 import static io.deephaven.treetable.TreeTableConstants.ROOT_TABLE_KEY;
 
-class TreeTableSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<CLIENT_TYPE>> extends AbstractTreeSnapshotImpl<TreeTableInfo, CLIENT_TYPE> {
-    private static final boolean NODE_SORT_MODE = Configuration.getInstance().getBooleanWithDefault("TreeTableSnapshotImpl.sortAtNodes", true);
+class TreeTableSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<CLIENT_TYPE>>
+        extends AbstractTreeSnapshotImpl<TreeTableInfo, CLIENT_TYPE> {
+    private static final boolean NODE_SORT_MODE =
+            Configuration.getInstance().getBooleanWithDefault("TreeTableSnapshotImpl.sortAtNodes", true);
 
     private ReverseLookup masterRll;
     private TableMap masterTableMap;
@@ -26,30 +28,30 @@ class TreeTableSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Clie
     private boolean rootTableChanged = false;
 
     /**
-     * Construct a new query that will create a flat snapshot of the tree table using a flat viewport beginning at the specified rows
-     * and columns, applying the specified sorts and filters if required to fetch tables
+     * Construct a new query that will create a flat snapshot of the tree table using a flat viewport beginning at the
+     * specified rows and columns, applying the specified sorts and filters if required to fetch tables
      *
-     * @param baseTableId The Id of the base table.  Used to maintain client state.
-     * @param baseTable   The base table to use if sorts/filters must be applied.
+     * @param baseTableId The Id of the base table. Used to maintain client state.
+     * @param baseTable The base table to use if sorts/filters must be applied.
      * @param tablesByKey The tables within the tree for which viewports are being tracked, separated by table key.
-     * @param firstRow    The first row of the flat viewport.
-     * @param lastRow     The last row of the flat viewport.
-     * @param columns     The columns to include in the viewport
-     * @param filters     The filters to apply to new tables.
-     * @param sorts       The sorts to apply to new tables.
-     * @param client      The client issuing the TSQ.
+     * @param firstRow The first row of the flat viewport.
+     * @param lastRow The last row of the flat viewport.
+     * @param columns The columns to include in the viewport
+     * @param filters The filters to apply to new tables.
+     * @param sorts The sorts to apply to new tables.
+     * @param client The client issuing the TSQ.
      * @param includedOps The set of operations performed by the client since the last TSQ.
      */
     TreeTableSnapshotImpl(int baseTableId,
-                          HierarchicalTable baseTable,
-                          Map<Object, TableDetails> tablesByKey,
-                          long firstRow,
-                          long lastRow,
-                          BitSet columns,
-                          @NotNull SelectFilter[] filters,
-                          @NotNull List<SortDirective> sorts,
-                          CLIENT_TYPE client,
-                          Set<TreeSnapshotQuery.Operation> includedOps) {
+            HierarchicalTable baseTable,
+            Map<Object, TableDetails> tablesByKey,
+            long firstRow,
+            long lastRow,
+            BitSet columns,
+            @NotNull SelectFilter[] filters,
+            @NotNull List<SortDirective> sorts,
+            CLIENT_TYPE client,
+            Set<TreeSnapshotQuery.Operation> includedOps) {
         super(baseTableId, baseTable, tablesByKey, firstRow, lastRow, columns, filters, sorts, client, includedOps);
     }
 
@@ -57,7 +59,7 @@ class TreeTableSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Clie
     Table prepareRootTable() {
         final HierarchicalTable baseTable = getBaseTable();
         Table prepared = tryGetRetainedTable(ROOT_TABLE_KEY);
-        if(prepared == null) {
+        if (prepared == null) {
             final SelectFilter[] filters = getFilters();
             final List<SortDirective> directives = getDirectives();
 
@@ -73,13 +75,14 @@ class TreeTableSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Clie
                     prepared = baseTable.getSourceTable();
                 }
 
-                if(!NODE_SORT_MODE) {
+                if (!NODE_SORT_MODE) {
                     reTreeRequired = true;
                     prepared = applySorts(prepared);
                 }
 
-                if(reTreeRequired) {
-                    final HierarchicalTable reTreed = (HierarchicalTable) TreeTableFilter.toTreeTable(prepared, baseTable);
+                if (reTreeRequired) {
+                    final HierarchicalTable reTreed =
+                            (HierarchicalTable) TreeTableFilter.toTreeTable(prepared, baseTable);
 
                     // We need to retain this reference or we will leak it.
                     retainTable(RE_TREE_KEY, reTreed);
@@ -95,14 +98,14 @@ class TreeTableSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Clie
             rootTableChanged = true;
         }
 
-        HierarchicalTable treeForDisplay = (HierarchicalTable)tryGetRetainedTable(RE_TREE_KEY);
-        if(treeForDisplay == null) {
+        HierarchicalTable treeForDisplay = (HierarchicalTable) tryGetRetainedTable(RE_TREE_KEY);
+        if (treeForDisplay == null) {
             treeForDisplay = baseTable;
         }
 
-        masterRll      = (ReverseLookup) treeForDisplay.getAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE);
+        masterRll = (ReverseLookup) treeForDisplay.getAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE);
         masterTableMap = (TableMap) treeForDisplay.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
-        sourceTable    = treeForDisplay.getSourceTable();
+        sourceTable = treeForDisplay.getSourceTable();
 
         return prepared;
     }
@@ -125,7 +128,7 @@ class TreeTableSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Clie
     @Override
     Table prepareTableInternal(Table t) {
         t = applyColumnFormats(t);
-        if(NODE_SORT_MODE && !getDirectives().isEmpty()) {
+        if (NODE_SORT_MODE && !getDirectives().isEmpty()) {
             t = attachReverseLookup(applySorts(t));
         }
 
@@ -134,7 +137,7 @@ class TreeTableSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Clie
 
     @Override
     ReverseLookup getReverseLookup(Table t) {
-        final ReverseLookup tableRll = (ReverseLookup)t.getAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE);
+        final ReverseLookup tableRll = (ReverseLookup) t.getAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE);
         return tableRll == null ? masterRll : tableRll;
     }
 
@@ -152,6 +155,6 @@ class TreeTableSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Clie
     boolean verifyChild(TableDetails parentDetail, TableDetails childDetail, long childKeyPos, boolean usePrev) {
         final Index parentIndex = parentDetail.getTable().getIndex();
         return usePrev ? parentIndex.getPrevIndex().find(childKeyPos) >= 0
-                       : parentIndex.find(childKeyPos) >= 0;
+                : parentIndex.find(childKeyPos) >= 0;
     }
 }

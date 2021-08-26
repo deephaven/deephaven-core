@@ -10,18 +10,18 @@ import org.apache.commons.lang3.mutable.MutableLong;
 
 public class RspOrderedKeys extends OrderedKeysAsChunkImpl {
     private RspArray arr;
-    private long firstKey;  // cached first key value or -1 if cache has not been populated yet.
-    private long lastKey;   // cached last key value or -1 if cache has not been populated yet.
-    private int startIdx;   // span index on arr for where our view start.
-    private int endIdx;     // span index on arr for where our view ends (inclusive).
-    private long startOffset;  // position offset inside the start span where our view starts.
-    private long endOffset;    // position offset inside the end span where our view ends (inclusive).
-    private long cardBeforeStartIdx;  // total cardinality in spans before startIdx.
-    private long cardBeforeEndIdx;  // total cardinality in spans before endIdx.
+    private long firstKey; // cached first key value or -1 if cache has not been populated yet.
+    private long lastKey; // cached last key value or -1 if cache has not been populated yet.
+    private int startIdx; // span index on arr for where our view start.
+    private int endIdx; // span index on arr for where our view ends (inclusive).
+    private long startOffset; // position offset inside the start span where our view starts.
+    private long endOffset; // position offset inside the end span where our view ends (inclusive).
+    private long cardBeforeStartIdx; // total cardinality in spans before startIdx.
+    private long cardBeforeEndIdx; // total cardinality in spans before endIdx.
 
     // Potentially useful for testing.
     private static RspArray wrapRspArray(final RspArray arr) {
-        return arr;  // Note no acquire.
+        return arr; // Note no acquire.
     }
 
     RspOrderedKeys(
@@ -30,7 +30,7 @@ public class RspOrderedKeys extends OrderedKeysAsChunkImpl {
             final int endIdx, final long endOffset, final long cardBeforeEndIdx) {
         if (RspBitmap.debug) {
             if (endIdx < startIdx ||
-                (endIdx == startIdx && endOffset < startOffset)) {
+                    (endIdx == startIdx && endOffset < startOffset)) {
                 throw new IllegalArgumentException("Empty " + RspOrderedKeys.class.getSimpleName() + " :" +
                         "startIdx=" + startIdx + ", startOffset=" + startOffset +
                         ", endIdx=" + endIdx + ", endOffset=" + endOffset);
@@ -87,7 +87,7 @@ public class RspOrderedKeys extends OrderedKeysAsChunkImpl {
     public long getAverageRunLengthEstimate() {
         final long sz = size();
         if (sz < 32) {
-            return 1;  // don't bother.
+            return 1; // don't bother.
         }
         long estimate = arr.getAverageRunLengthEstimate(startIdx, endIdx);
         if (estimate > sz) {
@@ -97,7 +97,7 @@ public class RspOrderedKeys extends OrderedKeysAsChunkImpl {
             // An alternative to the code below would be to just return sz,
             // but we want to avoid suggesting we are a single run when we don't know
             // for sure.
-            return Math.max(sz/2, 1);
+            return Math.max(sz / 2, 1);
         }
         return estimate;
     }
@@ -116,8 +116,8 @@ public class RspOrderedKeys extends OrderedKeysAsChunkImpl {
 
     // For object reuse in order to avoid allocations.
     private void reset(final int startIdx, final long startOffset, final long cardBeforeStartIdx,
-                       final int endIdx, final long endOffset, final long cardBeforeEndIdx,
-                       final long firstKey) {
+            final int endIdx, final long endOffset, final long cardBeforeEndIdx,
+            final long firstKey) {
         this.startIdx = startIdx;
         this.endIdx = endIdx;
         this.startOffset = startOffset;
@@ -170,10 +170,10 @@ public class RspOrderedKeys extends OrderedKeysAsChunkImpl {
                 new RspRangeBatchIterator(new RspArray.SpanCursorForwardImpl(arr, startIdx), startOffset, size());
         int nRanges = 0;
         while (it.hasNext()) {
-            final int n = it.fillRangeChunk(chunkToFill, 2*nRanges);
+            final int n = it.fillRangeChunk(chunkToFill, 2 * nRanges);
             nRanges += n;
         }
-        chunkToFill.setSize(2*nRanges);
+        chunkToFill.setSize(2 * nRanges);
     }
 
     private long absoluteStartPos() {
@@ -241,25 +241,29 @@ public class RspOrderedKeys extends OrderedKeysAsChunkImpl {
     }
 
     // Note unlike Index.Iterator, this Iterator will /not/ automatically release its underlying Index representation
-    // when iteration is exhausted.  The API for OK.Iterator makes that impossible.
+    // when iteration is exhausted. The API for OK.Iterator makes that impossible.
     static class Iterator implements OrderedKeys.Iterator {
         private static class OKWrapper extends RspOrderedKeys {
             OKWrapper(final RspArray arr) {
                 super(arr);
             }
-            @Override public void close() {
+
+            @Override
+            public void close() {
                 if (RspArray.debug) {
                     throw new IllegalStateException();
                 }
                 // We purposely /do not/ close the RspOrderedKeys part as it will get reused.
-                // The API doc for Iterator states that clients should /never/ call close. So that we eneded up here means
+                // The API doc for Iterator states that clients should /never/ call close. So that we eneded up here
+                // means
                 // there is some kind of bug.
                 closeOrderedKeysAsChunkImpl();
             }
         }
+
         private RspArray arr;
 
-        // Internal buffer used as a return value for next... methods.  Note this object and the
+        // Internal buffer used as a return value for next... methods. Note this object and the
         // position reflected by curr{Start,End}{Idx,Offset} may not be in sync if there
         // were any intermediate calls to advance.
         private final RspOrderedKeys currBuf;
@@ -275,7 +279,7 @@ public class RspOrderedKeys extends OrderedKeysAsChunkImpl {
         private long currCardBeforeStartIdx;
         private long currCardBeforeEndIdx;
 
-        private long sizeLeft;  // number of keys left for subsequent calls to next* methods.
+        private long sizeLeft; // number of keys left for subsequent calls to next* methods.
         private final int oksEndIdx;
         private final long oksEndOffset;
 
@@ -412,12 +416,14 @@ public class RspOrderedKeys extends OrderedKeysAsChunkImpl {
             }
             final MutableLong prevCardMu = (arr.acc == null) ? new MutableLong() : null;
             if (currEndIdx == -1) {
-                currEndIdx = endIndex(currStartIdx, currStartOffset, currCardBeforeStartIdx, boundedNumberOfKeys, prevCardMu);
+                currEndIdx = endIndex(currStartIdx, currStartOffset, currCardBeforeStartIdx, boundedNumberOfKeys,
+                        prevCardMu);
                 if (currEndIdx == currStartIdx) {
                     currCardBeforeEndIdx = currCardBeforeStartIdx;
                     currEndOffset = currStartOffset + boundedNumberOfKeys - 1;
                 } else {
-                    currCardBeforeEndIdx = (prevCardMu != null) ? prevCardMu.longValue() : arr.cardinalityBeforeWithAcc(currEndIdx);
+                    currCardBeforeEndIdx =
+                            (prevCardMu != null) ? prevCardMu.longValue() : arr.cardinalityBeforeWithAcc(currEndIdx);
                     final long spanCardAtStartIdx = arr.getSpanCardinalityAtIndexMaybeAcc(currStartIdx);
                     final long cardAtStartIdx = currCardBeforeStartIdx + spanCardAtStartIdx;
                     final long firstSpanCount = spanCardAtStartIdx - currStartOffset;
@@ -445,7 +451,8 @@ public class RspOrderedKeys extends OrderedKeysAsChunkImpl {
                 currStartIdx = currEndIdx + 1;
                 currStartOffset = 0;
                 currCardBeforeStartIdx = currCardBeforeEndIdx + spanCardinality;
-                keysAvailableInStartSpan = currStartIdxSpanCardinality = arr.getSpanCardinalityAtIndexMaybeAcc(currStartIdx);
+                keysAvailableInStartSpan =
+                        currStartIdxSpanCardinality = arr.getSpanCardinalityAtIndexMaybeAcc(currStartIdx);
             }
             if (keysAvailableInStartSpan >= boundedNumberOfKeys) {
                 currEndIdx = currStartIdx;
@@ -453,10 +460,13 @@ public class RspOrderedKeys extends OrderedKeysAsChunkImpl {
                 currCardBeforeEndIdx = currCardBeforeStartIdx;
                 return boundedNumberOfKeys;
             }
-            currEndIdx = endIndex(currStartIdx, currStartOffset, currCardBeforeStartIdx, boundedNumberOfKeys, prevCardMu);
-            currCardBeforeEndIdx = (prevCardMu != null) ? prevCardMu.longValue() : arr.cardinalityBeforeWithAcc(currEndIdx);
+            currEndIdx =
+                    endIndex(currStartIdx, currStartOffset, currCardBeforeStartIdx, boundedNumberOfKeys, prevCardMu);
+            currCardBeforeEndIdx =
+                    (prevCardMu != null) ? prevCardMu.longValue() : arr.cardinalityBeforeWithAcc(currEndIdx);
             final long keysBeforeLastSpan =
-                    keysAvailableInStartSpan + currCardBeforeEndIdx - currCardBeforeStartIdx - currStartIdxSpanCardinality;
+                    keysAvailableInStartSpan + currCardBeforeEndIdx - currCardBeforeStartIdx
+                            - currStartIdxSpanCardinality;
             final long keysLeftInLastSpan = boundedNumberOfKeys - keysBeforeLastSpan;
             if (keysLeftInLastSpan <= 0) {
                 throw new IllegalStateException("Internal error");
@@ -527,7 +537,7 @@ public class RspOrderedKeys extends OrderedKeysAsChunkImpl {
                     currStartIdx = currEndIdx;
                     currStartOffset = currEndOffset + 1;
                 } else {
-                    // currEndIdx + 1 <  arr.size, otherwise we would have returned on the sizeLeft <= 0 check.
+                    // currEndIdx + 1 < arr.size, otherwise we would have returned on the sizeLeft <= 0 check.
                     if (RspArray.debug) {
                         Assert.lt(currEndIdx + 1, "currEndIdx + 1",
                                 arr.size, "arr.size");

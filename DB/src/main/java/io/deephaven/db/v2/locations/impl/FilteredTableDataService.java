@@ -39,10 +39,10 @@ public class FilteredTableDataService extends AbstractTableDataService {
 
     /**
      * @param serviceToFilter The service that's being filtered
-     * @param locationKeyFilter  The filter function
+     * @param locationKeyFilter The filter function
      */
     public FilteredTableDataService(@NotNull final TableDataService serviceToFilter,
-                                    @NotNull final LocationKeyFilter locationKeyFilter) {
+            @NotNull final LocationKeyFilter locationKeyFilter) {
         super("Filtered-" + Require.neqNull(serviceToFilter, "serviceToFilter").getName());
         this.serviceToFilter = Require.neqNull(serviceToFilter, "serviceToFilter");
         this.locationKeyFilter = Require.neqNull(locationKeyFilter, "locationKeyFilter");
@@ -125,9 +125,9 @@ public class FilteredTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public @NotNull
-        Collection<ImmutableTableLocationKey> getTableLocationKeys() {
-            return inputProvider.getTableLocationKeys().stream().filter(locationKeyFilter::accept).collect(Collectors.toList());
+        public @NotNull Collection<ImmutableTableLocationKey> getTableLocationKeys() {
+            return inputProvider.getTableLocationKeys().stream().filter(locationKeyFilter::accept)
+                    .collect(Collectors.toList());
         }
 
         @Override
@@ -150,7 +150,8 @@ public class FilteredTableDataService extends AbstractTableDataService {
         }
     }
 
-    private class FilteringListener extends WeakReferenceWrapper<TableLocationProvider.Listener> implements TableLocationProvider.Listener {
+    private class FilteringListener extends WeakReferenceWrapper<TableLocationProvider.Listener>
+            implements TableLocationProvider.Listener {
 
         private FilteringListener(@NotNull final TableLocationProvider.Listener outputListener) {
             super(outputListener);
@@ -159,7 +160,8 @@ public class FilteredTableDataService extends AbstractTableDataService {
         @Override
         public void handleTableLocationKey(@NotNull final ImmutableTableLocationKey tableLocationKey) {
             final TableLocationProvider.Listener outputListener = getWrapped();
-            // We can't try to clean up null listeners here, the underlying implementation may not allow concurrent unsubscribe operations.
+            // We can't try to clean up null listeners here, the underlying implementation may not allow concurrent
+            // unsubscribe operations.
             if (outputListener != null && locationKeyFilter.accept(tableLocationKey)) {
                 outputListener.handleTableLocationKey(tableLocationKey);
             }

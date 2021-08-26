@@ -55,7 +55,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
         // modified rows need to have their redirections updated for subsequent modified columns
         if (upstream.shifted.nonempty()) {
             try (final Index prevIndex = resultIndex.getPrevIndex();
-                 final Index prevNoRemovals = prevIndex.minus(upstream.removed)) {
+                    final Index prevNoRemovals = prevIndex.minus(upstream.removed)) {
                 final MutableObject<Index.SearchIterator> forwardIt = new MutableObject<>();
 
                 upstream.shifted.intersect(prevNoRemovals).apply((begin, end, delta) -> {
@@ -65,7 +65,8 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
                         }
                         final Index.SearchIterator localForwardIt = forwardIt.getValue();
                         if (localForwardIt.advance(begin)) {
-                            for (long key = localForwardIt.currentValue(); localForwardIt.currentValue() <= end; key = localForwardIt.nextLong()) {
+                            for (long key = localForwardIt.currentValue(); localForwardIt.currentValue() <= end; key =
+                                    localForwardIt.nextLong()) {
                                 final long inner = redirectionIndex.remove(key);
                                 if (inner != Index.NULL_KEY) {
                                     redirectionIndex.put(key + delta, inner);
@@ -78,7 +79,8 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
                     } else {
                         try (final Index.SearchIterator reverseIt = prevNoRemovals.reverseIterator()) {
                             if (reverseIt.advance(end)) {
-                                for (long key = reverseIt.currentValue(); reverseIt.currentValue() >= begin; key = reverseIt.nextLong()) {
+                                for (long key = reverseIt.currentValue(); reverseIt.currentValue() >= begin; key =
+                                        reverseIt.nextLong()) {
                                     final long inner = redirectionIndex.remove(key);
                                     if (inner != Index.NULL_KEY) {
                                         redirectionIndex.put(key + delta, inner);

@@ -12,18 +12,16 @@ import java.io.IOException;
 import java.util.Set;
 
 /**
- * This loader loads *only* using {@link GroovyDeephavenSession#findScript(String)}.
- * Consistency locking and refresh methods are no-ops.
+ * This loader loads *only* using {@link GroovyDeephavenSession#findScript(String)}. Consistency locking and refresh
+ * methods are no-ops.
  */
 public class ConsoleScriptPathLoader implements ScriptPathLoader {
 
     @Override
-    public void lock() {
-    }
+    public void lock() {}
 
     @Override
-    public void unlock() {
-    }
+    public void unlock() {}
 
     @Override
     public Set<String> getAvailableScriptDisplayPaths() {
@@ -41,10 +39,8 @@ public class ConsoleScriptPathLoader implements ScriptPathLoader {
     }
 
     @Override
-    public void refresh() {
-    }
+    public void refresh() {}
 
     @Override
-    public void close() {
-    }
+    public void close() {}
 }

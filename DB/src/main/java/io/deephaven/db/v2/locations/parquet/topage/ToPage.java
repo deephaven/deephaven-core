@@ -56,7 +56,7 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
      * @return Produce the array of values from the result
      */
     default RESULT convertResult(Object result) {
-        //noinspection unchecked
+        // noinspection unchecked
         return (RESULT) result;
     }
 
@@ -68,7 +68,7 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
     }
 
     /**
-     * Produce the appropriately typed chunk page for the page read by the columnPageReader.  The is the expected entry
+     * Produce the appropriately typed chunk page for the page read by the columnPageReader. The is the expected entry
      * point for the ColumnChunkPageStore.
      */
     @NotNull
@@ -86,9 +86,9 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
     }
 
     /**
-     * @return an object implementing ToChunk which will read the integral Dictionary Keys when there's a dictionary
-     * for this column (as opposed to the values, which this object's toChunk will return.).  This will return null iff
-     * getDictionary returns null.
+     * @return an object implementing ToChunk which will read the integral Dictionary Keys when there's a dictionary for
+     *         this column (as opposed to the values, which this object's toChunk will return.). This will return null
+     *         iff getDictionary returns null.
      * @apiNote null iff {@link #getDictionary()} is null.
      */
     default ToPage<Attributes.DictionaryKeys, long[]> getDictionaryKeysToPage() {

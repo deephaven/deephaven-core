@@ -26,23 +26,26 @@ import java.util.stream.Collectors;
 /**
  * A OneClick filtered table.
  *
- * If requireAllFiltersToDisplay is true, data is only displayed once the user has OneClick filtered all byColumns.
- * If requireAllFiltersToDisplay is false, data is displayed when not all oneclicks are selected
+ * If requireAllFiltersToDisplay is true, data is only displayed once the user has OneClick filtered all byColumns. If
+ * requireAllFiltersToDisplay is false, data is displayed when not all oneclicks are selected
  */
-public class SelectableDataSetOneClick implements SelectableDataSet<String,Set<Object>> {
+public class SelectableDataSetOneClick implements SelectableDataSet<String, Set<Object>> {
     private final TableMap tableMap;
     private final TableDefinition tableMapTableDefinition;
     private final String[] byColumns;
     private final boolean requireAllFiltersToDisplay;
-    private final Map<Object, WeakReference<SelectableDataSet<String, Set<Object>>>> transformationCache = new HashMap<>();
+    private final Map<Object, WeakReference<SelectableDataSet<String, Set<Object>>>> transformationCache =
+            new HashMap<>();
 
     /**
      * Creates a SelectableDataSetOneClick instance.
      *
-     * Listens for OneClick events for the specified {@code byColumns} and calculates the {@link SwappableTable} by filtering the {@code table}.
-     * The {@link SwappableTable} will be null until all {@code byColumns} have a corresponding OneClick filter.
+     * Listens for OneClick events for the specified {@code byColumns} and calculates the {@link SwappableTable} by
+     * filtering the {@code table}. The {@link SwappableTable} will be null until all {@code byColumns} have a
+     * corresponding OneClick filter.
      *
-     * @throws io.deephaven.base.verify.RequirementFailure {@code tableMap}, {@code table} and {@code byColumns} must not be null
+     * @throws io.deephaven.base.verify.RequirementFailure {@code tableMap}, {@code table} and {@code byColumns} must
+     *         not be null
      * @param tableMap table map
      * @param tableMapTableDefinition table definition
      * @param byColumns selected columns
@@ -54,17 +57,21 @@ public class SelectableDataSetOneClick implements SelectableDataSet<String,Set<O
     /**
      * Creates a SelectableDataSetOneClick instance.
      *
-     * Listens for OneClick events for the specified {@code byColumns} and calculates the {@link SwappableTable} by filtering the {@code table}.
-     * If {@code requireAllFiltersToDisplay} is true, the {@link SwappableTable} will be null until all {@code byColumns} have a corresponding OneClick filter.
-     * If {@code requireAllFiltersToDisplay} is false, the {@link SwappableTable} will be calculated by filtering the {@code table} with the OneClicks used.
+     * Listens for OneClick events for the specified {@code byColumns} and calculates the {@link SwappableTable} by
+     * filtering the {@code table}. If {@code requireAllFiltersToDisplay} is true, the {@link SwappableTable} will be
+     * null until all {@code byColumns} have a corresponding OneClick filter. If {@code requireAllFiltersToDisplay} is
+     * false, the {@link SwappableTable} will be calculated by filtering the {@code table} with the OneClicks used.
      *
-     * @throws io.deephaven.base.verify.RequirementFailure {@code tableMap}, {@code table} and {@code byColumns} must not be null
+     * @throws io.deephaven.base.verify.RequirementFailure {@code tableMap}, {@code table} and {@code byColumns} must
+     *         not be null
      * @param tableMap table map
      * @param tableMapTableDefinition TableDefinition of the underlying table
      * @param byColumns selected columns
-     * @param requireAllFiltersToDisplay false to display data when not all oneclicks are selected; true to only display data when appropriate oneclicks are selected
+     * @param requireAllFiltersToDisplay false to display data when not all oneclicks are selected; true to only display
+     *        data when appropriate oneclicks are selected
      */
-    public SelectableDataSetOneClick(TableMap tableMap, TableDefinition tableMapTableDefinition, String[] byColumns, final boolean requireAllFiltersToDisplay) {
+    public SelectableDataSetOneClick(TableMap tableMap, TableDefinition tableMapTableDefinition, String[] byColumns,
+            final boolean requireAllFiltersToDisplay) {
         Require.neqNull(tableMap, "tableMap");
         Require.neqNull(tableMapTableDefinition, "tableMapTableDefinition");
         Require.neqNull(byColumns, "byColumns");
@@ -85,9 +92,9 @@ public class SelectableDataSetOneClick implements SelectableDataSet<String,Set<O
 
     @Override
     public SwappableTable getSwappableTable(final Comparable seriesName,
-                                            final ChartImpl chart,
-                                            final Function<Table, Table> tableTransform,
-                                            final String... cols) {
+            final ChartImpl chart,
+            final Function<Table, Table> tableTransform,
+            final String... cols) {
         ArgumentValidations.assertNotNull(chart, "chart", chart.getPlotInfo());
         ArgumentValidations.assertNotNull(cols, "cols", chart.getPlotInfo());
 
@@ -102,14 +109,15 @@ public class SelectableDataSetOneClick implements SelectableDataSet<String,Set<O
                 .filter(col -> updatedTableDef.getColumn(col) == null)
                 .collect(Collectors.toList());
 
-        if(!missingColumns.isEmpty()) {
-            throw new IllegalStateException("The columns [" + String.join(", ", missingColumns) + "] do not exist in the resulting table. Available columns are [" +
+        if (!missingColumns.isEmpty()) {
+            throw new IllegalStateException("The columns [" + String.join(", ", missingColumns)
+                    + "] do not exist in the resulting table. Available columns are [" +
                     updatedTableDef.getColumnNamesAsString() + "]");
         }
 
         final List<String> viewColumns;
         // If these do not match Then we'll have to use a different set of view columns.
-        if(!updatedTableDef.equals(tableMapTableDefinition)) {
+        if (!updatedTableDef.equals(tableMapTableDefinition)) {
             viewColumns = allCols.stream()
                     .filter(col -> tableMapTableDefinition.getColumn(col) != null)
                     .collect(Collectors.toList());
@@ -117,27 +125,32 @@ public class SelectableDataSetOneClick implements SelectableDataSet<String,Set<O
             viewColumns = null;
         }
 
-        final TableMapHandle tableMapHandle = new TableMapBackedTableMapHandle(tableMap, updatedTableDef, byColumns, chart.getPlotInfo(), allCols, viewColumns);
+        final TableMapHandle tableMapHandle = new TableMapBackedTableMapHandle(tableMap, updatedTableDef, byColumns,
+                chart.getPlotInfo(), allCols, viewColumns);
         tableMapHandle.setTableMap(tableMap);
         tableMapHandle.setKeyColumnsOrdered(byColumns);
         tableMapHandle.setOneClickMap(true);
 
-        return new SwappableTableOneClickMap(seriesName, figure.getUpdateInterval(), tableMapHandle, tableTransform, requireAllFiltersToDisplay, byColumns);
+        return new SwappableTableOneClickMap(seriesName, figure.getUpdateInterval(), tableMapHandle, tableTransform,
+                requireAllFiltersToDisplay, byColumns);
     }
 
-    private TableDefinition transformTableDefinition(TableDefinition toTransform, Function<Table, Table> transformation) {
-        return transformation != null ? transformation.apply(TableTools.newTable(toTransform)).getDefinition() : toTransform;
+    private TableDefinition transformTableDefinition(TableDefinition toTransform,
+            Function<Table, Table> transformation) {
+        return transformation != null ? transformation.apply(TableTools.newTable(toTransform)).getDefinition()
+                : toTransform;
     }
 
     @Override
-    public SelectableDataSet<String, Set<Object>> transform(@NotNull Object memoKey, @NotNull Function<Table, Table> transformation) {
+    public SelectableDataSet<String, Set<Object>> transform(@NotNull Object memoKey,
+            @NotNull Function<Table, Table> transformation) {
         SelectableDataSet<String, Set<Object>> value = null;
         final WeakReference<SelectableDataSet<String, Set<Object>>> reference = transformationCache.get(memoKey);
-        if(reference != null) {
+        if (reference != null) {
             value = reference.get();
         }
 
-        if(value == null) {
+        if (value == null) {
             value = new SelectableDataSetOneClick(tableMap.transformTables(transformation),
                     transformTableDefinition(tableMapTableDefinition, transformation),
                     byColumns,

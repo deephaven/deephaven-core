@@ -528,8 +528,7 @@ public final class SingletonContainer extends ImmutableContainer {
     }
 
     @Override
-    public void trim() {
-    }
+    public void trim() {}
 
     @Override
     public Container xor(final ArrayContainer x) {
@@ -611,8 +610,7 @@ public final class SingletonContainer extends ImmutableContainer {
     }
 
     @Override
-    public void setCopyOnWrite() {
-    }
+    public void setCopyOnWrite() {}
 
     @Override
     public int bytesAllocated() {
@@ -631,10 +629,9 @@ public final class SingletonContainer extends ImmutableContainer {
 
     @Override
     public Container toLargeContainer() {
-        return new ArrayContainer(new short[]{value});
+        return new ArrayContainer(new short[] {value});
     }
 
     @Override
-    public void validate() {
-    }
+    public void validate() {}
 }

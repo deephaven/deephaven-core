@@ -36,35 +36,33 @@ import java.util.stream.Stream;
  * Validates a column expression coming from the web api, to ensure that the included code will use the limited
  * supported API, and no use of `new`.
  *
- * This must be an early pass at the AST on the server, as the server's stricter validation will not function
- * without it.
+ * This must be an early pass at the AST on the server, as the server's stricter validation will not function without
+ * it.
  */
 public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void> {
     private static final Set<String> whitelistedStaticMethods;
     private static final Set<String> whitelistedInstanceMethods;
     static {
-        //list all static methods in supported util classes:
+        // list all static methods in supported util classes:
         whitelistedStaticMethods = Stream
                 .of(
                         DBLanguageFunctionUtil.class,
                         GroovyStaticImports.class,
                         DBTimeUtils.class,
-                        DBColorUtilImpl.class
-                )
+                        DBColorUtilImpl.class)
                 .map(Class::getDeclaredMethods)
                 .flatMap(Arrays::stream)
                 .filter(m -> Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers()))
                 .map(Method::getName)
                 .collect(Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
 
-        //list all non-inherited instance methods in supported data classes:
-        //DBDateTime
-        //String
+        // list all non-inherited instance methods in supported data classes:
+        // DBDateTime
+        // String
         whitelistedInstanceMethods = Stream
                 .of(
                         DBDateTime.class,
-                        String.class
-                )
+                        String.class)
                 .map(Class::getDeclaredMethods)
                 .flatMap(Arrays::stream)
                 .filter(m -> !Modifier.isStatic(m.getModifiers()))
@@ -78,7 +76,8 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
         for (int ii = 0; ii < selectFilters.length; ++ii) {
             final SelectFilter sf = selectFilters[ii];
             if (sf instanceof ConditionFilter) {
-                dummyAssignments.add(String.format("__boolean_placeholder_%d__ = (%s)", ii, conditionalExpressions[ii]));
+                dummyAssignments
+                        .add(String.format("__boolean_placeholder_%d__ = (%s)", ii, conditionalExpressions[ii]));
             }
         }
         if (!dummyAssignments.isEmpty()) {
@@ -90,9 +89,9 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
     }
 
     public static void validateColumnExpressions(final SelectColumn[] selectColumns,
-                                                 final String[] originalExpressions,
-                                                 final Table table) {
-        assert(selectColumns.length == originalExpressions.length);
+            final String[] originalExpressions,
+            final Table table) {
+        assert (selectColumns.length == originalExpressions.length);
 
         final SelectValidationResult validationResult = table.validateSelect(selectColumns);
         SelectAndViewAnalyzer top = validationResult.getAnalyzer();
@@ -106,9 +105,9 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
             top = top.getInner();
         }
         Collections.reverse(analyzers);
-        assert(analyzers.size() == clonedColumns.length + 1);
+        assert (analyzers.size() == clonedColumns.length + 1);
 
-        //noinspection rawtypes
+        // noinspection rawtypes
         final Map<String, ColumnDefinition> availableColumns = new LinkedHashMap<>();
         for (int ii = 0; ii < clonedColumns.length; ++ii) {
             analyzers.get(ii).updateColumnDefinitionsFromTopLayer(availableColumns);
@@ -118,18 +117,18 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
 
     @SuppressWarnings("rawtypes")
     private static void validateSelectColumnHelper(SelectColumn selectColumn,
-                                                   final String originalExpression,
-                                                   final Map<String, ColumnDefinition> availableColumns,
-                                                   final Table table) {
+            final String originalExpression,
+            final Map<String, ColumnDefinition> availableColumns,
+            final Table table) {
         while (selectColumn instanceof SwitchColumn) {
             selectColumn = ((SwitchColumn) selectColumn).getRealColumn();
         }
 
         if (!(selectColumn instanceof FormulaColumn)) {
-            //other variants should be safe, only test DhFormulaColumn
+            // other variants should be safe, only test DhFormulaColumn
             return;
         }
-        //Explicitly only supporting Column=Formula formats here
+        // Explicitly only supporting Column=Formula formats here
         final int indexOfEquals = originalExpression.indexOf('=');
         Assert.assertion(indexOfEquals != -1, "Expected formula expression");
         final String formulaString = originalExpression.substring(indexOfEquals + 1);
@@ -140,15 +139,15 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
             timeConversionResult = DBTimeUtils.convertExpression(formulaString);
             compiledFormula = FormulaAnalyzer.getCompiledFormula(availableColumns, timeConversionResult, null);
         } catch (final Exception e) {
-            //in theory not possible, since we already parsed it once
+            // in theory not possible, since we already parsed it once
             throw new IllegalStateException("Error occurred while re-compiling formula for whitelist", e);
         }
-        final boolean isAddOnly = table instanceof BaseTable && ((BaseTable)table).isAddOnly();
+        final boolean isAddOnly = table instanceof BaseTable && ((BaseTable) table).isAddOnly();
         if (table.isLive() && !(isAddOnly && table.isFlat())) {
             final Set<String> disallowedVariables = new HashSet<>();
             disallowedVariables.add("i");
             disallowedVariables.add("ii");
-            //TODO walk QueryScope.getInstance() and remove them too?
+            // TODO walk QueryScope.getInstance() and remove them too?
 
             if (compiledFormula.getVariablesUsed().stream().anyMatch(disallowedVariables::contains)) {
                 throw new IllegalStateException("Formulas involving live tables are not permitted to use i or ii");
@@ -160,24 +159,24 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
     }
 
     private static void validateInvocations(String expression) {
-        //copied, modified from DBLanguageParser.java
-        //before parsing, finish Deephaven-specific language features:
+        // copied, modified from DBLanguageParser.java
+        // before parsing, finish Deephaven-specific language features:
         expression = DBLanguageParser.convertBackticks(expression);
         expression = DBLanguageParser.convertSingleEquals(expression);
 
-        //then, parse into an AST
+        // then, parse into an AST
         final Expression expr;
         try {
-            synchronized (JavaParser.class){           //this is not thread-safe because it's all static...
+            synchronized (JavaParser.class) { // this is not thread-safe because it's all static...
                 expr = JavaParser.parseExpression(expression);
             }
         } catch (final ParseException | TokenMgrError e) {
-            //in theory not possible, since we already parsed once
+            // in theory not possible, since we already parsed once
             throw new IllegalStateException("Error occurred while re-parsing formula for whitelist", e);
         }
 
-        //now that we finally have the AST...
-        //check method and constructor calls that weren't already checked
+        // now that we finally have the AST...
+        // check method and constructor calls that weren't already checked
         expr.accept(new ColumnExpressionValidator(), null);
     }
 

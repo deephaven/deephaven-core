@@ -50,12 +50,15 @@ public class TableMap extends HasEventHandling {
 
         @Override
         public boolean equals(final Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
 
             final LocalKey localKey = (LocalKey) o;
 
-            if (str != null ? !str.equals(localKey.str) : localKey.str != null) return false;
+            if (str != null ? !str.equals(localKey.str) : localKey.str != null)
+                return false;
             return Arrays.equals(arr, localKey.arr);
         }
 
@@ -88,7 +91,7 @@ public class TableMap extends HasEventHandling {
     public TableMap(WorkerConnection workerConnection, String tableMapName) {
         this.workerConnection = workerConnection;
         this.fetch = c -> {
-//            workerConnection.getServer().fetchTableMap(tableMapName, c);
+            // workerConnection.getServer().fetchTableMap(tableMapName, c);
             throw new UnsupportedOperationException("fetchTableMap");
         };
     }
@@ -121,7 +124,7 @@ public class TableMap extends HasEventHandling {
             fireEvent(EVENT_RECONNECTFAILED, init);
             suppressEvents();
 
-            //noinspection unchecked
+            // noinspection unchecked
             return (Promise<TableMap>) (Promise) Promise.reject(err);
         });
     }
@@ -139,7 +142,7 @@ public class TableMap extends HasEventHandling {
 
     public Promise<JsTable> getMergedTable() {
         return workerConnection.newState((c, cts, metadata) -> {
-//            workerConnection.getServer().getMergedTableMap(tableMapHandle, cts.getHandle(), c);
+            // workerConnection.getServer().getMergedTableMap(tableMapHandle, cts.getHandle(), c);
             throw new UnsupportedOperationException("getMergedTableMap");
         }, "tablemap merged table")
                 .refetch(this, workerConnection.metadata())
@@ -176,18 +179,21 @@ public class TableMap extends HasEventHandling {
         tables.put(localKey, JsLazy.of(() -> {
             // If we've entered this lambda, the JsLazy is being used, so we need to go ahead and get the tablehandle
             final ClientTableState entry = workerConnection.newState((c, cts, metadata) -> {
-//                        if (key == null || key instanceof String) {
-//                            workerConnection.getServer().getTableMapStringEntry(tableMapHandle, cts.getHandle(), (String) key, c);
-//                        } else {
-//                            workerConnection.getServer().getTableMapStringArrayEntry(tableMapHandle, cts.getHandle(), (String[]) key, c);
-//                        }
-                        throw new UnsupportedOperationException("getTableMapEntry");
-                    },
-                    "tablemap key " + key
-            );
+                // if (key == null || key instanceof String) {
+                // workerConnection.getServer().getTableMapStringEntry(tableMapHandle, cts.getHandle(), (String) key,
+                // c);
+                // } else {
+                // workerConnection.getServer().getTableMapStringArrayEntry(tableMapHandle, cts.getHandle(), (String[])
+                // key, c);
+                // }
+                throw new UnsupportedOperationException("getTableMapEntry");
+            },
+                    "tablemap key " + key);
 
             // later, when the CTS is released, remove this "table" from the map and replace with an unresolved JsLazy
-            entry.onRunning(ignore -> {}, ignore -> {}, () -> put(key, localKey));
+            entry.onRunning(ignore -> {
+            }, ignore -> {
+            }, () -> put(key, localKey));
 
             // we'll make a table to return later, this func here just produces the JsLazy of the CTS
             return entry.refetch(this, workerConnection.metadata());

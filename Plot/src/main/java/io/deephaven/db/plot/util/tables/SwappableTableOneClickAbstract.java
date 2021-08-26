@@ -22,10 +22,10 @@ public abstract class SwappableTableOneClickAbstract extends SwappableTable impl
     private final Comparable seriesName;
 
     protected SwappableTableOneClickAbstract(@NotNull final Comparable seriesName,
-                                             final long updateInterval,
-                                             @NotNull final TableMapHandle tableMapHandle,
-                                             final boolean requireAllFiltersToDisplay,
-                                             @NotNull final String[] byColumns) {
+            final long updateInterval,
+            @NotNull final TableMapHandle tableMapHandle,
+            final boolean requireAllFiltersToDisplay,
+            @NotNull final String[] byColumns) {
         super(tableMapHandle);
         Require.neqNull(byColumns, "byColumns");
         this.tableMapHandle = tableMapHandle;

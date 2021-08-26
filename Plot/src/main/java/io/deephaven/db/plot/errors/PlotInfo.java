@@ -11,10 +11,8 @@ import io.deephaven.db.plot.*;
 import java.io.Serializable;
 
 /**
- * Information about a plot. Has 3 pieces of information (all optional)
- * Figure title, if it has one
- * Chart title, if it has one
- * Series name
+ * Information about a plot. Has 3 pieces of information (all optional) Figure title, if it has one Chart title, if it
+ * has one Series name
  */
 public class PlotInfo implements Serializable, LogOutputAppendable {
 
@@ -52,19 +50,19 @@ public class PlotInfo implements Serializable, LogOutputAppendable {
     private String encodeInfo(final String figureName, final String chartName, final String seriesName) {
         String info = "";
 
-        if(figureName != null) {
+        if (figureName != null) {
             info += "Figure: " + figureName + ".";
         }
 
-        if(chartName != null) {
-            if(figureName != null) {
+        if (chartName != null) {
+            if (figureName != null) {
                 info += " ";
             }
             info += "Chart: " + chartName + ".";
         }
 
-        if(seriesName != null) {
-            if(figureName != null || chartName != null) {
+        if (seriesName != null) {
+            if (figureName != null || chartName != null) {
                 info += " ";
             }
             info += "Series: " + seriesName + ".";

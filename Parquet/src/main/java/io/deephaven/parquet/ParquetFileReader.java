@@ -37,9 +37,10 @@ public class ParquetFileReader {
     private final Path rootPath;
     private final MessageType type;
 
-    public ParquetFileReader(String filePath, SeekableChannelsProvider channelsProvider, int pageSizeHint) throws IOException {
+    public ParquetFileReader(String filePath, SeekableChannelsProvider channelsProvider, int pageSizeHint)
+            throws IOException {
         this.channelsProvider = channelsProvider;
-        this.codecFactory =  ThreadLocal.withInitial(() -> new CodecFactory(new Configuration(), pageSizeHint));
+        this.codecFactory = ThreadLocal.withInitial(() -> new CodecFactory(new Configuration(), pageSizeHint));
         // Root path should be this file if a single file, else the parent directory for a metadata file
         rootPath = filePath.endsWith(".parquet") ? Paths.get(filePath) : Paths.get(filePath).getParent();
 
@@ -59,7 +60,8 @@ public class ParquetFileReader {
         byte[] magic = new byte[MAGIC.length];
         readFully(f, magic);
         if (!Arrays.equals(MAGIC, magic)) {
-            throw new RuntimeException(filePath + " is not a Parquet file. expected magic number at tail " + Arrays.toString(MAGIC) + " but found " + Arrays.toString(magic));
+            throw new RuntimeException(filePath + " is not a Parquet file. expected magic number at tail "
+                    + Arrays.toString(MAGIC) + " but found " + Arrays.toString(magic));
         }
         long footerIndex = footerLengthIndex - footerLength;
         if (footerIndex < MAGIC.length || footerIndex >= footerLengthIndex) {
@@ -70,7 +72,7 @@ public class ParquetFileReader {
         readFully(f, footer);
         f.close();
         fileMetaData = Util.readFileMetaData(new ByteArrayInputStream(footer));
-        type = fromParquetSchema(fileMetaData.schema,fileMetaData.column_orders);
+        type = fromParquetSchema(fileMetaData.schema, fileMetaData.column_orders);
     }
 
     /**
@@ -81,9 +83,10 @@ public class ParquetFileReader {
     }
 
     private Set<String> columnsWithDictionaryUsedOnEveryDataPage = null;
+
     /**
-     * Get the name of all columns that we can know for certain
-     * (a) have a dictionary, and (b) use the dictionary on all data pages.
+     * Get the name of all columns that we can know for certain (a) have a dictionary, and (b) use the dictionary on all
+     * data pages.
      *
      * @return A set of parquet column names that satisfies the required condition.
      */
@@ -95,12 +98,14 @@ public class ParquetFileReader {
         return columnsWithDictionaryUsedOnEveryDataPage;
     }
 
-    /** True only if we are certain every data page in this column chunk uses dictionary encoding;
-     *  note false also covers the "we can't tell" case. */
+    /**
+     * True only if we are certain every data page in this column chunk uses dictionary encoding; note false also covers
+     * the "we can't tell" case.
+     */
     private boolean columnChunkUsesDictionaryOnEveryPage(final ColumnChunk columnChunk) {
         final ColumnMetaData columnMeta = columnChunk.getMeta_data();
         if (columnMeta.encoding_stats == null) {
-            return false;  // this is false as "don't know".
+            return false; // this is false as "don't know".
         }
         for (PageEncodingStats encodingStat : columnMeta.encoding_stats) {
             if (encodingStat.page_type != PageType.DATA_PAGE
@@ -124,7 +129,7 @@ public class ParquetFileReader {
         if (!riter.hasNext()) {
             // For an empty file we say all columns satisfy the property.
             for (SchemaElement se : fileMetaData.getSchema()) {
-                if (!se.isSetNum_children()) {  // We want only the leaves.
+                if (!se.isSetNum_children()) { // We want only the leaves.
                     result.add(se.getName());
                 }
             }
@@ -189,12 +194,14 @@ public class ParquetFileReader {
         return builder.named(root.name);
     }
 
-    private static void buildChildren(Types.GroupBuilder builder, Iterator<SchemaElement> schema, int childrenCount, List<ColumnOrder> columnOrders, int columnCount) {
-        for(int i = 0; i < childrenCount; ++i) {
+    private static void buildChildren(Types.GroupBuilder builder, Iterator<SchemaElement> schema, int childrenCount,
+            List<ColumnOrder> columnOrders, int columnCount) {
+        for (int i = 0; i < childrenCount; ++i) {
             SchemaElement schemaElement = schema.next();
             Object childBuilder;
             if (schemaElement.type != null) {
-                Types.PrimitiveBuilder primitiveBuilder = builder.primitive(getPrimitive(schemaElement.type), fromParquetRepetition(schemaElement.repetition_type));
+                Types.PrimitiveBuilder primitiveBuilder = builder.primitive(getPrimitive(schemaElement.type),
+                        fromParquetRepetition(schemaElement.repetition_type));
                 if (schemaElement.isSetType_length()) {
                     primitiveBuilder.length(schemaElement.type_length);
                 }
@@ -208,8 +215,12 @@ public class ParquetFileReader {
                 }
 
                 if (columnOrders != null) {
-                    org.apache.parquet.schema.ColumnOrder columnOrder = fromParquetColumnOrder((ColumnOrder)columnOrders.get(columnCount));
-                    if (columnOrder.getColumnOrderName() == org.apache.parquet.schema.ColumnOrder.ColumnOrderName.TYPE_DEFINED_ORDER && (schemaElement.type == org.apache.parquet.format.Type.INT96 || schemaElement.converted_type == ConvertedType.INTERVAL)) {
+                    org.apache.parquet.schema.ColumnOrder columnOrder =
+                            fromParquetColumnOrder((ColumnOrder) columnOrders.get(columnCount));
+                    if (columnOrder
+                            .getColumnOrderName() == org.apache.parquet.schema.ColumnOrder.ColumnOrderName.TYPE_DEFINED_ORDER
+                            && (schemaElement.type == org.apache.parquet.format.Type.INT96
+                                    || schemaElement.converted_type == ConvertedType.INTERVAL)) {
                         columnOrder = org.apache.parquet.schema.ColumnOrder.undefined();
                     }
 
@@ -219,33 +230,39 @@ public class ParquetFileReader {
                 childBuilder = primitiveBuilder;
             } else {
                 childBuilder = builder.group(fromParquetRepetition(schemaElement.repetition_type));
-                buildChildren((Types.GroupBuilder)childBuilder, schema, schemaElement.num_children, columnOrders, columnCount);
+                buildChildren((Types.GroupBuilder) childBuilder, schema, schemaElement.num_children, columnOrders,
+                        columnCount);
             }
 
             if (schemaElement.isSetLogicalType()) {
-                ((org.apache.parquet.schema.Types.Builder)childBuilder).as(getLogicalTypeAnnotation(schemaElement.logicalType));
+                ((org.apache.parquet.schema.Types.Builder) childBuilder)
+                        .as(getLogicalTypeAnnotation(schemaElement.logicalType));
             }
 
             if (schemaElement.isSetConverted_type()) {
-                LogicalTypeAnnotation originalType = getLogicalTypeAnnotation(schemaElement.converted_type, schemaElement);
-                LogicalTypeAnnotation newOriginalType = schemaElement.isSetLogicalType() && getLogicalTypeAnnotation(schemaElement.logicalType) != null ? getLogicalTypeAnnotation(schemaElement.logicalType) : null;
+                LogicalTypeAnnotation originalType =
+                        getLogicalTypeAnnotation(schemaElement.converted_type, schemaElement);
+                LogicalTypeAnnotation newOriginalType =
+                        schemaElement.isSetLogicalType() && getLogicalTypeAnnotation(schemaElement.logicalType) != null
+                                ? getLogicalTypeAnnotation(schemaElement.logicalType)
+                                : null;
                 if (!originalType.equals(newOriginalType)) {
-                    ((org.apache.parquet.schema.Types.Builder)childBuilder).as(originalType);
+                    ((org.apache.parquet.schema.Types.Builder) childBuilder).as(originalType);
                 }
             }
 
             if (schemaElement.isSetField_id()) {
-                ((org.apache.parquet.schema.Types.Builder)childBuilder).id(schemaElement.field_id);
+                ((org.apache.parquet.schema.Types.Builder) childBuilder).id(schemaElement.field_id);
             }
 
-            ((org.apache.parquet.schema.Types.Builder)childBuilder).named(schemaElement.name);
+            ((org.apache.parquet.schema.Types.Builder) childBuilder).named(schemaElement.name);
             ++columnCount;
         }
 
     }
 
     private static org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit convertTimeUnit(TimeUnit unit) {
-        switch(unit.getSetField()) {
+        switch (unit.getSetField()) {
             case MICROS:
                 return org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit.MICROS;
             case MILLIS:
@@ -260,7 +277,7 @@ public class ParquetFileReader {
 
 
     static LogicalTypeAnnotation getLogicalTypeAnnotation(LogicalType type) {
-        switch(type.getSetField()) {
+        switch (type.getSetField()) {
             case MAP:
                 return LogicalTypeAnnotation.mapType();
             case BSON:
@@ -331,7 +348,7 @@ public class ParquetFileReader {
     }
 
     private static LogicalTypeAnnotation getLogicalTypeAnnotation(ConvertedType type, SchemaElement schemaElement) {
-        switch(type) {
+        switch (type) {
             case UTF8:
                 return LogicalTypeAnnotation.stringType();
             case MAP:
@@ -349,13 +366,17 @@ public class ParquetFileReader {
             case DATE:
                 return LogicalTypeAnnotation.dateType();
             case TIME_MILLIS:
-                return LogicalTypeAnnotation.timeType(true, org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit.MILLIS);
+                return LogicalTypeAnnotation.timeType(true,
+                        org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit.MILLIS);
             case TIME_MICROS:
-                return LogicalTypeAnnotation.timeType(true, org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit.MICROS);
+                return LogicalTypeAnnotation.timeType(true,
+                        org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit.MICROS);
             case TIMESTAMP_MILLIS:
-                return LogicalTypeAnnotation.timestampType(true, org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit.MILLIS);
+                return LogicalTypeAnnotation.timestampType(true,
+                        org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit.MILLIS);
             case TIMESTAMP_MICROS:
-                return LogicalTypeAnnotation.timestampType(true, org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit.MICROS);
+                return LogicalTypeAnnotation.timestampType(true,
+                        org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit.MICROS);
             case INTERVAL:
                 return LogicalTypeAnnotation.IntervalLogicalTypeAnnotation.getInstance();
             case INT_8:
@@ -379,7 +400,8 @@ public class ParquetFileReader {
             case BSON:
                 return LogicalTypeAnnotation.bsonType();
             default:
-                throw new RuntimeException("Can't convert converted type to logical type, unknown converted type " + type);
+                throw new RuntimeException(
+                        "Can't convert converted type to logical type, unknown converted type " + type);
         }
     }
 

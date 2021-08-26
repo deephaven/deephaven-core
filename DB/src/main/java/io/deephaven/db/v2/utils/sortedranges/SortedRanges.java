@@ -38,16 +38,17 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             SortedRanges.class, "longSparseCapacity", 4096);
 
     public static final int INT_DENSE_MAX_CAPACITY = Configuration.getInstance().getIntegerForClassWithDefault(
-            SortedRanges.class, "intDenseMaxCapacity", arraySizeRoundingInt(2*LONG_DENSE_MAX_CAPACITY));
+            SortedRanges.class, "intDenseMaxCapacity", arraySizeRoundingInt(2 * LONG_DENSE_MAX_CAPACITY));
 
     public static final int INT_SPARSE_MAX_CAPACITY = Configuration.getInstance().getIntegerForClassWithDefault(
-            SortedRanges.class, "intSparseMaxCapacity", arraySizeRoundingInt(2*LONG_SPARSE_MAX_CAPACITY));
+            SortedRanges.class, "intSparseMaxCapacity", arraySizeRoundingInt(2 * LONG_SPARSE_MAX_CAPACITY));
 
     public static final int SHORT_MAX_CAPACITY = Configuration.getInstance().getIntegerForClassWithDefault(
-            SortedRanges.class, "shortMaxCapacity", 4096 - 6);  // 12 bytes of array object overhead = 6 shorts
+            SortedRanges.class, "shortMaxCapacity", 4096 - 6); // 12 bytes of array object overhead = 6 shorts
 
-    public static final int ELEMENTS_PER_BLOCK_DENSE_THRESHOLD = Configuration.getInstance().getIntegerForClassWithDefault(
-            SortedRanges.class, "elementsPerBlockDenseThreshold", 16);
+    public static final int ELEMENTS_PER_BLOCK_DENSE_THRESHOLD =
+            Configuration.getInstance().getIntegerForClassWithDefault(
+                    SortedRanges.class, "elementsPerBlockDenseThreshold", 16);
 
     public static final int MAX_CAPACITY = Math.max(INT_SPARSE_MAX_CAPACITY, SHORT_MAX_CAPACITY);
     static {
@@ -68,10 +69,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             SortedRanges.class, "longExtent", 64);
 
     protected static final int INT_EXTENT = Configuration.getInstance().getIntegerForClassWithDefault(
-            SortedRanges.class, "intExtent", 2*LONG_EXTENT);
+            SortedRanges.class, "intExtent", 2 * LONG_EXTENT);
 
     protected static final int SHORT_EXTENT = Configuration.getInstance().getIntegerForClassWithDefault(
-            SortedRanges.class, "shortExtent", 2*INT_EXTENT);
+            SortedRanges.class, "shortExtent", 2 * INT_EXTENT);
 
     protected static final boolean POOL_ARRAYS = Configuration.getInstance().getBooleanForClassWithDefault(
             SortedRanges.class, "poolArrays", false);
@@ -116,7 +117,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     public static SortedRanges tryMakeForKnownRangeFinalCapacityLowerBound(
-            final int initialCapacity, final int finalCapacityLowerBound, final long first, final long last, final boolean isDense) {
+            final int initialCapacity, final int finalCapacityLowerBound, final long first, final long last,
+            final boolean isDense) {
         final long range = last - first;
         final long offset = first;
         if (range <= Short.MAX_VALUE) {
@@ -144,7 +146,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return tryMakeForKnownRangeUnknownMaxCapacity(INITIAL_SIZE, first, last, isDense);
     }
 
-    public static SortedRanges tryMakeForKnownRangeUnknownMaxCapacity(final int initialCapacity, final long first, final long last, final boolean isDense) {
+    public static SortedRanges tryMakeForKnownRangeUnknownMaxCapacity(final int initialCapacity, final long first,
+            final long last, final boolean isDense) {
         return tryMakeForKnownRangeFinalCapacityLowerBound(initialCapacity, initialCapacity, first, last, isDense);
     }
 
@@ -418,7 +421,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             if (iData < 0) {
                 final long iValue = -iData;
                 long v = prev;
-                while(true) {
+                while (true) {
                     if (!lac.accept(v)) {
                         return false;
                     }
@@ -646,6 +649,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     private static final class SearchIterator extends RangeIteratorBase implements Index.SearchIterator {
         private boolean pendingNext = false;
+
         private SearchIterator(final SortedRanges sar) {
             super(sar);
         }
@@ -694,7 +698,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         private static int searchPos(
                 final MutableLong outData,
                 final SortedRanges sar,
-                final IndexUtilities.Comparator comp, final int startPos) {  // startPos points to the beginning of a range.
+                final IndexUtilities.Comparator comp, final int startPos) { // startPos points to the beginning of a
+                                                                            // range.
             final long endPosUnpackedData = sar.unpackedGet(sar.count - 1);
             final long endPosUnpackedValue = Math.abs(endPosUnpackedData);
             int c = comp.directionToTargetFrom(endPosUnpackedValue);
@@ -768,8 +773,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 close();
                 return currRangeEnd;
             }
-            final IndexUtilities.Comparator ixComp = (final long v) ->
-                    comp.compareTargetTo(v, dir);
+            final IndexUtilities.Comparator ixComp = (final long v) -> comp.compareTargetTo(v, dir);
             final MutableLong outValue = new MutableLong();
             final int i = searchPos(outValue, sar, ixComp, nextRangeIdx);
             if (i < nextRangeIdx) {
@@ -949,7 +953,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return cardinality;
     }
 
-    public final void getKeysForPositions(final PrimitiveIterator.OfLong inputPositions, final LongConsumer outputKeys) {
+    public final void getKeysForPositions(final PrimitiveIterator.OfLong inputPositions,
+            final LongConsumer outputKeys) {
         if (!inputPositions.hasNext()) {
             return;
         }
@@ -996,7 +1001,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             ans.packedSet(0, iData);
             ans.cardinality = 1;
             ans.count = 1;
-            if (DEBUG) validate(startPosIn, endPosIn);
+            if (DEBUG)
+                validate(startPosIn, endPosIn);
             return ans;
         }
         long pos = 0;
@@ -1023,7 +1029,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 ans.packedSet(0, Math.abs(iData) - (pos - startPos));
                 ans.cardinality = 1;
                 ans.count = 1;
-                if (DEBUG) validate(startPosIn, endPosIn);
+                if (DEBUG)
+                    validate(startPosIn, endPosIn);
                 return ans;
             }
             // we know endPos > startPos, so there is more than a single value,
@@ -1035,7 +1042,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             ans.packedSet(1, -e);
             ans.cardinality = e - s + 1;
             ans.count = 2;
-            if (DEBUG) validate(startPosIn, endPosIn);
+            if (DEBUG)
+                validate(startPosIn, endPosIn);
             return ans;
         }
 
@@ -1081,7 +1089,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             ans.packedSet(ans.count++, iData);
             ans.cardinality += deltaCard;
         }
-        if (DEBUG) validate(startPosIn, endPosIn);
+        if (DEBUG)
+            validate(startPosIn, endPosIn);
         return ans;
     }
 
@@ -1200,7 +1209,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     // Guarantee for the caller: if this method returns null, no state change has been made on the this object.
     private SortedRanges packedAppend2(
-            final long packedData1, final long packedData2, final long unpackedData1, final long unpackedData2, final boolean writeCheck) {
+            final long packedData1, final long packedData2, final long unpackedData1, final long unpackedData2,
+            final boolean writeCheck) {
         SortedRanges ans = ensureCanAppend(count + 1, unpackedData2, writeCheck);
         if (ans == null) {
             return null;
@@ -1243,7 +1253,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 ++out.cardinality;
                 if (packedEnd == packedStart) {
                     iStartOut.setValue(srcIndex + 1);
-                    if (DEBUG) out.validate(start, end);
+                    if (DEBUG)
+                        out.validate(start, end);
                     return out;
                 }
             } else {
@@ -1263,7 +1274,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                         out.cardinality += packedEnd - packedStart + 1;
                     }
                     iStartOut.setValue((packedEnd < srcValue) ? srcIndex : srcIndex + 1);
-                    if (DEBUG) out.validate(start, end);
+                    if (DEBUG)
+                        out.validate(start, end);
                     return out;
                 }
                 out = out.unpackedAppend(sar.unpack(srcData), false);
@@ -1310,7 +1322,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             out.cardinality += packedEnd - prevStart;
         }
         iStartOut.setValue(srcIndex);
-        if (DEBUG) out.validate(start, end);
+        if (DEBUG)
+            out.validate(start, end);
         return out;
     }
 
@@ -1380,6 +1393,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     public abstract boolean isDense();
+
     public final boolean isSparse() {
         return !isDense();
     }
@@ -1466,9 +1480,9 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         final SortedRangesLong res = workSortedRangesLongPerThread.get();
         res.reset();
         try (ReadOnlyIndex.RangeIterator it1 = sr.getRangeIterator();
-             ReadOnlyIndex.RangeIterator it2 = takeComplement
-                     ? new ComplementRangeIterator(tix.ixRangeIterator())
-                     : tix.ixRangeIterator()) {
+                ReadOnlyIndex.RangeIterator it2 = takeComplement
+                        ? new ComplementRangeIterator(tix.ixRangeIterator())
+                        : tix.ixRangeIterator()) {
             it1.next();
             it2.next();
             long s1 = it1.currentRangeStart();
@@ -1582,7 +1596,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         final SortedRangesLong res = workSortedRangesLongPerThread.get();
         res.reset();
         try (ReadOnlyIndex.RangeIterator it1 = sr1.getRangeIterator();
-             ReadOnlyIndex.RangeIterator it2 = sr2.getRangeIterator()) {
+                ReadOnlyIndex.RangeIterator it2 = sr2.getRangeIterator()) {
             it1.next();
             it2.next();
             long s1 = it1.currentRangeStart();
@@ -1953,7 +1967,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 sar.isDense() && otherSar.isDense());
         if (out != null) {
             try (final Index.RangeIterator sarIter = sar.getRangeIterator();
-                 final Index.RangeIterator otherIter = otherSar.getRangeIterator()) {
+                    final Index.RangeIterator otherIter = otherSar.getRangeIterator()) {
                 SortedRanges.unionOnNewHelper(out, sarIter, otherIter);
             }
         }
@@ -1961,7 +1975,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     // {riter1, riter2}.hasNext() true on entry.
-    private static void unionOnNewHelper(SortedRanges out, final Index.RangeIterator riter1, final Index.RangeIterator riter2) {
+    private static void unionOnNewHelper(SortedRanges out, final Index.RangeIterator riter1,
+            final Index.RangeIterator riter2) {
         riter1.next();
         long start1 = riter1.currentRangeStart();
         long end1 = riter1.currentRangeEnd();
@@ -2067,7 +2082,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     // we /can/ offer the guarantee that, under a false return, the partial result
     // left in sarHolder can be used to repeat the operation (presumably on a different TreeIndexImpl type)
     // to produce the correct result.
-    private static boolean insertInternal(final MutableObject<SortedRanges> sarHolder, final SortedRanges other, final boolean writeCheckArg) {
+    private static boolean insertInternal(final MutableObject<SortedRanges> sarHolder, final SortedRanges other,
+            final boolean writeCheckArg) {
         int iOther = 0;
         long pendingStart = -1;
         SortedRanges sar = sarHolder.getValue();
@@ -2086,7 +2102,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 final long deltaCard = endPacked - startPacked + 1;
                 iAdd.setValue(sar.absRawBinarySearch(startPacked, iAdd.intValue(), sar.count - 1));
                 final SortedRanges ans = addRangePackedWithStart(
-                        sar, iAdd.intValue(), startPacked, endPacked, pendingStart, -iData, deltaCard, iAdd, writeCheck);
+                        sar, iAdd.intValue(), startPacked, endPacked, pendingStart, -iData, deltaCard, iAdd,
+                        writeCheck);
                 if (ans == null) {
                     sarHolder.setValue(sar);
                     return false;
@@ -2135,7 +2152,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             sar = ans;
         }
         sarHolder.setValue(sar);
-        if (DEBUG) sar.validate();
+        if (DEBUG)
+            sar.validate();
         return true;
     }
 
@@ -2387,7 +2405,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                         startOffset = 0;
                         endIdx = i;
                         endOffset = 0;
-                        return new SortedRangesOrderedKeys(this, startPosForOK, startIdx, startOffset, endIdx, endOffset, 1L);
+                        return new SortedRangesOrderedKeys(this, startPosForOK, startIdx, startOffset, endIdx,
+                                endOffset, 1L);
                     }
                     final long nextData = packedGet(i + 1);
                     if (nextData < 0) {
@@ -2411,7 +2430,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (iPos >= endPositionInclusive) {
             endIdx = startIdx;
             endOffset = startOffset + lengthForOK - 1;
-            return new SortedRangesOrderedKeys(this, startPosForOK, startIdx, startOffset, endIdx, endOffset, lengthForOK);
+            return new SortedRangesOrderedKeys(this, startPosForOK, startIdx, startOffset, endIdx, endOffset,
+                    lengthForOK);
         }
         i = startIdx + 1;
         ++iPos;
@@ -2696,7 +2716,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                         ans.cardinality = 1;
                         ans.count = 1;
                     }
-                    if (DEBUG) ans.validate(packedStart, packedEnd);
+                    if (DEBUG)
+                        ans.validate(packedStart, packedEnd);
                     return ans;
                 }
                 ans.packedSet(1, iStartData);
@@ -2709,7 +2730,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 if (iStart == iEnd) {
                     ans.cardinality = 1;
                     ans.count = 1;
-                    if (DEBUG) ans.validate(packedStart, packedEnd);
+                    if (DEBUG)
+                        ans.validate(packedStart, packedEnd);
                     return ans;
                 }
             }
@@ -2751,7 +2773,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 ans.packedSet(ans.count++, iEndValue);
             }
         }
-        if (DEBUG) ans.validate(packedStart, packedEnd);
+        if (DEBUG)
+            ans.validate(packedStart, packedEnd);
         return ans;
     }
 
@@ -2764,7 +2787,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     protected static int intArrayCapacityForLastIndex(final int lastIndex, final boolean isDense) {
-        final int c = capacityForLastIndex(lastIndex, INT_EXTENT, isDense ? INT_DENSE_MAX_CAPACITY : INT_SPARSE_MAX_CAPACITY);
+        final int c =
+                capacityForLastIndex(lastIndex, INT_EXTENT, isDense ? INT_DENSE_MAX_CAPACITY : INT_SPARSE_MAX_CAPACITY);
         if (c == 0) {
             return 0;
         }
@@ -2772,41 +2796,66 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     protected static int longArrayCapacityForLastIndex(final int lastIndex, final boolean isDense) {
-        return capacityForLastIndex(lastIndex, LONG_EXTENT, isDense ? LONG_DENSE_MAX_CAPACITY : LONG_SPARSE_MAX_CAPACITY);
+        return capacityForLastIndex(lastIndex, LONG_EXTENT,
+                isDense ? LONG_DENSE_MAX_CAPACITY : LONG_SPARSE_MAX_CAPACITY);
     }
 
     protected long cardinality;
     protected int count;
 
     public abstract boolean fits(long value);
+
     public abstract boolean fits(long start, long end);
+
     public abstract boolean fitsForAppend(final long end);
+
     protected abstract SortedRanges makeMyTypeAndOffset(int initialCapacity);
+
     protected abstract SortedRanges growOnNew(int capacity);
+
     protected abstract int packedValuesPerCacheLine();
+
     protected abstract long packedGet(int i);
+
     protected final long absPackedGet(final int i) {
         return Math.abs(packedGet(i));
     }
+
     protected abstract void packedSet(int i, long packedValue);
+
     protected abstract long pack(long unpackedValue);
+
     protected abstract long unpackedGet(int i);
+
     protected abstract long absUnpackedGet(int i);
+
     protected abstract void unpackedSet(int i, long unpackedValue);
+
     protected abstract long unpack(long packedValue);
+
     protected abstract int dataLength();
-    protected abstract SortedRanges ensureCanAppend(int newLastPosition, long unpackedNewLastKey, final boolean writeCheck);
+
+    protected abstract SortedRanges ensureCanAppend(int newLastPosition, long unpackedNewLastKey,
+            final boolean writeCheck);
+
     protected abstract void moveData(int srcPos, int dstPos, int len);
+
     protected abstract void copyData(int newCapacity);
 
     protected abstract SortedRanges addInternal(long v, boolean writeCheck);
+
     protected abstract SortedRanges addRangeInternal(long start, long end, boolean writeCheck);
+
     protected abstract SortedRanges appendInternal(long v, boolean writeCheck);
+
     protected abstract SortedRanges appendRangeInternal(long start, long end, boolean writeCheck);
+
     protected abstract SortedRanges removeInternal(long v);
+
     protected abstract SortedRanges removeRangeInternal(long start, long end);
 
     protected abstract SortedRanges tryPackFor(long first, long last, int maxPos, boolean isDense);
+
     protected final SortedRanges tryPackWithNewLast(final long newLastKey, int maxPos, final boolean isDense) {
         return tryPackFor(first(), newLastKey, maxPos, isDense);
     }
@@ -2814,10 +2863,11 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     protected abstract SortedRanges tryPack();
 
     public abstract int bytesAllocated();
+
     public abstract int bytesUsed();
+
     /**
-     * @param k if k == 0, compact if count < capacity.
-     *             k > 0, compact if (capacity - count > (capacity >> k).
+     * @param k if k == 0, compact if count < capacity. k > 0, compact if (capacity - count > (capacity >> k).
      */
     public abstract SortedRanges tryCompactUnsafe(int k);
 
@@ -2865,13 +2915,14 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     protected static boolean isIntAllocationSize(final int length) {
-        final int beforeRounding = length - 1;  // space for 1 int after a 12 byte object header to an 8-byte boundary.
+        final int beforeRounding = length - 1; // space for 1 int after a 12 byte object header to an 8-byte boundary.
         return isAllocationSize(beforeRounding, INT_EXTENT);
 
     }
 
     protected static boolean isShortAllocationSize(final int length) {
-        final int beforeRounding = length - 2;  // space for 2 shorts after a 12 byte object header to an 8-byte boundary.
+        final int beforeRounding = length - 2; // space for 2 shorts after a 12 byte object header to an 8-byte
+                                               // boundary.
         return isAllocationSize(beforeRounding, SHORT_EXTENT);
     }
 
@@ -2883,17 +2934,18 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     /**
-     * Run a binary search over the ranges in [pos, count).
-     * Assumes pos points to a position of a range start (eg, value at pos can't be negative).
+     * Run a binary search over the ranges in [pos, count). Assumes pos points to a position of a range start (eg, value
+     * at pos can't be negative).
      *
      * Assumes count > startPos on entry.
      *
      * @param unpackedTarget The (unpacked) target value to search for.
      * @param startPos A position in our array pointing to the start of a range from where to start the search.
-     * @return r >= 0 if the target value is present.  r is the position of the start of a range containing the target value.
-     *         r < 0 if the target value is not present. pos = -r - 1 (== ~r) is the position where the target value would
-     *         be inserted; this could be the start of a range which would be expanded in the target value where added,
-     *         or the position where it would have to go as a single value range pushing the ranges from there to the right.
+     * @return r >= 0 if the target value is present. r is the position of the start of a range containing the target
+     *         value. r < 0 if the target value is not present. pos = -r - 1 (== ~r) is the position where the target
+     *         value would be inserted; this could be the start of a range which would be expanded in the target value
+     *         where added, or the position where it would have to go as a single value range pushing the ranges from
+     *         there to the right.
      */
     final int unpackedBinarySearch(final long unpackedTarget, final int startPos) {
         final long packedTarget = pack(unpackedTarget);
@@ -2960,8 +3012,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
      * @param packedTarget The (packed) target value to search for.
      * @param startIdx A position in our array pointing to where to start the search.
      * @param endIdx last position (inclusive) for the search.
-     * @return A position where either a range containing the target already exists, or where it would be extended,
-     *         or a new range inserted if not.  Note this may never be negative but it might be endIdx + 1.
+     * @return A position where either a range containing the target already exists, or where it would be extended, or a
+     *         new range inserted if not. Note this may never be negative but it might be endIdx + 1.
      */
     final int absRawBinarySearch(final long packedTarget, final int startIdx, final int endIdx) {
         final long absEndPosPackedValue = absPackedGet(endIdx);
@@ -3068,7 +3120,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     // Note the returned SortedRangesTreeIndexImpl might have a different offset.
     // packedData1 < 0 && packedData2 > 0 on entry.
-    private SortedRanges openNeg(final int pos, final long packedData1, final long packedData2, final boolean writeCheck) {
+    private SortedRanges openNeg(final int pos, final long packedData1, final long packedData2,
+            final boolean writeCheck) {
         final long offset = unpack(0);
         final SortedRanges ans = checkSizeAndMoveData(pos, pos + 1, count - pos, first(), writeCheck);
         if (ans == null) {
@@ -3089,7 +3142,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     // Note the returned SortedRangesTreeIndexImpl might have a different offset.
     // packedData1 >= 0 && packedData2 < 0 on entry.
-    private SortedRanges open2(final int pos, final long packedData1, final long packedData2, final boolean writeCheck) {
+    private SortedRanges open2(final int pos, final long packedData1, final long packedData2,
+            final boolean writeCheck) {
         final long first = (pos == 0) ? unpack(packedData1) : first();
         final long offset = unpack(0);
         final SortedRanges ans = checkSizeAndMoveData(pos, pos + 2, count - pos, first, writeCheck);
@@ -3111,7 +3165,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     // Note the returned SortedRangesTreeIndexImpl might have a different offset.
     // packedData1 < 0 && packedData2 > 0 on entry.
-    private SortedRanges open2Neg(final int pos, final long packedData1, final long packedData2, final boolean writeCheck) {
+    private SortedRanges open2Neg(final int pos, final long packedData1, final long packedData2,
+            final boolean writeCheck) {
         final long offset = unpack(0);
         final SortedRanges ans = checkSizeAndMoveData(pos, pos + 2, count - pos, first(), writeCheck);
         if (ans == null) {
@@ -3140,7 +3195,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         count -= 2;
     }
 
-    protected static SortedRanges addPacked(SortedRanges sar, final long packedValue, final long value, final boolean writeCheck) {
+    protected static SortedRanges addPacked(SortedRanges sar, final long packedValue, final long value,
+            final boolean writeCheck) {
         if (sar.count == 0) {
             if (writeCheck) {
                 sar = sar.getWriteRef();
@@ -3175,7 +3231,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     if (iStartOut != null) {
                         iStartOut.setValue(j + 1);
                     }
-                    if (DEBUG) sar.validate(packedValue, packedValue);
+                    if (DEBUG)
+                        sar.validate(packedValue, packedValue);
                     return sar;
                 }
                 sar = sar.packedAppend(-packedValue, -value, writeCheck);
@@ -3186,7 +3243,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 if (iStartOut != null) {
                     iStartOut.setValue(sar.count);
                 }
-                if (DEBUG) sar.validate(packedValue, packedValue);
+                if (DEBUG)
+                    sar.validate(packedValue, packedValue);
                 return sar;
             }
             sar = sar.packedAppend(packedValue, value, writeCheck);
@@ -3197,7 +3255,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             if (iStartOut != null) {
                 iStartOut.setValue(sar.count);
             }
-            if (DEBUG) sar.validate(packedValue, packedValue);
+            if (DEBUG)
+                sar.validate(packedValue, packedValue);
             return sar;
         }
 
@@ -3211,7 +3270,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
         boolean mergeToLeftRange = false;
         boolean mergeToLeftSingle = false;
-        if (i > 0) {  // check for merge to left range.
+        if (i > 0) { // check for merge to left range.
             final int j = i - 1;
             final long jData = sar.packedGet(j);
             final boolean jNeg = jData < 0;
@@ -3227,7 +3286,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         boolean mergeToRightRange = false;
         boolean mergeToRightSingle = false;
         if (iValue == packedValue + 1) {
-            if (i < sar.count - 1) {  // check to merge to right range.
+            if (i < sar.count - 1) { // check to merge to right range.
                 final int j = i + 1;
                 final long jData = sar.packedGet(j);
                 final boolean jNeg = jData < 0;
@@ -3322,7 +3381,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 }
             }
         }
-        if (DEBUG) sar.validate(packedValue, packedValue);
+        if (DEBUG)
+            sar.validate(packedValue, packedValue);
         return sar;
     }
 
@@ -3332,7 +3392,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             return;
         }
         if (iSrc < count) {
-            moveData(iSrc, iDst,count - iSrc);
+            moveData(iSrc, iDst, count - iSrc);
             count -= iSrc - iDst;
             return;
         }
@@ -3340,7 +3400,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     protected static SortedRanges addRangePacked(
-            SortedRanges sar, long packedStart, long packedEnd, final long start, final long end, final boolean writeCheck) {
+            SortedRanges sar, long packedStart, long packedEnd, final long start, final long end,
+            final boolean writeCheck) {
         final long deltaCard = packedEnd - packedStart + 1;
         if (deltaCard == 1) {
             return addPacked(sar, packedStart, start, writeCheck);
@@ -3354,7 +3415,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             sar.packedSet(1, -packedEnd);
             sar.count = 2;
             sar.cardinality = deltaCard;
-            if (DEBUG) sar.validate(packedStart, packedEnd);
+            if (DEBUG)
+                sar.validate(packedStart, packedEnd);
             return sar;
         }
 
@@ -3384,7 +3446,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     if (iStartOut != null) {
                         iStartOut.setValue(j + 1);
                     }
-                    if (DEBUG) sar.validate(packedStart, packedEnd);
+                    if (DEBUG)
+                        sar.validate(packedStart, packedEnd);
                     return sar;
                 }
                 sar = sar.packedAppend(-packedEnd, -end, writeCheck);
@@ -3395,7 +3458,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 if (iStartOut != null) {
                     iStartOut.setValue(sar.count);
                 }
-                if (DEBUG) sar.validate(packedStart, packedEnd);
+                if (DEBUG)
+                    sar.validate(packedStart, packedEnd);
                 return sar;
             }
             sar = sar.packedAppend2(packedStart, -packedEnd, start, -end, writeCheck);
@@ -3406,7 +3470,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             if (iStartOut != null) {
                 iStartOut.setValue(sar.count);
             }
-            if (DEBUG) sar.validate(packedStart, packedEnd);
+            if (DEBUG)
+                sar.validate(packedStart, packedEnd);
             return sar;
         }
         long iStartData = sar.packedGet(iStart);
@@ -3417,7 +3482,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             if (iStartOut != null) {
                 iStartOut.setValue(iStart);
             }
-            if (DEBUG) sar.validate(packedStart, packedEnd);
+            if (DEBUG)
+                sar.validate(packedStart, packedEnd);
             return sar;
         }
 
@@ -3449,7 +3515,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     }
                 }
                 sar.cardinality += deltaCard - 1;
-                if (DEBUG) sar.validate(packedStart, packedEnd);
+                if (DEBUG)
+                    sar.validate(packedStart, packedEnd);
                 return sar;
             }
             iStartData = sar.packedGet(iStart);
@@ -3471,7 +3538,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                         if (iStartOut != null) {
                             iStartOut.setValue(iStart - 1);
                         }
-                        if (DEBUG) sar.validate(packedStart, packedEnd);
+                        if (DEBUG)
+                            sar.validate(packedStart, packedEnd);
                         return sar;
                     }
                     ++iStart;
@@ -3480,7 +3548,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                             if (iStartOut != null) {
                                 iStartOut.setValue(sar.count - 2);
                             }
-                            if (DEBUG) sar.validate(packedStart, packedEnd);
+                            if (DEBUG)
+                                sar.validate(packedStart, packedEnd);
                             return sar;
                         }
                         if (writeCheck) {
@@ -3491,7 +3560,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                             iStartOut.setValue(sar.count - 2);
                         }
                         sar.cardinality += packedEnd - iStartValue;
-                        if (DEBUG) sar.validate(packedStart, packedEnd);
+                        if (DEBUG)
+                            sar.validate(packedStart, packedEnd);
                         return sar;
                     }
                     deltaCard -= iStartValue - packedStart + 1;
@@ -3511,7 +3581,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 if (iStartOut != null) {
                     iStartOut.setValue(iStart + 1);
                 }
-                if (DEBUG) sar.validate(packedStart, packedEnd);
+                if (DEBUG)
+                    sar.validate(packedStart, packedEnd);
                 return sar;
             }
             ++iStart;
@@ -3540,7 +3611,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         // and store it in iEnd; we may need to adjust packedEnd and deltaCard.
         int iEnd;
         long pendingStart = -1;
-        long betweenCard = 0;  // will accumulate existing cardinality between iStart and iEnd.
+        long betweenCard = 0; // will accumulate existing cardinality between iStart and iEnd.
         boolean mergeToRightRange = false;
         boolean mergeToRightSingle = false;
         int i = iStart;
@@ -3723,7 +3794,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             }
         }
         sar.cardinality += deltaCard - betweenCard;
-        if (DEBUG) sar.validate(packedStart, packedEnd);
+        if (DEBUG)
+            sar.validate(packedStart, packedEnd);
         return sar;
     }
 
@@ -3734,7 +3806,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return appendPacked(sar, sar.pack(value), value, writeCheck);
     }
 
-    protected static SortedRanges appendPacked(SortedRanges sar, final long packedValue, final long value, final boolean writeCheck) {
+    protected static SortedRanges appendPacked(SortedRanges sar, final long packedValue, final long value,
+            final boolean writeCheck) {
         if (sar.count == 0) {
             if (writeCheck) {
                 sar = sar.getWriteRef();
@@ -3742,7 +3815,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             sar.cardinality = 1;
             sar.count = 1;
             sar.packedSet(0, packedValue);
-            if (DEBUG) sar.validate(packedValue, packedValue);
+            if (DEBUG)
+                sar.validate(packedValue, packedValue);
             return sar;
         }
         final long lastData = sar.packedGet(sar.count - 1);
@@ -3759,7 +3833,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 }
                 sar.packedSet(sar.count - 1, -packedValue);
                 ++sar.cardinality;
-                if (DEBUG) sar.validate(packedValue, packedValue);
+                if (DEBUG)
+                    sar.validate(packedValue, packedValue);
                 return sar;
             }
             sar = sar.packedAppend(-packedValue, -value, writeCheck);
@@ -3767,7 +3842,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 return null;
             }
             ++sar.cardinality;
-            if (DEBUG) sar.validate(packedValue, packedValue);
+            if (DEBUG)
+                sar.validate(packedValue, packedValue);
             return sar;
         }
         sar = sar.packedAppend(packedValue, value, writeCheck);
@@ -3775,7 +3851,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             return null;
         }
         ++sar.cardinality;
-        if (DEBUG) sar.validate(packedValue, packedValue);
+        if (DEBUG)
+            sar.validate(packedValue, packedValue);
         return sar;
     }
 
@@ -3803,7 +3880,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             sar.packedSet(1, -packedEnd);
             sar.cardinality = deltaCard;
             sar.count = 2;
-            if (DEBUG) sar.validate(packedStart, packedEnd);
+            if (DEBUG)
+                sar.validate(packedStart, packedEnd);
             return sar;
         }
         final long lastData = sar.packedGet(sar.count - 1);
@@ -3821,7 +3899,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 }
                 sar.cardinality += deltaCard;
                 sar.packedSet(sar.count - 1, -packedEnd);
-                if (DEBUG) sar.validate(packedStart, packedEnd);
+                if (DEBUG)
+                    sar.validate(packedStart, packedEnd);
                 return sar;
             }
             sar = sar.packedAppend(-packedEnd, -end, writeCheck);
@@ -3829,7 +3908,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 return null;
             }
             sar.cardinality += deltaCard;
-            if (DEBUG) sar.validate(packedStart, packedEnd);
+            if (DEBUG)
+                sar.validate(packedStart, packedEnd);
             return sar;
         }
         sar = sar.packedAppend2(packedStart, -packedEnd, start, -end, writeCheck);
@@ -3837,7 +3917,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             return null;
         }
         sar.cardinality += deltaCard;
-        if (DEBUG) sar.validate(packedStart, packedEnd);
+        if (DEBUG)
+            sar.validate(packedStart, packedEnd);
         return sar;
     }
 
@@ -3861,15 +3942,18 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 long iValue = sar.packedGet(i);
                 if (iValue == packedValue - 1) {
                     --sar.count;
-                    if (DEBUG) sar.validate(packedValue, packedValue);
+                    if (DEBUG)
+                        sar.validate(packedValue, packedValue);
                     return sar;
                 }
                 sar.packedSet(j, -(packedValue - 1));
-                if (DEBUG) sar.validate(packedValue, packedValue);
+                if (DEBUG)
+                    sar.validate(packedValue, packedValue);
                 return sar;
             }
             --sar.count;
-            if (DEBUG) sar.validate(packedValue, packedValue);
+            if (DEBUG)
+                sar.validate(packedValue, packedValue);
             return sar;
         }
 
@@ -3890,22 +3974,25 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             jNeg = jData < 0;
             if (!jNeg) {
                 sar.close(i);
-                if (DEBUG) sar.validate(packedValue, packedValue);
+                if (DEBUG)
+                    sar.validate(packedValue, packedValue);
                 return sar;
             }
             jValue = -jData;
             if (packedValue + 1 == jValue) {
                 sar.close(i);
                 sar.packedSet(i, jValue);
-                if (DEBUG) sar.validate(packedValue, packedValue);
+                if (DEBUG)
+                    sar.validate(packedValue, packedValue);
                 return sar;
             }
             sar.packedSet(i, packedValue + 1);
-            if (DEBUG) sar.validate(packedValue, packedValue);
+            if (DEBUG)
+                sar.validate(packedValue, packedValue);
             return sar;
         }
 
-        if (sar.count == 2) {  // sar.count can't be 1: we would have returned earlier.
+        if (sar.count == 2) { // sar.count can't be 1: we would have returned earlier.
             if (!jNeg) {
                 return sar;
             }
@@ -3925,14 +4012,16 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     iNeg = iData < 0;
                     if (!iNeg) {
                         sar.close(j);
-                        if (DEBUG) sar.validate(packedValue, packedValue);
+                        if (DEBUG)
+                            sar.validate(packedValue, packedValue);
                         return sar;
                     }
                     iValue = -iData;
                     if (packedValue + 1 == iValue) {
                         sar.close(j);
                         sar.packedSet(j, iValue);
-                        if (DEBUG) sar.validate(packedValue, packedValue);
+                        if (DEBUG)
+                            sar.validate(packedValue, packedValue);
                         return sar;
                     }
                     sar.packedSet(j, packedValue + 1);
@@ -3942,11 +4031,13 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 iValue = sar.packedGet(i);
                 if (iValue == packedValue - 1) {
                     sar.close(j);
-                    if (DEBUG) sar.validate(packedValue, packedValue);
+                    if (DEBUG)
+                        sar.validate(packedValue, packedValue);
                     return sar;
                 }
                 sar.packedSet(j, -(packedValue - 1));
-                if (DEBUG) sar.validate(packedValue, packedValue);
+                if (DEBUG)
+                    sar.validate(packedValue, packedValue);
                 return sar;
             }
             if (!jNeg) {
@@ -3962,7 +4053,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 sar = sar.getWriteRef();
                 --sar.cardinality;
                 sar.packedSet(j, jValue);
-                if (DEBUG) sar.validate(packedValue, packedValue);
+                if (DEBUG)
+                    sar.validate(packedValue, packedValue);
                 return sar;
             }
             sar = sar.open(j, packedValue + 1, true);
@@ -3970,7 +4062,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 return null;
             }
             --sar.cardinality;
-            if (DEBUG) sar.validate(packedValue, packedValue);
+            if (DEBUG)
+                sar.validate(packedValue, packedValue);
             return sar;
         }
         if (jValue == packedValue + 1) {
@@ -3979,7 +4072,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 return null;
             }
             --sar.cardinality;
-            if (DEBUG) sar.validate(packedValue, packedValue);
+            if (DEBUG)
+                sar.validate(packedValue, packedValue);
             return sar;
         }
         sar = sar.open2Neg(j, -(packedValue - 1), packedValue + 1, true);
@@ -3987,7 +4081,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             return null;
         }
         --sar.cardinality;
-        if (DEBUG) sar.validate(packedValue, packedValue);
+        if (DEBUG)
+            sar.validate(packedValue, packedValue);
         return sar;
     }
 
@@ -4035,7 +4130,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                         if (iStartOut != null) {
                             iStartOut.setValue(iStart + 1);
                         }
-                        if (DEBUG) sar.validate(packedStart, packedEnd);
+                        if (DEBUG)
+                            sar.validate(packedStart, packedEnd);
                         return sar;
                     }
                     --sar.count;
@@ -4043,7 +4139,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     if (iStartOut != null) {
                         iStartOut.setValue(sar.count);
                     }
-                    if (DEBUG) sar.validate(packedStart, packedEnd);
+                    if (DEBUG)
+                        sar.validate(packedStart, packedEnd);
                     return sar;
                 }
                 pendingStart = iStartValue;
@@ -4057,7 +4154,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     if (iStartOut != null) {
                         iStartOut.setValue(sar.count);
                     }
-                    if (DEBUG) sar.validate(packedStart, packedEnd);
+                    if (DEBUG)
+                        sar.validate(packedStart, packedEnd);
                     return sar;
                 }
             }
@@ -4153,7 +4251,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     if (iStartOut != null) {
                         iStartOut.setValue(iStart + 1);
                     }
-                } else {  // len == 0; it can't be the case that len==1 if we are truncating at both sides.
+                } else { // len == 0; it can't be the case that len==1 if we are truncating at both sides.
                     sar = sar.open2Neg(iStart, -(packedStart - 1), packedEnd + 1, writeCheck);
                     if (sar == null) {
                         return null;
@@ -4173,8 +4271,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     if (iStartOut != null) {
                         iStartOut.setValue(iStart + 1);
                     }
-                } else {  // len == 0.
-                    sar = sar.openNeg(iStart, -(packedStart -1), packedEnd + 1, writeCheck);
+                } else { // len == 0.
+                    sar = sar.openNeg(iStart, -(packedStart - 1), packedEnd + 1, writeCheck);
                     if (sar == null) {
                         return null;
                     }
@@ -4204,7 +4302,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     if (iStartOut != null) {
                         iStartOut.setValue(iStart + 1);
                     }
-                } else {  // len == 0.
+                } else { // len == 0.
                     sar = sar.open(iEndExclusive, packedEnd + 1, writeCheck);
                     if (sar == null) {
                         return null;
@@ -4233,13 +4331,15 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             }
         }
         sar.cardinality -= deltaCard;
-        if (DEBUG) sar.validate(packedStart, packedEnd);
+        if (DEBUG)
+            sar.validate(packedStart, packedEnd);
         return sar;
     }
 
     protected final void validate(final long iv1, final long iv2) {
         validate(null, iv1, iv2);
     }
+
     protected final void validate(String strArg, final long iv1, final long iv2) {
         final String str = strArg == null ? "" : strArg + " ";
         final String msg = str + "(" + iv1 + "," + iv2 + ")";
@@ -4265,8 +4365,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                         throw new IllegalStateException(cmsg + ": range delta=" + delta + " at i=" + i);
                     }
                     sz += delta;
-                }
-                else {
+                } else {
                     if (vi - vprev < 2) {
                         throw new IllegalStateException(cmsg + ": adjacent not merged at i=" + i);
                     }
@@ -4302,7 +4401,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         if (failedCard || !expSubset || !ansSubset) {
             throw new IllegalStateException(
                     (failedCard ? "cardinality" : "subset") +
-                    " check failed for for " +
+                            " check failed for for " +
                             "expected(" + expCard + ")=" + expected +
                             ", ans(" + ansCard + ")=" + ans +
                             ((orig == null) ? "" : ", orig(" + orig.ixCardinality() + ")=" + orig));
@@ -4349,12 +4448,14 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final TreeIndexImpl ixInsertSecondHalf(final LongChunk<Attributes.OrderedKeyIndices> keys, final int offset, final int length) {
+    public final TreeIndexImpl ixInsertSecondHalf(final LongChunk<Attributes.OrderedKeyIndices> keys, final int offset,
+            final int length) {
         return ixInsert(TreeIndexImpl.fromChunk(keys, offset, length, true));
     }
 
     @Override
-    public final TreeIndexImpl ixRemoveSecondHalf(final LongChunk<Attributes.OrderedKeyIndices> keys, final int offset, final int length) {
+    public final TreeIndexImpl ixRemoveSecondHalf(final LongChunk<Attributes.OrderedKeyIndices> keys, final int offset,
+            final int length) {
         return ixRemove(TreeIndexImpl.fromChunk(keys, offset, length, true));
     }
 
@@ -4435,7 +4536,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final void ixGetKeysForPositions(final PrimitiveIterator.OfLong inputPositions, final LongConsumer outputKeys) {
+    public final void ixGetKeysForPositions(final PrimitiveIterator.OfLong inputPositions,
+            final LongConsumer outputKeys) {
         getKeysForPositions(inputPositions, outputKeys);
     }
 
@@ -4524,7 +4626,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     public final TreeIndexImpl remove(final TreeIndexImpl removed) {
         if (!USE_RANGES_ARRAY) {
-            try (final ReadOnlyIndex.RangeIterator removedIter = removed.ixRangeIterator()){
+            try (final ReadOnlyIndex.RangeIterator removedIter = removed.ixRangeIterator()) {
                 final MutableObject<SortedRanges> holder = new MutableObject<>(this);
                 final boolean valid = removeLegacy(holder, removedIter);
                 if (!valid) {

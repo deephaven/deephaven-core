@@ -1,9 +1,9 @@
 package io.deephaven.properties;
 
 /**
- * A {@link PropertyVisitor} whose methods all throw {@link IllegalStateException} with the relevant
- * key and value context. Meant to be a utility class that other {@link PropertyVisitor}s can use,
- * for example in the case of parsing an unknown key.
+ * A {@link PropertyVisitor} whose methods all throw {@link IllegalStateException} with the relevant key and value
+ * context. Meant to be a utility class that other {@link PropertyVisitor}s can use, for example in the case of parsing
+ * an unknown key.
  */
 public enum PropertyVisitorError implements PropertyVisitor {
     INSTANCE;
@@ -13,7 +13,8 @@ public enum PropertyVisitorError implements PropertyVisitor {
     @Override
     public void visit(String key, String value) {
         if (value.length() > MAX_UNTRUNCATED_STRING_LENGTH) {
-            throw new IllegalStateException(String.format("Unexpected key/string-value: %s='%s...' (truncated)", key, value.substring(0, 128)));
+            throw new IllegalStateException(
+                    String.format("Unexpected key/string-value: %s='%s...' (truncated)", key, value.substring(0, 128)));
         }
         throw new IllegalStateException(String.format("Unexpected key/string-value: %s='%s'", key, value));
     }

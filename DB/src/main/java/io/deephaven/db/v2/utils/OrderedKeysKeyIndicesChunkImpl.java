@@ -157,8 +157,8 @@ public class OrderedKeysKeyIndicesChunkImpl implements OrderedKeys {
     @Override
     public final void fillKeyIndicesChunk(final WritableLongChunk<? extends KeyIndices> chunkToFill) {
         final int newSize = Math.toIntExact(size());
-        //noinspection unchecked
-        backingChunk.copyToChunk(0, (WritableLongChunk)chunkToFill, 0, newSize);
+        // noinspection unchecked
+        backingChunk.copyToChunk(0, (WritableLongChunk) chunkToFill, 0, newSize);
         chunkToFill.setSize(newSize);
     }
 
@@ -208,7 +208,8 @@ public class OrderedKeysKeyIndicesChunkImpl implements OrderedKeys {
         return true;
     }
 
-    @Override public boolean forEachLongRange(final LongRangeAbortableConsumer lc) {
+    @Override
+    public boolean forEachLongRange(final LongRangeAbortableConsumer lc) {
         long pendingStart = -2;
         long pendingEnd = -2;
         for (int i = 0; i < backingChunk.size(); ++i) {
@@ -248,7 +249,8 @@ public class OrderedKeysKeyIndicesChunkImpl implements OrderedKeys {
         return off;
     }
 
-    @Override public void close() {
+    @Override
+    public void close() {
         if (asRangesChunk != null) {
             asRangesChunk.close();
             asRangesChunk = null;

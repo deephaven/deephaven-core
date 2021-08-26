@@ -7,6 +7,7 @@ import javax.inject.Singleton;
 
 @Module()
 public interface AuthContextModule {
-    @Binds @Singleton
+    @Binds
+    @Singleton
     AuthContextProvider bindAuthContextProvider(TrivialAuthContextProvider authContextProvider);
 }

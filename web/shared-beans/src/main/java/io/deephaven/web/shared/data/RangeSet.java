@@ -11,11 +11,13 @@ public class RangeSet implements Serializable {
     public static RangeSet empty() {
         return new RangeSet();
     }
+
     public static RangeSet ofRange(long first, long last) {
         RangeSet rangeSet = new RangeSet();
         rangeSet.addRange(new Range(first, last));
         return rangeSet;
     }
+
     public static RangeSet ofItems(long... items) {
         RangeSet rangeSet = new RangeSet();
 
@@ -47,10 +49,10 @@ public class RangeSet implements Serializable {
 
     private Range[] sortedRanges = new Range[0];
 
-    public void addRange(Range range)  {
+    public void addRange(Range range) {
         // if empty, add as the only entry
         if (sortedRanges.length == 0) {
-            sortedRanges = new Range[] { range };
+            sortedRanges = new Range[] {range};
             return;
         }
         // if one other entry, test if before, after, or overlapping
@@ -58,12 +60,12 @@ public class RangeSet implements Serializable {
             Range existing = sortedRanges[0];
             Range overlap = range.overlap(existing);
             if (overlap != null) {
-                sortedRanges = new Range[] { overlap };
+                sortedRanges = new Range[] {overlap};
             } else if (existing.compareTo(range) < 0) {
-                sortedRanges = new Range[] { existing, range };
+                sortedRanges = new Range[] {existing, range};
             } else {
                 assert existing.compareTo(range) > 0;
-                sortedRanges = new Range[] { range, existing };
+                sortedRanges = new Range[] {range, existing};
             }
             return;
         }
@@ -87,7 +89,7 @@ public class RangeSet implements Serializable {
                     end = i - 1;
                     break;
                 }
-                //grow the region used for replacing
+                // grow the region used for replacing
                 merged = overlap;
             }
             // splice out [index, end] items, replacing with the newly grown overlap object (may be the same
@@ -110,10 +112,11 @@ public class RangeSet implements Serializable {
                 Range before = sortedRanges[proposedIndex - 1];
                 Range overlap = before.overlap(merged);
                 if (overlap != null) {
-                    //replace the range that we are merging, and start the slice here instead
+                    // replace the range that we are merging, and start the slice here instead
                     merged = overlap;
                     proposedIndex--;
-                    //TODO this will make the loop start here, considering this item twice. not ideal, but not a big deal either
+                    // TODO this will make the loop start here, considering this item twice. not ideal, but not a big
+                    // deal either
                 }
             }
             // "end" represents the last item that needs to be merged in to the newly added item. if no items are to be
@@ -122,7 +125,7 @@ public class RangeSet implements Serializable {
             // if we never find an item we cannot merge with, the end of the replaced range is the last item of the old
             // array, which could result in the new array having as little as only 1 item
             int end = sortedRanges.length - 1;
-            //until we quit finding matches, test subsequent items
+            // until we quit finding matches, test subsequent items
             for (int i = proposedIndex; i < sortedRanges.length; i++) {
                 Range existing = sortedRanges[i];
                 Range overlap = existing.overlap(merged);
@@ -167,13 +170,13 @@ public class RangeSet implements Serializable {
 
         int beforeCount = -1;
         int toRemove = 0;
-        for (;index < sortedRanges.length; index++) {
+        for (; index < sortedRanges.length; index++) {
             Range toCheck = sortedRanges[index];
             if (toCheck.getFirst() > range.getLast()) {
-                break;//done, this is entirely after the range we're removing
+                break;// done, this is entirely after the range we're removing
             }
             if (toCheck.getLast() < range.getFirst()) {
-                continue;//skip, we don't overlap at all yet
+                continue;// skip, we don't overlap at all yet
             }
             Range[] remaining = toCheck.minus(range);
             assert remaining != null : "Only early ranges are allowed to not match at all";
@@ -185,7 +188,9 @@ public class RangeSet implements Serializable {
                 // so we don't even "break", we just return
                 assert toCheck.getFirst() < range.getFirst() : "Expected " + range + " to start after " + toCheck;
                 assert toCheck.getLast() > range.getLast() : "Expected " + range + " to end after " + toCheck;
-                assert toRemove == 0 && beforeCount == -1 : "Expected that no previous items in the RangeSet had been removed toRemove=" + toRemove + ", beforeCount=" + beforeCount;
+                assert toRemove == 0 && beforeCount == -1
+                        : "Expected that no previous items in the RangeSet had been removed toRemove=" + toRemove
+                                + ", beforeCount=" + beforeCount;
 
                 Range[] replacement = new Range[sortedRanges.length + 1];
                 if (index > 0) {
@@ -216,7 +221,8 @@ public class RangeSet implements Serializable {
         if (toRemove > 0) {
             Range[] replacement = new Range[sortedRanges.length - toRemove];
             System.arraycopy(sortedRanges, 0, replacement, 0, beforeCount);
-            System.arraycopy(sortedRanges, beforeCount + toRemove, replacement, beforeCount, sortedRanges.length - beforeCount - toRemove);
+            System.arraycopy(sortedRanges, beforeCount + toRemove, replacement, beforeCount,
+                    sortedRanges.length - beforeCount - toRemove);
 
             sortedRanges = replacement;
         } else {
@@ -277,7 +283,8 @@ public class RangeSet implements Serializable {
                     continue;
                 }
                 if (match.getLast() > current.getLast()) {
-                    // since the match starts within current, if it ends afterward, we know at least one item is missing: current.getLast() + 1
+                    // since the match starts within current, if it ends afterward, we know at least one item is
+                    // missing: current.getLast() + 1
                     return false;
                 }
                 // else, the match is fully contained in current, so move on to the next item

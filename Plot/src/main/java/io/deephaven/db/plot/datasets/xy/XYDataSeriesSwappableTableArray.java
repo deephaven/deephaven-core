@@ -28,8 +28,10 @@ public class XYDataSeriesSwappableTableArray extends XYDataSeriesArray implement
     private final String y;
     private Table localTable;
 
-    public XYDataSeriesSwappableTableArray(final AxesImpl axes, final int id, final Comparable name, final SwappableTable swappableTable, final String x, final String y) {
-        super(axes, id, name, new IndexableNumericDataSwappableTable(swappableTable, x, new PlotInfo(axes, name)),new IndexableNumericDataSwappableTable(swappableTable, y, new PlotInfo(axes, name)));
+    public XYDataSeriesSwappableTableArray(final AxesImpl axes, final int id, final Comparable name,
+            final SwappableTable swappableTable, final String x, final String y) {
+        super(axes, id, name, new IndexableNumericDataSwappableTable(swappableTable, x, new PlotInfo(axes, name)),
+                new IndexableNumericDataSwappableTable(swappableTable, y, new PlotInfo(axes, name)));
 
         this.swappableTable = swappableTable;
         this.x = x;
@@ -39,11 +41,14 @@ public class XYDataSeriesSwappableTableArray extends XYDataSeriesArray implement
     @Override
     public <T extends Paint> AbstractXYDataSeries pointColorByY(Function<Double, T> colors) {
         final String colName = ColumnNameConstants.POINT_COLOR + this.hashCode();
-        chart().figure().registerTableMapFunction(swappableTable.getTableMapHandle(), constructTableMapFromFunction(colors, Paint.class, y, colName));
+        chart().figure().registerTableMapFunction(swappableTable.getTableMapHandle(),
+                constructTableMapFromFunction(colors, Paint.class, y, colName));
         swappableTable.getTableMapHandle().addColumn(colName);
         chart().figure().registerFigureFunction(new FigureImplFunction(figImpl -> {
-            ((XYDataSeriesSwappableTableArray) figImpl.getFigure().getCharts().getChart(chart().row(), chart().column()).axes(axes().id()).series(id()))
-                    .colorsSetSpecific(new IndexableDataSwappableTable<>(swappableTable, colName, getPlotInfo()));
+            ((XYDataSeriesSwappableTableArray) figImpl.getFigure().getCharts().getChart(chart().row(), chart().column())
+                    .axes(axes().id()).series(id()))
+                            .colorsSetSpecific(
+                                    new IndexableDataSwappableTable<>(swappableTable, colName, getPlotInfo()));
             return figImpl;
         }, this));
         return this;
@@ -61,13 +66,15 @@ public class XYDataSeriesSwappableTableArray extends XYDataSeriesArray implement
         this.y = series.y;
     }
 
-    private  <S, T> Function<Table, Table> constructTableMapFromFunction(final Function<S, T> function, final Class resultClass, final String onColumn, final String columnName) {
+    private <S, T> Function<Table, Table> constructTableMapFromFunction(final Function<S, T> function,
+            final Class resultClass, final String onColumn, final String columnName) {
         ArgumentValidations.assertNotNull(function, "function", getPlotInfo());
         final String queryFunction = columnName + "Function";
         return t -> {
             QueryScope.addParam(queryFunction, function);
             QueryLibrary.importClass(resultClass);
-            return t.update(columnName + " = (" + resultClass.getSimpleName() + ") " + queryFunction + ".apply(" + onColumn + ")");
+            return t.update(columnName + " = (" + resultClass.getSimpleName() + ") " + queryFunction + ".apply("
+                    + onColumn + ")");
         };
     }
 }

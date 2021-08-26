@@ -5,15 +5,15 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.BrowserFlight_pb_service.BidirectionalStream",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.BrowserFlight_pb_service.BidirectionalStream",
+        namespace = JsPackage.GLOBAL)
 public interface BidirectionalStream<ReqT, ResT> {
-  void cancel();
+    void cancel();
 
-  void end();
+    void end();
 
-  BidirectionalStream on(String type, Function handler);
+    BidirectionalStream on(String type, Function handler);
 
-  BidirectionalStream write(ReqT message);
+    BidirectionalStream write(ReqT message);
 }

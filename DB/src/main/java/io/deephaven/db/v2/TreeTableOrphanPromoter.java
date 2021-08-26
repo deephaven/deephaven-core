@@ -21,14 +21,20 @@ import java.util.stream.Stream;
 import static io.deephaven.db.tables.Table.TREE_TABLE_FILTER_REVERSE_LOOKUP_ATTRIBUTE;
 
 /**
- * <p>Identify orphan rows in a table destined for conversion into a tree table, and mask their parent column value to
- * null, so that they show up at the top level of the hierarchy.</p>
+ * <p>
+ * Identify orphan rows in a table destined for conversion into a tree table, and mask their parent column value to
+ * null, so that they show up at the top level of the hierarchy.
+ * </p>
  *
- * <p>This is useful if your data contains values which you can not identify as top-level rows; or if you would like to
+ * <p>
+ * This is useful if your data contains values which you can not identify as top-level rows; or if you would like to
  * filter your tree table source, excluding parents which do not meet your filter criteria, but do not want to orphan
- * the matches.</p>
+ * the matches.
+ * </p>
  *
- * <p>This class should be used by calling {@link #promoteOrphans(Table, String, String)} method.</p>
+ * <p>
+ * This class should be used by calling {@link #promoteOrphans(Table, String, String)} method.
+ * </p>
  */
 public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
     private final String idColumn;
@@ -56,7 +62,7 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
         private final DynamicTable source;
 
         public State(Table table) {
-            source = (DynamicTable)table;
+            source = (DynamicTable) table;
             reverseLookupListener = getReverseLookupListener(source, idColumn);
             parentSource = source.getColumnSource(parentColumn);
             idSource = source.getColumnSource(idColumn);
@@ -65,7 +71,7 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
         public Table invoke() {
             final Map<String, ColumnSource> nameToColumns = new LinkedHashMap<>(source.getColumnSourceMap());
 
-            //noinspection unchecked
+            // noinspection unchecked
             final ColumnSource parentView = new AbstractColumnSource.DefaultedMutable(parentSource.getType()) {
                 @Override
                 public Object get(long index) {
@@ -224,152 +230,167 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
 
                 final ModifiedColumnSet inputColumns = source.newModifiedColumnSet(idColumn, parentColumn);
 
-                final String[] columnNames = source.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-                final ModifiedColumnSet.Transformer mcsTransformer = source.newModifiedColumnSetTransformer(result, columnNames);
+                final String[] columnNames =
+                        source.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                final ModifiedColumnSet.Transformer mcsTransformer =
+                        source.newModifiedColumnSetTransformer(result, columnNames);
                 final ModifiedColumnSet mcsParentColumn = result.newModifiedColumnSet(parentColumn);
 
-                final ShiftAwareListener listener = new BaseTable.ShiftAwareListenerImpl("Orphan Promoter", source, result) {
-                    final Map<Object, TLongSet> parentToChildMap = new HashMap<>();
+                final ShiftAwareListener listener =
+                        new BaseTable.ShiftAwareListenerImpl("Orphan Promoter", source, result) {
+                            final Map<Object, TLongSet> parentToChildMap = new HashMap<>();
 
-                    {
-                        addChildren(source.getIndex());
-                    }
-
-                    private void addChildren(Index index) {
-                        for (final Index.Iterator it = index.iterator(); it.hasNext(); ) {
-                            final long key = it.nextLong();
-                            final Object parent = parentSource.get(key);
-                            if (parent != null) {
-                                parentToChildMap.computeIfAbsent(parent, x -> new TLongHashSet()).add(key);
+                            {
+                                addChildren(source.getIndex());
                             }
-                        }
-                    }
 
-                    private void removeChildren(Index index) {
-                        for (final Index.Iterator it = index.iterator(); it.hasNext(); ) {
-                            final long key = it.nextLong();
-                            final Object oldParent = parentSource.getPrev(key);
-                            if (oldParent != null) {
-                                removeFromParent(oldParent, parentToChildMap.get(oldParent), key);
-                            }
-                        }
-                    }
-
-                    private void removeFromParent(final Object oldParent, final TLongSet oldParentSet, final long keyToRemove) {
-                        if (oldParentSet == null) {
-                            throw new IllegalStateException("Could not find set for parent: " + oldParent);
-                        }
-                        if (!oldParentSet.remove(keyToRemove)) {
-                            throw new IllegalStateException("key=" + keyToRemove + " was not in parent=" + oldParent + " set=" + oldParentSet);
-                        }
-                    }
-
-                    @Override
-                    public void onUpdate(final Update upstream) {
-                        final Update downstream = upstream.copy();
-                        downstream.modifiedColumnSet = result.modifiedColumnSet;
-
-                        final boolean modifiedInputColumns = upstream.modifiedColumnSet.containsAny(inputColumns);
-                        if (upstream.added.empty() && upstream.removed.empty() && upstream.shifted.empty() && !modifiedInputColumns) {
-                            mcsTransformer.clearAndTransform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
-                            result.notifyListeners(downstream);
-                            return;
-                        }
-
-                        // Collect removed / added parent objects.
-                        final Set<Object> removedIds = new HashSet<>();
-                        final Set<Object> addedIds = new HashSet<>();
-
-                        upstream.removed.forAllLongs((final long v) -> {
-                            final Object id = idSource.getPrev(v);
-                            removedIds.add(id);
-                        });
-
-                        upstream.added.forAllLongs((final long v) -> {
-                            final Object id = idSource.get(v);
-                            if (!removedIds.remove(id)) {
-                                addedIds.add(id);
-                            }
-                        });
-
-                        if (modifiedInputColumns) {
-                            // account for any rows with modified ids
-                            upstream.forAllModified((preIndex, postIndex) -> {
-                                final Object prevId = idSource.getPrev(preIndex);
-                                final Object id = idSource.get(postIndex);
-                                if (!Objects.equals(id, prevId)) {
-                                    if (!addedIds.contains(prevId)) {
-                                        removedIds.add(prevId);
+                            private void addChildren(Index index) {
+                                for (final Index.Iterator it = index.iterator(); it.hasNext();) {
+                                    final long key = it.nextLong();
+                                    final Object parent = parentSource.get(key);
+                                    if (parent != null) {
+                                        parentToChildMap.computeIfAbsent(parent, x -> new TLongHashSet()).add(key);
                                     }
-                                    removedIds.remove(id);
-                                    addedIds.add(id);
                                 }
-                            });
-                        }
-
-                        // Process upstream changes and modify our state.
-                        removeChildren(upstream.removed);
-                        if (modifiedInputColumns) {
-                            removeChildren(upstream.getModifiedPreShift());
-                        }
-
-                        try (final Index prevIndex = source.getIndex().getPrevIndex()) {
-                            prevIndex.remove(upstream.removed);
-                            if (modifiedInputColumns) {
-                                prevIndex.remove(upstream.getModifiedPreShift());
                             }
 
-                            upstream.shifted.forAllInIndex(prevIndex, (key, shiftDelta) -> {
-                                final Object oldParent = parentSource.getPrev(key);
-                                final Object newParent = parentSource.get(key + shiftDelta);
-                                if (oldParent != null && Objects.equals(oldParent, newParent)) {
-                                    final TLongSet set = parentToChildMap.get(oldParent);
-                                    removeFromParent(oldParent, set, key);
-                                    set.add(key + shiftDelta);
-                                } else {
+                            private void removeChildren(Index index) {
+                                for (final Index.Iterator it = index.iterator(); it.hasNext();) {
+                                    final long key = it.nextLong();
+                                    final Object oldParent = parentSource.getPrev(key);
                                     if (oldParent != null) {
                                         removeFromParent(oldParent, parentToChildMap.get(oldParent), key);
                                     }
-                                    if (newParent != null) {
-                                        parentToChildMap.computeIfAbsent(newParent, x -> new TLongHashSet()).add(key + shiftDelta);
-                                    }
                                 }
-                            });
-                        }
-
-                        if (modifiedInputColumns) {
-                            addChildren(upstream.modified);
-                        }
-                        addChildren(upstream.added);
-
-                        final TLongList modifiedKeys = new TLongArrayList();
-                        Stream.concat(removedIds.stream(), addedIds.stream()).map(parentToChildMap::get).filter(Objects::nonNull).forEach(x -> x.forEach(value -> {
-                            modifiedKeys.add(value);
-                            return true;
-                        }));
-                        modifiedKeys.sort();
-
-                        final Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
-                        // TODO: Modify this such that we don't actually ever add the keys to the builder if they exist
-                        // within added; this would be made easier/more efficient if Index.Iterator exposed the
-                        // advance() operation.
-                        modifiedKeys.forEach(x -> { builder.appendKey(x); return true; });
-
-                        downstream.modified.insert(builder.getIndex());
-                        downstream.modified.remove(upstream.added);
-
-                        if (downstream.modified.nonempty()) {
-                            mcsTransformer.clearAndTransform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
-                            if (!modifiedKeys.isEmpty()) {
-                                downstream.modifiedColumnSet.setAll(mcsParentColumn);
                             }
-                        } else {
-                            downstream.modifiedColumnSet.clear();
-                        }
 
-                        result.notifyListeners(downstream);
-                    }
-                };
+                            private void removeFromParent(final Object oldParent, final TLongSet oldParentSet,
+                                    final long keyToRemove) {
+                                if (oldParentSet == null) {
+                                    throw new IllegalStateException("Could not find set for parent: " + oldParent);
+                                }
+                                if (!oldParentSet.remove(keyToRemove)) {
+                                    throw new IllegalStateException("key=" + keyToRemove + " was not in parent="
+                                            + oldParent + " set=" + oldParentSet);
+                                }
+                            }
+
+                            @Override
+                            public void onUpdate(final Update upstream) {
+                                final Update downstream = upstream.copy();
+                                downstream.modifiedColumnSet = result.modifiedColumnSet;
+
+                                final boolean modifiedInputColumns =
+                                        upstream.modifiedColumnSet.containsAny(inputColumns);
+                                if (upstream.added.empty() && upstream.removed.empty() && upstream.shifted.empty()
+                                        && !modifiedInputColumns) {
+                                    mcsTransformer.clearAndTransform(upstream.modifiedColumnSet,
+                                            downstream.modifiedColumnSet);
+                                    result.notifyListeners(downstream);
+                                    return;
+                                }
+
+                                // Collect removed / added parent objects.
+                                final Set<Object> removedIds = new HashSet<>();
+                                final Set<Object> addedIds = new HashSet<>();
+
+                                upstream.removed.forAllLongs((final long v) -> {
+                                    final Object id = idSource.getPrev(v);
+                                    removedIds.add(id);
+                                });
+
+                                upstream.added.forAllLongs((final long v) -> {
+                                    final Object id = idSource.get(v);
+                                    if (!removedIds.remove(id)) {
+                                        addedIds.add(id);
+                                    }
+                                });
+
+                                if (modifiedInputColumns) {
+                                    // account for any rows with modified ids
+                                    upstream.forAllModified((preIndex, postIndex) -> {
+                                        final Object prevId = idSource.getPrev(preIndex);
+                                        final Object id = idSource.get(postIndex);
+                                        if (!Objects.equals(id, prevId)) {
+                                            if (!addedIds.contains(prevId)) {
+                                                removedIds.add(prevId);
+                                            }
+                                            removedIds.remove(id);
+                                            addedIds.add(id);
+                                        }
+                                    });
+                                }
+
+                                // Process upstream changes and modify our state.
+                                removeChildren(upstream.removed);
+                                if (modifiedInputColumns) {
+                                    removeChildren(upstream.getModifiedPreShift());
+                                }
+
+                                try (final Index prevIndex = source.getIndex().getPrevIndex()) {
+                                    prevIndex.remove(upstream.removed);
+                                    if (modifiedInputColumns) {
+                                        prevIndex.remove(upstream.getModifiedPreShift());
+                                    }
+
+                                    upstream.shifted.forAllInIndex(prevIndex, (key, shiftDelta) -> {
+                                        final Object oldParent = parentSource.getPrev(key);
+                                        final Object newParent = parentSource.get(key + shiftDelta);
+                                        if (oldParent != null && Objects.equals(oldParent, newParent)) {
+                                            final TLongSet set = parentToChildMap.get(oldParent);
+                                            removeFromParent(oldParent, set, key);
+                                            set.add(key + shiftDelta);
+                                        } else {
+                                            if (oldParent != null) {
+                                                removeFromParent(oldParent, parentToChildMap.get(oldParent), key);
+                                            }
+                                            if (newParent != null) {
+                                                parentToChildMap.computeIfAbsent(newParent, x -> new TLongHashSet())
+                                                        .add(key + shiftDelta);
+                                            }
+                                        }
+                                    });
+                                }
+
+                                if (modifiedInputColumns) {
+                                    addChildren(upstream.modified);
+                                }
+                                addChildren(upstream.added);
+
+                                final TLongList modifiedKeys = new TLongArrayList();
+                                Stream.concat(removedIds.stream(), addedIds.stream()).map(parentToChildMap::get)
+                                        .filter(Objects::nonNull).forEach(x -> x.forEach(value -> {
+                                            modifiedKeys.add(value);
+                                            return true;
+                                        }));
+                                modifiedKeys.sort();
+
+                                final Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
+                                // TODO: Modify this such that we don't actually ever add the keys to the builder if
+                                // they exist
+                                // within added; this would be made easier/more efficient if Index.Iterator exposed the
+                                // advance() operation.
+                                modifiedKeys.forEach(x -> {
+                                    builder.appendKey(x);
+                                    return true;
+                                });
+
+                                downstream.modified.insert(builder.getIndex());
+                                downstream.modified.remove(upstream.added);
+
+                                if (downstream.modified.nonempty()) {
+                                    mcsTransformer.clearAndTransform(upstream.modifiedColumnSet,
+                                            downstream.modifiedColumnSet);
+                                    if (!modifiedKeys.isEmpty()) {
+                                        downstream.modifiedColumnSet.setAll(mcsParentColumn);
+                                    }
+                                } else {
+                                    downstream.modifiedColumnSet.clear();
+                                }
+
+                                result.notifyListeners(downstream);
+                            }
+                        };
 
                 source.listenForUpdates(listener);
             }
@@ -402,8 +423,9 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
     }
 
     static ReverseLookup getReverseLookupListener(DynamicTable source, String idColumn) {
-        //noinspection unchecked
-        Map<String, WeakReference<ReverseLookup>> rllMap = (Map<String, WeakReference<ReverseLookup>>) source.getAttribute(TREE_TABLE_FILTER_REVERSE_LOOKUP_ATTRIBUTE);
+        // noinspection unchecked
+        Map<String, WeakReference<ReverseLookup>> rllMap = (Map<String, WeakReference<ReverseLookup>>) source
+                .getAttribute(TREE_TABLE_FILTER_REVERSE_LOOKUP_ATTRIBUTE);
         if (rllMap == null) {
             rllMap = new HashMap<>();
             source.setAttribute(TREE_TABLE_FILTER_REVERSE_LOOKUP_ATTRIBUTE, rllMap);

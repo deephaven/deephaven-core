@@ -34,94 +34,108 @@ import static io.deephaven.db.tables.utils.NameValidator.legalizeColumnName;
  * Utilities for reading and writing CSV files to and from {@link Table}s
  */
 public class CsvHelpers {
-    //  Public so it can be used from user scripts
+    // Public so it can be used from user scripts
     @SuppressWarnings("WeakerAccess")
     public final static int MAX_CSV_LINE_COUNT = 1000000;
 
     /**
      * Writes a DB table out as a CSV file.
      *
-     * @param source     a Deephaven table object to be exported
-     * @param destPath   path to the CSV file to be written
+     * @param source a Deephaven table object to be exported
+     * @param destPath path to the CSV file to be written
      * @param compressed whether to zip the file being written
-     * @param timeZone   a DBTimeZone constant relative to which DBDateTime data should be adjusted
-     * @param progress   a procedure that implements Procedure.Binary, and takes a progress Integer and a total size Integer to update progress
-     * @param columns    a list of columns to include in the export
+     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
+     *        Integer to update progress
+     * @param columns a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table source, String destPath, boolean compressed, DBTimeZone timeZone, @Nullable Procedure.Binary<Long, Long> progress, String... columns) throws IOException {
+    public static void writeCsv(Table source, String destPath, boolean compressed, DBTimeZone timeZone,
+            @Nullable Procedure.Binary<Long, Long> progress, String... columns) throws IOException {
         writeCsv(source, destPath, compressed, timeZone, progress, false, columns);
     }
 
     /**
      * Writes a DB table out as a CSV file.
      *
-     * @param source       a Deephaven table object to be exported
-     * @param destPath     path to the CSV file to be written
-     * @param compressed   whether to zip the file being written
-     * @param timeZone     a DBTimeZone constant relative to which DBDateTime data should be adjusted
-     * @param progress     a procedure that implements Procedure.Binary, and takes a progress Integer and a total size Integer to update progress
+     * @param source a Deephaven table object to be exported
+     * @param destPath path to the CSV file to be written
+     * @param compressed whether to zip the file being written
+     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
+     *        Integer to update progress
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
-     * @param columns      a list of columns to include in the export
+     * @param columns a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table source, String destPath, boolean compressed, DBTimeZone timeZone, @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, String... columns) throws IOException {
+    public static void writeCsv(Table source, String destPath, boolean compressed, DBTimeZone timeZone,
+            @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, String... columns)
+            throws IOException {
         writeCsv(source, destPath, compressed, timeZone, progress, nullsAsEmpty, ',', columns);
     }
 
     /**
      * Writes a DB table out as a CSV file.
      *
-     * @param source       a Deephaven table object to be exported
-     * @param destPath     path to the CSV file to be written
-     * @param compressed   whether to zip the file being written
-     * @param timeZone     a DBTimeZone constant relative to which DBDateTime data should be adjusted
-     * @param progress     a procedure that implements Procedure.Binary, and takes a progress Integer and a total size Integer to update progress
+     * @param source a Deephaven table object to be exported
+     * @param destPath path to the CSV file to be written
+     * @param compressed whether to zip the file being written
+     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
+     *        Integer to update progress
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
-     * @param separator    the delimiter for the CSV
-     * @param columns      a list of columns to include in the export
+     * @param separator the delimiter for the CSV
+     * @param columns a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table source, String destPath, boolean compressed, DBTimeZone timeZone, @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, char separator, String... columns) throws IOException {
-        final BufferedWriter out = (compressed ?
-                new BufferedWriter(new OutputStreamWriter(new BzipFileOutputStream(destPath + ".bz2"))) :
-                new BufferedWriter(new FileWriter(destPath)));
+    public static void writeCsv(Table source, String destPath, boolean compressed, DBTimeZone timeZone,
+            @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, char separator, String... columns)
+            throws IOException {
+        final BufferedWriter out =
+                (compressed ? new BufferedWriter(new OutputStreamWriter(new BzipFileOutputStream(destPath + ".bz2")))
+                        : new BufferedWriter(new FileWriter(destPath)));
         writeCsv(source, out, timeZone, progress, nullsAsEmpty, separator, columns);
     }
 
     /**
      * Writes a DB table out as a CSV file.
      *
-     * @param source       a Deephaven table object to be exported
-     * @param out          BufferedWriter used to write the CSV
-     * @param timeZone     a DBTimeZone constant relative to which DBDateTime data should be adjusted
-     * @param progress     a procedure that implements Procedure.Binary, and takes a progress Integer and a total size Integer to update progress
+     * @param source a Deephaven table object to be exported
+     * @param out BufferedWriter used to write the CSV
+     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
+     *        Integer to update progress
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
-     * @param columns      a list of columns to include in the export
+     * @param columns a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table source, BufferedWriter out, DBTimeZone timeZone, @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, String... columns) throws IOException {
+    public static void writeCsv(Table source, BufferedWriter out, DBTimeZone timeZone,
+            @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, String... columns)
+            throws IOException {
         writeCsv(source, out, timeZone, progress, nullsAsEmpty, ',', columns);
     }
 
     /**
      * Writes a DB table out as a CSV file.
      *
-     * @param source       a Deephaven table object to be exported
-     * @param out          BufferedWriter used to write the CSV
-     * @param timeZone     a DBTimeZone constant relative to which DBDateTime data should be adjusted
-     * @param progress     a procedure that implements Procedure.Binary, and takes a progress Integer and a total size Integer to update progress
+     * @param source a Deephaven table object to be exported
+     * @param out BufferedWriter used to write the CSV
+     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
+     *        Integer to update progress
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
-     * @param separator    the delimiter for the CSV
-     * @param columns      a list of columns to include in the export
+     * @param separator the delimiter for the CSV
+     * @param columns a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table source, BufferedWriter out, DBTimeZone timeZone, @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, char separator, String... columns) throws IOException {
+    public static void writeCsv(Table source, BufferedWriter out, DBTimeZone timeZone,
+            @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, char separator, String... columns)
+            throws IOException {
 
         if (columns == null || columns.length == 0) {
             List<String> columnNames = source.getDefinition().getColumnNames();
@@ -137,7 +151,7 @@ public class CsvHelpers {
     /**
      * Writes the column name header row to a CSV file.
      *
-     * @param out     the BufferedWriter to which the header should be written
+     * @param out the BufferedWriter to which the header should be written
      * @param columns a list of column names to be written
      * @throws IOException if the BufferedWriter cannot be written to
      */
@@ -149,9 +163,9 @@ public class CsvHelpers {
     /**
      * Writes the column name header row to a CSV file.
      *
-     * @param out       the BufferedWriter to which the header should be written
+     * @param out the BufferedWriter to which the header should be written
      * @param separator a char to use as the delimiter value when writing out the header
-     * @param columns   a list of column names to be written
+     * @param columns a list of column names to be written
      * @throws IOException if the BufferedWriter cannot be written to
      */
     @ScriptApi
@@ -168,9 +182,10 @@ public class CsvHelpers {
     /**
      * Writes a Deephaven table to one or more files, splitting it based on the MAX_CSV_LINE_COUNT setting.
      *
-     * @param source   a Deephaven table to be exported
+     * @param source a Deephaven table to be exported
      * @param destPath the path in which the CSV file(s) should be written
-     * @param filename the base file name to use for the files. A dash and starting line number will be concatenated to each file.
+     * @param filename the base file name to use for the files. A dash and starting line number will be concatenated to
+     *        each file.
      * @throws IOException if the destination files cannot be written
      */
     @ScriptApi
@@ -181,14 +196,16 @@ public class CsvHelpers {
     /**
      * Writes a Deephaven table to one or more files, splitting it based on the MAX_CSV_LINE_COUNT setting.
      *
-     * @param source       a Deephaven table to be exported
-     * @param destPath     the path in which the CSV file(s) should be written
-     * @param filename     the base file name to use for the files. A dash and starting line number will be concatenated to each file.
+     * @param source a Deephaven table to be exported
+     * @param destPath the path in which the CSV file(s) should be written
+     * @param filename the base file name to use for the files. A dash and starting line number will be concatenated to
+     *        each file.
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
      * @throws IOException if the destination files cannot be written
      */
     @ScriptApi
-    public static void writeCsvPaginate(Table source, String destPath, String filename, boolean nullsAsEmpty) throws IOException {
+    public static void writeCsvPaginate(Table source, String destPath, String filename, boolean nullsAsEmpty)
+            throws IOException {
         long fileCount = source.size() / MAX_CSV_LINE_COUNT;
         if (fileCount > 0) {
             for (long i = 0; i <= fileCount; i++) {
@@ -202,29 +219,33 @@ public class CsvHelpers {
     /**
      * Writes a subset of rows from a Deephaven table to a CSV file.
      *
-     * @param table     a Deephaven table from which rows should be exported
-     * @param path      the destination path in which the output CSV file should be created
-     * @param filename  the base file name to which a dash and starting line number will be concatenated for the file
-     * @param startLine the starting line number from the table to export; the ending line number will be startLine + MAX_CSV_LINE_COUNT-1, or the end of the table
+     * @param table a Deephaven table from which rows should be exported
+     * @param path the destination path in which the output CSV file should be created
+     * @param filename the base file name to which a dash and starting line number will be concatenated for the file
+     * @param startLine the starting line number from the table to export; the ending line number will be startLine +
+     *        MAX_CSV_LINE_COUNT-1, or the end of the table
      * @throws IOException if the destination file cannot be written
      */
     @ScriptApi
-    public static void writeToMultipleFiles(Table table, String path, String filename, long startLine) throws IOException {
+    public static void writeToMultipleFiles(Table table, String path, String filename, long startLine)
+            throws IOException {
         writeToMultipleFiles(table, path, filename, startLine, false);
     }
 
     /**
      * Writes a subset of rows from a Deephaven table to a CSV file.
      *
-     * @param table        a Deephaven table from which rows should be exported
-     * @param path         the destination path in which the output CSV file should be created
-     * @param filename     the base file name to which a dash and starting line number will be concatenated for the file
-     * @param startLine    the starting line number from the table to export; the ending line number will be startLine + MAX_CSV_LINE_COUNT-1, or the end of the table
+     * @param table a Deephaven table from which rows should be exported
+     * @param path the destination path in which the output CSV file should be created
+     * @param filename the base file name to which a dash and starting line number will be concatenated for the file
+     * @param startLine the starting line number from the table to export; the ending line number will be startLine +
+     *        MAX_CSV_LINE_COUNT-1, or the end of the table
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
      * @throws IOException if the destination file cannot be written
      */
     @ScriptApi
-    public static void writeToMultipleFiles(Table table, String path, String filename, long startLine, boolean nullsAsEmpty) throws IOException {
+    public static void writeToMultipleFiles(Table table, String path, String filename, long startLine,
+            boolean nullsAsEmpty) throws IOException {
         Table part = table.getSubTable(table.getIndex().subindexByPos(startLine, startLine + MAX_CSV_LINE_COUNT));
         String partFilename = path + filename + "-" + startLine + ".csv";
         TableTools.writeCsv(part, partFilename, nullsAsEmpty);
@@ -233,77 +254,87 @@ public class CsvHelpers {
     /**
      * Writes a DB table out as a CSV file.
      *
-     * @param source   a Deephaven table object to be exported
-     * @param out      a BufferedWriter to which the header should be written
+     * @param source a Deephaven table object to be exported
+     * @param out a BufferedWriter to which the header should be written
      * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
      * @param colNames a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsvContents(Table source, BufferedWriter out, DBTimeZone timeZone, String... colNames) throws IOException {
+    public static void writeCsvContents(Table source, BufferedWriter out, DBTimeZone timeZone, String... colNames)
+            throws IOException {
         writeCsvContents(source, out, timeZone, null, colNames);
     }
 
     /**
      * Writes a DB table out as a CSV file.
      *
-     * @param source       a Deephaven table object to be exported
-     * @param out          a BufferedWriter to which the header should be written
-     * @param timeZone     a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param source a Deephaven table object to be exported
+     * @param out a BufferedWriter to which the header should be written
+     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
-     * @param colNames     a list of columns to include in the export
+     * @param colNames a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsvContents(Table source, BufferedWriter out, DBTimeZone timeZone, boolean nullsAsEmpty, String... colNames) throws IOException {
+    public static void writeCsvContents(Table source, BufferedWriter out, DBTimeZone timeZone, boolean nullsAsEmpty,
+            String... colNames) throws IOException {
         writeCsvContents(source, out, timeZone, null, nullsAsEmpty, colNames);
     }
 
     /**
      * Writes a DB table out as a CSV file.
      *
-     * @param source   a Deephaven table object to be exported
-     * @param out      a BufferedWriter to which the header should be written
+     * @param source a Deephaven table object to be exported
+     * @param out a BufferedWriter to which the header should be written
      * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
-     * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size Integer to update progress
+     * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
+     *        Integer to update progress
      * @param colNames a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsvContents(Table source, BufferedWriter out, DBTimeZone timeZone, @Nullable Procedure.Binary<Long, Long> progress, String... colNames) throws IOException {
+    public static void writeCsvContents(Table source, BufferedWriter out, DBTimeZone timeZone,
+            @Nullable Procedure.Binary<Long, Long> progress, String... colNames) throws IOException {
         writeCsvContents(source, out, timeZone, progress, false, colNames);
     }
 
     /**
      * Writes a DB table out as a CSV file.
      *
-     * @param source       a Deephaven table object to be exported
-     * @param out          a BufferedWriter to which the header should be written
-     * @param timeZone     a DBTimeZone constant relative to which DBDateTime data should be adjusted
-     * @param progress     a procedure that implements Procedure.Binary, and takes a progress Integer and a total size Integer to update progress
+     * @param source a Deephaven table object to be exported
+     * @param out a BufferedWriter to which the header should be written
+     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
+     *        Integer to update progress
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
-     * @param colNames     a list of columns to include in the export
+     * @param colNames a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsvContents(Table source, BufferedWriter out, DBTimeZone timeZone, @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, String... colNames) throws IOException {
+    public static void writeCsvContents(Table source, BufferedWriter out, DBTimeZone timeZone,
+            @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, String... colNames)
+            throws IOException {
         writeCsvContents(source, out, timeZone, progress, nullsAsEmpty, ',', colNames);
     }
 
     /**
      * Writes a DB table out as a CSV file.
      *
-     * @param source       a Deephaven table object to be exported
-     * @param out          a BufferedWriter to which the header should be written
-     * @param timeZone     a DBTimeZone constant relative to which DBDateTime data should be adjusted
-     * @param progress     a procedure that implements Procedure.Binary, and takes a progress Integer and a total size Integer to update progress
+     * @param source a Deephaven table object to be exported
+     * @param out a BufferedWriter to which the header should be written
+     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
+     *        Integer to update progress
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
-     * @param separator    the delimiter for the CSV
-     * @param colNames     a list of columns to include in the export
+     * @param separator the delimiter for the CSV
+     * @param colNames a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsvContents(Table source, BufferedWriter out, DBTimeZone timeZone, @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, char separator, String... colNames) throws IOException {
+    public static void writeCsvContents(Table source, BufferedWriter out, DBTimeZone timeZone,
+            @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, char separator, String... colNames)
+            throws IOException {
         if (colNames.length == 0) {
             return;
         }
@@ -316,9 +347,10 @@ public class CsvHelpers {
     }
 
     /**
-     * Returns a String value for a CSV column's value. This String will be enclosed in double quotes if the value includes a double quote, a newline, or the separator.
+     * Returns a String value for a CSV column's value. This String will be enclosed in double quotes if the value
+     * includes a double quote, a newline, or the separator.
      *
-     * @param str       the String to be escaped
+     * @param str the String to be escaped
      * @param separator the delimiter for the CSV
      * @return the input String, enclosed in double quotes if the value contains a comma, newline or double quote
      */
@@ -333,13 +365,14 @@ public class CsvHelpers {
     /**
      * Writes an array of Deephaven DataColumns out as a CSV file.
      *
-     * @param out          a BufferedWriter to which the header should be written
-     * @param timeZone     a DBTimeZone constant relative to which DBDateTime data should be adjusted
-     * @param cols         an array of Deephaven DataColumns to be written
-     * @param size         the size of the DataColumns
+     * @param out a BufferedWriter to which the header should be written
+     * @param timeZone a DBTimeZone constant relative to which DBDateTime data should be adjusted
+     * @param cols an array of Deephaven DataColumns to be written
+     * @param size the size of the DataColumns
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
-     * @param separator    the delimiter for the CSV
-     * @param progress     a procedure that implements Procedure.Binary, and takes a progress Integer and a total size Integer to update progress
+     * @param separator the delimiter for the CSV
+     * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
+     *        Integer to update progress
      * @throws IOException if the target file cannot be written
      */
     private static void writeCsvContentsSeq(
@@ -350,7 +383,8 @@ public class CsvHelpers {
             final boolean nullsAsEmpty,
             final char separator,
             @Nullable Procedure.Binary<Long, Long> progress) throws IOException {
-        QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance().getNugget("TableTools.writeCsvContentsSeq()");
+        QueryPerformanceNugget nugget =
+                QueryPerformanceRecorder.getInstance().getNugget("TableTools.writeCsvContentsSeq()");
         try {
             String separatorStr = String.valueOf(separator);
             for (long i = 0; i < size; i++) {
@@ -366,7 +400,8 @@ public class CsvHelpers {
                     } else if (o instanceof DBDateTime) {
                         out.write(separatorCsvEscape(((DBDateTime) o).toString(timeZone), separatorStr));
                     } else {
-                        out.write(nullsAsEmpty ? separatorCsvEscape(TableTools.nullToEmptyString(o), separatorStr) : separatorCsvEscape(TableTools.nullToNullString(o), separatorStr));
+                        out.write(nullsAsEmpty ? separatorCsvEscape(TableTools.nullToEmptyString(o), separatorStr)
+                                : separatorCsvEscape(TableTools.nullToNullString(o), separatorStr));
                     }
                 }
                 if (progress != null) {
@@ -382,7 +417,7 @@ public class CsvHelpers {
      * Return the provided {@link StatusCallback} if provided, otherwise create a new one and return it.
      *
      * @param progress use this if it is not null
-     * @param withLog  whether to create a StatusCallback that will annotate progress updates to the current log
+     * @param withLog whether to create a StatusCallback that will annotate progress updates to the current log
      * @return a valid StatusCallback.
      */
     private static StatusCallback checkStatusCallback(StatusCallback progress, boolean withLog) {
@@ -397,10 +432,12 @@ public class CsvHelpers {
     }
 
     /**
-     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are inferred from the data.
+     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
+     * inferred from the data.
      *
-     * @param is     an InputStream providing access to the CSV data.
-     * @param format an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to use as a delimiter.
+     * @param is an InputStream providing access to the CSV data.
+     * @param format an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
+     *        use as a delimiter.
      * @return a Deephaven Table object
      * @throws IOException if the InputStream cannot be read
      */
@@ -410,26 +447,35 @@ public class CsvHelpers {
     }
 
     /**
-     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are inferred from the data.
+     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
+     * inferred from the data.
      *
-     * @param is       an InputStream providing access to the CSV data.
-     * @param format   an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to use as a delimiter.
-     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If passed explicitly as null, a StatusCallback instance will be created to log progress to the current logger.
+     * @param is an InputStream providing access to the CSV data.
+     * @param format an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
+     *        use as a delimiter.
+     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If
+     *        passed explicitly as null, a StatusCallback instance will be created to log progress to the current
+     *        logger.
      * @return a Deephaven Table object
      * @throws IOException if the InputStream cannot be read
      */
     @ScriptApi
-    static Table readHeaderlessCsv(InputStream is, final String format, StatusCallback progress, Collection<String> header) throws IOException {
+    static Table readHeaderlessCsv(InputStream is, final String format, StatusCallback progress,
+            Collection<String> header) throws IOException {
         final StatusCallback lProgress = checkStatusCallback(progress, true);
         return readCsvInternal(is, format, false, lProgress, true, header);
     }
 
     /**
-     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are inferred from the data.
+     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
+     * inferred from the data.
      *
-     * @param is       an InputStream providing access to the CSV data.
-     * @param format   an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to use as a delimiter.
-     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If passed explicitly as null, a StatusCallback instance will be created to log progress to the current logger.
+     * @param is an InputStream providing access to the CSV data.
+     * @param format an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
+     *        use as a delimiter.
+     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If
+     *        passed explicitly as null, a StatusCallback instance will be created to log progress to the current
+     *        logger.
      * @return a Deephaven Table object
      * @throws IOException if the InputStream cannot be read
      */
@@ -440,9 +486,10 @@ public class CsvHelpers {
     }
 
     /**
-     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are inferred from the data.
+     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
+     * inferred from the data.
      *
-     * @param is        an InputStream providing access to the CSV data.
+     * @param is an InputStream providing access to the CSV data.
      * @param separator a char to use as the delimiter value when parsing the file.
      * @return a Deephaven Table object
      * @throws IOException if the InputStream cannot be read
@@ -453,11 +500,14 @@ public class CsvHelpers {
     }
 
     /**
-     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are inferred from the data.
+     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
+     * inferred from the data.
      *
-     * @param is        an InputStream providing access to the CSV data.
+     * @param is an InputStream providing access to the CSV data.
      * @param separator a char to use as the delimiter value when parsing the file.
-     * @param progress  a StatusCallback object that can be used to log progress details or update a progress bar. If passed explicitly as null, a StatusCallback instance will be created to log progress to the current logger.
+     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If
+     *        passed explicitly as null, a StatusCallback instance will be created to log progress to the current
+     *        logger.
      * @return a Deephaven Table object
      * @throws IOException if the InputStream cannot be read
      */
@@ -468,9 +518,10 @@ public class CsvHelpers {
     }
 
     /**
-     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are inferred from the data.
+     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
+     * inferred from the data.
      *
-     * @param is        an InputStream providing access to the CSV data.
+     * @param is an InputStream providing access to the CSV data.
      * @param separator a char to use as the delimiter value when parsing the file.
      * @return a Deephaven QueryTable object
      * @throws IOException if the InputStream cannot be read
@@ -481,7 +532,8 @@ public class CsvHelpers {
     }
 
     /**
-     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are inferred from the data.
+     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
+     * inferred from the data.
      *
      * @param is an InputStream providing access to the CSV data.
      * @return a Deephaven Table object
@@ -493,10 +545,13 @@ public class CsvHelpers {
     }
 
     /**
-     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are inferred from the data.
+     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
+     * inferred from the data.
      *
-     * @param is       an InputStream providing access to the CSV data.
-     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If passed explicitly as null, a StatusCallback instance will be created to log progress to the current logger.
+     * @param is an InputStream providing access to the CSV data.
+     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If
+     *        passed explicitly as null, a StatusCallback instance will be created to log progress to the current
+     *        logger.
      * @return a Deephaven Table object
      * @throws IOException if the InputStream cannot be read
      */
@@ -507,46 +562,59 @@ public class CsvHelpers {
     }
 
     /**
-     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are inferred from the data.
+     * Returns a memory table created by importing CSV data. The first row must be column names. Column data types are
+     * inferred from the data.
      *
      * @param is an InputStream providing access to the CSV data.
      * @return a Deephaven QueryTable object
      * @throws IOException if the InputStream cannot be read
      */
-    //  Public for backwards-compatibility for users calling readCsv2
+    // Public for backwards-compatibility for users calling readCsv2
     @SuppressWarnings("WeakerAccess")
     public static QueryTable readCsv2(InputStream is) throws IOException {
         return (QueryTable) readCsvInternal(is, null, true, checkStatusCallback(null, false));
     }
 
     /**
-     * Does the work of creating a memory table by importing CSV data. The first row must be column names. Column data types are inferred from the data.
+     * Does the work of creating a memory table by importing CSV data. The first row must be column names. Column data
+     * types are inferred from the data.
      *
-     * @param is       an InputStream providing access to the CSV data.
-     * @param format   an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to use as a delimiter.
-     * @param v2       whether the process the import using the older QueryTable processing (v2 = true) or the newer InMemoryTable processing (v2 = false).
-     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If passed explicitly as null, a StatusCallback instance will be created to log progress to the current logger.
+     * @param is an InputStream providing access to the CSV data.
+     * @param format an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
+     *        use as a delimiter.
+     * @param v2 whether the process the import using the older QueryTable processing (v2 = true) or the newer
+     *        InMemoryTable processing (v2 = false).
+     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If
+     *        passed explicitly as null, a StatusCallback instance will be created to log progress to the current
+     *        logger.
      * @return a Deephaven Table object
      * @throws IOException if the InputStream cannot be read
      */
-    private static Table readCsvInternal(InputStream is, String format, boolean v2, StatusCallback progress) throws IOException {
+    private static Table readCsvInternal(InputStream is, String format, boolean v2, StatusCallback progress)
+            throws IOException {
         return readCsvInternal(is, format, v2, progress, false, null);
     }
 
 
     /**
-     * Does the work of creating a memory table by importing CSV data. The first row must be column names. Column data types are inferred from the data.
+     * Does the work of creating a memory table by importing CSV data. The first row must be column names. Column data
+     * types are inferred from the data.
      *
-     * @param is       an InputStream providing access to the CSV data.
-     * @param format   an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to use as a delimiter.
-     * @param v2       whether the process the import using the older QueryTable processing (v2 = true) or the newer InMemoryTable processing (v2 = false).
-     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If passed explicitly as null, a StatusCallback instance will be created to log progress to the current logger.
+     * @param is an InputStream providing access to the CSV data.
+     * @param format an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
+     *        use as a delimiter.
+     * @param v2 whether the process the import using the older QueryTable processing (v2 = true) or the newer
+     *        InMemoryTable processing (v2 = false).
+     * @param progress a StatusCallback object that can be used to log progress details or update a progress bar. If
+     *        passed explicitly as null, a StatusCallback instance will be created to log progress to the current
+     *        logger.
      * @param noHeader True when the CSV does not have a header row.
-     * @param header   Column names to use as, or instead of, the header row for the CSV.
+     * @param header Column names to use as, or instead of, the header row for the CSV.
      * @return a Deephaven Table object
      * @throws IOException if the InputStream cannot be read
      */
-    private static Table readCsvInternal(InputStream is, String format, boolean v2, StatusCallback progress, boolean noHeader, @Nullable Collection<String> header) throws IOException {
+    private static Table readCsvInternal(InputStream is, String format, boolean v2, StatusCallback progress,
+            boolean noHeader, @Nullable Collection<String> header) throws IOException {
         final char separator;
         final InputStreamReader fileReader = new InputStreamReader(is);
 
@@ -565,7 +633,8 @@ public class CsvHelpers {
             }
         }
 
-        final CSVFormat parseFormat = CsvParserFormat.getCsvFormat(format, separator, (format.equals("TRIM")), noHeader, header == null ? null : new ArrayList<>(header));
+        final CSVFormat parseFormat = CsvParserFormat.getCsvFormat(format, separator, (format.equals("TRIM")), noHeader,
+                header == null ? null : new ArrayList<>(header));
         final CSVParser parser = new CSVParser(fileReader, parseFormat);
 
         lProgress.update(10, "Reading column names from CSV.");
@@ -594,10 +663,10 @@ public class CsvHelpers {
             }
         }
 
-        /* Validate provided header:
-         * The parser will fail to read if there are more column headers than data columns, but having less headers
-         * than data columns is perfectly valid, and there will be cases where columns are variable, but there is
-         * a guaranteed left-subset, or a user is only interested in a left-subset of the data.
+        /*
+         * Validate provided header: The parser will fail to read if there are more column headers than data columns,
+         * but having less headers than data columns is perfectly valid, and there will be cases where columns are
+         * variable, but there is a guaranteed left-subset, or a user is only interested in a left-subset of the data.
          */
         if (header != null && columnNames.length > colCount && csvData.size() > 0) {
             throw new RuntimeException("More column names provided in the header (" + columnNames.length
@@ -615,13 +684,15 @@ public class CsvHelpers {
         int numRows = csvData.size();
 
         for (int col = 0; col < columnNames.length; col++) {
-            lProgress.update(20 + (col + 1) * 70 / columnNames.length, "Parsing CSV column " + (col + 1) + " of " + columnNames.length + ".");
+            lProgress.update(20 + (col + 1) * 70 / columnNames.length,
+                    "Parsing CSV column " + (col + 1) + " of " + columnNames.length + ".");
             columnData[col] = parseColumn(csvData, numRows, col, initialLineNumber);
         }
 
         HashSet<String> taken = new HashSet<>();
         for (int i = 0; i < columnNames.length; i++) {
-            // The Apache parser does not allow duplicate column names, including blank/null, but it will allow one blank/null.
+            // The Apache parser does not allow duplicate column names, including blank/null, but it will allow one
+            // blank/null.
             // Replace a single blank/null column name with the first unique value based on "Column1."
             if (columnNames[i] == null || columnNames[i].isEmpty()) {
                 columnNames[i] = "Column" + (i + 1);
@@ -633,7 +704,8 @@ public class CsvHelpers {
         if (v2) {
             Map<String, ColumnSource> columnSources = new LinkedHashMap<>();
             for (int ii = 0; ii < columnNames.length; ii++) {
-                lProgress.update(90 + (ii + 1) * 10 / columnNames.length, "Mapping CSV column " + (ii + 1) + " of " + columnNames.length + " to table.");
+                lProgress.update(90 + (ii + 1) * 10 / columnNames.length,
+                        "Mapping CSV column " + (ii + 1) + " of " + columnNames.length + " to table.");
                 ColumnSource arrayBackedSource = ArrayBackedColumnSource.getMemoryColumnSourceUntyped(columnData[ii]);
                 columnSources.put(columnNames[ii], arrayBackedSource);
             }
@@ -646,15 +718,18 @@ public class CsvHelpers {
     }
 
     /**
-     * Returns a column of data, and inspects the data read from a CSV to determine what data type would best fit the column.
+     * Returns a column of data, and inspects the data read from a CSV to determine what data type would best fit the
+     * column.
      *
-     * @param csvData           a List of CSVRecords from the Apache Commons CSV parser used to read the CSV file
-     * @param numRows           how many rows to read from the List
-     * @param col               which column from each record should be read
-     * @param initialLineNumber initial line number in the source file from which the data was read (i.e. 1 if there was a header, 0 if not)
+     * @param csvData a List of CSVRecords from the Apache Commons CSV parser used to read the CSV file
+     * @param numRows how many rows to read from the List
+     * @param col which column from each record should be read
+     * @param initialLineNumber initial line number in the source file from which the data was read (i.e. 1 if there was
+     *        a header, 0 if not)
      * @return an object representing an array of values from the column that was read
      */
-    private static Object parseColumn(List<CSVRecord> csvData, int numRows, int col, long initialLineNumber) throws IOException {
+    private static Object parseColumn(List<CSVRecord> csvData, int numRows, int col, long initialLineNumber)
+            throws IOException {
         Boolean isInteger = null;
         Boolean isLong = null;
         Boolean isDouble = null;
@@ -677,7 +752,7 @@ public class CsvHelpers {
 
             if (isInteger == null || isInteger) {
                 try {
-                    //noinspection ResultOfMethodCallIgnored
+                    // noinspection ResultOfMethodCallIgnored
                     Integer.parseInt(value);
                     isInteger = true;
                 } catch (NumberFormatException e) {
@@ -687,7 +762,7 @@ public class CsvHelpers {
 
             if (isLong == null || isLong) {
                 try {
-                    //noinspection ResultOfMethodCallIgnored
+                    // noinspection ResultOfMethodCallIgnored
                     Long.parseLong(value);
                     isLong = true;
                 } catch (NumberFormatException e) {
@@ -697,7 +772,7 @@ public class CsvHelpers {
 
             if (isDouble == null || isDouble) {
                 try {
-                    //noinspection ResultOfMethodCallIgnored
+                    // noinspection ResultOfMethodCallIgnored
                     Double.parseDouble(value);
                     isDouble = true;
                 } catch (NumberFormatException e) {

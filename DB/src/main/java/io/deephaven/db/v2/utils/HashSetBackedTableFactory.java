@@ -29,12 +29,12 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
-* An abstract table that represents a hashset of smart keys.  Since we are representing a set, there we are not defining
- * an order to our output.  Whatever order the table happens to end up in, is fine.
+ * An abstract table that represents a hashset of smart keys. Since we are representing a set, there we are not defining
+ * an order to our output. Whatever order the table happens to end up in, is fine.
  *
  * The table will refresh by regenerating the full hashset (using the setGenerator Function passed in); and then
  * comparing that to the existing hash set.
-*/
+ */
 public class HashSetBackedTableFactory {
     private final Function.Nullary<HashSet<SmartKey>> setGenerator;
     private final int refreshIntervalMs;
@@ -49,7 +49,8 @@ public class HashSetBackedTableFactory {
     private final TLongArrayList freeSet = new TLongArrayList();
     Index index;
 
-    private HashSetBackedTableFactory(Function.Nullary<HashSet<SmartKey>> setGenerator, int refreshIntervalMs, String... colNames) {
+    private HashSetBackedTableFactory(Function.Nullary<HashSet<SmartKey>> setGenerator, int refreshIntervalMs,
+            String... colNames) {
         this.setGenerator = setGenerator;
         this.refreshIntervalMs = refreshIntervalMs;
         nextRefresh = System.currentTimeMillis() + this.refreshIntervalMs;
@@ -69,7 +70,8 @@ public class HashSetBackedTableFactory {
      * @param colNames the column names for the output table, must match the number of elements in each SmartKey.
      * @return a table representing the Set returned by the setGenerator
      */
-    public static Table create(Function.Nullary<HashSet<SmartKey>> setGenerator, int refreshIntervalMs, String... colNames) {
+    public static Table create(Function.Nullary<HashSet<SmartKey>> setGenerator, int refreshIntervalMs,
+            String... colNames) {
         HashSetBackedTableFactory factory = new HashSetBackedTableFactory(setGenerator, refreshIntervalMs, colNames);
 
         IndexBuilder addedBuilder = Index.FACTORY.getRandomBuilder();
@@ -94,7 +96,7 @@ public class HashSetBackedTableFactory {
         HashSet<SmartKey> valueSet = setGenerator.call();
 
         synchronized (this) {
-            for (TObjectLongIterator<SmartKey> it = valueToIndexMap.iterator(); it.hasNext(); ) {
+            for (TObjectLongIterator<SmartKey> it = valueToIndexMap.iterator(); it.hasNext();) {
                 it.advance();
                 SmartKey key = it.key();
                 if (!valueSet.contains(key)) {
@@ -142,9 +144,8 @@ public class HashSetBackedTableFactory {
         }
     }
 
-    private class HashSetBackedTable extends QueryTable implements LiveTable
-    {
-        HashSetBackedTable(Index index, Map < String, ColumnSource > columns) {
+    private class HashSetBackedTable extends QueryTable implements LiveTable {
+        HashSetBackedTable(Index index, Map<String, ColumnSource> columns) {
             super(index, columns);
             if (refreshIntervalMs >= 0) {
                 setRefreshing(true);
@@ -186,7 +187,8 @@ public class HashSetBackedTableFactory {
         }
     }
 
-    private class SmartKeyWrapperColumnSource extends AbstractColumnSource<String> implements MutableColumnSourceGetDefaults.ForObject<String> {
+    private class SmartKeyWrapperColumnSource extends AbstractColumnSource<String>
+            implements MutableColumnSourceGetDefaults.ForObject<String> {
 
         private final int columnIndex;
 

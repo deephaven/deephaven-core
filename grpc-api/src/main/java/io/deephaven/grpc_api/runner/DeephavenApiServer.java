@@ -29,16 +29,27 @@ public class DeephavenApiServer {
     public interface ServerComponent {
         @Singleton
         DeephavenApiServer getServer();
+
         @Singleton
         SessionService getSessionService();
 
         @Component.Builder
         interface Builder {
-            @BindsInstance Builder withPort(@Named("grpc.port") int port);
-            @BindsInstance Builder withSchedulerPoolSize(@Named("scheduler.poolSize") int numThreads);
-            @BindsInstance Builder withSessionTokenExpireTmMs(@Named("session.tokenExpireMs") long tokenExpireMs);
-            @BindsInstance Builder withOut(@Named("out") PrintStream out);
-            @BindsInstance Builder withErr(@Named("err") PrintStream err);
+            @BindsInstance
+            Builder withPort(@Named("grpc.port") int port);
+
+            @BindsInstance
+            Builder withSchedulerPoolSize(@Named("scheduler.poolSize") int numThreads);
+
+            @BindsInstance
+            Builder withSessionTokenExpireTmMs(@Named("session.tokenExpireMs") long tokenExpireMs);
+
+            @BindsInstance
+            Builder withOut(@Named("out") PrintStream out);
+
+            @BindsInstance
+            Builder withErr(@Named("err") PrintStream err);
+
             ServerComponent build();
         }
     }
@@ -56,16 +67,20 @@ public class DeephavenApiServer {
         final SessionService sessionService = injector.getSessionService();
 
         // Stop accepting new gRPC requests.
-        ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST, server.server::shutdown);
+        ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST,
+                server.server::shutdown);
 
         // Close outstanding sessions to give any gRPCs closure.
-        ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.MIDDLE, sessionService::closeAllSessions);
+        ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.MIDDLE,
+                sessionService::closeAllSessions);
 
         // Finally wait for gRPC to exit now.
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.LAST, () -> {
             try {
                 if (!server.server.awaitTermination(10, TimeUnit.SECONDS)) {
-                    log.error().append("The gRPC server did not terminate in a reasonable amount of time. Invoking shutdownNow().").endl();
+                    log.error().append(
+                            "The gRPC server did not terminate in a reasonable amount of time. Invoking shutdownNow().")
+                            .endl();
                     server.server.shutdownNow();
                 }
             } catch (final InterruptedException ignored) {

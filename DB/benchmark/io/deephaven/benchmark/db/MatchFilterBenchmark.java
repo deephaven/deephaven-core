@@ -24,7 +24,7 @@ import static io.deephaven.benchmarking.BenchmarkTools.applySparsity;
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Warmup(iterations = 1, time = 1)
 @Measurement(iterations = 10, time = 5)
-@Timeout(time=10)
+@Timeout(time = 10)
 @Fork(1)
 public class MatchFilterBenchmark {
     private TableBenchmarkState state;
@@ -56,7 +56,7 @@ public class MatchFilterBenchmark {
         final BenchmarkTableBuilder builder;
         final int actualSize = BenchmarkTools.sizeWithSparsity(tableSize, sparsity);
 
-        switch(tableType) {
+        switch (tableType) {
             case "Historical":
                 builder = BenchmarkTools.persistentTableBuilder("Carlos", actualSize)
                         .setPartitioningFormula("${autobalance_single}")
@@ -93,7 +93,7 @@ public class MatchFilterBenchmark {
 
         final BenchmarkTable bmTable = builder.build();
         state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
-        inputTable = applySparsity(bmTable.getTable(),tableSize,sparsity,0).coalesce();
+        inputTable = applySparsity(bmTable.getTable(), tableSize, sparsity, 0).coalesce();
 
 
         final List<Object> values = new ArrayList<>();
@@ -102,7 +102,8 @@ public class MatchFilterBenchmark {
                 values.add(DBTimeUtils.plus(startTime, ii));
             }
         } else if (filterCol.equals("Symbol")) {
-            inputTable.selectDistinct("Symbol").head(matchValues).columnIterator("Symbol").forEachRemaining(values::add);
+            inputTable.selectDistinct("Symbol").head(matchValues).columnIterator("Symbol")
+                    .forEachRemaining(values::add);
         } else {
             for (int ii = 0; ii < matchValues; ++ii) {
                 values.add(ii);
@@ -133,7 +134,8 @@ public class MatchFilterBenchmark {
 
     private <R> R incrementalBenchmark(Function<Table, R> function) {
         final long sizePerStep = Math.max(inputTable.size() / 10, 1);
-        final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(sizePerStep, sizePerStep);
+        final IncrementalReleaseFilter incrementalReleaseFilter =
+                new IncrementalReleaseFilter(sizePerStep, sizePerStep);
         final Table filtered = inputTable.where(incrementalReleaseFilter);
 
         final R result = function.apply(filtered);
@@ -158,7 +160,7 @@ public class MatchFilterBenchmark {
         return state.setResult(inputTable.where(matchFilter)).coalesce();
     }
 
-    public static void main(String [] args) throws RunnerException {
+    public static void main(String[] args) throws RunnerException {
         BenchUtil.run(MatchFilterBenchmark.class);
     }
 

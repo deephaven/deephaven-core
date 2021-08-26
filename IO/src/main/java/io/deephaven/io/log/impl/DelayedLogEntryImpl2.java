@@ -48,8 +48,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
         try {
             primitiveWriter.writeByte(END_OF_HEADER);
             numActions++;
-        }
-        catch ( IOException x ) {
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
         return this;
@@ -57,7 +56,9 @@ public class DelayedLogEntryImpl2 implements LogEntry {
 
     // This doesn't apply for this implementation, it's intended for when the buffer is being created
     @Override
-    public int getEndOfHeaderOffset() { return 0; }
+    public int getEndOfHeaderOffset() {
+        return 0;
+    }
 
     private final ByteBufferStreams.Sink SINK = new ByteBufferStreams.Sink() {
         @Override
@@ -76,12 +77,12 @@ public class DelayedLogEntryImpl2 implements LogEntry {
     private final ByteBufferStreams.Source SOURCE = new ByteBufferStreams.Source() {
         @Override
         public ByteBuffer nextBuffer(ByteBuffer lastBuffer) {
-            if ( lastBuffer != null ) {
+            if (lastBuffer != null) {
                 bufferPool.give(lastBuffer);
             }
             ByteBuffer b = null;
-            if ( bufferPtr < buffers.length && (b = buffers[bufferPtr++]) != null ) {
-                buffers[bufferPtr-1] = null;
+            if (bufferPtr < buffers.length && (b = buffers[bufferPtr++]) != null) {
+                buffers[bufferPtr - 1] = null;
             }
             return b;
         }
@@ -134,7 +135,8 @@ public class DelayedLogEntryImpl2 implements LogEntry {
     }
 
     @Override
-    public LogEntry start(final LogSink logSink, final LogLevel level, final long currentTimeMicros, final Throwable t) {
+    public LogEntry start(final LogSink logSink, final LogLevel level, final long currentTimeMicros,
+            final Throwable t) {
         this.timestamp = currentTimeMicros;
         this.level = level;
         this.throwable = t;
@@ -144,7 +146,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
 
     @Override
     public LogEntry end() {
-        //noinspection unchecked
+        // noinspection unchecked
         logSink.write(this);
         return this;
     }
@@ -191,8 +193,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
             primitiveWriter.writeByte(APPEND_BOOLEAN);
             primitiveWriter.writeBoolean(b);
             numActions++;
-        }
-        catch ( IOException x ) {
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
         return this;
@@ -204,8 +205,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
             primitiveWriter.writeByte(APPEND_CHAR);
             primitiveWriter.writeChar(c);
             numActions++;
-        }
-        catch ( IOException x ) {
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
         return this;
@@ -217,8 +217,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
             primitiveWriter.writeByte(APPEND_SHORT);
             primitiveWriter.writeChar(s);
             numActions++;
-        }
-        catch ( IOException x ) {
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
         return this;
@@ -230,8 +229,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
             primitiveWriter.writeByte(APPEND_INT);
             primitiveWriter.writeInt(i);
             numActions++;
-        }
-        catch ( IOException x ) {
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
         return this;
@@ -243,8 +241,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
             primitiveWriter.writeByte(APPEND_LONG);
             primitiveWriter.writeLong(l);
             numActions++;
-        }
-        catch ( IOException x ) {
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
         return this;
@@ -256,8 +253,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
             primitiveWriter.writeByte(APPEND_DOUBLE);
             primitiveWriter.writeDouble(f);
             numActions++;
-        }
-        catch ( IOException x ) {
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
         return this;
@@ -265,16 +261,14 @@ public class DelayedLogEntryImpl2 implements LogEntry {
 
     @Override
     public LogEntry append(final LogOutputAppendable appendable) {
-        if ( appendable == null ) {
+        if (appendable == null) {
             try {
                 primitiveWriter.writeByte(APPEND_NULL);
                 numActions++;
-            }
-            catch ( IOException x ) {
+            } catch (IOException x) {
                 throw new UncheckedIOException(x);
             }
-        }
-        else {
+        } else {
             appendable.append(this);
         }
         return this;
@@ -306,22 +300,19 @@ public class DelayedLogEntryImpl2 implements LogEntry {
 
     @Override
     public LogEntry append(final CharSequence seq) {
-        if ( seq == null ) {
+        if (seq == null) {
             try {
                 primitiveWriter.writeByte(APPEND_NULL);
                 numActions++;
-            }
-            catch ( IOException x ) {
+            } catch (IOException x) {
                 throw new UncheckedIOException(x);
             }
-        }
-        else {
+        } else {
             try {
                 primitiveWriter.writeByte(APPEND_CHARSEQ);
                 objects = ArrayUtil.put(objects, objectsPtr++, seq, Object.class);
                 numActions++;
-            }
-            catch ( IOException x ) {
+            } catch (IOException x) {
                 throw new UncheckedIOException(x);
             }
         }
@@ -330,24 +321,21 @@ public class DelayedLogEntryImpl2 implements LogEntry {
 
     @Override
     public LogEntry append(final CharSequence seq, final int start, final int length) {
-        if ( seq == null ) {
+        if (seq == null) {
             try {
                 primitiveWriter.writeByte(APPEND_NULL);
                 numActions++;
-            }
-            catch ( IOException x ) {
+            } catch (IOException x) {
                 throw new UncheckedIOException(x);
             }
-        }
-        else {
+        } else {
             try {
                 primitiveWriter.writeByte(APPEND_CHARSEQ);
                 objects = ArrayUtil.put(objects, objectsPtr++, seq, Object.class);
                 primitiveWriter.writeInt(start);
                 primitiveWriter.writeInt(length);
                 numActions++;
-            }
-            catch ( IOException x ) {
+            } catch (IOException x) {
                 throw new UncheckedIOException(x);
             }
         }
@@ -356,15 +344,13 @@ public class DelayedLogEntryImpl2 implements LogEntry {
 
     @Override
     public LogEntry append(final ByteBuffer bb) {
-        if ( bb == null ) {
+        if (bb == null) {
             try {
                 primitiveWriter.writeByte(APPEND_NULL);
-            }
-            catch ( IOException x ) {
+            } catch (IOException x) {
                 throw new UncheckedIOException(x);
             }
-        }
-        else {
+        } else {
             try {
                 int pos = bb.position();
                 primitiveWriter.writeByte(APPEND_BYTES);
@@ -372,8 +358,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
                 primitiveWriter.write(bb);
                 bb.position(pos);
                 numActions++;
-            }
-            catch ( IOException x ) {
+            } catch (IOException x) {
                 throw new UncheckedIOException(x);
             }
         }
@@ -387,8 +372,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
             primitiveWriter.writeLong(utcMillis);
             objects = ArrayUtil.put(objects, objectsPtr++, tb, Object.class);
             numActions++;
-        }
-        catch ( IOException x ) {
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
         return this;
@@ -401,8 +385,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
             primitiveWriter.writeLong(utcMicros);
             objects = ArrayUtil.put(objects, objectsPtr++, tb, Object.class);
             numActions++;
-        }
-        catch ( IOException x ) {
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
         return this;
@@ -414,8 +397,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
             primitiveWriter.writeByte(APPEND_THROWABLE);
             objects = ArrayUtil.put(objects, objectsPtr++, t, Object.class);
             numActions++;
-        }
-        catch ( IOException x ) {
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
         return this;
@@ -428,8 +410,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
             primitiveWriter.writeInt(ba.length);
             primitiveWriter.write(ba, 0, ba.length);
             numActions++;
-        }
-        catch ( IOException x ) {
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
         return this;
@@ -442,8 +423,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
             primitiveWriter.writeInt(length);
             primitiveWriter.write(ba, pos, length);
             numActions++;
-        }
-        catch ( IOException x ) {
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
         return this;
@@ -452,7 +432,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
     @Override
     public LogEntry append(final byte[] ba, byte terminator) {
         int n = 0;
-        while ( n < ba.length && ba[n] != terminator ) {
+        while (n < ba.length && ba[n] != terminator) {
             ++n;
         }
         return append(ba, 0, n);
@@ -463,8 +443,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
         try {
             primitiveWriter.writeByte(NF);
             numActions++;
-        }
-        catch ( IOException x ) {
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
         return this;
@@ -475,8 +454,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
         try {
             primitiveWriter.writeByte(NL);
             numActions++;
-        }
-        catch ( IOException x ) {
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
         return this;
@@ -489,8 +467,8 @@ public class DelayedLogEntryImpl2 implements LogEntry {
             bufferPtr = 1;
             objectsPtr = 0;
             int action;
-            while ( (action = primitiveReader.read()) != -1 ) {
-                switch ( action ) {
+            while ((action = primitiveReader.read()) != -1) {
+                switch (action) {
                     case APPEND_BOOLEAN: {
                         logOutputBuffer = logOutputBuffer.append(primitiveReader.readBoolean());
                         break;
@@ -528,7 +506,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
                     }
                     case APPEND_BYTES: {
                         int n = primitiveReader.readInt();
-                        for ( int i = 0; i < n; ++i ) {
+                        for (int i = 0; i < n; ++i) {
                             logOutputBuffer = logOutputBuffer.append((char) primitiveReader.read());
                         }
                         break;
@@ -546,7 +524,7 @@ public class DelayedLogEntryImpl2 implements LogEntry {
                         break;
                     }
                     case APPEND_NULL: {
-                        logOutputBuffer = logOutputBuffer.append((LogOutputAppendable)null);
+                        logOutputBuffer = logOutputBuffer.append((LogOutputAppendable) null);
                         break;
                     }
                     case APPEND_THROWABLE: {
@@ -566,12 +544,11 @@ public class DelayedLogEntryImpl2 implements LogEntry {
                         break;
                     }
                     default:
-                        //noinspection ConstantConditions
+                        // noinspection ConstantConditions
                         throw Assert.statementNeverExecuted("Unexpected action: " + action);
                 }
             }
-        }
-        catch ( IOException x ) {
+        } catch (IOException x) {
             throw new UncheckedIOException(x);
         }
     }
@@ -583,37 +560,37 @@ public class DelayedLogEntryImpl2 implements LogEntry {
 
     @Override
     public LogOutput start() {
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         throw Assert.statementNeverExecuted("Not implemented");
     }
 
     @Override
     public LogOutput close() {
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         throw Assert.statementNeverExecuted("Not implemented");
     }
 
     @Override
     public int size() {
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         throw Assert.statementNeverExecuted("Not implemented");
     }
 
     @Override
     public int getBufferCount() {
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         throw Assert.statementNeverExecuted("Not implemented");
     }
 
     @Override
     public ByteBuffer getBuffer(final int i) {
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         throw Assert.statementNeverExecuted("Not implemented");
     }
 
     @Override
     public LogEntry clear() {
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         throw Assert.statementNeverExecuted("Not implemented");
     }
 }

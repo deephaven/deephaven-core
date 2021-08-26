@@ -20,7 +20,8 @@ public abstract class AbstractReplacingVisitorTest {
     }
 
     private static String print(FilterDescriptor f) {
-        FilterPrinter p = new FilterPrinter(str -> "\"" + str + "\"");//not correct, but good enough for logging failures
+        FilterPrinter p = new FilterPrinter(str -> "\"" + str + "\"");// not correct, but good enough for logging
+                                                                      // failures
         return p.print(f);
     }
 

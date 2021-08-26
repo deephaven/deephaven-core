@@ -7,8 +7,8 @@ package io.deephaven.base.string.cache;
 import org.jetbrains.annotations.NotNull;
 
 /**
-* See documentation in the interface and parent class for details.
-*/
+ * See documentation in the interface and parent class for details.
+ */
 public class ByteArrayCharSequenceAdapterImpl extends ByteOrientedCharSequenceAdapter {
 
     private byte byteArray[];
@@ -31,6 +31,7 @@ public class ByteArrayCharSequenceAdapterImpl extends ByteOrientedCharSequenceAd
 
     /**
      * Set the byte array backing this CharSequenceAdapter.
+     * 
      * @param byteArray A byte[] instance that contains a proto-String this adapter knows how to convert.
      * @param offset The index of the first char in byteArray that belongs to the proto-String.
      * @param length The length of the proto-String in chars.
@@ -60,6 +61,6 @@ public class ByteArrayCharSequenceAdapterImpl extends ByteOrientedCharSequenceAd
 
     @Override
     public final char charAt(final int index) {
-        return (char)(byteArray[offset + index] & 0xFF);
+        return (char) (byteArray[offset + index] & 0xFF);
     }
 }

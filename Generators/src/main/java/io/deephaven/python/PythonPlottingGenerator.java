@@ -48,8 +48,8 @@ public class PythonPlottingGenerator {
     private static List<PythonGeneratorParser.DocstringContainer> figureDocContainer;
     private static List<PythonGeneratorParser.DocstringContainer> plotDocContainer;
 
-    public static void main(String[] args) throws ClassNotFoundException, IOException{
-        if(args.length < 2) {
+    public static void main(String[] args) throws ClassNotFoundException, IOException {
+        if (args.length < 2) {
             throw new IllegalArgumentException("args[0] = devroot, args[1] = assertNoChange");
         }
 
@@ -57,7 +57,8 @@ public class PythonPlottingGenerator {
         assertNoChange = Boolean.parseBoolean(args[1]);
         plotPreamble = devroot + "/Generators/src/main/java/io/deephaven/pythonPreambles/PlotPreamble.txt";
         plotOutput = devroot + "/Integrations/python/deephaven/Plot/__init__.py";
-        figureWrapperPreamble = devroot + "/Generators/src/main/java/io/deephaven/pythonPreambles/FigureWrapperPreamble.txt";
+        figureWrapperPreamble =
+                devroot + "/Generators/src/main/java/io/deephaven/pythonPreambles/FigureWrapperPreamble.txt";
         figureWrapperOutput = devroot + "/Integrations/python/deephaven/Plot/figure_wrapper.py";
 
         docRoot = PythonGeneratorParser.getDefaultDocRoot(devroot);
@@ -65,7 +66,9 @@ public class PythonPlottingGenerator {
         log.info("PythonPlottingGenerator - using system file encoding: " + System.getProperty("file.encoding"));
 
         figureDocContainer = PythonGeneratorParser.getDocstringContainer(FIGURE_PATH, docRoot, log);
-        plotDocContainer = Arrays.stream(PLOTTING_CONVENIENCE_DOC_PATHS).flatMap(path->PythonGeneratorParser.getDocstringContainer(path, docRoot, log).stream()).collect(Collectors.toList());
+        plotDocContainer = Arrays.stream(PLOTTING_CONVENIENCE_DOC_PATHS)
+                .flatMap(path -> PythonGeneratorParser.getDocstringContainer(path, docRoot, log).stream())
+                .collect(Collectors.toList());
 
         createFigureWrapper();
         createInitFile();
@@ -85,8 +88,10 @@ public class PythonPlottingGenerator {
         createFigureMethod(generatedMethods);
 
         // find all the methods for plotting convenience
-        final PythonGeneratorParser.MethodContainer methodContainer = PythonGeneratorParser.getPublicMethodsDetails(PLOTTING_CONVENIENCE_PATH);
-        for(final PythonGeneratorParser.MethodSignatureCollection method : methodContainer.getMethodSignatures().values()) {
+        final PythonGeneratorParser.MethodContainer methodContainer =
+                PythonGeneratorParser.getPublicMethodsDetails(PLOTTING_CONVENIENCE_PATH);
+        for (final PythonGeneratorParser.MethodSignatureCollection method : methodContainer.getMethodSignatures()
+                .values()) {
             final String methodName = method.getMethodName();
             // get digested method signature
             final PythonGeneratorParser.MethodSignature methodDigest = method.reduceSignature();
@@ -114,8 +119,10 @@ public class PythonPlottingGenerator {
         final List<String> generatedMethods = new ArrayList<>();
         // find all the methods for Figure
 
-        final PythonGeneratorParser.MethodContainer methodContainer = PythonGeneratorParser.getPublicMethodsDetails(FIGURE_PATH);
-        for(final PythonGeneratorParser.MethodSignatureCollection method : methodContainer.getMethodSignatures().values()) {
+        final PythonGeneratorParser.MethodContainer methodContainer =
+                PythonGeneratorParser.getPublicMethodsDetails(FIGURE_PATH);
+        for (final PythonGeneratorParser.MethodSignatureCollection method : methodContainer.getMethodSignatures()
+                .values()) {
             final String methodName = method.getMethodName();
             // get digested method signature
             final PythonGeneratorParser.MethodSignature methodDigest = method.reduceSignature();
@@ -139,8 +146,8 @@ public class PythonPlottingGenerator {
     }
 
     private static void createMethod(final String methodName,
-                                     final PythonGeneratorParser.MethodSignature methodSig,
-                                     final List<String> generatedMethods) {
+            final PythonGeneratorParser.MethodSignature methodSig,
+            final List<String> generatedMethods) {
         final String paramString = methodSig.createPythonParams();
         final Class rClass = methodSig.getReturnClass();
         String decorator = "";
@@ -148,7 +155,7 @@ public class PythonPlottingGenerator {
                 PythonGeneratorParser.getMethodDocstring(plotDocContainer, methodName, 4) + "\n";
         final String endMethod;
 
-        if(Figure.class.equals(rClass)){
+        if (Figure.class.equals(rClass)) {
             endMethod = "    return FigureWrapper()." + methodName + "(" + paramString + ")\n";
         } else {
             decorator = "@_convertArguments\n";
@@ -162,20 +169,20 @@ public class PythonPlottingGenerator {
     }
 
     private static void createFigureMethod(final String methodName,
-                                             final PythonGeneratorParser.MethodSignature methodSig,
-                                             final List<String> generatedMethods){
+            final PythonGeneratorParser.MethodSignature methodSig,
+            final List<String> generatedMethods) {
         final String paramString = methodSig.createPythonParams();
         final String decorator;
         final String endMethod;
 
-        if(catPlotWrapper.contains(methodName)) {
+        if (catPlotWrapper.contains(methodName)) {
             decorator = "    @_convertCatPlotArguments\n";
-        }else{
+        } else {
             decorator = "    @_convertArguments\n";
         }
-        endMethod = "    def " + methodName + "(" + methodSig.createPythonParams(true)+ "):" +
-                    PythonGeneratorParser.getMethodDocstring(figureDocContainer, methodName, 8) +
-                    "\n        return FigureWrapper(figure=self.figure." + methodName + "(" + paramString + "))\n";
+        endMethod = "    def " + methodName + "(" + methodSig.createPythonParams(true) + "):" +
+                PythonGeneratorParser.getMethodDocstring(figureDocContainer, methodName, 8) +
+                "\n        return FigureWrapper(figure=self.figure." + methodName + "(" + paramString + "))\n";
         generatedMethods.add(decorator + endMethod);
     }
 }

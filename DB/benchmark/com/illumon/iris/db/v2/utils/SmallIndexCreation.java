@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Thread)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Warmup(timeUnit = TimeUnit.MILLISECONDS,iterations = 2, time = 2000)
-@Measurement(timeUnit = TimeUnit.MILLISECONDS,iterations = 5, time = 2000)
+@Warmup(timeUnit = TimeUnit.MILLISECONDS, iterations = 2, time = 2000)
+@Measurement(timeUnit = TimeUnit.MILLISECONDS, iterations = 5, time = 2000)
 @Fork(1)
 public class SmallIndexCreation {
     // @Param({"12", "16", "20"})
@@ -38,6 +38,7 @@ public class SmallIndexCreation {
     private static final long seed = 1;
 
     private static final TIntHashSet workSet = new TIntHashSet();
+
     private static void populateRandomBlockValues(
             final Random random, final int[] blockValues, final int valuesPerBlock) {
         workSet.clear();
@@ -55,8 +56,7 @@ public class SmallIndexCreation {
         int n = 0;
         long block = 0;
         final int[] blockValues = new int[valuesPerBlock];
-        ADDING_VALUES:
-        while (true) {
+        ADDING_VALUES: while (true) {
             populateRandomBlockValues(random, blockValues, valuesPerBlock);
             for (long v : blockValues) {
                 values[n++] = block * RspArray.BLOCK_SIZE + v;

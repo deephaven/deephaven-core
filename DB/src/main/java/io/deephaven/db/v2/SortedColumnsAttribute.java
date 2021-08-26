@@ -33,7 +33,7 @@ public class SortedColumnsAttribute {
      * @return an optional containing the SortingOrder of the column if defined, empty otherwise
      */
     public static Optional<SortingOrder> getOrderForColumn(Table table, String columnName) {
-        return getOrderForColumn((String)table.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE), columnName);
+        return getOrderForColumn((String) table.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE), columnName);
     }
 
     /**
@@ -81,9 +81,10 @@ public class SortedColumnsAttribute {
         if (attribute == null || attribute.isEmpty()) {
             return writable ? new HashMap<>() : Collections.emptyMap();
         }
-        final String [] columnAttrs = attribute.split(",");
+        final String[] columnAttrs = attribute.split(",");
 
-        Map<String, SortingOrder> map = Arrays.stream(columnAttrs).map(s -> s.split("=")).collect(Collectors.toMap(a -> a[0], a -> SortingOrder.valueOf(a[1])));
+        Map<String, SortingOrder> map = Arrays.stream(columnAttrs).map(s -> s.split("="))
+                .collect(Collectors.toMap(a -> a[0], a -> SortingOrder.valueOf(a[1])));
         if (writable) {
             return map;
         } else {

@@ -11,10 +11,10 @@ public class JsNumberFormatTestGwt extends GWTTestCase {
 
     public void testFormat() {
         // broken in gwt 2.8.2
-//        assertRoundTrip("0.00%", "100.00%", 1.0);
-//        assertRoundTrip("0.00%", "0.00%", 0.00);
-//        assertRoundTrip("0.00%", "55.00%", 0.55);
-//        assertRoundTrip("0.00%", "55.00%", 0.0123);
+        // assertRoundTrip("0.00%", "100.00%", 1.0);
+        // assertRoundTrip("0.00%", "0.00%", 0.00);
+        // assertRoundTrip("0.00%", "55.00%", 0.55);
+        // assertRoundTrip("0.00%", "55.00%", 0.0123);
         JsNumberFormat percent = JsNumberFormat.getFormat("0.00%");
         assertEquals("100.00%", percent.format(1.0));
         assertEquals("55.00%", percent.format(0.55));
@@ -33,7 +33,7 @@ public class JsNumberFormatTestGwt extends GWTTestCase {
         assertRoundTrip("###,###.00", ".55", 0.55);
         assertRoundTrip("###,###.00", "1,234.56", 1234.56);
 
-        //leave leading zero in parsed text
+        // leave leading zero in parsed text
         JsNumberFormat format = JsNumberFormat.getFormat("###,###.00");
         assertEquals(0.55, format.parse("0.55"), 0.000001);
     }

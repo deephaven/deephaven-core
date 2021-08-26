@@ -22,8 +22,7 @@ public final class StandaloneTableKey implements ImmutableTableKey {
         return INSTANCE;
     }
 
-    private StandaloneTableKey() {
-    }
+    private StandaloneTableKey() {}
 
     @Override
     public String getImplementationName() {

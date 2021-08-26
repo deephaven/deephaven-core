@@ -65,7 +65,8 @@ public class SimpleDeephavenClient {
     public static void main(final String[] args) throws Exception {
         // Assign properties that need to be set to even turn on
         System.setProperty("Configuration.rootFile", "grpc-api.prop");
-        System.setProperty("io.deephaven.configuration.PropertyInputStreamLoader.override", "io.deephaven.configuration.PropertyInputStreamLoaderTraditional");
+        System.setProperty("io.deephaven.configuration.PropertyInputStreamLoader.override",
+                "io.deephaven.configuration.PropertyInputStreamLoaderTraditional");
 
         final String target = args.length == 0 ? "localhost:8080" : args[0];
         final ManagedChannel channel = ManagedChannelBuilder.forTarget(target)
@@ -121,6 +122,7 @@ public class SimpleDeephavenClient {
     }
 
     private int nextTableId = 0;
+
     private int nextExportId() {
         return ++nextTableId;
     }
@@ -160,11 +162,12 @@ public class SimpleDeephavenClient {
                         .setResultId(exportTable)
                         .setSourceId(TableReference.newBuilder().setBatchOffset(1).build())
                         .build()))
-                .build(), new ResponseBuilder<ExportedTableCreationResponse>()
-                .onError(this::onError)
-                .onNext(this::onExportedTableCreationResponse)
-                .onComplete(() -> log.info().append("Batch Complete"))
-                .build());
+                .build(),
+                new ResponseBuilder<ExportedTableCreationResponse>()
+                        .onError(this::onError)
+                        .onNext(this::onExportedTableCreationResponse)
+                        .onComplete(() -> log.info().append("Batch Complete"))
+                        .build());
 
         flightService.getSchema(
                 ExportTicketHelper.ticketToDescriptor(exportTable),
@@ -173,32 +176,36 @@ public class SimpleDeephavenClient {
                         .onNext(this::onSchemaResult)
                         .build());
 
-        final StreamObserver<Flight.FlightData> putObserver = flightService.doPut(new ResponseBuilder<Flight.PutResult>()
-                .onError(this::onError)
-                .onComplete(() -> log.info().append("Flight PUT Complete").endl())
-                .build());
-        flightService.doGet(Flight.Ticket.newBuilder().setTicket(exportTable.getTicket()).build(), new ResponseBuilder<Flight.FlightData>()
-                .onError(this::onError)
-                .onNext(data -> {
-                    log.info().append("DoGet Recv Payload").endl();
-                    putObserver.onNext(data);
-                })
-                .onComplete(putObserver::onCompleted)
-                .build());
+        final StreamObserver<Flight.FlightData> putObserver =
+                flightService.doPut(new ResponseBuilder<Flight.PutResult>()
+                        .onError(this::onError)
+                        .onComplete(() -> log.info().append("Flight PUT Complete").endl())
+                        .build());
+        flightService.doGet(Flight.Ticket.newBuilder().setTicket(exportTable.getTicket()).build(),
+                new ResponseBuilder<Flight.FlightData>()
+                        .onError(this::onError)
+                        .onNext(data -> {
+                            log.info().append("DoGet Recv Payload").endl();
+                            putObserver.onNext(data);
+                        })
+                        .onComplete(putObserver::onCompleted)
+                        .build());
     }
 
     private void onSchemaResult(final Flight.SchemaResult schemaResult) {
         final Schema schema = Schema.getRootAsSchema(schemaResult.getSchema().asReadOnlyByteBuffer());
         final TableDefinition definition = BarrageSchemaUtil.schemaToTableDefinition(schema);
 
-        // Note: until subscriptions move to flatbuffer, we cannot distinguish between the all-inclusive non-existing-bitset and an empty bitset.
+        // Note: until subscriptions move to flatbuffer, we cannot distinguish between the all-inclusive
+        // non-existing-bitset and an empty bitset.
         final BitSet columns = new BitSet();
         columns.set(0, definition.getColumns().length);
 
         resultTable = BarrageTable.make(definition, false);
         final InstrumentedShiftAwareListener listener = new InstrumentedShiftAwareListener("test") {
             @Override
-            protected void onFailureInternal(final Throwable originalException, final UpdatePerformanceTracker.Entry sourceEntry) {
+            protected void onFailureInternal(final Throwable originalException,
+                    final UpdatePerformanceTracker.Entry sourceEntry) {
                 SimpleDeephavenClient.this.onError(originalException);
             }
 
@@ -217,8 +224,8 @@ public class SimpleDeephavenClient {
 
     private void onScriptComplete() {
         sessionService.closeSession(HandshakeRequest.newBuilder()
-                        .setAuthProtocol(0)
-                        .setPayload(ByteString.copyFromUtf8(session.toString())).build(),
+                .setAuthProtocol(0)
+                .setPayload(ByteString.copyFromUtf8(session.toString())).build(),
                 new ResponseBuilder<ReleaseResponse>()
                         .onNext(r -> log.info().append("release session response ").append(r.toString()).endl())
                         .onError(e -> stop())
@@ -309,8 +316,8 @@ public class SimpleDeephavenClient {
 
     private void refreshToken() {
         sessionService.refreshSessionToken(HandshakeRequest.newBuilder()
-                        .setAuthProtocol(0)
-                        .setPayload(ByteString.copyFromUtf8(session.toString())).build(),
+                .setAuthProtocol(0)
+                .setPayload(ByteString.copyFromUtf8(session.toString())).build(),
                 new ResponseBuilder<HandshakeResponse>()
                         .onError(this::onError)
                         .onNext(this::onNewHandshakeResponse)
@@ -332,7 +339,8 @@ public class SimpleDeephavenClient {
     private void safeSleep(final long millis) {
         try {
             Thread.sleep(millis);
-        } catch (final InterruptedException ignore) {}
+        } catch (final InterruptedException ignore) {
+        }
     }
 
     private static class ResponseBuilder<T> {
@@ -359,17 +367,20 @@ public class SimpleDeephavenClient {
             return new StreamObserver<T>() {
                 @Override
                 public void onNext(final T value) {
-                    if (_onNext != null) _onNext.accept(value);
+                    if (_onNext != null)
+                        _onNext.accept(value);
                 }
 
                 @Override
                 public void onError(final Throwable t) {
-                    if (_onError != null) _onError.accept(t);
+                    if (_onError != null)
+                        _onError.accept(t);
                 }
 
                 @Override
                 public void onCompleted() {
-                    if (_onComplete != null) _onComplete.run();
+                    if (_onComplete != null)
+                        _onComplete.run();
                 }
             };
         }
@@ -378,8 +389,10 @@ public class SimpleDeephavenClient {
     private class AuthInterceptor implements ClientInterceptor {
         @Override
         public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
-                final MethodDescriptor<ReqT, RespT> methodDescriptor, final CallOptions callOptions, final Channel channel) {
-            return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(channel.newCall(methodDescriptor, callOptions)) {
+                final MethodDescriptor<ReqT, RespT> methodDescriptor, final CallOptions callOptions,
+                final Channel channel) {
+            return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(
+                    channel.newCall(methodDescriptor, callOptions)) {
                 @Override
                 public void start(final Listener<RespT> responseListener, final Metadata headers) {
                     final UUID currSession = session;

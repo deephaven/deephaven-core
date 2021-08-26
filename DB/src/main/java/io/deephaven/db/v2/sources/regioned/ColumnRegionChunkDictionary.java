@@ -18,7 +18,8 @@ import java.util.function.Function;
  */
 public class ColumnRegionChunkDictionary<DICT_TYPE, DATA_TYPE, ATTR extends Any>
         extends GenericColumnRegionBase<ATTR>
-        implements ColumnRegionObject<DATA_TYPE, ATTR>, Page.WithDefaults<ATTR>, DefaultChunkSource.SupportsContiguousGet<ATTR> {
+        implements ColumnRegionObject<DATA_TYPE, ATTR>, Page.WithDefaults<ATTR>,
+        DefaultChunkSource.SupportsContiguousGet<ATTR> {
 
     private final ObjectChunk<DICT_TYPE, ATTR> dictionary;
     private final Function<DICT_TYPE, DATA_TYPE> conversion;
@@ -28,18 +29,19 @@ public class ColumnRegionChunkDictionary<DICT_TYPE, DATA_TYPE, ATTR extends Any>
             @NotNull final Class<DATA_TYPE> dataType,
             @NotNull final Chunk<ATTR> dictionary) {
         if (CharSequence.class.isAssignableFrom(dataType)) {
-            //noinspection unchecked
+            // noinspection unchecked
             final StringCache<?> stringCache = StringUtils.getStringCache((Class<? extends CharSequence>) dataType);
-            //noinspection unchecked
-            final Function<String, DATA_TYPE> conversion = (final String dictValue) -> (DATA_TYPE) stringCache.getCachedString(dictValue);
+            // noinspection unchecked
+            final Function<String, DATA_TYPE> conversion =
+                    (final String dictValue) -> (DATA_TYPE) stringCache.getCachedString(dictValue);
             return new ColumnRegionChunkDictionary<>(pageMask, dictionary.asObjectChunk(), conversion);
         }
         return new ColumnRegionChunkDictionary<>(pageMask, dictionary.asObjectChunk(), Function.identity());
     }
 
     private ColumnRegionChunkDictionary(final long pageMask,
-                                        @NotNull final ObjectChunk<DICT_TYPE, ATTR> dictionary,
-                                        @NotNull final Function<DICT_TYPE, DATA_TYPE> conversion) {
+            @NotNull final ObjectChunk<DICT_TYPE, ATTR> dictionary,
+            @NotNull final Function<DICT_TYPE, DATA_TYPE> conversion) {
         super(pageMask);
         this.dictionary = dictionary;
         this.conversion = conversion;
@@ -56,15 +58,16 @@ public class ColumnRegionChunkDictionary<DICT_TYPE, DATA_TYPE, ATTR extends Any>
     }
 
     @Override
-    public void fillChunkAppend(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination, @NotNull final OrderedKeys orderedKeys) {
+    public void fillChunkAppend(@NotNull final FillContext context,
+            @NotNull final WritableChunk<? super ATTR> destination, @NotNull final OrderedKeys orderedKeys) {
         final WritableObjectChunk<DATA_TYPE, ? super ATTR> objectDestination = destination.asWritableObjectChunk();
         orderedKeys.forAllLongs((final long key) -> objectDestination.add(getObject(key)));
     }
 
     @Override
     public boolean gatherDictionaryValuesIndex(@NotNull final ReadOnlyIndex.SearchIterator keysToVisit,
-                                               @NotNull final OrderedKeys.Iterator knownKeys,
-                                               @NotNull final Index.SequentialBuilder sequentialBuilder) {
+            @NotNull final OrderedKeys.Iterator knownKeys,
+            @NotNull final Index.SequentialBuilder sequentialBuilder) {
         final long pageFirstKey = firstRow(keysToVisit.currentValue());
         final long pageLastKey = pageFirstKey + dictionary.size() - 1;
         if (knownKeys.peekNextKey() != pageFirstKey) {

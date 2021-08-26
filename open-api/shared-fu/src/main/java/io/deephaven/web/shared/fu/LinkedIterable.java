@@ -63,7 +63,9 @@ public class LinkedIterable<T> implements MappedIterable<T> {
 
     public LinkedIterable(T head, T tail, boolean includeTail, boolean strict, UnaryOperator<T> next) {
         this(head, new UnaryOperator<T>() {
-            boolean done = head == tail; // when head == tail, we will always return the head anyway, so just skip the next-ing.
+            boolean done = head == tail; // when head == tail, we will always return the head anyway, so just skip the
+                                         // next-ing.
+
             @Override
             public T apply(T cur) {
                 if (done) {

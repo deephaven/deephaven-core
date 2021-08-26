@@ -48,8 +48,7 @@ import static io.deephaven.libs.primitives.IntegerNumericPrimitives.abs;
  */
 public class PlotUtils {
 
-    private PlotUtils() {
-    }
+    private PlotUtils() {}
 
     /** Instances of ColorPaletteArray have some state, so this is kept privat. */
     private static final ColorPaletteArray MATPLOT_COLORS = new ColorPaletteArray(ColorPaletteArray.Palette.MATPLOTLIB);
@@ -72,8 +71,8 @@ public class PlotUtils {
     }
 
     /**
-     * Gets a variable name not already in the {@link QueryScope} by appending
-     * random integers to the end of {@code root} until a unique name is found.
+     * Gets a variable name not already in the {@link QueryScope} by appending random integers to the end of
+     * {@code root} until a unique name is found.
      *
      * @param root base variable name
      * @return unique randomized variable name based off {@code root}
@@ -107,8 +106,7 @@ public class PlotUtils {
     }
 
     /**
-     * Gets the double equivalent of the {@link Number}.
-     * Null {@link QueryConstants} are converted to Double.NaN.
+     * Gets the double equivalent of the {@link Number}. Null {@link QueryConstants} are converted to Double.NaN.
      *
      * @param n number
      * @return double value of {@code n}
@@ -137,7 +135,7 @@ public class PlotUtils {
     /**
      * Creates a new table with a column holding the specified data.
      *
-     * @param x       data
+     * @param x data
      * @param colName column name
      * @return new table with column holding {@code x}
      */
@@ -149,9 +147,9 @@ public class PlotUtils {
     /**
      * Creates a new table with a column holding the specified data.
      *
-     * @param x       data
+     * @param x data
      * @param colName column name
-     * @param <T>     type of the data in {@code x}
+     * @param <T> type of the data in {@code x}
      * @return new table with column holding {@code x}
      */
     public static <T> Table table(final List<T> x, final String colName) {
@@ -163,7 +161,7 @@ public class PlotUtils {
     /**
      * Creates a new table with a column of shorts holding the specified data.
      *
-     * @param x       data
+     * @param x data
      * @param colName column name
      * @return new table with column holding {@code x}
      */
@@ -175,7 +173,7 @@ public class PlotUtils {
     /**
      * Creates a new table with a column of ints holding the specified data.
      *
-     * @param x       data
+     * @param x data
      * @param colName column name
      * @return new table with column holding {@code x}
      */
@@ -187,7 +185,7 @@ public class PlotUtils {
     /**
      * Creates a new table with a column of longs holding the specified data.
      *
-     * @param x       data
+     * @param x data
      * @param colName column name
      * @return new table with column holding {@code x}
      */
@@ -199,7 +197,7 @@ public class PlotUtils {
     /**
      * Creates a new table with a column of floats holding the specified data.
      *
-     * @param x       data
+     * @param x data
      * @param colName column name
      * @return new table with column holding {@code x}
      */
@@ -211,7 +209,7 @@ public class PlotUtils {
     /**
      * Creates a new table with a column of doubles holding the specified data.
      *
-     * @param x       data
+     * @param x data
      * @param colName column name
      * @return new table with column holding {@code x}
      */
@@ -221,13 +219,12 @@ public class PlotUtils {
     }
 
     /**
-     * Creates a new table with a column of doubles holding the specified data.
-     * Values of {@code x} are converted to their corresponding double values.
-     * Nulls are mapped to Double.NaN.
+     * Creates a new table with a column of doubles holding the specified data. Values of {@code x} are converted to
+     * their corresponding double values. Nulls are mapped to Double.NaN.
      *
-     * @param x       data
+     * @param x data
      * @param colName column name
-     * @param <T>     type of the data in {@code x}
+     * @param <T> type of the data in {@code x}
      * @return new table with column holding {@code x}
      */
     public static <T extends Number> Table doubleTable(final T[] x, final String colName) {
@@ -236,19 +233,19 @@ public class PlotUtils {
     }
 
     /**
-     * Creates a new table with a column of doubles holding the specified data.
-     * Values of {@code x} are converted to their corresponding double values.
-     * Nulls are mapped to Double.NaN.
+     * Creates a new table with a column of doubles holding the specified data. Values of {@code x} are converted to
+     * their corresponding double values. Nulls are mapped to Double.NaN.
      *
-     * @param x       data
+     * @param x data
      * @param colName column name
-     * @param <T>     type of the data in {@code x}
+     * @param <T> type of the data in {@code x}
      * @return new table with column holding {@code x}
      */
     public static <T extends Number> Table doubleTable(final List<T> x, final String colName) {
         return table(x, "X")
                 .updateView("__Class__ = X.getClass()")
-                .view(colName + " = __Class__==Double.class ? X=NULL_DOUBLE ? Double.NaN : ((Double) X).doubleValue() " +
+                .view(colName + " = __Class__==Double.class ? X=NULL_DOUBLE ? Double.NaN : ((Double) X).doubleValue() "
+                        +
                         ": __Class__==Short.class ? X=NULL_SHORT ? Double.NaN : ((Short) X).doubleValue() " +
                         ": __Class__==Long.class ? X=NULL_LONG ? Double.NaN : ((Long) X).doubleValue() " +
                         ": __Class__==Integer.class ? X=NULL_INT ? Double.NaN : ((Integer) X).doubleValue() " +
@@ -258,11 +255,10 @@ public class PlotUtils {
     }
 
     /**
-     * Creates a new table with a column of doubles holding the specified data.
-     * Values of {@code x} are converted to their corresponding double values.
-     * Nulls are mapped to Double.NaN.
+     * Creates a new table with a column of doubles holding the specified data. Values of {@code x} are converted to
+     * their corresponding double values. Nulls are mapped to Double.NaN.
      *
-     * @param x       data
+     * @param x data
      * @param colName column name
      * @return new table with column holding {@code x}
      */
@@ -272,11 +268,10 @@ public class PlotUtils {
     }
 
     /**
-     * Creates a new table with a column of doubles holding the specified data.
-     * Values of {@code x} are converted to their corresponding double values.
-     * Nulls are mapped to Double.NaN.
+     * Creates a new table with a column of doubles holding the specified data. Values of {@code x} are converted to
+     * their corresponding double values. Nulls are mapped to Double.NaN.
      *
-     * @param x       data
+     * @param x data
      * @param colName column name
      * @return new table with column holding {@code x}
      */
@@ -286,11 +281,10 @@ public class PlotUtils {
     }
 
     /**
-     * Creates a new table with a column of doubles holding the specified data.
-     * Values of {@code x} are converted to their corresponding double values.
-     * Nulls are mapped to Double.NaN.
+     * Creates a new table with a column of doubles holding the specified data. Values of {@code x} are converted to
+     * their corresponding double values. Nulls are mapped to Double.NaN.
      *
-     * @param x       data
+     * @param x data
      * @param colName column name
      * @return new table with column holding {@code x}
      */
@@ -300,11 +294,10 @@ public class PlotUtils {
     }
 
     /**
-     * Creates a new table with a column of doubles holding the specified data.
-     * Values of {@code x} are converted to their corresponding double values.
-     * Nulls are mapped to Double.NaN.
+     * Creates a new table with a column of doubles holding the specified data. Values of {@code x} are converted to
+     * their corresponding double values. Nulls are mapped to Double.NaN.
      *
-     * @param x       data
+     * @param x data
      * @param colName column name
      * @return new table with column holding {@code x}
      */
@@ -314,11 +307,10 @@ public class PlotUtils {
     }
 
     /**
-     * Creates a new table with a column of doubles holding the specified data.
-     * Values of {@code x} are converted to their corresponding double values.
-     * Nulls are mapped to Double.NaN.
+     * Creates a new table with a column of doubles holding the specified data. Values of {@code x} are converted to
+     * their corresponding double values. Nulls are mapped to Double.NaN.
      *
-     * @param x       data
+     * @param x data
      * @param colName column name
      * @return new table with column holding {@code x}
      */
@@ -328,16 +320,15 @@ public class PlotUtils {
     }
 
     /*
-     * Auto unboxing of these types will throw an error in the generic method
-     * public static <T extends Number> Table doubleTable(final T[] x, final String colName)
+     * Auto unboxing of these types will throw an error in the generic method public static <T extends Number> Table
+     * doubleTable(final T[] x, final String colName)
      */
 
     /**
-     * Creates a new table with a column of doubles holding the specified data.
-     * Values of {@code x} are converted to their corresponding double values.
-     * Nulls are mapped to Double.NaN.
+     * Creates a new table with a column of doubles holding the specified data. Values of {@code x} are converted to
+     * their corresponding double values. Nulls are mapped to Double.NaN.
      *
-     * @param x       data
+     * @param x data
      * @param colName column name
      * @return new table with column holding {@code x}
      */
@@ -347,11 +338,10 @@ public class PlotUtils {
     }
 
     /**
-     * Creates a new table with a column of doubles holding the specified data.
-     * Values of {@code x} are converted to their corresponding double values.
-     * Nulls are mapped to Double.NaN.
+     * Creates a new table with a column of doubles holding the specified data. Values of {@code x} are converted to
+     * their corresponding double values. Nulls are mapped to Double.NaN.
      *
-     * @param x       data
+     * @param x data
      * @param colName column name
      * @return new table with column holding {@code x}
      */
@@ -361,11 +351,10 @@ public class PlotUtils {
     }
 
     /**
-     * Creates a new table with a column of doubles holding the specified data.
-     * Values of {@code x} are converted to their corresponding double values.
-     * Nulls are mapped to Double.NaN.
+     * Creates a new table with a column of doubles holding the specified data. Values of {@code x} are converted to
+     * their corresponding double values. Nulls are mapped to Double.NaN.
      *
-     * @param x       data
+     * @param x data
      * @param colName column name
      * @return new table with column holding {@code x}
      */
@@ -375,11 +364,10 @@ public class PlotUtils {
     }
 
     /**
-     * Creates a new table with a column of doubles holding the specified data.
-     * Values of {@code x} are converted to their corresponding double values.
-     * Nulls are mapped to Double.NaN.
+     * Creates a new table with a column of doubles holding the specified data. Values of {@code x} are converted to
+     * their corresponding double values. Nulls are mapped to Double.NaN.
      *
-     * @param x       data
+     * @param x data
      * @param colName column name
      * @return new table with column holding {@code x}
      */
@@ -389,11 +377,10 @@ public class PlotUtils {
     }
 
     /**
-     * Creates a new table with a column of doubles holding the specified data.
-     * Values of {@code x} are converted to their corresponding double values.
-     * Nulls are mapped to Double.NaN.
+     * Creates a new table with a column of doubles holding the specified data. Values of {@code x} are converted to
+     * their corresponding double values. Nulls are mapped to Double.NaN.
      *
-     * @param x       data
+     * @param x data
      * @param colName column name
      * @return new table with column holding {@code x}
      */
@@ -403,9 +390,8 @@ public class PlotUtils {
     }
 
     /**
-     * Creates a new array of floats holding the specified data.
-     * Values of {@code x} are converted to their corresponding float values.
-     * Nulls are mapped to Float.NaN.
+     * Creates a new array of floats holding the specified data. Values of {@code x} are converted to their
+     * corresponding float values. Nulls are mapped to Float.NaN.
      *
      * @param x data
      * @return new float array holding {@code x}
@@ -420,9 +406,8 @@ public class PlotUtils {
     }
 
     /**
-     * Creates a new array of floats holding the specified data.
-     * Values of {@code x} are converted to their corresponding float values.
-     * Nulls are mapped to Float.NaN.
+     * Creates a new array of floats holding the specified data. Values of {@code x} are converted to their
+     * corresponding float values. Nulls are mapped to Float.NaN.
      *
      * @param x data
      * @return new float array holding {@code x}
@@ -437,9 +422,8 @@ public class PlotUtils {
     }
 
     /**
-     * Creates a new array of floats holding the specified data.
-     * Values of {@code x} are converted to their corresponding float values.
-     * Nulls are mapped to Float.NaN.
+     * Creates a new array of floats holding the specified data. Values of {@code x} are converted to their
+     * corresponding float values. Nulls are mapped to Float.NaN.
      *
      * @param x data
      * @return new float array holding {@code x}
@@ -454,11 +438,10 @@ public class PlotUtils {
     }
 
     /**
-     * Creates a new array of floats holding the specified data.
-     * Values of {@code x} are converted to their corresponding float values.
-     * Nulls are mapped to Float.NaN.
+     * Creates a new array of floats holding the specified data. Values of {@code x} are converted to their
+     * corresponding float values. Nulls are mapped to Float.NaN.
      *
-     * @param x   data
+     * @param x data
      * @param <T> type of the data in {@code x}
      * @return new float array holding {@code x}
      */
@@ -472,9 +455,8 @@ public class PlotUtils {
     }
 
     /**
-     * Creates a new array of doubles holding the specified data.
-     * Values of {@code x} are converted to their corresponding double values.
-     * Nulls are mapped to Double.NaN.
+     * Creates a new array of doubles holding the specified data. Values of {@code x} are converted to their
+     * corresponding double values. Nulls are mapped to Double.NaN.
      *
      * @param x data
      * @return new float array holding {@code x}
@@ -489,9 +471,8 @@ public class PlotUtils {
     }
 
     /**
-     * Creates a new array of doubles holding the specified data.
-     * Values of {@code x} are converted to their corresponding double values.
-     * Nulls are mapped to Double.NaN.
+     * Creates a new array of doubles holding the specified data. Values of {@code x} are converted to their
+     * corresponding double values. Nulls are mapped to Double.NaN.
      *
      * @param x data
      * @return new float array holding {@code x}
@@ -506,9 +487,8 @@ public class PlotUtils {
     }
 
     /**
-     * Creates a new array of doubles holding the specified data.
-     * Values of {@code x} are converted to their corresponding double values.
-     * Nulls are mapped to Double.NaN.
+     * Creates a new array of doubles holding the specified data. Values of {@code x} are converted to their
+     * corresponding double values. Nulls are mapped to Double.NaN.
      *
      * @param x data
      * @return new float array holding {@code x}
@@ -523,11 +503,10 @@ public class PlotUtils {
     }
 
     /**
-     * Creates a new array of doubles holding the specified data.
-     * Values of {@code x} are converted to their corresponding double values.
-     * Nulls are mapped to Double.NaN.
+     * Creates a new array of doubles holding the specified data. Values of {@code x} are converted to their
+     * corresponding double values. Nulls are mapped to Double.NaN.
      *
-     * @param x   data
+     * @param x data
      * @param <T> type of the data in {@code x}
      * @return new float array holding {@code x}
      */
@@ -560,11 +539,11 @@ public class PlotUtils {
     public static double minIgnoreNaN(final double... values) {
         double min = Double.NaN;
 
-        if(values == null) {
+        if (values == null) {
             return min;
         }
 
-        for(double value : values) {
+        for (double value : values) {
             min = minIgnoreNaN(min, value);
         }
 
@@ -572,10 +551,10 @@ public class PlotUtils {
     }
 
     public static double minIgnoreNaN(final double oldMin, final double value) {
-        if(oldMin == QueryConstants.NULL_DOUBLE) {
+        if (oldMin == QueryConstants.NULL_DOUBLE) {
             return value;
         }
-        if(value == QueryConstants.NULL_DOUBLE) {
+        if (value == QueryConstants.NULL_DOUBLE) {
             return oldMin;
         }
 
@@ -585,11 +564,11 @@ public class PlotUtils {
     public static double maxIgnoreNaN(final double... values) {
         double max = Double.NaN;
 
-        if(values == null) {
+        if (values == null) {
             return max;
         }
 
-        for(double value : values) {
+        for (double value : values) {
             max = maxIgnoreNaN(max, value);
         }
 
@@ -597,10 +576,10 @@ public class PlotUtils {
     }
 
     public static double maxIgnoreNaN(final double oldMin, final double value) {
-        if(oldMin == QueryConstants.NULL_DOUBLE) {
+        if (oldMin == QueryConstants.NULL_DOUBLE) {
             return value;
         }
-        if(value == QueryConstants.NULL_DOUBLE) {
+        if (value == QueryConstants.NULL_DOUBLE) {
             return oldMin;
         }
 
@@ -608,10 +587,10 @@ public class PlotUtils {
     }
 
     public static float minIgnoreNaN(final float oldMin, final float value) {
-        if(oldMin == QueryConstants.NULL_FLOAT) {
+        if (oldMin == QueryConstants.NULL_FLOAT) {
             return value;
         }
-        if(value == QueryConstants.NULL_FLOAT) {
+        if (value == QueryConstants.NULL_FLOAT) {
             return oldMin;
         }
 
@@ -619,10 +598,10 @@ public class PlotUtils {
     }
 
     public static float maxIgnoreNaN(final float oldMin, final float value) {
-        if(oldMin == QueryConstants.NULL_FLOAT) {
+        if (oldMin == QueryConstants.NULL_FLOAT) {
             return value;
         }
-        if(value == QueryConstants.NULL_FLOAT) {
+        if (value == QueryConstants.NULL_FLOAT) {
             return oldMin;
         }
 
@@ -630,10 +609,10 @@ public class PlotUtils {
     }
 
     public static int minIgnoreNull(final int oldMin, final int value) {
-        if(oldMin == QueryConstants.NULL_INT) {
+        if (oldMin == QueryConstants.NULL_INT) {
             return value;
         }
-        if(value == QueryConstants.NULL_INT) {
+        if (value == QueryConstants.NULL_INT) {
             return oldMin;
         }
 
@@ -641,10 +620,10 @@ public class PlotUtils {
     }
 
     public static int maxIgnoreNull(final int oldMin, final int value) {
-        if(oldMin == QueryConstants.NULL_INT) {
+        if (oldMin == QueryConstants.NULL_INT) {
             return value;
         }
-        if(value == QueryConstants.NULL_INT) {
+        if (value == QueryConstants.NULL_INT) {
             return oldMin;
         }
 
@@ -652,10 +631,10 @@ public class PlotUtils {
     }
 
     public static short minIgnoreNull(final short oldMin, final short value) {
-        if(oldMin == QueryConstants.NULL_SHORT) {
+        if (oldMin == QueryConstants.NULL_SHORT) {
             return value;
         }
-        if(value == QueryConstants.NULL_SHORT) {
+        if (value == QueryConstants.NULL_SHORT) {
             return oldMin;
         }
 
@@ -663,10 +642,10 @@ public class PlotUtils {
     }
 
     public static short maxIgnoreNull(final short oldMin, final short value) {
-        if(oldMin == QueryConstants.NULL_SHORT) {
+        if (oldMin == QueryConstants.NULL_SHORT) {
             return value;
         }
-        if(value == QueryConstants.NULL_SHORT) {
+        if (value == QueryConstants.NULL_SHORT) {
             return oldMin;
         }
 
@@ -674,10 +653,10 @@ public class PlotUtils {
     }
 
     public static long minIgnoreNull(final long oldMin, final long value) {
-        if(oldMin == QueryConstants.NULL_LONG) {
+        if (oldMin == QueryConstants.NULL_LONG) {
             return value;
         }
-        if(value == QueryConstants.NULL_LONG) {
+        if (value == QueryConstants.NULL_LONG) {
             return oldMin;
         }
 
@@ -685,11 +664,11 @@ public class PlotUtils {
     }
 
     public static long maxIgnoreNull(final long oldMin, final long value) {
-        if(oldMin == QueryConstants.NULL_LONG) {
+        if (oldMin == QueryConstants.NULL_LONG) {
             return value;
         }
 
-        if(value == QueryConstants.NULL_LONG) {
+        if (value == QueryConstants.NULL_LONG) {
             return oldMin;
         }
 
@@ -697,33 +676,34 @@ public class PlotUtils {
     }
 
     public static TableHandle createCategoryTableHandle(Table t, final String catColumn, final String... otherColumns) {
-        return createCategoryTableHandle(t, new String[]{catColumn}, otherColumns);
+        return createCategoryTableHandle(t, new String[] {catColumn}, otherColumns);
     }
 
-    public static TableHandle createCategoryTableHandle(Table t, final String[] catColumns, final String... otherColumns) {
+    public static TableHandle createCategoryTableHandle(Table t, final String[] catColumns,
+            final String... otherColumns) {
         t = createCategoryTable(t, catColumns);
 
         final String[] cols = new String[otherColumns.length + catColumns.length + 1];
         System.arraycopy(catColumns, 0, cols, 0, catColumns.length);
         System.arraycopy(otherColumns, 0, cols, catColumns.length, otherColumns.length);
-        cols[cols.length-1] = CategoryDataSeries.CAT_SERIES_ORDER_COLUMN;
+        cols[cols.length - 1] = CategoryDataSeries.CAT_SERIES_ORDER_COLUMN;
 
         return new TableHandle(t, cols);
     }
 
     public static TableBackedTableMapHandle createCategoryTableMapHandle(Table t,
-                                                                         final String catColumn,
-                                                                         final String[] otherColumns,
-                                                                         final String[] byColumns,
-                                                                         final PlotInfo plotInfo) {
-        return createCategoryTableMapHandle(t, new String[]{catColumn}, otherColumns, byColumns, plotInfo);
+            final String catColumn,
+            final String[] otherColumns,
+            final String[] byColumns,
+            final PlotInfo plotInfo) {
+        return createCategoryTableMapHandle(t, new String[] {catColumn}, otherColumns, byColumns, plotInfo);
     }
 
     public static TableBackedTableMapHandle createCategoryTableMapHandle(Table t,
-                                                                         final String[] catColumns,
-                                                                         final String[] otherColumns,
-                                                                         final String[] byColumns,
-                                                                         final PlotInfo plotInfo) {
+            final String[] catColumns,
+            final String[] otherColumns,
+            final String[] byColumns,
+            final PlotInfo plotInfo) {
         final String[] lastByColumns = new String[catColumns.length + byColumns.length];
         System.arraycopy(catColumns, 0, lastByColumns, 0, catColumns.length);
         System.arraycopy(byColumns, 0, lastByColumns, catColumns.length, byColumns.length);
@@ -742,11 +722,13 @@ public class PlotUtils {
         // We need to do the equivalent of LastBy wrt. to columns included, or we have a chance to break ACLs
         final List<String> lastColumns = t.getDefinition().getColumnNames();
         lastColumns.removeAll(Arrays.asList(catColumns));
-        final Table result = t.by(createCategoryComboAgg(AggLast(lastColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY))), catColumns);
+        final Table result =
+                t.by(createCategoryComboAgg(AggLast(lastColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY))),
+                        catColumns);
 
         // We must explicitly copy attributes because we are doing a modified manual first/lastBy which will not
         // automatically do the copy.
-        ((BaseTable)t).copyAttributes(result, BaseTable.CopyAttributeOperation.LastBy);
+        ((BaseTable) t).copyAttributes(result, BaseTable.CopyAttributeOperation.LastBy);
         return result;
     }
 
@@ -755,24 +737,28 @@ public class PlotUtils {
     }
 
     public static ComboAggregateFactory createCategoryComboAgg(ComboBy agg) {
-        return AggCombo(Agg(new KeyOnlyFirstOrLastByStateFactory(CategoryDataSeries.CAT_SERIES_ORDER_COLUMN, AggType.First), MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY), agg);
+        return AggCombo(
+                Agg(new KeyOnlyFirstOrLastByStateFactory(CategoryDataSeries.CAT_SERIES_ORDER_COLUMN, AggType.First),
+                        MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY),
+                agg);
     }
 
     public static List<Condition> getColumnConditions(final Table arg, final String column) {
         return Collections.singletonList(Condition.EQUALS);
     }
 
-    public static Function<Long,Number> getNumberFromNumericOrTimeSource(final Table t, final String numericCol, final PlotInfo plotInfo) {
+    public static Function<Long, Number> getNumberFromNumericOrTimeSource(final Table t, final String numericCol,
+            final PlotInfo plotInfo) {
         ArgumentValidations.isNumericOrTime(t, numericCol, plotInfo);
 
         final ColumnSource columnSource = t.getColumnSource(numericCol);
 
-        if(columnSource.getType() == DBDateTime.class) {
+        if (columnSource.getType() == DBDateTime.class) {
             return key -> {
                 final DBDateTime dateTime = (DBDateTime) columnSource.get(key);
                 return dateTime == null ? NULL_LONG : dateTime.getNanos();
             };
-        } else if(columnSource.getType() == Date.class) {
+        } else if (columnSource.getType() == Date.class) {
             return key -> {
                 final Date dateTime = (Date) columnSource.get(key);
                 return dateTime == null ? NULL_LONG : dateTime.getTime() * 1000000;
@@ -796,7 +782,7 @@ public class PlotUtils {
 
         public <T> void runIfKeyExistsCast(final Consumer<T> consumer, final K key) {
             final V obj = get(key);
-            if(obj != null) {
+            if (obj != null) {
                 consumer.accept((T) obj);
             }
         }
@@ -826,12 +812,14 @@ public class PlotUtils {
         return new IndexableDataArray((T[]) o, plotInfo);
     }
 
-    public static <T> IndexableData createIndexableData(final Map<String, Object> snapshotData, @NotNull final TableDefinition tableDefinition, final String column, final PlotInfo plotInfo) {
+    public static <T> IndexableData createIndexableData(final Map<String, Object> snapshotData,
+            @NotNull final TableDefinition tableDefinition, final String column, final PlotInfo plotInfo) {
         return createIndexableData(snapshotData, tableDefinition.getColumn(column).getDataType(), column, plotInfo);
     }
 
-    public static <T> IndexableData createIndexableData(final Map<String, Object> snapshotData, final Class<T> c, final String column, final PlotInfo plotInfo) {
-        if(snapshotData == null) {
+    public static <T> IndexableData createIndexableData(final Map<String, Object> snapshotData, final Class<T> c,
+            final String column, final PlotInfo plotInfo) {
+        if (snapshotData == null) {
             return createEmptyIndexableData(c, plotInfo);
         }
 
@@ -839,19 +827,19 @@ public class PlotUtils {
     }
 
     public static <T> IndexableData createEmptyIndexableData(final Class<T> c, final PlotInfo plotInfo) {
-        if(c.equals(int.class)) {
+        if (c.equals(int.class)) {
             return new IndexableDataInteger(EMPTY_INT_ARRAY, plotInfo);
-        } else if(c.equals(double.class)) {
+        } else if (c.equals(double.class)) {
             return new IndexableDataDouble(EMPTY_DOUBLE_ARRAY, false, plotInfo);
-        } else if(c.equals(float.class)) {
+        } else if (c.equals(float.class)) {
             return new IndexableDataDouble(EMPTY_FLOAT_ARRAY, false, plotInfo);
-        } else if(c.equals(long.class)) {
+        } else if (c.equals(long.class)) {
             return new IndexableDataDouble(EMPTY_LONG_ARRAY, false, plotInfo);
-        } else if(c.equals(short.class)) {
+        } else if (c.equals(short.class)) {
             return new IndexableDataDouble(EMPTY_SHORT_ARRAY, false, plotInfo);
-        } else if(c.equals(char.class)) {
+        } else if (c.equals(char.class)) {
             return new IndexableDataCharacter(EMPTY_CHAR_ARRAY, plotInfo);
-        } else if(c.equals(byte.class)) {
+        } else if (c.equals(byte.class)) {
             return new IndexableDataByte(EMPTY_BYTE_ARRAY, plotInfo);
         }
 
@@ -859,19 +847,19 @@ public class PlotUtils {
     }
 
     public static <T> IndexableData createIndexableData(final Object data, final PlotInfo plotInfo) {
-        if(data instanceof int[]) {
+        if (data instanceof int[]) {
             return new IndexableDataInteger((int[]) data, plotInfo);
-        } else if(data instanceof double[]) {
+        } else if (data instanceof double[]) {
             return new IndexableDataDouble((double[]) data, false, plotInfo);
-        } else if(data instanceof float[]) {
+        } else if (data instanceof float[]) {
             return new IndexableDataDouble((float[]) data, false, plotInfo);
-        } else if(data instanceof long[]) {
+        } else if (data instanceof long[]) {
             return new IndexableDataDouble((long[]) data, false, plotInfo);
-        } else if(data instanceof short[]) {
+        } else if (data instanceof short[]) {
             return new IndexableDataDouble((short[]) data, false, plotInfo);
-        } else if(data instanceof char[]) {
+        } else if (data instanceof char[]) {
             return new IndexableDataCharacter((char[]) data, plotInfo);
-        } else if(data instanceof byte[]){
+        } else if (data instanceof byte[]) {
             return new IndexableDataByte((byte[]) data, plotInfo);
         }
 
@@ -879,21 +867,21 @@ public class PlotUtils {
     }
 
     public static <T> IndexableData createIndexableData(final Object data, final Class<T> c, final PlotInfo plotInfo) {
-        if(c.equals(int.class)) {
+        if (c.equals(int.class)) {
             return new IndexableDataInteger((int[]) data, plotInfo);
-        } else if(c.equals(double.class)) {
+        } else if (c.equals(double.class)) {
             return new IndexableDataDouble((double[]) data, false, plotInfo);
-        } else if(c.equals(float.class)) {
+        } else if (c.equals(float.class)) {
             return new IndexableDataDouble((float[]) data, false, plotInfo);
-        } else if(c.equals(long.class)) {
+        } else if (c.equals(long.class)) {
             return new IndexableDataDouble((long[]) data, false, plotInfo);
-        } else if(c.equals(short.class)) {
+        } else if (c.equals(short.class)) {
             return new IndexableDataDouble((short[]) data, false, plotInfo);
-        } else if(c.equals(char.class)) {
+        } else if (c.equals(char.class)) {
             return new IndexableDataCharacter((char[]) data, plotInfo);
-        } else if(c.equals(byte.class)) {
+        } else if (c.equals(byte.class)) {
             return new IndexableDataByte((byte[]) data, plotInfo);
-        } else if(c.equals(DBDateTime.class)) {
+        } else if (c.equals(DBDateTime.class)) {
             if (data instanceof long[]) {
                 return new IndexableDataDBDateTime((long[]) data, plotInfo);
             }
@@ -906,68 +894,74 @@ public class PlotUtils {
         return new IndexableDataArray(data, plotInfo);
     }
 
-    public static IndexableNumericData createIndexableNumericDataArray(final Map<String, Object> data, @NotNull final TableHandle th, final String column, final PlotInfo plotInfo) {
+    public static IndexableNumericData createIndexableNumericDataArray(final Map<String, Object> data,
+            @NotNull final TableHandle th, final String column, final PlotInfo plotInfo) {
         return createIndexableNumericDataArray(data, th.getTable(), column, plotInfo);
     }
 
-    public static IndexableNumericData createIndexableNumericDataArray(final Map<String, Object> data, @NotNull final Table t, final String column, final PlotInfo plotInfo) {
+    public static IndexableNumericData createIndexableNumericDataArray(final Map<String, Object> data,
+            @NotNull final Table t, final String column, final PlotInfo plotInfo) {
         return createIndexableNumericDataArray(data, t.getDefinition(), column, plotInfo);
     }
 
-    public static IndexableNumericData createIndexableNumericDataArray(final Map<String, Object> data, @NotNull final TableDefinition tableDefinition, final String column, final PlotInfo plotInfo) {
-        if(data == null) {
-            if(tableDefinition.getColumn(column) == null) {
+    public static IndexableNumericData createIndexableNumericDataArray(final Map<String, Object> data,
+            @NotNull final TableDefinition tableDefinition, final String column, final PlotInfo plotInfo) {
+        if (data == null) {
+            if (tableDefinition.getColumn(column) == null) {
                 return createEmptyIndexableNumericDataArray(double.class, plotInfo);
             }
 
             return createEmptyIndexableNumericDataArray(tableDefinition.getColumn(column).getDataType(), plotInfo);
         }
 
-        return createIndexableNumericDataArray(data.get(column), tableDefinition.getColumn(column).getDataType(), plotInfo);
+        return createIndexableNumericDataArray(data.get(column), tableDefinition.getColumn(column).getDataType(),
+                plotInfo);
     }
 
-    public static IndexableNumericData createEmptyIndexableNumericDataArray(final Class dataType, final PlotInfo plotInfo) {
-        if(dataType == int.class) {
+    public static IndexableNumericData createEmptyIndexableNumericDataArray(final Class dataType,
+            final PlotInfo plotInfo) {
+        if (dataType == int.class) {
             return new IndexableNumericDataArrayInt(EMPTY_INT_ARRAY, plotInfo);
-        } else if(dataType == double.class) {
+        } else if (dataType == double.class) {
             return new IndexableNumericDataArrayDouble(EMPTY_DOUBLE_ARRAY, plotInfo);
-        } else if(dataType == float.class) {
+        } else if (dataType == float.class) {
             return new IndexableNumericDataArrayFloat(EMPTY_FLOAT_ARRAY, plotInfo);
-        } else if(dataType == long.class) {
+        } else if (dataType == long.class) {
             return new IndexableNumericDataArrayLong(EMPTY_LONG_ARRAY, plotInfo);
-        } else if(dataType == short.class) {
+        } else if (dataType == short.class) {
             return new IndexableNumericDataArrayShort(EMPTY_SHORT_ARRAY, plotInfo);
-        } else if(dataType == DBDateTime.class) {
+        } else if (dataType == DBDateTime.class) {
             return new IndexableNumericDataArrayDBDateTime(EMPTY_DBDATETIME_ARRAY, plotInfo);
-        } else if(dataType == Date.class) {
+        } else if (dataType == Date.class) {
             return new IndexableNumericDataArrayDate(EMPTY_DATE_ARRAY, plotInfo);
-        } else if(Number.class.isAssignableFrom(dataType)) {
+        } else if (Number.class.isAssignableFrom(dataType)) {
             return new IndexableNumericDataArrayNumber(EMPTY_NUMBER_ARRAY, plotInfo);
         } else {
             throw new UnsupportedOperationException("Can not create IndexableNumericDataArray from type " + dataType);
         }
     }
 
-    public static IndexableNumericData createIndexableNumericDataArray(final Object data, final Class dataType, final PlotInfo plotInfo) {
-        if(dataType == int.class) {
+    public static IndexableNumericData createIndexableNumericDataArray(final Object data, final Class dataType,
+            final PlotInfo plotInfo) {
+        if (dataType == int.class) {
             return new IndexableNumericDataArrayInt((int[]) data, plotInfo);
-        } else if(dataType == double.class) {
+        } else if (dataType == double.class) {
             return new IndexableNumericDataArrayDouble((double[]) data, plotInfo);
-        } else if(dataType == float.class) {
+        } else if (dataType == float.class) {
             return new IndexableNumericDataArrayFloat((float[]) data, plotInfo);
-        } else if(dataType == long.class) {
+        } else if (dataType == long.class) {
             return new IndexableNumericDataArrayLong((long[]) data, plotInfo);
-        } else if(dataType == short.class) {
+        } else if (dataType == short.class) {
             return new IndexableNumericDataArrayShort((short[]) data, plotInfo);
-        } else if(dataType == DBDateTime.class) {
-            if(data instanceof long[]) {
+        } else if (dataType == DBDateTime.class) {
+            if (data instanceof long[]) {
                 return new IndexableNumericDataArrayLong((long[]) data, plotInfo);
             } else {
                 return new IndexableNumericDataArrayDBDateTime((DBDateTime[]) data, plotInfo);
             }
-        } else if(dataType == Date.class) {
+        } else if (dataType == Date.class) {
             return new IndexableNumericDataArrayDate((Date[]) data, plotInfo);
-        } else if(Number.class.isAssignableFrom(dataType)) {
+        } else if (Number.class.isAssignableFrom(dataType)) {
             return new IndexableNumericDataArrayNumber((Number[]) data, plotInfo);
         } else {
             throw new UnsupportedOperationException("Can not create IndexableNumericDataArray from type " + dataType);

@@ -24,7 +24,8 @@ import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING
 public class FormulaColumnPython extends AbstractFormulaColumn implements FormulaKernelFactory {
 
     @SuppressWarnings("unused") // called from python
-    public static FormulaColumnPython create(String columnName, io.deephaven.db.v2.select.python.DeephavenCompatibleFunction dcf) {
+    public static FormulaColumnPython create(String columnName,
+            io.deephaven.db.v2.select.python.DeephavenCompatibleFunction dcf) {
         return new FormulaColumnPython(columnName, dcf);
     }
 
@@ -65,10 +66,10 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
             throw new IllegalStateException("Must be initialized first");
         }
         return new FormulaSourceDescriptor(
-            returnedType,
-            dcf.getColumnNames().toArray(new String[0]),
-            ZERO_LENGTH_STRING_ARRAY,
-            ZERO_LENGTH_STRING_ARRAY);
+                returnedType,
+                dcf.getColumnNames().toArray(new String[0]),
+                ZERO_LENGTH_STRING_ARRAY,
+                ZERO_LENGTH_STRING_ARRAY);
     }
 
     @Override

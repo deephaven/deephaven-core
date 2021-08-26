@@ -10,7 +10,7 @@ import java.io.Serializable;
 import java.util.Objects;
 
 /**
- * A Simple generic pair.  Can be used as a compound return value for lambdas.
+ * A Simple generic pair. Can be used as a compound return value for lambdas.
  */
 public class Pair<A, B> implements Comparable<Pair<A, B>>, Serializable {
     private static final long serialVersionUID = 1884389166059435494L;
@@ -32,8 +32,10 @@ public class Pair<A, B> implements Comparable<Pair<A, B>>, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         Pair<?, ?> pair = (Pair<?, ?>) o;
 
@@ -57,8 +59,8 @@ public class Pair<A, B> implements Comparable<Pair<A, B>>, Serializable {
         } else if (o.first == null) {
             return 1;
         } else {
-            //noinspection unchecked
-            int firstResult = ((Comparable)first).compareTo(o.first);
+            // noinspection unchecked
+            int firstResult = ((Comparable) first).compareTo(o.first);
             if (firstResult != 0) {
                 return firstResult;
             }
@@ -73,7 +75,7 @@ public class Pair<A, B> implements Comparable<Pair<A, B>>, Serializable {
             return 1;
         }
 
-        //noinspection unchecked
-        return ((Comparable)second).compareTo(o.second);
+        // noinspection unchecked
+        return ((Comparable) second).compareTo(o.second);
     }
 }

@@ -57,11 +57,12 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     public void testMemoize() {
         final Random random = new Random(0);
         final ParentChildGenerator parentChildGenerator = new ParentChildGenerator(0.25, 0);
-        final QueryTable table = getTable(1000, random, initColumnInfos(new String[]{"IDPair", "Sentinel", "Sentinel2", "Sym"},
-                parentChildGenerator,
-                new IntGenerator(0, 1_000_000_000),
-                new IntGenerator(0, 1_000_000_000),
-                new SetGenerator<>("AAPL", "TSLA", "VXX", "SPY")));
+        final QueryTable table = getTable(1000, random,
+                initColumnInfos(new String[] {"IDPair", "Sentinel", "Sentinel2", "Sym"},
+                        parentChildGenerator,
+                        new IntGenerator(0, 1_000_000_000),
+                        new IntGenerator(0, 1_000_000_000),
+                        new SetGenerator<>("AAPL", "TSLA", "VXX", "SPY")));
 
         final Table prepared = table.update("ID=IDPair.getId()", "Parent=IDPair.getParent()").dropColumns("IDPair");
         final Table tree = prepared.treeTable("ID", "Parent");
@@ -97,15 +98,17 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testTreeTableSimple() {
-        final Table source = TableTools.newTable(col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10), col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2));
+        final Table source = TableTools.newTable(col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+                col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2));
 
-        final Table treed = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> source.treeTable("Sentinel", "Parent"));
+        final Table treed =
+                LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> source.treeTable("Sentinel", "Parent"));
         final String hierarchicalColumnName = getHierarchicalColumnName(treed);
         TableTools.showWithIndex(treed);
 
         assertEquals(2, treed.size());
 
-        assertTrue(Arrays.equals(new int[]{NULL_INT, NULL_INT}, (int[]) treed.getColumn("Parent").getDirect()));
+        assertTrue(Arrays.equals(new int[] {NULL_INT, NULL_INT}, (int[]) treed.getColumn("Parent").getDirect()));
 
         final Table child1 = getChildTable(treed, treed, hierarchicalColumnName, 0);
         assertNotNull(child1);
@@ -152,8 +155,10 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
             final Supplier<Table> doTree = () -> source.treeTable("Sentinel", "Parent");
             final Table expect = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(doTree::get);
-            final Table expectOriginal = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> makeStatic(source).treeTable("Sentinel", "Parent"));
-            final Table expect2 = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> source2.treeTable("Sentinel", "Parent"));
+            final Table expectOriginal = LiveTableMonitor.DEFAULT.exclusiveLock()
+                    .computeLocked(() -> makeStatic(source).treeTable("Sentinel", "Parent"));
+            final Table expect2 = LiveTableMonitor.DEFAULT.exclusiveLock()
+                    .computeLocked(() -> source2.treeTable("Sentinel", "Parent"));
 
             final String hierarchicalColumnName = getHierarchicalColumnName(expect);
 
@@ -161,17 +166,21 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
             final Table treed1 = pool.submit(doTree::get).get();
 
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed1, expect, 0, 10, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed1, expect, 0, 10, hierarchicalColumnName,
+                    CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
             System.out.println("ORIGINAL TREED1");
             dumpRollup(treed1, hierarchicalColumnName);
 
-            TstUtils.addToTable(source, i(0, 11), c("Sentinel", 1, 11), c("Parent", NULL_INT, NULL_INT), c("Extra", "aa", "k"));
+            TstUtils.addToTable(source, i(0, 11), c("Sentinel", 1, 11), c("Parent", NULL_INT, NULL_INT),
+                    c("Extra", "aa", "k"));
 
             final Table treed2 = pool.submit(doTree::get).get();
 
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed1, expectOriginal, true, false, 0, 10, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2, expectOriginal, true, false, 0, 10, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed1, expectOriginal, true, false, 0, 10,
+                    hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2, expectOriginal, true, false, 0, 10,
+                    hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
             final TableMap map1 = (TableMap) treed1.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
             final TableMap map2 = (TableMap) treed2.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
@@ -206,15 +215,21 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
             TableTools.show(treed3);
 
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect, treed1, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect, treed2, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed3, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect, treed1, 0, 4, hierarchicalColumnName,
+                    CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect, treed2, 0, 4, hierarchicalColumnName,
+                    CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed3, 0, 4, hierarchicalColumnName,
+                    CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
             LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
 
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed1, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed2, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed3, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed1, 0, 4, hierarchicalColumnName,
+                    CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed2, 0, 4, hierarchicalColumnName,
+                    CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed3, 0, 4, hierarchicalColumnName,
+                    CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
             final Table expectedFinalSort = rootExpected2.sortDescending("Sentinel");
             assertTableEquals(expectedFinalSort, sortedRoot1);
@@ -229,14 +244,18 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
 
-            final Table backwards1 = pool.submit(() -> TreeTableFilter.rawFilterTree(treed1, "!isNull(Extra)").sortDescending("Extra")).get();
+            final Table backwards1 =
+                    pool.submit(() -> TreeTableFilter.rawFilterTree(treed1, "!isNull(Extra)").sortDescending("Extra"))
+                            .get();
             final Table backwardsTree1a = pool.submit(() -> backwards1.treeTable("Sentinel", "Parent")).get();
 
             final Table treed4 = pool.submit(doTree::get).get();
 
             TstUtils.addToTable(source, i(12), c("Sentinel", 12), c("Parent", 11), c("Extra", "l"));
 
-            final Table backwards2 = pool.submit(() -> TreeTableFilter.rawFilterTree(treed1, "!isNull(Extra)").sortDescending("Extra")).get();
+            final Table backwards2 =
+                    pool.submit(() -> TreeTableFilter.rawFilterTree(treed1, "!isNull(Extra)").sortDescending("Extra"))
+                            .get();
             final Table backwardsTree1b = pool.submit(() -> backwards1.treeTable("Sentinel", "Parent")).get();
             final Table backwardsTree2a = pool.submit(() -> backwards2.treeTable("Sentinel", "Parent")).get();
 
@@ -244,7 +263,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
             int ii = 1;
             for (Table treed : Arrays.asList(treed1, treed2, treed3, treed4, treed5)) {
-                doCompareWithChildrenForTrees("testConcurrentInstantiation" + ii++, expect, treed, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                doCompareWithChildrenForTrees("testConcurrentInstantiation" + ii++, expect, treed, 0, 4,
+                        hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
             }
 
             final Table eleven1b = map1.get(11);
@@ -257,7 +277,9 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
             final Table backwardsTree1c = pool.submit(() -> backwards1.treeTable("Sentinel", "Parent")).get();
             final Table backwardsTree2b = pool.submit(() -> backwards2.treeTable("Sentinel", "Parent")).get();
-            final Table backwards3 = pool.submit(() -> TreeTableFilter.rawFilterTree(treed1, "!isNull(Extra)").sortDescending("Extra")).get();
+            final Table backwards3 =
+                    pool.submit(() -> TreeTableFilter.rawFilterTree(treed1, "!isNull(Extra)").sortDescending("Extra"))
+                            .get();
             final Table backwardsTree3 = pool.submit(() -> backwards3.treeTable("Sentinel", "Parent")).get();
 
             final Table root1a = map1.get(null);
@@ -284,13 +306,17 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
             ii = 1;
             for (Table treed : Arrays.asList(treed1, treed2, treed3, treed4, treed5, treed6)) {
-                doCompareWithChildrenForTrees("testConcurrentInstantiation" + ii++, expect, treed, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                doCompareWithChildrenForTrees("testConcurrentInstantiation" + ii++, expect, treed, 0, 4,
+                        hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
             }
 
-            final Table backwardsExpected = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> source.sortDescending("Extra").treeTable("Sentinel", "Parent"));
+            final Table backwardsExpected = LiveTableMonitor.DEFAULT.exclusiveLock()
+                    .computeLocked(() -> source.sortDescending("Extra").treeTable("Sentinel", "Parent"));
             ii = 1;
-            for (Table treed : Arrays.asList(backwardsTree1a, backwardsTree1b, backwardsTree1c, backwardsTree2a, backwardsTree2b, backwardsTree3)) {
-                doCompareWithChildrenForTrees("testConcurrentInstantiationBackward" + ii++, backwardsExpected, treed, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            for (Table treed : Arrays.asList(backwardsTree1a, backwardsTree1b, backwardsTree1c, backwardsTree2a,
+                    backwardsTree2b, backwardsTree3)) {
+                doCompareWithChildrenForTrees("testConcurrentInstantiationBackward" + ii++, backwardsExpected, treed, 0,
+                        4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
             }
         } finally {
             QueryTable.setMemoizeResults(oldMemoize);
@@ -316,9 +342,12 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             final java.util.function.Function<Table, Table> doTree = t -> t.treeTable("Sentinel", "Parent");
             final java.util.function.Function<Table, Table> doSortAndTree = doSort.andThen(doTree);
 
-            final Table expect = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> doSortAndTree.apply(source));
-            final Table expectOriginal = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> doSortAndTree.apply(makeStatic(source)));
-            final Table expect2 = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> doSortAndTree.apply(makeStatic(source2)));
+            final Table expect =
+                    LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> doSortAndTree.apply(source));
+            final Table expectOriginal = LiveTableMonitor.DEFAULT.exclusiveLock()
+                    .computeLocked(() -> doSortAndTree.apply(makeStatic(source)));
+            final Table expect2 = LiveTableMonitor.DEFAULT.exclusiveLock()
+                    .computeLocked(() -> doSortAndTree.apply(makeStatic(source2)));
 
             final String hierarchicalColumnName = getHierarchicalColumnName(expect);
 
@@ -331,34 +360,48 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             final Table treed1 = pool.submit(() -> doSortAndTree.apply(source)).get();
             final Table sorted1 = pool.submit(() -> doSort.apply(source)).get();
 
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed1, expect, 0, 10, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed1, expect, 0, 10, hierarchicalColumnName,
+                    CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
             TstUtils.removeRows(source, i(0));
-            TstUtils.addToTable(source, i(1, 11, 12), c("Sentinel", 2, 11, 12), c("Parent", NULL_INT, NULL_INT, 11), c("Extra", "bb", "k", "l"));
+            TstUtils.addToTable(source, i(1, 11, 12), c("Sentinel", 2, 11, 12), c("Parent", NULL_INT, NULL_INT, 11),
+                    c("Extra", "bb", "k", "l"));
 
             final Table treed2a = pool.submit(() -> doSortAndTree.apply(source)).get();
             final Table treed2b = pool.submit(() -> doTree.apply(sorted0)).get();
             final Table treed2c = pool.submit(() -> doTree.apply(sorted1)).get();
 
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed1, expectOriginal, true, false, 0, 10, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2a, expectOriginal, true, false, 0, 10, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2b, expectOriginal, true, false, 0, 10, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2c, expectOriginal, true, false, 0, 10, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed1, expectOriginal, true, false, 0, 10,
+                    hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2a, expectOriginal, true, false, 0, 10,
+                    hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2b, expectOriginal, true, false, 0, 10,
+                    hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2c, expectOriginal, true, false, 0, 10,
+                    hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
             source.notifyListeners(i(11, 12), i(0), i(1));
 
             LiveTableMonitor.DEFAULT.flushAllNormalNotificationsForUnitTests();
 
             // everything should have current values now
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed1, expect2, false, false, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2a, expect2, false, false, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2b, expect2, false, false, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2c, expect2, false, false, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed1, expect2, false, false, 0, 4,
+                    hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2a, expect2, false, false, 0, 4,
+                    hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2b, expect2, false, false, 0, 4,
+                    hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2c, expect2, false, false, 0, 4,
+                    hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
             // but still have a previous value for things that are old
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed1, expectOriginal, true, false, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2a, expectOriginal, true, false, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2b, expectOriginal, true, false, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2c, expectOriginal, true, false, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed1, expectOriginal, true, false, 0, 4,
+                    hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2a, expectOriginal, true, false, 0, 4,
+                    hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2b, expectOriginal, true, false, 0, 4,
+                    hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed2c, expectOriginal, true, false, 0, 4,
+                    hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
             // we now initialize things after the notification is complete
             final Table treed3a = pool.submit(() -> doSortAndTree.apply(source)).get();
@@ -373,9 +416,12 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             dumpRollup(treed3c, hierarchicalColumnName);
 
             // everything should have current values now
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed3a, expect2, false, false, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed3b, expect2, false, false, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed3c, expect2, false, false, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed3a, expect2, false, false, 0, 4,
+                    hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed3b, expect2, false, false, 0, 4,
+                    hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", treed3c, expect2, false, false, 0, 4,
+                    hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
             // Note that previous is not defined to be the starting value, now that redirectToGet has been discontinued.
             assertTableEquals(sorted0Original, prevTable(sorted0));
@@ -385,13 +431,20 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
             LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
 
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed1, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed2a, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed2b, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed2c, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed3a, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed3b, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed3c, 0, 4, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed1, 0, 4, hierarchicalColumnName,
+                    CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed2a, 0, 4, hierarchicalColumnName,
+                    CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed2b, 0, 4, hierarchicalColumnName,
+                    CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed2c, 0, 4, hierarchicalColumnName,
+                    CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed3a, 0, 4, hierarchicalColumnName,
+                    CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed3b, 0, 4, hierarchicalColumnName,
+                    CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed3c, 0, 4, hierarchicalColumnName,
+                    CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
         } finally {
             QueryTable.setMemoizeResults(oldMemoize);
@@ -403,9 +456,11 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testTreeTableStaticFilter() {
-        final Table source = TableTools.newTable(intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10), col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 6));
+        final Table source = TableTools.newTable(intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+                col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 6));
 
-        final Table treed = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> source.treeTable("Sentinel", "Parent"));
+        final Table treed =
+                LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> source.treeTable("Sentinel", "Parent"));
         TableTools.showWithIndex(treed);
 
         final String hierarchicalColumnName = getHierarchicalColumnName(treed);
@@ -415,7 +470,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         TableTools.showWithIndex(filtered);
         assertEquals(1, filtered.size());
 
-        assertTrue(Arrays.equals(new int[]{NULL_INT, NULL_INT}, (int[]) treed.getColumn("Parent").getDirect()));
+        assertTrue(Arrays.equals(new int[] {NULL_INT, NULL_INT}, (int[]) treed.getColumn("Parent").getDirect()));
         final Table child1 = getChildTable(filtered, filtered, hierarchicalColumnName, 0);
         assertNotNull(child1);
 
@@ -424,9 +479,12 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testTreeTableSimpleFilter() {
-        final QueryTable source = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(10), col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10), col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 6));
+        final QueryTable source = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(10),
+                col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+                col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 6));
 
-        final Table treed = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> source.treeTable("Sentinel", "Parent"));
+        final Table treed =
+                LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> source.treeTable("Sentinel", "Parent"));
         TableTools.showWithIndex(treed);
 
         final String hierarchicalColumnName = getHierarchicalColumnName(treed);
@@ -437,7 +495,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         TableTools.showWithIndex(filtered);
         assertEquals(1, filtered.size());
 
-        assertTrue(Arrays.equals(new int[]{NULL_INT, NULL_INT}, (int[]) treed.getColumn("Parent").getDirect()));
+        assertTrue(Arrays.equals(new int[] {NULL_INT, NULL_INT}, (int[]) treed.getColumn("Parent").getDirect()));
         final Table child1 = getChildTable(filtered, filtered, hierarchicalColumnName, 0);
         assertNotNull(child1);
 
@@ -513,9 +571,11 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testOrphanPromoterSimple() {
-        final QueryTable source = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(4), col("Sentinel", 1, 2, 3, 4), col("Parent", NULL_INT, NULL_INT, 1, 5));
+        final QueryTable source = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(4),
+                col("Sentinel", 1, 2, 3, 4), col("Parent", NULL_INT, NULL_INT, 1, 5));
 
-        final Table treed = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter.promoteOrphans(source, "Sentinel", "Parent").treeTable("Sentinel", "Parent"));
+        final Table treed = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter
+                .promoteOrphans(source, "Sentinel", "Parent").treeTable("Sentinel", "Parent"));
         TableTools.showWithIndex(treed);
         assertEquals(3, treed.size());
 
@@ -545,13 +605,15 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     private static String getHierarchicalColumnName(Table treed) {
-        final HierarchicalTableInfo info = (HierarchicalTableInfo) treed.getAttribute(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
+        final HierarchicalTableInfo info =
+                (HierarchicalTableInfo) treed.getAttribute(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
         return info.getHierarchicalColumnName();
     }
 
     private Table getChildTable(Table root, Table treed, String hierarchicalColumnName, long index) {
         final Object childKey1 = treed.getColumn(hierarchicalColumnName).get(index);
-        final Table table = ((TableMap) root.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE)).get(childKey1);
+        final Table table =
+                ((TableMap) root.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE)).get(childKey1);
         if (table == null || table.isEmpty()) {
             return null;
         }
@@ -564,7 +626,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 col("Filter", 0, 0, 0, 0),
                 col("Parent", NULL_INT, NULL_INT, NULL_INT, NULL_INT));
 
-        final EvalNugget[] en = new EvalNugget[]{
+        final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
@@ -659,7 +721,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         public TreeMap<Long, IdParentPair> populateMap(TreeMap<Long, IdParentPair> values, Index toAdd, Random random) {
             final TreeMap<Long, IdParentPair> result = new TreeMap<>();
 
-            for (final Index.Iterator it = toAdd.iterator(); it.hasNext(); ) {
+            for (final Index.Iterator it = toAdd.iterator(); it.hasNext();) {
                 add(random, values, result, it.nextLong());
             }
 
@@ -668,13 +730,14 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             return result;
         }
 
-        private void add(Random random, TreeMap<Long, IdParentPair> values, TreeMap<Long, IdParentPair> result, long key) {
+        private void add(Random random, TreeMap<Long, IdParentPair> values, TreeMap<Long, IdParentPair> result,
+                long key) {
             if (values.containsKey(key)) {
                 // this is a modification, for now let's keep it actually the same, because otherwise it is hard
                 final IdParentPair existing = values.get(key);
 
-//                final boolean isOrphan = orphans.containsKey(existing.id);
-//                final boolean isActive = parentToChild.containsKey(existing.id);
+                // final boolean isOrphan = orphans.containsKey(existing.id);
+                // final boolean isActive = parentToChild.containsKey(existing.id);
 
                 result.put(key, existing);
 
@@ -727,7 +790,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         }
 
         private void doOrphan(int parentToOrphan) {
-            final Set<Integer> orphanKeys = Require.neqNull(parentToChild.remove(parentToOrphan), Integer.toString(parentToOrphan));
+            final Set<Integer> orphanKeys =
+                    Require.neqNull(parentToChild.remove(parentToOrphan), Integer.toString(parentToOrphan));
             orphans.put(parentToOrphan, orphanKeys);
             orphanKeys.forEach(this::doOrphan);
         }
@@ -767,7 +831,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             compareWithChildren(msg, originalValue, recomputed, getHierarchicalColumnName(recomputed));
         }
 
-        abstract void compareWithChildren(String msg, Table originalValue, Table recomputed, String hierarchicalColumnName);
+        abstract void compareWithChildren(String msg, Table originalValue, Table recomputed,
+                String hierarchicalColumnName);
 
         @Override
         void showResult(String label, Table e) {
@@ -787,7 +852,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         }
 
         void compareWithChildren(String msg, Table originalValue, Table recomputed, String hierarchicalColumnName) {
-            doCompareWithChildrenForTrees(msg, originalValue, recomputed, 0, maxLevels.get(), hierarchicalColumnName, sortColumns);
+            doCompareWithChildrenForTrees(msg, originalValue, recomputed, 0, maxLevels.get(), hierarchicalColumnName,
+                    sortColumns);
         }
     }
 
@@ -802,22 +868,29 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         }
 
         void compareWithChildren(String msg, Table originalValue, Table recomputed, String hierarchicalColumnName) {
-            doCompareWithChildrenForRollups(msg, originalValue, recomputed, 0, maxLevels.get(), hierarchicalColumnName, sortColumns);
+            doCompareWithChildrenForRollups(msg, originalValue, recomputed, 0, maxLevels.get(), hierarchicalColumnName,
+                    sortColumns);
         }
     }
 
-    static private void doCompareWithChildrenForTrees(String msg, Table actualValue, Table expectedValue, int levels, int maxLevels, String hierarchicalColumnName, String[] sortColumns) {
-        doCompareWithChildrenForTrees(msg, actualValue, expectedValue, false, false, levels, maxLevels, hierarchicalColumnName, sortColumns);
+    static private void doCompareWithChildrenForTrees(String msg, Table actualValue, Table expectedValue, int levels,
+            int maxLevels, String hierarchicalColumnName, String[] sortColumns) {
+        doCompareWithChildrenForTrees(msg, actualValue, expectedValue, false, false, levels, maxLevels,
+                hierarchicalColumnName, sortColumns);
     }
 
-    static private void doCompareWithChildrenForTrees(String msg, Table actualValue, Table expectedValue, boolean actualPrev, boolean expectedPrev, int levels, int maxLevels, String hierarchicalColumnName, String[] sortColumns) {
+    static private void doCompareWithChildrenForTrees(String msg, Table actualValue, Table expectedValue,
+            boolean actualPrev, boolean expectedPrev, int levels, int maxLevels, String hierarchicalColumnName,
+            String[] sortColumns) {
         doCompareWithChildren(
                 t -> (TableMap) actualValue.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE),
                 t -> (TableMap) expectedValue.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE),
-                msg, actualValue, expectedValue, actualPrev, expectedPrev, levels, maxLevels, hierarchicalColumnName, sortColumns);
+                msg, actualValue, expectedValue, actualPrev, expectedPrev, levels, maxLevels, hierarchicalColumnName,
+                sortColumns);
     }
 
-    static private void doCompareWithChildrenForRollups(String msg, Table originalValue, Table recomputed, int levels, int maxLevels, String hierarchicalColumnName, String[] sortColumns) {
+    static private void doCompareWithChildrenForRollups(String msg, Table originalValue, Table recomputed, int levels,
+            int maxLevels, String hierarchicalColumnName, String[] sortColumns) {
         doCompareWithChildren(
                 t -> (TableMap) t.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE),
                 t -> (TableMap) t.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE),
@@ -825,16 +898,16 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     static private void doCompareWithChildren(Function.Unary<TableMap, Table> actualMapSource,
-                                              Function.Unary<TableMap, Table> expectedMapSource,
-                                              String msg,
-                                              Table actualValueIn,
-                                              Table expectedValueIn,
-                                              boolean actualPrev,
-                                              boolean expectedPrev,
-                                              int levels,
-                                              int maxLevels,
-                                              String hierarchicalColumnName,
-                                              String[] sortColumns) {
+            Function.Unary<TableMap, Table> expectedMapSource,
+            String msg,
+            Table actualValueIn,
+            Table expectedValueIn,
+            boolean actualPrev,
+            boolean expectedPrev,
+            int levels,
+            int maxLevels,
+            String hierarchicalColumnName,
+            String[] sortColumns) {
         if (levels > maxLevels) {
             throw new IllegalStateException("Refusing to validate levels " + levels + ", to prevent infinite looping!");
         }
@@ -848,7 +921,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         }
 
         final String diff = diff(maybePrev(actualValue.dropColumns(hierarchicalColumnName), actualPrev),
-                                 maybePrev(expectedValue.dropColumns(hierarchicalColumnName), expectedPrev), 10, EnumSet.of(TableDiff.DiffItems.DoublesExact));
+                maybePrev(expectedValue.dropColumns(hierarchicalColumnName), expectedPrev), 10,
+                EnumSet.of(TableDiff.DiffItems.DoublesExact));
         Assert.assertEquals(msg, "", diff);
 
         final ColumnSource actualChildren = columnOrPrev(actualValue, hierarchicalColumnName, actualPrev);
@@ -864,7 +938,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final Index.Iterator oit = actualIndex.iterator();
         final Index.Iterator rit = expectedIndex.iterator();
 
-        for (; oit.hasNext(); ) {
+        for (; oit.hasNext();) {
             assertTrue(rit.hasNext());
             final long originalRow = oit.nextLong();
             final long recomputedRow = rit.nextLong();
@@ -880,7 +954,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             assertEquals(ac == null || ac.size() == 0, ec == null || ec.size() == 0);
 
             if ((ac != null && ac.size() > 0) && (ec != null && ec.size() > 0)) {
-                doCompareWithChildren(actualMapSource, expectedMapSource, msg, ac, ec, actualPrev, expectedPrev, levels + 1, maxLevels, hierarchicalColumnName, sortColumns);
+                doCompareWithChildren(actualMapSource, expectedMapSource, msg, ac, ec, actualPrev, expectedPrev,
+                        levels + 1, maxLevels, hierarchicalColumnName, sortColumns);
             }
         }
     }
@@ -895,7 +970,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     private static ColumnSource columnOrPrev(Table table, String columnName, boolean usePrev) {
-        //noinspection unchecked
+        // noinspection unchecked
         return usePrev ? new PrevColumnSource(table.getColumnSource(columnName)) : table.getColumnSource(columnName);
     }
 
@@ -907,7 +982,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final Random random = new Random(seed);
         final ParentChildGenerator parentChildGenerator = new ParentChildGenerator(0.25, 0);
 
-        final TstUtils.ColumnInfo[] columnInfo = initColumnInfos(new String[]{"IDPair", "Sentinel", "Sym"},
+        final TstUtils.ColumnInfo[] columnInfo = initColumnInfos(new String[] {"IDPair", "Sentinel", "Sym"},
                 parentChildGenerator,
                 new IntGenerator(0, 1_000_000_000),
                 new SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"));
@@ -926,7 +1001,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             TableTools.showWithIndex(prepared);
         }
 
-        final EvalNuggetInterface en[] = new EvalNuggetInterface[]{
+        final EvalNuggetInterface en[] = new EvalNuggetInterface[] {
                 new EvalNuggetInterface() {
                     @Override
                     public void validate(String msg) {}
@@ -939,19 +1014,22 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 new TreeTableEvalNugget(prepared) {
                     @Override
                     protected Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> prepared.treeTable("ID", "Parent"));
+                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                                .computeLocked(() -> prepared.treeTable("ID", "Parent"));
                     }
                 },
                 new TreeTableEvalNugget(prepared) {
                     @Override
                     protected Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> prepared.sort("Sym").treeTable("ID", "Parent"));
+                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                                .computeLocked(() -> prepared.sort("Sym").treeTable("ID", "Parent"));
                     }
                 },
                 new TreeTableEvalNugget(prepared) {
                     @Override
                     protected Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> prepared.sort("Sentinel").treeTable("ID", "Parent"));
+                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                                .computeLocked(() -> prepared.sort("Sentinel").treeTable("ID", "Parent"));
                     }
                 },
                 new TreeTableEvalNugget(prepared) {
@@ -960,7 +1038,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                         return TreeTableFilter.filterTree(prepared.treeTable("ID", "Parent"), "Sentinel % 2 == 1");
                     }
                 },
-                EvalNugget.from(() -> TreeTableFilter.rawFilterTree(prepared.treeTable("ID", "Parent"), "Sentinel % 2 == 1")),
+                EvalNugget.from(
+                        () -> TreeTableFilter.rawFilterTree(prepared.treeTable("ID", "Parent"), "Sentinel % 2 == 1")),
         };
 
         final int maxSteps = numSteps.intValue();
@@ -983,14 +1062,15 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         final ColumnInfo[] columnInfo;
         final ParentChildGenerator parentChildGenerator = new ParentChildGenerator(0.25, 0.25);
-        final QueryTable table = getTable(size, random, columnInfo = initColumnInfos(new String[]{"IDPair", "Sentinel", "Sym"},
-                parentChildGenerator,
-                new TstUtils.IntGenerator(0, 1_000_000_000),
-                new TstUtils.SetGenerator<>("AAPL", "TSLA", "VXX", "SPY")));
+        final QueryTable table = getTable(size, random,
+                columnInfo = initColumnInfos(new String[] {"IDPair", "Sentinel", "Sym"},
+                        parentChildGenerator,
+                        new TstUtils.IntGenerator(0, 1_000_000_000),
+                        new TstUtils.SetGenerator<>("AAPL", "TSLA", "VXX", "SPY")));
 
         final Table prepared = table.update("ID=IDPair.getId()", "Parent=IDPair.getParent()").dropColumns("IDPair");
 
-        final EvalNuggetInterface en[] = new EvalNuggetInterface[]{
+        final EvalNuggetInterface en[] = new EvalNuggetInterface[] {
                 new EvalNuggetInterface() {
                     @Override
                     public void validate(String msg) {}
@@ -1003,19 +1083,24 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter.promoteOrphans(prepared, "ID", "Parent"));
+                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                                .computeLocked(() -> TreeTableOrphanPromoter.promoteOrphans(prepared, "ID", "Parent"));
                     }
                 },
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter.promoteOrphans(prepared.where("Sentinel % 2 == 0"), "ID", "Parent"));
+                        return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter
+                                .promoteOrphans(prepared.where("Sentinel % 2 == 0"), "ID", "Parent"));
                     }
                 },
                 new TreeTableEvalNugget(prepared) {
                     @Override
                     protected Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter.promoteOrphans(prepared.where("Sentinel % 2 == 0"), "ID", "Parent").treeTable("ID", "Parent"));
+                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                                .computeLocked(() -> TreeTableOrphanPromoter
+                                        .promoteOrphans(prepared.where("Sentinel % 2 == 0"), "ID", "Parent")
+                                        .treeTable("ID", "Parent"));
                     }
                 },
         };
@@ -1033,19 +1118,26 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     private static void dumpRollup(Table root, boolean usePrev, String hierarchicalColumnName, String... labelColumns) {
-        final HierarchicalTableInfo info = (HierarchicalTableInfo)root.getAttribute(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
+        final HierarchicalTableInfo info =
+                (HierarchicalTableInfo) root.getAttribute(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE);
 
-        final TableMap map = info instanceof TreeTableInfo ? (TableMap)root.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE) : null;
+        final TableMap map = info instanceof TreeTableInfo
+                ? (TableMap) root.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE)
+                : null;
 
         dumpRollup(root, map, usePrev, hierarchicalColumnName, labelColumns);
     }
 
-    private static void dumpRollup(Table root, TableMap childMap, boolean usePrev, String hierarchicalColumnName, String... labelColumns) {
+    private static void dumpRollup(Table root, TableMap childMap, boolean usePrev, String hierarchicalColumnName,
+            String... labelColumns) {
         TableTools.showWithIndex(usePrev ? prevTable(root) : root, 101);
 
-        final List<ColumnSource> labelSource = Arrays.stream(labelColumns).map(root::getColumnSource).collect(Collectors.toList());
+        final List<ColumnSource> labelSource =
+                Arrays.stream(labelColumns).map(root::getColumnSource).collect(Collectors.toList());
         final ColumnSource children = columnOrPrev(root, hierarchicalColumnName, usePrev);
-        final TableMap map = childMap == null ?(TableMap) root.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE) : childMap;
+        final TableMap map =
+                childMap == null ? (TableMap) root.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE)
+                        : childMap;
         final ReverseLookup reverseLookup = (ReverseLookup) root.getAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE);
         if (reverseLookup != null) {
             System.out.println("Reverse Lookup is set.");
@@ -1058,7 +1150,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             return;
         }
 
-        for (final Index.Iterator it = indexOrPrev(root, usePrev).iterator(); it.hasNext(); ) {
+        for (final Index.Iterator it = indexOrPrev(root, usePrev).iterator(); it.hasNext();) {
             final long key = it.nextLong();
             Object childKey = children.get(key);
             if (childKey == null) {
@@ -1094,29 +1186,37 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final Random random = new Random(0);
 
         final int size = 100;
-        final QueryTable table = getTable(size, random, initColumnInfos(new String[]{"USym", "DateTime", "IntCol", "DoubleCol", "BoolCol", "BigIntCol", "BigDecCol"},
-                new SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
-                new SetGenerator<>(DBTimeUtils.convertDateTime("2020-01-01T00:00:00 NY"), null, DBTimeUtils.convertDateTime("2020-02-28T14:30:00 NY")),
-                new IntGenerator(0, 1_000_000),
-                new DoubleGenerator(-100, 100),
-                new BooleanGenerator(0.4, 0.1),
-                new BigIntegerGenerator(BigInteger.ZERO, BigInteger.valueOf(100), 0.1),
-                new BigDecimalGenerator(BigInteger.valueOf(-1000), BigInteger.valueOf(1000), 5, 0.1)
-        ));
+        final QueryTable table = getTable(size, random,
+                initColumnInfos(
+                        new String[] {"USym", "DateTime", "IntCol", "DoubleCol", "BoolCol", "BigIntCol", "BigDecCol"},
+                        new SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
+                        new SetGenerator<>(DBTimeUtils.convertDateTime("2020-01-01T00:00:00 NY"), null,
+                                DBTimeUtils.convertDateTime("2020-02-28T14:30:00 NY")),
+                        new IntGenerator(0, 1_000_000),
+                        new DoubleGenerator(-100, 100),
+                        new BooleanGenerator(0.4, 0.1),
+                        new BigIntegerGenerator(BigInteger.ZERO, BigInteger.valueOf(100), 0.1),
+                        new BigDecimalGenerator(BigInteger.valueOf(-1000), BigInteger.valueOf(1000), 5, 0.1)));
 
         System.out.println("Source Data:");
         TableTools.showWithIndex(table);
 
-        final Table rollup = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "USym", "DateTime", "BoolCol", "BigIntCol", "BigDecCol"));
+        final Table rollup = LiveTableMonitor.DEFAULT.exclusiveLock()
+                .computeLocked(() -> table.rollup(comboAgg, "USym", "DateTime", "BoolCol", "BigIntCol", "BigDecCol"));
         verifyReverseLookup(rollup);
 
-        verifyReverseLookup(LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "USym")));
-        verifyReverseLookup(LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "DateTime")));
-        verifyReverseLookup(LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "BoolCol")));
+        verifyReverseLookup(
+                LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "USym")));
+        verifyReverseLookup(
+                LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "DateTime")));
+        verifyReverseLookup(
+                LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "BoolCol")));
     }
 
     private void verifyReverseLookup(Table rollup) {
-        final String columnName = ((HierarchicalTableInfo)rollup.getAttribute(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE)).getHierarchicalColumnName();
+        final String columnName =
+                ((HierarchicalTableInfo) rollup.getAttribute(Table.HIERARCHICAL_SOURCE_INFO_ATTRIBUTE))
+                        .getHierarchicalColumnName();
         verifyReverseLookup(rollup, columnName);
     }
 
@@ -1138,7 +1238,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             TestCase.assertEquals(key, fromColumn);
         });
 
-        final TableMap childMap = (TableMap)rollup.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
+        final TableMap childMap = (TableMap) rollup.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
         for (final Object childKey : children) {
             verifyReverseLookup(childMap.get(childKey), columnName);
         }
@@ -1149,7 +1249,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testRollupAverage() {
-        testSimpleRollup(AggCombo(AggAvg("IntCol", "DoubleCol", "BigIntCol", "BigDecCol", "DoubleNanCol", "FloatNullCol")));
+        testSimpleRollup(
+                AggCombo(AggAvg("IntCol", "DoubleCol", "BigIntCol", "BigDecCol", "DoubleNanCol", "FloatNullCol")));
     }
 
     public void testRollupStd() {
@@ -1178,7 +1279,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
     public void testRollupCountDistinct() {
         testSimpleRollup(AggCombo(AggCountDistinct("IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
-        testSimpleRollup(AggCombo(AggCountDistinct(true, "IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
+        testSimpleRollup(
+                AggCombo(AggCountDistinct(true, "IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
     }
 
     public void testRollupDistinct() {
@@ -1195,23 +1297,26 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final Random random = new Random(0);
 
         final int size = 10;
-        final QueryTable table = getTable(size, random, initColumnInfos(new String[]{"USym", "Group", "IntCol", "DoubleCol", "DoubleNanCol", "FloatNullCol", "StringCol", "BoolCol", "BigIntCol", "BigDecCol"},
-                new TstUtils.SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
-                new TstUtils.SetGenerator<>("Terran", "Vulcan", "Klingon", "Romulan"),
-                new TstUtils.IntGenerator(0, 1_000_000),
-                new TstUtils.DoubleGenerator(-100, 100),
-                new TstUtils.DoubleGenerator(-100, 100, 0.0, 0.1),
-                new TstUtils.FloatGenerator(-100, 100, 0.1, 0.0),
-                new TstUtils.SetGenerator<>("A", "B", "C", "D"),
-                new TstUtils.BooleanGenerator(.5, .1),
-                new TstUtils.BigIntegerGenerator(BigInteger.ZERO, BigInteger.valueOf(100), 0.1),
-                new TstUtils.BigDecimalGenerator(BigInteger.valueOf(-1000), BigInteger.valueOf(1000), 5, 0.1)
-        ));
+        final QueryTable table = getTable(size, random,
+                initColumnInfos(
+                        new String[] {"USym", "Group", "IntCol", "DoubleCol", "DoubleNanCol", "FloatNullCol",
+                                "StringCol", "BoolCol", "BigIntCol", "BigDecCol"},
+                        new TstUtils.SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
+                        new TstUtils.SetGenerator<>("Terran", "Vulcan", "Klingon", "Romulan"),
+                        new TstUtils.IntGenerator(0, 1_000_000),
+                        new TstUtils.DoubleGenerator(-100, 100),
+                        new TstUtils.DoubleGenerator(-100, 100, 0.0, 0.1),
+                        new TstUtils.FloatGenerator(-100, 100, 0.1, 0.0),
+                        new TstUtils.SetGenerator<>("A", "B", "C", "D"),
+                        new TstUtils.BooleanGenerator(.5, .1),
+                        new TstUtils.BigIntegerGenerator(BigInteger.ZERO, BigInteger.valueOf(100), 0.1),
+                        new TstUtils.BigDecimalGenerator(BigInteger.valueOf(-1000), BigInteger.valueOf(1000), 5, 0.1)));
 
         System.out.println("Source Data:");
         TableTools.showWithIndex(table);
 
-        final Table rollup = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "USym", "Group"));
+        final Table rollup =
+                LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "USym", "Group"));
 
         final Table fullBy = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.by(comboAgg));
         System.out.println("Full By:");
@@ -1224,7 +1329,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         dumpRollup(rollup, getHierarchicalColumnName(rollup), "USym", "Group");
 
         final List<String> viewCols = new ArrayList<>(Arrays.asList("IntCol", "DoubleCol"));
-        for (final String maybeColumn : new String[]{"BigIntCol", "BigDecCol", "DoubleNanCol", "FloatNullCol", "StringCol", "BoolCol"}) {
+        for (final String maybeColumn : new String[] {"BigIntCol", "BigDecCol", "DoubleNanCol", "FloatNullCol",
+                "StringCol", "BoolCol"}) {
             if (fullBy.hasColumns(maybeColumn)) {
                 viewCols.add(maybeColumn);
             }
@@ -1242,21 +1348,23 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final Random random = new Random(0);
 
         final int size = 10;
-        final QueryTable table = getTable(size, random, initColumnInfos(new String[]{"USym", "Group", "IntCol", "DoubleCol"},
-                new TstUtils.SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
-                new TstUtils.SetGenerator<>("Terran", "Vulcan", "Klingon", "Romulan"),
-                new TstUtils.IntGenerator(0, 1_000_000),
-                new TstUtils.DoubleGenerator(-100, 100)));
+        final QueryTable table = getTable(size, random,
+                initColumnInfos(new String[] {"USym", "Group", "IntCol", "DoubleCol"},
+                        new TstUtils.SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
+                        new TstUtils.SetGenerator<>("Terran", "Vulcan", "Klingon", "Romulan"),
+                        new TstUtils.IntGenerator(0, 1_000_000),
+                        new TstUtils.DoubleGenerator(-100, 100)));
 
         final SafeCloseable scopeCloseable = LivenessScopeStack.open();
 
-        final Table rollup = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(AggCombo(AggSum("IntCol", "DoubleCol")), "USym", "Group"));
-        final TableMap rootMap = (TableMap)rollup.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
+        final Table rollup = LiveTableMonitor.DEFAULT.exclusiveLock()
+                .computeLocked(() -> table.rollup(AggCombo(AggSum("IntCol", "DoubleCol")), "USym", "Group"));
+        final TableMap rootMap = (TableMap) rollup.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
         final Table nextLevel = rootMap.get(SmartKey.EMPTY);
         assertNotNull(nextLevel);
 
-//        TableTools.show(rollup.getMeta());
-//        dumpRollup(rollup, getHierarchicalColumnName(rollup), "USym", "Group");
+        // TableTools.show(rollup.getMeta());
+        // dumpRollup(rollup, getHierarchicalColumnName(rollup), "USym", "Group");
 
         final SingletonLivenessManager rollupManager = new SingletonLivenessManager(rollup);
 
@@ -1272,10 +1380,12 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(rollupManager::release);
 
-        // we should not be able to retainReference the rollup, because closing the scope should have decremented it to zero
+        // we should not be able to retainReference the rollup, because closing the scope should have decremented it to
+        // zero
         Assert.assertFalse(rollup.tryRetainReference());
 
-        // we should not be able to retainReference the tablemap, because closing the scope should have decremented it to zero
+        // we should not be able to retainReference the tablemap, because closing the scope should have decremented it
+        // to zero
         Assert.assertFalse(rootMap.tryRetainReference());
 
         Assert.assertFalse(nextLevel.tryRetainReference());
@@ -1285,12 +1395,13 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final Random random = new Random(0);
 
         final int size = 10;
-        final QueryTable table = getTable(size, random, initColumnInfos(new String[]{"USym", "Group", "IntCol", "DoubleCol", "ParentCol"},
-                new TstUtils.SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
-                new TstUtils.SetGenerator<>("Terran", "Vulcan", "Klingon", "Romulan"),
-                new TstUtils.IntGenerator(1, 1_000_000),
-                new TstUtils.DoubleGenerator(-100, 100),
-                new TstUtils.IntGenerator(0, 0, 1.0)));
+        final QueryTable table = getTable(size, random,
+                initColumnInfos(new String[] {"USym", "Group", "IntCol", "DoubleCol", "ParentCol"},
+                        new TstUtils.SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
+                        new TstUtils.SetGenerator<>("Terran", "Vulcan", "Klingon", "Romulan"),
+                        new TstUtils.IntGenerator(1, 1_000_000),
+                        new TstUtils.DoubleGenerator(-100, 100),
+                        new TstUtils.IntGenerator(0, 0, 1.0)));
 
         final SafeCloseable scopeCloseable = LivenessScopeStack.open();
 
@@ -1321,24 +1432,27 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(treeManager::release);
 
-        // we should not be able to retainReference the tree table, because closing the scope should have decremented it to zero
+        // we should not be able to retainReference the tree table, because closing the scope should have decremented it
+        // to zero
         Assert.assertFalse(treed.tryRetainReference());
         Assert.assertFalse(promoted.tryRetainReference());
     }
 
     public void testRollupScope2() {
-        final QueryTable table = TstUtils.testRefreshingTable(i(), col("USym", CollectionUtil.ZERO_LENGTH_STRING_ARRAY), col("Group", CollectionUtil.ZERO_LENGTH_STRING_ARRAY), intCol("IntCol"), doubleCol("DoubleCol"));
+        final QueryTable table = TstUtils.testRefreshingTable(i(), col("USym", CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+                col("Group", CollectionUtil.ZERO_LENGTH_STRING_ARRAY), intCol("IntCol"), doubleCol("DoubleCol"));
 
         final SafeCloseable scopeCloseable = LivenessScopeStack.open();
 
-        final Table rollup = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(AggCombo(AggSum("IntCol", "DoubleCol")), "USym", "Group"));
-        final TableMap rootMap = (TableMap)rollup.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
+        final Table rollup = LiveTableMonitor.DEFAULT.exclusiveLock()
+                .computeLocked(() -> table.rollup(AggCombo(AggSum("IntCol", "DoubleCol")), "USym", "Group"));
+        final TableMap rootMap = (TableMap) rollup.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
 
         final SingletonLivenessManager rollupManager = new SingletonLivenessManager(rollup);
 
         LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(scopeCloseable::close);
 
-//        dumpRollup(rollup, getHierarchicalColumnName(rollup), "USym", "Group");
+        // dumpRollup(rollup, getHierarchicalColumnName(rollup), "USym", "Group");
 
         Assert.assertTrue(rollup.tryRetainReference());
         Assert.assertTrue(rootMap.tryRetainReference());
@@ -1347,7 +1461,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         rootMap.dropReference();
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-        addToTable(table, i(0, 1), col("USym", "AAPL", "TSLA"), col("Group", "Terran", "Vulcan"), intCol("IntCol", 1, 2), doubleCol("DoubleCol", .1, .2));
+        addToTable(table, i(0, 1), col("USym", "AAPL", "TSLA"), col("Group", "Terran", "Vulcan"),
+                intCol("IntCol", 1, 2), doubleCol("DoubleCol", .1, .2));
         table.notifyListeners(i(0, 1), i(), i());
         LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
 
@@ -1366,10 +1481,12 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(getScope::close);
         LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(rollupManager::release);
 
-        // we should not be able to retainReference the rollup, because closing the scope should have decremented it to zero
+        // we should not be able to retainReference the rollup, because closing the scope should have decremented it to
+        // zero
         Assert.assertFalse(rollup.tryRetainReference());
 
-        // we should not be able to retainReference the tablemap, because closing the scope should have decremented it to zero
+        // we should not be able to retainReference the tablemap, because closing the scope should have decremented it
+        // to zero
         Assert.assertFalse(rootMap.tryRetainReference());
 
         Assert.assertFalse(nextLevel.tryRetainReference());
@@ -1379,15 +1496,16 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final Random random = new Random(0);
 
         final int size = 10;
-        final QueryTable table = getTable(size, random, initColumnInfos(new String[]{"USym", "Group", "IntCol", "DoubleCol", "StringCol"},
-                new TstUtils.SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
-                new TstUtils.SetGenerator<>("Terran", "Vulcan", "Klingon", "Romulan"),
-                new TstUtils.IntGenerator(0, 1_000_000),
-                new TstUtils.DoubleGenerator(-100, 100),
-                new TstUtils.SetGenerator<>("A", "B", "C", "D")
-        ));
+        final QueryTable table = getTable(size, random,
+                initColumnInfos(new String[] {"USym", "Group", "IntCol", "DoubleCol", "StringCol"},
+                        new TstUtils.SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
+                        new TstUtils.SetGenerator<>("Terran", "Vulcan", "Klingon", "Romulan"),
+                        new TstUtils.IntGenerator(0, 1_000_000),
+                        new TstUtils.DoubleGenerator(-100, 100),
+                        new TstUtils.SetGenerator<>("A", "B", "C", "D")));
 
-        final Table rollup = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(AggCombo(AggSum("DoubleCol"), AggFirst("StringCol")), "USym", "Group", "IntCol"));
+        final Table rollup = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(
+                () -> table.rollup(AggCombo(AggSum("DoubleCol"), AggFirst("StringCol")), "USym", "Group", "IntCol"));
         TestCase.assertEquals(String.class, rollup.getColumnSource("USym").getType());
         TestCase.assertEquals(String.class, rollup.getColumnSource("Group").getType());
         TestCase.assertEquals(int.class, rollup.getColumnSource("IntCol").getType());
@@ -1427,9 +1545,12 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     private void testIncrementalSimple(ComboBy comboBy) {
-        final QueryTable table = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(6), col("G1", "A", "A", "A", "B", "B", "B"), col("G2", "C", "C", "D", "D", "E", "E"), col("IntCol", 1, 2, 3, 4, 5, 6));
+        final QueryTable table =
+                TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(6), col("G1", "A", "A", "A", "B", "B", "B"),
+                        col("G2", "C", "C", "D", "D", "E", "E"), col("IntCol", 1, 2, 3, 4, 5, 6));
 
-        final Table rollup = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(AggCombo(comboBy), "G1", "G2"));
+        final Table rollup = LiveTableMonitor.DEFAULT.exclusiveLock()
+                .computeLocked(() -> table.rollup(AggCombo(comboBy), "G1", "G2"));
 
         dumpRollup(rollup, "G1", "G2");
 
@@ -1491,8 +1612,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final TstUtils.ColumnInfo[] columnInfo;
 
         final int size = 100;
-        final QueryTable table = getTable(size, random, columnInfo = initColumnInfos(new String[]{
-                "USym", "Group", "IntCol", "DoubleCol", "StringCol", "StringNulls" , "BoolCol", "DateTime",
+        final QueryTable table = getTable(size, random, columnInfo = initColumnInfos(new String[] {
+                "USym", "Group", "IntCol", "DoubleCol", "StringCol", "StringNulls", "BoolCol", "DateTime",
                 "IntSet", "LongSet", "DoubleSet", "FloatSet", "CharSet", "ShortSet", "ByteSet"},
 
                 new TstUtils.SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
@@ -1502,15 +1623,16 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 new TstUtils.SetGenerator<>("A", "B", "C", "D"),
                 new TstUtils.SetGenerator<>("A", "B", "C", "D", null),
                 new TstUtils.BooleanGenerator(.5, .1),
-                new TstUtils.UnsortedDateTimeGenerator(DBTimeUtils.convertDateTime("2020-03-17T09:30:00 NY"), DBTimeUtils.convertDateTime("2020-03-17T16:00:00 NY")),
-                new TstUtils.SetGenerator<>(0,1,2,3,4,5,NULL_INT),
-                new TstUtils.SetGenerator<>(0L,1L,2L,3L,4L,5L,NULL_LONG),
-                new TstUtils.SetGenerator<>(0.0D,1.1D,2.2D,3.3D,4.4D,5.5D,NULL_DOUBLE),
-                new TstUtils.SetGenerator<>(0.0f,1.1f,2.2f,3.3f,4.4f,5.5f,NULL_FLOAT),
-                new TstUtils.SetGenerator<>('a','b','c','d','e', NULL_CHAR),
-                new TstUtils.SetGenerator<>((short)0, (short)1, (short)2, (short)3, (short)4, (short)5, NULL_SHORT),
-                new TstUtils.SetGenerator<>((byte)0, (byte)1, (byte)2, (byte)3, (byte)4, (byte)5, NULL_BYTE)
-        ));
+                new TstUtils.UnsortedDateTimeGenerator(DBTimeUtils.convertDateTime("2020-03-17T09:30:00 NY"),
+                        DBTimeUtils.convertDateTime("2020-03-17T16:00:00 NY")),
+                new TstUtils.SetGenerator<>(0, 1, 2, 3, 4, 5, NULL_INT),
+                new TstUtils.SetGenerator<>(0L, 1L, 2L, 3L, 4L, 5L, NULL_LONG),
+                new TstUtils.SetGenerator<>(0.0D, 1.1D, 2.2D, 3.3D, 4.4D, 5.5D, NULL_DOUBLE),
+                new TstUtils.SetGenerator<>(0.0f, 1.1f, 2.2f, 3.3f, 4.4f, 5.5f, NULL_FLOAT),
+                new TstUtils.SetGenerator<>('a', 'b', 'c', 'd', 'e', NULL_CHAR),
+                new TstUtils.SetGenerator<>((short) 0, (short) 1, (short) 2, (short) 3, (short) 4, (short) 5,
+                        NULL_SHORT),
+                new TstUtils.SetGenerator<>((byte) 0, (byte) 1, (byte) 2, (byte) 3, (byte) 4, (byte) 5, NULL_BYTE)));
 
         final ComboAggregateFactory rollupDefinition = AggCombo(
                 AggSum("IntCol", "DoubleCol"),
@@ -1523,8 +1645,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 AggLast("IntLast=IntCol", "DoubleLast=DoubleCol"),
                 AggCount("Count"),
                 AggCountDistinct("SCDistinct=StringCol", "CDBoolCol=BoolCol", "DTCDistinct=DateTime",
-                                 "CDIntCol=IntSet", "CDLongCol=LongSet", "CDDoubleCol=DoubleSet",
-                                 "CDFloatCol=FloatSet", "CDCharCol=CharSet", "CDShortCol=ShortSet", "CDByteCol=ByteSet"),
+                        "CDIntCol=IntSet", "CDLongCol=LongSet", "CDDoubleCol=DoubleSet",
+                        "CDFloatCol=FloatSet", "CDCharCol=CharSet", "CDShortCol=ShortSet", "CDByteCol=ByteSet"),
                 AggDistinct("SDistinct=StringCol", "DistinctBoolCol=BoolCol", "DTDistinct=DateTime",
                         "DIntCol=IntSet", "DLongCol=LongSet", "DDoubleCol=DoubleSet",
                         "DFloatCol=FloatSet", "DCharCol=CharSet", "DShortCol=ShortSet", "DByteCol=ByteSet"),
@@ -1540,7 +1662,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 AggUnique(true, "SUniqueN=StringNulls", "UniqueBoolColN=BoolCol",
                         "UNIntCol=IntSet", "UNLongCol=LongSet", "UNDoubleCol=DoubleSet",
                         "UNFloatCol=FloatSet", "UNCharCol=CharSet", "UNShortCol=ShortSet", "UNByteCol=ByteSet"));
-        final EvalNuggetInterface [] en = new EvalNuggetInterface[]{
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNuggetInterface() {
                     @Override
                     public void validate(String msg) {}
@@ -1553,7 +1675,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 new RollupEvalNugget(3, "USym", "Group") {
                     @Override
                     protected Table e() {
-                        return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(rollupDefinition, "USym", "Group"));
+                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                                .computeLocked(() -> table.rollup(rollupDefinition, "USym", "Group"));
                     }
 
                     @Override
@@ -1562,7 +1685,9 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                         dumpRollup(e, "USym", "Group");
                     }
                 },
-                new TableComparator(getDiffableTable(table.rollup(rollupDefinition)).dropColumns(RollupInfo.ROLLUP_COLUMN), table.by(rollupDefinition))
+                new TableComparator(
+                        getDiffableTable(table.rollup(rollupDefinition)).dropColumns(RollupInfo.ROLLUP_COLUMN),
+                        table.by(rollupDefinition))
         };
 
         for (int step = 0; step < 100; step++) {
@@ -1595,7 +1720,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         int nextHid = 11;
         long index = 2;
 
-        final QueryTable source = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(1), longCol("Sentinel", 1), stringCol("hid", "a"), stringCol("hpos", "1"), col("open", true), doubleCol("rand", 1.0));
+        final QueryTable source = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(1), longCol("Sentinel", 1),
+                stringCol("hid", "a"), stringCol("hpos", "1"), col("open", true), doubleCol("rand", 1.0));
 
         final List<String> openHid = new ArrayList<>();
         openHid.add("a");
@@ -1606,7 +1732,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final Table orders = source
                 .lastBy("hpos", "hid")
                 .where("open")
-                .update("treeid=new io.deephaven.datastructures.util.SmartKey(hid, hpos)", "parent=io.deephaven.db.v2.QueryTableTreeTest.getPrefix(hid, hpos)");
+                .update("treeid=new io.deephaven.datastructures.util.SmartKey(hid, hpos)",
+                        "parent=io.deephaven.db.v2.QueryTableTreeTest.getPrefix(hid, hpos)");
 
         final Table ordersTree = orders.treeTable("treeid", "parent");
         final Table ordersFiltered = TreeTableFilter.filterTree(ordersTree, "rand > 0.8");
@@ -1638,18 +1765,21 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                     final List<String> hpos = hidToPos.computeIfAbsent(hid, (key) -> new ArrayList<>());
                     final String newHpos;
                     if (hpos.isEmpty()) {
-//                        newHpos = random.nextBoolean() ? "1" : "1.1";
+                        // newHpos = random.nextBoolean() ? "1" : "1.1";
                         newHpos = "1";
                     } else {
                         final String parentHpos = hpos.get(random.nextInt(hpos.size()));
-                        final int next = hpos.stream().filter(s -> s.startsWith(parentHpos + ".")).map(s -> s.substring(parentHpos.length() + 1).split("\\.")[0]).mapToInt(Integer::parseInt).max().orElse(0) + 1;
+                        final int next = hpos.stream().filter(s -> s.startsWith(parentHpos + "."))
+                                .map(s -> s.substring(parentHpos.length() + 1).split("\\.")[0])
+                                .mapToInt(Integer::parseInt).max().orElse(0) + 1;
                         newHpos = parentHpos + "." + next;
                         maxLevel = Math.max(maxLevel, 1 + StringUtils.countMatches(newHpos, "."));
                     }
                     hpos.add(newHpos);
 
                     final long newIndex = ++index;
-                    addToTable(source, i(newIndex), longCol("Sentinel", newIndex), col("hid", hid), col("hpos", newHpos), col("open", true), col("rand", random.nextDouble()));
+                    addToTable(source, i(newIndex), longCol("Sentinel", newIndex), col("hid", hid),
+                            col("hpos", newHpos), col("open", true), col("rand", random.nextDouble()));
                     builder.appendKey(newIndex);
                 } else if (which < 0.1) {
                     // close an order
@@ -1663,7 +1793,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                     }
 
                     final long newIndex = ++index;
-                    addToTable(source, i(newIndex), longCol("Sentinel", newIndex), col("hid", hid), col("hpos", hpos), col("open", false), col("rand", random.nextDouble()));
+                    addToTable(source, i(newIndex), longCol("Sentinel", newIndex), col("hid", hid), col("hpos", hpos),
+                            col("open", false), col("rand", random.nextDouble()));
                     builder.appendKey(newIndex);
                 } else {
                     // modify an order
@@ -1676,7 +1807,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                     final String hpos = validHpos.get(random.nextInt(validHpos.size()));
 
                     final long newIndex = ++index;
-                    addToTable(source, i(newIndex), longCol("Sentinel", newIndex), col("hid", hid), col("hpos", hpos), col("open", true), col("rand", random.nextDouble()));
+                    addToTable(source, i(newIndex), longCol("Sentinel", newIndex), col("hid", hid), col("hpos", hpos),
+                            col("open", true), col("rand", random.nextDouble()));
                     builder.appendKey(newIndex);
                 }
 
@@ -1686,18 +1818,23 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             final Index newIndex = builder.getIndex();
             source.notifyListeners(newIndex, i(), i());
 
-//            TableTools.showWithIndex(source.getSubTable(newIndex));
+            // TableTools.showWithIndex(source.getSubTable(newIndex));
 
             LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
 
             final String hierarchicalColumnName = getHierarchicalColumnName(ordersFiltered);
-            doCompareWithChildrenForTrees("step = " + step, ordersFiltered, TreeTableFilter.filterTree(ordersTree, "rand > 0.8"), 0, maxLevel, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-            doCompareWithChildrenForTrees("step = " + step, ordersFiltered2, TreeTableFilter.filterTree(ordersTree, "rand > 0.1"), 0, maxLevel, hierarchicalColumnName, CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("step = " + step, ordersFiltered,
+                    TreeTableFilter.filterTree(ordersTree, "rand > 0.8"), 0, maxLevel, hierarchicalColumnName,
+                    CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            doCompareWithChildrenForTrees("step = " + step, ordersFiltered2,
+                    TreeTableFilter.filterTree(ordersTree, "rand > 0.1"), 0, maxLevel, hierarchicalColumnName,
+                    CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
         }
     }
 
     public void testIds6262() {
-        final QueryTable table = TstUtils.testRefreshingTable(i(1), col("Sym", "A"), col("BigI", new BigInteger[]{null}), col("BigD", new BigDecimal[]{null}));
+        final QueryTable table = TstUtils.testRefreshingTable(i(1), col("Sym", "A"),
+                col("BigI", new BigInteger[] {null}), col("BigD", new BigDecimal[] {null}));
 
         final Table rollup = table.rollup(AggCombo(AggVar("BigI", "BigD")), "Sym");
 
@@ -1707,7 +1844,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         assertNull(rollup.getColumn("BigD").get(0));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(table, i(2, 3), col("Sym", "A", "A"), col("BigI", BigInteger.ZERO, BigInteger.ZERO), col("BigD", BigDecimal.ZERO, BigDecimal.ZERO));
+            addToTable(table, i(2, 3), col("Sym", "A", "A"), col("BigI", BigInteger.ZERO, BigInteger.ZERO),
+                    col("BigD", BigDecimal.ZERO, BigDecimal.ZERO));
             table.notifyListeners(i(2, 3), i(), i());
         });
 
@@ -1725,10 +1863,10 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 shortCol("SValue", NULL_SHORT),
                 intCol("IValue", NULL_INT),
                 longCol("LValue", NULL_LONG),
-                floatCol("FValue", NULL_FLOAT)
-        );
+                floatCol("FValue", NULL_FLOAT));
 
-        final Table rolledUp = dataTable.rollup(AggCombo(AggAvg("Value", "BValue", "SValue", "IValue", "LValue", "FValue")), "USym");
+        final Table rolledUp =
+                dataTable.rollup(AggCombo(AggAvg("Value", "BValue", "SValue", "IValue", "LValue", "FValue")), "USym");
         final TableMap rollupMap = (TableMap) rolledUp.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
         assertNotNull(rollupMap);
 
@@ -1738,13 +1876,13 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         // Start with Nulls and make sure we get NaN
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(1, 2),
-                stringCol("USym", "A", "A"),
-                doubleCol("Value", NULL_DOUBLE, NULL_DOUBLE),
-                byteCol("BValue" , NULL_BYTE, NULL_BYTE),
-                shortCol("SValue", NULL_SHORT, NULL_SHORT),
-                intCol("IValue"  , NULL_INT, NULL_INT),
-                longCol("LValue" , NULL_LONG, NULL_LONG),
-                floatCol("FValue", NULL_FLOAT, NULL_FLOAT));
+                    stringCol("USym", "A", "A"),
+                    doubleCol("Value", NULL_DOUBLE, NULL_DOUBLE),
+                    byteCol("BValue", NULL_BYTE, NULL_BYTE),
+                    shortCol("SValue", NULL_SHORT, NULL_SHORT),
+                    intCol("IValue", NULL_INT, NULL_INT),
+                    longCol("LValue", NULL_LONG, NULL_LONG),
+                    floatCol("FValue", NULL_FLOAT, NULL_FLOAT));
 
             dataTable.notifyListeners(i(1, 2), i(), i());
         });
@@ -1768,12 +1906,11 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             addToTable(dataTable, i(3),
                     stringCol("USym", "A"),
                     doubleCol("Value", 0.0d),
-                    byteCol("BValue" , (byte)0),
-                    shortCol("SValue", (short)0),
-                    intCol("IValue"  , 0),
-                    longCol("LValue" , 0),
-                    floatCol("FValue", 0.0f)
-            );
+                    byteCol("BValue", (byte) 0),
+                    shortCol("SValue", (short) 0),
+                    intCol("IValue", 0),
+                    longCol("LValue", 0),
+                    floatCol("FValue", 0.0f));
 
             dataTable.notifyListeners(i(3), i(), i());
         });
@@ -1818,12 +1955,11 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             addToTable(dataTable, i(3, 4, 5),
                     stringCol("USym", "A", "A", "A"),
                     doubleCol("Value", 0.0d, 0.0d, 0.0d),
-                    byteCol("BValue" , (byte)0, (byte)0, (byte)0),
-                    shortCol("SValue", (short)0, (short)0, (short)0),
-                    intCol("IValue"  , 0, 0, 0),
-                    longCol("LValue" , 0, 0, 0),
-                    floatCol("FValue", 0.0f, 0.0f, 0.0f)
-            );
+                    byteCol("BValue", (byte) 0, (byte) 0, (byte) 0),
+                    shortCol("SValue", (short) 0, (short) 0, (short) 0),
+                    intCol("IValue", 0, 0, 0),
+                    longCol("LValue", 0, 0, 0),
+                    floatCol("FValue", 0.0f, 0.0f, 0.0f));
 
             dataTable.notifyListeners(i(3, 4, 5), i(), i());
         });
@@ -1846,12 +1982,11 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             addToTable(dataTable, i(6),
                     stringCol("USym", "A"),
                     doubleCol("Value", 1.0d),
-                    byteCol("BValue" , (byte)1),
-                    shortCol("SValue", (short)1),
-                    intCol("IValue"  , 1),
-                    longCol("LValue" , 1),
-                    floatCol("FValue", 1.0f)
-            );
+                    byteCol("BValue", (byte) 1),
+                    shortCol("SValue", (short) 1),
+                    intCol("IValue", 1),
+                    longCol("LValue", 1),
+                    floatCol("FValue", 1.0f));
 
             dataTable.notifyListeners(i(6), i(), i());
         });
@@ -1872,7 +2007,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     private static Table getDiffableTable(Table table) {
-        if(table instanceof HierarchicalTable) {
+        if (table instanceof HierarchicalTable) {
             return ((HierarchicalTable) table).getRawRootTable();
         }
 

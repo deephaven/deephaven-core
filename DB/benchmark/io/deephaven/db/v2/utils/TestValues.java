@@ -5,6 +5,7 @@ import java.util.Random;
 public class TestValues {
     public interface Builder {
         void add(long v);
+
         void done();
     }
 
@@ -29,7 +30,7 @@ public class TestValues {
         }
 
         public void populateSecondArgStep(final int sizePropOneIn, final int sharePropOneIn, final long k,
-                                          int cluster1Mid, final int halfClusterWidth, final Random r) {
+                int cluster1Mid, final int halfClusterWidth, final Random r) {
             if (sizePropOneIn != 1 && r.nextInt(sizePropOneIn) != 0) {
                 return;
             }
@@ -51,7 +52,7 @@ public class TestValues {
 
     public static class Config {
         Config(final String name, final int min, final int max, final int clusterWidth, final int sizePropOneIn,
-               final int sharePropOneIn, final int jumpPropOneIn) {
+                final int sharePropOneIn, final int jumpPropOneIn) {
             this.name = name;
             this.clusterWidth = clusterWidth;
             this.sizePropOneIn = sizePropOneIn;
@@ -60,6 +61,7 @@ public class TestValues {
             this.min = min;
             this.max = max;
         }
+
         public final String name;
         public final int clusterWidth;
         public final int sizePropOneIn;
@@ -87,7 +89,8 @@ public class TestValues {
         b.done();
     }
 
-    public static void setup3(final Builder b1, final Builder b2, final Builder b3, final int sz, final TestValues.Config cf) {
+    public static void setup3(final Builder b1, final Builder b2, final Builder b3, final int sz,
+            final TestValues.Config cf) {
         final int halfClusterWidth = cf.clusterWidth / 2;
         final TestValues.Context cx1 = new TestValues.Context(cf.min + halfClusterWidth, b1);
         final TestValues.Context cx2 = new TestValues.Context(cf.max + halfClusterWidth, b2);

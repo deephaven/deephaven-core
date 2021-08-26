@@ -24,8 +24,8 @@ import java.util.logging.Logger;
 import static io.deephaven.db.plot.util.PlotGeneratorUtils.indent;
 
 /**
- * Create static functions that resolve against the last created instance of a plotting figure class.  This is to make a cleaner
- * plotting interface
+ * Create static functions that resolve against the last created instance of a plotting figure class. This is to make a
+ * cleaner plotting interface
  */
 public class GeneratePlottingConvenience {
     // See also GroovyStaticImportGenerator
@@ -42,7 +42,8 @@ public class GeneratePlottingConvenience {
     private final Function<JavaFunction, String> functionNamer;
 
     private GeneratePlottingConvenience(final String[] staticImports, final String[] imports,
-                                        final Collection<Predicate<JavaFunction>> skips, final Function<JavaFunction, String> functionNamer) throws ClassNotFoundException {
+            final Collection<Predicate<JavaFunction>> skips, final Function<JavaFunction, String> functionNamer)
+            throws ClassNotFoundException {
         this.skips = skips;
         this.functionNamer = functionNamer == null ? JavaFunction::getMethodName : functionNamer;
 
@@ -54,8 +55,9 @@ public class GeneratePlottingConvenience {
             log.info("Processing static class: " + c);
 
             final Method[] methods = Arrays.stream(c.getMethods()).filter(
-                    m -> m.getName().equals(methodName) && Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())
-            ).toArray(Method[]::new);
+                    m -> m.getName().equals(methodName) && Modifier.isStatic(m.getModifiers())
+                            && Modifier.isPublic(m.getModifiers()))
+                    .toArray(Method[]::new);
 
             for (Method m : methods) {
                 log.info("Processing static method (" + c + "): " + m);
@@ -110,8 +112,7 @@ public class GeneratePlottingConvenience {
                 f.getReturnType(),
                 f.getParameterTypes(),
                 f.getParameterNames(),
-                f.isVarArgs()
-        );
+                f.isVarArgs());
 
         boolean skip = skip(f, ignoreSkips);
 
@@ -174,10 +175,10 @@ public class GeneratePlottingConvenience {
                 result.addAll(typesToImport(a));
             }
         } else if (t instanceof TypeVariable) {
-            //type variables are generic so they don't need importing
+            // type variables are generic so they don't need importing
             return result;
         } else if (t instanceof WildcardType) {
-            //type variables are generic so they don't need importing
+            // type variables are generic so they don't need importing
             return result;
         } else if (t instanceof GenericArrayType) {
             GenericArrayType at = (GenericArrayType) t;
@@ -194,8 +195,10 @@ public class GeneratePlottingConvenience {
         String code = "/*\n" +
                 " * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending\n" +
                 " */\n\n" +
-                "/****************************************************************************************************************************\n" +
-                " ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run GeneratePlottingConvenience or \"./gradlew :Generators:generatePlottingConvenience\" to regenerate\n" +
+                "/****************************************************************************************************************************\n"
+                +
+                " ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run GeneratePlottingConvenience or \"./gradlew :Generators:generatePlottingConvenience\" to regenerate\n"
+                +
                 " ****************************************************************************************************************************/\n\n";
 
         code += "package io.deephaven.db.plot;\n\n";
@@ -305,7 +308,9 @@ public class GeneratePlottingConvenience {
         }
 
         s += " ) {\n";
-        s += indent(2) + (f.getReturnType().equals(void.class) ? "" : "return ") + (isStatic ? (f.getClassNameShort() + ".") : "FigureFactory.figure().") + f.getMethodName() + "(" + callArgs + " );\n";
+        s += indent(2) + (f.getReturnType().equals(void.class) ? "" : "return ")
+                + (isStatic ? (f.getClassNameShort() + ".") : "FigureFactory.figure().") + f.getMethodName() + "("
+                + callArgs + " );\n";
         s += indent(1) + "}\n";
 
         return s;
@@ -388,11 +393,12 @@ public class GeneratePlottingConvenience {
                 "errorBarY",
                 "errorBarYBy",
                 "catErrorBar",
-                "catErrorBarBy"
-        ));
+                "catErrorBarBy"));
 
-        @SuppressWarnings("unchecked") GeneratePlottingConvenience gen = new GeneratePlottingConvenience(staticImports, imports,
-                Arrays.asList(javaFunction -> !keepers.contains(javaFunction.getMethodName())), JavaFunction::getMethodName);
+        @SuppressWarnings("unchecked")
+        GeneratePlottingConvenience gen = new GeneratePlottingConvenience(staticImports, imports,
+                Arrays.asList(javaFunction -> !keepers.contains(javaFunction.getMethodName())),
+                JavaFunction::getMethodName);
 
         final String code = gen.generateCode()
                 .replace("io.deephaven.db.plot.FigureImpl", "io.deephaven.db.plot.Figure");
@@ -404,7 +410,8 @@ public class GeneratePlottingConvenience {
         if (assertNoChange) {
             String oldCode = new String(Files.readAllBytes(Paths.get(file)));
             if (!code.equals(oldCode)) {
-                throw new RuntimeException("Change in generated code.  Run GeneratePlottingConvenience or \"./gradlew :Generators:generatePlottingConvenience\" to regenerate\n");
+                throw new RuntimeException(
+                        "Change in generated code.  Run GeneratePlottingConvenience or \"./gradlew :Generators:generatePlottingConvenience\" to regenerate\n");
             }
         } else {
 

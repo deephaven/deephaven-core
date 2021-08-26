@@ -38,13 +38,13 @@ public class TestAppendableColumn extends TestCase {
             assertEquals(320000, tableR.getIndex().size());
             assertEquals(80000, tableR.getColumnSource("v").getGroupToRange().size());
             assertEquals(80000, tableR.getColumnSource("v").getValuesMapping(tableR.getIndex()).size());
-            assertEquals(80000, tableR.getColumnSource("v").getValuesMapping(tableR.getIndex().subindexByPos(0, tableR.size())).size());
+            assertEquals(80000, tableR.getColumnSource("v")
+                    .getValuesMapping(tableR.getIndex().subindexByPos(0, tableR.size())).size());
             final Map mapper = tableR.getColumnSource("v").getGroupToRange();
             for (int i = 0; i < data.length / 4; i++) {
                 assertEquals(mapper.get(i), Index.FACTORY.getIndexByRange(i * 4, i * 4 + 3));
             }
-        }
-        finally {
+        } finally {
             FileUtils.deleteRecursively(directory);
         }
 

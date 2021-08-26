@@ -146,11 +146,13 @@ public class TreeIndexTest extends SortedIndexTestBase {
         copy = (Index) doSerDeser(index);
         assertEquals(index, copy);
 
-        index = indexFromString("0,2,4-5,8-9,12-17,19-20,22,25-29,33-38,41-45,47,49-54,56,58-59,61-73,75-78,80,82-85,89,91-104,106-110,112-114,116-117,120-132,135-136,138-141,143-144,146,148-154,157-159,161,163-166,168,170,172-189,193-196,198-206,209-210,213,215-235,237-245,248-250,252-262,264-267,269-271,273-276,278-281,284-289,291,293-294,296-301,303,305-307,309-317,319-345,347-354,356-366,368-378,380-387,389-393,395-401,403-409,411-421,424-428,430-437,439-460,462-463,465-473,475-488,490-497,499-503,505-510,512-519,521,523-531,533-540,542-543,545-562,564-570,572-595,597-642,644,646-664,666-670,674-675,677-680,682-689,691-718,720-740,742-764,766-801,803-821,823-826,828-831,833-840,842-887,890-892,894-901,903-928,930-951,953-957,959-964,966-996,998-1010,1013-1016,1018-1022,1024-1064,1066-1072,1074-1094,1096-1107,1109-1181,1183-1193,1195-1199,1201-1253,1255-1288,1290-1291,1293-1311,1313-1328,1330-1345,1347-1349,1352-1446,1448-1473,1475-1511,1513-1567,1569-1572,1574-1580,1582-1615,1617-1643,1645,1647-1687,1689-1691,1693-1695,1697-1698,1700-1709,1711-1732,1734,1735-1751,1753-1792,1794-1831,1833-1849,1851-1857,1859-1866,1868-1880,1882-1885,1887-1920,1922-1926,1931-2566");
+        index = indexFromString(
+                "0,2,4-5,8-9,12-17,19-20,22,25-29,33-38,41-45,47,49-54,56,58-59,61-73,75-78,80,82-85,89,91-104,106-110,112-114,116-117,120-132,135-136,138-141,143-144,146,148-154,157-159,161,163-166,168,170,172-189,193-196,198-206,209-210,213,215-235,237-245,248-250,252-262,264-267,269-271,273-276,278-281,284-289,291,293-294,296-301,303,305-307,309-317,319-345,347-354,356-366,368-378,380-387,389-393,395-401,403-409,411-421,424-428,430-437,439-460,462-463,465-473,475-488,490-497,499-503,505-510,512-519,521,523-531,533-540,542-543,545-562,564-570,572-595,597-642,644,646-664,666-670,674-675,677-680,682-689,691-718,720-740,742-764,766-801,803-821,823-826,828-831,833-840,842-887,890-892,894-901,903-928,930-951,953-957,959-964,966-996,998-1010,1013-1016,1018-1022,1024-1064,1066-1072,1074-1094,1096-1107,1109-1181,1183-1193,1195-1199,1201-1253,1255-1288,1290-1291,1293-1311,1313-1328,1330-1345,1347-1349,1352-1446,1448-1473,1475-1511,1513-1567,1569-1572,1574-1580,1582-1615,1617-1643,1645,1647-1687,1689-1691,1693-1695,1697-1698,1700-1709,1711-1732,1734,1735-1751,1753-1792,1794-1831,1833-1849,1851-1857,1859-1866,1868-1880,1882-1885,1887-1920,1922-1926,1931-2566");
         copy = (Index) doSerDeser(index);
         assertEquals(index, copy);
 
-        index = indexFromString("1-2,4,6,9-12,14-18,20-21,24-26,28-33,35,37-39,41-42,44,46-53,55-59,61-62,64,67,69,71-72,74-75,77-79,83-85,87-91,93-95,97,100-112,114,116,118,120-122,124-126,128-130,134-138,140-146,148-149,151,153-154,156,158-159,161-163,165-169,171-172,174-178,182-192,198-200,202,205,207-234,236-243,245,247-249,252-260,262-267,269,271-273,275-279,283-284,286-291,293-295,297-303,306-311,313,315-320,322,324-326,328-330,332-335,337-350,352-355,357,359-364,366,369-376,378-379,381-391,393,395-406,408-425,427-466,470-471,473-477,480-490,492-497,499-513,515-522,524-529,531-535,539-549,552-553,555-563,565-570,572-578,580-624,626-634,636-650,652-654,656-657,659,661-665,667-673,675-677,679,681,683-684,686,688-692,694-695,697-717,719-733,735-739,741-743,745-750,752-755,757-760,762-778,780,782-799,801-809,811-817,819-822,824-827,829-835,838-907,909-924,926-928,930-942,944-1049,1051,1053-1058,1060-1064,1066-1069,1071-1080,1082-1089,1091-1092,1094,1096-1098,1100-1102,1104-1109,1111-1121,1123-1142,1144-1156,1158-1162,1164-1169,1171-1175,1177-1190,1192-1195,1198-1199,1201-1211,1214,1216-1218,1220-1221,1223-1231,1233-1234,1236-1239,1241-1287,1289-1304,1306-1307,1309-1317,1319-1327,1329-1331,1333-1335,1337-1340,1342-1344,1346-1350,1352-1354,1356-1371,1373-1393,1395-1398,1400,1402-1479,1481-1486,1488-1490,1493,1495-1507,1509,1511-1543,1545-1550,1553-1556,1558-1564,1566-1582,1584,1586,1589-1590,1592-1615,1617-1626,1628-1634,1636-1643,1645,1647-1657,1659-1668,1670-1673,1675-1681,1683-1690,1693-1695,1697-1699,1701-1713,1715-1716,1718-1722,1724-1746,1748-1750,1753-1755,1757-1794,1796-1804,1806-1821,1823-1826,1828-1830,1832-1835,1837-1843,1846,1847-1856,1858-1894,1896-1908,1910-1916,1918-1924,1926,1928-1929,1936-2566");
+        index = indexFromString(
+                "1-2,4,6,9-12,14-18,20-21,24-26,28-33,35,37-39,41-42,44,46-53,55-59,61-62,64,67,69,71-72,74-75,77-79,83-85,87-91,93-95,97,100-112,114,116,118,120-122,124-126,128-130,134-138,140-146,148-149,151,153-154,156,158-159,161-163,165-169,171-172,174-178,182-192,198-200,202,205,207-234,236-243,245,247-249,252-260,262-267,269,271-273,275-279,283-284,286-291,293-295,297-303,306-311,313,315-320,322,324-326,328-330,332-335,337-350,352-355,357,359-364,366,369-376,378-379,381-391,393,395-406,408-425,427-466,470-471,473-477,480-490,492-497,499-513,515-522,524-529,531-535,539-549,552-553,555-563,565-570,572-578,580-624,626-634,636-650,652-654,656-657,659,661-665,667-673,675-677,679,681,683-684,686,688-692,694-695,697-717,719-733,735-739,741-743,745-750,752-755,757-760,762-778,780,782-799,801-809,811-817,819-822,824-827,829-835,838-907,909-924,926-928,930-942,944-1049,1051,1053-1058,1060-1064,1066-1069,1071-1080,1082-1089,1091-1092,1094,1096-1098,1100-1102,1104-1109,1111-1121,1123-1142,1144-1156,1158-1162,1164-1169,1171-1175,1177-1190,1192-1195,1198-1199,1201-1211,1214,1216-1218,1220-1221,1223-1231,1233-1234,1236-1239,1241-1287,1289-1304,1306-1307,1309-1317,1319-1327,1329-1331,1333-1335,1337-1340,1342-1344,1346-1350,1352-1354,1356-1371,1373-1393,1395-1398,1400,1402-1479,1481-1486,1488-1490,1493,1495-1507,1509,1511-1543,1545-1550,1553-1556,1558-1564,1566-1582,1584,1586,1589-1590,1592-1615,1617-1626,1628-1634,1636-1643,1645,1647-1657,1659-1668,1670-1673,1675-1681,1683-1690,1693-1695,1697-1699,1701-1713,1715-1716,1718-1722,1724-1746,1748-1750,1753-1755,1757-1794,1796-1804,1806-1821,1823-1826,1828-1830,1832-1835,1837-1843,1846,1847-1856,1858-1894,1896-1908,1910-1916,1918-1924,1926,1928-1929,1936-2566");
         copy = (Index) doSerDeser(index);
         assertEquals(index, copy);
     }
@@ -535,12 +537,12 @@ public class TreeIndexTest extends SortedIndexTestBase {
 
         unionIndexStrings(indexStrings);
 
-//        doCutDown(indexStrings);
+        // doCutDown(indexStrings);
     }
 
-    // This method will take one range out of one the index and run the test.  If we find a range we can take out and
+    // This method will take one range out of one the index and run the test. If we find a range we can take out and
     // still get a failure, recursively try again, so that we have a minimal set of index ranges that actually produce
-    // a failure for us.  We don't need it during normal testing, so it is unused.
+    // a failure for us. We don't need it during normal testing, so it is unused.
     @SuppressWarnings("unused")
     private void doCutDown(String[] indexStrings) {
         for (int ii = 0; ii < indexStrings.length; ++ii) {
@@ -629,7 +631,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
                 }
                 priorityQueueBuilder.addRange(value, value + rangeSize - 1);
                 treeBuilder.addRange(value, value + rangeSize - 1);
-//                System.out.println(value  + " -> " + (value + rangeSize - 1));
+                // System.out.println(value + " -> " + (value + rangeSize - 1));
             }
 
             final Index prioIndex = new TreeIndex(priorityQueueBuilder.getTreeIndexImpl());
@@ -648,14 +650,14 @@ public class TreeIndexTest extends SortedIndexTestBase {
             if (jj < ii) {
                 values.remove(jj, values.size() - jj);
             }
-//            System.out.println(prioIndex);
-//            System.out.println(treeIndex);
-//            dumpValues(values);
+            // System.out.println(prioIndex);
+            // System.out.println(treeIndex);
+            // dumpValues(values);
 
             assertEquals(treeIndex, prioIndex);
 
             ii = 0;
-            for (final Index.Iterator it = prioIndex.iterator(); it.hasNext(); ) {
+            for (final Index.Iterator it = prioIndex.iterator(); it.hasNext();) {
                 final long next = it.nextLong();
                 TestCase.assertEquals(values.get(ii++), next);
             }
@@ -686,7 +688,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testOverlappingRanges() {
-        final RangePriorityQueueBuilder priorityQueueBuilder =  new RangePriorityQueueBuilder(16);
+        final RangePriorityQueueBuilder priorityQueueBuilder = new RangePriorityQueueBuilder(16);
         priorityQueueBuilder.addRange(10, 100);
         assertEquals(1, priorityQueueBuilder.rangeCount());
         priorityQueueBuilder.addRange(99, 110);
@@ -754,7 +756,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
 
     private void dumpValues(TLongArrayList values) {
         System.out.print("{");
-        for (int startPosition = 0; startPosition < values.size(); ) {
+        for (int startPosition = 0; startPosition < values.size();) {
             if (startPosition > 0) {
                 System.out.print(",");
             }
@@ -779,124 +781,124 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
 
-//    This test would be way too brittle to include, even if I wasn't reading the deserialized stuff from a file.
-//  The following function will write something useful to read in.
-//    String dumpSerialized(TreeIndex obj) {
-//        try {
-//            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-//            ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-//            obj.writeImpl(objectOutputStream);
-//            return Base64.byteArrayToBase64(byteArrayOutputStream.toByteArray());
-//        } catch (IOException ioe) {
-//            return ioe.getMessage();
-//        }
-//    }
-//
-//    public void testDeserializeIt() throws IOException, ClassNotFoundException {
-//        try (BufferedReader br = new BufferedReader(new FileReader("/home/cwright/b64.txt"))) {
-//            ArrayList<TreeIndexImpl> readImpls = new ArrayList<>();
-//            String line;
-//            while ((line = br.readLine()) != null) {
-//                if (line.isEmpty())
-//                    continue;
-//                // process the line.
-//                byte [] decoded = Base64.decode(line.getBytes());
-//                ByteArrayInputStream bis = new ByteArrayInputStream(decoded);
-//                ObjectInputStream ois = new ObjectInputStream(bis);
-//                Object read = ois.readObject();
-//                if (read instanceof TreeIndexImpl) {
-//                    readImpls.add((TreeIndexImpl) read);
-//                }
-//            }
-//
-//            Assert.eq(3, "3", readImpls.size(), "readImpls.size()");
-//
-//            Index toInsertInto = new TreeIndex(readImpls.get(0));
-//            toInsertInto.validate();
-//
-//            Index indexToInsert = new TreeIndex(readImpls.get(1));
-//            indexToInsert.validate();
-//
-//            System.out.println(toInsertInto);
-//            System.out.println(indexToInsert);
-//
-//            toInsertInto.insert(indexToInsert);
-//            toInsertInto.validate();
-//        }
-//    }
+    // This test would be way too brittle to include, even if I wasn't reading the deserialized stuff from a file.
+    // The following function will write something useful to read in.
+    // String dumpSerialized(TreeIndex obj) {
+    // try {
+    // ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+    // ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+    // obj.writeImpl(objectOutputStream);
+    // return Base64.byteArrayToBase64(byteArrayOutputStream.toByteArray());
+    // } catch (IOException ioe) {
+    // return ioe.getMessage();
+    // }
+    // }
+    //
+    // public void testDeserializeIt() throws IOException, ClassNotFoundException {
+    // try (BufferedReader br = new BufferedReader(new FileReader("/home/cwright/b64.txt"))) {
+    // ArrayList<TreeIndexImpl> readImpls = new ArrayList<>();
+    // String line;
+    // while ((line = br.readLine()) != null) {
+    // if (line.isEmpty())
+    // continue;
+    // // process the line.
+    // byte [] decoded = Base64.decode(line.getBytes());
+    // ByteArrayInputStream bis = new ByteArrayInputStream(decoded);
+    // ObjectInputStream ois = new ObjectInputStream(bis);
+    // Object read = ois.readObject();
+    // if (read instanceof TreeIndexImpl) {
+    // readImpls.add((TreeIndexImpl) read);
+    // }
+    // }
+    //
+    // Assert.eq(3, "3", readImpls.size(), "readImpls.size()");
+    //
+    // Index toInsertInto = new TreeIndex(readImpls.get(0));
+    // toInsertInto.validate();
+    //
+    // Index indexToInsert = new TreeIndex(readImpls.get(1));
+    // indexToInsert.validate();
+    //
+    // System.out.println(toInsertInto);
+    // System.out.println(indexToInsert);
+    //
+    // toInsertInto.insert(indexToInsert);
+    // toInsertInto.validate();
+    // }
+    // }
 
-//    public void testDeserializeIt() throws IOException, ClassNotFoundException {
-//        Map<String, TreeIndex> readIndices = new LinkedHashMap<>();
-//
-//        try (BufferedReader br = new BufferedReader(new FileReader("/home/cwright/tmp/t"))) {
-//            String line;
-//            while ((line = br.readLine()) != null) {
-//                if (line.isEmpty())
-//                    continue;
-//                String[] splits = line.split(":");
-//                String name = splits[0];
-//                String value = splits[1];
-//                // process the line.
-//                byte[] decoded = Base64.decode(value.getBytes());
-//                ByteArrayInputStream bis = new ByteArrayInputStream(decoded);
-//                ObjectInputStream ois = new ObjectInputStream(bis);
-//                Object read = ois.readObject();
-//                if (read instanceof TreeIndexImpl) {
-//                    readIndices.put(name, new TreeIndex((TreeIndexImpl) read));
-//                }
-//            }
-//        }
-//        for (Map.Entry<String, TreeIndex> entry : readIndices.entrySet()) {
-//            System.out.println(entry.getKey() + " -> " + entry.getValue());
-//        }
-//
-//        Index saveModified = readIndices.get("saveModified");
-//        Index saveModified2 = readIndices.get("saveModified2");
-//        Index minus = readIndices.get("minus");
-//        Index intersect = readIndices.get("intersect");
-//
-//        saveModified.validate();
-//        saveModified2.validate();
-//        minus.validate();
-//        intersect.validate();
-//
-////        saveModified.insert(minus);
-////        saveModified.validate();
-////        saveModified.insert(intersect);
-////        saveModified.validate();
-////
-////        saveModified2.insert(intersect);
-////        for (Index.RangeIterator rit = saveModified2.rangeIterator(); rit.hasNext(); ) {
-////            rit.next();
-////            System.out.println(rit.currentRangeStart() + "-" + rit.currentRangeEnd());
-////        }
-////
-////        saveModified2.validate();
-//
-//        Index modified = readIndices.get("modifiedIndices");
-//
-////        Assert.eq(saveModified2, "saveModified2", modified, "modified");
-//
-//
-//
-//        modified.validate();
-//
-////        saveModified2.insert(intersect);
-////        saveModified2.validate();
-//    }
+    // public void testDeserializeIt() throws IOException, ClassNotFoundException {
+    // Map<String, TreeIndex> readIndices = new LinkedHashMap<>();
+    //
+    // try (BufferedReader br = new BufferedReader(new FileReader("/home/cwright/tmp/t"))) {
+    // String line;
+    // while ((line = br.readLine()) != null) {
+    // if (line.isEmpty())
+    // continue;
+    // String[] splits = line.split(":");
+    // String name = splits[0];
+    // String value = splits[1];
+    // // process the line.
+    // byte[] decoded = Base64.decode(value.getBytes());
+    // ByteArrayInputStream bis = new ByteArrayInputStream(decoded);
+    // ObjectInputStream ois = new ObjectInputStream(bis);
+    // Object read = ois.readObject();
+    // if (read instanceof TreeIndexImpl) {
+    // readIndices.put(name, new TreeIndex((TreeIndexImpl) read));
+    // }
+    // }
+    // }
+    // for (Map.Entry<String, TreeIndex> entry : readIndices.entrySet()) {
+    // System.out.println(entry.getKey() + " -> " + entry.getValue());
+    // }
+    //
+    // Index saveModified = readIndices.get("saveModified");
+    // Index saveModified2 = readIndices.get("saveModified2");
+    // Index minus = readIndices.get("minus");
+    // Index intersect = readIndices.get("intersect");
+    //
+    // saveModified.validate();
+    // saveModified2.validate();
+    // minus.validate();
+    // intersect.validate();
+    //
+    //// saveModified.insert(minus);
+    //// saveModified.validate();
+    //// saveModified.insert(intersect);
+    //// saveModified.validate();
+    ////
+    //// saveModified2.insert(intersect);
+    //// for (Index.RangeIterator rit = saveModified2.rangeIterator(); rit.hasNext(); ) {
+    //// rit.next();
+    //// System.out.println(rit.currentRangeStart() + "-" + rit.currentRangeEnd());
+    //// }
+    ////
+    //// saveModified2.validate();
+    //
+    // Index modified = readIndices.get("modifiedIndices");
+    //
+    //// Assert.eq(saveModified2, "saveModified2", modified, "modified");
+    //
+    //
+    //
+    // modified.validate();
+    //
+    //// saveModified2.insert(intersect);
+    //// saveModified2.validate();
+    // }
 
     public void testRandomBuilderEmptyAdds() {
         // Make a perfect merge between two leaves, collapsing to a single range.
         final Index.RandomBuilder b = TreeIndex.makeRandomBuilder();
         for (int i = 1; i <= 32; ++i) {
-            b.addKey(2*i);
+            b.addKey(2 * i);
         }
         for (int i = 0; i < 32; ++i) {
-            b.addKey(2*i + 1);
+            b.addKey(2 * i + 1);
         }
         // make a few more leaves.
         for (int i = 0; i < 10 * 32; ++i) {
-            b.addKey(1000 + 2*i);
+            b.addKey(1000 + 2 * i);
         }
         final Index ix = b.getIndex();
         assertEquals(12 * 32, ix.size());
@@ -1130,7 +1132,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
         assertEquals(1, ix2.refCount());
         assertEquals(1, ix3.refCount());
         ix3.remove(101);
-        assertEquals(1, ix2.refCount());  // one from ix3.prev
+        assertEquals(1, ix2.refCount()); // one from ix3.prev
         assertEquals(1, ix3.refCount());
         final Index ix4 = singleRangeIndex(1002, 1003);
         assertEquals(1, ix4.refCount());
@@ -1218,12 +1220,14 @@ public class TreeIndexTest extends SortedIndexTestBase {
 
     public void testGetOrderedKeysByKeyRange() {
         final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
-        final long[] vs = new long[] { 3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536*3, 65536*3 + 5 };
+        final long[] vs = new long[] {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3,
+                65536 * 3 + 5};
         for (long v : vs) {
             b.appendKey(v);
         }
         final Index ix = b.getIndex();
-        final long[] ends = new long[] { 44, 45, 46, 58, 61, 62, 72, 65535, 65536, 65536*2, 65536*3 - 1, 65536*3, 65536*3 + 1 };
+        final long[] ends = new long[] {44, 45, 46, 58, 61, 62, 72, 65535, 65536, 65536 * 2, 65536 * 3 - 1, 65536 * 3,
+                65536 * 3 + 1};
         final long start = 8;
         for (long end : ends) {
             final String m = "end==" + end;
@@ -1250,7 +1254,8 @@ public class TreeIndexTest extends SortedIndexTestBase {
 
     public void testGetOrderedKeysByPosition() {
         final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
-        final long[] vs = new long[] { 3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536*3, 65536*3 + 5 };
+        final long[] vs = new long[] {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3,
+                65536 * 3 + 5};
         for (long v : vs) {
             b.appendKey(v);
         }
@@ -1270,12 +1275,12 @@ public class TreeIndexTest extends SortedIndexTestBase {
                     if (p < startPos || p > endPos) {
                         assertTrue(m3, ioks.find(ix.get(p)) < 0);
                     } else {
-                       ++n;
-                       if (firstTime) {
-                           assertEquals(m3, vs[p], oks.firstKey());
-                           firstTime = false;
-                       }
-                       assertTrue(m3, ioks.find(ix.get(p)) >= 0);
+                        ++n;
+                        if (firstTime) {
+                            assertEquals(m3, vs[p], oks.firstKey());
+                            firstTime = false;
+                        }
+                        assertTrue(m3, ioks.find(ix.get(p)) >= 0);
                     }
                 }
                 assertEquals(m2, n, ioks.size());
@@ -1285,7 +1290,8 @@ public class TreeIndexTest extends SortedIndexTestBase {
 
     public void testFillChunk() {
         final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
-        final long[] vs = new long[]{3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3, 65536 * 3 + 5};
+        final long[] vs = new long[] {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3,
+                65536 * 3 + 5};
         for (long v : vs) {
             b.appendKey(v);
         }
@@ -1298,9 +1304,11 @@ public class TreeIndexTest extends SortedIndexTestBase {
     public void testBuilderAddKeys() {
         final Index.RandomBuilder b = Index.FACTORY.getRandomBuilder();
         b.addKey(27);
-        final long[] vs = {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3, 65536 * 3 + 5};
+        final long[] vs =
+                {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3, 65536 * 3 + 5};
         b.addKeys(new PrimitiveIterator.OfLong() {
             int vi = 0;
+
             @Override
             public long nextLong() {
                 return vs[vi++];
@@ -1322,11 +1330,20 @@ public class TreeIndexTest extends SortedIndexTestBase {
     public void testBuilderAppendKeys() {
         final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
         b.appendKey(1);
-        final long[] vs = {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3, 65536 * 3 + 5};
+        final long[] vs =
+                {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 65537, 65539, 65536 * 3, 65536 * 3 + 5};
         b.appendKeys(new PrimitiveIterator.OfLong() {
             int vi = 0;
-            @Override public long nextLong() { return vs[vi++]; }
-            @Override public boolean hasNext() { return vi < vs.length; }
+
+            @Override
+            public long nextLong() {
+                return vs[vi++];
+            }
+
+            @Override
+            public boolean hasNext() {
+                return vi < vs.length;
+            }
         });
         final Index ix = b.getIndex();
         assertEquals(vs.length + 1, ix.size());
@@ -1338,18 +1355,35 @@ public class TreeIndexTest extends SortedIndexTestBase {
 
     public void testBuilderAddRanges() {
         final Index.RandomBuilder b = Index.FACTORY.getRandomBuilder();
-        final long[] vs = { 3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 91, 65537, 65539, 65536 * 3, 65536 * 3 + 5 };
+        final long[] vs =
+                {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 91, 65537, 65539, 65536 * 3, 65536 * 3 + 5};
         b.addRanges(new LongRangeIterator() {
             int vi = -2;
-            @Override public void next() { vi += 2; }
-            @Override public boolean hasNext() { return vi < vs.length - 2; }
-            @Override public long start() { return vs[vi]; }
-            @Override public long end() { return vs[vi + 1]; }
+
+            @Override
+            public void next() {
+                vi += 2;
+            }
+
+            @Override
+            public boolean hasNext() {
+                return vi < vs.length - 2;
+            }
+
+            @Override
+            public long start() {
+                return vs[vi];
+            }
+
+            @Override
+            public long end() {
+                return vs[vi + 1];
+            }
         });
         final Index ix = b.getIndex();
         final Index.RandomBuilder b2 = Index.FACTORY.getRandomBuilder();
         for (int i = 0; i < vs.length; i += 2) {
-            b2.addRange(vs[i], vs[i+1]);
+            b2.addRange(vs[i], vs[i + 1]);
         }
         final Index ix2 = b2.getIndex();
         assertEquals(ix2.size(), ix.size());
@@ -1358,18 +1392,35 @@ public class TreeIndexTest extends SortedIndexTestBase {
 
     public void testBuilderAppendRanges() {
         final Index.SequentialBuilder b = Index.FACTORY.getSequentialBuilder();
-        final long[] vs = { 3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 91, 65537, 65539, 65536 * 3, 65536 * 3 + 5 };
+        final long[] vs =
+                {3, 4, 5, 8, 10, 12, 29, 31, 44, 45, 46, 59, 60, 61, 72, 91, 65537, 65539, 65536 * 3, 65536 * 3 + 5};
         b.appendRanges(new LongRangeIterator() {
             int vi = -2;
-            @Override public void next() { vi += 2; }
-            @Override public boolean hasNext() { return vi < vs.length - 2; }
-            @Override public long start() { return vs[vi]; }
-            @Override public long end() { return vs[vi + 1]; }
+
+            @Override
+            public void next() {
+                vi += 2;
+            }
+
+            @Override
+            public boolean hasNext() {
+                return vi < vs.length - 2;
+            }
+
+            @Override
+            public long start() {
+                return vs[vi];
+            }
+
+            @Override
+            public long end() {
+                return vs[vi + 1];
+            }
         });
         final Index ix = b.getIndex();
         final Index.RandomBuilder b2 = Index.FACTORY.getRandomBuilder();
         for (int i = 0; i < vs.length; i += 2) {
-            b2.addRange(vs[i], vs[i+1]);
+            b2.addRange(vs[i], vs[i + 1]);
         }
         final Index ix2 = b2.getIndex();
         assertEquals(ix2.size(), ix.size());
@@ -1416,12 +1467,12 @@ public class TreeIndexTest extends SortedIndexTestBase {
 
     public void testContainsRange() {
         final Index ix = Index.FACTORY.getEmptyIndex();
-        ix.insertRange(1,3);
+        ix.insertRange(1, 3);
         ix.insertRange(BLOCK_LAST, BLOCK_SIZE);
-        ix.insertRange(2*BLOCK_SIZE, 2*BLOCK_SIZE + 1);
-        ix.insertRange(3*BLOCK_SIZE - 2, 3*BLOCK_SIZE - 1);
-        ix.insertRange(6*BLOCK_SIZE, 6*BLOCK_SIZE + BLOCK_LAST);
-        ix.insertRange(10*BLOCK_SIZE, 20*BLOCK_SIZE - 1);
+        ix.insertRange(2 * BLOCK_SIZE, 2 * BLOCK_SIZE + 1);
+        ix.insertRange(3 * BLOCK_SIZE - 2, 3 * BLOCK_SIZE - 1);
+        ix.insertRange(6 * BLOCK_SIZE, 6 * BLOCK_SIZE + BLOCK_LAST);
+        ix.insertRange(10 * BLOCK_SIZE, 20 * BLOCK_SIZE - 1);
         final Index.RangeIterator rit = ix.rangeIterator();
         while (rit.hasNext()) {
             rit.next();
@@ -1452,12 +1503,12 @@ public class TreeIndexTest extends SortedIndexTestBase {
 
     public void testOverlapsRange() {
         final Index ix = Index.FACTORY.getEmptyIndex();
-        ix.insertRange(3,5);
+        ix.insertRange(3, 5);
         ix.insertRange(BLOCK_LAST, BLOCK_SIZE);
-        ix.insertRange(2*BLOCK_SIZE, 2*BLOCK_SIZE + 1);
-        ix.insertRange(3*BLOCK_SIZE - 2, 3*BLOCK_SIZE - 1);
-        ix.insertRange(6*BLOCK_SIZE, 6*BLOCK_SIZE + BLOCK_LAST);
-        ix.insertRange(10*BLOCK_SIZE, 20*BLOCK_SIZE - 1);
+        ix.insertRange(2 * BLOCK_SIZE, 2 * BLOCK_SIZE + 1);
+        ix.insertRange(3 * BLOCK_SIZE - 2, 3 * BLOCK_SIZE - 1);
+        ix.insertRange(6 * BLOCK_SIZE, 6 * BLOCK_SIZE + BLOCK_LAST);
+        ix.insertRange(10 * BLOCK_SIZE, 20 * BLOCK_SIZE - 1);
         final Index.RangeIterator rit = ix.rangeIterator();
         long prevEnd = -1;
         while (rit.hasNext()) {
@@ -1567,14 +1618,13 @@ public class TreeIndexTest extends SortedIndexTestBase {
         final Index ix0 = Index.FACTORY.getEmptyIndex();
         // force a bitmap container.
         for (int i = 0; i < 5000; ++i) {
-            ix0.insert(2*i);
+            ix0.insert(2 * i);
         }
         ix0.insertRange(10069, 10070);
         final Index.SearchIterator it = ix0.searchIterator();
         final long target0 = 10070;
         final MutableLong target = new MutableLong(target0);
-        final Index.TargetComparator comp = (long key, int dir) ->
-                Long.compare(target.longValue(), key)*dir;
+        final Index.TargetComparator comp = (long key, int dir) -> Long.compare(target.longValue(), key) * dir;
         final long r = it.binarySearchValue(comp, 1);
         assertEquals(target0, r);
         assertEquals(target0, it.currentValue());
@@ -1672,7 +1722,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
         final Index.SearchIterator reverseIter = index.reverseIterator();
         final boolean valid = reverseIter.advance(key);
         assertTrue(valid);
-        assertEquals(key -1, reverseIter.currentValue());
+        assertEquals(key - 1, reverseIter.currentValue());
     }
 
     public void testIteratorAdvanceRegression1() {
@@ -1710,7 +1760,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testMinusRegression0() {
-        final Index ix1 = new TreeIndex(RspBitmap.makeSingleRange(1073741843L,1073741860L));
+        final Index ix1 = new TreeIndex(RspBitmap.makeSingleRange(1073741843L, 1073741860L));
         final Index ix2 = new TreeIndex(SortedRanges.makeSingleElement(1073741843L));
         final Index ix3 = ix1.minus(ix2);
         assertEquals(ix1.lastKey() - ix1.firstKey(), ix3.size());
@@ -1721,17 +1771,24 @@ public class TreeIndexTest extends SortedIndexTestBase {
         SortedRanges sr0 = new SortedRangesShort(64, 10);
         final Index ix0 = new TreeIndex(sr0);
         rvs2ix(ix0, new long[] {
-                85,88,103,121,201,204,220,258,275,296,366,370,386,409,411,453,584,587,602,631,661,683,714,-715,
-                744,750,786,791,830,836,841,885,911,941,981,993,1024,1052,1054,1089,1151,1220,1232,1243,1266,-1267,
-                1296,1355,1403,1429,1431,1442,1466,1477,1533,1556,1559,1577,1579,1589,1610,1622,1645,1654,1661,1683,
-                1695,1784,1790,1830,1876,1914,1926,1972,1980,2016,2075,2082,2150,2154,2166,-2167,2171,2177,2188,2202,
-                2217,-2218,2246,2257,2266,2278,-2279,2282,2288,2294,2300,2302,-2303,2331,2346,2355,2364,2368,2377,
-                2412,2421,2442,2465,2472,-2473,2488,2497,2500,2504,2511,2529,-2530,2532,2536,-2537,2540,2560,2563,-2564,
-                2573,-2574,2588,2595,-2596,2598,2601,2612,2627,-2628,2647,2664,2670,2672,-2673,2696,-2697,2702,2723,
-                2741,2751,2757,2784,2792,2799,2818,2824,2838,2853,2857,2863
+                85, 88, 103, 121, 201, 204, 220, 258, 275, 296, 366, 370, 386, 409, 411, 453, 584, 587, 602, 631, 661,
+                683, 714, -715,
+                744, 750, 786, 791, 830, 836, 841, 885, 911, 941, 981, 993, 1024, 1052, 1054, 1089, 1151, 1220, 1232,
+                1243, 1266, -1267,
+                1296, 1355, 1403, 1429, 1431, 1442, 1466, 1477, 1533, 1556, 1559, 1577, 1579, 1589, 1610, 1622, 1645,
+                1654, 1661, 1683,
+                1695, 1784, 1790, 1830, 1876, 1914, 1926, 1972, 1980, 2016, 2075, 2082, 2150, 2154, 2166, -2167, 2171,
+                2177, 2188, 2202,
+                2217, -2218, 2246, 2257, 2266, 2278, -2279, 2282, 2288, 2294, 2300, 2302, -2303, 2331, 2346, 2355, 2364,
+                2368, 2377,
+                2412, 2421, 2442, 2465, 2472, -2473, 2488, 2497, 2500, 2504, 2511, 2529, -2530, 2532, 2536, -2537, 2540,
+                2560, 2563, -2564,
+                2573, -2574, 2588, 2595, -2596, 2598, 2601, 2612, 2627, -2628, 2647, 2664, 2670, 2672, -2673, 2696,
+                -2697, 2702, 2723,
+                2741, 2751, 2757, 2784, 2792, 2799, 2818, 2824, 2838, 2853, 2857, 2863
         });
         final TreeIndex ix1 = TreeIndex.makeEmptyRsp();
-        rvs2ix(ix1, new long[] {296,366,370,386,409,411,453});
+        rvs2ix(ix1, new long[] {296, 366, 370, 386, 409, 411, 453});
         assertTrue(ix1.subsetOf(ix0));
     }
 
@@ -1779,11 +1836,11 @@ public class TreeIndexTest extends SortedIndexTestBase {
         final long bkSz = BLOCK_SIZE;
         final long off0 = bkSz;
         ix0.insertRange(off0 + 7, off0 + 9);
-        final long off1 = off0 + 2*bkSz;
+        final long off1 = off0 + 2 * bkSz;
         ix0.insertRange(off1 + 13, off1 + 15);
-        final long off2 = off1 + 4*bkSz;
+        final long off2 = off1 + 4 * bkSz;
         ix0.insert(off2 + 20);
-        final long off3 = off2 + 3*bkSz;
+        final long off3 = off2 + 3 * bkSz;
         ix0.insertRange(off2 + 33, off3 + 45);
         final Index ix1 = TreeIndex.makeEmptyRsp();
         ix1.insertRange(off0 + 7, off0 + 9);
@@ -1797,14 +1854,14 @@ public class TreeIndexTest extends SortedIndexTestBase {
                 it1.next();
                 final long start = it1.currentRangeStart();
                 final long end = it1.currentRangeEnd();
-                for (long v : new long[]{ pendingStart, start - bkSz, start - 1}) {
+                for (long v : new long[] {pendingStart, start - bkSz, start - 1}) {
                     final Index ix2 = ix1.clone();
                     ix2.insert(v);
                     assertFalse("v==" + v, ix2.subsetOf(ix0));
                 }
                 pendingStart = end + 1;
             }
-            for (long v : new long[] { pendingStart, pendingStart + 3}) {
+            for (long v : new long[] {pendingStart, pendingStart + 3}) {
                 final Index ix2 = ix1.clone();
                 ix2.insert(v);
                 assertFalse("v==" + v, ix2.subsetOf(ix0));
@@ -1853,11 +1910,12 @@ public class TreeIndexTest extends SortedIndexTestBase {
     public void testMinusRegression1() {
         final Index ix0 = TreeIndex.makeEmptySr();
         rvs2ix(ix0, new long[] {
-                10,-12,14,16,18,20,22,24,26,28,-29,31,33,-34,36,38,-39,41,43,45,-47,49,51,53,55,57,59,61,63,-64,
-                66,-67,69, 71,-76,78,-80,82,-83,85,-88,90,-91,93,-94,96,98,100,102,-110,112,-113
+                10, -12, 14, 16, 18, 20, 22, 24, 26, 28, -29, 31, 33, -34, 36, 38, -39, 41, 43, 45, -47, 49, 51, 53, 55,
+                57, 59, 61, 63, -64,
+                66, -67, 69, 71, -76, 78, -80, 82, -83, 85, -88, 90, -91, 93, -94, 96, 98, 100, 102, -110, 112, -113
         });
         final Index ix1 = TreeIndex.makeEmptySr();
-        rvs2ix(ix1,  new long[] {24,28,31,38,51,57,59,61,74,90,93,107,-108,110});
+        rvs2ix(ix1, new long[] {24, 28, 31, 38, 51, 57, 59, 61, 74, 90, 93, 107, -108, 110});
         final Index ix3 = ix0.minus(ix1);
         final Index intersect = ix0.intersect(ix1);
         final Index ix4 = ix0.clone();
@@ -1988,7 +2046,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
         sr1 = sr1.addRange(5, 10);
         sr1 = sr1.addRange(25, 30);
         final Index ix1 = new TreeIndex(sr1);
-        ix0.insert(21);  // force prev.
+        ix0.insert(21); // force prev.
         ix0.retain(ix1);
         ix0.validate();
         assertTrue(ix0.empty());
@@ -2008,9 +2066,9 @@ public class TreeIndexTest extends SortedIndexTestBase {
             for (Index ix1 : new Index[] {
                     TreeIndex.makeSingleRange(start1, end1),
                     new TreeIndex(new RspBitmap(start1, end1)),
-                    new TreeIndex(SortedRanges.makeSingleRange(start1, end1)) }) {
+                    new TreeIndex(SortedRanges.makeSingleRange(start1, end1))}) {
                 int ia = 0;
-                for (long shiftAmount : new long[]{2 * BLOCK_SIZE, 2 * BLOCK_SIZE + 1}) {
+                for (long shiftAmount : new long[] {2 * BLOCK_SIZE, 2 * BLOCK_SIZE + 1}) {
                     final Index ix2 = ix0.clone();
                     ix2.insertWithShift(shiftAmount, ix1);
                     final String m = "i0==" + i0 + " && i1==" + i1 + " && ia==" + ia;
@@ -2040,9 +2098,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
                 @Override
                 public int compareTargetTo(final long rKey, final int direction) {
                     final long d = (target.longValue() - rKey) * direction;
-                    return (d > 0) ? 1 :
-                            (d < 0) ? -1 :
-                                    0;
+                    return (d > 0) ? 1 : (d < 0) ? -1 : 0;
                 }
             };
             long v = sit.binarySearchValue(comp, 1);
@@ -2056,7 +2112,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
     }
 
     public void testRemoveSrFromRspFullBlockRegression() {
-        final long offset = 3*BLOCK_SIZE + 52546;  // 249154
+        final long offset = 3 * BLOCK_SIZE + 52546; // 249154
         SortedRanges sr = new SortedRangesInt(8, offset);
         sr = sr.addRange(offset + 0, offset + 1);
         sr = sr.addRange(offset + 12, offset + 13);
@@ -2074,7 +2130,7 @@ public class TreeIndexTest extends SortedIndexTestBase {
         final int cap = SortedRanges.INT_SPARSE_MAX_CAPACITY;
         SortedRanges sr0 = new SortedRangesInt(cap, 0);
         for (int i = 0; i < cap; ++i) {
-            sr0 = sr0.add(i*BLOCK_SIZE + 1);  // ensure we create a sparse SR.
+            sr0 = sr0.add(i * BLOCK_SIZE + 1); // ensure we create a sparse SR.
             assertNotNull(sr0);
         }
         assertEquals(cap, sr0.getCardinality());
@@ -2099,11 +2155,11 @@ public class TreeIndexTest extends SortedIndexTestBase {
             }
         }
         try (final Index result = outer.getIndex();
-             final Index toRemove = inner.getIndex()) {
+                final Index toRemove = inner.getIndex()) {
             final long t0 = System.currentTimeMillis();
             result.remove(toRemove);
             final long t1 = System.currentTimeMillis();
-            final double removeTimeSeconds = (t1 - t0)/1000.0;
+            final double removeTimeSeconds = (t1 - t0) / 1000.0;
             // With the O(n^2) implementation this took ~47 seconds on an Intel Core i9-8950HK 2.90 GHz.
             // The O(n) implementation took 0.1 seconds on the same machine.
             final double reasonableThresholdIfWePauseSeconds = 8.0;
@@ -2160,12 +2216,12 @@ public class TreeIndexTest extends SortedIndexTestBase {
 
     public void testRemoveSrFromRspFullBlockRegression2() {
         // try to prime the work data to be only a single thing
-        final RspBitmap rb1 = new RspBitmap(0, 1<<17 - 1);
+        final RspBitmap rb1 = new RspBitmap(0, 1 << 17 - 1);
         rb1.ixCompact();
-        final RspBitmap rb2 = new RspBitmap(0, 1<<16 - 1);
+        final RspBitmap rb2 = new RspBitmap(0, 1 << 16 - 1);
         rb2.ixCompact();
         rb2.andEqualsUnsafe(rb1);
-        final long offset = 3*BLOCK_SIZE + 52546;  // 249154
+        final long offset = 3 * BLOCK_SIZE + 52546; // 249154
         SortedRanges sr = new SortedRangesInt(8, offset);
         sr = sr.addRange(offset + 0, offset + 1);
         sr = sr.addRange(offset + 12, offset + 13);

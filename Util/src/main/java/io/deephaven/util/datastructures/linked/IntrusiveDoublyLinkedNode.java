@@ -46,7 +46,7 @@ public interface IntrusiveDoublyLinkedNode<NODE_TYPE extends IntrusiveDoublyLink
         private NODE_TYPE prev;
 
         protected Impl() {
-            //noinspection unchecked
+            // noinspection unchecked
             next = prev = (NODE_TYPE) this;
         }
 
@@ -76,17 +76,17 @@ public interface IntrusiveDoublyLinkedNode<NODE_TYPE extends IntrusiveDoublyLink
     /**
      * Generic {@link IntrusiveDoublyLinkedStructureBase.Adapter} usable with any implementing class.
      */
-    class Adapter<NODE_TYPE extends IntrusiveDoublyLinkedNode<NODE_TYPE>> implements IntrusiveDoublyLinkedStructureBase.Adapter<NODE_TYPE> {
+    class Adapter<NODE_TYPE extends IntrusiveDoublyLinkedNode<NODE_TYPE>>
+            implements IntrusiveDoublyLinkedStructureBase.Adapter<NODE_TYPE> {
 
         private static final IntrusiveDoublyLinkedStructureBase.Adapter<?> INSTANCE = new Adapter<>();
 
         public static <NODE_TYPE extends IntrusiveDoublyLinkedNode<NODE_TYPE>> IntrusiveDoublyLinkedStructureBase.Adapter<NODE_TYPE> getInstance() {
-            //noinspection unchecked
+            // noinspection unchecked
             return (IntrusiveDoublyLinkedStructureBase.Adapter<NODE_TYPE>) INSTANCE;
         }
 
-        private Adapter() {
-        }
+        private Adapter() {}
 
         @NotNull
         @Override

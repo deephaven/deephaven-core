@@ -10,29 +10,30 @@ import java.io.*;
 
 public class DbFileImplTest extends BaseArrayTestCase {
 
-    final private String file = Configuration.getInstance().getDevRootPath() + "/DbTypesImpl/src/test/resources/io/deephaven/dbtypes/white.jpg";
+    final private String file = Configuration.getInstance().getDevRootPath()
+            + "/DbTypesImpl/src/test/resources/io/deephaven/dbtypes/white.jpg";
     final private String tempdir = Configuration.getInstance().getTempPath("DBFiletest");
 
     public void testNullConstructors() throws IOException {
-        try{
+        try {
             new DbFileImpl((byte[]) null);
             fail("Should have thrown an exception.");
         } catch (RequirementFailure e) {
-            //pass
+            // pass
         }
 
-        try{
+        try {
             new DbFileImpl((String) null);
             fail("Should have thrown an exception.");
         } catch (NullPointerException e) {
-            //pass
+            // pass
         }
 
-        try{
+        try {
             new DbFileImpl((java.io.File) null);
             fail("Should have thrown an exception.");
         } catch (NullPointerException e) {
-            //pass
+            // pass
         }
     }
 

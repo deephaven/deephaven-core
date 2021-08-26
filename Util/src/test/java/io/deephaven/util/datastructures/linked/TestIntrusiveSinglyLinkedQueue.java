@@ -23,22 +23,26 @@ public class TestIntrusiveSinglyLinkedQueue {
         }
     }
 
-    private static class IntNodeAdapter implements IntrusiveSinglyLinkedQueue.Adapter<TestIntrusiveSinglyLinkedQueue.IntNode> {
+    private static class IntNodeAdapter
+            implements IntrusiveSinglyLinkedQueue.Adapter<TestIntrusiveSinglyLinkedQueue.IntNode> {
 
         @Override
-        public TestIntrusiveSinglyLinkedQueue.IntNode getNext(@NotNull final TestIntrusiveSinglyLinkedQueue.IntNode node) {
+        public TestIntrusiveSinglyLinkedQueue.IntNode getNext(
+                @NotNull final TestIntrusiveSinglyLinkedQueue.IntNode node) {
             return node.next;
         }
 
         @Override
-        public void setNext(@NotNull final TestIntrusiveSinglyLinkedQueue.IntNode node, final TestIntrusiveSinglyLinkedQueue.IntNode other) {
+        public void setNext(@NotNull final TestIntrusiveSinglyLinkedQueue.IntNode node,
+                final TestIntrusiveSinglyLinkedQueue.IntNode other) {
             node.next = other;
         }
     }
 
     @Test
     public void testEmpty() {
-        final IntrusiveSinglyLinkedQueue<TestIntrusiveSinglyLinkedQueue.IntNode> queue = new IntrusiveSinglyLinkedQueue<>(new TestIntrusiveSinglyLinkedQueue.IntNodeAdapter());
+        final IntrusiveSinglyLinkedQueue<TestIntrusiveSinglyLinkedQueue.IntNode> queue =
+                new IntrusiveSinglyLinkedQueue<>(new TestIntrusiveSinglyLinkedQueue.IntNodeAdapter());
         TestCase.assertTrue(queue.isEmpty());
         TestCase.assertNull(queue.peek());
         TestCase.assertNull(queue.poll());
@@ -62,7 +66,8 @@ public class TestIntrusiveSinglyLinkedQueue {
     }
 
     private void doSimpleTest(final int nodeCount) {
-        final IntrusiveSinglyLinkedQueue<TestIntrusiveSinglyLinkedQueue.IntNode> queue = new IntrusiveSinglyLinkedQueue<>(new TestIntrusiveSinglyLinkedQueue.IntNodeAdapter());
+        final IntrusiveSinglyLinkedQueue<TestIntrusiveSinglyLinkedQueue.IntNode> queue =
+                new IntrusiveSinglyLinkedQueue<>(new TestIntrusiveSinglyLinkedQueue.IntNodeAdapter());
         for (int ni = 0; ni < nodeCount; ++ni) {
             queue.offer(new TestIntrusiveSinglyLinkedQueue.IntNode(ni));
         }

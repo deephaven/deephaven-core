@@ -33,36 +33,43 @@ public class StringContainsFilter extends PatternFilter {
         this(MatchType.Regular, columnName, values);
     }
 
-    public StringContainsFilter(CaseSensitivity sensitivity, MatchType matchType, @NotNull String columnName, String... values) {
+    public StringContainsFilter(CaseSensitivity sensitivity, MatchType matchType, @NotNull String columnName,
+            String... values) {
         this(sensitivity, matchType, columnName, true, false, values);
     }
 
-    public StringContainsFilter(CaseSensitivity sensitivity, MatchType matchType, @NotNull String columnName, boolean internalDisjuntive, boolean removeQuotes, String... values) {
-        super(sensitivity, matchType, columnName, constructRegex(values, matchType, internalDisjuntive, removeQuotes, columnName));
+    public StringContainsFilter(CaseSensitivity sensitivity, MatchType matchType, @NotNull String columnName,
+            boolean internalDisjuntive, boolean removeQuotes, String... values) {
+        super(sensitivity, matchType, columnName,
+                constructRegex(values, matchType, internalDisjuntive, removeQuotes, columnName));
         this.internalDisjunctive = internalDisjuntive;
         this.values = values;
     }
 
-    private static String constructRegex(String[] values, MatchType matchType, boolean internalDisjunctive, boolean removeQuotes, String columnName) {
-        if(values == null || values.length == 0) {
-            throw new IllegalArgumentException("StringContainsFilter must be created with at least one value parameter");
+    private static String constructRegex(String[] values, MatchType matchType, boolean internalDisjunctive,
+            boolean removeQuotes, String columnName) {
+        if (values == null || values.length == 0) {
+            throw new IllegalArgumentException(
+                    "StringContainsFilter must be created with at least one value parameter");
         }
 
-        final MatchFilter.ColumnTypeConvertor converter = removeQuotes ? MatchFilter.ColumnTypeConvertorFactory.getConvertor(String.class, columnName) : null;
+        final MatchFilter.ColumnTypeConvertor converter =
+                removeQuotes ? MatchFilter.ColumnTypeConvertorFactory.getConvertor(String.class, columnName) : null;
         final String regex;
 
         final Stream<String> valueStream = Arrays.stream(values)
                 .map(val -> {
-                    if(StringUtils.isNullOrEmpty(val)) {
-                        throw new IllegalArgumentException("Parameters to StringContainsFilter must not be null or empty");
+                    if (StringUtils.isNullOrEmpty(val)) {
+                        throw new IllegalArgumentException(
+                                "Parameters to StringContainsFilter must not be null or empty");
                     }
                     return Pattern.quote(converter == null ? val : converter.convertStringLiteral(val).toString());
                 });
 
         // If the match is simple, includes -any- or includes -none- we can just use a simple
         // regex of or'd values
-        if((matchType == MatchType.Regular && internalDisjunctive) ||
-           (matchType == MatchType.Inverted && !internalDisjunctive)) {
+        if ((matchType == MatchType.Regular && internalDisjunctive) ||
+                (matchType == MatchType.Inverted && !internalDisjunctive)) {
             regex = valueStream.collect(Collectors.joining("|"));
         } else {
             // Note that internalDisjunctive is -always- false here.
@@ -90,7 +97,8 @@ public class StringContainsFilter extends PatternFilter {
 
     @Override
     public String toString() {
-        return (invertMatch ? "!" : "") + columnName + ".contains"  + ((values.length == 1) ? "" : internalDisjunctive ? "Any" : "All")
+        return (invertMatch ? "!" : "") + columnName + ".contains"
+                + ((values.length == 1) ? "" : internalDisjunctive ? "Any" : "All")
                 + (caseInsensitive ? "IgnoreCase" : "") + "(\"" + value + "\")";
     }
 

@@ -25,15 +25,17 @@ public class TestColumnDescriptionInheritance extends QueryTableTestBase {
 
 
         System.out.println("Running basic \"maybeCopyColumnDescriptions\" tests...");
-        final Table destTable = new QueryTable(sourceTable.getDefinition(), sourceTable.getIndex(), sourceTable.getColumnSourceMap());
-        final Map<String, String> descriptionMap = (Map<String, String>)withDescriptions.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
+        final Table destTable =
+                new QueryTable(sourceTable.getDefinition(), sourceTable.getIndex(), sourceTable.getColumnSourceMap());
+        final Map<String, String> descriptionMap =
+                (Map<String, String>) withDescriptions.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
         assertNotNull(descriptionMap);
         assertEquals(2, descriptionMap.size());
 
-        ((BaseTable)sourceTable).maybeCopyColumnDescriptions(destTable);
+        ((BaseTable) sourceTable).maybeCopyColumnDescriptions(destTable);
         assertNull(destTable.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
 
-        ((BaseTable)withDescriptions).maybeCopyColumnDescriptions(destTable);
+        ((BaseTable) withDescriptions).maybeCopyColumnDescriptions(destTable);
         assertEquals(descriptionMap, destTable.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
 
 
@@ -130,7 +132,8 @@ public class TestColumnDescriptionInheritance extends QueryTableTestBase {
         final Table rightTable = withDescriptions
                 .renameColumns("rightInt=intCol", "rightDouble=doubleCol")
                 .withColumnDescription("Sym", "Ignored Sym");
-        final Map<String, String> rightMap = (Map<String, String>)rightTable.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
+        final Map<String, String> rightMap =
+                (Map<String, String>) rightTable.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
         assertNotNull(rightMap);
         assertEquals(2, rightMap.size());
 
@@ -149,7 +152,8 @@ public class TestColumnDescriptionInheritance extends QueryTableTestBase {
                 .getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
 
         assertNull(sourceTable
-                .naturalJoin(sourceTable.renameColumns("rightInt=intCol", "rightDouble=doubleCol"), "Sym", "rightInt,rightDouble")
+                .naturalJoin(sourceTable.renameColumns("rightInt=intCol", "rightDouble=doubleCol"), "Sym",
+                        "rightInt,rightDouble")
                 .getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE));
 
 

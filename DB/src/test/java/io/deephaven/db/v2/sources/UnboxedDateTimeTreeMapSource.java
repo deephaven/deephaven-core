@@ -12,16 +12,16 @@ public class UnboxedDateTimeTreeMapSource extends UnboxedDateTimeColumnSource im
     private final TreeMapSource<Long> treeMapSource;
 
     public UnboxedDateTimeTreeMapSource(ColumnSource<DBDateTime> alternateColumnSource,
-                                 TreeMapSource<Long> treeMapSource) {
+            TreeMapSource<Long> treeMapSource) {
         super(alternateColumnSource);
         this.treeMapSource = treeMapSource;
     }
 
-    public void add(Index index, Long[] data){
+    public void add(Index index, Long[] data) {
         treeMapSource.add(index, data);
     }
 
-    public void remove(Index index){
+    public void remove(Index index) {
         treeMapSource.remove(index);
     }
 }

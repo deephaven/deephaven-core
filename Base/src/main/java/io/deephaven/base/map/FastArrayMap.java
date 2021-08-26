@@ -20,8 +20,7 @@ public class FastArrayMap<K extends Comparable<K> & Externalizable & Copyable<K>
 
     private FastArray<KeyValuePair<K, V>> array;
 
-    public FastArrayMap() {
-    }
+    public FastArrayMap() {}
 
     public FastArrayMap(final Function.Nullary<? extends KeyValuePair<K, V>> newInstance) {
         array = new FastArray<KeyValuePair<K, V>>(newInstance);
@@ -40,13 +39,13 @@ public class FastArrayMap<K extends Comparable<K> & Externalizable & Copyable<K>
     }
 
     private int findThisKeyIndex(K key) {
-        //todo write this to be faster with binary search
+        // todo write this to be faster with binary search
         for (int i = 0; i < array.getLength(); i++) {
             if (array.getUnsafeArray()[i].getKey().equals(key)) {
                 return i;
             }
         }
-        return -1; //could not find your key
+        return -1; // could not find your key
     }
 
     public boolean containsKey(K key) {
@@ -69,7 +68,7 @@ public class FastArrayMap<K extends Comparable<K> & Externalizable & Copyable<K>
             array.getUnsafeArray()[index].setValue(value);
             return oldValue;
         } else {
-            KeyValuePair<K, V> newItem = new KeyValuePair<K, V>(key, value); //ALLOCATION
+            KeyValuePair<K, V> newItem = new KeyValuePair<K, V>(key, value); // ALLOCATION
             insertNewlyAllocatedItemIntoArray(newItem);
             return null;
         }
@@ -89,7 +88,7 @@ public class FastArrayMap<K extends Comparable<K> & Externalizable & Copyable<K>
         if (index >= 0) {
             V oldValue = array.getUnsafeArray()[index].getValue();
             array.removeThisIndex(index);
-            //this just moves all the values ahead one slot so we should still be sorted still
+            // this just moves all the values ahead one slot so we should still be sorted still
             return oldValue;
         } else {
             return null;
@@ -118,7 +117,9 @@ public class FastArrayMap<K extends Comparable<K> & Externalizable & Copyable<K>
         return result;
     }
 
-    public static <K extends Externalizable & Comparable<K> & Copyable<K>, V extends Externalizable & Copyable<V>> void writeExternal(final FastArrayMap<K, V> THIS, ObjectOutput out, FastArray.WriteExternalFunction<KeyValuePair<K, V>> writeExternalFunction) throws IOException {
+    public static <K extends Externalizable & Comparable<K> & Copyable<K>, V extends Externalizable & Copyable<V>> void writeExternal(
+            final FastArrayMap<K, V> THIS, ObjectOutput out,
+            FastArray.WriteExternalFunction<KeyValuePair<K, V>> writeExternalFunction) throws IOException {
         if (THIS == null) {
             throw new IllegalArgumentException("FastArray.writeExternal(): THIS was null and is not supported");
         }
@@ -128,8 +129,10 @@ public class FastArrayMap<K extends Comparable<K> & Externalizable & Copyable<K>
         }
     }
 
-    public static <K extends Externalizable & Comparable<K> & Copyable<K>, V extends Externalizable & Copyable<V>> void readExternal(final FastArrayMap<K, V> THIS, ObjectInput in,
-                                                                                                                                     FastArray.ReadExternalFunction<KeyValuePair<K, V>> readExternalFunction) throws IOException, ClassNotFoundException {
+    public static <K extends Externalizable & Comparable<K> & Copyable<K>, V extends Externalizable & Copyable<V>> void readExternal(
+            final FastArrayMap<K, V> THIS, ObjectInput in,
+            FastArray.ReadExternalFunction<KeyValuePair<K, V>> readExternalFunction)
+            throws IOException, ClassNotFoundException {
         if (THIS == null) {
             throw new IllegalArgumentException("FastArray.readExternal(): THIS was null and is not supported");
         }
@@ -143,12 +146,15 @@ public class FastArrayMap<K extends Comparable<K> & Externalizable & Copyable<K>
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof FastArrayMap)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof FastArrayMap))
+            return false;
 
         FastArrayMap that = (FastArrayMap) o;
 
-        if (array != null ? !array.equals(that.array) : that.array != null) return false;
+        if (array != null ? !array.equals(that.array) : that.array != null)
+            return false;
 
         return true;
     }

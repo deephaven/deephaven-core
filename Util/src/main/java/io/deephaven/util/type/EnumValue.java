@@ -13,8 +13,9 @@ public class EnumValue {
      * @throws IllegalArgumentException when value is not found in the Enum's constants
      */
     public static <T extends Enum<?>> T caseInsensitiveValueOf(Class<T> enumClass, String value) {
-        return Arrays.stream(enumClass.getEnumConstants()).filter(x -> x.name().equalsIgnoreCase(value)).findFirst().orElseThrow(
-                () -> new IllegalArgumentException(enumClass.getSimpleName() + " has no constant that matches " + value)
-        );
+        return Arrays.stream(enumClass.getEnumConstants()).filter(x -> x.name().equalsIgnoreCase(value)).findFirst()
+                .orElseThrow(
+                        () -> new IllegalArgumentException(
+                                enumClass.getSimpleName() + " has no constant that matches " + value));
     }
 }

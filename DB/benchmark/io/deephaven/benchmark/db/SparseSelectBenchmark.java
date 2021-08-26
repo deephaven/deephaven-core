@@ -22,7 +22,7 @@ import static io.deephaven.benchmarking.BenchmarkTools.applySparsity;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 1, time = 1)
 @Measurement(iterations = 5, time = 1)
-@Timeout(time=3)
+@Timeout(time = 3)
 @Fork(1)
 public class SparseSelectBenchmark {
     private TableBenchmarkState state;
@@ -62,7 +62,7 @@ public class SparseSelectBenchmark {
 
         state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
 
-        inputTable = applySparsity(bmTable.getTable(),tableSize,sparsity,0).coalesce();
+        inputTable = applySparsity(bmTable.getTable(), tableSize, sparsity, 0).coalesce();
     }
 
     @TearDown(Level.Trial)
@@ -87,14 +87,16 @@ public class SparseSelectBenchmark {
 
     @Benchmark
     public Table incrementalSparseSelect() {
-        final Table result = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() ->  IncrementalBenchmark.incrementalBenchmark(SparseSelect::sparseSelect, inputTable, 10));
+        final Table result = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(
+                () -> IncrementalBenchmark.incrementalBenchmark(SparseSelect::sparseSelect, inputTable, 10));
         Assert.eq(result.size(), "result.size()", inputTable.size(), "inputTable.size()");
         return state.setResult(result);
     }
 
     @Benchmark
     public Table sparseSelect() {
-        return state.setResult(LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> SparseSelect.sparseSelect(inputTable)));
+        return state.setResult(
+                LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> SparseSelect.sparseSelect(inputTable)));
     }
 
     public static void main(final String[] args) {

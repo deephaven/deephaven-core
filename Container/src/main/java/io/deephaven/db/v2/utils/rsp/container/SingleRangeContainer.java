@@ -113,7 +113,7 @@ public final class SingleRangeContainer extends ImmutableContainer {
         }
         final boolean minBeginIsThem = rangeBegin <= begin;
         final boolean maxEndIsThem = end <= rangeEnd;
-        if (minBeginIsThem && maxEndIsThem) {  // avoid creating a new object if we can.
+        if (minBeginIsThem && maxEndIsThem) { // avoid creating a new object if we can.
             return this;
         }
         return new SingleRangeContainer(minBeginIsThem ? begin : rangeBegin, maxEndIsThem ? end : rangeEnd);
@@ -707,8 +707,7 @@ public final class SingleRangeContainer extends ImmutableContainer {
     }
 
     @Override
-    public void trim() {
-    }
+    public void trim() {}
 
     @Override
     public Container xor(final ArrayContainer x) {
@@ -798,8 +797,7 @@ public final class SingleRangeContainer extends ImmutableContainer {
     }
 
     @Override
-    public void setCopyOnWrite() {
-    }
+    public void setCopyOnWrite() {}
 
     @Override
     public int bytesAllocated() {

@@ -50,8 +50,8 @@ public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
         // This loop does two optimizations:
         // 1. Consolidate all sorts into a SortPair array in order to only call one sort on the table
         // 2. Move all the reverses to the back:
-        //    - For an odd number of reverses only call one reverse
-        //    - For an even number of reverses do not call reverse (they cancel out)
+        // - For an odd number of reverses only call one reverse
+        // - For an even number of reverses do not call reverse (they cancel out)
         // As a reverse moves past a sort, the direction of the sort is reversed (e.g. asc -> desc)
         final List<SortPair> sortPairs = new ArrayList<>();
         boolean shouldReverse = false;
@@ -71,7 +71,8 @@ public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
                     direction = 1;
                     break;
                 default:
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Unexpected sort direction: " + direction);
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                            "Unexpected sort direction: " + direction);
             }
 
             final StringBuilder columnName = new StringBuilder(sort.getColumnName());

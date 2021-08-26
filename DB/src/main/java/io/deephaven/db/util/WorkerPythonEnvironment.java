@@ -16,8 +16,8 @@ import java.io.UncheckedIOException;
 /**
  * This class is the support infrastructure for running Python remote queries.
  *
- * It is a singleton that contains an instance of a PythonHolder.  All of the specially handled db operations from a
- * remote Python session should execute queries which interact wtih this class.  The script sessions that run for
+ * It is a singleton that contains an instance of a PythonHolder. All of the specially handled db operations from a
+ * remote Python session should execute queries which interact wtih this class. The script sessions that run for
  * PersistentQueries or consoles are handled separately by the {@link PythonDeephavenSession}.
  */
 public enum WorkerPythonEnvironment {
@@ -43,13 +43,14 @@ public enum WorkerPythonEnvironment {
         evaluator = jpy;
         scope = jpy.getScope();
         pythonVersion = evaluator.getPythonVersion();
-        pythonVersionParts = pythonVersion.split("\\.", 0);  // NB: you have to escape "." ...
-        if(pythonVersionParts.length > 2) {
+        pythonVersionParts = pythonVersion.split("\\.", 0); // NB: you have to escape "." ...
+        if (pythonVersionParts.length > 2) {
             log.info().append("Worker python version ").append(pythonVersion).endl();
-        }else{
+        } else {
             log.warn().append("Worker python version set as ").append(pythonVersion)
                     .append(" which has unexpected format (not `<major>.<minor>...` which may " +
-                            "lead to unexpected errors").endl();
+                            "lead to unexpected errors")
+                    .endl();
         }
 
         PythonLogAdapter.interceptOutputStreams(evaluator);
@@ -60,7 +61,8 @@ public enum WorkerPythonEnvironment {
                 .replace("<workspace>", Configuration.getInstance().getWorkspacePath());
 
         final ScriptFinder scriptFinder = new ScriptFinder(defaultScriptPath);
-        final String initScript = Configuration.getInstance().getStringWithDefault("WorkerPythonEnvironment.initScript", "core/deephaven_jpy_init.py");
+        final String initScript = Configuration.getInstance().getStringWithDefault("WorkerPythonEnvironment.initScript",
+                "core/deephaven_jpy_init.py");
 
         final ScriptFinder.FileOrStream file;
         try {
@@ -91,7 +93,7 @@ public enum WorkerPythonEnvironment {
     /**
      * Retrieves a value from our Python holder's globals.
      *
-     * When the object is a convertible PyObject; we return the PyObject.  Otherwise, we'll return a
+     * When the object is a convertible PyObject; we return the PyObject. Otherwise, we'll return a
      * PythonRemoteQuery.PickledResult, which is suitable for unpickling by the remote side.
      *
      * The caller should never serialize an unconverted PyObject; it contains a raw pointer and will result in a Hotspot
@@ -117,8 +119,9 @@ public enum WorkerPythonEnvironment {
             if (pythonVersionParts[0].equals("2")) {
                 // In python2, we have that str is 8 bits, and base64.b64encode produces a str
                 evaluator.evalStatement("__resultPickled__ = base64.b64encode(__resultDill__)");
-            }else{
-                // In python3, we have that str is 32 bit unicode, and base64.b64encode produces a bytes (array basically)
+            } else {
+                // In python3, we have that str is 32 bit unicode, and base64.b64encode produces a bytes (array
+                // basically)
                 // our next step is to cast this output as a java string, which does not work for a bytes.
                 // We must make it a str, via calling .decode() on it.
                 evaluator.evalStatement("__resultPickled__ = base64.b64encode(__resultDill__).decode()");
@@ -127,7 +130,8 @@ public enum WorkerPythonEnvironment {
             String pickled = (String) getValue("__resultPickled__");
             x = new PickledResult(pickled, pythonVersion);
         } else {
-            log.info().append("Variable ").append(name).append(" is of type ").append(x.getClass().getCanonicalName()).endl();
+            log.info().append("Variable ").append(name).append(" is of type ").append(x.getClass().getCanonicalName())
+                    .endl();
         }
 
         return x;
@@ -152,8 +156,8 @@ public enum WorkerPythonEnvironment {
      */
     Object getValue(String variable) {
         return scope
-            .getValue(variable)
-            .orElseThrow(() -> new QueryScope.MissingVariableException("No variable: " + variable));
+                .getValue(variable)
+                .orElseThrow(() -> new QueryScope.MissingVariableException("No variable: " + variable));
     }
 }
 

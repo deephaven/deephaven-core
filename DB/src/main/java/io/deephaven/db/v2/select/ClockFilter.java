@@ -42,8 +42,7 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
     }
 
     @Override
-    public final void init(@NotNull final TableDefinition tableDefinition) {
-    }
+    public final void init(@NotNull final TableDefinition tableDefinition) {}
 
     @Override
     public final List<String> getColumns() {
@@ -56,13 +55,15 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
     }
 
     @Override
-    public final Index filter(@NotNull final Index selection, @NotNull final Index fullSet, @NotNull final Table table, boolean usePrev) {
+    public final Index filter(@NotNull final Index selection, @NotNull final Index fullSet, @NotNull final Table table,
+            boolean usePrev) {
         if (usePrev) {
             throw new PreviousFilteringNotSupported();
         }
 
         // We have no support for refreshing tables, nor any known use cases for that support.
-        Require.requirement(DynamicNode.notDynamicOrNotRefreshing(table), "DynamicNode.notDynamicOrNotRefreshing(table)");
+        Require.requirement(DynamicNode.notDynamicOrNotRefreshing(table),
+                "DynamicNode.notDynamicOrNotRefreshing(table)");
 
         // noinspection unchecked
         final ColumnSource<DBDateTime> dateTimeColumnSource = table.getColumnSource(columnName);
@@ -70,16 +71,18 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
         Require.requirement(DBDateTime.class.isAssignableFrom(dateTimeColumnSource.getType()),
                 "DBDateTime.class.isAssignableFrom(dateTimeColumnSource.getType())");
 
-        //noinspection unchecked
+        // noinspection unchecked
         nanosColumnSource = dateTimeColumnSource.allowsReinterpret(long.class)
                 ? table.dateTimeColumnAsNanos(columnName).getColumnSource(columnName)
-                : table.view(columnName + " = isNull(" + columnName + ") ? NULL_LONG : " + columnName + ".getNanos()").getColumnSource(columnName);
+                : table.view(columnName + " = isNull(" + columnName + ") ? NULL_LONG : " + columnName + ".getNanos()")
+                        .getColumnSource(columnName);
 
         final Index initial = initializeAndGetInitialIndex(selection, fullSet, table);
         return initial == null ? Index.FACTORY.getEmptyIndex() : initial;
     }
 
-    protected abstract @Nullable Index initializeAndGetInitialIndex(@NotNull final Index selection, @NotNull final Index fullSet, @NotNull final Table table);
+    protected abstract @Nullable Index initializeAndGetInitialIndex(@NotNull final Index selection,
+            @NotNull final Index fullSet, @NotNull final Table table);
 
     @Override
     public final boolean isSimpleFilter() {
@@ -140,12 +143,14 @@ public abstract class ClockFilter extends SelectFilterLivenessArtifactImpl imple
             return nextKey > lastKey;
         }
 
-        @Nullable Index.RandomBuilder consumeKeysAndAppendAdded(final ColumnSource<Long> nanosColumnSource,
-                                                                final long nowNanos,
-                                                                @Nullable Index.RandomBuilder addedBuilder) {
+        @Nullable
+        Index.RandomBuilder consumeKeysAndAppendAdded(final ColumnSource<Long> nanosColumnSource,
+                final long nowNanos,
+                @Nullable Index.RandomBuilder addedBuilder) {
             final long firstKeyAdded = nextKey;
             long lastKeyAdded = -1L;
-            while (nextKey <= lastKey && DBLanguageFunctionUtil.lessEquals(nanosColumnSource.getLong(nextKey), nowNanos)) {
+            while (nextKey <= lastKey
+                    && DBLanguageFunctionUtil.lessEquals(nanosColumnSource.getLong(nextKey), nowNanos)) {
                 lastKeyAdded = nextKey++;
             }
             if (lastKeyAdded == -1L) {

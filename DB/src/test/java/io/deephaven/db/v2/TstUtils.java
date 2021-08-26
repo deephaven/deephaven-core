@@ -53,7 +53,7 @@ public class TstUtils {
     public static void addToTable(final Table table, final Index index, final ColumnHolder... columnHolders) {
         Require.requirement(table.isLive(), "table.isLive()");
         if (table instanceof DynamicTable) {
-            Require.requirement(((DynamicTable)table).isRefreshing(), "table.isRefreshing()");
+            Require.requirement(((DynamicTable) table).isRefreshing(), "table.isRefreshing()");
         }
         final Set<String> usedNames = new HashSet<>();
         for (ColumnHolder columnHolder : columnHolders) {
@@ -64,7 +64,8 @@ public class TstUtils {
             final Object[] boxedArray = ArrayUtils.getBoxedArray(columnHolder.data);
             final Index colIndex = (boxedArray.length == 0) ? TstUtils.i() : index;
             if (colIndex.size() != boxedArray.length) {
-                throw new IllegalArgumentException(columnHolder.name + ": Invalid data addition: index=" + colIndex.size() + ", boxedArray=" + boxedArray.length);
+                throw new IllegalArgumentException(columnHolder.name + ": Invalid data addition: index="
+                        + colIndex.size() + ", boxedArray=" + boxedArray.length);
             }
 
             if (colIndex.size() == 0) {
@@ -72,20 +73,20 @@ public class TstUtils {
             }
 
             if (columnSource instanceof DateTimeTreeMapSource && columnHolder.dataType == long.class) {
-                final DateTimeTreeMapSource treeMapSource = (DateTimeTreeMapSource)columnSource;
-                treeMapSource.add(colIndex, (Long[])boxedArray);
-            }
-            else if (columnSource.getType() != columnHolder.dataType) {
-                throw new UnsupportedOperationException(columnHolder.name + ": Adding invalid type: source.getType()=" + columnSource.getType() + ", columnHolder=" + columnHolder.dataType);
+                final DateTimeTreeMapSource treeMapSource = (DateTimeTreeMapSource) columnSource;
+                treeMapSource.add(colIndex, (Long[]) boxedArray);
+            } else if (columnSource.getType() != columnHolder.dataType) {
+                throw new UnsupportedOperationException(columnHolder.name + ": Adding invalid type: source.getType()="
+                        + columnSource.getType() + ", columnHolder=" + columnHolder.dataType);
             }
 
             if (columnSource instanceof TreeMapSource) {
-                final TreeMapSource treeMapSource = (TreeMapSource)columnSource;
-                //noinspection unchecked
+                final TreeMapSource treeMapSource = (TreeMapSource) columnSource;
+                // noinspection unchecked
                 treeMapSource.add(colIndex, boxedArray);
             } else if (columnSource instanceof DateTimeTreeMapSource) {
-                final DateTimeTreeMapSource treeMapSource = (DateTimeTreeMapSource)columnSource;
-                treeMapSource.add(colIndex, (Long[])boxedArray);
+                final DateTimeTreeMapSource treeMapSource = (DateTimeTreeMapSource) columnSource;
+                treeMapSource.add(colIndex, (Long[]) boxedArray);
             }
         }
 
@@ -97,22 +98,24 @@ public class TstUtils {
 
         table.getIndex().insert(index);
         if (table.isFlat()) {
-            Assert.assertion(table.getIndex().isFlat(), "table.getIndex().isFlat()", table.getIndex(), "table.getIndex()", index, "index");
+            Assert.assertion(table.getIndex().isFlat(), "table.getIndex().isFlat()", table.getIndex(),
+                    "table.getIndex()", index, "index");
         }
     }
 
     public static void removeRows(Table table, Index index) {
         Require.requirement(table.isLive(), "table.isLive()");
         if (table instanceof DynamicTable) {
-            Require.requirement(((DynamicTable)table).isRefreshing(), "table.isRefreshing()");
+            Require.requirement(((DynamicTable) table).isRefreshing(), "table.isRefreshing()");
         }
         table.getIndex().remove(index);
         if (table.isFlat()) {
-            Assert.assertion(table.getIndex().isFlat(), "table.getIndex().isFlat()", table.getIndex(), "table.getIndex()", index, "index");
+            Assert.assertion(table.getIndex().isFlat(), "table.getIndex().isFlat()", table.getIndex(),
+                    "table.getIndex()", index, "index");
         }
         for (ColumnSource columnSource : table.getColumnSources()) {
             if (columnSource instanceof TreeMapSource) {
-                final TreeMapSource treeMapSource = (TreeMapSource)columnSource;
+                final TreeMapSource treeMapSource = (TreeMapSource) columnSource;
                 treeMapSource.remove(index);
             }
         }
@@ -192,7 +195,7 @@ public class TstUtils {
     public static ColumnHolder getRandomShortCol(String colName, int size, Random random) {
         final short data[] = new short[size];
         for (int i = 0; i < data.length; i++) {
-            data[i] = (short)random.nextInt(Short.MAX_VALUE);
+            data[i] = (short) random.nextInt(Short.MAX_VALUE);
         }
         return new ColumnHolder(colName, false, data);
     }
@@ -216,7 +219,7 @@ public class TstUtils {
     public static ColumnHolder getRandomCharCol(String colName, int size, Random random) {
         final char data[] = new char[size];
         for (int i = 0; i < data.length; i++) {
-            data[i] = (char)random.nextInt();
+            data[i] = (char) random.nextInt();
         }
         return new ColumnHolder(colName, false, data);
     }
@@ -224,7 +227,7 @@ public class TstUtils {
     public static ColumnHolder getRandomByteCol(String colName, int size, Random random) {
         final byte data[] = new byte[size];
         for (int i = 0; i < data.length; i++) {
-            data[i] = (byte)random.nextInt();
+            data[i] = (byte) random.nextInt();
         }
         return new ColumnHolder(colName, false, data);
     }
@@ -280,7 +283,7 @@ public class TstUtils {
         for (int i = 0; i < size; i++) {
             final short[] v = new short[random.nextInt(maxSz)];
             for (int j = 0; j < v.length; j++) {
-                v[j] = (short)random.nextInt();
+                v[j] = (short) random.nextInt();
             }
             data[i] = v;
         }
@@ -316,7 +319,7 @@ public class TstUtils {
         for (int i = 0; i < size; i++) {
             final char[] v = new char[random.nextInt(maxSz)];
             for (int j = 0; j < v.length; j++) {
-                v[j] = (char)random.nextInt();
+                v[j] = (char) random.nextInt();
             }
             data[i] = v;
         }
@@ -376,10 +379,11 @@ public class TstUtils {
     }
 
     public static Index selectSubIndexSet(int size, Index sourceIndex, Random random) {
-        Assert.assertion(size <= sourceIndex.size(), "size <= sourceIndex.size()", size, "size", sourceIndex, "sourceIndex.size()");
+        Assert.assertion(size <= sourceIndex.size(), "size <= sourceIndex.size()", size, "size", sourceIndex,
+                "sourceIndex.size()");
 
         // generate an array that is the size of our index, then shuffle it, and those are the positions we'll pick
-        final Integer[] positions = new Integer[(int)sourceIndex.size()];
+        final Integer[] positions = new Integer[(int) sourceIndex.size()];
         for (int ii = 0; ii < positions.length; ++ii) {
             positions[ii] = ii;
         }
@@ -397,60 +401,71 @@ public class TstUtils {
     public static Index newIndex(int targetSize, Index sourceIndex, Random random) {
         final long maxKey = (sourceIndex.size() == 0 ? 0 : sourceIndex.lastKey());
         final long emptySlots = maxKey - sourceIndex.size();
-        final int slotsToFill = Math.min(Math.min((int)(Math.max(0.0, ((random.nextGaussian() / 0.1) + 0.9)) * emptySlots), targetSize), (int)emptySlots);
+        final int slotsToFill = Math.min(
+                Math.min((int) (Math.max(0.0, ((random.nextGaussian() / 0.1) + 0.9)) * emptySlots), targetSize),
+                (int) emptySlots);
 
-        final Index fillIn = selectSubIndexSet(slotsToFill, Index.FACTORY.getIndexByRange(0, maxKey).minus(sourceIndex), random);
+        final Index fillIn =
+                selectSubIndexSet(slotsToFill, Index.FACTORY.getIndexByRange(0, maxKey).minus(sourceIndex), random);
 
-        final int endSlots = targetSize - (int)fillIn.size();
+        final int endSlots = targetSize - (int) fillIn.size();
 
         double density = ((random.nextGaussian() / 0.25) + 0.5);
         density = density < 0.1 ? 0.1 : density;
         density = density > 1 ? 1 : density;
-        final long rangeSize = (long)((1.0 / density) * endSlots);
-        final Index expansion = selectSubIndexSet(endSlots, Index.FACTORY.getIndexByRange(maxKey + 1, maxKey + rangeSize + 1), random);
+        final long rangeSize = (long) ((1.0 / density) * endSlots);
+        final Index expansion =
+                selectSubIndexSet(endSlots, Index.FACTORY.getIndexByRange(maxKey + 1, maxKey + rangeSize + 1), random);
 
         fillIn.insert(expansion);
 
-        Assert.assertion(fillIn.size() == targetSize, "fillIn.size() == targetSize", fillIn.size(), "fillIn.size()", targetSize, "targetSize", endSlots, "endSlots", slotsToFill, "slotsToFill");
+        Assert.assertion(fillIn.size() == targetSize, "fillIn.size() == targetSize", fillIn.size(), "fillIn.size()",
+                targetSize, "targetSize", endSlots, "endSlots", slotsToFill, "slotsToFill");
 
         return fillIn;
     }
 
     public static ColumnInfo[] initColumnInfos(String names[], Generator... generators) {
         if (names.length != generators.length) {
-            throw new IllegalArgumentException("names and generator lengths mismatch: " + names.length + " != " + generators.length);
+            throw new IllegalArgumentException(
+                    "names and generator lengths mismatch: " + names.length + " != " + generators.length);
         }
 
         final ColumnInfo[] result = new ColumnInfo[names.length];
         for (int i = 0; i < result.length; i++) {
-            //noinspection unchecked
+            // noinspection unchecked
             result[i] = new ColumnInfo(generators[i], names[i]);
         }
         return result;
     }
 
-    public static ColumnInfo[] initColumnInfos(String names[], ColumnInfo.ColAttributes attributes[], Generator... generators) {
+    public static ColumnInfo[] initColumnInfos(String names[], ColumnInfo.ColAttributes attributes[],
+            Generator... generators) {
         if (names.length != generators.length) {
-            throw new IllegalArgumentException("names and generator lengths mismatch: " + names.length + " != " + generators.length);
+            throw new IllegalArgumentException(
+                    "names and generator lengths mismatch: " + names.length + " != " + generators.length);
         }
 
         final ColumnInfo[] result = new ColumnInfo[names.length];
         for (int i = 0; i < result.length; i++) {
-            //noinspection unchecked
+            // noinspection unchecked
             result[i] = new ColumnInfo(generators[i], names[i], attributes);
         }
         return result;
     }
 
-    public static ColumnInfo[] initColumnInfos(String names[], List<List<ColumnInfo.ColAttributes>> attributes, Generator... generators) {
+    public static ColumnInfo[] initColumnInfos(String names[], List<List<ColumnInfo.ColAttributes>> attributes,
+            Generator... generators) {
         if (names.length != generators.length) {
-            throw new IllegalArgumentException("names and generator lengths mismatch: " + names.length + " != " + generators.length);
+            throw new IllegalArgumentException(
+                    "names and generator lengths mismatch: " + names.length + " != " + generators.length);
         }
 
         final ColumnInfo[] result = new ColumnInfo[names.length];
         for (int ii = 0; ii < result.length; ii++) {
-            //noinspection unchecked
-            result[ii] = new ColumnInfo(generators[ii], names[ii], attributes.get(ii).toArray(ColumnInfo.ZERO_LENGTH_COLUMN_ATTRIBUTES_ARRAY));
+            // noinspection unchecked
+            result[ii] = new ColumnInfo(generators[ii], names[ii],
+                    attributes.get(ii).toArray(ColumnInfo.ZERO_LENGTH_COLUMN_ATTRIBUTES_ARRAY));
         }
         return result;
     }
@@ -505,7 +520,8 @@ public class TstUtils {
     }
 
     public static QueryTable testRefreshingTable(ColumnHolder... columnHolders) {
-        final Index index = columnHolders.length == 0 ? Index.FACTORY.getEmptyIndex() : Index.FACTORY.getFlatIndex(Array.getLength(columnHolders[0].data));
+        final Index index = columnHolders.length == 0 ? Index.FACTORY.getEmptyIndex()
+                : Index.FACTORY.getFlatIndex(Array.getLength(columnHolders[0].data));
         final Map<String, ColumnSource> columns = new LinkedHashMap<>();
         for (ColumnHolder columnHolder : columnHolders) {
             columns.put(columnHolder.name, getTreeMapColumnSource(index, columnHolder));
@@ -520,17 +536,17 @@ public class TstUtils {
 
         final AbstractColumnSource result;
         if (columnHolder instanceof ImmutableColumnHolder) {
-            //noinspection unchecked
+            // noinspection unchecked
             result = new ImmutableTreeMapSource(columnHolder.dataType, index, boxedData);
         } else if (columnHolder.dataType.equals(DBDateTime.class) && columnHolder.data instanceof long[]) {
-            result = new DateTimeTreeMapSource(index, (long[])columnHolder.data);
+            result = new DateTimeTreeMapSource(index, (long[]) columnHolder.data);
         } else {
-            //noinspection unchecked
+            // noinspection unchecked
             result = new TreeMapSource(columnHolder.dataType, index, boxedData);
         }
 
         if (columnHolder.grouped) {
-            //noinspection unchecked
+            // noinspection unchecked
             result.setGroupToRange(result.getValuesMapping(index));
         }
         return result;
@@ -540,7 +556,7 @@ public class TstUtils {
         final Index index = table.getIndex().getPrevIndex();
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
         table.getColumnSourceMap().forEach((k, cs) -> {
-            //noinspection unchecked
+            // noinspection unchecked
             columnSourceMap.put(k, new PrevColumnSource(cs));
         });
         return new QueryTable(index, columnSourceMap);
@@ -555,52 +571,60 @@ public class TstUtils {
             final ColumnSource<?> columnSource = mapEntry.getValue();
             final List<Object> data = new ArrayList<>();
 
-            for (final Index.Iterator it = index.iterator(); it.hasNext(); ) {
+            for (final Index.Iterator it = index.iterator(); it.hasNext();) {
                 final long key = it.nextLong();
                 final Object item = columnSource.getPrev(key);
                 data.add(item);
             }
 
             if (columnSource.getType() == int.class) {
-                cols.add(new ColumnHolder<>(name, false, data.stream().mapToInt(x -> x == null ? io.deephaven.util.QueryConstants.NULL_INT : (int) x).toArray()));
+                cols.add(new ColumnHolder<>(name, false, data.stream()
+                        .mapToInt(x -> x == null ? io.deephaven.util.QueryConstants.NULL_INT : (int) x).toArray()));
             } else if (columnSource.getType() == long.class) {
-                cols.add(new ColumnHolder<>(name, false, data.stream().mapToLong(x -> x == null ? io.deephaven.util.QueryConstants.NULL_LONG : (long)x).toArray()));
+                cols.add(new ColumnHolder<>(name, false, data.stream()
+                        .mapToLong(x -> x == null ? io.deephaven.util.QueryConstants.NULL_LONG : (long) x).toArray()));
             } else if (columnSource.getType() == boolean.class) {
-                cols.add(ColumnHolder.createColumnHolder(name, false, data.stream().map(x -> (Boolean)x).toArray(Boolean[]::new)));
+                cols.add(ColumnHolder.createColumnHolder(name, false,
+                        data.stream().map(x -> (Boolean) x).toArray(Boolean[]::new)));
             } else if (columnSource.getType() == String.class) {
-                cols.add(ColumnHolder.createColumnHolder(name, false, data.stream().map(x -> (String)x).toArray(String[]::new)));
+                cols.add(ColumnHolder.createColumnHolder(name, false,
+                        data.stream().map(x -> (String) x).toArray(String[]::new)));
             } else if (columnSource.getType() == double.class) {
-                cols.add(new ColumnHolder<>(name, false, data.stream().mapToDouble(x -> x == null ? io.deephaven.util.QueryConstants.NULL_DOUBLE : (double)x).toArray()));
+                cols.add(new ColumnHolder<>(name, false,
+                        data.stream()
+                                .mapToDouble(x -> x == null ? io.deephaven.util.QueryConstants.NULL_DOUBLE : (double) x)
+                                .toArray()));
             } else if (columnSource.getType() == float.class) {
-                final float [] floatArray = new float[data.size()];
+                final float[] floatArray = new float[data.size()];
                 for (int ii = 0; ii < data.size(); ++ii) {
                     final Object value = data.get(ii);
-                    floatArray[ii] = value == null ? QueryConstants.NULL_FLOAT : (float)value;
+                    floatArray[ii] = value == null ? QueryConstants.NULL_FLOAT : (float) value;
                 }
                 cols.add(new ColumnHolder<>(name, false, floatArray));
             } else if (columnSource.getType() == char.class) {
-                final char [] charArray = new char[data.size()];
+                final char[] charArray = new char[data.size()];
                 for (int ii = 0; ii < data.size(); ++ii) {
                     final Object value = data.get(ii);
-                    charArray[ii] = value == null ? QueryConstants.NULL_CHAR : (char)value;
+                    charArray[ii] = value == null ? QueryConstants.NULL_CHAR : (char) value;
                 }
                 cols.add(new ColumnHolder<>(name, false, charArray));
             } else if (columnSource.getType() == byte.class) {
-                final byte [] byteArray = new byte[data.size()];
+                final byte[] byteArray = new byte[data.size()];
                 for (int ii = 0; ii < data.size(); ++ii) {
                     final Object value = data.get(ii);
-                    byteArray[ii] = value == null ? QueryConstants.NULL_BYTE : (byte)value;
+                    byteArray[ii] = value == null ? QueryConstants.NULL_BYTE : (byte) value;
                 }
                 cols.add(new ColumnHolder<>(name, false, byteArray));
             } else if (columnSource.getType() == short.class) {
-                final short [] shortArray = new short[data.size()];
+                final short[] shortArray = new short[data.size()];
                 for (int ii = 0; ii < data.size(); ++ii) {
                     final Object value = data.get(ii);
-                    shortArray[ii] = value == null ? QueryConstants.NULL_SHORT : (short)value;
+                    shortArray[ii] = value == null ? QueryConstants.NULL_SHORT : (short) value;
                 }
                 cols.add(new ColumnHolder<>(name, false, shortArray));
             } else {
-                cols.add(new ColumnHolder(name, columnSource.getType(), columnSource.getComponentType(), false, data.toArray((Object[])Array.newInstance(columnSource.getType(), data.size()))));
+                cols.add(new ColumnHolder(name, columnSource.getType(), columnSource.getComponentType(), false,
+                        data.toArray((Object[]) Array.newInstance(columnSource.getType(), data.size()))));
             }
         }
 
@@ -613,14 +637,12 @@ public class TstUtils {
         /**
          * Called after a key has been removed from the map.
          *
-         * @param key     the index key that was removed
+         * @param key the index key that was removed
          * @param removed the value that was removed
          */
-        default void onRemove(long key, U removed) {
-        }
+        default void onRemove(long key, U removed) {}
 
-        default void onMove(long oldKey, long newKey, U moved) {
-        }
+        default void onMove(long oldKey, long newKey, U moved) {}
 
         Class<U> getType();
 
@@ -656,14 +678,14 @@ public class TstUtils {
 
         public SetGenerator(T... set) {
             this.set = set;
-            //noinspection unchecked
-            type = (Class<T>)set.getClass().getComponentType();
+            // noinspection unchecked
+            type = (Class<T>) set.getClass().getComponentType();
         }
 
         public SetGenerator(Class<T> type, Collection<T> set) {
             this.type = type;
-            //noinspection unchecked
-            this.set = set.toArray((T[])Array.newInstance(type, set.size()));
+            // noinspection unchecked
+            this.set = set.toArray((T[]) Array.newInstance(type, set.size()));
         }
 
         @Override
@@ -771,7 +793,8 @@ public class TstUtils {
     }
 
     public static class BigIntegerGenerator extends AbstractGenerator<BigInteger> {
-        private static final BigInteger DEFAULT_FROM = BigInteger.valueOf(Long.MIN_VALUE).multiply(BigInteger.valueOf(2));
+        private static final BigInteger DEFAULT_FROM =
+                BigInteger.valueOf(Long.MIN_VALUE).multiply(BigInteger.valueOf(2));
         private static final BigInteger DEFAULT_TO = BigInteger.valueOf(Long.MAX_VALUE).multiply(BigInteger.valueOf(2));
 
         private final BigInteger to, from;
@@ -784,7 +807,8 @@ public class TstUtils {
         }
 
         public BigIntegerGenerator(double nullFraction) {
-            this(BigInteger.valueOf(Long.MIN_VALUE).multiply(BigInteger.valueOf(2)), BigInteger.valueOf(Long.MAX_VALUE).multiply(BigInteger.valueOf(2)), 0);
+            this(BigInteger.valueOf(Long.MIN_VALUE).multiply(BigInteger.valueOf(2)),
+                    BigInteger.valueOf(Long.MAX_VALUE).multiply(BigInteger.valueOf(2)), 0);
         }
 
         public BigIntegerGenerator(BigInteger from, BigInteger to) {
@@ -815,7 +839,8 @@ public class TstUtils {
 
             final BigInteger result = value.add(from);
 
-            Assert.assertion(result.compareTo(from) >= 0, "result.compareTo(from) >= 0", result, "result", from, "from");
+            Assert.assertion(result.compareTo(from) >= 0, "result.compareTo(from) >= 0", result, "result", from,
+                    "from");
             Assert.assertion(result.compareTo(to) <= 0, "result.compareTo(to) <= 0", result, "result", to, "to");
 
             return result;
@@ -880,7 +905,8 @@ public class TstUtils {
 
             final BigDecimal result = new BigDecimal(value, decimalPlaces).add(fromDecimal);
 
-            Assert.assertion(result.compareTo(fromDecimal) >= 0, "result.compareTo(from) >= 0", result, "result", from, "from");
+            Assert.assertion(result.compareTo(fromDecimal) >= 0, "result.compareTo(from) >= 0", result, "result", from,
+                    "from");
             Assert.assertion(result.compareTo(toDecimal) <= 0, "result.compareTo(to) <= 0", result, "result", to, "to");
 
             return result;
@@ -898,7 +924,7 @@ public class TstUtils {
         private final double nullFraction;
 
         public ShortGenerator() {
-            this((short)(QueryConstants.NULL_SHORT + 1), Short.MAX_VALUE);
+            this((short) (QueryConstants.NULL_SHORT + 1), Short.MAX_VALUE);
         }
 
         public ShortGenerator(short from, short to) {
@@ -918,7 +944,7 @@ public class TstUtils {
                     return null;
                 }
             }
-            return (short)(from + random.nextInt(to - from));
+            return (short) (from + random.nextInt(to - from));
         }
 
         @Override
@@ -933,7 +959,7 @@ public class TstUtils {
         private final double nullFraction;
 
         public ByteGenerator() {
-            this((byte)(QueryConstants.NULL_BYTE + 1), Byte.MAX_VALUE);
+            this((byte) (QueryConstants.NULL_BYTE + 1), Byte.MAX_VALUE);
         }
 
         public ByteGenerator(byte from, byte to) {
@@ -953,7 +979,7 @@ public class TstUtils {
                     return null;
                 }
             }
-            return (byte)(from + random.nextInt(to - from));
+            return (byte) (from + random.nextInt(to - from));
         }
 
         @Override
@@ -986,7 +1012,7 @@ public class TstUtils {
                     return null;
                 }
             }
-            return (char)(from + random.nextInt(to - from));
+            return (char) (from + random.nextInt(to - from));
         }
 
         @Override
@@ -1023,7 +1049,7 @@ public class TstUtils {
             }
             final long distance = to - from;
             if (distance > 0 && distance < Integer.MAX_VALUE) {
-                return from + random.nextInt((int)(to - from));
+                return from + random.nextInt((int) (to - from));
             } else if (from == QueryConstants.NULL_LONG + 1 && to == Long.MAX_VALUE) {
                 long r;
                 do {
@@ -1031,7 +1057,7 @@ public class TstUtils {
                 } while (r == QueryConstants.NULL_LONG);
                 return r;
             } else {
-                return (long)(from + random.nextDouble() * (to - from));
+                return (long) (from + random.nextDouble() * (to - from));
             }
         }
 
@@ -1065,14 +1091,16 @@ public class TstUtils {
             this(from, to, nullFraction, nanFraction, 0, 0);
         }
 
-        public DoubleGenerator(double from, double to, double nullFraction, double nanFraction, double negInfFraction, double posInfFraction) {
+        public DoubleGenerator(double from, double to, double nullFraction, double nanFraction, double negInfFraction,
+                double posInfFraction) {
             this.from = from;
             this.to = to;
             this.nullFraction = nullFraction;
             this.nanFraction = nanFraction;
             this.negInfFraction = negInfFraction;
             this.posInfFraction = posInfFraction;
-            Require.leq(nullFraction + nanFraction + negInfFraction + posInfFraction, "nullFraction + nanFraction + negInfFraction + posInfFraction", 1.0, "1.0");
+            Require.leq(nullFraction + nanFraction + negInfFraction + posInfFraction,
+                    "nullFraction + nanFraction + negInfFraction + posInfFraction", 1.0, "1.0");
         }
 
         @Override
@@ -1129,14 +1157,16 @@ public class TstUtils {
             this(from, to, nullFraction, nanFraction, 0, 0);
         }
 
-        public FloatGenerator(float from, float to, double nullFraction, double nanFraction, double negInfFraction, double posInfFraction) {
+        public FloatGenerator(float from, float to, double nullFraction, double nanFraction, double negInfFraction,
+                double posInfFraction) {
             this.from = from;
             this.to = to;
             this.nullFraction = nullFraction;
             this.nanFraction = nanFraction;
             this.negInfFraction = negInfFraction;
             this.posInfFraction = posInfFraction;
-            Require.leq(nullFraction + nanFraction + negInfFraction + posInfFraction, "nullFraction + nanFraction + negInfFraction + posInfFraction", 1.0, "1.0");
+            Require.leq(nullFraction + nanFraction + negInfFraction + posInfFraction,
+                    "nullFraction + nanFraction + negInfFraction + posInfFraction", 1.0, "1.0");
         }
 
         @Override
@@ -1241,7 +1271,7 @@ public class TstUtils {
         Long makeValue(Long floor, Long ceiling, Random random) {
             final long range = ceiling - floor;
             if (range + 1 < Integer.MAX_VALUE) {
-                return floor + random.nextInt((int)(range + 1));
+                return floor + random.nextInt((int) (range + 1));
             }
             final int bits = 64 - Long.numberOfLeadingZeros(range);
             long candidate = getRandom(random, bits);
@@ -1284,11 +1314,11 @@ public class TstUtils {
             final int allowedBits = range.bitLength();
             BigInteger candidate = null;
             for (int ii = 0; ii < 100; ++ii) {
-              candidate = new BigInteger(allowedBits, random);
-              if (candidate.compareTo(range) < 0) {
-                  break;
-              }
-              candidate = null;
+                candidate = new BigInteger(allowedBits, random);
+                if (candidate.compareTo(range) < 0) {
+                    break;
+                }
+                candidate = null;
             }
             if (candidate == null) {
                 throw new RuntimeException(String.format("Couldn't find a suitable BigInteger between %s and %s",
@@ -1469,7 +1499,7 @@ public class TstUtils {
             if (ceiling.getTime() < floor.getTime()) {
                 throw new IllegalStateException("ceiling < floor: " + ceiling + " > " + floor);
             }
-            return new Date(floor.getTime() + random.nextInt((int)(ceiling.getTime() - floor.getTime() + 1)));
+            return new Date(floor.getTime() + random.nextInt((int) (ceiling.getTime() - floor.getTime() + 1)));
         }
 
         @Override
@@ -1484,7 +1514,7 @@ public class TstUtils {
             if (toAdd.size() == 0)
                 return result;
 
-            for (final Index.Iterator it = toAdd.iterator(); it.hasNext(); ) {
+            for (final Index.Iterator it = toAdd.iterator(); it.hasNext();) {
                 values.remove(it.nextLong());
             }
 
@@ -1507,7 +1537,8 @@ public class TstUtils {
 
                 if (!ceiling.equals(currentCeiling) || !floor.equals(currentFloor)) {
                     // we're past the end of the last run so we need to generate the values for the map
-                    generateValues(toAdd.intersect(Index.FACTORY.getIndexByRange(firstKey, lastKey)), currentFloor, currentCeiling, result, random);
+                    generateValues(toAdd.intersect(Index.FACTORY.getIndexByRange(firstKey, lastKey)), currentFloor,
+                            currentCeiling, result, random);
                     firstKey = nextKey;
                     currentFloor = floor;
                     currentCeiling = ceiling;
@@ -1515,7 +1546,8 @@ public class TstUtils {
                 lastKey = nextKey;
             }
 
-            generateValues(toAdd.intersect(Index.FACTORY.getIndexByRange(firstKey, lastKey)), currentFloor, currentCeiling, result, random);
+            generateValues(toAdd.intersect(Index.FACTORY.getIndexByRange(firstKey, lastKey)), currentFloor,
+                    currentCeiling, result, random);
 
             values.putAll(result);
 
@@ -1532,21 +1564,22 @@ public class TstUtils {
             T lastValue = minValue();
             for (Map.Entry<Long, T> valueEntry : values.entrySet()) {
                 final T value = valueEntry.getValue();
-                Assert.assertion(value.compareTo(lastValue) >= 0, "value >= lastValue", value, "value", lastValue, "lastValue", valueEntry.getKey(), "valueEntry.getKey");
+                Assert.assertion(value.compareTo(lastValue) >= 0, "value >= lastValue", value, "value", lastValue,
+                        "lastValue", valueEntry.getKey(), "valueEntry.getKey");
                 lastValue = value;
             }
         }
 
         private void generateValues(Index toadd, T floor, T ceiling, TreeMap<Long, T> result, Random random) {
-            final int count = (int)toadd.size();
-            //noinspection unchecked
-            final T[] values = (T[])Array.newInstance(getType(), count);
+            final int count = (int) toadd.size();
+            // noinspection unchecked
+            final T[] values = (T[]) Array.newInstance(getType(), count);
             for (int ii = 0; ii < count; ++ii) {
                 values[ii] = makeValue(floor, ceiling, random);
             }
             Arrays.sort(values);
             int ii = 0;
-            for (final Index.Iterator it = toadd.iterator(); it.hasNext(); ) {
+            for (final Index.Iterator it = toadd.iterator(); it.hasNext();) {
                 result.put(it.nextLong(), values[ii++]);
             }
         }
@@ -1566,13 +1599,13 @@ public class TstUtils {
             if (toAdd.size() == 0)
                 return result;
 
-            for (final Index.Iterator it = toAdd.iterator(); it.hasNext(); ) {
+            for (final Index.Iterator it = toAdd.iterator(); it.hasNext();) {
                 values.remove(it.nextLong());
             }
 
             final HashSet<T> usedValues = new HashSet<>(values.values());
 
-            for (final Index.Iterator iterator = toAdd.iterator(); iterator.hasNext(); ) {
+            for (final Index.Iterator iterator = toAdd.iterator(); iterator.hasNext();) {
                 final long nextKey = iterator.nextLong();
                 final T value = getNextUniqueValue(usedValues, values, nextKey, random);
                 usedValues.add(value);
@@ -1668,7 +1701,7 @@ public class TstUtils {
                 }
             }
 
-            return (long)(from + random.nextInt(to - from));
+            return (long) (from + random.nextInt(to - from));
         }
 
         @Override
@@ -1700,7 +1733,7 @@ public class TstUtils {
                 }
             }
 
-            return (short)(from + random.nextInt(to - from));
+            return (short) (from + random.nextInt(to - from));
         }
 
         @Override
@@ -1732,7 +1765,7 @@ public class TstUtils {
                 }
             }
 
-            return (byte)(from + random.nextInt(to - from));
+            return (byte) (from + random.nextInt(to - from));
         }
 
         @Override
@@ -1763,7 +1796,7 @@ public class TstUtils {
                 }
             }
 
-            return (char)(from + random.nextInt(to - from));
+            return (char) (from + random.nextInt(to - from));
         }
 
         @Override
@@ -1793,7 +1826,7 @@ public class TstUtils {
 
         @Override
         public SmartKey nextValue(TreeMap<Long, SmartKey> values, long key, Random random) {
-            //noinspection unchecked
+            // noinspection unchecked
             return new SmartKey(Arrays.stream(generators).map(g -> g.nextValue(null, key, random)).toArray());
         }
 
@@ -1812,7 +1845,7 @@ public class TstUtils {
 
         @Override
         public SmartKey nextValue(TreeMap<Long, SmartKey> values, long key, Random random) {
-            //noinspection unchecked
+            // noinspection unchecked
             return new SmartKey(Arrays.stream(generators).map(g -> g.nextValue(null, key, random)).toArray());
         }
 
@@ -1827,19 +1860,22 @@ public class TstUtils {
             this(uniqueStringGenerator, existingFraction, new StringGenerator());
         }
 
-        FromUniqueStringGenerator(UniqueStringGenerator uniqueStringGenerator, double existingFraction, AbstractGenerator<String> defaultGenerator) {
+        FromUniqueStringGenerator(UniqueStringGenerator uniqueStringGenerator, double existingFraction,
+                AbstractGenerator<String> defaultGenerator) {
             super(String.class, uniqueStringGenerator, defaultGenerator, String[]::new, existingFraction);
         }
     }
 
     static class FromUniqueSmartKeyGenerator extends AbstractFromUniqueGenerator<SmartKey> {
-        FromUniqueSmartKeyGenerator(UniqueSmartKeyGenerator uniqueSmartKeyGenerator, SmartKeyGenerator defaultGenerator, double existingFraction) {
+        FromUniqueSmartKeyGenerator(UniqueSmartKeyGenerator uniqueSmartKeyGenerator, SmartKeyGenerator defaultGenerator,
+                double existingFraction) {
             super(SmartKey.class, uniqueSmartKeyGenerator, defaultGenerator, SmartKey[]::new, existingFraction);
         }
     }
 
     static class FromUniqueIntGenerator extends AbstractFromUniqueGenerator<Integer> {
-        FromUniqueIntGenerator(UniqueIntGenerator uniqueSmartKeyGenerator, IntGenerator defaultGenerator, double existingFraction) {
+        FromUniqueIntGenerator(UniqueIntGenerator uniqueSmartKeyGenerator, IntGenerator defaultGenerator,
+                double existingFraction) {
             super(Integer.class, uniqueSmartKeyGenerator, defaultGenerator, Integer[]::new, existingFraction);
         }
     }
@@ -1861,10 +1897,12 @@ public class TstUtils {
             final Generator<T, T> firstGenerator = generators.get(0);
             for (Generator<T, T> generator : generators) {
                 if (!generator.getType().equals(firstGenerator.getType())) {
-                    throw new IllegalArgumentException("Mismatched generator types: " + generator.getType() + " vs. " + firstGenerator.getType());
+                    throw new IllegalArgumentException(
+                            "Mismatched generator types: " + generator.getType() + " vs. " + firstGenerator.getType());
                 }
                 if (!generator.getColumnType().equals(firstGenerator.getColumnType())) {
-                    throw new IllegalArgumentException("Mismatched generator column types: " + generator.getType() + " vs. " + firstGenerator.getType());
+                    throw new IllegalArgumentException("Mismatched generator column types: " + generator.getType()
+                            + " vs. " + firstGenerator.getType());
                 }
             }
             this.generators = generators;
@@ -1930,7 +1968,8 @@ public class TstUtils {
         int lastSize = 0;
         T[] lastValues;
 
-        AbstractFromUniqueGenerator(Class<T> type, AbstractUniqueGenerator<T> uniqueStringGenerator, AbstractGenerator<T> defaultGenerator, IntFunction<T[]> arrayFactory, double existingFraction) {
+        AbstractFromUniqueGenerator(Class<T> type, AbstractUniqueGenerator<T> uniqueStringGenerator,
+                AbstractGenerator<T> defaultGenerator, IntFunction<T[]> arrayFactory, double existingFraction) {
             this.type = type;
             this.uniqueGenerator = uniqueStringGenerator;
             this.defaultGenerator = defaultGenerator;
@@ -1971,16 +2010,17 @@ public class TstUtils {
         final static ColAttributes[] ZERO_LENGTH_COLUMN_ATTRIBUTES_ARRAY = new ColAttributes[0];
 
         enum ColAttributes {
-            None,
-            Immutable,
-            Grouped
+            None, Immutable, Grouped
         }
 
         public ColumnInfo(Generator<T, U> generator, String name, ColAttributes... colAttributes) {
-            this(generator.getType(), generator.getColumnType(), generator, name, Arrays.asList(colAttributes).contains(ColAttributes.Immutable), Arrays.asList(colAttributes).contains(ColAttributes.Grouped), new TreeMap<>());
+            this(generator.getType(), generator.getColumnType(), generator, name,
+                    Arrays.asList(colAttributes).contains(ColAttributes.Immutable),
+                    Arrays.asList(colAttributes).contains(ColAttributes.Grouped), new TreeMap<>());
         }
 
-        private ColumnInfo(Class<U> dataType, Class<T> type, Generator<T, U> generator, String name, boolean immutable, boolean grouped, TreeMap<Long, U> data) {
+        private ColumnInfo(Class<U> dataType, Class<T> type, Generator<T, U> generator, String name, boolean immutable,
+                boolean grouped, TreeMap<Long, U> data) {
             this.dataType = dataType;
             this.type = type;
             this.generator = generator;
@@ -1999,11 +2039,11 @@ public class TstUtils {
             if (dataType == Long.class && type == DBDateTime.class) {
                 Require.eqFalse(immutable, "immutable");
                 Require.eqFalse(grouped, "grouped");
-                final long[] dataArray = data.values().stream().map(x -> (Long)x).mapToLong(x -> x).toArray();
+                final long[] dataArray = data.values().stream().map(x -> (Long) x).mapToLong(x -> x).toArray();
                 return ColumnHolder.getDateTimeColumnHolder(name, false, dataArray);
             }
 
-            final U[] dataArray = data.values().toArray((U[])Array.newInstance(dataType, data.size()));
+            final U[] dataArray = data.values().toArray((U[]) Array.newInstance(dataType, data.size()));
             if (immutable) {
                 return new ImmutableColumnHolder<>(name, dataType, null, grouped, dataArray);
             } else if (grouped) {
@@ -2025,8 +2065,8 @@ public class TstUtils {
 
         ColumnHolder populateMapAndC(Index keysToModify, Random random) {
             final Collection<U> newValues = populateMap(keysToModify, random).values();
-            //noinspection unchecked
-            final U[] valueArray = newValues.toArray((U[])Array.newInstance(dataType, newValues.size()));
+            // noinspection unchecked
+            final U[] valueArray = newValues.toArray((U[]) Array.newInstance(dataType, newValues.size()));
             if (grouped) {
                 return TstUtils.cG(name, valueArray);
             } else {
@@ -2111,11 +2151,13 @@ public class TstUtils {
         }
     }
 
-    public static void assertTableEquals(@NotNull final Table expected, @NotNull final Table actual, final TableDiff.DiffItems... itemsToSkip) {
+    public static void assertTableEquals(@NotNull final Table expected, @NotNull final Table actual,
+            final TableDiff.DiffItems... itemsToSkip) {
         assertTableEquals("", expected, actual, itemsToSkip);
     }
 
-    public static void assertTableEquals(final String context, @NotNull final Table expected, @NotNull final Table actual, final TableDiff.DiffItems... itemsToSkip) {
+    public static void assertTableEquals(final String context, @NotNull final Table expected,
+            @NotNull final Table actual, final TableDiff.DiffItems... itemsToSkip) {
         if (itemsToSkip.length > 0) {
             assertTableEquals(context, expected, actual, EnumSet.of(itemsToSkip[0], itemsToSkip));
         } else {
@@ -2123,7 +2165,8 @@ public class TstUtils {
         }
     }
 
-    public static void assertTableEquals(final String context, @NotNull final Table expected, @NotNull final Table actual, final EnumSet<TableDiff.DiffItems> itemsToSkip) {
+    public static void assertTableEquals(final String context, @NotNull final Table expected,
+            @NotNull final Table actual, final EnumSet<TableDiff.DiffItems> itemsToSkip) {
         final Pair<String, Long> diffPair = TableTools.diffPair(actual, expected, 10, itemsToSkip);
         if (diffPair.getFirst().equals("")) {
             return;
@@ -2165,7 +2208,7 @@ public class TstUtils {
      * @param runner A method whose first param is the random seed to use, and second parameter is the number of steps.
      */
     public static void findMinimalTestCase(final LiveTableTestCase test, final int initialSeed, final int maxSeed,
-                                           final int initialSteps, final BiConsumer<Integer, MutableInt> runner) {
+            final int initialSteps, final BiConsumer<Integer, MutableInt> runner) {
         final boolean origPrintTableUpdates = LiveTableTestCase.printTableUpdates;
         LiveTableTestCase.printTableUpdates = false;
 
@@ -2178,7 +2221,8 @@ public class TstUtils {
                 System.out.println("Best Run: bestSeed=" + bestSeed + " bestSteps=" + bestSteps);
                 return;
             }
-            System.out.println("Running: seed=" + seed + " numSteps=" + maxSteps.intValue() + " bestSeed=" + bestSeed + " bestSteps=" + bestSteps);
+            System.out.println("Running: seed=" + seed + " numSteps=" + maxSteps.intValue() + " bestSeed=" + bestSeed
+                    + " bestSteps=" + bestSteps);
             if (seed != initialSeed) {
                 try {
                     test.tearDown();

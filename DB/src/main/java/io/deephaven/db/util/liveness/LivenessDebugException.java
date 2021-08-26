@@ -5,6 +5,5 @@ package io.deephaven.db.util.liveness;
  */
 class LivenessDebugException extends RuntimeException {
 
-    LivenessDebugException() {
-    }
+    LivenessDebugException() {}
 }

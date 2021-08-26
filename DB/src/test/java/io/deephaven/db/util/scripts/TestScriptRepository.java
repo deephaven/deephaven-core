@@ -79,11 +79,15 @@ public class TestScriptRepository extends BaseArrayTestCase {
         testGetAvailableScriptPaths(true, true);
     }
 
-    private void testGetAvailableScriptPaths(boolean prefixDisplayPathsWithRepoName, boolean resetGitLockFiles) throws IOException, GitAPIException {
+    private void testGetAvailableScriptPaths(boolean prefixDisplayPathsWithRepoName, boolean resetGitLockFiles)
+            throws IOException, GitAPIException {
         StreamLoggerImpl logger = new StreamLoggerImpl(System.out, LogLevel.DEBUG);
 
         Path path = new File(tempDir + "/checkout").toPath();
-        ScriptRepository scriptRepository = new ScriptRepository(logger, "Dummy", Collections.singleton("*"), repo.toAbsolutePath().toString(), true, false, "origin","master", prefixDisplayPathsWithRepoName, path.toAbsolutePath(), resetGitLockFiles, Paths.get(path.toAbsolutePath().toString(), "path1"), Paths.get(path.toAbsolutePath().toString(), "path2"));
+        ScriptRepository scriptRepository = new ScriptRepository(logger, "Dummy", Collections.singleton("*"),
+                repo.toAbsolutePath().toString(), true, false, "origin", "master", prefixDisplayPathsWithRepoName,
+                path.toAbsolutePath(), resetGitLockFiles, Paths.get(path.toAbsolutePath().toString(), "path1"),
+                Paths.get(path.toAbsolutePath().toString(), "path2"));
 
         Set<String> result = scriptRepository.getAvailableScriptDisplayPaths(ScriptPathLoaderState.NONE);
         ScriptPathLoaderState state = scriptRepository.getState();
@@ -98,7 +102,7 @@ public class TestScriptRepository extends BaseArrayTestCase {
 
         TestCase.assertEquals(expected, new TreeSet<>(result));
 
-        //noinspection ResultOfMethodCallIgnored
+        // noinspection ResultOfMethodCallIgnored
         Paths.get(dirToImport.toString(), "path2", "c", "bar.groovY").toFile().delete();
         git.rm().addFilepattern("path2/c/bar.groovY").call();
         git.commit().setMessage("Dummy message").call();
@@ -131,7 +135,10 @@ public class TestScriptRepository extends BaseArrayTestCase {
 
         // Need to create repo so there's a valid git in which to create a lockfile
         final Path path = new File(tempDir + "/checkout").toPath();
-        new ScriptRepository(logger, "Dummy", Collections.singleton("*"), repo.toAbsolutePath().toString(), true, false, "origin", "master", true, path.toAbsolutePath(), false, Paths.get(path.toAbsolutePath().toString(), "path1"), Paths.get(path.toAbsolutePath().toString(), "path2"));
+        new ScriptRepository(logger, "Dummy", Collections.singleton("*"), repo.toAbsolutePath().toString(), true, false,
+                "origin", "master", true, path.toAbsolutePath(), false,
+                Paths.get(path.toAbsolutePath().toString(), "path1"),
+                Paths.get(path.toAbsolutePath().toString(), "path2"));
 
         final Path gitPath = path.resolve(".git");
         if (!gitPath.toFile().exists()) {
@@ -144,7 +151,10 @@ public class TestScriptRepository extends BaseArrayTestCase {
         }
 
         try {
-            new ScriptRepository(logger, "Dummy", Collections.singleton("*"), repo.toAbsolutePath().toString(), true, false, "origin", "master", true, path.toAbsolutePath(), resetLockFile, Paths.get(path.toAbsolutePath().toString(), "path1"), Paths.get(path.toAbsolutePath().toString(), "path2"));
+            new ScriptRepository(logger, "Dummy", Collections.singleton("*"), repo.toAbsolutePath().toString(), true,
+                    false, "origin", "master", true, path.toAbsolutePath(), resetLockFile,
+                    Paths.get(path.toAbsolutePath().toString(), "path1"),
+                    Paths.get(path.toAbsolutePath().toString(), "path2"));
             if (!resetLockFile) {
                 fail("Expected exception from script repo setup");
             }
@@ -154,7 +164,7 @@ public class TestScriptRepository extends BaseArrayTestCase {
             }
             final String shortCauses = new ExceptionDetails(e).getShortCauses();
             if (!shortCauses.contains("Cannot lock")) {
-                fail ("Did not receive expected exception, instead received " + shortCauses);
+                fail("Did not receive expected exception, instead received " + shortCauses);
             }
         }
     }

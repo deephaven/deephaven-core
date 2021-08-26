@@ -31,8 +31,7 @@ public class JsAxisDescriptor {
     public boolean isTimeAxis = false;
 
     @JsConstructor
-    public JsAxisDescriptor() {
-    }
+    public JsAxisDescriptor() {}
 
     @JsIgnore
     public JsAxisDescriptor(JsPropertyMap<Object> source) {

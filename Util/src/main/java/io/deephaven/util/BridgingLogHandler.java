@@ -23,7 +23,8 @@ public final class BridgingLogHandler extends Handler {
     static {
         // Tools that don't want this in their output should set this to false.
         final String propValue = System.getProperty("BridgingLogHandler.flushPendingOnShutdown");
-        flushPendingOnShutdown = (propValue == null) ? FLUSH_PENDING_ON_SHUTDOWN_DEFAULT : Boolean.parseBoolean(propValue);
+        flushPendingOnShutdown =
+                (propValue == null) ? FLUSH_PENDING_ON_SHUTDOWN_DEFAULT : Boolean.parseBoolean(propValue);
     }
 
     public static synchronized void setFlushPendingOnShutdown(final boolean v) {
@@ -46,8 +47,7 @@ public final class BridgingLogHandler extends Handler {
                 final String sourceClassName,
                 final String sourceMethodName,
                 final int threadId,
-                final String msg
-        ) {
+                final String msg) {
             this.level = level;
             this.throwable = throwable;
             this.timeMillis = timeMillis;
@@ -99,8 +99,7 @@ public final class BridgingLogHandler extends Handler {
                             sourceClassName,
                             sourceMethodName,
                             logRecord.getThreadID(),
-                            logRecord.getMessage()
-                    ));
+                            logRecord.getMessage()));
                     return;
                 }
             }
@@ -121,21 +120,21 @@ public final class BridgingLogHandler extends Handler {
     }
 
     private static void appendMsg(LogOutput logOutput,
-                                  final String sourceClassName, final String sourceMethodName, final int threadId, final String msg) {
+            final String sourceClassName, final String sourceMethodName, final int threadId, final String msg) {
         logOutput.append("[")
-            .append(sourceClassName)
-            .append(":")
-            .append(sourceMethodName)
-            .append(":tid=")
-            .append(threadId)
-            .append("] ")
-            .append(msg)
-            ;
+                .append(sourceClassName)
+                .append(":")
+                .append(sourceMethodName)
+                .append(":tid=")
+                .append(threadId)
+                .append("] ")
+                .append(msg);
     }
 
     private static LogEntry logEntry(
-            final io.deephaven.io.logger.Logger log, final Level level, final long timeMillis, final Throwable throwable) {
-        return log.getEntry(mapLevel(level), 1000*timeMillis, throwable);
+            final io.deephaven.io.logger.Logger log, final Level level, final long timeMillis,
+            final Throwable throwable) {
+        return log.getEntry(mapLevel(level), 1000 * timeMillis, throwable);
     }
 
     private static final Map<Level, LogLevel> LEVEL_MAPPINGS = new HashMap<>();
@@ -143,6 +142,7 @@ public final class BridgingLogHandler extends Handler {
         LEVEL_MAPPINGS.put(Level.WARNING, LogLevel.WARN);
         LEVEL_MAPPINGS.put(Level.SEVERE, LogLevel.ERROR);
     }
+
     private static io.deephaven.io.log.LogLevel mapLevel(final Level level) {
         final LogLevel mapping = LEVEL_MAPPINGS.get(level);
         if (mapping != null) {

@@ -12,8 +12,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Builder for constructing groupings from one or more {@code <value, key range>} pairs, with no requirement that
- * key ranges be sequential.
+ * Builder for constructing groupings from one or more {@code <value, key range>} pairs, with no requirement that key
+ * ranges be sequential.
  */
 public class RandomGroupingBuilder<DATA_TYPE> {
 
@@ -24,16 +24,17 @@ public class RandomGroupingBuilder<DATA_TYPE> {
     /**
      * Add a mapping from value [firstKey, lastKey] to the groupings under construction.
      *
-     * @param value    The value for the grouping
+     * @param value The value for the grouping
      * @param firstKey The first key in the range
-     * @param lastKey  The last key in the range
+     * @param lastKey The last key in the range
      */
     public void addGrouping(@Nullable DATA_TYPE value, long firstKey, long lastKey) {
         // if we've already created the groupToIndex, then our groupToIndexBuilder is going to be in a bad state
         Require.eqNull(groupToIndex, "groupToIndex");
         Require.neqNull(groupToIndexBuilder, "groupToIndexBuilder");
 
-        final Index.RandomBuilder indexBuilder = groupToIndexBuilder.computeIfAbsent(value, (k) -> Index.FACTORY.getRandomBuilder());
+        final Index.RandomBuilder indexBuilder =
+                groupToIndexBuilder.computeIfAbsent(value, (k) -> Index.FACTORY.getRandomBuilder());
         indexBuilder.addRange(firstKey, lastKey);
     }
 

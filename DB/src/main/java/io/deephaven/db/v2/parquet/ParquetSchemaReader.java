@@ -34,32 +34,40 @@ public class ParquetSchemaReader {
     }
 
     public static final class ParquetMessageDefinition {
-        /** Yes you guessed right.  This is the column name. */
+        /** Yes you guessed right. This is the column name. */
         public String name;
         /** The parquet type. */
         public Class<?> baseType;
-        /** Some types require special annotations to support regular parquet tools and efficient DH handling.
-         * Examples are StringSet and DbArray; a parquet file with a DbIntArray special type metadata annotation,
-         * but storing types as repeated int, can be loaded both by other parquet tools and efficiently by DH. */
+        /**
+         * Some types require special annotations to support regular parquet tools and efficient DH handling. Examples
+         * are StringSet and DbArray; a parquet file with a DbIntArray special type metadata annotation, but storing
+         * types as repeated int, can be loaded both by other parquet tools and efficiently by DH.
+         */
         public ColumnTypeInfo.SpecialType dhSpecialType;
-        /** Parquet 1.0 did not support logical types; if we encounter a type like this is true.
-         * For example, in parquet 1.0 binary columns with no annotation are used to represent strings.
-         * They are also used to represent other things that are not strings.  Good luck, may the force be with you. */
+        /**
+         * Parquet 1.0 did not support logical types; if we encounter a type like this is true. For example, in parquet
+         * 1.0 binary columns with no annotation are used to represent strings. They are also used to represent other
+         * things that are not strings. Good luck, may the force be with you.
+         */
         public boolean noLogicalType;
         /** Your guess is good here */
         public boolean isArray;
         /** Your guess is good here. */
         public boolean isGrouping;
-        /** When codec metadata is present (which will be returned as modified read instructions below for actual codec
-         * name and args), we expect codec type and component type to be present.  When they are present,
-         * codecType and codecComponentType take precedence over any other DH type deducing heuristics (and
-         * thus baseType in this structure can be ignored). */
+        /**
+         * When codec metadata is present (which will be returned as modified read instructions below for actual codec
+         * name and args), we expect codec type and component type to be present. When they are present, codecType and
+         * codecComponentType take precedence over any other DH type deducing heuristics (and thus baseType in this
+         * structure can be ignored).
+         */
         public String codecType;
         public String codecComponentType;
-        /** We reuse the guts of this poor object between calls to avoid allocating.
-         * Like prometheus nailed to a mountain, this poor object has to suffer his guts being eaten forever.
-         * Or not forever but at least for one stack frame activation of readParquetSchema and as many columns
-         * that function finds in the file. */
+
+        /**
+         * We reuse the guts of this poor object between calls to avoid allocating. Like prometheus nailed to a
+         * mountain, this poor object has to suffer his guts being eaten forever. Or not forever but at least for one
+         * stack frame activation of readParquetSchema and as many columns that function finds in the file.
+         */
         void reset() {
             name = null;
             baseType = null;
@@ -72,23 +80,24 @@ public class ParquetSchemaReader {
     /**
      * Obtain schema information from a parquet file
      *
-     * @param filePath          Location for input parquet file
+     * @param filePath Location for input parquet file
      * @param readInstructions Parquet read instructions specifying transformations like column mappings and codecs.
-     *                         Note a new read instructions based on this one may be returned by this method to provide necessary
-     *                         transformations, eg, replacing unsupported characters like ' ' (space) in column names.
-     * @param consumer         A ColumnDefinitionConsumer whose accept method would be called for each column in the file
+     *        Note a new read instructions based on this one may be returned by this method to provide necessary
+     *        transformations, eg, replacing unsupported characters like ' ' (space) in column names.
+     * @param consumer A ColumnDefinitionConsumer whose accept method would be called for each column in the file
      * @return Parquet read instructions, either the ones supplied or a new object based on the supplied with necessary
-     * transformations added.
+     *         transformations added.
      */
     public static ParquetInstructions readParquetSchema(
             @NotNull final String filePath,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final ColumnDefinitionConsumer consumer,
-            @NotNull final BiFunction<String, Set<String>, String> legalizeColumnNameFunc
-    ) throws IOException {
+            @NotNull final BiFunction<String, Set<String>, String> legalizeColumnNameFunc) throws IOException {
         final ParquetFileReader parquetFileReader = ParquetTools.getParquetFileReader(new File(filePath));
-        final ParquetMetadata parquetMetadata = new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData);
-        return readParquetSchema(parquetFileReader.getSchema(), parquetMetadata.getFileMetaData().getKeyValueMetaData(), readInstructions, consumer, legalizeColumnNameFunc);
+        final ParquetMetadata parquetMetadata =
+                new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData);
+        return readParquetSchema(parquetFileReader.getSchema(), parquetMetadata.getFileMetaData().getKeyValueMetaData(),
+                readInstructions, consumer, legalizeColumnNameFunc);
     }
 
     public static Optional<TableInfo> parseMetadata(@NotNull final Map<String, String> keyValueMetadata) {
@@ -106,29 +115,31 @@ public class ParquetSchemaReader {
     /**
      * Obtain schema information from a parquet file
      *
-     * @param schema           Parquet schema.
-     *                         DO NOT RELY ON {@link ParquetMetadataConverter} FOR THIS! USE {@link ParquetFileReader}!
+     * @param schema Parquet schema. DO NOT RELY ON {@link ParquetMetadataConverter} FOR THIS! USE
+     *        {@link ParquetFileReader}!
      * @param keyValueMetadata Parquet key-value metadata map
      * @param readInstructions Parquet read instructions specifying transformations like column mappings and codecs.
-     *                         Note a new read instructions based on this one may be returned by this method to provide necessary
-     *                         transformations, eg, replacing unsupported characters like ' ' (space) in column names.
-     * @param consumer         A ColumnDefinitionConsumer whose accept method would be called for each column in the file
+     *        Note a new read instructions based on this one may be returned by this method to provide necessary
+     *        transformations, eg, replacing unsupported characters like ' ' (space) in column names.
+     * @param consumer A ColumnDefinitionConsumer whose accept method would be called for each column in the file
      * @return Parquet read instructions, either the ones supplied or a new object based on the supplied with necessary
-     * transformations added.
+     *         transformations added.
      */
     public static ParquetInstructions readParquetSchema(
             @NotNull final MessageType schema,
             @NotNull final Map<String, String> keyValueMetadata,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final ColumnDefinitionConsumer consumer,
-            @NotNull final BiFunction<String, Set<String>, String> legalizeColumnNameFunc
-    ) {
+            @NotNull final BiFunction<String, Set<String>, String> legalizeColumnNameFunc) {
         final MutableObject<String> errorString = new MutableObject<>();
         final MutableObject<ColumnDescriptor> currentColumn = new MutableObject<>();
         final Optional<TableInfo> tableInfo = parseMetadata(keyValueMetadata);
-        final Set<String> groupingColumnNames = tableInfo.map(TableInfo::groupingColumnNames).orElse(Collections.emptySet());
-        final Map<String, ColumnTypeInfo> nonDefaultTypeColumns = tableInfo.map(TableInfo::columnTypeMap).orElse(Collections.emptyMap());
-        final LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>> visitor = getVisitor(nonDefaultTypeColumns, errorString, currentColumn);
+        final Set<String> groupingColumnNames =
+                tableInfo.map(TableInfo::groupingColumnNames).orElse(Collections.emptySet());
+        final Map<String, ColumnTypeInfo> nonDefaultTypeColumns =
+                tableInfo.map(TableInfo::columnTypeMap).orElse(Collections.emptyMap());
+        final LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>> visitor =
+                getVisitor(nonDefaultTypeColumns, errorString, currentColumn);
 
         final MutableObject<ParquetInstructions.Builder> instructionsBuilder = new MutableObject<>();
         final Supplier<ParquetInstructions.Builder> builderSupplier = () -> {
@@ -156,7 +167,8 @@ public class ParquetSchemaReader {
                 if (oldPath != null) {
                     // TODO (https://github.com/deephaven/deephaven-core/issues/871): Support this
                     throw new UnsupportedOperationException("Encountered unsupported multi-column field "
-                            + parquetColumnName + ": found columns " + String.join("/", oldPath) + " and " + String.join("/", column.getPath()));
+                            + parquetColumnName + ": found columns " + String.join("/", oldPath) + " and "
+                            + String.join("/", column.getPath()));
                 }
                 return column.getPath();
             });
@@ -221,14 +233,14 @@ public class ParquetSchemaReader {
                     case FIXED_LEN_BYTE_ARRAY:
                         if (colDef.dhSpecialType != null) {
                             if (colDef.dhSpecialType == ColumnTypeInfo.SpecialType.StringSet) {
-                                colDef.baseType = null;  // when dhSpecialType is set, it takes precedence.
+                                colDef.baseType = null; // when dhSpecialType is set, it takes precedence.
                                 colDef.isArray = true;
                             } else {
                                 // We don't expect to see any other special types here.
                                 throw new UncheckedDeephavenException(
                                         "BINARY or FIXED_LEN_BYTE_ARRAY type " + column.getPrimitiveType()
-                                            + " for column " + Arrays.toString(column.getPath())
-                                            + " with unknown special type " + colDef.dhSpecialType);
+                                                + " for column " + Arrays.toString(column.getPath())
+                                                + " with unknown special type " + colDef.dhSpecialType);
                             }
                         } else if (codecName == null || codecName.isEmpty()) {
                             codecArgs = (typeName == PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY)
@@ -256,8 +268,7 @@ public class ParquetSchemaReader {
                     String msg = "Unable to read column " + Arrays.toString(column.getPath()) + ": ";
                     msg += (logicalTypeString != null)
                             ? (logicalTypeString + " not supported")
-                            : "no mappable logical type annotation found"
-                        ;
+                            : "no mappable logical type annotation found";
                     return new UncheckedDeephavenException(msg);
                 });
             }
@@ -265,8 +276,7 @@ public class ParquetSchemaReader {
         }
         return (instructionsBuilder.getValue() == null)
                 ? readInstructions
-                : instructionsBuilder.getValue().build()
-                ;
+                : instructionsBuilder.getValue().build();
     }
 
     private static LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>> getVisitor(
@@ -279,7 +289,8 @@ public class ParquetSchemaReader {
                 final ColumnDescriptor column = currentColumn.getValue();
                 final String columnName = column.getPath()[0];
                 final ColumnTypeInfo columnTypeInfo = nonDefaultTypeColumns.get(columnName);
-                final ColumnTypeInfo.SpecialType specialType = columnTypeInfo == null ? null : columnTypeInfo.specialType().orElse(null);
+                final ColumnTypeInfo.SpecialType specialType =
+                        columnTypeInfo == null ? null : columnTypeInfo.specialType().orElse(null);
                 if (specialType != null) {
                     if (specialType == ColumnTypeInfo.SpecialType.StringSet) {
                         return Optional.of(StringSet.class);
@@ -312,7 +323,8 @@ public class ParquetSchemaReader {
             }
 
             @Override
-            public Optional<Class<?>> visit(final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType) {
+            public Optional<Class<?>> visit(
+                    final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType) {
                 errorString.setValue("DecimalLogicalType");
                 return Optional.empty();
             }
@@ -330,16 +342,18 @@ public class ParquetSchemaReader {
             }
 
             @Override
-            public Optional<Class<?>> visit(final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
+            public Optional<Class<?>> visit(
+                    final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
                 if (timestampLogicalType.isAdjustedToUTC()) {
-                    switch(timestampLogicalType.getUnit()) {
+                    switch (timestampLogicalType.getUnit()) {
                         case MILLIS:
                         case MICROS:
                         case NANOS:
                             return Optional.of(io.deephaven.db.tables.utils.DBDateTime.class);
                     }
                 }
-                errorString.setValue("TimestampLogicalType, isAdjustedToUTC=" + timestampLogicalType.isAdjustedToUTC() + ", unit=" + timestampLogicalType.getUnit());
+                errorString.setValue("TimestampLogicalType, isAdjustedToUTC=" + timestampLogicalType.isAdjustedToUTC()
+                        + ", unit=" + timestampLogicalType.getUnit());
                 return Optional.empty();
             }
 
@@ -372,7 +386,8 @@ public class ParquetSchemaReader {
                             // fallthrough.
                     }
                 }
-                errorString.setValue("IntLogicalType, isSigned=" + intLogicalType.isSigned() + ", bitWidth=" + intLogicalType.getBitWidth());
+                errorString.setValue("IntLogicalType, isSigned=" + intLogicalType.isSigned() + ", bitWidth="
+                        + intLogicalType.getBitWidth());
                 return Optional.empty();
             }
 
@@ -395,13 +410,15 @@ public class ParquetSchemaReader {
             }
 
             @Override
-            public Optional<Class<?>> visit(final LogicalTypeAnnotation.IntervalLogicalTypeAnnotation intervalLogicalType) {
+            public Optional<Class<?>> visit(
+                    final LogicalTypeAnnotation.IntervalLogicalTypeAnnotation intervalLogicalType) {
                 errorString.setValue("IntervalLogicalType");
                 return Optional.empty();
             }
 
             @Override
-            public Optional<Class<?>> visit(final LogicalTypeAnnotation.MapKeyValueTypeAnnotation mapKeyValueLogicalType) {
+            public Optional<Class<?>> visit(
+                    final LogicalTypeAnnotation.MapKeyValueTypeAnnotation mapKeyValueLogicalType) {
                 errorString.setValue("MapKeyValueType");
                 return Optional.empty();
             }

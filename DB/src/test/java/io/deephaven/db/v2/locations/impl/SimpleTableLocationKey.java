@@ -25,7 +25,8 @@ public final class SimpleTableLocationKey extends PartitionedTableLocationKey {
 
     @Override
     public LogOutput append(LogOutput logOutput) {
-        return logOutput.append(getImplementationName()).append("[partitions=").append(PartitionsFormatter.INSTANCE, partitions).append(']');
+        return logOutput.append(getImplementationName()).append("[partitions=")
+                .append(PartitionsFormatter.INSTANCE, partitions).append(']');
     }
 
     @Override
@@ -43,6 +44,7 @@ public final class SimpleTableLocationKey extends PartitionedTableLocationKey {
 
     @Override
     public boolean equals(final Object other) {
-        return other == this || (other instanceof SimpleTableLocationKey && partitions.equals(((SimpleTableLocationKey) other).partitions));
+        return other == this || (other instanceof SimpleTableLocationKey
+                && partitions.equals(((SimpleTableLocationKey) other).partitions));
     }
 }

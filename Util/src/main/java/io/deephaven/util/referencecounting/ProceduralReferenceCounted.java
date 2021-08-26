@@ -4,8 +4,8 @@ import io.deephaven.base.verify.Require;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * A {@link ReferenceCounted} implementation that takes a {@link Runnable} onReferenceCountAtZero procedure, in order
- * to avoid relying on inheritance where necessary or desirable.
+ * A {@link ReferenceCounted} implementation that takes a {@link Runnable} onReferenceCountAtZero procedure, in order to
+ * avoid relying on inheritance where necessary or desirable.
  */
 public final class ProceduralReferenceCounted extends ReferenceCounted {
 
@@ -16,7 +16,8 @@ public final class ProceduralReferenceCounted extends ReferenceCounted {
 
     public ProceduralReferenceCounted(@NotNull final Runnable onReferenceCountAtZeroProcedure, final int initialValue) {
         super(initialValue);
-        this.onReferenceCountAtZeroProcedure = Require.neqNull(onReferenceCountAtZeroProcedure, "onReferenceCountAtZeroProcedure");
+        this.onReferenceCountAtZeroProcedure =
+                Require.neqNull(onReferenceCountAtZeroProcedure, "onReferenceCountAtZeroProcedure");
     }
 
     public ProceduralReferenceCounted(@NotNull final Runnable onReferenceCountAtZeroProcedure) {

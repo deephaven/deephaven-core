@@ -37,6 +37,7 @@ public class JsData {
 
     /**
      * Gets a required property from a JsPropertyMap. Will throw if the value isn't set
+     * 
      * @param source The property map to get the value from
      * @param propertyName The property to get value for
      * @return The value
@@ -107,7 +108,8 @@ public class JsData {
         return getNullableDoubleProperty(source, propertyName, null);
     }
 
-    public static Double getNullableDoubleProperty(JsPropertyMap<Object> source, String propertyName, Double defaultValue) {
+    public static Double getNullableDoubleProperty(JsPropertyMap<Object> source, String propertyName,
+            Double defaultValue) {
         Any value = getProperty(source, propertyName, Js.asAny(defaultValue));
         return value == null ? null : value.asDouble();
     }
@@ -129,7 +131,8 @@ public class JsData {
         return getNullableBooleanProperty(source, propertyName, null);
     }
 
-    public static Boolean getNullableBooleanProperty(JsPropertyMap<Object> source, String propertyName, Boolean defaultValue) {
+    public static Boolean getNullableBooleanProperty(JsPropertyMap<Object> source, String propertyName,
+            Boolean defaultValue) {
         Any value = getProperty(source, propertyName, Js.asAny(defaultValue));
         return value == null ? null : value.asBoolean();
     }

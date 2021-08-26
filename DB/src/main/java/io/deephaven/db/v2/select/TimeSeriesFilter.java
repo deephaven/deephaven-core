@@ -73,7 +73,7 @@ public class TimeSeriesFilter extends SelectFilterLivenessArtifactImpl implement
         long nanoBoundary = getNow().getNanos() - nanos;
 
         Index.SequentialBuilder indexBuilder = Index.FACTORY.getSequentialBuilder();
-        for (Index.Iterator it = selection.iterator(); it.hasNext(); ) {
+        for (Index.Iterator it = selection.iterator(); it.hasNext();) {
             long row = it.nextLong();
             long nanoValue = dateColumn.get(row).getNanos();
             if (nanoValue >= nanoBoundary) {

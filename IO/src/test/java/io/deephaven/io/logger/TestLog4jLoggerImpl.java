@@ -27,10 +27,13 @@ public class TestLog4jLoggerImpl extends TestCase {
 
     public void testSimple() {
         Log4jLoggerImpl SUT = new Log4jLoggerImpl(log4jlogger);
-        context.checking(new Expectations() {{
-            one(log4jlogger).isEnabledFor(Level.INFO); will(returnValue(true));
-            one(log4jlogger).log(Level.INFO, "foobar", null);
-        }});
+        context.checking(new Expectations() {
+            {
+                one(log4jlogger).isEnabledFor(Level.INFO);
+                will(returnValue(true));
+                one(log4jlogger).log(Level.INFO, "foobar", null);
+            }
+        });
         SUT.info().append("foo").append("bar").endl();
         context.assertIsSatisfied();
     }

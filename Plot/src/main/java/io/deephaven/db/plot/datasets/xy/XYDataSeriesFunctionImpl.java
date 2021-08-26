@@ -21,9 +21,9 @@ import java.util.function.DoubleUnaryOperator;
 /**
  * {@link XYDataSeriesInternal} based on a function.
  *
- * By default, this calculates at least 200 data points inside the plots existing range.
- * The number of points can be increased for a finer grained plot, or decreased if less resolution is needed.
- * The points are recomputed as the {@link Chart}'s x-range changes.
+ * By default, this calculates at least 200 data points inside the plots existing range. The number of points can be
+ * increased for a finer grained plot, or decreased if less resolution is needed. The points are recomputed as the
+ * {@link Chart}'s x-range changes.
  */
 public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XYDataSeriesFunctionInternal {
 
@@ -40,7 +40,7 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
     private double[][] currentData;
     private double[][] nextData;
 
-    private SortedMap<Double,Double> buffer;
+    private SortedMap<Double, Double> buffer;
     private boolean nPointsSet;
     private boolean rangeSet;
 
@@ -52,7 +52,8 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
      * @param name series name
      * @param function function to plot
      */
-    public XYDataSeriesFunctionImpl(final AxesImpl axes, final int id, final Comparable name, @SuppressWarnings("ConstantConditions") final DoubleUnaryOperator function) {
+    public XYDataSeriesFunctionImpl(final AxesImpl axes, final int id, final Comparable name,
+            @SuppressWarnings("ConstantConditions") final DoubleUnaryOperator function) {
         super(axes, id, name, null);
         this.function = function;
         ArgumentValidations.assertNotNull(function, "function", getPlotInfo());
@@ -85,7 +86,7 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
     }
 
 
-    //////////////////////////  internal  //////////////////////////
+    ////////////////////////// internal //////////////////////////
 
 
     private synchronized void recompute(final boolean recomputeAll) {
@@ -105,7 +106,7 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
 
         final double dxmax = (xmax - xmin) / (npoints - 1);
 
-        if(!buffer.isEmpty()) {
+        if (!buffer.isEmpty()) {
             final double lowerBound = buffer.firstKey();
             final double upperBound = buffer.lastKey();
 
@@ -122,12 +123,12 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
             }
         }
 
-        if(buffer.keySet().stream().filter(x -> x >= xmin && x <= xmax).count() < npoints){
+        if (buffer.keySet().stream().filter(x -> x >= xmin && x <= xmax).count() < npoints) {
             recomputeRange(xmin, xmax, npoints);
             changed = true;
         }
 
-        if(changed) {
+        if (changed) {
             nextData = new double[2][buffer.size()];
             int indx = 0;
             for (Map.Entry<Double, Double> e : buffer.entrySet()) {
@@ -142,8 +143,10 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
     private void recomputeRange(final double xmin, final double xmax, final int npoints) {
         final double dx = (xmax - xmin) / (npoints - 1);
 
-        if(!DoubleFpPrimitives.isNormal(xmin) || !DoubleFpPrimitives.isNormal(xmax) || !DoubleFpPrimitives.isNormal(dx)){
-            log.info("XYDataSeriesFunction: abnormal range: xmin=" + xmin + " xmax=" + xmax + " dx=" + dx + " npoints=" + npoints);
+        if (!DoubleFpPrimitives.isNormal(xmin) || !DoubleFpPrimitives.isNormal(xmax)
+                || !DoubleFpPrimitives.isNormal(dx)) {
+            log.info("XYDataSeriesFunction: abnormal range: xmin=" + xmin + " xmax=" + xmax + " dx=" + dx + " npoints="
+                    + npoints);
             return;
         }
 
@@ -154,11 +157,12 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
     }
 
     private void computeY(final double x) {
-        if(DoubleFpPrimitives.isNormal(x)) {
+        if (DoubleFpPrimitives.isNormal(x)) {
             buffer.computeIfAbsent(x, val -> {
                 double y = function.applyAsDouble(x);
                 if (!DoubleFpPrimitives.isNormal(y)) {
-                    log.info("XYDataSeriesFunction: abnormal y value: x=" + x + " y=" + y + " xmin=" + xmin + " xmax=" + xmax + " npoints=" + npoints);
+                    log.info("XYDataSeriesFunction: abnormal y value: x=" + x + " y=" + y + " xmin=" + xmin + " xmax="
+                            + xmax + " npoints=" + npoints);
                     y = Double.NaN;
                 }
                 ymin = PlotUtils.minIgnoreNaN(ymin, y);
@@ -166,7 +170,8 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
                 return y;
             });
         } else {
-            log.info("XYDataSeriesFunction: abnormal x value: x=" + x + " xmin=" + xmin + " xmax=" + xmax + " npoints=" + npoints);
+            log.info("XYDataSeriesFunction: abnormal x value: x=" + x + " xmin=" + xmin + " xmax=" + xmax + " npoints="
+                    + npoints);
         }
     }
 
@@ -178,7 +183,7 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
 
     @Override
     public int size() {
-        if( currentData == null ){
+        if (currentData == null) {
             return 0;
         } else {
             return currentData[0].length;
@@ -204,7 +209,7 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
     }
 
 
-    //////////////////////////  modification  //////////////////////////
+    ////////////////////////// modification //////////////////////////
 
 
     /**
@@ -223,9 +228,8 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
     /**
      * Sets the data range for this series.
      *
-     * @throws IllegalArgumentException {@code xmin} must not be less than {@code xmax}
-     *                          {@code xmin} and {@code xmax} must be normal. See {@link DoubleFpPrimitives#isNormal}
-     *                          {@code npoints} must non-negative
+     * @throws IllegalArgumentException {@code xmin} must not be less than {@code xmax} {@code xmin} and {@code xmax}
+     *         must be normal. See {@link DoubleFpPrimitives#isNormal} {@code npoints} must non-negative
      * @param xmin range minimum
      * @param xmax range maximum
      * @param npoints number of data points
@@ -255,26 +259,26 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
      * Invokes a funcRangeInternal if xmin or xmax has changed.
      */
     public void invokeRecompute(final double xmin, final double xmax, final String name, final int sessionId) {
-        if(xmin == this.xmin && xmax == this.xmax) {
+        if (xmin == this.xmin && xmax == this.xmax) {
             return;
         }
 
         funcRangeInternal(xmin, xmax);
     }
 
-    //Public for use outside this package. Not meant to be customer facing
+    // Public for use outside this package. Not meant to be customer facing
     public XYDataSeriesFunctionImpl funcRangeInternal(double xmin, double xmax) {
         return funcRangeInternal(xmin, xmax, false);
     }
 
     @Override
-    //Public for use outside this package. Not meant to be customer facing
+    // Public for use outside this package. Not meant to be customer facing
     public XYDataSeriesFunctionImpl funcRangeInternal(double xmin, double xmax, int npoints) {
         return funcRangeInternal(xmin, xmax, npoints, false);
     }
 
     @Override
-    //Public for use outside this package. Not meant to be customer facing
+    // Public for use outside this package. Not meant to be customer facing
     public XYDataSeriesFunctionImpl funcNPointsInternal(int npoints) {
         return funcNPointsInternal(npoints, false);
     }
@@ -284,9 +288,8 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
      *
      * @param xmin lower bound for the x values to plot
      * @param xmax upper bound for the x values to plot
-     * @param isUser whether the user is the one who called for the range to be changed.
-     *               If a user called for the change, we don't want internal calls to change
-     *               the plot out from under them.
+     * @param isUser whether the user is the one who called for the range to be changed. If a user called for the
+     *        change, we don't want internal calls to change the plot out from under them.
      * @return this series
      */
     private XYDataSeriesFunctionImpl funcRangeInternal(double xmin, double xmax, boolean isUser) {
@@ -299,13 +302,12 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
      * @param xmin lower bound for the x values to plot
      * @param xmax upper bound for the x values to plot
      * @param npoints number of points to compute
-     * @param isUser whether the user is the one who called for the range to be changed.
-     *               If a user called for the change, we don't want internal calls to change
-     *               the plot out from under them.
+     * @param isUser whether the user is the one who called for the range to be changed. If a user called for the
+     *        change, we don't want internal calls to change the plot out from under them.
      * @return this series
      */
     private XYDataSeriesFunctionImpl funcRangeInternal(double xmin, double xmax, int npoints, boolean isUser) {
-        if(!DoubleFpPrimitives.isNormal(xmin) || !DoubleFpPrimitives.isNormal(xmax)){
+        if (!DoubleFpPrimitives.isNormal(xmin) || !DoubleFpPrimitives.isNormal(xmax)) {
             throw new PlotIllegalArgumentException("Abnormal range value.  xmin=" + xmin + " xmax=" + xmax, this);
         }
 
@@ -317,7 +319,7 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
             throw new PlotIllegalArgumentException("npoints < 0", this);
         }
 
-        if(!rangeSet || isUser) {
+        if (!rangeSet || isUser) {
             final boolean changeNumberOfPoints = !nPointsSet || isUser;
             final boolean recompute = this.npoints != npoints && changeNumberOfPoints;
             final boolean changed = this.xmin != xmin || this.xmax != xmax || (recompute);
@@ -337,9 +339,8 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
      * Change the granularity of the plot by specifying how many points to compute.
      *
      * @param npoints number of points to compute
-     * @param isUser whether the user is the one who called for the number of points to be changed.
-     *               If a user called for the change, we don't want internal calls to change
-     *               the plot out from under them.
+     * @param isUser whether the user is the one who called for the number of points to be changed. If a user called for
+     *        the change, we don't want internal calls to change the plot out from under them.
      * @return this series
      */
     private XYDataSeriesFunctionImpl funcNPointsInternal(int npoints, boolean isUser) {
@@ -347,7 +348,7 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
             throw new PlotIllegalArgumentException("npoints < 0", this);
         }
 
-        if(!nPointsSet || isUser) {
+        if (!nPointsSet || isUser) {
             final boolean changed = this.npoints != npoints;
             this.npoints = npoints;
 

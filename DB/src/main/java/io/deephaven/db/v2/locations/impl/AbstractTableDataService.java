@@ -16,7 +16,8 @@ public abstract class AbstractTableDataService implements TableDataService, Name
 
     private final String name;
 
-    private final KeyedObjectHashMap<TableKey, TableLocationProvider> tableLocationProviders = new KeyedObjectHashMap<>(ProviderKeyDefinition.INSTANCE);
+    private final KeyedObjectHashMap<TableKey, TableLocationProvider> tableLocationProviders =
+            new KeyedObjectHashMap<>(ProviderKeyDefinition.INSTANCE);
 
     /**
      * Construct an AbstractTableDataService.
@@ -27,9 +28,9 @@ public abstract class AbstractTableDataService implements TableDataService, Name
         this.name = name;
     }
 
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // TableDataService implementation
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
     @Override
     @NotNull
@@ -62,8 +63,7 @@ public abstract class AbstractTableDataService implements TableDataService, Name
 
         private static final KeyedObjectKey<TableKey, TableLocationProvider> INSTANCE = new ProviderKeyDefinition();
 
-        private ProviderKeyDefinition() {
-        }
+        private ProviderKeyDefinition() {}
 
         @Override
         public TableKey getKey(@NotNull final TableLocationProvider tableLocationProvider) {

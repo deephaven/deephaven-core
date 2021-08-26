@@ -34,7 +34,8 @@ import java.util.Set;
  *
  * Note: The key column values must be unique.
  */
-public class ReverseLookupListener extends LivenessArtifact implements ReverseLookup, DynamicNode, NotificationStepSource {
+public class ReverseLookupListener extends LivenessArtifact
+        implements ReverseLookup, DynamicNode, NotificationStepSource {
     private static final long NO_ENTRY_VALUE = -2;
     private static final long REMOVED_ENTRY_VALUE = -3;
 
@@ -44,14 +45,15 @@ public class ReverseLookupListener extends LivenessArtifact implements ReverseLo
     private final boolean ignoreNull;
     private final InternalListener listener;
 
-    private class InternalListener extends InstrumentedListenerAdapter implements NotificationStepSource, NotificationStepReceiver  {
+    private class InternalListener extends InstrumentedListenerAdapter
+            implements NotificationStepSource, NotificationStepReceiver {
         private final TObjectLongHashMap<Object> prevMap;
         private final Set<Object> modifiedThisCycle = new THashSet<>();
         private volatile long lastNotificationStep = NULL_NOTIFICATION_STEP;
 
         InternalListener(String description, DynamicTable source, boolean retain) {
             super(description, source, retain);
-            prevMap = new TObjectLongHashMap<>(source.isRefreshing() ? 2*source.intSize() : 0, 0.75f, NO_ENTRY_VALUE);
+            prevMap = new TObjectLongHashMap<>(source.isRefreshing() ? 2 * source.intSize() : 0, 0.75f, NO_ENTRY_VALUE);
             modifiedThisCycle.clear();
         }
 
@@ -66,29 +68,31 @@ public class ReverseLookupListener extends LivenessArtifact implements ReverseLo
                 prevMap.clear();
                 removeEntries(removed);
                 modifyEntries(modified);
-                addEntries(added, false, () -> {});
+                addEntries(added, false, () -> {
+                });
                 modifiedThisCycle.clear();
             }
         }
 
         private void removeEntries(Index index) {
-            for (final Index.Iterator it = index.iterator(); it.hasNext(); ) {
+            for (final Index.Iterator it = index.iterator(); it.hasNext();) {
                 final long row = it.nextLong();
                 final Object keyToReverse = getPrevKey(row);
-                if(ignoreNull && keyToReverse == null) {
+                if (ignoreNull && keyToReverse == null) {
                     continue;
                 }
 
                 final long oldRow = map.remove(keyToReverse);
                 if (oldRow == map.getNoEntryValue()) {
-                    throw Assert.statementNeverExecuted("Removed value not in reverse lookup map: row=" + row + ", key=" + keyToReverse);
+                    throw Assert.statementNeverExecuted(
+                            "Removed value not in reverse lookup map: row=" + row + ", key=" + keyToReverse);
                 }
                 setPrevious(keyToReverse, oldRow);
             }
         }
 
         private void modifyEntries(Index index) {
-            for (final Index.Iterator it = index.iterator(); it.hasNext(); ) {
+            for (final Index.Iterator it = index.iterator(); it.hasNext();) {
                 final long row = it.nextLong();
                 final Object keyToReverse = getPrevKey(row);
                 final Object newKey = getKey(row);
@@ -99,16 +103,17 @@ public class ReverseLookupListener extends LivenessArtifact implements ReverseLo
                 final long oldRow;
 
                 // We only want to remove keys from the mapping that haven't already been modified.
-                if((!ignoreNull || keyToReverse != null) && !modifiedThisCycle.contains(keyToReverse)) {
+                if ((!ignoreNull || keyToReverse != null) && !modifiedThisCycle.contains(keyToReverse)) {
                     oldRow = map.remove(keyToReverse);
                     if (oldRow == map.getNoEntryValue()) {
-                        throw Assert.statementNeverExecuted("Removed value not in reverse lookup map: row=" + row + ", key=" + keyToReverse);
+                        throw Assert.statementNeverExecuted(
+                                "Removed value not in reverse lookup map: row=" + row + ", key=" + keyToReverse);
                     }
                 } else {
                     oldRow = NO_ENTRY_VALUE;
                 }
 
-                if(!ignoreNull || newKey != null) {
+                if (!ignoreNull || newKey != null) {
                     // Take into account that the newKey may already be mapped somewhere, and in that case
                     // should be added to the previous map so we don't lose that component.
                     setPrevious(newKey, map.put(newKey, row));
@@ -173,9 +178,10 @@ public class ReverseLookupListener extends LivenessArtifact implements ReverseLo
 
         final Mutable<ReverseLookupListener> resultListener = new MutableObject<>();
 
-        //noinspection AutoBoxing
+        // noinspection AutoBoxing
         ConstructSnapshot.callDataSnapshotFunction(System.identityHashCode(source) + ": ",
-                swapListener == null ? ConstructSnapshot.StaticSnapshotControl.INSTANCE : swapListener.makeSnapshotControl(),
+                swapListener == null ? ConstructSnapshot.StaticSnapshotControl.INSTANCE
+                        : swapListener.makeSnapshotControl(),
                 (usePrev, beforeClock) -> {
                     final ReverseLookupListener value = new ReverseLookupListener(source, false, usePrev, columns);
                     if (swapListener != null) {
@@ -184,8 +190,7 @@ public class ReverseLookupListener extends LivenessArtifact implements ReverseLo
                     }
                     resultListener.setValue(value);
                     return true;
-                }
-        );
+                });
 
         final ReverseLookupListener resultListenerValue = resultListener.getValue();
         if (swapListener != null) {
@@ -209,13 +214,14 @@ public class ReverseLookupListener extends LivenessArtifact implements ReverseLo
      */
     @ScriptApi
     public static void prepareForTree(BaseTable preTree, String idColumn) {
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (preTree) {
             if (preTree.hasAttribute(Table.PREPARED_RLL_ATTRIBUTE)) {
                 return;
             }
 
-            preTree.setAttribute(Table.PREPARED_RLL_ATTRIBUTE, makeReverseLookupListenerWithSnapshot(preTree, idColumn));
+            preTree.setAttribute(Table.PREPARED_RLL_ATTRIBUTE,
+                    makeReverseLookupListenerWithSnapshot(preTree, idColumn));
         }
     }
 
@@ -232,7 +238,7 @@ public class ReverseLookupListener extends LivenessArtifact implements ReverseLo
         this.ignoreNull = ignoreNull;
         this.columns = Arrays.stream(columns).map(source::getColumnSource).toArray(ColumnSource[]::new);
 
-        map = new TObjectLongHashMap<>(2*source.intSize(), 0.75f, NO_ENTRY_VALUE);
+        map = new TObjectLongHashMap<>(2 * source.intSize(), 0.75f, NO_ENTRY_VALUE);
         try (final ReadOnlyIndex prevIndex = usePrev ? source.getIndex().getPrevIndex() : null) {
             addEntries(usePrev ? prevIndex : source.getIndex(), usePrev, () -> {
                 if (source.isRefreshing()) {
@@ -241,7 +247,7 @@ public class ReverseLookupListener extends LivenessArtifact implements ReverseLo
             });
         }
 
-        if(source.isRefreshing()) {
+        if (source.isRefreshing()) {
             this.listener = new InternalListener("ReverseLookup(" + Arrays.toString(columns) + ")", source, false);
             manage(listener);
         } else {
@@ -277,6 +283,7 @@ public class ReverseLookupListener extends LivenessArtifact implements ReverseLo
 
     /**
      * Gets the key for a given row.
+     * 
      * @param row the index value to retrieve the key for
      * @return an individual object or SmartKey for multi-column keys
      */
@@ -286,6 +293,7 @@ public class ReverseLookupListener extends LivenessArtifact implements ReverseLo
 
     /**
      * Gets the previous key for a given row.
+     * 
      * @param row the index value to retrieve the previous key for
      * @return an individual object or SmartKey for multi-column keys
      */
@@ -293,21 +301,23 @@ public class ReverseLookupListener extends LivenessArtifact implements ReverseLo
         return TableTools.getPrevKey(columns, row);
     }
 
-    private void addEntries(@NotNull final ReadOnlyIndex index, final boolean usePrev, @NotNull final Runnable consistencyChecker) {
-        for (final ReadOnlyIndex.Iterator it = index.iterator(); it.hasNext(); ) {
+    private void addEntries(@NotNull final ReadOnlyIndex index, final boolean usePrev,
+            @NotNull final Runnable consistencyChecker) {
+        for (final ReadOnlyIndex.Iterator it = index.iterator(); it.hasNext();) {
             final long row = it.nextLong();
             final Object keyToReverse = usePrev ? getPrevKey(row) : getKey(row);
-            if(ignoreNull && keyToReverse == null) {
+            if (ignoreNull && keyToReverse == null) {
                 continue;
             }
 
             final long oldRow = map.put(keyToReverse, row);
             if (oldRow != map.getNoEntryValue()) {
                 consistencyChecker.run();
-                throw Assert.statementNeverExecuted("Duplicate value in reverse lookup map: row=" + row + ", oldRow=" + oldRow + ", key=" + keyToReverse);
+                throw Assert.statementNeverExecuted("Duplicate value in reverse lookup map: row=" + row + ", oldRow="
+                        + oldRow + ", key=" + keyToReverse);
             }
 
-            if(listener != null) {
+            if (listener != null) {
                 listener.setPrevious(keyToReverse, oldRow);
             }
         }
@@ -349,7 +359,8 @@ public class ReverseLookupListener extends LivenessArtifact implements ReverseLo
 
     @Override
     public boolean setRefreshing(boolean refreshing) {
-        throw new UnsupportedOperationException("An RLL refreshing state is tied to the table it is mapping and can not be changed.");
+        throw new UnsupportedOperationException(
+                "An RLL refreshing state is tied to the table it is mapping and can not be changed.");
     }
 
     @Override

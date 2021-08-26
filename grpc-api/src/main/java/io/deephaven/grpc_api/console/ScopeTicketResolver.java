@@ -33,7 +33,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
 
     @Inject
     public ScopeTicketResolver(final GlobalSessionProvider globalSessionProvider) {
-        super((byte)TICKET_PREFIX, FLIGHT_DESCRIPTOR_ROUTE);
+        super((byte) TICKET_PREFIX, FLIGHT_DESCRIPTOR_ROUTE);
         this.globalSessionProvider = globalSessionProvider;
     }
 
@@ -52,13 +52,15 @@ public class ScopeTicketResolver extends TicketResolverBase {
             final ScriptSession gss = globalSessionProvider.getGlobalSession();
             Object scopeVar = gss.getVariable(scopeName);
             if (scopeVar == null) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not resolve: no variable exists with name '" + scopeName + "'");
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                        "Could not resolve: no variable exists with name '" + scopeName + "'");
             }
             if (scopeVar instanceof Table) {
                 return TicketRouter.getFlightInfo((Table) scopeVar, descriptor, ticketForName(scopeName));
             }
 
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not resolve: no variable exists with name '" + scopeName + "'");
+            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve: no variable exists with name '" + scopeName + "'");
         });
 
         return SessionState.wrapAsExport(flightInfo);
@@ -68,7 +70,8 @@ public class ScopeTicketResolver extends TicketResolverBase {
     public void forAllFlightInfo(@Nullable final SessionState session, final Consumer<Flight.FlightInfo> visitor) {
         globalSessionProvider.getGlobalSession().getVariables().forEach((varName, varObj) -> {
             if (varObj instanceof Table) {
-                visitor.accept(TicketRouter.getFlightInfo((Table) varObj, descriptorForName(varName), ticketForName(varName)));
+                visitor.accept(
+                        TicketRouter.getFlightInfo((Table) varObj, descriptorForName(varName), ticketForName(varName)));
             }
         });
     }
@@ -79,7 +82,8 @@ public class ScopeTicketResolver extends TicketResolverBase {
     }
 
     @Override
-    public <T> SessionState.ExportObject<T> resolve(@Nullable final SessionState session, final Flight.FlightDescriptor descriptor) {
+    public <T> SessionState.ExportObject<T> resolve(@Nullable final SessionState session,
+            final Flight.FlightDescriptor descriptor) {
         return resolve(session, nameForDescriptor(descriptor));
     }
 
@@ -87,16 +91,18 @@ public class ScopeTicketResolver extends TicketResolverBase {
         // if we are not attached to a session, check the scope for a variable right now
         final T export = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> {
             final ScriptSession gss = globalSessionProvider.getGlobalSession();
-            //noinspection unchecked
+            // noinspection unchecked
             T scopeVar = (T) gss.getVariable(scopeName);
             if (scopeVar == null) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not resolve: no variable exists with name '" + scopeName + "'");
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                        "Could not resolve: no variable exists with name '" + scopeName + "'");
             }
             return scopeVar;
         });
 
         if (export == null) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not resolve: no variable exists with name '" + scopeName + "'");
+            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve: no variable exists with name '" + scopeName + "'");
         }
         return SessionState.wrapAsExport(export);
     }
@@ -107,7 +113,8 @@ public class ScopeTicketResolver extends TicketResolverBase {
     }
 
     @Override
-    public <T> SessionState.ExportBuilder<T> publish(final SessionState session, final Flight.FlightDescriptor descriptor) {
+    public <T> SessionState.ExportBuilder<T> publish(final SessionState session,
+            final Flight.FlightDescriptor descriptor) {
         return publish(session, nameForDescriptor(descriptor));
     }
 
@@ -166,8 +173,10 @@ public class ScopeTicketResolver extends TicketResolverBase {
         if (ticket == null) {
             throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket not supplied");
         }
-        if (ticket.remaining() < 3 || ticket.get(ticket.position()) != TICKET_PREFIX || ticket.get(ticket.position() + 1) != '/') {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Cannot parse ticket: found 0x" + byteBufToHex(ticket) + "' (hex)");
+        if (ticket.remaining() < 3 || ticket.get(ticket.position()) != TICKET_PREFIX
+                || ticket.get(ticket.position() + 1) != '/') {
+            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Cannot parse ticket: found 0x" + byteBufToHex(ticket) + "' (hex)");
         }
 
         final int initialLimit = ticket.limit();
@@ -177,7 +186,8 @@ public class ScopeTicketResolver extends TicketResolverBase {
             ticket.position(initialPosition + 2);
             return decoder.decode(ticket).toString();
         } catch (CharacterCodingException e) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Cannot parse ticket: failed to decode: " + e.getMessage());
+            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Cannot parse ticket: failed to decode: " + e.getMessage());
         } finally {
             ticket.position(initialPosition);
             ticket.limit(initialLimit);
@@ -196,7 +206,8 @@ public class ScopeTicketResolver extends TicketResolverBase {
         }
         if (descriptor.getPathCount() != 2) {
             throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Cannot parse descriptor: unexpected path length (found: " + TicketRouterHelper.getLogNameFor(descriptor) + ", expected: 2)");
+                    "Cannot parse descriptor: unexpected path length (found: "
+                            + TicketRouterHelper.getLogNameFor(descriptor) + ", expected: 2)");
         }
 
         return descriptor.getPath(1);
@@ -218,7 +229,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
      * @param descriptor the descriptor to convert
      * @return a flight ticket that represents the descriptor
      */
-    //TODO #412 use this or remove it (above is unused too?)
+    // TODO #412 use this or remove it (above is unused too?)
     public static Flight.Ticket descriptorToTicket(final Flight.FlightDescriptor descriptor) {
         return ticketForName(nameForDescriptor(descriptor));
     }

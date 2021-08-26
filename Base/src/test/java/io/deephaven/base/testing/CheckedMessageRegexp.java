@@ -9,11 +9,10 @@ import java.util.regex.Pattern;
 import junit.framework.ComparisonFailure;
 import org.apache.log4j.Level;
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 /**
- * The details of a message that should have been logged, when the
- * message must be matched against a regular expression. For use
- * with {@link LoggingRecorder}.
+ * The details of a message that should have been logged, when the message must be matched against a regular expression.
+ * For use with {@link LoggingRecorder}.
  */
 public class CheckedMessageRegexp extends CheckedMessage {
 
@@ -21,7 +20,7 @@ public class CheckedMessageRegexp extends CheckedMessage {
 
     public CheckedMessageRegexp(Pattern pattern, Level level) {
         super(pattern.toString(), level);
-        m_pattern=pattern;
+        m_pattern = pattern;
     }
 
     @Override

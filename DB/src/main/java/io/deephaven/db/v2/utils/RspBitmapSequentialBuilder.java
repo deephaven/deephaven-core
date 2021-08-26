@@ -128,7 +128,8 @@ public class RspBitmapSequentialBuilder implements TreeIndexImpl.SequentialBuild
             final long pendingContainerBlockKey = highBits(pendingContainerKey);
             if (pendingContainerKey != -1 && pendingContainerBlockKey == highStart) { // short path.
                 if (pendingContainer == null) {
-                    pendingContainer = containerForLowValueAndRange(lowBitsAsInt(pendingContainerKey), lowStart, lowEnd);
+                    pendingContainer =
+                            containerForLowValueAndRange(lowBitsAsInt(pendingContainerKey), lowStart, lowEnd);
                     pendingContainerKey = highBits(pendingContainerKey);
                 } else {
                     pendingContainer = pendingContainer.iappend(lowStart, lowEnd + 1);
@@ -168,9 +169,9 @@ public class RspBitmapSequentialBuilder implements TreeIndexImpl.SequentialBuild
         final int initialContainerStart;
         final int initialContainerEnd;
         final long midFullBlockSpanKey;
-        final long midFullBlockSpanLen ;
+        final long midFullBlockSpanLen;
         final long endingContainerKey;
-        // final int endingContainerStart;  The start of the ending container can only be 0.
+        // final int endingContainerStart; The start of the ending container can only be 0.
         final int endingContainerEnd;
 
         // Let's see if we have an initial container block.
@@ -200,7 +201,7 @@ public class RspBitmapSequentialBuilder implements TreeIndexImpl.SequentialBuild
         } else {
             // we don't have a full block span.
             midFullBlockSpanKey = -1;
-            midFullBlockSpanLen = 0;  // not used in this case.
+            midFullBlockSpanLen = 0; // not used in this case.
         }
 
         // Let's see if we have an ending container block.
@@ -210,7 +211,7 @@ public class RspBitmapSequentialBuilder implements TreeIndexImpl.SequentialBuild
         } else {
             // we don't have an ending container.
             endingContainerKey = -1;
-            endingContainerEnd = 0;  // not used in this case.
+            endingContainerEnd = 0; // not used in this case.
         }
 
         if (initialContainerKey != -1) {

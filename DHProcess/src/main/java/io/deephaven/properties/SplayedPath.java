@@ -19,11 +19,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
- * A splayed path is a {@link PropertySet} where the fully resolved file paths represent property
- * keys and the corresponding contents of each file represents the property value. It is meant to
- * represent a standardized interface for property keys and values that can be read or written
- * to from a variety of tools. It is straightforward in the sense that there is no order-dependent
- * parsing logic.
+ * A splayed path is a {@link PropertySet} where the fully resolved file paths represent property keys and the
+ * corresponding contents of each file represents the property value. It is meant to represent a standardized interface
+ * for property keys and values that can be read or written to from a variety of tools. It is straightforward in the
+ * sense that there is no order-dependent parsing logic.
  */
 public class SplayedPath {
 
@@ -37,18 +36,18 @@ public class SplayedPath {
     private final boolean trim;
 
     /**
-     * Property keys are essentially "flat" keys, and that doesn't mesh well with a filesystem
-     * directory/file structure when one key is a prefix of another key. For example, the JVM might
-     * have the system properties {@code file.encoding} and {@code file.encoding.pkg}. We can't have
-     * both {@code <path>/file/encoding} and {@code <path>/file/encoding/pkg} as files. To work
-     * around this, we can append a specific filename to the filesystem paths as such:
-     * {@code <path>/file/encoding/__value} and {@code <path>/file/encoding/pkg/__value}.
+     * Property keys are essentially "flat" keys, and that doesn't mesh well with a filesystem directory/file structure
+     * when one key is a prefix of another key. For example, the JVM might have the system properties
+     * {@code file.encoding} and {@code file.encoding.pkg}. We can't have both {@code <path>/file/encoding} and
+     * {@code <path>/file/encoding/pkg} as files. To work around this, we can append a specific filename to the
+     * filesystem paths as such: {@code <path>/file/encoding/__value} and {@code <path>/file/encoding/pkg/__value}.
      *
-     * <p>If writing/reading unrestricted properties (such as system properties), a value based
-     * approach should be taken.
+     * <p>
+     * If writing/reading unrestricted properties (such as system properties), a value based approach should be taken.
      *
-     * <p>If writing/reading restricted properties (ie, if we place a no-prefix restriction on
-     * application properties), a non-value based approach can be taken.
+     * <p>
+     * If writing/reading restricted properties (ie, if we place a no-prefix restriction on application properties), a
+     * non-value based approach can be taken.
      */
     private final boolean isValueBased;
 
@@ -58,8 +57,8 @@ public class SplayedPath {
         this.path = Objects.requireNonNull(path);
         if (!path.getFileSystem().equals(FileSystems.getDefault())) {
             throw new UnsupportedOperationException(String.format(
-                "Expected path to be a default filesystem path. Instead is: %s",
-                path.getFileSystem()));
+                    "Expected path to be a default filesystem path. Instead is: %s",
+                    path.getFileSystem()));
         }
         this.trim = trim;
         this.isValueBased = isValueBased;
@@ -89,20 +88,17 @@ public class SplayedPath {
 
     // If we need more fine-grained write access in the future, we may want to expose this.
     /**
-     * A {@link PropertyVisitor} writer to the splayed path. The visitor may throw
-     * {@link UncheckedIOException}s.
+     * A {@link PropertyVisitor} writer to the splayed path. The visitor may throw {@link UncheckedIOException}s.
      *
-     * <p>Prefer {@link #write(PropertySet)} if applicable.
+     * <p>
+     * Prefer {@link #write(PropertySet)} if applicable.
      *
      * @return the visitor
      * @throws IOException
      */
     /*
-    public PropertyVisitor asUnsafeWriter() throws IOException {
-        check();
-        return writer;
-    }
-    */
+     * public PropertyVisitor asUnsafeWriter() throws IOException { check(); return writer; }
+     */
 
     /**
      * This visitor is used only *after* {@link #check()} has been invoked.
@@ -143,7 +139,7 @@ public class SplayedPath {
                     continue;
                 }
                 final BasicFileAttributes attributes = Files
-                    .readAttributes(key, BasicFileAttributes.class);
+                        .readAttributes(key, BasicFileAttributes.class);
                 if (!attributes.isRegularFile()) {
                     continue;
                 }
@@ -158,23 +154,16 @@ public class SplayedPath {
 
     // If we need more fine-grained read access in the future, we may want to expose this.
     /**
-     * A {@link PropertySet} reader of the splayed path. The property set may throw a
-     * {@link UncheckedIOException}s.
+     * A {@link PropertySet} reader of the splayed path. The property set may throw a {@link UncheckedIOException}s.
      *
-     * <p>Prefer {@link #readTo(PropertyVisitor)} if applicable.
+     * <p>
+     * Prefer {@link #readTo(PropertyVisitor)} if applicable.
      *
      * @return the property set
      */
     /*
-    public PropertySet asUnsafePropertySet() {
-        return visitor -> {
-            try {
-                readTo(visitor);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        };
-    }
+     * public PropertySet asUnsafePropertySet() { return visitor -> { try { readTo(visitor); } catch (IOException e) {
+     * throw new UncheckedIOException(e); } }; }
      */
 
     // --------------------------------------------------------------------------------------------
@@ -184,23 +173,21 @@ public class SplayedPath {
     }
 
     private String toString(byte[] bytes) {
-        return trim ?
-            new String(bytes, StandardCharsets.UTF_8).trim() :
-            new String(bytes, StandardCharsets.UTF_8);
+        return trim ? new String(bytes, StandardCharsets.UTF_8).trim() : new String(bytes, StandardCharsets.UTF_8);
     }
 
     private String pathToString(Path key) {
         if (isValueBased) {
             if (!key.endsWith(VALUE_PATH)) {
                 throw new IllegalStateException(
-                    String.format("Expected path to be a value path, is not: '%s'", key));
+                        String.format("Expected path to be a value path, is not: '%s'", key));
             }
             key = key.getParent();
         }
         final String relative = path.relativize(key).toString();
         if (relative.indexOf(SEPARATOR) != -1) {
             throw new IllegalStateException(String.format(
-                "Unable to translate path that has '%s' in it.", SEPARATOR));
+                    "Unable to translate path that has '%s' in it.", SEPARATOR));
         }
         return relative.replace(FS_SEPARATOR, SEPARATOR);
     }
@@ -210,8 +197,6 @@ public class SplayedPath {
         for (String part : SEPARATOR_PATTERN.split(key)) {
             next = next.resolve(part);
         }
-        return isValueBased ?
-            next.resolve(VALUE_NAME) :
-            next;
+        return isValueBased ? next.resolve(VALUE_NAME) : next;
     }
 }

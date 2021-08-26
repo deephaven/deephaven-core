@@ -28,10 +28,12 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 /**
  * An object representing a timepoint in Deephaven.
  *
- * <p>The DBDateTime object is a timepoint, that is a precise instance in time without respect to timezones.  The
- * timepoint is stored as a signed 64-bit long nanoseconds since the epoch (January 1, 1970, 00:00:00 GMT).  This
- * provides a range from 1677-09-21T00:12:43.146-775807 UTC to 2262-04-11T23:47:16.854775807 UTC.  The minimum long
- * value is reserved for {@link QueryConstants#NULL_LONG} and therefore is not permitted as a valid DBDateTime.</p>
+ * <p>
+ * The DBDateTime object is a timepoint, that is a precise instance in time without respect to timezones. The timepoint
+ * is stored as a signed 64-bit long nanoseconds since the epoch (January 1, 1970, 00:00:00 GMT). This provides a range
+ * from 1677-09-21T00:12:43.146-775807 UTC to 2262-04-11T23:47:16.854775807 UTC. The minimum long value is reserved for
+ * {@link QueryConstants#NULL_LONG} and therefore is not permitted as a valid DBDateTime.
+ * </p>
  */
 @TypeUtils.IsDateTime
 @ReflexiveUse(referrers = "io.deephaven.gui.table.filters.StringFilterData")
@@ -51,14 +53,16 @@ public final class DBDateTime implements Comparable<DBDateTime>, Externalizable 
     /**
      * Create a new DBDatetime initialized to the epoch.
      */
-    public DBDateTime(){
-        //for Externalizable
+    public DBDateTime() {
+        // for Externalizable
     }
 
     /**
      * Create a new DBDatetime initialized to the current time.
      *
-     * <p>The precision of DBDateTime is nanoseconds, but the resolution of the now method is currently microseconds.</p>
+     * <p>
+     * The precision of DBDateTime is nanoseconds, but the resolution of the now method is currently microseconds.
+     * </p>
      *
      * @return a new DBDateTime initialized to the current time.
      */
@@ -80,26 +84,26 @@ public final class DBDateTime implements Comparable<DBDateTime>, Externalizable 
      *
      * @return the number of nanoseconds since the epoch
      */
-    public long getNanos(){
+    public long getNanos() {
         return nanos;
     }
 
     /**
      * Get this time represented as microseconds since the epoch
-
+     * 
      * @return the number of microseconds since the epoch
      */
-    public long getMicros(){
-        return nanos/1000;
+    public long getMicros() {
+        return nanos / 1000;
     }
 
     /**
      * Get this time represented as milliseconds since the epoch
-
+     * 
      * @return the number of milliseconds since the epoch
      */
-    public long getMillis(){
-        return nanos/1000000;
+    public long getMillis() {
+        return nanos / 1000000;
     }
 
     /**
@@ -107,8 +111,8 @@ public final class DBDateTime implements Comparable<DBDateTime>, Externalizable 
      *
      * @return the number of nanoseconds after the nearest millisecond.
      */
-    public long getNanosPartial(){
-        return nanos%1000000;
+    public long getNanosPartial() {
+        return nanos % 1000000;
     }
 
     /**
@@ -118,7 +122,7 @@ public final class DBDateTime implements Comparable<DBDateTime>, Externalizable 
      *
      * @return a Java Date representing this DBDateTime
      */
-    public Date getDate(){
+    public Date getDate() {
         return new Date(getMillis());
     }
 
@@ -129,7 +133,7 @@ public final class DBDateTime implements Comparable<DBDateTime>, Externalizable 
      *
      * @return a Joda DateTime representing this DBDateTime
      */
-    public DateTime getJodaDateTime(){
+    public DateTime getJodaDateTime() {
         return new DateTime(getMillis());
     }
 
@@ -142,7 +146,7 @@ public final class DBDateTime implements Comparable<DBDateTime>, Externalizable 
      *
      * @return a Joda DateTime representing this DBDateTime
      */
-    public DateTime getJodaDateTime(DBTimeZone timeZone){
+    public DateTime getJodaDateTime(DBTimeZone timeZone) {
         return new DateTime(getMillis(), timeZone.getTimeZone());
     }
 
@@ -152,8 +156,8 @@ public final class DBDateTime implements Comparable<DBDateTime>, Externalizable 
      * @return a Java Instant representing this DBDateTime
      */
     public Instant getInstant() {
-        long epochSecond = nanos/1000000000;
-        long nanoAdjustment = nanos%1000000000;
+        long epochSecond = nanos / 1000000000;
+        long nanoAdjustment = nanos % 1000000000;
         return Instant.ofEpochSecond(epochSecond, nanoAdjustment);
     }
 
@@ -168,15 +172,15 @@ public final class DBDateTime implements Comparable<DBDateTime>, Externalizable 
         if (!(that instanceof DBDateTime)) {
             return false;
         }
-        return nanos == ((DBDateTime)that).nanos;
+        return nanos == ((DBDateTime) that).nanos;
     }
 
     public int hashCode() {
-        return (int)(nanos ^ (nanos >>> 32));
+        return (int) (nanos ^ (nanos >>> 32));
     }
 
     public int compareTo(DBDateTime dateTime) {
-        return (nanos<dateTime.nanos ? -1 : (nanos==dateTime.nanos ? 0 : 1));
+        return (nanos < dateTime.nanos ? -1 : (nanos == dateTime.nanos ? 0 : 1));
     }
 
     @Override
@@ -187,14 +191,17 @@ public final class DBDateTime implements Comparable<DBDateTime>, Externalizable 
     /**
      * Convert this DBDateTime into a String using the provided {@link DBTimeZone}.
      *
-     * <p>The date will be formatted as {@code yyyy-MM-DDThh:mm:ss.SSSSSSSSS TZ}, for example
-     * {@code 2020-05-27T13:37:57.780853000 NY} or {@code 2020-05-27T17:37:42.763641000 UTC}.</p>
+     * <p>
+     * The date will be formatted as {@code yyyy-MM-DDThh:mm:ss.SSSSSSSSS TZ}, for example
+     * {@code 2020-05-27T13:37:57.780853000 NY} or {@code 2020-05-27T17:37:42.763641000 UTC}.
+     * </p>
      *
      * @param timeZone the timezone for formatting the string
      * @return a String representation of this DBDateTime
      */
     public String toString(DBTimeZone timeZone) {
-        return dateTimeFormat.withZone(timeZone.getTimeZone()).print(getMillis()) + StringUtils.pad(String.valueOf(getNanosPartial()), 6, '0') + " " + timeZone.toString().substring(3);
+        return dateTimeFormat.withZone(timeZone.getTimeZone()).print(getMillis())
+                + StringUtils.pad(String.valueOf(getNanosPartial()), 6, '0') + " " + timeZone.toString().substring(3);
     }
 
     /**
@@ -223,7 +230,7 @@ public final class DBDateTime implements Comparable<DBDateTime>, Externalizable 
      * @return The date (yyyy-MM-dd) represented by this {@code DBDateTime} in the given {@code timeZone}
      */
     public String toDateString(DateTimeZone timeZone) {
-        if(timeZone == null) {
+        if (timeZone == null) {
             throw new IllegalArgumentException("timeZone cannot be null");
         }
         return dateFormat.withZone(timeZone).print(getMillis());
@@ -233,7 +240,8 @@ public final class DBDateTime implements Comparable<DBDateTime>, Externalizable 
      * Get the date represented by this DBDateTime in the time zone specified by {@code zoneId}
      *
      * @param zoneId A java time zone ID string
-     * @return The date (yyyy-MM-dd) represented by this {@code DBDateTime} in time zone represented by the given {@code zoneId}
+     * @return The date (yyyy-MM-dd) represented by this {@code DBDateTime} in time zone represented by the given
+     *         {@code zoneId}
      */
     public String toDateString(String zoneId) {
         return toDateString(ZoneId.of(zoneId));
@@ -246,7 +254,7 @@ public final class DBDateTime implements Comparable<DBDateTime>, Externalizable 
      * @return The date (yyyy-MM-dd) represented by this {@code DBDateTime} in the given {@code timeZone}
      */
     public String toDateString(ZoneId timeZone) {
-        if(timeZone == null) {
+        if (timeZone == null) {
             throw new IllegalArgumentException("timeZone cannot be null");
         }
         return ISO_LOCAL_DATE.format(ZonedDateTime.ofInstant(getInstant(), timeZone));
@@ -257,6 +265,6 @@ public final class DBDateTime implements Comparable<DBDateTime>, Externalizable 
     }
 
     public void readExternal(ObjectInput in) throws IOException {
-        nanos=in.readLong();
+        nanos = in.readLong();
     }
 }

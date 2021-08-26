@@ -16,21 +16,21 @@ import static io.deephaven.util.QueryConstants.*;
 
 public class ColumnComparatorFactory {
     /**
-     * Produce an {@link IComparator} specialized for a given left and right {@link ColumnSource}.
-     * To do this we look at the underlying types of the column sources (actually we require those underlying types to
-     * be the same) and we use this information to call the specific primitive type getter method (whether {@link ColumnSource#getDouble},
-     * {@link ColumnSource#getLong} and so on). This approach allows us to avoid boxing on these calls. We use a similar approach in order
-     * to test the null-ness of a given element.
+     * Produce an {@link IComparator} specialized for a given left and right {@link ColumnSource}. To do this we look at
+     * the underlying types of the column sources (actually we require those underlying types to be the same) and we use
+     * this information to call the specific primitive type getter method (whether {@link ColumnSource#getDouble},
+     * {@link ColumnSource#getLong} and so on). This approach allows us to avoid boxing on these calls. We use a similar
+     * approach in order to test the null-ness of a given element.
      *
-     * This method is not especially efficient, but (because we are typically not being called from an inner loop),
-     * that fact is probably not relevant for performance. The point is that the returned IComparator *is*
-     * rather efficient.
+     * This method is not especially efficient, but (because we are typically not being called from an inner loop), that
+     * fact is probably not relevant for performance. The point is that the returned IComparator *is* rather efficient.
+     * 
      * @param lcs The left-hand ColumnSource (uses current values)
      * @param rcs The right-hand ColumnSource (uses current values)
      * @return An AbstractColumnSource.IComparator designed to compare elements from the two column sources.
      */
     public static IComparator createComparator(final ColumnSource lcs,
-                                               final ColumnSource rcs) {
+            final ColumnSource rcs) {
         final Class lType = lcs.getType();
         final Class rType = rcs.getType();
         Assert.eq(lType, "lType", rType, "rType");
@@ -84,15 +84,16 @@ public class ColumnComparatorFactory {
     }
 
     /**
-     * Produce an {@link IComparator} specialized for a given left and right {@link ColumnSource}.
-     * To do this we look at the underlying types of the column sources (actually we require those underlying types to
-     * be the same) and we use this information to call the specific primitive type getter method (whether {@link ColumnSource#getDouble},
-     * {@link ColumnSource#getLong} and so on). This approach allows us to avoid boxing on these calls. We use a similar approach in order
-     * to test the null-ness of a given element.
+     * Produce an {@link IComparator} specialized for a given left and right {@link ColumnSource}. To do this we look at
+     * the underlying types of the column sources (actually we require those underlying types to be the same) and we use
+     * this information to call the specific primitive type getter method (whether {@link ColumnSource#getDouble},
+     * {@link ColumnSource#getLong} and so on). This approach allows us to avoid boxing on these calls. We use a similar
+     * approach in order to test the null-ness of a given element.
      *
-     * This method is not especially efficient, but (because we are typically not being called from an inner loop),
-     * that fact is probably not relevant for performance. The point is that the returned IComparatorEnhanced *is*
-     * rather efficient.
+     * This method is not especially efficient, but (because we are typically not being called from an inner loop), that
+     * fact is probably not relevant for performance. The point is that the returned IComparatorEnhanced *is* rather
+     * efficient.
+     * 
      * @param lcs The left-hand ColumnSource (uses current values)
      * @param rcs The right-hand ColumnSource (uses previous values)
      * @return An AbstractColumnSource.IComparator designed to compare elements from the two column sources.

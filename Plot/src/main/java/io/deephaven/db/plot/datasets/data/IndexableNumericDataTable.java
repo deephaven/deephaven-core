@@ -11,8 +11,7 @@ import io.deephaven.db.plot.util.tables.ColumnHandlerFactory;
 import io.deephaven.db.plot.util.tables.TableHandle;
 
 /**
- * {@link IndexableData} dataset whose data is a column in a table
- * and whose indices are the row numbers of the column.
+ * {@link IndexableData} dataset whose data is a column in a table and whose indices are the row numbers of the column.
  *
  * The column must be numeric.
  */
@@ -34,19 +33,20 @@ public class IndexableNumericDataTable extends LiveIndexableNumericData {
 
         this.columnHandler = columnHandler;
 
-        if(!this.columnHandler.typeClassification().isNumeric()) {
-            throw new PlotUnsupportedOperationException("Attempting to create a dataseries with a non-numeric column: column=" + columnHandler.getColumnName(), this);
+        if (!this.columnHandler.typeClassification().isNumeric()) {
+            throw new PlotUnsupportedOperationException(
+                    "Attempting to create a dataseries with a non-numeric column: column="
+                            + columnHandler.getColumnName(),
+                    this);
         }
 
     }
 
     /**
-     * Creates an IndexableNumericDataTable instance.
-     * The numeric data is a {@code column} in the table held by {@code tableHandle}.
-     * Indices are the row numbers of the column.
+     * Creates an IndexableNumericDataTable instance. The numeric data is a {@code column} in the table held by
+     * {@code tableHandle}. Indices are the row numbers of the column.
      *
-     * @throws io.deephaven.base.verify.RequirementFailure {@code tableHandle} and
-     *                                              {@code column} must not be null
+     * @throws io.deephaven.base.verify.RequirementFailure {@code tableHandle} and {@code column} must not be null
      * @throws IllegalArgumentException {@code column} must be a column in {@code tableHandle}
      * @throws UnsupportedOperationException {@code column} must be numeric
      * @param tableHandle holds the table
@@ -57,10 +57,14 @@ public class IndexableNumericDataTable extends LiveIndexableNumericData {
     }
 
     @Override
-    public int size() { return columnHandler.size(); }
+    public int size() {
+        return columnHandler.size();
+    }
 
     @Override
-    public double get(final int i) { return columnHandler.getDouble(i); }
+    public double get(final int i) {
+        return columnHandler.getDouble(i);
+    }
 
     public ColumnHandlerFactory.ColumnHandler getColumnHandler() {
         return columnHandler;

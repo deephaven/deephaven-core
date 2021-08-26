@@ -67,8 +67,7 @@ public class JsSeries {
     }
 
     /**
-     * JS doesn't support method overloads, so we just ignore this one and mark the arg
-     * as optional in the JS version.
+     * JS doesn't support method overloads, so we just ignore this one and mark the arg as optional in the JS version.
      */
     @JsIgnore
     public void subscribe() {
@@ -80,6 +79,7 @@ public class JsSeries {
         subscribed = true;
         jsFigure.enqueueSubscriptionCheck();
     }
+
     public void unsubscribe() {
         markUnsubscribed();
         jsFigure.enqueueSubscriptionCheck();
@@ -137,11 +137,11 @@ public class JsSeries {
         return descriptor.getLineColor();
     }
 
-    //TODO (deephaven-core#774) finish this field or remove it from the DSL
-//    @JsProperty
-//    public String getLineStyle() {
-//        return descriptor.getLineStyle();
-//    }
+    // TODO (deephaven-core#774) finish this field or remove it from the DSL
+    // @JsProperty
+    // public String getLineStyle() {
+    // return descriptor.getLineStyle();
+    // }
 
     @JsProperty
     public String getPointLabelFormat() {

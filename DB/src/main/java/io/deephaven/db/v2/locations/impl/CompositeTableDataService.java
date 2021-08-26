@@ -17,8 +17,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Routing {@link TableDataService} that applies a selector function to pick service(s) for each request.
- * It is assumed that each service will provide access to a non-overlapping set of table locations for any table key.
+ * Routing {@link TableDataService} that applies a selector function to pick service(s) for each request. It is assumed
+ * that each service will provide access to a non-overlapping set of table locations for any table key.
  */
 public class CompositeTableDataService extends AbstractTableDataService {
 
@@ -46,7 +46,7 @@ public class CompositeTableDataService extends AbstractTableDataService {
     }
 
     /**
-     * @param name            optional name for this service
+     * @param name optional name for this service
      * @param serviceSelector Function to map a table key to a set of services that should be queried.
      */
     public CompositeTableDataService(@NotNull String name, @NotNull final ServiceSelector serviceSelector) {
@@ -86,9 +86,11 @@ public class CompositeTableDataService extends AbstractTableDataService {
         private final List<TableLocationProvider> inputProviders;
         private final String implementationName;
 
-        private TableLocationProviderImpl(@NotNull final TableDataService[] inputServices, @NotNull final TableKey tableKey) {
+        private TableLocationProviderImpl(@NotNull final TableDataService[] inputServices,
+                @NotNull final TableKey tableKey) {
             this.tableKey = tableKey.makeImmutable();
-            inputProviders = Arrays.stream(inputServices).map(s -> s.getTableLocationProvider(this.tableKey)).collect(Collectors.toList());
+            inputProviders = Arrays.stream(inputServices).map(s -> s.getTableLocationProvider(this.tableKey))
+                    .collect(Collectors.toList());
             implementationName = "Composite-" + inputProviders;
         }
 
@@ -154,11 +156,13 @@ public class CompositeTableDataService extends AbstractTableDataService {
                                     .filter(inputProvider -> inputProvider.hasTableLocationKey(duplicateLocationKey))
                                     .map(TableLocationProvider::getName)
                                     .collect(Collectors.joining(","));
-                            throw new TableDataException("Data Routing Configuration error: TableDataService elements overlap at location " +
-                                    duplicateLocationKey +
-                                    " in providers " + overlappingProviders +
-                                    ". Full TableDataService configuration:\n" +
-                                    Formatter.formatTableDataService(CompositeTableDataService.this.toString()));
+                            throw new TableDataException(
+                                    "Data Routing Configuration error: TableDataService elements overlap at location " +
+                                            duplicateLocationKey +
+                                            " in providers " + overlappingProviders +
+                                            ". Full TableDataService configuration:\n" +
+                                            Formatter
+                                                    .formatTableDataService(CompositeTableDataService.this.toString()));
                         });
                 return Collections.unmodifiableCollection(locationKeys);
             }
@@ -166,7 +170,8 @@ public class CompositeTableDataService extends AbstractTableDataService {
 
         @Override
         public boolean hasTableLocationKey(@NotNull final TableLocationKey tableLocationKey) {
-            return inputProviders.stream().anyMatch(inputProvider -> inputProvider.hasTableLocationKey(tableLocationKey));
+            return inputProviders.stream()
+                    .anyMatch(inputProvider -> inputProvider.hasTableLocationKey(tableLocationKey));
         }
 
         @Override
@@ -216,16 +221,17 @@ public class CompositeTableDataService extends AbstractTableDataService {
                 '}';
     }
 
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // Location key definition implementation
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
-    private static final class KeyKeyDefinition extends KeyedObjectKey.Basic<ImmutableTableLocationKey, ImmutableTableLocationKey> {
+    private static final class KeyKeyDefinition
+            extends KeyedObjectKey.Basic<ImmutableTableLocationKey, ImmutableTableLocationKey> {
 
-        private static final KeyedObjectKey<ImmutableTableLocationKey, ImmutableTableLocationKey> INSTANCE = new KeyKeyDefinition();
+        private static final KeyedObjectKey<ImmutableTableLocationKey, ImmutableTableLocationKey> INSTANCE =
+                new KeyKeyDefinition();
 
-        private KeyKeyDefinition() {
-        }
+        private KeyKeyDefinition() {}
 
         @Override
         public ImmutableTableLocationKey getKey(@NotNull final ImmutableTableLocationKey tableLocationKey) {

@@ -13,10 +13,11 @@ import java.lang.management.ThreadMXBean;
 public final class SunThreadMXBeanThreadProfiler extends ThreadMXBeanThreadProfiler<com.sun.management.ThreadMXBean> {
 
     @VisibleForTesting
-    static final boolean TRY_ENABLE_THREAD_ALLOCATED_MEMORY = Configuration.getInstance().getBooleanForClassWithDefault(SunThreadMXBeanThreadProfiler.class, "tryEnableThreadAllocatedMemory", true);
+    static final boolean TRY_ENABLE_THREAD_ALLOCATED_MEMORY = Configuration.getInstance()
+            .getBooleanForClassWithDefault(SunThreadMXBeanThreadProfiler.class, "tryEnableThreadAllocatedMemory", true);
 
     // NB: This class may need to be moved to a JDK-specific source set at some future date, if and when we add support
-    //     to compile on other JDKs.
+    // to compile on other JDKs.
 
     /**
      * Whether thread allocated memory measurements are supported.
@@ -29,14 +30,18 @@ public final class SunThreadMXBeanThreadProfiler extends ThreadMXBeanThreadProfi
             return;
         }
 
-        if (threadMXBean.isThreadAllocatedMemorySupported() && !threadMXBean.isThreadAllocatedMemoryEnabled() && TRY_ENABLE_THREAD_ALLOCATED_MEMORY) {
+        if (threadMXBean.isThreadAllocatedMemorySupported() && !threadMXBean.isThreadAllocatedMemoryEnabled()
+                && TRY_ENABLE_THREAD_ALLOCATED_MEMORY) {
             try {
                 threadMXBean.setThreadAllocatedMemoryEnabled(true);
             } catch (UnsupportedOperationException e) {
-                throw new UnsupportedOperationException("Failed to enable thread allocated memory - set SunThreadMXBeanThreadProfiler.tryEnableThreadAllocatedMemory=false to proceed without it", e);
+                throw new UnsupportedOperationException(
+                        "Failed to enable thread allocated memory - set SunThreadMXBeanThreadProfiler.tryEnableThreadAllocatedMemory=false to proceed without it",
+                        e);
             }
         }
-        memoryProfilingAvailable = threadMXBean.isThreadAllocatedMemorySupported() && threadMXBean.isThreadAllocatedMemoryEnabled();
+        memoryProfilingAvailable =
+                threadMXBean.isThreadAllocatedMemorySupported() && threadMXBean.isThreadAllocatedMemoryEnabled();
     }
 
     @Override

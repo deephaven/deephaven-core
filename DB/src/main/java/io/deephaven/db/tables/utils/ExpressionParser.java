@@ -13,7 +13,8 @@ import java.util.Map;
 import java.util.LinkedHashMap;
 
 /**
- * A parser that will try a set of {@link ExpressionFactory}s and attempt to parse the expression until one of them succeeds.
+ * A parser that will try a set of {@link ExpressionFactory}s and attempt to parse the expression until one of them
+ * succeeds.
  *
  * @param <TYPE> The expected type of the parsed expression
  */
@@ -21,7 +22,8 @@ public class ExpressionParser<TYPE> {
     private Map<Pattern, ExpressionFactory<TYPE>> expressions = new LinkedHashMap<>();
 
     /**
-     * Attempt to process the expression using the {@link #registerFactory(ExpressionFactory) configured} {@link ExpressionFactory factories}
+     * Attempt to process the expression using the {@link #registerFactory(ExpressionFactory) configured}
+     * {@link ExpressionFactory factories}
      *
      * @param expression the expression to parse
      * @return The result of the parsing
@@ -43,10 +45,11 @@ public class ExpressionParser<TYPE> {
                 }
             }
         }
-        if(creationException == null) {
+        if (creationException == null) {
             throw new ExpressionException("Unable to parse expression: \"" + expression + "\"", expression);
         } else {
-            throw new ExpressionException("Failed to get expression for all matched patterns", creationException, expression);
+            throw new ExpressionException("Failed to get expression for all matched patterns", creationException,
+                    expression);
         }
     }
 
@@ -56,6 +59,6 @@ public class ExpressionParser<TYPE> {
      * @param expressionFactory the factory
      */
     public void registerFactory(ExpressionFactory<TYPE> expressionFactory) {
-        expressions.put(Pattern.compile(expressionFactory.getPattern()),expressionFactory);
+        expressions.put(Pattern.compile(expressionFactory.getPattern()), expressionFactory);
     }
 }

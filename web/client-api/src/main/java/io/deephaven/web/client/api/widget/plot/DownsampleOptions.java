@@ -17,8 +17,8 @@ public final class DownsampleOptions {
      */
     public static int MAX_SUBSCRIPTION_SIZE = 200_000;
     /**
-     * Flag to let the API decide what data will be available, based on the nature of the data, the series, and how the axes are
-     * configured.
+     * Flag to let the API decide what data will be available, based on the nature of the data, the series, and how the
+     * axes are configured.
      */
     public static final DownsampleOptions DEFAULT = new DownsampleOptions();
 
@@ -28,6 +28,5 @@ public final class DownsampleOptions {
      */
     public static final DownsampleOptions DISABLE = new DownsampleOptions();
 
-    private DownsampleOptions() {
-    }
+    private DownsampleOptions() {}
 }

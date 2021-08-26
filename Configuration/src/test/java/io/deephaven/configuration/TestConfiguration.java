@@ -12,8 +12,9 @@ import java.util.List;
 /**
  * Test suite for Configuration.
  *
- * Must provide a Configuration.rootFile property in the VM arguments when running from IntelliJ, even though we set that in most of the tests.
- * -ea -DConfiguration.rootFile=resources/lib-tests.prop -Ddevroot=/ -Dworkspace=/ -DcacheDir=/cache
+ * Must provide a Configuration.rootFile property in the VM arguments when running from IntelliJ, even though we set
+ * that in most of the tests. -ea -DConfiguration.rootFile=resources/lib-tests.prop -Ddevroot=/ -Dworkspace=/
+ * -DcacheDir=/cache
  */
 public class TestConfiguration extends TestCase {
     private final String FILENAME_PROPERTY = Configuration.getInstance().getConfFileProperty();
@@ -21,6 +22,7 @@ public class TestConfiguration extends TestCase {
 
     /**
      * Restore previous configuration values after running the tests.
+     * 
      * @throws Exception If reloading the old properties file somehow fails
      */
     @After
@@ -76,6 +78,7 @@ public class TestConfiguration extends TestCase {
 
     /**
      * Verify that the 'includes' mechanism works property
+     * 
      * @throws Exception If the configuration cannot be loaded
      */
     public void testIncludes() throws Exception {
@@ -105,7 +108,7 @@ public class TestConfiguration extends TestCase {
         assertTrue(Configuration.getInstance().getWorkspacePath("cacheDir").endsWith("cache"));
 
         try {
-            //noinspection SpellCheckingInspection
+            // noinspection SpellCheckingInspection
             Configuration.getInstance().getProperty("NonExistant"); // Intentional misspelling
             fail("Expected exception");
         } catch (PropertyException expected) {
@@ -113,7 +116,7 @@ public class TestConfiguration extends TestCase {
         }
 
         try {
-            System.setProperty(FILENAME_PROPERTY,  "nonexistent");
+            System.setProperty(FILENAME_PROPERTY, "nonexistent");
             Configuration.TEST_NEW_Configuration();
             fail("Expected exception");
         } catch (ConfigurationException expected) {
@@ -125,7 +128,7 @@ public class TestConfiguration extends TestCase {
         System.out.println(Configuration.getInstance().lookupPath("testconfig"));
         assertTrue(Configuration.getInstance().lookupPath("testconfig").indexOf("test") > 0);
         try {
-            //noinspection SpellCheckingInspection
+            // noinspection SpellCheckingInspection
             Configuration.getInstance().lookupPath("nonexistant"); // Intentional misspelling
             fail("Didn't catch expected exception");
         } catch (ConfigurationException ignored) {
@@ -190,13 +193,15 @@ public class TestConfiguration extends TestCase {
         } catch (ConfigurationException e) {
             // Expected
         } catch (Exception e) {
-            fail("Received unexpected error while checking for reserved keyword used as declaration: " + e.getMessage());
+            fail("Received unexpected error while checking for reserved keyword used as declaration: "
+                    + e.getMessage());
 
         }
     }
 
     /**
-     * Verify that loading context-sensitive configuration files works correctly, both with a known system property and an on-the-fly property
+     * Verify that loading context-sensitive configuration files works correctly, both with a known system property and
+     * an on-the-fly property
      */
     public void testContext() throws Exception {
         final String oldProcessName = System.getProperty(ConfigurationContext.PROCESS_NAME_PROPERTY);
@@ -254,7 +259,8 @@ public class TestConfiguration extends TestCase {
             assertEquals("P", Configuration.getInstance().getStringWithDefault("cval", "FAIL"));
 
         } finally {
-            if (oldProcessName != null) System.setProperty("process.name", oldProcessName);
+            if (oldProcessName != null)
+                System.setProperty("process.name", oldProcessName);
             System.clearProperty(testProp);
         }
 
@@ -281,14 +287,15 @@ public class TestConfiguration extends TestCase {
 
             assertEquals("something", Configuration.getInstance().getStringWithDefault("multiprop2", "FAIL"));
         } finally {
-            if (oldProcessName != null) System.setProperty("process.name", oldProcessName);
+            if (oldProcessName != null)
+                System.setProperty("process.name", oldProcessName);
             System.clearProperty(testProp);
         }
     }
 
-            /**
-             * Test that 'final' declarations are handled properly
-             */
+    /**
+     * Test that 'final' declarations are handled properly
+     */
     public void testFinalDeclaration() {
         runTestsOnFinalKeyword("resources/final-test.prop", "final", "", "foo", "foo");
     }
@@ -316,17 +323,19 @@ public class TestConfiguration extends TestCase {
     }
 
     /**
-     * Verify that we can either create an error or a warning when a declaration previously named 'final' is modified later.
+     * Verify that we can either create an error or a warning when a declaration previously named 'final' is modified
+     * later.
      *
      * @param filename The name of the file to load, generally from the resources directory within this project
      * @param contextName The process name to use while loading the configuration file
-     * @param beforeValue The value that the 'beforetest' property should have at the end of this test. If 'beforetest' is
-     *                    explicitly set, then that value should appear (since it was parsed before the error happened).
-     *                    If 'beforetest' is not explicitly set but is created by an empty declaration or the 'final' keyword,
-     *                    then it should have a value of empty-string. If 'beforetest' was created by a 'finalize' declaration,
-     *                    then it has no value at all, so the default value of 'FAIL' should be returned.
+     * @param beforeValue The value that the 'beforetest' property should have at the end of this test. If 'beforetest'
+     *        is explicitly set, then that value should appear (since it was parsed before the error happened). If
+     *        'beforetest' is not explicitly set but is created by an empty declaration or the 'final' keyword, then it
+     *        should have a value of empty-string. If 'beforetest' was created by a 'finalize' declaration, then it has
+     *        no value at all, so the default value of 'FAIL' should be returned.
      */
-    private void runTestsOnFinalKeyword(final String filename, final String contextName, final String beforeValue, final String finalTestValue, final String includeValue) {
+    private void runTestsOnFinalKeyword(final String filename, final String contextName, final String beforeValue,
+            final String finalTestValue, final String includeValue) {
         final String oldProcessName = System.getProperty(ConfigurationContext.PROCESS_NAME_PROPERTY);
         final String testPropContextIdentifier = "testbatch";
         final String beforeTestProperty = "beforetest";
@@ -343,22 +352,25 @@ public class TestConfiguration extends TestCase {
                 Configuration.getInstance().reloadProperties();
                 fail("Did not catch re-set final declaration");
             } catch (ConfigurationException e) {
-                // expected; this configuration tries to re-set a final declaration or includes a file in the wrong place.
+                // expected; this configuration tries to re-set a final declaration or includes a file in the wrong
+                // place.
                 String a = e.getMessage();
             } catch (Exception e) {
                 fail("Unexpected exception while checking for re-set final declaration: " + e.getMessage());
             }
-            // The 'before' line should load with an empty value, unless it was declared with a 'finalize' statement and so is null.
+            // The 'before' line should load with an empty value, unless it was declared with a 'finalize' statement and
+            // so is null.
             assertEquals(beforeValue, Configuration.getInstance().getStringWithDefault(beforeTestProperty, "FAIL"));
             // the 'final' line should have the original value, unless it was not loaded
             assertEquals(finalTestValue, Configuration.getInstance().getStringWithDefault(finalTestProperty, "FAIL"));
             // The 'after' line should not be loaded, since this should always come after some exception
             assertEquals("NOTHING", Configuration.getInstance().getStringWithDefault(afterTestProperty, "NOTHING"));
             // The 'includetest' line should be loaded with its initial value, unless it was changed or failed to load
-            assertEquals(includeValue,Configuration.getInstance().getStringWithDefault("includetest", "FAIL"));
+            assertEquals(includeValue, Configuration.getInstance().getStringWithDefault("includetest", "FAIL"));
 
         } finally {
-            if (oldProcessName != null) System.setProperty(ConfigurationContext.PROCESS_NAME_PROPERTY, oldProcessName);
+            if (oldProcessName != null)
+                System.setProperty(ConfigurationContext.PROCESS_NAME_PROPERTY, oldProcessName);
             System.clearProperty(testPropContextIdentifier);
         }
     }
@@ -412,8 +424,10 @@ public class TestConfiguration extends TestCase {
         try {
             Configuration.getInstance().reloadProperties();
             assertEquals("abcdefghi", Configuration.getInstance().getStringWithDefault("foo", "FAIL"));
-            assertEquals("C:\\a\\b\\c\\", Configuration.getInstance().getStringWithDefault("research.dbCacheDir", "FAIL"));
-            assertEquals("C:\\d\\e\\", Configuration.getInstance().getStringWithDefault("research.stockPriceEstimator", "FAIL"));
+            assertEquals("C:\\a\\b\\c\\",
+                    Configuration.getInstance().getStringWithDefault("research.dbCacheDir", "FAIL"));
+            assertEquals("C:\\d\\e\\",
+                    Configuration.getInstance().getStringWithDefault("research.stockPriceEstimator", "FAIL"));
         } catch (Exception e) {
             fail("Received unexpected error while checking multiline properties: " + e.getMessage());
         }
@@ -432,16 +446,18 @@ public class TestConfiguration extends TestCase {
         assertEquals("[]", history.get(0).context);
         if ("1.8".equals(System.getProperty("java.specification.version"))) {
             assertEquals(
-                "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:426)\n" +
-                    "sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n" +
-                    "sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n",
-                history.get(0).fileName);
+                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:440)\n"
+                            +
+                            "sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n" +
+                            "sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n",
+                    history.get(0).fileName);
         } else {
             assertEquals(
-                "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:426)\n" +
-                    "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n" +
-                    "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n",
-                history.get(0).fileName);
+                    "<not from configuration file>: io.deephaven.configuration.TestConfiguration.testShowHistory(TestConfiguration.java:440)\n"
+                            +
+                            "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n" +
+                            "java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)\n",
+                    history.get(0).fileName);
         }
         System.out.println("-------------- End show history -----------------");
     }

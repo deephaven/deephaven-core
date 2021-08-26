@@ -10,7 +10,8 @@ import java.io.IOException;
 public class ReplicateToPage {
 
     public static void main(String... args) throws IOException {
-        ReplicatePrimitiveCode.intToLongAndFloatingPoints(ToIntPage.class, ReplicatePrimitiveCode.MAIN_SRC, "interface");
+        ReplicatePrimitiveCode.intToLongAndFloatingPoints(ToIntPage.class, ReplicatePrimitiveCode.MAIN_SRC,
+                "interface");
         ReplicatePrimitiveCode.charToShortAndByte(ToCharPageFromInt.class, ReplicatePrimitiveCode.MAIN_SRC);
     }
 }

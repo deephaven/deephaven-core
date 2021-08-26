@@ -180,20 +180,21 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         // The replicated table's TableUpdateValidator will be confused if the table is a viewport. Instead we rely on
         // comparing the producer table to the consumer table to validate contents are correct.
         RemoteClient(final Index viewport, final BitSet subscribedColumns,
-                     final BarrageMessageProducer<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> barrageMessageProducer,
-                     final String name) {
+                final BarrageMessageProducer<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> barrageMessageProducer,
+                final String name) {
             this(viewport, subscribedColumns, barrageMessageProducer, name, false);
         }
 
         RemoteClient(final Index viewport, final BitSet subscribedColumns,
-                     final BarrageMessageProducer<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> barrageMessageProducer,
-                     final String name, final boolean deferSubscription) {
+                final BarrageMessageProducer<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> barrageMessageProducer,
+                final String name, final boolean deferSubscription) {
             this.viewport = viewport;
             this.subscribedColumns = subscribedColumns;
             this.name = name;
             this.barrageMessageProducer = barrageMessageProducer;
 
-            this.barrageTable = BarrageTable.make(liveTableRegistrar, LiveTableMonitor.DEFAULT, barrageMessageProducer.getTableDefinition(), viewport != null);
+            this.barrageTable = BarrageTable.make(liveTableRegistrar, LiveTableMonitor.DEFAULT,
+                    barrageMessageProducer.getTableDefinition(), viewport != null);
 
             final ChunkInputStreamGenerator.Options options = new ChunkInputStreamGenerator.Options.Builder()
                     .setIsViewport(viewport != null)
@@ -210,7 +211,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                 replicatedTUV.getResultTable().listenForUpdates(replicatedTUVListener);
             } else {
                 // the TUV is unaware of the viewport and gets confused about which data should be valid.
-                // instead we rely on the validation of the content in the viewport between the consumer and expected table.
+                // instead we rely on the validation of the content in the viewport between the consumer and expected
+                // table.
                 replicatedTUV = null;
                 replicatedTUVListener = null;
             }
@@ -256,9 +258,11 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
             // Data should be identical and in-order.
             TstUtils.assertTableEquals(expected, toCheck);
-            // Since key-space needs to be kept the same, the indexes should also be identical between producer and consumer
+            // Since key-space needs to be kept the same, the indexes should also be identical between producer and
+            // consumer
             // (not the indexes between expected and consumer; as the consumer maintains the entire index).
-            Assert.equals(barrageMessageProducer.getIndex(), "barrageMessageProducer.getIndex()", barrageTable.getIndex(), ".getIndex()");
+            Assert.equals(barrageMessageProducer.getIndex(), "barrageMessageProducer.getIndex()",
+                    barrageTable.getIndex(), ".getIndex()");
         }
 
         private void showResult(final String label, final Table table) {
@@ -286,16 +290,19 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             }
 
             final int maxLines = 100;
-            final Pair<String, Long> diffPair = TableTools.diffPair(toCheck, expected, maxLines, EnumSet.of(TableDiff.DiffItems.DoublesExact));
+            final Pair<String, Long> diffPair =
+                    TableTools.diffPair(toCheck, expected, maxLines, EnumSet.of(TableDiff.DiffItems.DoublesExact));
 
             if (diffPair.getFirst().equals("")) {
                 showResult("Ticking Table (" + name + "):", toCheck);
             } else {
                 final long numTableRows = Math.min(maxLines, Math.max(toCheck.size(), expected.size()));
                 final long firstRow = Math.max(0, diffPair.getSecond() - 5);
-                final long lastRow = Math.min(firstRow + numTableRows, Math.min(firstRow + maxLines, diffPair.getSecond() + 5));
+                final long lastRow =
+                        Math.min(firstRow + numTableRows, Math.min(firstRow + maxLines, diffPair.getSecond() + 5));
 
-                System.out.println("Recomputed Table (" + name + ") Differs:\n" + diffPair.getFirst() + "\nRecomputed Table Rows [" + firstRow + ", " + lastRow + "]:");
+                System.out.println("Recomputed Table (" + name + ") Differs:\n" + diffPair.getFirst()
+                        + "\nRecomputed Table Rows [" + firstRow + ", " + lastRow + "]:");
                 TableTools.showWithIndex(expected, firstRow, lastRow + 1);
                 System.out.println("Replicated Table Rows [" + firstRow + ", " + lastRow + "]:");
                 TableTools.showWithIndex(toCheck, firstRow, lastRow + 1);
@@ -345,7 +352,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         RemoteNugget(final Supplier<Table> makeTable) {
             this.makeTable = makeTable;
             this.originalTable = (QueryTable) makeTable.get();
-            this.barrageMessageProducer = originalTable.getResult(new BarrageMessageProducer.Operation<>(scheduler, daggerRoot.getStreamGeneratorFactory(), originalTable, UPDATE_INTERVAL, this::onGetSnapshot));
+            this.barrageMessageProducer = originalTable.getResult(new BarrageMessageProducer.Operation<>(scheduler,
+                    daggerRoot.getStreamGeneratorFactory(), originalTable, UPDATE_INTERVAL, this::onGetSnapshot));
 
             originalTUV = TableUpdateValidator.make(originalTable);
             originalTUVListener = new FailureListener("Original Table Update Validator");
@@ -379,8 +387,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             return clients.get(clients.size() - 1);
         }
 
-        public void onGetSnapshot() {
-        }
+        public void onGetSnapshot() {}
     }
 
     private abstract class TestHelper {
@@ -396,7 +403,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         QueryTable sourceTable;
         TstUtils.ColumnInfo<?, ?>[] columnInfo;
 
-        TestHelper(final int numProducerCoalesce, final int numConsumerCoalesce, final int size, final int seed, final MutableInt numSteps) {
+        TestHelper(final int numProducerCoalesce, final int numConsumerCoalesce, final int size, final int seed,
+                final MutableInt numSteps) {
             this.numProducerCoalesce = numProducerCoalesce;
             this.numConsumerCoalesce = numConsumerCoalesce;
             this.size = size;
@@ -405,19 +413,24 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         }
 
         public void createTable() {
-            sourceTable = getTable(size / 4, random, columnInfo = initColumnInfos(new String[]{"Sym", "intCol", "doubleCol", "Keys", "boolCol", "TimeStamp"},
-                    new TstUtils.SetGenerator<>("a", "b", "c", "d"),
-                    new TstUtils.IntGenerator(10, 100),
-                    new TstUtils.SetGenerator<>(10.1, 20.1, 30.1),
-                    new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1),
-                    new TstUtils.BooleanGenerator(0.2),
-                    new TstUtils.UnsortedDateTimeGenerator(DBTimeUtils.convertDateTime("2020-02-14T00:00:00 NY"), DBTimeUtils.convertDateTime("2020-02-25T00:00:00 NY"))));
+            sourceTable = getTable(size / 4, random,
+                    columnInfo =
+                            initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "Keys", "boolCol", "TimeStamp"},
+                                    new TstUtils.SetGenerator<>("a", "b", "c", "d"),
+                                    new TstUtils.IntGenerator(10, 100),
+                                    new TstUtils.SetGenerator<>(10.1, 20.1, 30.1),
+                                    new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1),
+                                    new TstUtils.BooleanGenerator(0.2),
+                                    new TstUtils.UnsortedDateTimeGenerator(
+                                            DBTimeUtils.convertDateTime("2020-02-14T00:00:00 NY"),
+                                            DBTimeUtils.convertDateTime("2020-02-25T00:00:00 NY"))));
         }
 
         public void createNuggets() {
             createNuggetsForTableMaker(() -> sourceTable); // test the explicit updates
             createNuggetsForTableMaker(sourceTable::flatten); // test shift aggressive version of these updates
-            createNuggetsForTableMaker(() -> sourceTable.sort("doubleCol")); // test updates in the middle of the keyspace
+            createNuggetsForTableMaker(() -> sourceTable.sort("doubleCol")); // test updates in the middle of the
+                                                                             // keyspace
             createNuggetsForTableMaker(() -> sourceTable.where("intCol % 12 < 5")); // test sparse(r) updates
         }
 
@@ -455,7 +468,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     }
 
     private class OneProducerPerClient extends TestHelper {
-        OneProducerPerClient(final int numProducerCoalesce, final int numConsumerCoalesce, final int size, final int seed, final MutableInt numSteps) {
+        OneProducerPerClient(final int numProducerCoalesce, final int numConsumerCoalesce, final int size,
+                final int seed, final MutableInt numSteps) {
             super(numProducerCoalesce, numConsumerCoalesce, size, seed, numSteps);
         }
 
@@ -466,9 +480,11 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
             nuggets.get(nuggets.size() - 1).newClient(null, subscribedColumns, "full");
 
             nuggets.add(new RemoteNugget(makeTable));
-            nuggets.get(nuggets.size() - 1).newClient(Index.FACTORY.getIndexByRange(0, size / 10), subscribedColumns, "header");
+            nuggets.get(nuggets.size() - 1).newClient(Index.FACTORY.getIndexByRange(0, size / 10), subscribedColumns,
+                    "header");
             nuggets.add(new RemoteNugget(makeTable));
-            nuggets.get(nuggets.size() - 1).newClient(Index.FACTORY.getIndexByRange(size / 2, size * 3 / 4), subscribedColumns, "floating");
+            nuggets.get(nuggets.size() - 1).newClient(Index.FACTORY.getIndexByRange(size / 2, size * 3 / 4),
+                    subscribedColumns, "floating");
 
             final Index.SequentialBuilder swissIndexBuilder = Index.FACTORY.getSequentialBuilder();
             final long rangeSize = Math.max(1, size / 20);
@@ -484,7 +500,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     }
 
     private class SharedProducerForAllClients extends TestHelper {
-        SharedProducerForAllClients(final int numProducerCoalesce, final int numConsumerCoalesce, final int size, final int seed, final MutableInt numSteps) {
+        SharedProducerForAllClients(final int numProducerCoalesce, final int numConsumerCoalesce, final int size,
+                final int seed, final MutableInt numSteps) {
             super(numProducerCoalesce, numConsumerCoalesce, size, seed, numSteps);
         }
 
@@ -515,22 +532,26 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         final Consumer<TestHelper> runOne = helper -> {
             final int maxSteps = MAX_STEPS * helper.numConsumerCoalesce * helper.numProducerCoalesce;
             helper.runTest(() -> {
-                final long lastKey = (Math.abs(helper.random.nextLong()) % 16) + (helper.sourceTable.getIndex().nonempty() ? helper.sourceTable.getIndex().lastKey() : -1);
+                final long lastKey = (Math.abs(helper.random.nextLong()) % 16)
+                        + (helper.sourceTable.getIndex().nonempty() ? helper.sourceTable.getIndex().lastKey() : -1);
                 final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-                update.added = Index.CURRENT_FACTORY.getIndexByRange(lastKey + 1, lastKey + Math.max(1, helper.size / maxSteps));
+                update.added = Index.CURRENT_FACTORY.getIndexByRange(lastKey + 1,
+                        lastKey + Math.max(1, helper.size / maxSteps));
                 update.removed = i();
                 update.modified = i();
                 update.shifted = IndexShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update, helper.random, helper.sourceTable, helper.columnInfo));
+                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                        helper.random, helper.sourceTable, helper.columnInfo));
             });
         };
 
-        for (final int size : new int[]{10, 100, 1000}) {
-            for (final int numProducerCoalesce : new int[]{1, 10}) {
-                for (final int numConsumerCoalesce : new int[]{1, 10}) {
-                    runOne.accept(new OneProducerPerClient(numProducerCoalesce, numConsumerCoalesce, size, 0, new MutableInt(MAX_STEPS)));
+        for (final int size : new int[] {10, 100, 1000}) {
+            for (final int numProducerCoalesce : new int[] {1, 10}) {
+                for (final int numConsumerCoalesce : new int[] {1, 10}) {
+                    runOne.accept(new OneProducerPerClient(numProducerCoalesce, numConsumerCoalesce, size, 0,
+                            new MutableInt(MAX_STEPS)));
                 }
             }
         }
@@ -541,7 +562,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         final Consumer<TestHelper> runOne = helper -> {
             final int maxSteps = MAX_STEPS * helper.numConsumerCoalesce * helper.numProducerCoalesce;
             helper.runTest(() -> {
-                final long lastKey = helper.sourceTable.getIndex().nonempty() ? helper.sourceTable.getIndex().lastKey() : -1;
+                final long lastKey =
+                        helper.sourceTable.getIndex().nonempty() ? helper.sourceTable.getIndex().lastKey() : -1;
                 final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
                 final int stepSize = Math.max(1, helper.size / maxSteps);
                 update.added = Index.CURRENT_FACTORY.getIndexByRange(0, stepSize - 1);
@@ -555,14 +577,16 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                 }
                 update.shifted = shifted.build();
 
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update, helper.random, helper.sourceTable, helper.columnInfo));
+                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                        helper.random, helper.sourceTable, helper.columnInfo));
             });
         };
 
-        for (final int size : new int[]{10, 100, 1000}) {
-            for (final int numProducerCoalesce : new int[]{1, 10}) {
-                for (final int numConsumerCoalesce : new int[]{1, 10}) {
-                    runOne.accept(new OneProducerPerClient(numProducerCoalesce, numConsumerCoalesce, size, 0, new MutableInt(MAX_STEPS)));
+        for (final int size : new int[] {10, 100, 1000}) {
+            for (final int numProducerCoalesce : new int[] {1, 10}) {
+                for (final int numConsumerCoalesce : new int[] {1, 10}) {
+                    runOne.accept(new OneProducerPerClient(numProducerCoalesce, numConsumerCoalesce, size, 0,
+                            new MutableInt(MAX_STEPS)));
                 }
             }
         }
@@ -570,14 +594,16 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
     public void testRoundTripIncremental() {
         final Consumer<TestHelper> runOne = helper -> {
-            helper.runTest(() -> LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() ->
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, helper.size, helper.random, helper.sourceTable, helper.columnInfo)));
+            helper.runTest(() -> LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(
+                    () -> GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                            helper.size, helper.random, helper.sourceTable, helper.columnInfo)));
         };
 
-        for (final int size : new int[]{10, 100, 1000}) {
-            for (final int numProducerCoalesce : new int[]{1, 10}) {
-                for (final int numConsumerCoalesce : new int[]{1, 10}) {
-                    runOne.accept(new OneProducerPerClient(numProducerCoalesce, numConsumerCoalesce, size, 0, new MutableInt(100)));
+        for (final int size : new int[] {10, 100, 1000}) {
+            for (final int numProducerCoalesce : new int[] {1, 10}) {
+                for (final int numConsumerCoalesce : new int[] {1, 10}) {
+                    runOne.accept(new OneProducerPerClient(numProducerCoalesce, numConsumerCoalesce, size, 0,
+                            new MutableInt(100)));
                 }
             }
         }
@@ -588,22 +614,26 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         final Consumer<TestHelper> runOne = helper -> {
             final int maxSteps = MAX_STEPS * helper.numConsumerCoalesce * helper.numProducerCoalesce;
             helper.runTest(() -> {
-                final long lastKey = (Math.abs(helper.random.nextLong()) % 16) + (helper.sourceTable.getIndex().nonempty() ? helper.sourceTable.getIndex().lastKey() : -1);
+                final long lastKey = (Math.abs(helper.random.nextLong()) % 16)
+                        + (helper.sourceTable.getIndex().nonempty() ? helper.sourceTable.getIndex().lastKey() : -1);
                 final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-                update.added = Index.CURRENT_FACTORY.getIndexByRange(lastKey + 1, lastKey + Math.max(1, helper.size / maxSteps));
+                update.added = Index.CURRENT_FACTORY.getIndexByRange(lastKey + 1,
+                        lastKey + Math.max(1, helper.size / maxSteps));
                 update.removed = i();
                 update.modified = i();
                 update.shifted = IndexShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update, helper.random, helper.sourceTable, helper.columnInfo));
+                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                        helper.random, helper.sourceTable, helper.columnInfo));
             });
         };
 
-        for (final int size : new int[]{10, 100, 1000}) {
-            for (final int numProducerCoalesce : new int[]{1, 2, 10}) {
-                for (final int numConsumerCoalesce : new int[]{1, 2, 10}) {
-                    runOne.accept(new SharedProducerForAllClients(numProducerCoalesce, numConsumerCoalesce, size, 0, new MutableInt(MAX_STEPS)));
+        for (final int size : new int[] {10, 100, 1000}) {
+            for (final int numProducerCoalesce : new int[] {1, 2, 10}) {
+                for (final int numConsumerCoalesce : new int[] {1, 2, 10}) {
+                    runOne.accept(new SharedProducerForAllClients(numProducerCoalesce, numConsumerCoalesce, size, 0,
+                            new MutableInt(MAX_STEPS)));
                 }
             }
         }
@@ -614,7 +644,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         final Consumer<TestHelper> runOne = helper -> {
             final int maxSteps = MAX_STEPS * helper.numConsumerCoalesce * helper.numProducerCoalesce;
             helper.runTest(() -> {
-                final long lastKey = helper.sourceTable.getIndex().nonempty() ? helper.sourceTable.getIndex().lastKey() : -1;
+                final long lastKey =
+                        helper.sourceTable.getIndex().nonempty() ? helper.sourceTable.getIndex().lastKey() : -1;
                 final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
                 final int stepSize = Math.max(1, helper.size / maxSteps);
                 update.added = Index.CURRENT_FACTORY.getIndexByRange(0, stepSize - 1);
@@ -628,14 +659,16 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                 }
                 update.shifted = shifted.build();
 
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update, helper.random, helper.sourceTable, helper.columnInfo));
+                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                        helper.random, helper.sourceTable, helper.columnInfo));
             });
         };
 
-        for (final int size : new int[]{10, 100, 1000}) {
-            for (final int numProducerCoalsce : new int[]{1, 10}) {
-                for (final int numConsumerCoalesce : new int[]{1, 10}) {
-                    runOne.accept(new SharedProducerForAllClients(numProducerCoalsce, numConsumerCoalesce, size, 0, new MutableInt(MAX_STEPS)));
+        for (final int size : new int[] {10, 100, 1000}) {
+            for (final int numProducerCoalsce : new int[] {1, 10}) {
+                for (final int numConsumerCoalesce : new int[] {1, 10}) {
+                    runOne.accept(new SharedProducerForAllClients(numProducerCoalsce, numConsumerCoalesce, size, 0,
+                            new MutableInt(MAX_STEPS)));
                 }
             }
         }
@@ -643,14 +676,16 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
     public void testRoundTripIncrementalSharedProducer() {
         final Consumer<TestHelper> runOne = helper -> {
-            helper.runTest(() -> LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() ->
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, helper.size, helper.random, helper.sourceTable, helper.columnInfo)));
+            helper.runTest(() -> LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(
+                    () -> GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                            helper.size, helper.random, helper.sourceTable, helper.columnInfo)));
         };
 
-        for (final int size : new int[]{10, 100, 1000}) {
-            for (final int numProducerCoalesce : new int[]{1, 10}) {
-                for (final int numConsumerCoalesce : new int[]{1, 10}) {
-                    runOne.accept(new SharedProducerForAllClients(numProducerCoalesce, numConsumerCoalesce, size, 0, new MutableInt(100)));
+        for (final int size : new int[] {10, 100, 1000}) {
+            for (final int numProducerCoalesce : new int[] {1, 10}) {
+                for (final int numConsumerCoalesce : new int[] {1, 10}) {
+                    runOne.accept(new SharedProducerForAllClients(numProducerCoalesce, numConsumerCoalesce, size, 0,
+                            new MutableInt(100)));
                 }
             }
         }
@@ -659,7 +694,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     // These test mid-cycle subscription changes and snapshot content
 
     private abstract class SubscriptionChangingHelper extends SharedProducerForAllClients {
-        SubscriptionChangingHelper(final int numProducerCoalesce, final int numConsumerCoalesce, final int size, final int seed, final MutableInt numSteps) {
+        SubscriptionChangingHelper(final int numProducerCoalesce, final int numConsumerCoalesce, final int size,
+                final int seed, final MutableInt numSteps) {
             super(numProducerCoalesce, numConsumerCoalesce, size, seed, numSteps);
         }
 
@@ -674,8 +710,9 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                     for (int pt = 0; pt < numProducerCoalesce; ++pt) {
                         maybeChangeSub(numSteps.intValue(), rt, pt);
 
-                        LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() ->
-                                GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
+                        LiveTableMonitor.DEFAULT
+                                .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                                        GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
                     }
 
                     // flush producer
@@ -696,19 +733,24 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     }
 
     public void testColumnSubChange() {
-        for (final int size : new int[]{10, 100, 1000}) {
-            for (final int numProducerCoalesce : new int[]{1, 4}) {
-                for (final int numConsumerCoalesce : new int[]{1, 4}) {
-                    for (int subProducerCoalesce = 0; subProducerCoalesce < numProducerCoalesce; ++subProducerCoalesce) {
-                        for (int subConsumerCoalesce = 0; subConsumerCoalesce < numConsumerCoalesce; ++subConsumerCoalesce) {
+        for (final int size : new int[] {10, 100, 1000}) {
+            for (final int numProducerCoalesce : new int[] {1, 4}) {
+                for (final int numConsumerCoalesce : new int[] {1, 4}) {
+                    for (int subProducerCoalesce =
+                            0; subProducerCoalesce < numProducerCoalesce; ++subProducerCoalesce) {
+                        for (int subConsumerCoalesce =
+                                0; subConsumerCoalesce < numConsumerCoalesce; ++subConsumerCoalesce) {
                             final int finalSubProducerCoalesce = subProducerCoalesce;
                             final int finalSubConsumerCoalesce = subConsumerCoalesce;
-                            new SubscriptionChangingHelper(numProducerCoalesce, numConsumerCoalesce, size, 0, new MutableInt(4)) {
+                            new SubscriptionChangingHelper(numProducerCoalesce, numConsumerCoalesce, size, 0,
+                                    new MutableInt(4)) {
                                 {
                                     for (final RemoteNugget nugget : nuggets) {
                                         final BitSet columns = new BitSet();
                                         columns.set(0, nugget.originalTable.getColumns().length / 2);
-                                        nugget.clients.add(new RemoteClient(Index.FACTORY.getIndexByRange(size / 5, 2 * size / 5), columns, nugget.barrageMessageProducer, "sub-changer"));
+                                        nugget.clients.add(
+                                                new RemoteClient(Index.FACTORY.getIndexByRange(size / 5, 2 * size / 5),
+                                                        columns, nugget.barrageMessageProducer, "sub-changer"));
                                     }
                                 }
 
@@ -734,14 +776,17 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     }
 
     public void testViewportChange() {
-        for (final int size : new int[]{10, 100}) {
-            for (final int numProducerCoalesce : new int[]{1, 4}) {
-                for (final int numConsumerCoalesce : new int[]{1, 4}) {
-                    for (int subProducerCoalesce = 0; subProducerCoalesce < numProducerCoalesce; ++subProducerCoalesce) {
-                        for (int subConsumerCoalesce = 0; subConsumerCoalesce < numConsumerCoalesce; ++subConsumerCoalesce) {
+        for (final int size : new int[] {10, 100}) {
+            for (final int numProducerCoalesce : new int[] {1, 4}) {
+                for (final int numConsumerCoalesce : new int[] {1, 4}) {
+                    for (int subProducerCoalesce =
+                            0; subProducerCoalesce < numProducerCoalesce; ++subProducerCoalesce) {
+                        for (int subConsumerCoalesce =
+                                0; subConsumerCoalesce < numConsumerCoalesce; ++subConsumerCoalesce) {
                             final int finalSubProducerCoalesce = 0;
                             final int finalSubConsumerCoalesce = 1;
-                            new SubscriptionChangingHelper(numProducerCoalesce, numConsumerCoalesce, size, 0, new MutableInt(25)) {
+                            new SubscriptionChangingHelper(numProducerCoalesce, numConsumerCoalesce, size, 0,
+                                    new MutableInt(25)) {
                                 @Override
                                 void createNuggetsForTableMaker(final Supplier<Table> makeTable) {
                                     final RemoteNugget nugget = new RemoteNugget(makeTable);
@@ -749,11 +794,13 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
                                     final BitSet columns = new BitSet();
                                     columns.set(0, 4);
-                                    nugget.clients.add(new RemoteClient(Index.FACTORY.getIndexByRange(0, size / 5), columns, nugget.barrageMessageProducer, "sub-changer"));
+                                    nugget.clients.add(new RemoteClient(Index.FACTORY.getIndexByRange(0, size / 5),
+                                            columns, nugget.barrageMessageProducer, "sub-changer"));
                                 }
 
                                 void maybeChangeSub(final int step, final int rt, final int pt) {
-                                    if (step % 2 != 0 || rt != finalSubConsumerCoalesce || pt != finalSubProducerCoalesce) {
+                                    if (step % 2 != 0 || rt != finalSubConsumerCoalesce
+                                            || pt != finalSubProducerCoalesce) {
                                         return;
                                     }
 
@@ -773,19 +820,24 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     }
 
     public void testOverlappedColumnSubsChange() {
-        for (final int size : new int[]{10, 100, 1000}) {
-            for (final int numProducerCoalesce : new int[]{1, 4}) {
-                for (final int numConsumerCoalesce : new int[]{1, 4}) {
-                    for (int subProducerCoalesce = 0; subProducerCoalesce < numProducerCoalesce; ++subProducerCoalesce) {
-                        for (int subConsumerCoalesce = 0; subConsumerCoalesce < numConsumerCoalesce; ++subConsumerCoalesce) {
+        for (final int size : new int[] {10, 100, 1000}) {
+            for (final int numProducerCoalesce : new int[] {1, 4}) {
+                for (final int numConsumerCoalesce : new int[] {1, 4}) {
+                    for (int subProducerCoalesce =
+                            0; subProducerCoalesce < numProducerCoalesce; ++subProducerCoalesce) {
+                        for (int subConsumerCoalesce =
+                                0; subConsumerCoalesce < numConsumerCoalesce; ++subConsumerCoalesce) {
                             final int finalSubProducerCoalesce = subProducerCoalesce;
                             final int finalSubConsumerCoalesce = subConsumerCoalesce;
-                            new SubscriptionChangingHelper(numProducerCoalesce, numConsumerCoalesce, size, 0, new MutableInt(4)) {
+                            new SubscriptionChangingHelper(numProducerCoalesce, numConsumerCoalesce, size, 0,
+                                    new MutableInt(4)) {
                                 {
                                     for (final RemoteNugget nugget : nuggets) {
                                         final BitSet columns = new BitSet();
                                         columns.set(0, 3);
-                                        nugget.clients.add(new RemoteClient(Index.FACTORY.getIndexByRange(size / 5, 2 * size / 5), columns, nugget.barrageMessageProducer, "sub-changer"));
+                                        nugget.clients.add(
+                                                new RemoteClient(Index.FACTORY.getIndexByRange(size / 5, 2 * size / 5),
+                                                        columns, nugget.barrageMessageProducer, "sub-changer"));
                                     }
                                 }
 
@@ -812,14 +864,16 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     public void testViewportSubscribeMidCycle() {
         // This is a regression test for IDS-6392. It catches a race between when a subscription becomes active and
         // when the viewport becomes active post-snapshot.
-        for (final int size : new int[]{10, 100, 1000}) {
-            for (final int numProducerCoalesce : new int[]{2, 3, 4}) {
-                for (final int numConsumerCoalesce : new int[]{1, 4}) {
-                    new SubscriptionChangingHelper(numProducerCoalesce, numConsumerCoalesce, size, 0, new MutableInt(4)) {
+        for (final int size : new int[] {10, 100, 1000}) {
+            for (final int numProducerCoalesce : new int[] {2, 3, 4}) {
+                for (final int numConsumerCoalesce : new int[] {1, 4}) {
+                    new SubscriptionChangingHelper(numProducerCoalesce, numConsumerCoalesce, size, 0,
+                            new MutableInt(4)) {
 
                         void maybeChangeSub(final int step, final int rt, final int pt) {
                             if (step != 0 || rt != 0 || pt != 1) {
-                                // Only subscribe after we have sent at least one update, but no need to subscribe again.
+                                // Only subscribe after we have sent at least one update, but no need to subscribe
+                                // again.
                                 return;
                             }
 
@@ -835,8 +889,9 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                             final RemoteNugget nugget = new RemoteNugget(makeTable) {
                                 @Override
                                 public void onGetSnapshot() {
-                                    LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() ->
-                                            GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
+                                    LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates
+                                            .generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, size,
+                                                    random, sourceTable, columnInfo));
                                 }
                             };
                             nuggets.add(nugget);
@@ -845,7 +900,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                             final BitSet columns = new BitSet();
                             columns.set(0, 4);
                             final boolean deferSubscription = true;
-                            nugget.clients.add(new RemoteClient(Index.FACTORY.getIndexByRange(size / 5, 2 * size / 5), columns, nugget.barrageMessageProducer, "sub-changer", deferSubscription));
+                            nugget.clients.add(new RemoteClient(Index.FACTORY.getIndexByRange(size / 5, 2 * size / 5),
+                                    columns, nugget.barrageMessageProducer, "sub-changer", deferSubscription));
 
                         }
                     }.runTest();
@@ -855,14 +911,17 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     }
 
     public void testOverlappingViewportChange() {
-        for (final int size : new int[]{10, 100, 1000}) {
-            for (final int numProducerCoalesce : new int[]{1, 4}) {
-                for (final int numConsumerCoalesce : new int[]{1, 4}) {
-                    for (int subProducerCoalesce = 0; subProducerCoalesce < numProducerCoalesce; ++subProducerCoalesce) {
-                        for (int subConsumerCoalesce = 0; subConsumerCoalesce < numConsumerCoalesce; ++subConsumerCoalesce) {
+        for (final int size : new int[] {10, 100, 1000}) {
+            for (final int numProducerCoalesce : new int[] {1, 4}) {
+                for (final int numConsumerCoalesce : new int[] {1, 4}) {
+                    for (int subProducerCoalesce =
+                            0; subProducerCoalesce < numProducerCoalesce; ++subProducerCoalesce) {
+                        for (int subConsumerCoalesce =
+                                0; subConsumerCoalesce < numConsumerCoalesce; ++subConsumerCoalesce) {
                             final int finalSubProducerCoalesce = subProducerCoalesce;
                             final int finalSubConsumerCoalesce = subConsumerCoalesce;
-                            new SubscriptionChangingHelper(numProducerCoalesce, numConsumerCoalesce, size, 0, new MutableInt(4)) {
+                            new SubscriptionChangingHelper(numProducerCoalesce, numConsumerCoalesce, size, 0,
+                                    new MutableInt(4)) {
                                 @Override
                                 public void createNuggets() {
                                     super.createNuggets();
@@ -870,7 +929,9 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                                     for (final RemoteNugget nugget : nuggets) {
                                         final BitSet columns = new BitSet();
                                         columns.set(0, 4);
-                                        nugget.clients.add(new RemoteClient(Index.FACTORY.getIndexByRange(size / 5, 3 * size / 5), columns, nugget.barrageMessageProducer, "sub-changer"));
+                                        nugget.clients.add(
+                                                new RemoteClient(Index.FACTORY.getIndexByRange(size / 5, 3 * size / 5),
+                                                        columns, nugget.barrageMessageProducer, "sub-changer"));
                                     }
                                 }
 
@@ -895,7 +956,7 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
     }
 
     public void testSimultaneousSubscriptionChanges() {
-        for (final int size : new int[]{10, 100, 1000}) {
+        for (final int size : new int[] {10, 100, 1000}) {
             final int numProducerCoalesce = 8;
             final int numConsumerCoalesce = 8;
             for (int subConsumerCoalesce = 0; subConsumerCoalesce < numConsumerCoalesce; ++subConsumerCoalesce) {
@@ -905,7 +966,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                         for (final RemoteNugget nugget : nuggets) {
                             final BitSet columns = new BitSet();
                             columns.set(0, 4);
-                            nugget.clients.add(new RemoteClient(Index.FACTORY.getIndexByRange(size / 5, 2 * size / 5), columns, nugget.barrageMessageProducer, "sub-changer"));
+                            nugget.clients.add(new RemoteClient(Index.FACTORY.getIndexByRange(size / 5, 2 * size / 5),
+                                    columns, nugget.barrageMessageProducer, "sub-changer"));
                         }
                     }
 
@@ -917,7 +979,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                         for (final RemoteNugget nugget : nuggets) {
                             final RemoteClient client = nugget.clients.get(nugget.clients.size() - 1);
                             final int firstKey = random.nextInt(size);
-                            client.setViewport(Index.FACTORY.getIndexByRange(firstKey, firstKey + random.nextInt(size - firstKey)));
+                            client.setViewport(Index.FACTORY.getIndexByRange(firstKey,
+                                    firstKey + random.nextInt(size - firstKey)));
                         }
                     }
                 }.runTest();
@@ -979,7 +1042,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         final RemoteNugget remoteNugget = new RemoteNugget(() -> queryTable);
 
         // Set original viewport.
-        final RemoteClient remoteClient = remoteNugget.newClient(Index.FACTORY.getIndexByRange(1, 2), allColumns, "prevSnapshot");
+        final RemoteClient remoteClient =
+                remoteNugget.newClient(Index.FACTORY.getIndexByRange(1, 2), allColumns, "prevSnapshot");
 
         // Obtain snapshot of original viewport.
         flushProducerTable();
@@ -1001,7 +1065,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                     IndexShiftData.EMPTY, ModifiedColumnSet.ALL));
         });
 
-        // Do not allow the two updates to coalesce; we must force the consumer to apply the modification. (An allowed race.)
+        // Do not allow the two updates to coalesce; we must force the consumer to apply the modification. (An allowed
+        // race.)
         flushProducerTable();
 
         // Add rows to shift modified row into new viewport.
@@ -1017,7 +1082,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
         // Obtain snapshot of new viewport. (which will not include the modified row)
         flushProducerTable();
-        Assert.equals(remoteClient.commandQueue.size(), "remoteClient.getValue().commandQueue.size()", 3); // mod, add, snaphot
+        Assert.equals(remoteClient.commandQueue.size(), "remoteClient.getValue().commandQueue.size()", 3); // mod, add,
+                                                                                                           // snaphot
         remoteNugget.flushClientEvents();
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(liveTableRegistrar::refresh);
         remoteNugget.validate("new viewport with modification");
@@ -1035,29 +1101,36 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         this.useDeephavenNulls = useDeephavenNulls;
 
         final int MAX_STEPS = 100;
-        for (int size : new int[]{10, 1000, 10000}) {
-            SharedProducerForAllClients helper = new SharedProducerForAllClients(1, 1, size, 0, new MutableInt(MAX_STEPS)) {
-                @Override
-                public void createTable() {
-                    columnInfo = initColumnInfos(new String[]{"longCol", "intCol", "objCol", "byteCol", "doubleCol", "floatCol", "shortCol", "charCol", "boolCol", "strArrCol", "datetimeCol"},
-                            new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1),
-                            new TstUtils.IntGenerator(10, 100, 0.1),
-                            new TstUtils.SetGenerator<>("a", "b", "c", "d"), // covers object
-                            new TstUtils.ByteGenerator((byte) 0, (byte) 127, 0.1),
-                            new TstUtils.DoubleGenerator(100.1, 200.1, 0.1),
-                            new TstUtils.FloatGenerator(100.1f, 200.1f, 0.1),
-                            new TstUtils.ShortGenerator((short) 0, (short) 20000, 0.1),
-                            new TstUtils.CharGenerator('a', 'z', 0.1),
-                            new TstUtils.BooleanGenerator(0.2),
-                            new TstUtils.SetGenerator<>(new String[]{"a", "b"}, new String[]{"0", "1"}, new String[]{}, null),
-                            new TstUtils.UnsortedDateTimeGenerator(DBTimeUtils.convertDateTime("2020-02-14T00:00:00 NY"), DBTimeUtils.convertDateTime("2020-02-25T00:00:00 NY")));
-                    sourceTable = getTable(size / 4, random, columnInfo);
-                }
-            };
+        for (int size : new int[] {10, 1000, 10000}) {
+            SharedProducerForAllClients helper =
+                    new SharedProducerForAllClients(1, 1, size, 0, new MutableInt(MAX_STEPS)) {
+                        @Override
+                        public void createTable() {
+                            columnInfo = initColumnInfos(
+                                    new String[] {"longCol", "intCol", "objCol", "byteCol", "doubleCol", "floatCol",
+                                            "shortCol", "charCol", "boolCol", "strArrCol", "datetimeCol"},
+                                    new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1),
+                                    new TstUtils.IntGenerator(10, 100, 0.1),
+                                    new TstUtils.SetGenerator<>("a", "b", "c", "d"), // covers object
+                                    new TstUtils.ByteGenerator((byte) 0, (byte) 127, 0.1),
+                                    new TstUtils.DoubleGenerator(100.1, 200.1, 0.1),
+                                    new TstUtils.FloatGenerator(100.1f, 200.1f, 0.1),
+                                    new TstUtils.ShortGenerator((short) 0, (short) 20000, 0.1),
+                                    new TstUtils.CharGenerator('a', 'z', 0.1),
+                                    new TstUtils.BooleanGenerator(0.2),
+                                    new TstUtils.SetGenerator<>(new String[] {"a", "b"}, new String[] {"0", "1"},
+                                            new String[] {}, null),
+                                    new TstUtils.UnsortedDateTimeGenerator(
+                                            DBTimeUtils.convertDateTime("2020-02-14T00:00:00 NY"),
+                                            DBTimeUtils.convertDateTime("2020-02-25T00:00:00 NY")));
+                            sourceTable = getTable(size / 4, random, columnInfo);
+                        }
+                    };
 
             final int maxSteps = MAX_STEPS * helper.numConsumerCoalesce * helper.numProducerCoalesce;
             helper.runTest(() -> {
-                final long lastKey = (Math.abs(helper.random.nextLong()) % 16) + (helper.sourceTable.isEmpty() ? -1 : helper.sourceTable.getIndex().lastKey());
+                final long lastKey = (Math.abs(helper.random.nextLong()) % 16)
+                        + (helper.sourceTable.isEmpty() ? -1 : helper.sourceTable.getIndex().lastKey());
                 final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
                 final int stepSize = Math.max(1, helper.size / maxSteps);
                 update.added = Index.CURRENT_FACTORY.getIndexByRange(lastKey + 1, lastKey + stepSize);
@@ -1071,7 +1144,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                 update.shifted = IndexShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update, helper.random, helper.sourceTable, helper.columnInfo));
+                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                        helper.random, helper.sourceTable, helper.columnInfo));
             });
         }
     }
@@ -1088,30 +1162,37 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         this.useDeephavenNulls = useDeephavenNulls;
 
         final int MAX_STEPS = 100;
-        for (int size : new int[]{10, 1000, 10000}) {
-            SharedProducerForAllClients helper = new SharedProducerForAllClients(1, 1, size, 0, new MutableInt(MAX_STEPS)) {
-                @Override
-                public void createTable() {
-                    columnInfo = initColumnInfos(new String[]{"longCol", "intCol", "objCol", "byteCol", "doubleCol", "floatCol", "shortCol", "charCol", "boolCol", "strCol", "strArrCol", "datetimeCol"},
-                            new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1),
-                            new TstUtils.IntGenerator(10, 100, 0.1),
-                            new TstUtils.SetGenerator<>("a", "b", "c", "d"), // covers strings
-                            new TstUtils.ByteGenerator((byte) 0, (byte) 127, 0.1),
-                            new TstUtils.DoubleGenerator(100.1, 200.1, 0.1),
-                            new TstUtils.FloatGenerator(100.1f, 200.1f, 0.1),
-                            new TstUtils.ShortGenerator((short) 0, (short) 20000, 0.1),
-                            new TstUtils.CharGenerator('a', 'z', 0.1),
-                            new TstUtils.BooleanGenerator(0.2),
-                            new TstUtils.StringGenerator(),
-                            new TstUtils.SetGenerator<>(new String[]{"a", "b"}, new String[]{"0", "1"}, new String[]{}, null),
-                            new TstUtils.UnsortedDateTimeGenerator(DBTimeUtils.convertDateTime("2020-02-14T00:00:00 NY"), DBTimeUtils.convertDateTime("2020-02-25T00:00:00 NY")));
-                    sourceTable = getTable(size / 4, random, columnInfo);
-                }
-            };
+        for (int size : new int[] {10, 1000, 10000}) {
+            SharedProducerForAllClients helper =
+                    new SharedProducerForAllClients(1, 1, size, 0, new MutableInt(MAX_STEPS)) {
+                        @Override
+                        public void createTable() {
+                            columnInfo = initColumnInfos(
+                                    new String[] {"longCol", "intCol", "objCol", "byteCol", "doubleCol", "floatCol",
+                                            "shortCol", "charCol", "boolCol", "strCol", "strArrCol", "datetimeCol"},
+                                    new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1),
+                                    new TstUtils.IntGenerator(10, 100, 0.1),
+                                    new TstUtils.SetGenerator<>("a", "b", "c", "d"), // covers strings
+                                    new TstUtils.ByteGenerator((byte) 0, (byte) 127, 0.1),
+                                    new TstUtils.DoubleGenerator(100.1, 200.1, 0.1),
+                                    new TstUtils.FloatGenerator(100.1f, 200.1f, 0.1),
+                                    new TstUtils.ShortGenerator((short) 0, (short) 20000, 0.1),
+                                    new TstUtils.CharGenerator('a', 'z', 0.1),
+                                    new TstUtils.BooleanGenerator(0.2),
+                                    new TstUtils.StringGenerator(),
+                                    new TstUtils.SetGenerator<>(new String[] {"a", "b"}, new String[] {"0", "1"},
+                                            new String[] {}, null),
+                                    new TstUtils.UnsortedDateTimeGenerator(
+                                            DBTimeUtils.convertDateTime("2020-02-14T00:00:00 NY"),
+                                            DBTimeUtils.convertDateTime("2020-02-25T00:00:00 NY")));
+                            sourceTable = getTable(size / 4, random, columnInfo);
+                        }
+                    };
 
             final int maxSteps = MAX_STEPS * helper.numConsumerCoalesce * helper.numProducerCoalesce;
             helper.runTest(() -> {
-                final long lastKey = (Math.abs(helper.random.nextLong()) % 16) + (helper.sourceTable.isEmpty() ? -1 : helper.sourceTable.getIndex().lastKey());
+                final long lastKey = (Math.abs(helper.random.nextLong()) % 16)
+                        + (helper.sourceTable.isEmpty() ? -1 : helper.sourceTable.getIndex().lastKey());
                 final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
                 final int stepSize = Math.max(1, helper.size / maxSteps);
                 update.added = Index.CURRENT_FACTORY.getIndexByRange(lastKey + 1, lastKey + stepSize);
@@ -1125,7 +1206,8 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
                 update.shifted = IndexShiftData.EMPTY;
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
-                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update, helper.random, helper.sourceTable, helper.columnInfo));
+                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                        helper.random, helper.sourceTable, helper.columnInfo));
             });
         }
     }
@@ -1145,10 +1227,12 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         public void onNext(final BarrageStreamGenerator.View messageView) {
             try {
                 messageView.forEachStream(inputStream -> {
-                    try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos = new BarrageProtoUtil.ExposedByteArrayOutputStream()) {
+                    try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
+                            new BarrageProtoUtil.ExposedByteArrayOutputStream()) {
                         ((Drainable) inputStream).drainTo(baos);
                         inputStream.close();
-                        final BarrageMessage message = marshaller.parse(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
+                        final BarrageMessage message =
+                                marshaller.parse(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
                         // we skip schema messages, but can't suppress without propagating something...
                         if (message != null) {
                             receivedCommands.add(message);
@@ -1173,12 +1257,13 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         }
     }
 
-    private static class BarrageMarshaller extends FlightServiceGrpcBinding.BarrageDataMarshaller<ChunkInputStreamGenerator.Options> {
+    private static class BarrageMarshaller
+            extends FlightServiceGrpcBinding.BarrageDataMarshaller<ChunkInputStreamGenerator.Options> {
         public BarrageMarshaller(final ChunkInputStreamGenerator.Options options,
-                                 final ChunkType[] columnChunkTypes,
-                                 final Class<?>[] columnTypes,
-                                 final Class<?>[] componentTypes,
-                                 final BarrageMessageConsumer.StreamReader<ChunkInputStreamGenerator.Options> streamReader) {
+                final ChunkType[] columnChunkTypes,
+                final Class<?>[] columnTypes,
+                final Class<?>[] componentTypes,
+                final BarrageMessageConsumer.StreamReader<ChunkInputStreamGenerator.Options> streamReader) {
             super(options, columnChunkTypes, columnTypes, componentTypes, streamReader);
         }
     }

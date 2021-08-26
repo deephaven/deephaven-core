@@ -56,20 +56,21 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
      * Creates an AbstractCategoryDataSeries instance.
      *
      * @param axes axes on which this series will be plotted
-     * @param id   data series id
+     * @param id data series id
      * @param name series name
      * @param series series to copy
      *
      */
-    public AbstractCategoryDataSeries(final AxesImpl axes, final int id, final Comparable name, final AbstractCategoryDataSeries series) {
+    public AbstractCategoryDataSeries(final AxesImpl axes, final int id, final Comparable name,
+            final AbstractCategoryDataSeries series) {
         super(axes, id, name, series);
 
         colors = new AssociativeDataWithDefault<>(getPlotInfo());
         labels = new AssociativeDataWithDefault<>(getPlotInfo());
         sizes = new AssociativeDataWithDefault<>(getPlotInfo());
         shapes = new AssociativeDataWithDefault<>(getPlotInfo());
-        
-        if(series != null) {
+
+        if (series != null) {
             this.colors.set(series.colors);
             this.labels.set(series.labels);
             this.sizes.set(series.sizes);
@@ -83,7 +84,7 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
      * Creates a copy of a series using a different Axes.
      *
      * @param series series to copy.
-     * @param axes   new axes to use.
+     * @param axes new axes to use.
      */
     protected AbstractCategoryDataSeries(final AbstractCategoryDataSeries series, final AxesImpl axes) {
         super(series, axes);
@@ -92,7 +93,7 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
         labels = new AssociativeDataWithDefault<>(series.getPlotInfo());
         sizes = new AssociativeDataWithDefault<>(series.getPlotInfo());
         shapes = new AssociativeDataWithDefault<>(series.getPlotInfo());
-        
+
         this.colors.set(series.colors);
         this.labels.set(series.labels);
         this.sizes.set(series.sizes);
@@ -101,7 +102,7 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
         this.piePercentLabelFormat = series.piePercentLabelFormat;
     }
 
-    //////////////////////////  internal  //////////////////////////
+    ////////////////////////// internal //////////////////////////
 
     protected void colorsSetSpecific(final AssociativeData<Comparable, Paint> data) {
         colors.setSpecific(data);
@@ -135,11 +136,14 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public String getLabel(final Comparable category) { return labels.get(category);}
+    public String getLabel(final Comparable category) {
+        return labels.get(category);
+    }
 
     @Override
     public Shape getPointShape(final Comparable category) {
-        return shapes.get(category); }
+        return shapes.get(category);
+    }
 
     @Override
     public int getGroup() {
@@ -147,7 +151,9 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public String getPiePercentLabelFormat() { return piePercentLabelFormat; }
+    public String getPiePercentLabelFormat() {
+        return piePercentLabelFormat;
+    }
 
     //////////////////////// data organization ////////////////////////
 
@@ -159,7 +165,7 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
 
-    //////////////////////////  visibility  //////////////////////////
+    ////////////////////////// visibility //////////////////////////
 
 
     @Override
@@ -181,7 +187,7 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
 
-    //////////////////////////  color  //////////////////////////
+    ////////////////////////// color //////////////////////////
 
 
     /**
@@ -221,7 +227,7 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
 
-    //////////////////////////  line color  //////////////////////////
+    ////////////////////////// line color //////////////////////////
 
 
     @Override
@@ -243,7 +249,7 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
 
-    //////////////////////////  error bar color  //////////////////////////
+    ////////////////////////// error bar color //////////////////////////
 
 
     @Override
@@ -265,7 +271,7 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
 
-    //////////////////////////  line style  //////////////////////////
+    ////////////////////////// line style //////////////////////////
 
 
     @Override
@@ -274,7 +280,7 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
         return this;
     }
 
-    //////////////////////////  point sizes  //////////////////////////
+    ////////////////////////// point sizes //////////////////////////
 
 
     @Override
@@ -340,23 +346,27 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public <CATEGORY extends Comparable> AbstractCategoryDataSeries pointSize(final CATEGORY[] categories, int[] factors) {
+    public <CATEGORY extends Comparable> AbstractCategoryDataSeries pointSize(final CATEGORY[] categories,
+            int[] factors) {
         return pointSize(categories, PlotUtils.toDouble(factors));
     }
 
     @Override
-    public <CATEGORY extends Comparable> AbstractCategoryDataSeries pointSize(final CATEGORY[] categories, long[] factors) {
+    public <CATEGORY extends Comparable> AbstractCategoryDataSeries pointSize(final CATEGORY[] categories,
+            long[] factors) {
         return pointSize(categories, PlotUtils.toDouble(factors));
     }
 
     @Override
-    public <CATEGORY extends Comparable, NUMBER extends Number> AbstractCategoryDataSeries pointSize(final CATEGORY[] categories, NUMBER[] factors) {
+    public <CATEGORY extends Comparable, NUMBER extends Number> AbstractCategoryDataSeries pointSize(
+            final CATEGORY[] categories, NUMBER[] factors) {
         return pointSize(categories, PlotUtils.toDouble(factors));
     }
 
 
     @Override
-    public <CATEGORY extends Comparable> AbstractCategoryDataSeries pointSize(final CATEGORY[] categories, double[] factors) {
+    public <CATEGORY extends Comparable> AbstractCategoryDataSeries pointSize(final CATEGORY[] categories,
+            double[] factors) {
         ArgumentValidations.assertNotNull(categories, "categories", getPlotInfo());
         ArgumentValidations.assertNotNull(factors, "factors", getPlotInfo());
         Require.eq(categories.length, "categories.length", factors.length, "factors.length");
@@ -372,7 +382,8 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public <CATEGORY extends Comparable, NUMBER extends Number> AbstractCategoryDataSeries pointSize(final Map<CATEGORY, NUMBER> factors) {
+    public <CATEGORY extends Comparable, NUMBER extends Number> AbstractCategoryDataSeries pointSize(
+            final Map<CATEGORY, NUMBER> factors) {
         if (!this.sizes.isModifiable()) {
             this.sizes.setSpecific(new AssociativeDataHashMap<>(getPlotInfo()));
         }
@@ -395,9 +406,11 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
         final TableHandle tableHandle = new TableHandle(t, keyColumn, valueColumn);
         addTableHandle(tableHandle);
 
-        ArgumentValidations.assertInstance(t, keyColumn, Comparable.class, "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
+        ArgumentValidations.assertInstance(t, keyColumn, Comparable.class,
+                "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
 
-        sizes.setSpecific(new AssociativeDataTable<Comparable, Double, Number>(tableHandle, keyColumn, valueColumn, Comparable.class, Number.class, getPlotInfo()) {
+        sizes.setSpecific(new AssociativeDataTable<Comparable, Double, Number>(tableHandle, keyColumn, valueColumn,
+                Comparable.class, Number.class, getPlotInfo()) {
             @Override
             public Double convert(Number v) {
                 return PlotUtils.numberToDouble(v);
@@ -413,13 +426,16 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
         ArgumentValidations.assertNotNull(keyColumn, "keyColumn", getPlotInfo());
         ArgumentValidations.assertNotNull(valueColumn, "valueColumn", getPlotInfo());
 
-        final Function<Table, Table> tableTransform = (Function<Table, Table> & Serializable) table -> table.lastBy(keyColumn);
+        final Function<Table, Table> tableTransform =
+                (Function<Table, Table> & Serializable) table -> table.lastBy(keyColumn);
         final SwappableTable t = sds.getSwappableTable(name(), chart(), tableTransform, valueColumn);
         addSwappableTable(t);
 
-        ArgumentValidations.assertInstance(t.getTableDefinition(), keyColumn, Comparable.class, "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
+        ArgumentValidations.assertInstance(t.getTableDefinition(), keyColumn, Comparable.class,
+                "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
 
-        sizes.setSpecific(new AssociativeDataSwappableTable<Comparable, Double, Number>(t, keyColumn, valueColumn, Comparable.class, Number.class, getPlotInfo()) {
+        sizes.setSpecific(new AssociativeDataSwappableTable<Comparable, Double, Number>(t, keyColumn, valueColumn,
+                Comparable.class, Number.class, getPlotInfo()) {
             @Override
             public Double convert(Number v) {
                 return PlotUtils.numberToDouble(v);
@@ -430,7 +446,7 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
 
-    //////////////////////////  point colors  //////////////////////////
+    ////////////////////////// point colors //////////////////////////
 
 
     @Override
@@ -470,7 +486,8 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public <CATEGORY extends Comparable, COLOR extends Paint> AbstractCategoryDataSeries pointColor(final Map<CATEGORY, COLOR> colors) {
+    public <CATEGORY extends Comparable, COLOR extends Paint> AbstractCategoryDataSeries pointColor(
+            final Map<CATEGORY, COLOR> colors) {
         if (!this.colors.isModifiable()) {
             this.colors.setSpecific(new AssociativeDataHashMap<>(getPlotInfo()));
         }
@@ -480,7 +497,8 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public <CATEGORY extends Comparable, COLOR extends Integer> AbstractCategoryDataSeries pointColorInteger(final Map<CATEGORY, COLOR> colors) {
+    public <CATEGORY extends Comparable, COLOR extends Integer> AbstractCategoryDataSeries pointColorInteger(
+            final Map<CATEGORY, COLOR> colors) {
         if (!this.colors.isModifiable()) {
             this.colors.setSpecific(new AssociativeDataHashMap<>(getPlotInfo()));
         }
@@ -497,47 +515,59 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
         ArgumentValidations.assertNotNull(t, "table", getPlotInfo());
         ArgumentValidations.assertNotNull(keyColumn, "keyColumn", getPlotInfo());
         ArgumentValidations.assertNotNull(valueColumn, "valueColumn", getPlotInfo());
-        ArgumentValidations.assertInstance(t, keyColumn, Comparable.class, "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
+        ArgumentValidations.assertInstance(t, keyColumn, Comparable.class,
+                "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
 
         final TableHandle tableHandle = new TableHandle(t, keyColumn, valueColumn);
         addTableHandle(tableHandle);
-        final ColumnHandlerFactory.ColumnHandler valueColumnHandler = ColumnHandlerFactory.newNumericHandler(tableHandle, valueColumn, getPlotInfo());
+        final ColumnHandlerFactory.ColumnHandler valueColumnHandler =
+                ColumnHandlerFactory.newNumericHandler(tableHandle, valueColumn, getPlotInfo());
 
         if (valueColumnHandler.typeClassification().equals(ColumnHandlerFactory.TypeClassification.INTEGER) &&
                 (valueColumnHandler.type() == int.class || valueColumnHandler.type() == Integer.class)) {
-            this.colors.setSpecific(new AssociativeDataTableComparablePaint(tableHandle, keyColumn, valueColumn, chart(), getPlotInfo()));
+            this.colors.setSpecific(new AssociativeDataTableComparablePaint(tableHandle, keyColumn, valueColumn,
+                    chart(), getPlotInfo()));
         } else if (valueColumnHandler.typeClassification().equals(ColumnHandlerFactory.TypeClassification.PAINT)) {
-            this.colors.setSpecific(new AssociativeDataTable<>(tableHandle, keyColumn, valueColumn, Comparable.class, Paint.class, getPlotInfo()));
+            this.colors.setSpecific(new AssociativeDataTable<>(tableHandle, keyColumn, valueColumn, Comparable.class,
+                    Paint.class, getPlotInfo()));
         } else {
-            throw new PlotUnsupportedOperationException("Column can not be converted into a color: column=" + valueColumn + "\ttype=" + valueColumnHandler.type(), this);
+            throw new PlotUnsupportedOperationException("Column can not be converted into a color: column="
+                    + valueColumn + "\ttype=" + valueColumnHandler.type(), this);
         }
 
         return this;
     }
 
     @Override
-    public AbstractCategoryDataSeries pointColor(final SelectableDataSet sds, final String keyColumn, final String valueColumn) {
+    public AbstractCategoryDataSeries pointColor(final SelectableDataSet sds, final String keyColumn,
+            final String valueColumn) {
         ArgumentValidations.assertNotNull(sds, "sds", getPlotInfo());
         ArgumentValidations.assertNotNull(keyColumn, "keyColumn", getPlotInfo());
         ArgumentValidations.assertNotNull(valueColumn, "valueColumn", getPlotInfo());
-        ArgumentValidations.assertInstance(sds, keyColumn, Comparable.class, "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
+        ArgumentValidations.assertInstance(sds, keyColumn, Comparable.class,
+                "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
 
         final Class type = sds.getTableDefinition().getColumn(valueColumn).getDataType();
-        final boolean isInt = type.equals(int.class) || type.equals(Integer.class) || type.equals(short.class) || type.equals(Short.class);
+        final boolean isInt = type.equals(int.class) || type.equals(Integer.class) || type.equals(short.class)
+                || type.equals(Short.class);
         final boolean isPaint = Paint.class.isAssignableFrom(type);
 
         if (!isInt && !isPaint) {
-            throw new PlotUnsupportedOperationException("Column can not be converted into a color: column=" + valueColumn + "\ttype=" + type, this);
+            throw new PlotUnsupportedOperationException(
+                    "Column can not be converted into a color: column=" + valueColumn + "\ttype=" + type, this);
         }
 
-        final Function<Table, Table> tableTransform = (Function<Table, Table> & Serializable) table -> table.lastBy(keyColumn);
+        final Function<Table, Table> tableTransform =
+                (Function<Table, Table> & Serializable) table -> table.lastBy(keyColumn);
         final SwappableTable t = sds.getSwappableTable(name(), chart(), tableTransform, keyColumn, valueColumn);
         addSwappableTable(t);
 
         if (isInt) {
-            this.colors.setSpecific(new AssociativeDataSwappableTableComparablePaint(t, keyColumn, valueColumn, chart(), getPlotInfo()));
+            this.colors.setSpecific(new AssociativeDataSwappableTableComparablePaint(t, keyColumn, valueColumn, chart(),
+                    getPlotInfo()));
         } else if (isPaint) {
-            this.colors.setSpecific(new AssociativeDataSwappableTable<>(t, keyColumn, valueColumn, Comparable.class, Paint.class, getPlotInfo()));
+            this.colors.setSpecific(new AssociativeDataSwappableTable<>(t, keyColumn, valueColumn, Comparable.class,
+                    Paint.class, getPlotInfo()));
         } else {
             throw new PlotIllegalStateException("Should never reach here", this);
         }
@@ -557,7 +587,7 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
 
-    //////////////////////////  point labels  //////////////////////////
+    ////////////////////////// point labels //////////////////////////
 
 
     @Override
@@ -577,7 +607,8 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public <CATEGORY extends Comparable, LABEL> AbstractCategoryDataSeries pointLabel(final Map<CATEGORY, LABEL> labels) {
+    public <CATEGORY extends Comparable, LABEL> AbstractCategoryDataSeries pointLabel(
+            final Map<CATEGORY, LABEL> labels) {
         if (!this.labels.isModifiable()) {
             this.labels.setSpecific(new AssociativeDataHashMap<>(getPlotInfo()));
         }
@@ -593,7 +624,8 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     public AbstractCategoryDataSeries pointLabel(final Table t, final String keyColumn, final String valueColumn) {
         final TableHandle tableHandle = new TableHandle(t, keyColumn, valueColumn);
         addTableHandle(tableHandle);
-        ArgumentValidations.assertInstance(t, keyColumn, Comparable.class, "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
+        ArgumentValidations.assertInstance(t, keyColumn, Comparable.class,
+                "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
 
         this.labels.setSpecific(new AssociativeDataTableLabel(tableHandle, keyColumn, valueColumn, getPlotInfo()));
 
@@ -625,11 +657,14 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
-    public AbstractCategoryDataSeries pointLabel(final SelectableDataSet sds, final String keyColumn, final String valueColumn) {
+    public AbstractCategoryDataSeries pointLabel(final SelectableDataSet sds, final String keyColumn,
+            final String valueColumn) {
         ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), keyColumn, valueColumn);
-        ArgumentValidations.assertInstance(sds, keyColumn, Comparable.class, "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
+        ArgumentValidations.assertInstance(sds, keyColumn, Comparable.class,
+                "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
 
-        final Function<Table, Table> tableTransform = (Function<Table, Table> & Serializable) table -> table.lastBy(keyColumn);
+        final Function<Table, Table> tableTransform =
+                (Function<Table, Table> & Serializable) table -> table.lastBy(keyColumn);
         final SwappableTable t = sds.getSwappableTable(name(), chart(), tableTransform, keyColumn, valueColumn);
         addSwappableTable(t);
         this.labels.setSpecific(new AssociativeDataSwappableTableLabel(t, keyColumn, valueColumn, getPlotInfo()));
@@ -676,7 +711,8 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
                 this.shapes.put(l.getKey(), NamedShape.getShape(l.getValue()));
             } catch (final IllegalArgumentException iae) {
                 this.shapes.setSpecific(null);
-                throw new PlotIllegalArgumentException("Not a valid shape: `" + l.getValue() + "` for category:" + l.getKey() + "; valid shapes: " + NamedShape.getShapesString(), this);
+                throw new PlotIllegalArgumentException("Not a valid shape: `" + l.getValue() + "` for category:"
+                        + l.getKey() + "; valid shapes: " + NamedShape.getShapesString(), this);
             }
         }
 
@@ -689,43 +725,52 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
         ArgumentValidations.assertNotNull(keyColumn, "keyColumn", getPlotInfo());
         ArgumentValidations.assertNotNull(valueColumn, "valueColumn", getPlotInfo());
 
-        ArgumentValidations.assertInstance(t, keyColumn, Comparable.class, "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
+        ArgumentValidations.assertInstance(t, keyColumn, Comparable.class,
+                "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
 
         final Class columnType = ArgumentValidations.getColumnType(t, valueColumn, getPlotInfo());
         if (String.class.isAssignableFrom(columnType)) {
             final TableHandle tableHandle = new TableHandle(t, keyColumn, valueColumn);
             addTableHandle(tableHandle);
-            this.shapes.setSpecific(new AssociativeDataTablePointShapeString(tableHandle, keyColumn, valueColumn, getPlotInfo()));
+            this.shapes.setSpecific(
+                    new AssociativeDataTablePointShapeString(tableHandle, keyColumn, valueColumn, getPlotInfo()));
         } else if (Shape.class.isAssignableFrom(columnType)) {
             final TableHandle tableHandle = new TableHandle(t, keyColumn, valueColumn);
             addTableHandle(tableHandle);
-            this.shapes.setSpecific(new AssociativeDataTablePointShapeObj(tableHandle, keyColumn, valueColumn, getPlotInfo()));
+            this.shapes.setSpecific(
+                    new AssociativeDataTablePointShapeObj(tableHandle, keyColumn, valueColumn, getPlotInfo()));
         } else {
-            throw new PlotRuntimeException("column is not a supported type (String or Shape): columnName=" + valueColumn, this);
+            throw new PlotRuntimeException(
+                    "column is not a supported type (String or Shape): columnName=" + valueColumn, this);
         }
 
         return this;
     }
 
     @Override
-    public CategoryDataSeries pointShape(final SelectableDataSet sds, final String keyColumn, final String valueColumn) {
+    public CategoryDataSeries pointShape(final SelectableDataSet sds, final String keyColumn,
+            final String valueColumn) {
         ArgumentValidations.assertNotNull(sds, "sds", getPlotInfo());
         ArgumentValidations.assertNotNull(keyColumn, "keyColumn", getPlotInfo());
         ArgumentValidations.assertNotNull(valueColumn, "valueColumn", getPlotInfo());
 
         ArgumentValidations.assertColumnsInTable(sds, getPlotInfo(), keyColumn, valueColumn);
-        ArgumentValidations.assertInstance(sds, keyColumn, Comparable.class, "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
+        ArgumentValidations.assertInstance(sds, keyColumn, Comparable.class,
+                "key column is not a supported type (Comparable): keyColumn=" + keyColumn, getPlotInfo());
 
         final SwappableTable swappableTable = sds.getSwappableTable(name(), chart(), keyColumn, valueColumn);
         final Class columnType = ArgumentValidations.getColumnType(sds, valueColumn, getPlotInfo());
         if (String.class.isAssignableFrom(columnType)) {
             addSwappableTable(swappableTable);
-            this.shapes.setSpecific(new AssociativeDataSwappableTablePointShapeString(swappableTable, keyColumn, valueColumn, getPlotInfo()));
+            this.shapes.setSpecific(new AssociativeDataSwappableTablePointShapeString(swappableTable, keyColumn,
+                    valueColumn, getPlotInfo()));
         } else if (Shape.class.isAssignableFrom(columnType)) {
             addSwappableTable(swappableTable);
-            this.shapes.setSpecific(new AssociativeDataSwappableTablePointShapeObj(swappableTable, keyColumn, valueColumn, getPlotInfo()));
+            this.shapes.setSpecific(new AssociativeDataSwappableTablePointShapeObj(swappableTable, keyColumn,
+                    valueColumn, getPlotInfo()));
         } else {
-            throw new PlotRuntimeException("column is not a supported type (String OR Shape): columnName=" + valueColumn, this);
+            throw new PlotRuntimeException(
+                    "column is not a supported type (String OR Shape): columnName=" + valueColumn, this);
         }
         return this;
     }
@@ -734,7 +779,8 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
 
         private static final long serialVersionUID = -782616004116345049L;
 
-        AssociativeDataTablePointShapeString(final TableHandle handle, final String keyColumn, final String valueColumn, final PlotInfo plotInfo) {
+        AssociativeDataTablePointShapeString(final TableHandle handle, final String keyColumn, final String valueColumn,
+                final PlotInfo plotInfo) {
             super(handle, keyColumn, valueColumn, Comparable.class, String.class, plotInfo);
         }
 
@@ -749,7 +795,8 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
 
         private static final long serialVersionUID = -2868764888409198544L;
 
-        AssociativeDataTablePointShapeObj(final TableHandle handle, final String keyColumn, final String valueColumn, final PlotInfo plotInfo) {
+        AssociativeDataTablePointShapeObj(final TableHandle handle, final String keyColumn, final String valueColumn,
+                final PlotInfo plotInfo) {
             super(handle, keyColumn, valueColumn, Comparable.class, Shape.class, plotInfo);
         }
 
@@ -759,11 +806,13 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
         }
     }
 
-    private static class AssociativeDataSwappableTablePointShapeString extends AssociativeDataSwappableTable<Comparable, Shape, String> {
+    private static class AssociativeDataSwappableTablePointShapeString
+            extends AssociativeDataSwappableTable<Comparable, Shape, String> {
 
         private static final long serialVersionUID = 120758160744582475L;
 
-        AssociativeDataSwappableTablePointShapeString(final SwappableTable t, final String keyColumn, final String valueColumn, final PlotInfo plotInfo) {
+        AssociativeDataSwappableTablePointShapeString(final SwappableTable t, final String keyColumn,
+                final String valueColumn, final PlotInfo plotInfo) {
             super(t, keyColumn, valueColumn, Comparable.class, String.class, plotInfo);
         }
 
@@ -773,11 +822,13 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
         }
     }
 
-    private static class AssociativeDataSwappableTablePointShapeObj extends AssociativeDataSwappableTable<Comparable, Shape, Shape> {
+    private static class AssociativeDataSwappableTablePointShapeObj
+            extends AssociativeDataSwappableTable<Comparable, Shape, Shape> {
 
         private static final long serialVersionUID = -682972849470492883L;
 
-        AssociativeDataSwappableTablePointShapeObj(final SwappableTable t, final String keyColumn, final String valueColumn, final PlotInfo plotInfo) {
+        AssociativeDataSwappableTablePointShapeObj(final SwappableTable t, final String keyColumn,
+                final String valueColumn, final PlotInfo plotInfo) {
             super(t, keyColumn, valueColumn, Comparable.class, Shape.class, plotInfo);
         }
 
@@ -787,13 +838,15 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
         }
     }
 
-    private static class AssociativeDataPaintByYMap<COLOR extends Paint> extends AssociativeData<Comparable, Paint> implements Serializable {
+    private static class AssociativeDataPaintByYMap<COLOR extends Paint> extends AssociativeData<Comparable, Paint>
+            implements Serializable {
 
         private static final long serialVersionUID = 1040533194319869777L;
         private final Map<Double, COLOR> colors;
         private final AbstractCategoryDataSeries dataSeries;
 
-        private AssociativeDataPaintByYMap(final Map<Double, COLOR> colors, final AbstractCategoryDataSeries dataSeries) {
+        private AssociativeDataPaintByYMap(final Map<Double, COLOR> colors,
+                final AbstractCategoryDataSeries dataSeries) {
             super(dataSeries.getPlotInfo());
             this.colors = colors;
             this.dataSeries = dataSeries;
@@ -825,7 +878,8 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
         private static final long serialVersionUID = 2872945661540856625L;
         private final ChartImpl chart;
 
-        AssociativeDataTableComparablePaint(final TableHandle handle, final String keyColumn, final String valueColumn, final ChartImpl chart, final PlotInfo plotInfo) {
+        AssociativeDataTableComparablePaint(final TableHandle handle, final String keyColumn, final String valueColumn,
+                final ChartImpl chart, final PlotInfo plotInfo) {
             super(handle, keyColumn, valueColumn, Comparable.class, Integer.class, plotInfo);
             this.chart = chart;
         }
@@ -836,12 +890,14 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
         }
     }
 
-    private static class AssociativeDataSwappableTableComparablePaint extends AssociativeDataSwappableTable<Comparable, Paint, Integer> {
+    private static class AssociativeDataSwappableTableComparablePaint
+            extends AssociativeDataSwappableTable<Comparable, Paint, Integer> {
 
         private static final long serialVersionUID = -644994476705986379L;
         private final ChartImpl chart;
 
-        AssociativeDataSwappableTableComparablePaint(final SwappableTable t, final String keyColumn, final String valueColumn, final ChartImpl chart, final PlotInfo plotInfo) {
+        AssociativeDataSwappableTableComparablePaint(final SwappableTable t, final String keyColumn,
+                final String valueColumn, final ChartImpl chart, final PlotInfo plotInfo) {
             super(t, keyColumn, valueColumn, Comparable.class, Integer.class, plotInfo);
             this.chart = chart;
         }
@@ -855,7 +911,8 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     private static class AssociativeDataTableLabel extends AssociativeDataTable<Comparable, String, Object> {
         private static final long serialVersionUID = -2209957632708434850L;
 
-        AssociativeDataTableLabel(final TableHandle handle, final String keyColumn, final String valueColumn, final PlotInfo plotInfo) {
+        AssociativeDataTableLabel(final TableHandle handle, final String keyColumn, final String valueColumn,
+                final PlotInfo plotInfo) {
             super(handle, keyColumn, valueColumn, Comparable.class, Object.class, plotInfo);
         }
 
@@ -865,11 +922,13 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
         }
     }
 
-    private static class AssociativeDataSwappableTableLabel extends AssociativeDataSwappableTable<Comparable, String, Object> {
+    private static class AssociativeDataSwappableTableLabel
+            extends AssociativeDataSwappableTable<Comparable, String, Object> {
         private static final long serialVersionUID = -7266731699707547063L;
 
-        //The SwappableTable needs to have a lastBy applied
-        AssociativeDataSwappableTableLabel(final SwappableTable t, final String keyColumn, final String valueColumn, final PlotInfo plotInfo) {
+        // The SwappableTable needs to have a lastBy applied
+        AssociativeDataSwappableTableLabel(final SwappableTable t, final String keyColumn, final String valueColumn,
+                final PlotInfo plotInfo) {
             super(t, keyColumn, valueColumn, Comparable.class, Object.class, plotInfo);
         }
 
@@ -888,7 +947,9 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
      *
      * @param format format
      */
-    protected void setPiePercentLabelFormat(String format) { this.piePercentLabelFormat = format; }
+    protected void setPiePercentLabelFormat(String format) {
+        this.piePercentLabelFormat = format;
+    }
 
     @Override
     public AbstractCategoryDataSeries toolTipPattern(final String format) {

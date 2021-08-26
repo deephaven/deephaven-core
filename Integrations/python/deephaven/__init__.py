@@ -19,8 +19,6 @@ For convenient usage in the python console, the main sub-packages of deephaven h
 
 * Plot imported as plt
 
-* QueryScope imported as qs
-
 * ParquetTools imported as pt
 
 * TableTools imported as ttools *(`tt` is frequently used for time table)*
@@ -37,7 +35,7 @@ Additionally, the following methods have been imported into the main deephaven n
        convertToJavaHashSet, convertToJavaHashMap
 
 * from TableManipulation import ColumnRenderersBuilder, DistinctFormatter,
-       DownsampledWhereFilter, LayoutHintBuilder,
+       DownsampledWhereFilter, DynamicTableWriter, LayoutHintBuilder,  
        SmartKey, SortPair, TotalsTableBuilder, WindowCheck
 
 For ease of namespace population in a python console, consider::
@@ -59,10 +57,10 @@ __all__ = [
     "convertToJavaArray", "convertToJavaList", "convertToJavaArrayList", "convertToJavaHashSet",
     "convertToJavaHashMap",  # from conversion_utils
 
-    'ColumnRenderersBuilder', 'DistinctFormatter', 'DownsampledWhereFilter', 'LayoutHintBuilder',
-    'SmartKey', 'SortPair', 'TotalsTableBuilder', 'WindowCheck',  # from TableManipulation
+    'ColumnRenderersBuilder', 'DistinctFormatter', 'DownsampledWhereFilter', 'DynamicTableWriter', 
+    'LayoutHintBuilder', 'SmartKey', 'SortPair', 'TotalsTableBuilder', 'WindowCheck',  # from TableManipulation
 
-    "cals", "caf", "dbtu", "figw", "mavg", "npy", "plt", "qs", "pt", "ttools", "tloggers"  # subpackages with abbreviated names
+    "cals", "caf", "dbtu", "figw", "mavg", "npy", "plt", "pt", "ttools", "tloggers"  # subpackages with abbreviated names
 ]
 
 
@@ -117,10 +115,10 @@ def initialize():
 
     import deephaven.TableManipulation
     deephaven.TableManipulation._defineSymbols()
-    global ColumnRenderersBuilder, DistinctFormatter, DownsampledWhereFilter, LayoutHintBuilder, \
-        SmartKey, SortPair, TotalsTableBuilder
+    global ColumnRenderersBuilder, DistinctFormatter, DownsampledWhereFilter, DynamicTableWriter, \
+        LayoutHintBuilder, SmartKey, SortPair, TotalsTableBuilder
     from deephaven.TableManipulation import ColumnRenderersBuilder, DistinctFormatter, \
-        DownsampledWhereFilter, LayoutHintBuilder, SmartKey, SortPair, \
+        DownsampledWhereFilter, DynamicTableWriter, LayoutHintBuilder, SmartKey, SortPair, \
         TotalsTableBuilder
 
     WindowCheck._defineSymbols()

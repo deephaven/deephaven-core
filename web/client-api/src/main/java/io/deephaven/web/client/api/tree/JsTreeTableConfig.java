@@ -6,8 +6,7 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 /**
- * Configuration object for running Table.treeTable to produce a hierarchical view of a given "flat"
- * table.
+ * Configuration object for running Table.treeTable to produce a hierarchical view of a given "flat" table.
  */
 @JsType(name = "TreeTableConfig", namespace = "dh")
 public class JsTreeTableConfig {
@@ -15,8 +14,7 @@ public class JsTreeTableConfig {
     public String parentColumn = null;
     public boolean promoteOrphansToRoot = false;
 
-    public JsTreeTableConfig() {
-    }
+    public JsTreeTableConfig() {}
 
     @JsIgnore
     public JsTreeTableConfig(JsPropertyMap<Object> source) {

@@ -18,11 +18,13 @@ public class UnstructuredFilterTableGrpcImpl extends GrpcTableOperation<Unstruct
 
     @Inject
     public UnstructuredFilterTableGrpcImpl() {
-        super(BatchTableRequest.Operation::getUnstructuredFilter, UnstructuredFilterTableRequest::getResultId, UnstructuredFilterTableRequest::getSourceId);
+        super(BatchTableRequest.Operation::getUnstructuredFilter, UnstructuredFilterTableRequest::getResultId,
+                UnstructuredFilterTableRequest::getSourceId);
     }
 
     @Override
-    public Table create(final UnstructuredFilterTableRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final UnstructuredFilterTableRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();

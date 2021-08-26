@@ -11,7 +11,8 @@ import java.util.Optional;
  * A custom type {@link #clazz() class}.
  *
  * <p>
- * The {@link #clazz() class} must not be representable by a {@link Type#knownTypes() known type}.
+ * The {@link #clazz() class} must not be representable by a {@link Type#knownTypes() known type}, and must not be an
+ * array.
  *
  * @param <T> the type
  */
@@ -33,11 +34,26 @@ public abstract class CustomType<T> extends GenericTypeBase<T> {
     }
 
     @Check
-    final void checkClazz() {
+    final void checkNotStatic() {
         final Optional<Type<T>> staticType = TypeHelper.findStatic(clazz());
         if (staticType.isPresent()) {
             throw new IllegalArgumentException(
-                String.format("Use static type %s instead", staticType.get()));
+                    String.format("Use static type %s instead", staticType.get()));
+        }
+    }
+
+    @Check
+    final void checkNotArray() {
+        if (clazz().isArray()) {
+            throw new IllegalArgumentException(String.format(
+                    "Can't create an array type here, use '%s' instead", NativeArrayType.class));
+        }
+    }
+
+    @Check
+    final void checkNotDbArray() {
+        if (clazz().getName().startsWith("io.deephaven.db.tables.dbarrays.Db")) {
+            throw new IllegalArgumentException("Can't create DB array types as custom types");
         }
     }
 }

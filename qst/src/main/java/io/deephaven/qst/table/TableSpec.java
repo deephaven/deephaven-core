@@ -1,9 +1,10 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.api.TableOperations;
-import io.deephaven.qst.TableCreation;
-import io.deephaven.qst.TableCreation.OperationsToTable;
-import io.deephaven.qst.TableCreation.TableToOperations;
+import io.deephaven.qst.TableCreator;
+import io.deephaven.qst.TableCreator.OperationsToTable;
+import io.deephaven.qst.TableCreator.TableToOperations;
+import io.deephaven.qst.TableCreationLogic;
 import org.immutables.value.Value.Derived;
 
 import java.io.BufferedInputStream;
@@ -13,22 +14,20 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collection;
 
 /**
- * A table specification is a declarative description of a table query. Part of a "query syntax
- * tree".
+ * A table specification is a declarative description of a table query. Part of a "query syntax tree".
  *
  * <p>
- * A table specification may be built-up explicitly via the individual implementation class build
- * patterns, or may be built-up in a fluent-manner via the {@link TableOperations} interface.
+ * A table specification may be built-up explicitly via the individual implementation class build patterns, or may be
+ * built-up in a fluent-manner via the {@link TableOperations} interface.
  *
  * <p>
  * A table specification can be "replayed" against the fluent interfaces, see
- * {@link io.deephaven.qst.TableCreation#create(TableCreation, TableToOperations, OperationsToTable, TableSpec)}.
+ * {@link TableCreator#create(TableCreator, TableToOperations, OperationsToTable, TableSpec)}.
  *
- * @see io.deephaven.qst.TableCreation
+ * @see TableCreator
  * @see io.deephaven.api.TableOperations
  */
 public interface TableSpec extends TableOperations<TableSpec, TableSpec>, Serializable {
@@ -37,8 +36,8 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, Serial
         return EmptyTable.of(size);
     }
 
-    static TableSpec merge(TableSpec... tables) {
-        return merge(Arrays.asList(tables));
+    static MergeTable merge(TableSpec first, TableSpec second, TableSpec... rest) {
+        return MergeTable.builder().addTables(first, second).addTables(rest).build();
     }
 
     static TableSpec merge(Collection<? extends TableSpec> tables) {
@@ -49,6 +48,10 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, Serial
             return tables.iterator().next();
         }
         return MergeTable.of(tables);
+    }
+
+    static TableSpec of(TableCreationLogic logic) {
+        return logic.create(TableCreatorImpl.INSTANCE);
     }
 
     /**
@@ -64,15 +67,17 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, Serial
      */
     static TableSpec file(Path path) throws IOException, ClassNotFoundException {
         try (InputStream in = Files.newInputStream(path);
-            BufferedInputStream buf = new BufferedInputStream(in);
-            ObjectInputStream oIn = new ObjectInputStream(buf)) {
+                BufferedInputStream buf = new BufferedInputStream(in);
+                ObjectInputStream oIn = new ObjectInputStream(buf)) {
             return (TableSpec) oIn.readObject();
         }
     }
 
+    TableCreationLogic logic();
+
     /**
-     * The depth of the table is the maximum depth of its dependencies plus one. A table with no
-     * dependencies has a depth of zero.
+     * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a
+     * depth of zero.
      *
      * @return the depth
      */

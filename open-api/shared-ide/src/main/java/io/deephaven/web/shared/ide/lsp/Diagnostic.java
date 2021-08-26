@@ -22,8 +22,8 @@ public class Diagnostic implements Serializable {
     private DocumentRange range;
 
     /**
-     * The diagnostic's severity. Can be omitted. If omitted it is up to the
-     * client to interpret diagnostics as error, warning, info or hint.
+     * The diagnostic's severity. Can be omitted. If omitted it is up to the client to interpret diagnostics as error,
+     * warning, info or hint.
      */
     private Integer severity;
 
@@ -33,8 +33,7 @@ public class Diagnostic implements Serializable {
     private Integer code;
 
     /**
-     * A human-readable string describing the source of this
-     * diagnostic, e.g. 'typescript' or 'super lint'.
+     * A human-readable string describing the source of this diagnostic, e.g. 'typescript' or 'super lint'.
      */
     private String source;
 
@@ -44,8 +43,8 @@ public class Diagnostic implements Serializable {
     private String message;
 
     /**
-     * An array of related diagnostic information, e.g. when symbol-names within
-     * a scope collide all definitions can be marked via this property.
+     * An array of related diagnostic information, e.g. when symbol-names within a scope collide all definitions can be
+     * marked via this property.
      */
     private DiagnosticRelatedInformation[] relatedInformation;
 
@@ -55,7 +54,7 @@ public class Diagnostic implements Serializable {
     }
 
     @JsConstructor
-    public Diagnostic(@JsOptional  JsPropertyMap<Object> source) {
+    public Diagnostic(@JsOptional JsPropertyMap<Object> source) {
         if (source == null) {
             return;
         }
@@ -101,7 +100,8 @@ public class Diagnostic implements Serializable {
     @JsProperty
     public void setSeverity(Double severity) {
         this.severity = severity == null ? null : severity.intValue();
-        assert severity == null || severity == severity.intValue() : "Only set integer severity! (you sent " + severity + ")";
+        assert severity == null || severity == severity.intValue()
+                : "Only set integer severity! (you sent " + severity + ")";
     }
 
     @JsProperty

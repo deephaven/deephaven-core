@@ -15,8 +15,13 @@ public abstract class CharType extends PrimitiveTypeBase<Character> {
     }
 
     @Override
-    public final Class<Character> primitiveClass() {
+    public final Class<Character> clazz() {
         return char.class;
+    }
+
+    @Override
+    public final NativeArrayType<char[], Character> arrayType() {
+        return NativeArrayType.of(char[].class, this);
     }
 
     @Override

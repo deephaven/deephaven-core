@@ -58,6 +58,8 @@ public interface SingleRangeMixin extends OrderedKeys {
     }
 
     long size();
+
     long rangeStart();
+
     long rangeEnd();
 }

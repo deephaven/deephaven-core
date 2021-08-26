@@ -26,6 +26,7 @@ public class MemoryTableLoggers {
             "defaultProcessInfoLogSize", 400);
 
     private volatile static MemoryTableLoggers INSTANCE;
+
     public static MemoryTableLoggers getInstance() {
         if (INSTANCE == null) {
             synchronized (MemoryTableLoggers.class) {
@@ -52,7 +53,8 @@ public class MemoryTableLoggers {
         try {
             pInfo = ProcessInfoConfig.createForCurrentProcess(configuration);
             pInfoLogger = new MemoryTableLogger<>(
-                    log, new ProcessInfoLogLogger(), ProcessInfoLogLogger.getTableDefinition(), DEFAULT_PROCESSS_INFO_LOG_SIZE);
+                    log, new ProcessInfoLogLogger(), ProcessInfoLogLogger.getTableDefinition(),
+                    DEFAULT_PROCESSS_INFO_LOG_SIZE);
             new ProcessInfoStoreDBImpl(pInfoLogger.getTableLogger()).put(pInfo);
         } catch (IOException e) {
             log.fatal().append("Failed to configure process info: ").append(e.toString()).endl();
@@ -63,7 +65,8 @@ public class MemoryTableLoggers {
         qplLogger = new MemoryTableLogger<>(
                 log, new QueryPerformanceLogLogger(pInfoId), QueryPerformanceLogLogger.getTableDefinition());
         qoplLogger = new MemoryTableLogger<>(
-                log, new QueryOperationPerformanceLogLogger(pInfoId), QueryOperationPerformanceLogLogger.getTableDefinition());
+                log, new QueryOperationPerformanceLogLogger(pInfoId),
+                QueryOperationPerformanceLogLogger.getTableDefinition());
         if (STATS_LOGGING_ENABLED) {
             processMetricsLogger = new MemoryTableLogger<>(
                     log, new ProcessMetricsLogLogger(), ProcessMetricsLogLogger.getTableDefinition());

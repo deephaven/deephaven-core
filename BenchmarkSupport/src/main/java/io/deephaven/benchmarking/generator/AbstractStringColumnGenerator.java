@@ -23,7 +23,7 @@ public abstract class AbstractStringColumnGenerator implements ColumnGenerator<S
 
     @Override
     public String getUpdateString(String varName) {
-        return def.getName()+"=(String)"+varName+".get()";
+        return def.getName() + "=(String)" + varName + ".get()";
     }
 
     @Override

@@ -7,10 +7,9 @@ import org.junit.Test;
 
 public class TestKnVn {
     /**
-     * Rationale: at its maximum capacity, the hashtable will have an long[Integer.MAX_VALUE] array.
-     * When it rehashes, it will need another such array to rehash into.
-     * So, number of bytes needed = 2 * sizeof(long) * Integer.MAX_VALUE = 32G.
-     * Let's round up and say you need a 40G heap to run this test.
+     * Rationale: at its maximum capacity, the hashtable will have an long[Integer.MAX_VALUE] array. When it rehashes,
+     * it will need another such array to rehash into. So, number of bytes needed = 2 * sizeof(long) * Integer.MAX_VALUE
+     * = 32G. Let's round up and say you need a 40G heap to run this test.
      */
     private static final long MINIMUM_HEAP_SIZE_NEEDED_FOR_TEST = 40L << 30;
     private static final int HASHTABLE_SIZE_LOWER_BOUND_1 = 900_000_000;
@@ -54,7 +53,7 @@ public class TestKnVn {
         }
         long ii = 0;
         try {
-            for ( ; ii < lowerSizeBound; ++ii) {
+            for (; ii < lowerSizeBound; ++ii) {
                 if ((ii % 10_000_000) == 0) {
                     System.out.printf("made it to %d%n", ii);
                 }
@@ -66,7 +65,7 @@ public class TestKnVn {
 
         // Expect the hashtable to reject a put soon
         boolean putFailed = false;
-        for ( ; ii < HASHTABLE_SIZE_UPPER_BOUND; ++ii) {
+        for (; ii < HASHTABLE_SIZE_UPPER_BOUND; ++ii) {
             try {
                 if ((ii % 10_000_000) == 0) {
                     System.out.printf("Made it to %d, and expecting it to hit max capacity soon%n", ii);
@@ -77,7 +76,8 @@ public class TestKnVn {
                 break;
             }
         }
-        TestCase.assertTrue(String.format("Expected hashtable to reject a 'put' as it got close to being full, but it accepted %d elements", ii),
+        TestCase.assertTrue(String.format(
+                "Expected hashtable to reject a 'put' as it got close to being full, but it accepted %d elements", ii),
                 putFailed);
     }
 }

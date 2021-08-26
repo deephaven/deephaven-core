@@ -18,8 +18,8 @@ import java.util.regex.Pattern;
 /**
  * Represents a parsed document.
  *
- * For now, we will be re-parsing the entire string document every time,
- * but in the future, we would like to be able to update only ranges of changed code.
+ * For now, we will be re-parsing the entire string document every time, but in the future, we would like to be able to
+ * update only ranges of changed code.
  */
 public class ParsedDocument implements ParsedResult<ChunkerDocument, ChunkerAssign, Node> {
 
@@ -79,7 +79,7 @@ public class ParsedDocument implements ParsedResult<ChunkerDocument, ChunkerAssi
         }
 
 
-        // bah.  whoever is the most derived should go _last_.
+        // bah. whoever is the most derived should go _last_.
         // We will be looking backwards from cursor, so we should want the end-most item
         // to be the final node, to easily find it later...
 
@@ -87,14 +87,13 @@ public class ParsedDocument implements ParsedResult<ChunkerDocument, ChunkerAssi
             return 1;
         }
 
-        assert b.isChildOf(a) :
-            "Nodes occupying the same tokenspace were not in a parent-child relationship "
+        assert b.isChildOf(a) : "Nodes occupying the same tokenspace were not in a parent-child relationship "
                 + a + " does not contain " + b + " (or vice versa)";
 
         return -1;
     };
     /**
-     * TODO: enforce clients to only send \n.  We don't want to mess around with \r\n taking up two chars.  IDS-1517-26
+     * TODO: enforce clients to only send \n. We don't want to mess around with \r\n taking up two chars. IDS-1517-26
      */
     private static final Pattern NEW_LINE_PATTERN = Pattern.compile("\\r?\\n");
     private final ChunkerDocument doc;
@@ -111,9 +110,9 @@ public class ParsedDocument implements ParsedResult<ChunkerDocument, ChunkerAssi
         this.src = document;
         computedPositions = new ConcurrentHashMap<>(4);
         assignments = new ConcurrentHashMap<>(12);
-        statements = new Lazy<>(()->{
+        statements = new Lazy<>(() -> {
             final LinkedHashSet<ChunkerStatement> stmts = new LinkedHashSet<>();
-            doc.childrenAccept(new ChunkerDefaultVisitor(){
+            doc.childrenAccept(new ChunkerDefaultVisitor() {
                 @Override
                 public Object visitChunkerStatement(ChunkerStatement node, Object data) {
                     stmts.add(node);
@@ -134,8 +133,8 @@ public class ParsedDocument implements ParsedResult<ChunkerDocument, ChunkerAssi
         // our nodes are 0-indexed...
         final Node best;
         if (p >= doc.getEndIndex()) {
-            // cursor is at the end of the document.  Just find the deepest tail node.
-            best = findLast(doc, Math.max(0, Math.min(p-1, doc.getEndIndex())));
+            // cursor is at the end of the document. Just find the deepest tail node.
+            best = findLast(doc, Math.max(0, Math.min(p - 1, doc.getEndIndex())));
         } else {
             best = findDeepest(doc, Math.max(0, p));
         }
@@ -147,20 +146,19 @@ public class ParsedDocument implements ParsedResult<ChunkerDocument, ChunkerAssi
         Assert.leq(best.getStartIndex(), "node.startIndex", i);
         Assert.geq(best.getEndIndex(), "node.endIndex", i);
         // TODO: consider binary search here instead of linear;
-        //  it is likely better to actually search linearly from the end
-        //  since user is most likely to be editing at the end.  IDS-1517-27
-        for (int c = best.jjtGetNumChildren();
-             c --> 0;
-        ) {
+        // it is likely better to actually search linearly from the end
+        // since user is most likely to be editing at the end. IDS-1517-27
+        for (int c = best.jjtGetNumChildren(); c-- > 0;) {
             final Node child = best.jjtGetChild(c);
             if (child.containsIndex(i) ||
-                (best instanceof ChunkerStatement && i == child.getEndIndex())) {
+                    (best instanceof ChunkerStatement && i == child.getEndIndex())) {
                 return findDeepest(child, i);
             }
         }
         // none of our children (if any) contained the specified index; return us.
         return best;
     }
+
     private Node findLast(Node best, int i) {
         Assert.leq(best.getStartIndex(), "node.startIndex", i);
         Assert.geq(best.getEndIndex(), "node.endIndex", i);
@@ -186,12 +184,11 @@ public class ParsedDocument implements ParsedResult<ChunkerDocument, ChunkerAssi
     /**
      * When a parse fails, we do not throw away our last-good document.
      *
-     * We do, however, record the failure information,
-     * which you should check via {@link #isError()}.
+     * We do, however, record the failure information, which you should check via {@link #isError()}.
      *
      * @param src The source with an error
-     * @param e The parse exception.  May make this any exception type.
-     * @return this, for chaining.  We may need to make copies later, but for now, we'll use it as-is.
+     * @param e The parse exception. May make this any exception type.
+     * @return this, for chaining. We may need to make copies later, but for now, we'll use it as-is.
      */
     public ParsedDocument withError(String src, ParseException e) {
         this.errorSource = src;
@@ -226,10 +223,10 @@ public class ParsedDocument implements ParsedResult<ChunkerDocument, ChunkerAssi
     @Override
     public String toString() {
         return "ParsedDocument{" +
-            "doc=" + doc +
-            ", errorSource='" + errorSource + '\'' +
-            ", error=" + error +
-            '}';
+                "doc=" + doc +
+                ", errorSource='" + errorSource + '\'' +
+                ", error=" + error +
+                '}';
     }
 
     public Position.Builder findEditRange(DocumentRange replaceRange) {
@@ -241,12 +238,13 @@ public class ParsedDocument implements ParsedResult<ChunkerDocument, ChunkerAssi
         assert replaceRange.getEnd().getCharacter() <= end.endColumn;
 
         // Most definitely want to cache this very expensive operation.
-        return computedPositions.computeIfAbsent(replaceRange, r-> findFromNodes(replaceRange, doc));
+        return computedPositions.computeIfAbsent(replaceRange, r -> findFromNodes(replaceRange, doc));
     }
 
     private Position.Builder findFromNodes(DocumentRange replaceRange, Node startNode) {
         return findFromNodes(replaceRange, startNode, null);
     }
+
     private Position.Builder findFromNodes(DocumentRange replaceRange, Node startNode, Node endNode) {
 
         if (startNode.jjtGetNumChildren() == 0) {
@@ -323,7 +321,7 @@ public class ParsedDocument implements ParsedResult<ChunkerDocument, ChunkerAssi
         }
         while (tok.next != null) {
             if (tok.containsPosition(pos)) {
-                int ind = tok.tokenBegin;//start ? tok.tokenBegin : tok.startIndex;
+                int ind = tok.tokenBegin;// start ? tok.tokenBegin : tok.startIndex;
                 final Position.Builder candidate = tok.positionStart();
                 final String[] lines = NEW_LINE_PATTERN.split(tok.image);
                 // multi-line tokens rare, but not illegal.
@@ -337,7 +335,7 @@ public class ParsedDocument implements ParsedResult<ChunkerDocument, ChunkerAssi
                         candidate.setLine(candidate.getLine() + 1);
                         candidate.setCharacter(0);
                         // TODO: make monaco force \n only instead of \r\n, and blow up if client gives us \r\ns
-                        //  so the +1 we are doing here for the line split is always valid. IDS-1517-26
+                        // so the +1 we are doing here for the line split is always valid. IDS-1517-26
                         ind += line.length() + 1;
                     }
                 }
@@ -355,7 +353,7 @@ public class ParsedDocument implements ParsedResult<ChunkerDocument, ChunkerAssi
             tok = extendEnd(tok, requested, item);
             if (tok == null) {
                 item.getTextEditBuilder().getRangeBuilder()
-                    .setEnd(LspTools.plus(requested, 0, 1));
+                        .setEnd(LspTools.plus(requested, 0, 1));
                 break;
             }
         }
@@ -368,14 +366,14 @@ public class ParsedDocument implements ParsedResult<ChunkerDocument, ChunkerAssi
             int moved = LspTools.extend(textEdit.getRangeBuilder().getEndBuilder(), tok.positionEnd());
             String txt = tok.image;
             textEdit.setText(textEdit.getText() +
-                txt.substring(txt.length() - moved)
-            );
+                    txt.substring(txt.length() - moved));
             edit.setTextEdit(textEdit);
             return tok.next;
         } else {
-            // ick.  multi-line tokens are the devil.
+            // ick. multi-line tokens are the devil.
             // we should probably reduce this to be only-the-newline-token,
-            // and instead run more productions on the contents of multi-line strings (the other possible line-spanning token)
+            // and instead run more productions on the contents of multi-line strings (the other possible line-spanning
+            // token)
             throw new UnsupportedOperationException("Multi-line edits not supported yet; cannot extendEnd over " + tok);
         }
     }

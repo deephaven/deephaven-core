@@ -27,7 +27,7 @@ class StdStateWithNan extends StdState {
     @Override
     void savePrevious() {
         super.savePrevious();
-        ((StdStateWithNan)prev()).nanCount = nanCount;
+        ((StdStateWithNan) prev()).nanCount = nanCount;
     }
 
     @Override

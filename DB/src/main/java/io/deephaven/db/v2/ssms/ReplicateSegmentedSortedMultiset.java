@@ -30,57 +30,88 @@ import java.util.List;
 import java.util.function.Function;
 
 import static io.deephaven.compilertools.ReplicateUtilities.*;
+
 //
 public class ReplicateSegmentedSortedMultiset {
     public static void main(String[] args) throws IOException {
-        ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharSegmentedSortedMultiset.class, ReplicatePrimitiveCode.MAIN_SRC);
-        insertDbDateTimeExtensions(ReplicatePrimitiveCode.charToLong(CharSegmentedSortedMultiset.class, ReplicatePrimitiveCode.MAIN_SRC));
+        ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharSegmentedSortedMultiset.class,
+                ReplicatePrimitiveCode.MAIN_SRC);
+        insertDbDateTimeExtensions(
+                ReplicatePrimitiveCode.charToLong(CharSegmentedSortedMultiset.class, ReplicatePrimitiveCode.MAIN_SRC));
 
-        String objectSsm = ReplicatePrimitiveCode.charToObject(CharSegmentedSortedMultiset.class, ReplicatePrimitiveCode.MAIN_SRC);
-        fixupObjectSsm(objectSsm, ReplicateSegmentedSortedMultiset::fixupNulls
-                                , ReplicateSegmentedSortedMultiset::fixupDbArrays
-                                , ReplicateSegmentedSortedMultiset::fixupTHashes
-                                , ReplicateSegmentedSortedMultiset::fixupSsmConstructor
-                                , ReplicateSegmentedSortedMultiset::fixupObjectCompare);
+        String objectSsm =
+                ReplicatePrimitiveCode.charToObject(CharSegmentedSortedMultiset.class, ReplicatePrimitiveCode.MAIN_SRC);
+        fixupObjectSsm(objectSsm, ReplicateSegmentedSortedMultiset::fixupNulls,
+                ReplicateSegmentedSortedMultiset::fixupDbArrays, ReplicateSegmentedSortedMultiset::fixupTHashes,
+                ReplicateSegmentedSortedMultiset::fixupSsmConstructor,
+                ReplicateSegmentedSortedMultiset::fixupObjectCompare);
 
-        ReplicatePrimitiveCode.charToAllButBoolean(io.deephaven.db.v2.by.ssmminmax.CharSetResult.class, ReplicatePrimitiveCode.MAIN_SRC);
-        fixupObjectSsm(ReplicatePrimitiveCode.charToObject(io.deephaven.db.v2.by.ssmminmax.CharSetResult.class, ReplicatePrimitiveCode.MAIN_SRC)
-                , ReplicateSegmentedSortedMultiset::fixupNulls);
+        ReplicatePrimitiveCode.charToAllButBoolean(io.deephaven.db.v2.by.ssmminmax.CharSetResult.class,
+                ReplicatePrimitiveCode.MAIN_SRC);
+        fixupObjectSsm(ReplicatePrimitiveCode.charToObject(io.deephaven.db.v2.by.ssmminmax.CharSetResult.class,
+                ReplicatePrimitiveCode.MAIN_SRC), ReplicateSegmentedSortedMultiset::fixupNulls);
 
         ReplicatePrimitiveCode.charToAllButBoolean(CharPercentileTypeHelper.class, ReplicatePrimitiveCode.MAIN_SRC);
-        fixupObjectSsm(ReplicatePrimitiveCode.charToObject(CharPercentileTypeHelper.class, ReplicatePrimitiveCode.MAIN_SRC)
-                , ReplicateSegmentedSortedMultiset::fixupNulls);
+        fixupObjectSsm(
+                ReplicatePrimitiveCode.charToObject(CharPercentileTypeHelper.class, ReplicatePrimitiveCode.MAIN_SRC),
+                ReplicateSegmentedSortedMultiset::fixupNulls);
 
         ReplicatePrimitiveCode.charToIntegers(CharPercentileTypeMedianHelper.class, ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(FloatPercentileTypeMedianHelper.class, ReplicatePrimitiveCode.MAIN_SRC);
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(FloatPercentileTypeMedianHelper.class,
+                ReplicatePrimitiveCode.MAIN_SRC);
 
         ReplicatePrimitiveCode.charToAllButBoolean(CharSsmBackedSource.class, ReplicatePrimitiveCode.MAIN_SRC);
         objectSsm = ReplicatePrimitiveCode.charToObject(CharSsmBackedSource.class, ReplicatePrimitiveCode.MAIN_SRC);
         fixupObjectSsm(objectSsm, ReplicateSegmentedSortedMultiset::fixupDbArrays,
                 ReplicateSegmentedSortedMultiset::fixupSourceConstructor,
-                (l) -> replaceRegion(l, "CreateNew", Collections.singletonList("            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(DistinctOperatorFactory.NODE_SIZE, Object.class));")));
+                (l) -> replaceRegion(l, "CreateNew", Collections.singletonList(
+                        "            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(DistinctOperatorFactory.NODE_SIZE, Object.class));")));
 
-        ReplicatePrimitiveCode.charToAllButBoolean(CharChunkedCountDistinctOperator.class, ReplicatePrimitiveCode.MAIN_SRC);
-        fixupObjectKernelOperator(ReplicatePrimitiveCode.charToObject(CharChunkedCountDistinctOperator.class, ReplicatePrimitiveCode.MAIN_SRC), "ssms");
+        ReplicatePrimitiveCode.charToAllButBoolean(CharChunkedCountDistinctOperator.class,
+                ReplicatePrimitiveCode.MAIN_SRC);
+        fixupObjectKernelOperator(ReplicatePrimitiveCode.charToObject(CharChunkedCountDistinctOperator.class,
+                ReplicatePrimitiveCode.MAIN_SRC), "ssms");
 
-        ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharChunkedDistinctOperator.class, ReplicatePrimitiveCode.MAIN_SRC);
-        fixupLongKernelOperator(ReplicatePrimitiveCode.charToLong(CharChunkedDistinctOperator.class, ReplicatePrimitiveCode.MAIN_SRC), "    externalResult = new DbDateTimeSsmSourceWrapper(internalResult);");
-        fixupObjectKernelOperator(ReplicatePrimitiveCode.charToObject(CharChunkedDistinctOperator.class, ReplicatePrimitiveCode.MAIN_SRC), "internalResult");
+        ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharChunkedDistinctOperator.class,
+                ReplicatePrimitiveCode.MAIN_SRC);
+        fixupLongKernelOperator(
+                ReplicatePrimitiveCode.charToLong(CharChunkedDistinctOperator.class, ReplicatePrimitiveCode.MAIN_SRC),
+                "    externalResult = new DbDateTimeSsmSourceWrapper(internalResult);");
+        fixupObjectKernelOperator(
+                ReplicatePrimitiveCode.charToObject(CharChunkedDistinctOperator.class, ReplicatePrimitiveCode.MAIN_SRC),
+                "internalResult");
 
-        ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharChunkedUniqueOperator.class, ReplicatePrimitiveCode.MAIN_SRC);
-        fixupLongKernelOperator(ReplicatePrimitiveCode.charToLong(CharChunkedUniqueOperator.class, ReplicatePrimitiveCode.MAIN_SRC), "    externalResult = new BoxedColumnSource.OfDateTime(internalResult);");
-        fixupObjectKernelOperator(ReplicatePrimitiveCode.charToObject(CharChunkedUniqueOperator.class, ReplicatePrimitiveCode.MAIN_SRC), "ssms");
+        ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharChunkedUniqueOperator.class,
+                ReplicatePrimitiveCode.MAIN_SRC);
+        fixupLongKernelOperator(
+                ReplicatePrimitiveCode.charToLong(CharChunkedUniqueOperator.class, ReplicatePrimitiveCode.MAIN_SRC),
+                "    externalResult = new BoxedColumnSource.OfDateTime(internalResult);");
+        fixupObjectKernelOperator(
+                ReplicatePrimitiveCode.charToObject(CharChunkedUniqueOperator.class, ReplicatePrimitiveCode.MAIN_SRC),
+                "ssms");
 
-        ReplicatePrimitiveCode.charToAllButBoolean(CharRollupCountDistinctOperator.class, ReplicatePrimitiveCode.MAIN_SRC);
-        fixupObjectKernelOperator(ReplicatePrimitiveCode.charToObject(CharRollupCountDistinctOperator.class, ReplicatePrimitiveCode.MAIN_SRC), "ssms");
+        ReplicatePrimitiveCode.charToAllButBoolean(CharRollupCountDistinctOperator.class,
+                ReplicatePrimitiveCode.MAIN_SRC);
+        fixupObjectKernelOperator(ReplicatePrimitiveCode.charToObject(CharRollupCountDistinctOperator.class,
+                ReplicatePrimitiveCode.MAIN_SRC), "ssms");
 
-        ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharRollupDistinctOperator.class, ReplicatePrimitiveCode.MAIN_SRC);
-        fixupLongKernelOperator(ReplicatePrimitiveCode.charToLong(CharRollupDistinctOperator.class, ReplicatePrimitiveCode.MAIN_SRC), "    externalResult = new DbDateTimeSsmSourceWrapper(internalResult);");
-        fixupObjectKernelOperator(ReplicatePrimitiveCode.charToObject(CharRollupDistinctOperator.class, ReplicatePrimitiveCode.MAIN_SRC), "internalResult");
+        ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharRollupDistinctOperator.class,
+                ReplicatePrimitiveCode.MAIN_SRC);
+        fixupLongKernelOperator(
+                ReplicatePrimitiveCode.charToLong(CharRollupDistinctOperator.class, ReplicatePrimitiveCode.MAIN_SRC),
+                "    externalResult = new DbDateTimeSsmSourceWrapper(internalResult);");
+        fixupObjectKernelOperator(
+                ReplicatePrimitiveCode.charToObject(CharRollupDistinctOperator.class, ReplicatePrimitiveCode.MAIN_SRC),
+                "internalResult");
 
-        ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharRollupUniqueOperator.class, ReplicatePrimitiveCode.MAIN_SRC);
-        fixupLongKernelOperator(ReplicatePrimitiveCode.charToLong(CharRollupUniqueOperator.class, ReplicatePrimitiveCode.MAIN_SRC), "    externalResult = new BoxedColumnSource.OfDateTime(internalResult);");
-        fixupObjectKernelOperator(ReplicatePrimitiveCode.charToObject(CharRollupUniqueOperator.class, ReplicatePrimitiveCode.MAIN_SRC), "ssms");
+        ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharRollupUniqueOperator.class,
+                ReplicatePrimitiveCode.MAIN_SRC);
+        fixupLongKernelOperator(
+                ReplicatePrimitiveCode.charToLong(CharRollupUniqueOperator.class, ReplicatePrimitiveCode.MAIN_SRC),
+                "    externalResult = new BoxedColumnSource.OfDateTime(internalResult);");
+        fixupObjectKernelOperator(
+                ReplicatePrimitiveCode.charToObject(CharRollupUniqueOperator.class, ReplicatePrimitiveCode.MAIN_SRC),
+                "ssms");
     }
 
     private static void fixupLongKernelOperator(String longPath, String externalResultSetter) throws IOException {
@@ -95,8 +126,7 @@ public class ReplicateSegmentedSortedMultiset {
                         externalResultSetter,
                         "} else {",
                         "    externalResult = internalResult;",
-                        "}"
-                ), 8));
+                        "}"), 8));
 
         FileUtils.writeLines(longFile, lines);
     }
@@ -107,22 +137,25 @@ public class ReplicateSegmentedSortedMultiset {
         lines = replaceRegion(lines, "Constructor",
                 indent(Collections.singletonList("Class<?> type,"), 12));
         lines = replaceRegion(lines, "SsmCreation",
-                indent(Collections.singletonList("this."+ssmVarName+" = new ObjectSsmBackedSource(type);"), 8));
+                indent(Collections.singletonList("this." + ssmVarName + " = new ObjectSsmBackedSource(type);"), 8));
         lines = replaceRegion(lines, "ResultCreation",
                 indent(Collections.singletonList("this.internalResult = new ObjectArraySource(type);"), 8));
-        lines = globalReplacements(lines, "\\(WritableObjectChunk<\\? extends Values>\\)", "(WritableObjectChunk<?, ? extends Values>)");
+        lines = globalReplacements(lines, "\\(WritableObjectChunk<\\? extends Values>\\)",
+                "(WritableObjectChunk<?, ? extends Values>)");
 
         FileUtils.writeLines(objectFile, lines);
     }
 
-    private static void fixupObjectSsm(String objectPath, Function<List<String>, List<String>>... mutators) throws IOException {
+    private static void fixupObjectSsm(String objectPath, Function<List<String>, List<String>>... mutators)
+            throws IOException {
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = fixupChunkAttributes(lines);
         lines = ReplicateSortKernel.fixupObjectComparisons(lines);
-        lines = replaceRegion(lines, "averageMedian", indent(Collections.singletonList("throw new UnsupportedOperationException();"), 16));
+        lines = replaceRegion(lines, "averageMedian",
+                indent(Collections.singletonList("throw new UnsupportedOperationException();"), 16));
 
-        if(mutators != null) {
+        if (mutators != null) {
             for (int i = 0; i < mutators.length; i++) {
                 lines = mutators[i].apply(lines);
             }
@@ -152,57 +185,60 @@ public class ReplicateSegmentedSortedMultiset {
 
     private static List<String> fixupTHashes(List<String> lines) {
         lines = removeImport(lines, "\\s*import gnu.trove.*;");
-        lines = addImport(lines,THashSet.class);
+        lines = addImport(lines, THashSet.class);
         return globalReplacements(lines, "TObjectHashSet", "THashSet");
     }
 
     private static List<String> fixupSsmConstructor(List<String> lines) {
-        return replaceRegion(lines, "Constructor", Collections.singletonList("    private final Class componentType;\n" +
-                "\n" +
-                "    /**\n" +
-                "     * Create a ObjectSegmentedSortedArray with the given leafSize.\n" +
-                "     *\n" +
-                "     * @param leafSize the maximumSize for any leaf\n" +
-                "     * @param componentType the type of the underlying Object\n" +
-                "     */\n" +
-                "    public ObjectSegmentedSortedMultiset(int leafSize, Class<?> componentType) {\n" +
-                "        this.leafSize = leafSize;\n" +
-                "        this.componentType = componentType;\n" +
-                "        leafCount = 0;\n" +
-                "        size = 0;\n" +
-                "    }\n" +
-                "\n" +
-                "    @Override\n" +
-                "    public Class getComponentType() {\n" +
-                "        return componentType;\n" +
-                "    }"));
+        return replaceRegion(lines, "Constructor",
+                Collections.singletonList("    private final Class componentType;\n" +
+                        "\n" +
+                        "    /**\n" +
+                        "     * Create a ObjectSegmentedSortedArray with the given leafSize.\n" +
+                        "     *\n" +
+                        "     * @param leafSize the maximumSize for any leaf\n" +
+                        "     * @param componentType the type of the underlying Object\n" +
+                        "     */\n" +
+                        "    public ObjectSegmentedSortedMultiset(int leafSize, Class<?> componentType) {\n" +
+                        "        this.leafSize = leafSize;\n" +
+                        "        this.componentType = componentType;\n" +
+                        "        leafCount = 0;\n" +
+                        "        size = 0;\n" +
+                        "    }\n" +
+                        "\n" +
+                        "    @Override\n" +
+                        "    public Class getComponentType() {\n" +
+                        "        return componentType;\n" +
+                        "    }"));
     }
 
     private static List<String> fixupSourceConstructor(List<String> lines) {
-        return replaceRegion(lines, "Constructor", Collections.singletonList("    public ObjectSsmBackedSource(Class type) {\n" +
-                "        super(DbArray.class, type);\n" +
-                "        underlying = new ObjectArraySource<>(ObjectSegmentedSortedMultiset.class, type);\n" +
-                "    }"));
+        return replaceRegion(lines, "Constructor",
+                Collections.singletonList("    public ObjectSsmBackedSource(Class type) {\n" +
+                        "        super(DbArray.class, type);\n" +
+                        "        underlying = new ObjectArraySource<>(ObjectSegmentedSortedMultiset.class, type);\n" +
+                        "    }"));
     }
 
     private static List<String> fixupObjectCompare(List<String> lines) {
         lines = removeRegion(lines, "DbArrayEquals");
         lines = replaceRegion(lines, "EqualsArrayTypeCheck", Collections.singletonList(
                 "        if(o.getComponentType() != o.getComponentType()) {\n" +
-                "            return false;\n" +
-                "        }"));
+                        "            return false;\n" +
+                        "        }"));
         lines = replaceRegion(lines, "DirObjectEquals",
                 Collections.singletonList(
                         "                if(!Objects.equals(directoryValues[ii], that.directoryValues[ii])) {\n" +
-                        "                    return false;\n" +
-                        "                }"));
+                                "                    return false;\n" +
+                                "                }"));
         return replaceRegion(lines, "LeafObjectEquals",
                 Collections.singletonList(
-                        "                if(!Objects.equals(leafValues[li][ai], that.leafValues[otherLeaf][otherLeafIdx++])) {\n" +
-                        "                    return false;\n" +
-                        "                }"));
+                        "                if(!Objects.equals(leafValues[li][ai], that.leafValues[otherLeaf][otherLeafIdx++])) {\n"
+                                +
+                                "                    return false;\n" +
+                                "                }"));
     }
-    
+
     private static void insertDbDateTimeExtensions(String longPath) throws IOException {
         final File longFile = new File(longPath);
         List<String> lines = FileUtils.readLines(longFile, Charset.defaultCharset());

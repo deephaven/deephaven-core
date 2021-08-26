@@ -112,7 +112,8 @@ public class TestLiveTableMonitorLock extends LiveTableTestCase {
         };
         final MutableBoolean success = new MutableBoolean(false);
         TestCase.assertFalse(lock.sharedLock().isHeldByCurrentThread());
-        lock.sharedLock().doLocked(() -> checkHeld.accept(() -> checkHeld.accept(() -> checkHeld.accept(() -> checkHeld.accept(() -> checkHeld.accept(success::setTrue))))));
+        lock.sharedLock().doLocked(() -> checkHeld.accept(() -> checkHeld
+                .accept(() -> checkHeld.accept(() -> checkHeld.accept(() -> checkHeld.accept(success::setTrue))))));
         TestCase.assertFalse(lock.sharedLock().isHeldByCurrentThread());
         TestCase.assertTrue(success.getValue());
     }
@@ -126,7 +127,8 @@ public class TestLiveTableMonitorLock extends LiveTableTestCase {
         };
         final MutableBoolean success = new MutableBoolean(false);
         TestCase.assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
-        lock.exclusiveLock().doLocked(() -> checkHeld.accept(() -> checkHeld.accept(() -> checkHeld.accept(() -> checkHeld.accept(() -> checkHeld.accept(success::setTrue))))));
+        lock.exclusiveLock().doLocked(() -> checkHeld.accept(() -> checkHeld
+                .accept(() -> checkHeld.accept(() -> checkHeld.accept(() -> checkHeld.accept(success::setTrue))))));
         TestCase.assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
     }
 

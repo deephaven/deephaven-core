@@ -139,12 +139,14 @@ public final class PrevColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public final Chunk<? extends Values> getChunk(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
+    public final Chunk<? extends Values> getChunk(@NotNull final GetContext context,
+            @NotNull final OrderedKeys orderedKeys) {
         return originalSource.getPrevChunk(context, orderedKeys);
     }
 
     @Override
-    public final Chunk<? extends Values> getPrevChunk(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
+    public final Chunk<? extends Values> getPrevChunk(@NotNull final GetContext context,
+            @NotNull final OrderedKeys orderedKeys) {
         throw new UnsupportedOperationException();
     }
 
@@ -154,12 +156,14 @@ public final class PrevColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public final void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+    public final void fillChunk(@NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
         originalSource.fillPrevChunk(context, destination, orderedKeys);
     }
 
     @Override
-    public final void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+    public final void fillPrevChunk(@NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
         throw new UnsupportedOperationException();
     }
 }

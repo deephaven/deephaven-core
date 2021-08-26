@@ -44,7 +44,7 @@ public class SMTPMailer implements Mailer {
     private final SMTPClient client;
 
     public SMTPMailer() {
-        client = new SMTPClient(){
+        client = new SMTPClient() {
             public void connect(String hostname, int port) throws IOException {
                 _socket_ = new Socket();
                 _socket_.connect(new InetSocketAddress(hostname, port), 1000);
@@ -76,10 +76,11 @@ public class SMTPMailer implements Mailer {
             Attribute attribute = attributes.get("MX");
 
             // Otherwise, return the first MX record we find
-            for(NamingEnumeration all = attribute.getAll(); all.hasMore(); ){
+            for (NamingEnumeration all = attribute.getAll(); all.hasMore();) {
                 String mailhost = (String) all.next();
-                mailhost = mailhost.substring(1+mailhost.indexOf(" "), mailhost.length()-1);
-                // NOTE: DON'T LOG HERE, WE MIGHT ALREADY BE PART OF LOG_MAILER, AND IF THE QUEUE IS FULL WE NEVER ESCAPE!
+                mailhost = mailhost.substring(1 + mailhost.indexOf(" "), mailhost.length() - 1);
+                // NOTE: DON'T LOG HERE, WE MIGHT ALREADY BE PART OF LOG_MAILER, AND IF THE QUEUE IS FULL WE NEVER
+                // ESCAPE!
                 return mailhost;
             }
         } catch (Exception e) {
@@ -92,12 +93,12 @@ public class SMTPMailer implements Mailer {
 
     @Override
     public void sendEmail(String sender, String[] recipients, String subject, String msg) throws IOException {
-        if (sender==null){
-            String hostname=InetAddress.getLocalHost().getHostName();
-            sender=System.getProperty("user.name")+"@"+hostname;
+        if (sender == null) {
+            String hostname = InetAddress.getLocalHost().getHostName();
+            sender = System.getProperty("user.name") + "@" + hostname;
         }
 
-        for (int i=0;i<recipients.length;i++) {
+        for (int i = 0; i < recipients.length; i++) {
             sendEmail(sender, recipients[i], subject, msg);
         }
     }
@@ -109,7 +110,7 @@ public class SMTPMailer implements Mailer {
 
     @Override
     public void sendHTMLEmail(String sender, String recipient, String subject, String msg) throws IOException {
-        List<Map.Entry<String, String>> extraHeaderEntries=new ArrayList<>();
+        List<Map.Entry<String, String>> extraHeaderEntries = new ArrayList<>();
 
         extraHeaderEntries.add(new AbstractMap.SimpleEntry<>("Mime-Version", "1.0;"));
         extraHeaderEntries.add(new AbstractMap.SimpleEntry<>("Content-Type", "text/html; charset=\"ISO-8859-1\";"));
@@ -118,14 +119,15 @@ public class SMTPMailer implements Mailer {
     }
 
     @Override
-    public void sendEmail(String sender, String recipient, String subject, String msg, List<Map.Entry<String, String>> extraHeaderEntries) throws IOException {
+    public void sendEmail(String sender, String recipient, String subject, String msg,
+            List<Map.Entry<String, String>> extraHeaderEntries) throws IOException {
         if (Props.INSTANCE.sendEmailDisabled) {
             return;
         }
 
-        if (sender==null){
-            String hostname=InetAddress.getLocalHost().getHostName();
-            sender=System.getProperty("user.name")+"@"+hostname;
+        if (sender == null) {
+            String hostname = InetAddress.getLocalHost().getHostName();
+            sender = System.getProperty("user.name") + "@" + hostname;
         }
 
         client.connect(getMXRecord());
@@ -143,14 +145,13 @@ public class SMTPMailer implements Mailer {
         }
         SimpleSMTPHeader header = new SimpleSMTPHeader(sender, recipient, subject);
 
-        if(extraHeaderEntries!=null)
-            for(Map.Entry<String, String> entry : extraHeaderEntries)
+        if (extraHeaderEntries != null)
+            for (Map.Entry<String, String> entry : extraHeaderEntries)
                 header.addHeaderField(entry.getKey(), entry.getValue());
 
         Writer writer = client.sendMessageData();
 
-        if (writer != null)
-        {
+        if (writer != null) {
             writer.write(header.toString());
             writer.write(msg);
             writer.close();
@@ -161,13 +162,14 @@ public class SMTPMailer implements Mailer {
         client.disconnect();
     }
 
-    final private static Object lastUpdateLock=new Object();
-    private static long lastUpdateTime=0;
+    final private static Object lastUpdateLock = new Object();
+    private static long lastUpdateTime = 0;
 
     /**
      * Bug reporter, sends mail but limits the mail to 1 email per second and automatically includes hostname.
      * <P>
-     * Note there is no guarantee your email goes through because of the 1/second limit and because this function eats IOExceptions.
+     * Note there is no guarantee your email goes through because of the 1/second limit and because this function eats
+     * IOExceptions.
      * <P>
      *
      * @param from "from" address, must not contain spaces, e.g. "RiskProfiler"
@@ -177,13 +179,12 @@ public class SMTPMailer implements Mailer {
      */
     public static void reportBug(final String from, final String to, final String subject, final String message) {
         // return if it's been less than 1 second since the last email
-        final long now=System.currentTimeMillis();
-        synchronized(lastUpdateLock) {
-            if (now<lastUpdateTime+1000) {
+        final long now = System.currentTimeMillis();
+        synchronized (lastUpdateLock) {
+            if (now < lastUpdateTime + 1000) {
                 return;
-            }
-            else {
-                lastUpdateTime=now;
+            } else {
+                lastUpdateTime = now;
             }
         }
 
@@ -201,20 +202,22 @@ public class SMTPMailer implements Mailer {
         // get hostname
         String hostname;
         try {
-            hostname= InetAddress.getLocalHost().getHostName();
+            hostname = InetAddress.getLocalHost().getHostName();
         } catch (UnknownHostException e) {
-            hostname= "Unknown host";
+            hostname = "Unknown host";
         }
 
         // send mail
         try {
-            new SMTPMailer().sendEmail(from, to, subject, "bug report from " + hostname + ":\n\n"+message+addMessage);
+            new SMTPMailer().sendEmail(from, to, subject,
+                    "bug report from " + hostname + ":\n\n" + message + addMessage);
         } catch (IOException e) {
             // ignore it, we do not promise to deliver.
         }
     }
 
-    public void sendEmailWithAttachments(String sender, String[] recipients, String subject, String msg, String attachmentPaths[]) throws Exception{
+    public void sendEmailWithAttachments(String sender, String[] recipients, String subject, String msg,
+            String attachmentPaths[]) throws Exception {
         // Create the email message
         MultiPartEmail email = new MultiPartEmail();
         email.setHostName(getMXRecord());
@@ -239,19 +242,20 @@ public class SMTPMailer implements Mailer {
         email.send();
     }
 
-    public void sendHTMLEmailWithInline(String sender, String recipients[], String subject, String msg, String attachmentPaths[]) throws Exception {
+    public void sendHTMLEmailWithInline(String sender, String recipients[], String subject, String msg,
+            String attachmentPaths[]) throws Exception {
         Properties sessionProperties = System.getProperties();
         sessionProperties.put("mail.smtp.host", getMXRecord());
         Session session = Session.getDefaultInstance(sessionProperties, null);
 
         Message message = new MimeMessage(session);
-        message.setFrom(sender==null ? null : new InternetAddress(sender));
+        message.setFrom(sender == null ? null : new InternetAddress(sender));
         message.setSubject(subject);
 
         Address recipientsAddresses[] = new Address[recipients.length];
 
-        for (int i=0; i<recipients.length; i++){
-            recipientsAddresses[i]=new InternetAddress(recipients[i]);
+        for (int i = 0; i < recipients.length; i++) {
+            recipientsAddresses[i] = new InternetAddress(recipients[i]);
         }
 
         message.addRecipients(Message.RecipientType.TO, recipientsAddresses);
@@ -280,38 +284,21 @@ public class SMTPMailer implements Mailer {
         Transport.send(message);
     }
 
-    /*public void sendEmail_Authenticated(String user, String password, String sender, String recipient, String subject, String body) throws IOException, javax.mail.MessagingException {
-        String mailer = "zzz";
-        Transport tr = null;
-        try {
-            Properties props = System.getProperties();
-            props.put("mail.smtp.auth", "true");
-
-            // Get a Session object
-            Session mailSession = Session.getDefaultInstance(props, null);
-
-            // construct the message
-            Message msg = new MimeMessage(mailSession);
-            msg.setFrom(new InternetAddress(sender));
-
-            msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipient, false));
-            msg.setSubject(subject);
-
-            msg.setText(body);
-            msg.setHeader("X-Mailer", mailer);
-            msg.setSentDate(new Date());
-
-            tr = mailSession.getTransport("smtp");
-            tr.connect(SMTPHOST, user, password);
-            msg.saveChanges();
-            tr.sendMessage(msg, msg.getAllRecipients());
-            tr.close();
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-        finally {
-            if (tr != null) tr.close();
-        }
-    }*/
+    /*
+     * public void sendEmail_Authenticated(String user, String password, String sender, String recipient, String
+     * subject, String body) throws IOException, javax.mail.MessagingException { String mailer = "zzz"; Transport tr =
+     * null; try { Properties props = System.getProperties(); props.put("mail.smtp.auth", "true");
+     * 
+     * // Get a Session object Session mailSession = Session.getDefaultInstance(props, null);
+     * 
+     * // construct the message Message msg = new MimeMessage(mailSession); msg.setFrom(new InternetAddress(sender));
+     * 
+     * msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipient, false)); msg.setSubject(subject);
+     * 
+     * msg.setText(body); msg.setHeader("X-Mailer", mailer); msg.setSentDate(new Date());
+     * 
+     * tr = mailSession.getTransport("smtp"); tr.connect(SMTPHOST, user, password); msg.saveChanges();
+     * tr.sendMessage(msg, msg.getAllRecipients()); tr.close(); } catch (Exception e) { e.printStackTrace(); } finally {
+     * if (tr != null) tr.close(); } }
+     */
 }

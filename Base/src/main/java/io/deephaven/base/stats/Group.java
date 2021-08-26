@@ -30,9 +30,10 @@ public class Group {
     }
 
     /** get or create a named, top-level item */
-    synchronized <V extends Value> Item<V> makeItem(String name, Function.Unary<V, Long> valueFactory, String description, long now) {
-        for ( Item i : items ) {
-            if ( i.getName().equals(name) ) {
+    synchronized <V extends Value> Item<V> makeItem(String name, Function.Unary<V, Long> valueFactory,
+            String description, long now) {
+        for (Item i : items) {
+            if (i.getName().equals(name)) {
                 return i;
             }
         }
@@ -42,9 +43,10 @@ public class Group {
     }
 
     /** get or create a named, top-level item */
-    synchronized <V extends Value, Arg> Item<V> makeItem(String name, Function.Binary<V, Long, Arg> valueFactory, String description, long now, Arg arg) {
-        for ( Item i : items ) {
-            if ( i.getName().equals(name) ) {
+    synchronized <V extends Value, Arg> Item<V> makeItem(String name, Function.Binary<V, Long, Arg> valueFactory,
+            String description, long now, Arg arg) {
+        for (Item i : items) {
+            if (i.getName().equals(name)) {
                 return i;
             }
         }
@@ -52,12 +54,13 @@ public class Group {
         addItem(i);
         return i;
     }
+
     /**
      * Get an item from this group by name
      */
     public synchronized Item getItem(String id) {
-        for ( Item i : items ) {
-            if ( i.name.equals(id) ) {
+        for (Item i : items) {
+            if (i.name.equals(id)) {
                 return i;
             }
         }
@@ -68,6 +71,7 @@ public class Group {
      * Add an item to this group
      */
     Item[] itemsArray = new Item[0];
+
     public synchronized void addItem(Item i) {
         items.add(i);
         itemsArray = items.toArray(itemsArray);

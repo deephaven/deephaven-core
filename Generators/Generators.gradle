@@ -13,9 +13,9 @@ dependencies {
 
     compile project(':DB'),
             project(':Plot')
-            project(':KafkaIngester')
+            project(':Kafka')
 
-    runtime project(path: ':configs'), project(path: ':test-configs'), project(':KafkaIngester')
+    runtime project(path: ':configs'), project(path: ':test-configs'), project(':Kafka')
 
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'

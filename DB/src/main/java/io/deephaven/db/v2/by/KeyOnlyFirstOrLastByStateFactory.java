@@ -21,8 +21,10 @@ public class KeyOnlyFirstOrLastByStateFactory extends IterativeIndexStateFactory
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
             MemoKey memoKey = (MemoKey) o;
             return Objects.equals(resultColumnName, memoKey.resultColumnName) && type == memoKey.type;
         }
@@ -38,8 +40,9 @@ public class KeyOnlyFirstOrLastByStateFactory extends IterativeIndexStateFactory
         this.resultColumn = resultColumn;
         this.type = type;
 
-        if(type != AggType.First && type != AggType.Last) {
-            throw new IllegalArgumentException("KeyOnlyFirstOrLastByStateFactory only support AggType.First and AggType.Last");
+        if (type != AggType.First && type != AggType.Last) {
+            throw new IllegalArgumentException(
+                    "KeyOnlyFirstOrLastByStateFactory only support AggType.First and AggType.Last");
         }
     }
 

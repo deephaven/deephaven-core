@@ -83,6 +83,6 @@ public class RollupTableRequest implements Serializable {
                 ", aggregations=" + Arrays.toString(aggregations) +
                 ", includeConstituents=" + includeConstituents +
                 ", includeOriginalColumns=" + includeOriginalColumns +
-        '}';
+                '}';
     }
 }

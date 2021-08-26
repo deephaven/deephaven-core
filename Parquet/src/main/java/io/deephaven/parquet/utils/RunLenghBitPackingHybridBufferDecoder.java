@@ -22,7 +22,9 @@ public class RunLenghBitPackingHybridBufferDecoder {
     private final int maxLevel;
     private int rleCandidateValue;
 
-    private enum MODE {RLE, PACKED}
+    private enum MODE {
+        RLE, PACKED
+    }
 
     private final int bitWidth;
     private final BytePacker packer;
@@ -148,7 +150,8 @@ public class RunLenghBitPackingHybridBufferDecoder {
                 int bytesToRead = (int) Math.ceil(currentCount * bitWidth / 8.0);
                 bytesToRead = Math.min(bytesToRead, in.remaining());
                 int newPos = in.position() + bytesToRead;
-                for (int valueIndex = 0, byteIndex = 0; valueIndex < currentCount; valueIndex += 8, byteIndex += bitWidth) {
+                for (int valueIndex = 0, byteIndex = 0; valueIndex < currentCount; valueIndex += 8, byteIndex +=
+                        bitWidth) {
                     packer.unpack8Values(in, byteIndex + in.position(), currentBuffer, valueIndex);
                 }
                 in.position(newPos);

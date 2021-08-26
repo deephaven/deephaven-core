@@ -16,28 +16,33 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Utility for generating a table that counts the operations performed on its ColumnSource's.  Used by the grouping tests
+ * Utility for generating a table that counts the operations performed on its ColumnSource's. Used by the grouping tests
  * to verify that we are not doing unnecessary work.
  */
 class CountingTable {
     @NotNull
     static QueryTable getCountingTable(QueryTable nonCountingTable) {
         Map<String, ColumnSource> countingSources = new LinkedHashMap<>();
-        nonCountingTable.getColumnSourceMap().entrySet().stream().forEach(x -> countingSources.put(x.getKey(), getCountingColumnSource(x.getValue())));
+        nonCountingTable.getColumnSourceMap().entrySet().stream()
+                .forEach(x -> countingSources.put(x.getKey(), getCountingColumnSource(x.getValue())));
         return new QueryTable(nonCountingTable.getIndex(), countingSources);
     }
 
     private static <T> ColumnSource<T> getCountingColumnSource(final ColumnSource<T> inputColumnSource) {
-        //noinspection unchecked
-        return (ColumnSource<T>) Proxy.newProxyInstance(IndexGroupingTest.class.getClassLoader(), new Class[]{MethodCounter.class, ColumnSource.class}, new CountingColumnSourceInvocationHandler(inputColumnSource));
+        // noinspection unchecked
+        return (ColumnSource<T>) Proxy.newProxyInstance(IndexGroupingTest.class.getClassLoader(),
+                new Class[] {MethodCounter.class, ColumnSource.class},
+                new CountingColumnSourceInvocationHandler(inputColumnSource));
     }
 
     interface MethodCounter {
         int getMethodCount(String name);
+
         void clear();
 
         @SuppressWarnings("unused")
         int getMethodCount(Method method);
+
         @SuppressWarnings("unused")
         void dumpMethodCounts();
     }
@@ -73,10 +78,11 @@ class CountingTable {
 
 
                         if (method.getParameterTypes()[0].equals(Method.class)) {
-                            //noinspection SuspiciousMethodCalls
+                            // noinspection SuspiciousMethodCalls
                             return methodCounts.get(args[0]);
                         } else if (method.getParameterTypes()[0].equals(String.class)) {
-                            return methodCounts.entrySet().stream().filter(x -> x.getKey().getName().equals(args[0])).mapToInt(Map.Entry::getValue).sum();
+                            return methodCounts.entrySet().stream().filter(x -> x.getKey().getName().equals(args[0]))
+                                    .mapToInt(Map.Entry::getValue).sum();
                         } else {
                             throw new UnsupportedOperationException();
                         }
@@ -85,8 +91,9 @@ class CountingTable {
                 }
             }
 
-            //noinspection ConfusingArgumentToVarargsMethod
-            return wrappedColumnSource.getClass().getMethod(method.getName(), method.getParameterTypes()).invoke(wrappedColumnSource, args);
+            // noinspection ConfusingArgumentToVarargsMethod
+            return wrappedColumnSource.getClass().getMethod(method.getName(), method.getParameterTypes())
+                    .invoke(wrappedColumnSource, args);
         }
     }
 }

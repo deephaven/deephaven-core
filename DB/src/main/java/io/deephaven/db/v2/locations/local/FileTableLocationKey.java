@@ -13,9 +13,9 @@ import java.util.Map;
 
 /**
  * Base {@link ImmutableTableLocationKey} implementation for table locations that may be enclosed by partitions and
- * described by a {@link File}.
- * Sub-classes should override {@link #compareTo(TableLocationKey)} and {@link #equals(Object)} only if they need to
- * prevent equality with other {@link FileTableLocationKey} implementations.
+ * described by a {@link File}. Sub-classes should override {@link #compareTo(TableLocationKey)} and
+ * {@link #equals(Object)} only if they need to prevent equality with other {@link FileTableLocationKey}
+ * implementations.
  */
 public class FileTableLocationKey extends PartitionedTableLocationKey {
 
@@ -29,16 +29,17 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
     /**
      * Construct a new FileTableLocationKey for the supplied {@code file} and {@code partitions}.
      *
-     * @param file        The file (or directory) that backs the keyed location. Will be adjusted to an absolute path.
-     * @param order      Explicit ordering value for this location key. {@link Comparable#compareTo(Object)} will sort
-     *                   FileTableLocationKeys with a lower {@code order} before other keys. Comparing this ordering
-     *                   value takes precedence over other fields.
+     * @param file The file (or directory) that backs the keyed location. Will be adjusted to an absolute path.
+     * @param order Explicit ordering value for this location key. {@link Comparable#compareTo(Object)} will sort
+     *        FileTableLocationKeys with a lower {@code order} before other keys. Comparing this ordering value takes
+     *        precedence over other fields.
      * @param partitions The table partitions enclosing the table location keyed by {@code this}. Note that if this
-     *                   parameter is {@code null}, the location will be a member of no partitions. An ordered copy
-     *                   of the map will be made, so the calling code is free to mutate the map after this call
-     *                   completes, but the partition keys and values themselves <em>must</em> be effectively immutable.
+     *        parameter is {@code null}, the location will be a member of no partitions. An ordered copy of the map will
+     *        be made, so the calling code is free to mutate the map after this call completes, but the partition keys
+     *        and values themselves <em>must</em> be effectively immutable.
      */
-    public FileTableLocationKey(@NotNull final File file, final int order, @Nullable final Map<String, Comparable<?>> partitions) {
+    public FileTableLocationKey(@NotNull final File file, final int order,
+            @Nullable final Map<String, Comparable<?>> partitions) {
         super(partitions);
         this.file = file.getAbsoluteFile();
         this.order = order;
@@ -64,6 +65,7 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
     /**
      * Precedence-wise this implementation compares {@code order}, then applies a {@link PartitionsComparator} to
      * {@code partitions}, then compares {@code file}.
+     * 
      * @inheritDoc
      */
     @Override
@@ -74,7 +76,8 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
             if (orderingComparisonResult != 0) {
                 return orderingComparisonResult;
             }
-            final int partitionComparisonResult = PartitionsComparator.INSTANCE.compare(partitions, otherTyped.partitions);
+            final int partitionComparisonResult =
+                    PartitionsComparator.INSTANCE.compare(partitions, otherTyped.partitions);
             if (partitionComparisonResult != 0) {
                 return partitionComparisonResult;
             }

@@ -9,32 +9,31 @@ import io.deephaven.configuration.Configuration;
 /**
  * A RandomBuilder type that uses a priority queue of ranges.
  *
- * Each range entered into the Index is stored in a priority queue, backed by two long arrays.  One array contains
- * the start elements, the second array contains the end elements.  The priority function is the start element.
+ * Each range entered into the Index is stored in a priority queue, backed by two long arrays. One array contains the
+ * start elements, the second array contains the end elements. The priority function is the start element.
  *
  * We may have many overlapping ranges in the priority queue; as an optimization, if two adjacent ranges are entered
  * into the queue consecutively, the range is not stored in the queue more than once.
  */
 public class RangePriorityQueueBuilder {
     private static final int doublingAllocThreshold = Configuration.getInstance().getIntegerForClassWithDefault(
-            MixedBuilder.class,"doublingAllocThreshold", 128 * 1024);
+            MixedBuilder.class, "doublingAllocThreshold", 128 * 1024);
     // Things are nicer (integer division will be bit shift) if this is a power of 2, but it is not mandatory.
     private static final int linearAllocStep = Configuration.getInstance().getIntegerForClassWithDefault(
-            MixedBuilder.class,"linearAllocStep", 128 * 1024);
+            MixedBuilder.class, "linearAllocStep", 128 * 1024);
 
     /** The range start keys, slot 0 is unused. */
-    private long [] start;
+    private long[] start;
     /** The range end keys, slot 0 is unused; (invariant: end.length == start.length). */
-    private long [] end;
+    private long[] end;
 
     /** The index of the last entered value in start/end. */
     private int lastEntered = -1;
 
     /**
-     * The size of the queue (invariant: size < start.length - 1).
-     * Note since we don't use element 0 in start and end arrays, this size does not match
-     * the normal invariant in array access where the last element
-     * used is an array a[] is a[size - 1]; in our case the last element used is a[size].
+     * The size of the queue (invariant: size < start.length - 1). Note since we don't use element 0 in start and end
+     * arrays, this size does not match the normal invariant in array access where the last element used is an array a[]
+     * is a[size - 1]; in our case the last element used is a[size].
      */
     private int size = 0;
 
@@ -54,7 +53,7 @@ public class RangePriorityQueueBuilder {
     }
 
     /**
-     *  Returns true if the priority queue contains no elements.
+     * Returns true if the priority queue contains no elements.
      */
     private boolean isEmpty() {
         return size == 0;
@@ -62,9 +61,11 @@ public class RangePriorityQueueBuilder {
 
     /**
      *
-     * Returns our internal queue size.  This is not necessarily the size of the resulting index.
+     * Returns our internal queue size. This is not necessarily the size of the resulting index.
      */
-    public int size() { return size; }
+    public int size() {
+        return size;
+    }
 
     private void ensureCapacityFor(final int lastIndex) {
         final int minCapacity = lastIndex + 1;
@@ -90,7 +91,7 @@ public class RangePriorityQueueBuilder {
 
     /**
      * Adds an element to the range queues.
-     * */
+     */
     private void enter(final long startKey, final long endKey) {
         if (lastEntered >= 1 &&
                 endKey >= start[lastEntered] - 1 &&
@@ -113,7 +114,7 @@ public class RangePriorityQueueBuilder {
         size = newSize;
         lastEntered = size;
         fixUp(size);
-//        assert testInvariant("after fixUp in enter-add");
+        // assert testInvariant("after fixUp in enter-add");
     }
 
     /**
@@ -132,6 +133,7 @@ public class RangePriorityQueueBuilder {
 
     /**
      * Number of ranges, used only for unit tests to confirm the adjacency merging.
+     * 
      * @return the number of ranges enqueued
      */
     int rangeCount() {
@@ -149,12 +151,12 @@ public class RangePriorityQueueBuilder {
             return false;
         }
 
-        if ( --size > 0 ) {
-            start[1] = start[size+1];
-            end[1] = end[size+1];
+        if (--size > 0) {
+            start[1] = start[size + 1];
+            end[1] = end[size + 1];
 
-//            start[size+1] = 0;
-//            end[size+1] = 0;
+            // start[size+1] = 0;
+            // end[size+1] = 0;
 
             fixDown(1);
         }
@@ -164,19 +166,21 @@ public class RangePriorityQueueBuilder {
 
     /** move queue[itemIndex] up the heap until its start is >= that of its parent. */
     private void fixUp(int itemIndex) {
-        if ( itemIndex > 1 ) {
+        if (itemIndex > 1) {
             final long itemStartKey = start[itemIndex];
             final long itemEndKey = end[itemIndex];
             int parentIndex = itemIndex >> 1;
             long parent = start[parentIndex];
-            if ( itemStartKey < parent ) {
+            if (itemStartKey < parent) {
                 start[itemIndex] = parent;
                 end[itemIndex] = end[parentIndex];
-                itemIndex = parentIndex; parentIndex = itemIndex >> 1;
-                while ( itemIndex > 1 && itemStartKey < (parent = start[parentIndex]) ) {
+                itemIndex = parentIndex;
+                parentIndex = itemIndex >> 1;
+                while (itemIndex > 1 && itemStartKey < (parent = start[parentIndex])) {
                     start[itemIndex] = parent;
                     end[itemIndex] = end[parentIndex];
-                    itemIndex = parentIndex; parentIndex = itemIndex >> 1;
+                    itemIndex = parentIndex;
+                    parentIndex = itemIndex >> 1;
                 }
                 start[itemIndex] = itemStartKey;
                 end[itemIndex] = itemEndKey;
@@ -188,31 +192,33 @@ public class RangePriorityQueueBuilder {
     /** move queue[itemIndex] down the heap until its start is <= those of its children. */
     private void fixDown(@SuppressWarnings("SameParameterValue") int itemIndex) {
         int childIndex = itemIndex << 1;
-        if ( childIndex <= size ) {
+        if (childIndex <= size) {
             final long itemStartKey = start[itemIndex];
             final long itmEndKey = end[itemIndex];
             long child = start[childIndex];
             long child2;
-            if ( childIndex < size && (child2 = start[childIndex+1]) < child) {
+            if (childIndex < size && (child2 = start[childIndex + 1]) < child) {
                 child = child2;
                 childIndex++;
             }
             if (child < itemStartKey) {
                 start[itemIndex] = child;
                 end[itemIndex] = end[childIndex];
-                itemIndex = childIndex; childIndex = itemIndex << 1;
-                while ( childIndex <= size ) {
+                itemIndex = childIndex;
+                childIndex = itemIndex << 1;
+                while (childIndex <= size) {
                     child = start[childIndex];
-                    if (childIndex < size && (child2 = start[childIndex+1]) < child) {
+                    if (childIndex < size && (child2 = start[childIndex + 1]) < child) {
                         child = child2;
                         childIndex++;
                     }
-                    if ( child >= itemStartKey ) {
+                    if (child >= itemStartKey) {
                         break;
                     }
                     start[itemIndex] = child;
                     end[itemIndex] = end[childIndex];
-                    itemIndex = childIndex; childIndex = itemIndex << 1;
+                    itemIndex = childIndex;
+                    childIndex = itemIndex << 1;
                 }
                 start[itemIndex] = itemStartKey;
                 end[itemIndex] = itmEndKey;
@@ -264,7 +270,7 @@ public class RangePriorityQueueBuilder {
 
     public void addRange(long firstKey, long lastKey) {
         // offensively, we do this in query table
-        if(firstKey > lastKey) {
+        if (firstKey > lastKey) {
             return;
         }
         enter(firstKey, lastKey);

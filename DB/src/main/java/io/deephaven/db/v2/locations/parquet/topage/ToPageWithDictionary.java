@@ -65,7 +65,7 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any> implements ToPage
         }
 
         final int[] from = (int[]) result;
-        //noinspection unchecked
+        // noinspection unchecked
         final DATA_TYPE[] to = (DATA_TYPE[]) Array.newInstance(nativeType, from.length);
 
         for (int ii = 0; ii < from.length; ++ii) {

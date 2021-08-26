@@ -14,11 +14,14 @@ public class SomeJavaClassOutTest extends PythonTest {
 
     private static final SomeJavaClass SJC = new SomeJavaClass();
 
-    static class SomeJavaClass {}
+    static class SomeJavaClass {
+    }
 
     interface SJCOut extends IdentityOut {
         SomeJavaClass identity(SomeJavaClass object);
+
         SomeJavaClass identity(PyObject object);
+
         SomeJavaClass identity(Object object);
     }
 
@@ -33,12 +36,12 @@ public class SomeJavaClassOutTest extends PythonTest {
         pyOut = IdentityOut.create(getCreateModule(), PyObjectIdentityOut.class);
         ref = ReferenceCounting.create();
         jpy = JpyModule.create();
-        //jpy.setFlags(EnumSet.of(Flag.ALL));
+        // jpy.setFlags(EnumSet.of(Flag.ALL));
     }
 
     @After
     public void tearDown() {
-        //jpy.setFlags(EnumSet.of(Flag.OFF));
+        // jpy.setFlags(EnumSet.of(Flag.OFF));
         jpy.close();
         ref.close();
         pyOut.close();
@@ -56,7 +59,7 @@ public class SomeJavaClassOutTest extends PythonTest {
     @Ignore
     @Test
     public void implicitSJCToSJC() {
-        Assert.assertEquals(SJC, out.identity((Object)SJC));
+        Assert.assertEquals(SJC, out.identity((Object) SJC));
     }
 
     @Test
@@ -73,7 +76,7 @@ public class SomeJavaClassOutTest extends PythonTest {
     public void implicitPyObjectToSJC() {
         try (final PyObject in = pyOut.identity(SJC)) {
             check(1, in);
-            final SomeJavaClass out = this.out.identity((Object)in);
+            final SomeJavaClass out = this.out.identity((Object) in);
             Assert.assertEquals(SJC, out);
             check(1, in);
         }

@@ -25,7 +25,8 @@ public class TestTypeUtils extends TestCase {
         Require.equals(getBoxedType(Boolean.class), "getBoxedType(Boolean.class)", Boolean.class, "Boolean.class");
         Require.equals(getBoxedType(Byte.class), "getBoxedType(Byte.class)", Byte.class, "Byte.class");
         Require.equals(getBoxedType(Short.class), "getBoxedType(Short.class)", Short.class, "Short.class");
-        Require.equals(getBoxedType(Character.class), "getBoxedType(Character.class)", Character.class, "Character.class");
+        Require.equals(getBoxedType(Character.class), "getBoxedType(Character.class)", Character.class,
+                "Character.class");
         Require.equals(getBoxedType(Integer.class), "getBoxedType(Integer.class)", Integer.class, "Integer.class");
         Require.equals(getBoxedType(Long.class), "getBoxedType(Long.class)", Long.class, "Long.class");
         Require.equals(getBoxedType(Float.class), "getBoxedType(Float.class)", Float.class, "Float.class");
@@ -33,7 +34,8 @@ public class TestTypeUtils extends TestCase {
 
 
         Require.equals(getBoxedType(Object.class), "getBoxedType(Object.class)", Object.class, "Object.class");
-        Require.equals(getBoxedType(CharSequence.class), "getBoxedType(CharSequence.class)", CharSequence.class, "CharSequence.class");
+        Require.equals(getBoxedType(CharSequence.class), "getBoxedType(CharSequence.class)", CharSequence.class,
+                "CharSequence.class");
         Require.equals(getBoxedType(String.class), "getBoxedType(String.class)", String.class, "String.class");
     }
 
@@ -117,9 +119,9 @@ public class TestTypeUtils extends TestCase {
 
         // Ensure primitive types and boxed types have the same ordering
         Require.requirement(
-                Arrays.equals(PRIMITIVE_TYPES.toArray(), BOXED_TYPES.stream().map(io.deephaven.util.type.TypeUtils::getUnboxedType).toArray()),
-                "Arrays.equals(PRIMITIVE_TYPES.toArray(), BOXED_TYPES.stream().map(TypeUtils::getUnboxedType).toArray())"
-        );
+                Arrays.equals(PRIMITIVE_TYPES.toArray(),
+                        BOXED_TYPES.stream().map(io.deephaven.util.type.TypeUtils::getUnboxedType).toArray()),
+                "Arrays.equals(PRIMITIVE_TYPES.toArray(), BOXED_TYPES.stream().map(TypeUtils::getUnboxedType).toArray())");
     }
 
     public void testIsType() {
@@ -158,7 +160,7 @@ public class TestTypeUtils extends TestCase {
     }
 
     public void testObjectToString() throws IOException {
-        assertNull(io.deephaven.util.type.TypeUtils.objectToString(null)); //null input
-        assertEquals("STRING", io.deephaven.util.type.TypeUtils.objectToString("STRING")); //non null input
+        assertNull(io.deephaven.util.type.TypeUtils.objectToString(null)); // null input
+        assertEquals("STRING", io.deephaven.util.type.TypeUtils.objectToString("STRING")); // non null input
     }
 }

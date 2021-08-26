@@ -42,7 +42,7 @@ public class UpdatableTable extends QueryTable implements LiveTable {
         void removeIndex(long key);
 
         /**
-         * Flag key as an modification (unless it was added this cycle). Must only be called in an  updater function.
+         * Flag key as an modification (unless it was added this cycle). Must only be called in an updater function.
          *
          * @param key The key
          */
@@ -60,13 +60,16 @@ public class UpdatableTable extends QueryTable implements LiveTable {
 
     private final IndexChangeRecorder indexChangeRecorder = new IndexChangeRecorderImpl();
 
-    private final TLongSet addedSet = new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
-    private final TLongSet removedSet = new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
-    private final TLongSet modifiedSet = new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
+    private final TLongSet addedSet =
+            new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
+    private final TLongSet removedSet =
+            new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
+    private final TLongSet modifiedSet =
+            new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
 
     public UpdatableTable(@NotNull final Index index,
-                          @NotNull final Map<String, ? extends ColumnSource> nameToColumnSource,
-                          @NotNull final Updater updater) {
+            @NotNull final Map<String, ? extends ColumnSource> nameToColumnSource,
+            @NotNull final Updater updater) {
         super(index, nameToColumnSource);
         this.updater = updater;
     }

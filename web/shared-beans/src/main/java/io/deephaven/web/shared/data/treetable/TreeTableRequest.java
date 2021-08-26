@@ -10,11 +10,7 @@ import java.util.BitSet;
 
 public class TreeTableRequest implements Serializable {
     public enum TreeRequestOperation {
-        Expand,
-        Contract,
-        FilterChanged,
-        SortChanged,
-        Close
+        Expand, Contract, FilterChanged, SortChanged, Close
     }
 
     private long viewportStart;

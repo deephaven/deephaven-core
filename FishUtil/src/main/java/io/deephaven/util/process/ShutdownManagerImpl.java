@@ -23,9 +23,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * This is a helper class for keeping track of one-time shutdown tasks.
- * Tasks are dispatched serially according to their ordering category (first, middle, last), and in LIFO (last in,
- * first out) order within their category.
+ * This is a helper class for keeping track of one-time shutdown tasks. Tasks are dispatched serially according to their
+ * ordering category (first, middle, last), and in LIFO (last in, first out) order within their category.
  */
 @SuppressWarnings("WeakerAccess")
 public class ShutdownManagerImpl implements ShutdownManager {
@@ -40,15 +39,18 @@ public class ShutdownManagerImpl implements ShutdownManager {
     /**
      * Timeout for "if all else fails" process halt, to prevent zombie processes.
      */
-    private final long SHUTDOWN_TIMEOUT_MILLIS = Configuration.getInstance().getLongWithDefault(SHUTDOWN_TIMEOUT_MILLIS_PROP, -1);
+    private final long SHUTDOWN_TIMEOUT_MILLIS =
+            Configuration.getInstance().getLongWithDefault(SHUTDOWN_TIMEOUT_MILLIS_PROP, -1);
 
     /**
-     * Shutdown task stacks by ordering category.  Note, EnumMaps iterate in ordinal order.
+     * Shutdown task stacks by ordering category. Note, EnumMaps iterate in ordinal order.
      */
     private final Map<OrderingCategory, SynchronizedStack<Task>> tasksByOrderingCategory;
     {
-        final EnumMap<OrderingCategory, SynchronizedStack<Task>> taskStacksByOrderingCategoryTemp = new EnumMap<>(OrderingCategory.class);
-        Arrays.stream(OrderingCategory.values()).forEach(oc -> taskStacksByOrderingCategoryTemp.put(oc, new SynchronizedStack<>()));
+        final EnumMap<OrderingCategory, SynchronizedStack<Task>> taskStacksByOrderingCategoryTemp =
+                new EnumMap<>(OrderingCategory.class);
+        Arrays.stream(OrderingCategory.values())
+                .forEach(oc -> taskStacksByOrderingCategoryTemp.put(oc, new SynchronizedStack<>()));
         tasksByOrderingCategory = Collections.unmodifiableMap(taskStacksByOrderingCategoryTemp);
     }
 
@@ -60,12 +62,11 @@ public class ShutdownManagerImpl implements ShutdownManager {
     /**
      * Construct a new ShutdownManager.
      */
-    public ShutdownManagerImpl() {
-    }
+    public ShutdownManagerImpl() {}
 
     @Override
     public void addShutdownHookToRuntime() {
-        AccessController.doPrivileged((PrivilegedAction<Void>)() -> {
+        AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
             Runtime.getRuntime().addShutdownHook(new Thread(this::maybeInvokeTasks));
             return null;
         });
@@ -142,9 +143,9 @@ public class ShutdownManagerImpl implements ShutdownManager {
     }
 
     /**
-     * Attempt to log a line of items.  Fails silently if any Throwable is thrown, including
-     * Throwables one might ordinarily prefer not to catch (e.g. InterruptedException, subclasses of Error, etc).
-     * This is intended for use in processes that are shutting down.
+     * Attempt to log a line of items. Fails silently if any Throwable is thrown, including Throwables one might
+     * ordinarily prefer not to catch (e.g. InterruptedException, subclasses of Error, etc). This is intended for use in
+     * processes that are shutting down.
      */
     public static void logShutdown(final LogLevel level, final Object... items) {
         try {
@@ -153,7 +154,7 @@ public class ShutdownManagerImpl implements ShutdownManager {
                 entry.append(item.toString());
             }
             entry.endl();
-        } catch(Throwable ignored) {
+        } catch (Throwable ignored) {
         }
     }
 
@@ -165,7 +166,8 @@ public class ShutdownManagerImpl implements ShutdownManager {
         final long deadline = start + TimeUnit.MILLISECONDS.toNanos(SHUTDOWN_TIMEOUT_MILLIS);
         for (long now = start; now < deadline; now = System.nanoTime()) {
             final long nanosRemaining = deadline - now;
-            final long millisRemainingRoundedUp = TimeUnit.NANOSECONDS.toMillis(nanosRemaining + TimeUnit.MILLISECONDS.toNanos(1) - 1);
+            final long millisRemainingRoundedUp =
+                    TimeUnit.NANOSECONDS.toMillis(nanosRemaining + TimeUnit.MILLISECONDS.toNanos(1) - 1);
             try {
                 Thread.sleep(millisRemainingRoundedUp);
             } catch (InterruptedException ignored) {
@@ -173,7 +175,8 @@ public class ShutdownManagerImpl implements ShutdownManager {
         }
 
         final PrintStream destStdErr = PrintStreamGlobals.getErr();
-        destStdErr.println("Halting due to shutdown delay greater than " + SHUTDOWN_TIMEOUT_MILLIS + "ms. Thread dump:");
+        destStdErr
+                .println("Halting due to shutdown delay greater than " + SHUTDOWN_TIMEOUT_MILLIS + "ms. Thread dump:");
         try {
             ThreadDump.threadDump(destStdErr);
             destStdErr.println();

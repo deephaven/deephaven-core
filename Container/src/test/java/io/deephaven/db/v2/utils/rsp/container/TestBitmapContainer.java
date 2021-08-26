@@ -24,7 +24,8 @@ public class TestBitmapContainer extends TestContainerBase {
     static BitmapContainer generateContainer(short min, short max, int sample) {
         BitmapContainer bc = new BitmapContainer();
         for (int i = min; i < max; i++) {
-            if (i % sample != 0) bc.iset((short) i);
+            if (i % sample != 0)
+                bc.iset((short) i);
         }
         return bc;
     }
@@ -38,7 +39,8 @@ public class TestBitmapContainer extends TestContainerBase {
         for (int i = 100; i < 10000; ++i) {
             if ((i % 2) == 0)
                 bc2 = (BitmapContainer) bc2.iset((short) i);
-            else bc3 = (BitmapContainer) bc3.iset((short) i);
+            else
+                bc3 = (BitmapContainer) bc3.iset((short) i);
         }
         bc = bc.ixor(bc2);
         assertTrue(bc.ixor(bc3).getCardinality() == 0);
@@ -53,7 +55,8 @@ public class TestBitmapContainer extends TestContainerBase {
         for (int i = 100; i < 10000; ++i) {
             if ((i % 2) == 0)
                 bc2 = bc2.iset((short) i);
-            else bc3 = bc3.iset((short) i);
+            else
+                bc3 = bc3.iset((short) i);
         }
         RunContainer rc = new RunContainer();
         rc.iadd(0, 1 << 16);
@@ -73,7 +76,8 @@ public class TestBitmapContainer extends TestContainerBase {
         for (int i = 100; i < 10000; ++i) {
             if ((i % 2) == 0)
                 bc2 = (BitmapContainer) bc2.iset((short) i);
-            else bc3 = (BitmapContainer) bc3.iset((short) i);
+            else
+                bc3 = (BitmapContainer) bc3.iset((short) i);
         }
         bc = bc.iand(bc2);
         assertTrue(bc.sameContents(bc2));
@@ -90,7 +94,8 @@ public class TestBitmapContainer extends TestContainerBase {
         for (int i = 100; i < 10000; ++i) {
             if ((i % 2) == 0)
                 bc2 = bc2.iset((short) i);
-            else bc3 = bc3.iset((short) i);
+            else
+                bc3 = bc3.iset((short) i);
         }
         bc2 = bc2.ior(bc3);
         assertTrue(bc.sameContents(bc2));
@@ -158,7 +163,7 @@ public class TestBitmapContainer extends TestContainerBase {
     @Test
     public void testRangeCardinality3() {
         BitmapContainer bc = generateContainer((short) 100, (short) 10000, 5);
-        RunContainer rc = new RunContainer(new short[]{7, 300, 400, 900, 1400, 2200}, 3);
+        RunContainer rc = new RunContainer(new short[] {7, 300, 400, 900, 1400, 2200}, 3);
         bc.ior(rc);
         assertEquals(8677, bc.cardinality);
     }
@@ -166,7 +171,7 @@ public class TestBitmapContainer extends TestContainerBase {
     @Test
     public void testRangeCardinality4() {
         BitmapContainer bc = generateContainer((short) 100, (short) 10000, 5);
-        RunContainer rc = new RunContainer(new short[]{7, 300, 400, 900, 1400, 2200}, 3);
+        RunContainer rc = new RunContainer(new short[] {7, 300, 400, 900, 1400, 2200}, 3);
         bc = (BitmapContainer) bc.andNot(rc);
         assertEquals(5274, bc.cardinality);
     }
@@ -174,7 +179,7 @@ public class TestBitmapContainer extends TestContainerBase {
     @Test
     public void testRangeCardinality5() {
         BitmapContainer bc = generateContainer((short) 100, (short) 10000, 5);
-        RunContainer rc = new RunContainer(new short[]{7, 300, 400, 900, 1400, 2200}, 3);
+        RunContainer rc = new RunContainer(new short[] {7, 300, 400, 900, 1400, 2200}, 3);
         bc.iandNot(rc);
         assertEquals(5274, bc.cardinality);
     }
@@ -182,7 +187,7 @@ public class TestBitmapContainer extends TestContainerBase {
     @Test
     public void testRangeCardinality6() {
         BitmapContainer bc = generateContainer((short) 100, (short) 10000, 5);
-        RunContainer rc = new RunContainer(new short[]{7, 300, 400, 900, 1400, 5200}, 3);
+        RunContainer rc = new RunContainer(new short[] {7, 300, 400, 900, 1400, 5200}, 3);
         bc = (BitmapContainer) bc.iand(rc);
         assertEquals(5046, bc.cardinality);
     }
@@ -190,7 +195,7 @@ public class TestBitmapContainer extends TestContainerBase {
     @Test
     public void testRangeCardinality7() {
         BitmapContainer bc = generateContainer((short) 100, (short) 10000, 5);
-        RunContainer rc = new RunContainer(new short[]{7, 300, 400, 900, 1400, 2200}, 3);
+        RunContainer rc = new RunContainer(new short[] {7, 300, 400, 900, 1400, 2200}, 3);
         bc.ixor(rc);
         assertEquals(6031, bc.cardinality);
     }

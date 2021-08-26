@@ -45,9 +45,8 @@ public class DocumentRange implements Serializable {
         final DocumentRange range = new DocumentRange();
         range.start = getPositionFromOffset(source, start);
         range.end = getPositionFromOffset(
-            source,
-            start + length
-        );
+                source,
+                start + length);
         return range;
     }
 
@@ -80,13 +79,13 @@ public class DocumentRange implements Serializable {
             if (nextLineOffset >= 0) {
                 position.line += 1;
                 position.character = 0;
-                offset -= (1+nextLineOffset - pos);
+                offset -= (1 + nextLineOffset - pos);
             } else {
                 position.character = offset;
                 break;
             }
 
-            pos = nextLineOffset+1;
+            pos = nextLineOffset + 1;
         }
         return position;
     }
@@ -95,9 +94,9 @@ public class DocumentRange implements Serializable {
     @JsIgnore
     public String toString() {
         return "Range{" +
-            "start=" + start +
-            ", end=" + end +
-            '}';
+                "start=" + start +
+                ", end=" + end +
+                '}';
     }
 
     @Override
@@ -131,6 +130,6 @@ public class DocumentRange implements Serializable {
 
     public boolean isInside(Position innerStart, Position innerEnd) {
         return innerStart.line >= start.line && innerStart.character >= start.character
-            && innerEnd.line <= end.line && innerEnd.character <= end.character;
+                && innerEnd.line <= end.line && innerEnd.character <= end.character;
     }
 }

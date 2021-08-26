@@ -13,7 +13,8 @@ import java.util.stream.StreamSupport;
 /**
  * A simple queue based on circular intrusive doubly linked nodes (for O(1) random removal).
  */
-public class IntrusiveDoublyLinkedQueue<VALUE_TYPE> extends IntrusiveDoublyLinkedStructureBase<VALUE_TYPE> implements Iterable<VALUE_TYPE> {
+public class IntrusiveDoublyLinkedQueue<VALUE_TYPE> extends IntrusiveDoublyLinkedStructureBase<VALUE_TYPE>
+        implements Iterable<VALUE_TYPE> {
 
     /**
      * The head of the queue, or null if the queue is empty
@@ -55,7 +56,7 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE> extends IntrusiveDoublyLinke
     /**
      * Move all nodes from {@code other} to the front of this queue in O(1) time.
      *
-     * @param other  The queue to transfer from
+     * @param other The queue to transfer from
      */
     public final void transferBeforeHeadFrom(@NotNull final IntrusiveDoublyLinkedQueue<VALUE_TYPE> other) {
         transferFrom(other, true);
@@ -64,7 +65,7 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE> extends IntrusiveDoublyLinke
     /**
      * Move all nodes from {@code other} to the back of this queue in O(1) time.
      *
-     * @param other  The queue to transfer from
+     * @param other The queue to transfer from
      */
     public final void transferAfterTailFrom(@NotNull final IntrusiveDoublyLinkedQueue<VALUE_TYPE> other) {
         transferFrom(other, false);
@@ -73,8 +74,8 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE> extends IntrusiveDoublyLinke
     /**
      * Move all nodes from {@code other} to this queue in O(1) time.
      *
-     * @param other  The queue to transfer from
-     * @param front  Whether to add {@code other}'s elements at the front (instead of the back) of this queue
+     * @param other The queue to transfer from
+     * @param front Whether to add {@code other}'s elements at the front (instead of the back) of this queue
      */
     private void transferFrom(@NotNull final IntrusiveDoublyLinkedQueue<VALUE_TYPE> other, final boolean front) {
         if (!compatible(other)) {
@@ -121,7 +122,7 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE> extends IntrusiveDoublyLinke
     /**
      * Add a node at the the specified offset into the queue. This is necessarily an O(n) operation.
      *
-     * @param node   The node to add
+     * @param node The node to add
      * @param offset The offset (in [0, size()] to add the node at
      */
     public final void insert(@NotNull final VALUE_TYPE node, final int offset) {
@@ -151,8 +152,7 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE> extends IntrusiveDoublyLinke
      * @return The current head of the queue, or null if the queue is empty
      */
     @SuppressWarnings("unused")
-    public @Nullable
-    final VALUE_TYPE peek() {
+    public @Nullable final VALUE_TYPE peek() {
         return head;
     }
 
@@ -161,8 +161,7 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE> extends IntrusiveDoublyLinke
      *
      * @return The node at the head of the queue (now removed)
      */
-    public @Nullable
-    final VALUE_TYPE poll() {
+    public @Nullable final VALUE_TYPE poll() {
         if (isEmpty()) {
             return null;
         }
@@ -178,8 +177,7 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE> extends IntrusiveDoublyLinke
      * @return The node at the head of the queue (now removed)
      * @throws NoSuchElementException If the queue is empty
      */
-    public @NotNull
-    final VALUE_TYPE remove() {
+    public @NotNull final VALUE_TYPE remove() {
         final VALUE_TYPE result = poll();
         if (result == null) {
             throw new NoSuchElementException();
@@ -215,7 +213,7 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE> extends IntrusiveDoublyLinke
      * Remove and unlink all nodes in the queue.
      */
     public final void clear() {
-        //noinspection StatementWithEmptyBody
+        // noinspection StatementWithEmptyBody
         while (null != poll());
     }
 
@@ -228,8 +226,8 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE> extends IntrusiveDoublyLinke
     }
 
     /**
-     * Determine if a node is currently in the queue.  Assumes that the node's prev/next pointers are only used
-     * in this queue.
+     * Determine if a node is currently in the queue. Assumes that the node's prev/next pointers are only used in this
+     * queue.
      *
      * @param node The node
      * @return Whether the node is currently in the queue
@@ -277,7 +275,10 @@ public class IntrusiveDoublyLinkedQueue<VALUE_TYPE> extends IntrusiveDoublyLinke
 
     @Override
     public Spliterator<VALUE_TYPE> spliterator() {
-        return Spliterators.spliterator(iterator(), size(), Spliterator.ORDERED | Spliterator.NONNULL); // Implicitly | SIZED | SUBSIZED, too.
+        return Spliterators.spliterator(iterator(), size(), Spliterator.ORDERED | Spliterator.NONNULL); // Implicitly |
+                                                                                                        // SIZED |
+                                                                                                        // SUBSIZED,
+                                                                                                        // too.
 
     }
 

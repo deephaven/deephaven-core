@@ -29,8 +29,7 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
     }
 
     @Override
-    public void startTrackingPrevValues() {
-    }
+    public void startTrackingPrevValues() {}
 
     @Override
     public T get(long index) {
@@ -183,7 +182,8 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
     @Override
     public boolean isUngroupable() {
-        return innerSource instanceof UngroupableColumnSource && ((UngroupableColumnSource) innerSource).isUngroupable();
+        return innerSource instanceof UngroupableColumnSource
+                && ((UngroupableColumnSource) innerSource).isUngroupable();
     }
 
     @Override
@@ -198,34 +198,39 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
     @Override
     public T getUngrouped(long columnIndex, int arrayIndex) {
-        //noinspection unchecked
+        // noinspection unchecked
         return (T) ((UngroupableColumnSource) innerSource).getUngrouped(shiftState.getMasked(columnIndex), arrayIndex);
     }
 
     @Override
     public T getUngroupedPrev(long columnIndex, int arrayIndex) {
-        //noinspection unchecked
-        return (T) ((UngroupableColumnSource) innerSource).getUngroupedPrev(shiftState.getPrevMasked(columnIndex), arrayIndex);
+        // noinspection unchecked
+        return (T) ((UngroupableColumnSource) innerSource).getUngroupedPrev(shiftState.getPrevMasked(columnIndex),
+                arrayIndex);
     }
 
     @Override
     public Boolean getUngroupedBoolean(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedBoolean(shiftState.getMasked(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedBoolean(shiftState.getMasked(columnIndex),
+                arrayIndex);
     }
 
     @Override
     public Boolean getUngroupedPrevBoolean(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevBoolean(shiftState.getPrevMasked(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevBoolean(shiftState.getPrevMasked(columnIndex),
+                arrayIndex);
     }
 
     @Override
     public double getUngroupedDouble(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedDouble(shiftState.getMasked(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedDouble(shiftState.getMasked(columnIndex),
+                arrayIndex);
     }
 
     @Override
     public double getUngroupedPrevDouble(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevDouble(shiftState.getPrevMasked(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevDouble(shiftState.getPrevMasked(columnIndex),
+                arrayIndex);
     }
 
     @Override
@@ -235,7 +240,8 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
     @Override
     public float getUngroupedPrevFloat(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevFloat(shiftState.getPrevMasked(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevFloat(shiftState.getPrevMasked(columnIndex),
+                arrayIndex);
     }
 
     @Override
@@ -245,7 +251,8 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
     @Override
     public byte getUngroupedPrevByte(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevByte(shiftState.getPrevMasked(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevByte(shiftState.getPrevMasked(columnIndex),
+                arrayIndex);
     }
 
     @Override
@@ -255,7 +262,8 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
     @Override
     public char getUngroupedPrevChar(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevChar(shiftState.getPrevMasked(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevChar(shiftState.getPrevMasked(columnIndex),
+                arrayIndex);
     }
 
     @Override
@@ -265,7 +273,8 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
     @Override
     public short getUngroupedPrevShort(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevShort(shiftState.getPrevMasked(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevShort(shiftState.getPrevMasked(columnIndex),
+                arrayIndex);
     }
 
     @Override
@@ -275,7 +284,8 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
     @Override
     public int getUngroupedPrevInt(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevInt(shiftState.getPrevMasked(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevInt(shiftState.getPrevMasked(columnIndex),
+                arrayIndex);
     }
 
     @Override
@@ -285,7 +295,8 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
     @Override
     public long getUngroupedPrevLong(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevLong(shiftState.getPrevMasked(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevLong(shiftState.getPrevMasked(columnIndex),
+                arrayIndex);
     }
 
     @Override
@@ -295,19 +306,22 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
     }
 
     @Override
-    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
+            @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         return innerSource.allowsReinterpret(alternateDataType);
     }
 
     @Override
-    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        //noinspection unchecked
+    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
+            @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        // noinspection unchecked
         return new ReinterpretToOriginal(alternateDataType);
     }
 
     private class ReinterpretToOriginal<ALTERNATE_DATA_TYPE> extends BitMaskingColumnSource<ALTERNATE_DATA_TYPE> {
         private ReinterpretToOriginal(Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-            super(BitMaskingColumnSource.this.shiftState, BitMaskingColumnSource.this.innerSource.reinterpret(alternateDataType));
+            super(BitMaskingColumnSource.this.shiftState,
+                    BitMaskingColumnSource.this.innerSource.reinterpret(alternateDataType));
         }
 
         @Override
@@ -316,8 +330,9 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
         }
 
         @Override
-        protected <ORIGINAL_TYPE> ColumnSource<ORIGINAL_TYPE> doReinterpret(@NotNull Class<ORIGINAL_TYPE> alternateDataType) {
-            //noinspection unchecked
+        protected <ORIGINAL_TYPE> ColumnSource<ORIGINAL_TYPE> doReinterpret(
+                @NotNull Class<ORIGINAL_TYPE> alternateDataType) {
+            // noinspection unchecked
             return (ColumnSource<ORIGINAL_TYPE>) BitMaskingColumnSource.this;
         }
     }
@@ -327,8 +342,11 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
         private final Shareable shareable;
         private final ColumnSource.FillContext innerFillContext;
 
-       private FillContext(final BitMaskingColumnSource cs, final int chunkCapacity, final SharedContext sharedContext) {
-            shareable = sharedContext == null ? new Shareable(false, chunkCapacity) : sharedContext.getOrCreate(new SharingKey(cs.shiftState), () -> new Shareable(true, chunkCapacity));
+        private FillContext(final BitMaskingColumnSource cs, final int chunkCapacity,
+                final SharedContext sharedContext) {
+            shareable = sharedContext == null ? new Shareable(false, chunkCapacity)
+                    : sharedContext.getOrCreate(new SharingKey(cs.shiftState),
+                            () -> new Shareable(true, chunkCapacity));
             if (cs.innerSource instanceof FillUnordered) {
                 innerFillContext = cs.innerSource.makeFillContext(chunkCapacity, shareable);
             } else {
@@ -366,7 +384,8 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
                 maskedKeys = WritableLongChunk.makeWritableChunk(chunkCapacity);
             }
 
-            private void ensureMaskedKeysInitialized(@NotNull final CrossJoinShiftState shiftState, final boolean usePrev, @NotNull final OrderedKeys orderedKeys) {
+            private void ensureMaskedKeysInitialized(@NotNull final CrossJoinShiftState shiftState,
+                    final boolean usePrev, @NotNull final OrderedKeys orderedKeys) {
                 if (maskedKeysReusable) {
                     return;
                 }
@@ -376,7 +395,8 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
                 maskedKeys.setSize(0);
                 orderedKeys.forAllLongs((final long indexKey) -> {
-                    final long innerIndexKey = usePrev ? shiftState.getPrevMasked(indexKey) : shiftState.getMasked(indexKey);
+                    final long innerIndexKey =
+                            usePrev ? shiftState.getPrevMasked(indexKey) : shiftState.getMasked(indexKey);
                     maskedKeys.add(innerIndexKey);
                 });
 
@@ -404,24 +424,24 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
     @Override
     public void fillChunk(@NotNull final ColumnSource.FillContext context,
-                          @NotNull final WritableChunk<? super Values> destination,
-                          @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final OrderedKeys orderedKeys) {
         doFillChunk(context, destination, orderedKeys, false);
     }
 
     @Override
     public void fillPrevChunk(@NotNull final ColumnSource.FillContext context,
-                              @NotNull final WritableChunk<? super Values> destination,
-                              @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final OrderedKeys orderedKeys) {
         doFillChunk(context, destination, orderedKeys, true);
     }
 
     private void doFillChunk(@NotNull final ColumnSource.FillContext context,
-                             @NotNull final WritableChunk<? super Values> destination,
-                             @NotNull final OrderedKeys orderedKeys,
-                             boolean usePrev) {
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final OrderedKeys orderedKeys,
+            boolean usePrev) {
         // TODO (nate): revisit and decide if it is worth generating all right-side indexes, sorting, compacting,
-        //  and then permuting back. (Note: fillChunk takes orderedKeys which are unique.)
+        // and then permuting back. (Note: fillChunk takes orderedKeys which are unique.)
         final long sz = orderedKeys.size();
         if (sz <= 0) {
             destination.setSize(0);

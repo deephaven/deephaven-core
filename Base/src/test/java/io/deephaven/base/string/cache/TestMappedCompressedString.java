@@ -43,17 +43,20 @@ public class TestMappedCompressedString extends TestCase {
         assertEquals(mcs.hashCode(), "dancing".hashCode());
         assertTrue(Arrays.equals(mcs.getData(), "dancing".getBytes()));
 
-        assertTrue(CharSequenceUtils.contentEquals(mcs = new MappedCompressedString("dancing with the stars!".getBytes(), 17, 5), "stars"));
+        assertTrue(CharSequenceUtils
+                .contentEquals(mcs = new MappedCompressedString("dancing with the stars!".getBytes(), 17, 5), "stars"));
         assertEquals(mcs.toString(), "stars");
         assertEquals(mcs.hashCode(), "stars".hashCode());
         assertTrue(Arrays.equals(mcs.getData(), "stars".getBytes()));
 
-        assertTrue(CharSequenceUtils.contentEquals(mcs = new MappedCompressedString(ByteBuffer.wrap("happy".getBytes())), "happy"));
+        assertTrue(CharSequenceUtils
+                .contentEquals(mcs = new MappedCompressedString(ByteBuffer.wrap("happy".getBytes())), "happy"));
         assertEquals(mcs.toString(), "happy");
         assertEquals(mcs.hashCode(), "happy".hashCode());
         assertTrue(Arrays.equals(mcs.getData(), "happy".getBytes()));
 
-        assertTrue(CharSequenceUtils.contentEquals(mcs = new MappedCompressedString(ByteBuffer.wrap("hedgehog!".getBytes()), 5, 3), "hog"));
+        assertTrue(CharSequenceUtils
+                .contentEquals(mcs = new MappedCompressedString(ByteBuffer.wrap("hedgehog!".getBytes()), 5, 3), "hog"));
         assertEquals(mcs.toString(), "hog");
         assertEquals(mcs.hashCode(), "hog".hashCode());
         assertTrue(Arrays.equals(mcs.getData(), "hog".getBytes()));
@@ -65,11 +68,13 @@ public class TestMappedCompressedString extends TestCase {
         try {
             mcs.putIfAbsent(null, 0);
             fail();
-        } catch (RequirementFailure ignored) {}
+        } catch (RequirementFailure ignored) {
+        }
         try {
             mcs.putIfAbsent(key1, MappedCompressedString.NULL_MAPPING_VALUE);
             fail();
-        } catch (RequirementFailure ignored) {}
+        } catch (RequirementFailure ignored) {
+        }
     }
 
     public void testMapping() {

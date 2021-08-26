@@ -57,7 +57,7 @@ public class Calendars implements Map<String, BusinessCalendar> {
 
         final String n = name.toUpperCase();
 
-        if(!instance.containsKey(n)){
+        if (!instance.containsKey(n)) {
             throw new IllegalArgumentException("No such calendar: " + name);
         }
 
@@ -67,7 +67,7 @@ public class Calendars implements Map<String, BusinessCalendar> {
     /**
      * Returns a business calendar.
      *
-     * @return default business calendar.  The deault is specified by the {@code Calendar.default} property.
+     * @return default business calendar. The deault is specified by the {@code Calendar.default} property.
      */
     public static BusinessCalendar calendar() {
         return calendar(defaultName);
@@ -102,7 +102,7 @@ public class Calendars implements Map<String, BusinessCalendar> {
 
         loadProperty(configuration, BUSINESS_CALENDAR_PROP_INTERNAL);
 
-        if(configuration.hasProperty(BUSINESS_CALENDAR_PROP_USER)){
+        if (configuration.hasProperty(BUSINESS_CALENDAR_PROP_USER)) {
             loadProperty(configuration, BUSINESS_CALENDAR_PROP_USER);
         }
     }
@@ -116,8 +116,10 @@ public class Calendars implements Map<String, BusinessCalendar> {
         }
     }
 
-    private void load(final Configuration configuration, final String businessCalendarLocations) throws NoSuchFileException {
-        final ResourceResolution resourceResolution = new io.deephaven.util.files.ResourceResolution(configuration, ";", businessCalendarLocations);
+    private void load(final Configuration configuration, final String businessCalendarLocations)
+            throws NoSuchFileException {
+        final ResourceResolution resourceResolution =
+                new io.deephaven.util.files.ResourceResolution(configuration, ";", businessCalendarLocations);
 
         final BiConsumer<URL, String> consumer = (URL, filePath) -> {
             try {
@@ -140,7 +142,7 @@ public class Calendars implements Map<String, BusinessCalendar> {
 
         try {
             resourceResolution.findResources(SUFFIX, consumer);
-        } catch (NoSuchFileException e){
+        } catch (NoSuchFileException e) {
             logger.warn("Problem loading calendar: locations=" + businessCalendarLocations, e);
             throw e;
         } catch (IOException e) {
@@ -149,17 +151,17 @@ public class Calendars implements Map<String, BusinessCalendar> {
         }
     }
 
-    private void addCalendar(final BusinessCalendar cal){
+    private void addCalendar(final BusinessCalendar cal) {
         final String name = cal.name().toUpperCase();
         try {
             NameValidator.validateQueryParameterName(name);
-        } catch(NameValidator.InvalidNameException e){
-            throw new IllegalArgumentException("Invalid name for calendar: name='" + name + "'" );
+        } catch (NameValidator.InvalidNameException e) {
+            throw new IllegalArgumentException("Invalid name for calendar: name='" + name + "'");
         }
 
-        if(containsKey(name)){
+        if (containsKey(name)) {
             final Calendar oldCalendar = get(name);
-            if(oldCalendar.equals(cal)) {
+            if (oldCalendar.equals(cal)) {
                 return;
             }
             throw new IllegalArgumentException("Multiple calendars have the same name: name='" + name + "'");
@@ -203,7 +205,8 @@ public class Calendars implements Map<String, BusinessCalendar> {
 
     @Override
     public boolean containsKey(Object key) {
-        return !(key == null || !key.getClass().isAssignableFrom(String.class)) && calendars.containsKey(((String) key).toUpperCase());
+        return !(key == null || !key.getClass().isAssignableFrom(String.class))
+                && calendars.containsKey(((String) key).toUpperCase());
 
     }
 

@@ -38,7 +38,8 @@ public class QueryLibrary {
     }
 
     private static volatile QueryLibrary defaultLibrary = null;
-    private final static ThreadLocal<QueryLibrary> currLibrary = ThreadLocal.withInitial(QueryLibrary::getDefaultLibrary);
+    private final static ThreadLocal<QueryLibrary> currLibrary =
+            ThreadLocal.withInitial(QueryLibrary::getDefaultLibrary);
 
     private static QueryLibrary getDefaultLibrary() {
         if (defaultLibrary == null) {
@@ -60,7 +61,8 @@ public class QueryLibrary {
      */
     public static synchronized void setDefaultLibrary(final QueryLibrary library) {
         if (defaultLibrary != null) {
-            throw new IllegalStateException("It's too late to set default library; it's already set to: " + defaultLibrary);
+            throw new IllegalStateException(
+                    "It's too late to set default library; it's already set to: " + defaultLibrary);
         }
         defaultLibrary = Objects.requireNonNull(library);
     }

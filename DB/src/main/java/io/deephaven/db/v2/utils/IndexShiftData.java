@@ -26,10 +26,10 @@ import java.io.Serializable;
  */
 public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
-    private static final int BEGIN_RANGE_ATTR  = 0;
-    private static final int END_RANGE_ATTR    = 1;
-    private static final int SHIFT_DELTA_ATTR  = 2;
-    private static final int NUM_ATTR          = 3;
+    private static final int BEGIN_RANGE_ATTR = 0;
+    private static final int END_RANGE_ATTR = 1;
+    private static final int SHIFT_DELTA_ATTR = 2;
+    private static final int NUM_ATTR = 3;
 
     /**
      * {@code payload} is organized into triplets of (rangeStart, rangeEnd, shiftDelta). Triplets are ordered by
@@ -50,6 +50,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
     /**
      * The number of shifts embedded in the payload.
+     * 
      * @return the number of shifts
      */
     public final int size() {
@@ -60,6 +61,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
     /**
      * The number of keys affected by shift commands.
+     * 
      * @return number of keys affected by shifts
      */
     public final long getEffectiveSize() {
@@ -75,6 +77,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
     /**
      * The number of keys affected by shift commands.
+     * 
      * @param clamp the maximum size to return
      * @return number of keys affected by shifts
      */
@@ -94,6 +97,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
     /**
      * Get the inclusive begin offset of the {@code idx}th shift.
+     * 
      * @param idx which pair to get offset for
      * @return the offset
      */
@@ -103,6 +107,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
     /**
      * Get the inclusive end offset of the {@code idx}th shift.
+     * 
      * @param idx which pair to get offset for
      * @return the offset
      */
@@ -112,6 +117,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
     /**
      * Get the absolute shift of the {@code idx}th shift.
+     * 
      * @param idx which pair to get shift for
      * @return the shift
      */
@@ -154,6 +160,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
     /**
      * Queries whether this IndexShiftData is empty (i.e. has no shifts).
+     * 
      * @return true if the size() of this is zero, false if the size is greater than zero
      */
     public final boolean empty() {
@@ -162,9 +169,12 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
     /**
      * Queries whether this IndexShiftData is non-empty (i.e. has at least one shift).
+     * 
      * @return true if the size() of this Index greater than zero, false if the size is zero
      */
-    public final boolean nonempty() { return !empty(); }
+    public final boolean nonempty() {
+        return !empty();
+    }
 
     @Override
     public String toString() {
@@ -215,6 +225,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
     public interface Callback {
         /**
          * Process the shift.
+         * 
          * @param beginRange start of range (inclusive)
          * @param endRange end of range (inclusive)
          * @param shiftDelta amount range has moved by
@@ -271,6 +282,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
     /**
      * Apply all shifts to the provided index. Moves index from pre-shift keyspace to post-shift keyspace.
+     * 
      * @param index the index to shift
      */
     public void apply(final Index index) {
@@ -294,7 +306,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
         }
 
         try (final Index remove = toRemove.getIndex();
-             final Index insert = toInsert.getIndex()) {
+                final Index insert = toInsert.getIndex()) {
             index.remove(remove);
             index.insert(insert);
         }
@@ -303,13 +315,14 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
     /**
      * Apply a shift to the provided index. Moves index from pre-shift keyspace to post-shift keyspace.
      *
-     * @param index      The index to apply the shift to
+     * @param index The index to apply the shift to
      * @param beginRange start of range (inclusive)
-     * @param endRange   end of range (inclusive)
+     * @param endRange end of range (inclusive)
      * @param shiftDelta amount range has moved by
      * @return Whether there was any overlap found to shift
      */
-    public static boolean applyShift(@NotNull final Index index, final long beginRange, final long endRange, final long shiftDelta) {
+    public static boolean applyShift(@NotNull final Index index, final long beginRange, final long endRange,
+            final long shiftDelta) {
         try (final Index toShift = index.subindexByKey(beginRange, endRange)) {
             if (toShift.empty()) {
                 return false;
@@ -323,6 +336,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
     /**
      * Unapply all shifts to the provided index. Moves index from post-shift keyspace to pre-shift keyspace.
+     * 
      * @param index the index to shift
      */
     public void unapply(final Index index) {
@@ -346,7 +360,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
         }
 
         try (final Index remove = toRemove.getIndex();
-             final Index insert = toInsert.getIndex()) {
+                final Index insert = toInsert.getIndex()) {
             index.remove(remove);
             index.insert(insert);
         }
@@ -354,25 +368,29 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
     /**
      * Unapply all shifts to the provided index. Moves index from post-shift keyspace to pre-shift keyspace.
+     * 
      * @param index the index to shift
      * @param offset an additional offset to apply to all shifts (such as when applying to a wrapped table)
      */
     public void unapply(final Index index, final long offset) {
-        // NB: This is an unapply callback, and beginRange, endRange, and shiftDelta have been adjusted so that this is a reversed shift,
-        //     hence we use the applyShift helper.
-        unapply((beginRange, endRange, shiftDelta) -> applyShift(index, beginRange + offset, endRange + offset, shiftDelta));
+        // NB: This is an unapply callback, and beginRange, endRange, and shiftDelta have been adjusted so that this is
+        // a reversed shift,
+        // hence we use the applyShift helper.
+        unapply((beginRange, endRange, shiftDelta) -> applyShift(index, beginRange + offset, endRange + offset,
+                shiftDelta));
     }
 
     /**
      * Unapply a shift to the provided index. Moves index from post-shift keyspace to pre-shift keyspace.
      *
-     * @param index      The index to apply the shift to
+     * @param index The index to apply the shift to
      * @param beginRange start of range (inclusive)
-     * @param endRange   end of range (inclusive)
+     * @param endRange end of range (inclusive)
      * @param shiftDelta amount range has moved by
      * @return Whether there was any overlap found to shift
      */
-    public static boolean unapplyShift(@NotNull final Index index, final long beginRange, final long endRange, final long shiftDelta) {
+    public static boolean unapplyShift(@NotNull final Index index, final long beginRange, final long endRange,
+            final long shiftDelta) {
         try (final Index toShift = index.subindexByKey(beginRange + shiftDelta, endRange + shiftDelta)) {
             if (toShift.empty()) {
                 return false;
@@ -388,6 +406,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
     public interface SingleElementShiftCallback {
         /**
          * Process the shift.
+         * 
          * @param key the key to shift
          * @param shiftDelta amount key has moved by
          */
@@ -444,10 +463,13 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
     public interface Iterator {
         boolean hasNext();
+
         void next();
 
         long beginRange();
+
         long endRange();
+
         long shiftDelta();
 
         boolean polarityReversed();
@@ -510,7 +532,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
                 }
                 end = polaritySwapIndices.get(psi) - 1;
 
-                dir = getShiftDelta(start) > 0 ? - 1 : 1;
+                dir = getShiftDelta(start) > 0 ? -1 : 1;
                 if (dir < 0) {
                     final int tmp = start;
                     start = end;
@@ -551,6 +573,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
     /**
      * Intersects this IndexShiftData against the provided Index.
+     * 
      * @param index the index to test for intersections (pre-shift keyspace)
      * @return an IndexShiftData containing only non-empty shifts
      */
@@ -567,8 +590,8 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
     }
 
     /**
-     * Helper utility to build instances of {@link IndexShiftData} with internally consistent data.
-     * No other ranges should be added to this builder after {@link Builder#build} is invoked.
+     * Helper utility to build instances of {@link IndexShiftData} with internally consistent data. No other ranges
+     * should be added to this builder after {@link Builder#build} is invoked.
      */
     public static class Builder {
         private IndexShiftData shiftData;
@@ -586,6 +609,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
         /**
          * Gets the last index assigned to a shift.
+         * 
          * @return The greatest index assigned to a shift or -1 if no shifts exist yet.
          */
         public long lastShiftEnd() {
@@ -594,6 +618,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
         /**
          * Shift a range of keys. The shift must be consistent with previously added shifts.
+         * 
          * @param beginRange first key to shift (inclusive)
          * @param endRange last key to shift (inclusive)
          * @param shiftDelta offset to shift by; may be negative
@@ -642,11 +667,13 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
                 return nextShiftDelta < 0 ? -nextShiftDelta : 0;
             }
             final int idx = shiftData.size() - 1;
-            return Math.max(shiftData.getEndRange(idx) + 1, shiftData.getEndRange(idx) + shiftData.getShiftDelta(idx) - nextShiftDelta + 1);
+            return Math.max(shiftData.getEndRange(idx) + 1,
+                    shiftData.getEndRange(idx) + shiftData.getShiftDelta(idx) - nextShiftDelta + 1);
         }
 
         /**
          * Make final modifications to the {@link IndexShiftData} and return it.
+         * 
          * @return the built IndexShiftData
          */
         public IndexShiftData build() {
@@ -665,8 +692,8 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
         /**
          * Use this method to append shifts that propagate from a parent table to a subset of a dependent table. The
-         * canonical use-case is merge, where tables are shifted in key-space so that they do not overlap each other.
-         * If one of these merged tables has a shift, then it must propagate these shifts to the merged table in the
+         * canonical use-case is merge, where tables are shifted in key-space so that they do not overlap each other. If
+         * one of these merged tables has a shift, then it must propagate these shifts to the merged table in the
          * appropriately shifted key space.
          *
          * This method also supports shifting the entire range in addition to propagating upstream shifts. For example,
@@ -682,7 +709,8 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
          * @param currOffset the new offset where this sub-table begins (may be equal to prevOffset)
          * @param currCardinality the cardinality of the keyspace currently allocated to this table
          */
-        public void appendShiftData(final IndexShiftData innerShiftData, final long prevOffset, final long prevCardinality, final long currOffset, final long currCardinality) {
+        public void appendShiftData(final IndexShiftData innerShiftData, final long prevOffset,
+                final long prevCardinality, final long currOffset, final long currCardinality) {
             long watermarkKey = 0; // id space of source table
 
             // These bounds seem weird. We are going to insert a shift for the keyspace prior to the shift with
@@ -695,9 +723,12 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
                 if (sidx < innerShiftData.size()) {
                     nextShiftDelta = innerShiftData.getShiftDelta(sidx);
                     // Shifts to indices less than zero are meaningless and might cause our builder to complain.
-                    nextShiftStart = Math.max(innerShiftData.getBeginRange(sidx), nextShiftDelta < 0 ? -nextShiftDelta : 0);
-                    // Shifts beyond the cardinality are meaningless (assumptions) but might destroy neighboring table data.
-                    nextShiftEnd = Math.min(Math.min(prevCardinality - 1, currCardinality - 1 - nextShiftDelta), innerShiftData.getEndRange(sidx));
+                    nextShiftStart =
+                            Math.max(innerShiftData.getBeginRange(sidx), nextShiftDelta < 0 ? -nextShiftDelta : 0);
+                    // Shifts beyond the cardinality are meaningless (assumptions) but might destroy neighboring table
+                    // data.
+                    nextShiftEnd = Math.min(Math.min(prevCardinality - 1, currCardinality - 1 - nextShiftDelta),
+                            innerShiftData.getEndRange(sidx));
                 } else {
                     nextShiftEnd = nextShiftStart = prevCardinality;
                     nextShiftDelta = 0;
@@ -714,7 +745,8 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
                 }
 
                 // insert this range
-                shiftRange(nextShiftStart + prevOffset, nextShiftEnd + prevOffset, currOffset - prevOffset + nextShiftDelta);
+                shiftRange(nextShiftStart + prevOffset, nextShiftEnd + prevOffset,
+                        currOffset - prevOffset + nextShiftDelta);
                 watermarkKey = nextShiftEnd + 1 + (nextShiftDelta > 0 ? nextShiftDelta : 0);
             }
         }
@@ -722,6 +754,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
         /**
          * This method adjusts the previous shift so that the upcoming shift will not be considered overlapping. This is
          * useful if the previous shift included empty space for efficiency, but would intersect with our new shift.
+         * 
          * @param nextShiftBegin The first real-key that needs to shift in the upcoming shift.
          * @param nextShiftDelta The delta that applies to the upcoming shift.
          */
@@ -731,13 +764,15 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
                 if (nextShiftBegin <= shiftData.getEndRange(prevIdx)) {
                     shiftData.payload.set(prevIdx * NUM_ATTR + END_RANGE_ATTR, nextShiftBegin - 1);
                 }
-                if (nextShiftBegin + nextShiftDelta <= shiftData.getEndRange(prevIdx) + shiftData.getShiftDelta(prevIdx)) {
-                    shiftData.payload.set(prevIdx * NUM_ATTR + END_RANGE_ATTR, nextShiftBegin + nextShiftDelta - shiftData.getShiftDelta(prevIdx) - 1);
+                if (nextShiftBegin + nextShiftDelta <= shiftData.getEndRange(prevIdx)
+                        + shiftData.getShiftDelta(prevIdx)) {
+                    shiftData.payload.set(prevIdx * NUM_ATTR + END_RANGE_ATTR,
+                            nextShiftBegin + nextShiftDelta - shiftData.getShiftDelta(prevIdx) - 1);
                 }
 
                 if (shiftData.getEndRange(prevIdx) < shiftData.getBeginRange(prevIdx)) {
                     // remove shift completely:
-                    shiftData.payload.remove(shiftData.payload.size() - 3,  3);
+                    shiftData.payload.remove(shiftData.payload.size() - 3, 3);
                     final int numSwaps = shiftData.polaritySwapIndices.size();
                     if (numSwaps > 0 && shiftData.polaritySwapIndices.get(numSwaps - 1) >= shiftData.size()) {
                         shiftData.polaritySwapIndices.removeAt(numSwaps - 1);
@@ -750,17 +785,19 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
     }
 
     /**
-     * Helper utility to build instances of {@link IndexShiftData} with internally consistent data.
-     * No other ranges should be added to this builder after {@link Builder#build} is invoked.
+     * Helper utility to build instances of {@link IndexShiftData} with internally consistent data. No other ranges
+     * should be added to this builder after {@link Builder#build} is invoked.
      * <p>
-     * Differs from {@link Builder} in that it coalesces ranges with the same delta if they have no intervening keys
-     * in the pre-shift keys of the input, e.g. a {@link io.deephaven.db.tables.Table}.</p>
+     * Differs from {@link Builder} in that it coalesces ranges with the same delta if they have no intervening keys in
+     * the pre-shift keys of the input, e.g. a {@link io.deephaven.db.tables.Table}.
+     * </p>
      * <p>
-     * The data should be presented to the builder in shift iterator order, meaning the first contiguous run with
-     * a given polarity is presented to the builder, then the next run is presented with the opposite polarity.
-     * When the polarity is reversed (i.e., the delta is positive); the ranges must be presented in reverse (descending)
-     * order within the run.  When the polarity is not reversed (i.e., the delta is negative); the ranges must be
-     * presented in ascending order.</p>
+     * The data should be presented to the builder in shift iterator order, meaning the first contiguous run with a
+     * given polarity is presented to the builder, then the next run is presented with the opposite polarity. When the
+     * polarity is reversed (i.e., the delta is positive); the ranges must be presented in reverse (descending) order
+     * within the run. When the polarity is not reversed (i.e., the delta is negative); the ranges must be presented in
+     * ascending order.
+     * </p>
      */
     public static final class SmartCoalescingBuilder implements SafeCloseable {
         /**
@@ -768,12 +805,12 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
          */
         private ReadOnlyIndex preShiftKeys;
         /**
-         * A forward iterator, which is used for all shifts that do not have reversed polarity (i.e. negative delta).
-         * We create this on the first negative delta shift and reuse it until we are closed.
+         * A forward iterator, which is used for all shifts that do not have reversed polarity (i.e. negative delta). We
+         * create this on the first negative delta shift and reuse it until we are closed.
          */
         private ReadOnlyIndex.SearchIterator preShiftKeysIteratorForward;
         /**
-         * For each run of shifts that have reversed polarity (positive delta), we create a new reverse iterator.  We
+         * For each run of shifts that have reversed polarity (positive delta), we create a new reverse iterator. We
          * reuse this until we find a negative delta shift and then close it.
          */
         private ReadOnlyIndex.SearchIterator preShiftKeysIteratorReverse;
@@ -783,7 +820,7 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
         private IndexShiftData shiftData;
 
         /**
-         * The index of the first range that needs to be reversed.  -1 if there is no range to reverse at the moment.
+         * The index of the first range that needs to be reversed. -1 if there is no range to reverse at the moment.
          */
         private int rangeToReverseStart = -1;
 
@@ -801,9 +838,9 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
          */
         private long nextReverseKey;
         /**
-         * The next key after our last shift range.  We record this value so that if two subsequent shifts have the same
-         * delta, but do not include the intervening key we do not permit coalescing.  If there is no intervening key,
-         * we permit coalescing.  ReadOnlyIndex.NULL_KEY indicates there is no intervening key of interest.
+         * The next key after our last shift range. We record this value so that if two subsequent shifts have the same
+         * delta, but do not include the intervening key we do not permit coalescing. If there is no intervening key, we
+         * permit coalescing. ReadOnlyIndex.NULL_KEY indicates there is no intervening key of interest.
          */
         private long interveningKey = ReadOnlyIndex.NULL_KEY;
 
@@ -844,7 +881,8 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
 
             final boolean polarityReversed = shiftDelta > 0;
             final boolean polarityChanged = lastPolarityReversed != polarityReversed;
-            final boolean reinitializeReverseIterator = polarityReversed && (polarityChanged || beginRange > lastReverseIteratorStart);
+            final boolean reinitializeReverseIterator =
+                    polarityReversed && (polarityChanged || beginRange > lastReverseIteratorStart);
             if (polarityChanged || reinitializeReverseIterator) {
                 interveningKey = ReadOnlyIndex.NULL_KEY;
                 if (lastPolarityReversed) {
@@ -911,13 +949,14 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
                     if (interveningKey == ReadOnlyIndex.NULL_KEY || interveningKey <= endRange) {
                         // we must merge these ranges; this is not as simple as the forward case, because if we had the
                         // same reverse iterator as last time (i.e. the polarity was applied "correctly"), we should
-                        // simply be able to update the beginning of the range.  However, if the existing range is
+                        // simply be able to update the beginning of the range. However, if the existing range is
                         // before this range; it means we are in a new segment of shifts; and must merge ourselves
                         // to the existing shift by extending the end
                         final long existingBegin = shiftData.getBeginRange(currentRangeIndex);
                         final long existingEnd = shiftData.getEndRange(currentRangeIndex);
                         if (existingBegin < beginRange) {
-                            // if there was an intervening key between our beginRange and the existing end, we can not merge
+                            // if there was an intervening key between our beginRange and the existing end, we can not
+                            // merge
                             if (nextInterveningKey <= existingEnd) {
                                 shiftData.payload.set(currentRangeIndex * 3 + 1, endRange);
                                 interveningKey = nextInterveningKey;
@@ -957,25 +996,36 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
             if (!polarityReversed) {
                 if (beginRange <= shiftData.getEndRange(currentRangeIndex)) {
                     throw new IllegalArgumentException("new range [" + beginRange + "," + endRange
-                            + "]->" + shiftDelta + " overlaps previous [" + shiftData.getBeginRange(currentRangeIndex) + ","
-                            + shiftData.getEndRange(currentRangeIndex) + "]->" + shiftData.getShiftDelta(currentRangeIndex));
+                            + "]->" + shiftDelta + " overlaps previous [" + shiftData.getBeginRange(currentRangeIndex)
+                            + ","
+                            + shiftData.getEndRange(currentRangeIndex) + "]->"
+                            + shiftData.getShiftDelta(currentRangeIndex));
                 }
-                if (beginRange + shiftDelta <= shiftData.getEndRange(currentRangeIndex) + shiftData.getShiftDelta(currentRangeIndex)) {
+                if (beginRange + shiftDelta <= shiftData.getEndRange(currentRangeIndex)
+                        + shiftData.getShiftDelta(currentRangeIndex)) {
                     throw new IllegalArgumentException("new resulting range [" + beginRange + "," + endRange
-                            + "]->" + shiftDelta + " overlaps previous [" + shiftData.getBeginRange(currentRangeIndex) + ","
-                            + shiftData.getEndRange(currentRangeIndex) + "]->" + shiftData.getShiftDelta(currentRangeIndex));
+                            + "]->" + shiftDelta + " overlaps previous [" + shiftData.getBeginRange(currentRangeIndex)
+                            + ","
+                            + shiftData.getEndRange(currentRangeIndex) + "]->"
+                            + shiftData.getShiftDelta(currentRangeIndex));
                 }
             } else if (!reinitializeReverseIterator) {
-                // we are in the midst of a sequence of reversed polarity things, so we should be less than the previous shift
+                // we are in the midst of a sequence of reversed polarity things, so we should be less than the previous
+                // shift
                 if (beginRange >= shiftData.getEndRange(currentRangeIndex)) {
                     throw new IllegalArgumentException("new range [" + beginRange + "," + endRange
-                            + "]->" + shiftDelta + " overlaps previous [" + shiftData.getBeginRange(currentRangeIndex) + ","
-                            + shiftData.getEndRange(currentRangeIndex) + "]->" + shiftData.getShiftDelta(currentRangeIndex));
+                            + "]->" + shiftDelta + " overlaps previous [" + shiftData.getBeginRange(currentRangeIndex)
+                            + ","
+                            + shiftData.getEndRange(currentRangeIndex) + "]->"
+                            + shiftData.getShiftDelta(currentRangeIndex));
                 }
-                if (beginRange + shiftDelta >= shiftData.getEndRange(currentRangeIndex) + shiftData.getShiftDelta(currentRangeIndex)) {
+                if (beginRange + shiftDelta >= shiftData.getEndRange(currentRangeIndex)
+                        + shiftData.getShiftDelta(currentRangeIndex)) {
                     throw new IllegalArgumentException("new resulting range [" + beginRange + "," + endRange
-                            + "]->" + shiftDelta + " overlaps previous [" + shiftData.getBeginRange(currentRangeIndex) + ","
-                            + shiftData.getEndRange(currentRangeIndex) + "]->" + shiftData.getShiftDelta(currentRangeIndex));
+                            + "]->" + shiftDelta + " overlaps previous [" + shiftData.getBeginRange(currentRangeIndex)
+                            + ","
+                            + shiftData.getEndRange(currentRangeIndex) + "]->"
+                            + shiftData.getShiftDelta(currentRangeIndex));
                 }
             }
         }
@@ -1009,8 +1059,8 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
         }
 
         /**
-         * Make final modifications to the {@link IndexShiftData} and return it. Invoke {@link #close()} to minimize
-         * the lifetime of the pre-shift {@link OrderedKeys.Iterator}.
+         * Make final modifications to the {@link IndexShiftData} and return it. Invoke {@link #close()} to minimize the
+         * lifetime of the pre-shift {@link OrderedKeys.Iterator}.
          *
          * @return The built IndexShiftData
          */
@@ -1051,11 +1101,13 @@ public final class IndexShiftData implements Serializable, LogOutputAppendable {
      * Indexes have the same size. An element at position k in the first index is the pre-shift key for the same row
      * whose post-shift key is at position k in the second index.
      *
-     * @param postShiftIndex The index of keys that were shifted in post-shift keyspace. It should not contain rows
-     *                       that did not exist prior to the shift.
-     * @return A SafeCloseablePair of preShiftedKeys and postShiftedKeys that intersect this IndexShiftData with postShiftIndex.
+     * @param postShiftIndex The index of keys that were shifted in post-shift keyspace. It should not contain rows that
+     *        did not exist prior to the shift.
+     * @return A SafeCloseablePair of preShiftedKeys and postShiftedKeys that intersect this IndexShiftData with
+     *         postShiftIndex.
      */
-    public SafeCloseablePair<Index, Index> extractParallelShiftedRowsFromPostShiftIndex(final ReadOnlyIndex postShiftIndex) {
+    public SafeCloseablePair<Index, Index> extractParallelShiftedRowsFromPostShiftIndex(
+            final ReadOnlyIndex postShiftIndex) {
         if (empty()) {
             return SafeCloseablePair.of(Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());
         }

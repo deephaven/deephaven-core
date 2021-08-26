@@ -23,6 +23,7 @@ public abstract class GrpcTableOperation<T> {
 
     /**
      * This table operation has many dependencies.
+     * 
      * @param getRequest a functor to extract the request from a BatchTableRequest.Operation
      * @param getTicket a function to extract the result ticket from the request
      * @param getDependencies a function to extract the table-reference dependencies from the request
@@ -38,6 +39,7 @@ public abstract class GrpcTableOperation<T> {
 
     /**
      * This table operation has one dependency.
+     * 
      * @param getRequest a functor to extract the request from a BatchTableRequest.Operation
      * @param getTicket a function to extract the result ticket from the request
      * @param getDependency a function to extract the table-reference dependency from the request
@@ -53,6 +55,7 @@ public abstract class GrpcTableOperation<T> {
 
     /**
      * This table operation has no dependencies.
+     * 
      * @param getRequest a functor to extract the request from a BatchTableRequest.Operation
      * @param getTicket a function to extract the result ticket from the request
      */
@@ -66,6 +69,7 @@ public abstract class GrpcTableOperation<T> {
 
     /**
      * This method validates preconditions of the request.
+     * 
      * @param request the original request from the user
      * @throws StatusRuntimeException on the first failed precondition
      */
@@ -75,6 +79,7 @@ public abstract class GrpcTableOperation<T> {
 
     /**
      * This actually performs the operation. It will typically be performed after the
+     * 
      * @param request the original request from the user
      * @param sourceTables the source tables that this operation may or may not need
      * @return the resulting table
@@ -83,6 +88,7 @@ public abstract class GrpcTableOperation<T> {
 
     /**
      * Extract the specific request object from the batch operation.
+     * 
      * @param op the batch operation
      * @return the typed request from the batch
      */
@@ -92,6 +98,7 @@ public abstract class GrpcTableOperation<T> {
 
     /**
      * Get the result ticket for this operation.
+     * 
      * @param request the request
      * @return the result ticket
      */
@@ -101,6 +108,7 @@ public abstract class GrpcTableOperation<T> {
 
     /**
      * Get the table references for this operation.
+     * 
      * @param request the request
      * @return the table references of the other source table dependencies
      */

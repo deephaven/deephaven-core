@@ -43,11 +43,6 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
     }
 
     @Override
-    public void ensureCapacity(long capacity) {
-        ensureCapacity(capacity, blocks, prevBlocks, true);
-    }
-
-    @Override
     public void ensureCapacity(long capacity, boolean nullFill) {
         ensureCapacity(capacity, blocks, prevBlocks, nullFill);
     }

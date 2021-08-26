@@ -35,7 +35,7 @@ public interface ChunkHasher {
      * Update a hash for a boxed object.
      *
      * @param existing the existing hashcode
-     * @param value    the boxed object to add to the hash code
+     * @param value the boxed object to add to the hash code
      * @return the hashcode, as if you called the chunked version of this function
      */
     int hashUpdate(int existing, Object value);

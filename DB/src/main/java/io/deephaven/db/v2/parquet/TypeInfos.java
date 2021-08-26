@@ -20,12 +20,12 @@ import java.io.Externalizable;
 import java.util.*;
 
 /**
- * Contains the necessary information to convert a Deephaven table into a Parquet table. Both the
- * schema translation, and the data translation.
+ * Contains the necessary information to convert a Deephaven table into a Parquet table. Both the schema translation,
+ * and the data translation.
  */
 class TypeInfos {
 
-    private static final TypeInfo[] TYPE_INFOS = new TypeInfo[]{
+    private static final TypeInfo[] TYPE_INFOS = new TypeInfo[] {
             IntType.INSTANCE,
             LongType.INSTANCE,
             ShortType.INSTANCE,
@@ -56,8 +56,7 @@ class TypeInfos {
 
     private static TypeInfo lookupTypeInfo(
             @NotNull final ColumnDefinition<?> column,
-            @NotNull final ParquetInstructions instructions
-    ) {
+            @NotNull final ParquetInstructions instructions) {
         if (CodecLookup.codecRequired(column)
                 || CodecLookup.explicitCodecPresent(instructions.getCodecName(column.getName()))) {
             return new CodecType<>();
@@ -75,8 +74,7 @@ class TypeInfos {
 
     static Pair<String, String> getCodecAndArgs(
             @NotNull final ColumnDefinition<?> columnDefinition,
-            @NotNull final ParquetInstructions instructions
-    ) {
+            @NotNull final ParquetInstructions instructions) {
         // Explicit codecs always take precedence
         final String colName = columnDefinition.getName();
         final String codecNameFromInstructions = instructions.getCodecName(colName);
@@ -97,13 +95,12 @@ class TypeInfos {
 
     static TypeInfo getTypeInfo(
             @NotNull final ColumnDefinition<?> column,
-            @NotNull final ParquetInstructions instructions
-    ) {
+            @NotNull final ParquetInstructions instructions) {
         return lookupTypeInfo(column, instructions);
     }
 
     private static boolean isRequired(ColumnDefinition<?> columnDefinition) {
-        return false;//TODO change this when adding optionals support
+        return false;// TODO change this when adding optionals support
     }
 
     private static PrimitiveBuilder<PrimitiveType> type(PrimitiveTypeName type, boolean required, boolean repeating) {
@@ -286,14 +283,12 @@ class TypeInfos {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
             return type(PrimitiveTypeName.BINARY, required, repeating)
-                    .as(LogicalTypeAnnotation.stringType())
-                    ;
+                    .as(LogicalTypeAnnotation.stringType());
         }
     }
 
     /**
-     * TODO: newer versions of parquet seem to support NANOS, but this version seems to only support
-     * MICROS
+     * TODO: newer versions of parquet seem to support NANOS, but this version seems to only support MICROS
      */
     private enum DBDateTimeType implements TypeInfo {
         INSTANCE;
@@ -311,8 +306,7 @@ class TypeInfos {
                 throw new IllegalArgumentException("Invalid data type " + dataType);
             }
             return type(PrimitiveTypeName.INT64, required, repeating)
-                    .as(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS))
-                    ;
+                    .as(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS));
         }
     }
 
@@ -326,8 +320,7 @@ class TypeInfos {
 
         default Type createSchemaType(
                 @NotNull final ColumnDefinition<?> columnDefinition,
-                @NotNull final ParquetInstructions instructions
-        ) {
+                @NotNull final ParquetInstructions instructions) {
             final Class<?> dataType = columnDefinition.getDataType();
             final Class<?> componentType = columnDefinition.getComponentType();
 
@@ -352,8 +345,8 @@ class TypeInfos {
             }
             return Types.buildGroup(Type.Repetition.OPTIONAL).addField(
                     Types.buildGroup(Type.Repetition.REPEATED).addField(
-                            builder.named("item")).named(columnDefinition.getName())
-            ).as(LogicalTypeAnnotation.listType()).named(columnDefinition.getName());
+                            builder.named("item")).named(columnDefinition.getName()))
+                    .as(LogicalTypeAnnotation.listType()).named(columnDefinition.getName());
         }
 
         PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType);
@@ -361,8 +354,7 @@ class TypeInfos {
 
     private static class CodecType<T> implements TypeInfo {
 
-        CodecType() {
-        }
+        CodecType() {}
 
         @Override
         public Set<Class<?>> getTypes() {

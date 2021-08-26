@@ -18,7 +18,8 @@ public class SimplePlotBy {
         final String[] cats = {"A", "B", "A", "B", "A", "B"};
         final int[] x1 = {1, 1, 2, 2, 3, 3};
         final double[] y1 = {2.0, 3.0, 4.0, 5.0, 3.0, 4.0};
-        final Table t = TableTools.newTable(TableTools.col("USym", cats), TableTools.intCol("Index", x1), TableTools.doubleCol("Value", y1));
+        final Table t = TableTools.newTable(TableTools.col("USym", cats), TableTools.intCol("Index", x1),
+                TableTools.doubleCol("Value", y1));
 
         Figure fig = FigureFactory.figure();
         Figure cht = fig.newChart(0)

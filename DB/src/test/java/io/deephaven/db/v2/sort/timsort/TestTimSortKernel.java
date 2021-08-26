@@ -49,6 +49,7 @@ public abstract class TestTimSortKernel {
         }
 
         abstract void run();
+
         abstract void check(List<T> expected);
     }
 
@@ -60,6 +61,7 @@ public abstract class TestTimSortKernel {
         }
 
         abstract void run();
+
         abstract void check(List<T> expected);
     }
 
@@ -84,15 +86,16 @@ public abstract class TestTimSortKernel {
         }
 
         abstract void run();
+
         abstract void check(List<T> expected);
     }
 
     <T, K, M> void performanceTest(GenerateTupleList<T> generateValues,
-                                   Function<List<T>, K> createKernelStuff,
-                                   Consumer<K> runKernel,
-                                   Comparator<T> comparator,
-                                   Function<List<T>, M> createMergeStuff,
-                                   Consumer<M> runMerge) {
+            Function<List<T>, K> createKernelStuff,
+            Consumer<K> runKernel,
+            Comparator<T> comparator,
+            Function<List<T>, M> createMergeStuff,
+            Consumer<M> runMerge) {
         for (int chunkSize = INITIAL_PERFORMANCE_CHUNK_SIZE; chunkSize <= MAX_CHUNK_SIZE; chunkSize *= 2) {
             System.out.println("Size = " + chunkSize);
 
@@ -120,7 +123,8 @@ public abstract class TestTimSortKernel {
         }
     }
 
-    private <T, R> void performanceTest(int chunkSize, GenerateTupleList<T> tupleListGenerator, Function<List<T>, R> prepareFunction, Consumer<R> timedFunction, @Nullable PerfStats stats) {
+    private <T, R> void performanceTest(int chunkSize, GenerateTupleList<T> tupleListGenerator,
+            Function<List<T>, R> prepareFunction, Consumer<R> timedFunction, @Nullable PerfStats stats) {
         for (int seed = 0; seed < PERFORMANCE_SEEDS; ++seed) {
             final Random random = new Random(seed);
 
@@ -138,7 +142,8 @@ public abstract class TestTimSortKernel {
         }
     }
 
-    <T> void correctnessTest(int size, GenerateTupleList<T> tupleListGenerator, Comparator<T> comparator, Function<List<T>, SortKernelStuff<T>> prepareFunction) {
+    <T> void correctnessTest(int size, GenerateTupleList<T> tupleListGenerator, Comparator<T> comparator,
+            Function<List<T>, SortKernelStuff<T>> prepareFunction) {
         for (int seed = 0; seed < CORRECTNESS_SEEDS; ++seed) {
             System.out.println("Size = " + size + ", seed=" + seed);
             final Random random = new Random(seed);
@@ -156,10 +161,13 @@ public abstract class TestTimSortKernel {
 
     @FunctionalInterface
     interface PartitionKernelStuffFactory<T> {
-        PartitionKernelStuff<T> apply(List<T> javaTuples, Index index, int chunkSize, int nPartitions, boolean preserveEquality);
+        PartitionKernelStuff<T> apply(List<T> javaTuples, Index index, int chunkSize, int nPartitions,
+                boolean preserveEquality);
     }
 
-    <T> void partitionCorrectnessTest(int dataSize, int chunkSize, int nPartitions, GenerateTupleList<T> tupleListGenerator, Comparator<T> comparator, PartitionKernelStuffFactory<T> prepareFunction) {
+    <T> void partitionCorrectnessTest(int dataSize, int chunkSize, int nPartitions,
+            GenerateTupleList<T> tupleListGenerator, Comparator<T> comparator,
+            PartitionKernelStuffFactory<T> prepareFunction) {
         for (int seed = 0; seed < CORRECTNESS_SEEDS; ++seed) {
             System.out.println("Size = " + dataSize + ", seed=" + seed + ", nPartitions=" + nPartitions);
             final Random random = new Random(seed);
@@ -172,7 +180,8 @@ public abstract class TestTimSortKernel {
             }
             final Index index = builder.getIndex();
 
-            final PartitionKernelStuff<T> partitionStuff = prepareFunction.apply(javaTuples, index, chunkSize, nPartitions, false);
+            final PartitionKernelStuff<T> partitionStuff =
+                    prepareFunction.apply(javaTuples, index, chunkSize, nPartitions, false);
 
             partitionStuff.run();
 
@@ -180,7 +189,8 @@ public abstract class TestTimSortKernel {
         }
     }
 
-    <T> void multiCorrectnessTest(int size, GenerateTupleList<T> tupleListGenerator, Comparator<T> comparator, Function<List<T>, SortKernelStuff<T>> prepareFunction) {
+    <T> void multiCorrectnessTest(int size, GenerateTupleList<T> tupleListGenerator, Comparator<T> comparator,
+            Function<List<T>, SortKernelStuff<T>> prepareFunction) {
         for (int seed = 0; seed < CORRECTNESS_SEEDS; ++seed) {
             System.out.println("Size = " + size + ", seed=" + seed);
             final Random random = new Random(seed);
@@ -189,11 +199,11 @@ public abstract class TestTimSortKernel {
 
             final SortKernelStuff<T> sortStuff = prepareFunction.apply(javaTuples);
 
-//            System.out.println("Prior to sort: " + javaTuples);
+            // System.out.println("Prior to sort: " + javaTuples);
             sortStuff.run();
 
             javaTuples.sort(comparator);
-//            System.out.println("After sort: " + javaTuples);
+            // System.out.println("After sort: " + javaTuples);
 
             sortStuff.check(javaTuples);
         }
@@ -204,15 +214,15 @@ public abstract class TestTimSortKernel {
     }
 
     static char generateCharValue(Random random) {
-        return (char)('A' +  random.nextInt(26));
+        return (char) ('A' + random.nextInt(26));
     }
 
     static byte generateByteValue(Random random) {
-        return (byte)random.nextInt(Byte.MAX_VALUE);
+        return (byte) random.nextInt(Byte.MAX_VALUE);
     }
 
     static short generateShortValue(Random random) {
-        return (short)random.nextInt(Short.MAX_VALUE);
+        return (short) random.nextInt(Short.MAX_VALUE);
     }
 
     static int generateIntValue(Random random) {
@@ -233,37 +243,37 @@ public abstract class TestTimSortKernel {
 
 
     static String incrementObjectValue(@SuppressWarnings("unused") Random unused, Object value) {
-        final int intValue = Integer.parseInt((String)value, 16);
+        final int intValue = Integer.parseInt((String) value, 16);
         return Integer.toHexString(intValue + 1);
     }
 
     static String decrementObjectValue(@SuppressWarnings("unused") Random unused, Object value) {
-        final int intValue = Integer.parseInt((String)value, 16);
+        final int intValue = Integer.parseInt((String) value, 16);
         return Integer.toHexString(intValue - 1);
     }
 
     static char incrementCharValue(@SuppressWarnings("unused") Random unused, char value) {
-        return (char)(value + 1);
+        return (char) (value + 1);
     }
 
     static char decrementCharValue(@SuppressWarnings("unused") Random unused, char value) {
-        return (char)(value - 1);
+        return (char) (value - 1);
     }
-    
+
     static byte incrementByteValue(@SuppressWarnings("unused") Random unused, byte value) {
-        return (byte)(value + 1);
+        return (byte) (value + 1);
     }
 
     static byte decrementByteValue(@SuppressWarnings("unused") Random unused, byte value) {
-        return (byte)(value - 1);
+        return (byte) (value - 1);
     }
 
     static short incrementShortValue(Random random, short value) {
-        return (short)(value + random.nextInt(100));
+        return (short) (value + random.nextInt(100));
     }
 
     static short decrementShortValue(Random random, short value) {
-        return (short)(value - random.nextInt(100));
+        return (short) (value - random.nextInt(100));
     }
 
     static int incrementIntValue(Random random, int value) {
@@ -299,6 +309,7 @@ public abstract class TestTimSortKernel {
     }
 
     void dumpKeys(LongChunk chunk) {
-        System.out.println("[" + IntStream.range(0, chunk.size()).mapToObj(chunk::get).map(Object::toString).collect(Collectors.joining(",")) + "]");
+        System.out.println("[" + IntStream.range(0, chunk.size()).mapToObj(chunk::get).map(Object::toString)
+                .collect(Collectors.joining(",")) + "]");
     }
 }

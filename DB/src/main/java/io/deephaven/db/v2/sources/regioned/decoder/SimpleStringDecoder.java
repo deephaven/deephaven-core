@@ -7,7 +7,8 @@ import io.deephaven.util.codec.ObjectDecoder;
 import org.jetbrains.annotations.NotNull;
 
 public class SimpleStringDecoder<STRING_LIKE_TYPE extends CharSequence> implements ObjectDecoder<STRING_LIKE_TYPE> {
-    private static final ThreadLocal<ByteArrayCharSequenceAdapterImpl> DECODER_ADAPTER = ThreadLocal.withInitial(ByteArrayCharSequenceAdapterImpl::new);
+    private static final ThreadLocal<ByteArrayCharSequenceAdapterImpl> DECODER_ADAPTER =
+            ThreadLocal.withInitial(ByteArrayCharSequenceAdapterImpl::new);
 
     private final StringCache<STRING_LIKE_TYPE> cache;
 
@@ -33,9 +34,9 @@ public class SimpleStringDecoder<STRING_LIKE_TYPE extends CharSequence> implemen
             return cache.getEmptyString();
         }
         // NB: Because the StringCache implementations in use convert bytes to chars 1:1 (with a 0xFF mask), we're
-        //     effectively using an ISO-8859-1 decoder.
-        //     We could probably move towards StringCaches with configurable Charsets for encoding/decoding directly
-        //     to/from ByteBuffers, but that's a step for later.
+        // effectively using an ISO-8859-1 decoder.
+        // We could probably move towards StringCaches with configurable Charsets for encoding/decoding directly
+        // to/from ByteBuffers, but that's a step for later.
         final ByteArrayCharSequenceAdapterImpl adapter = DECODER_ADAPTER.get();
         final STRING_LIKE_TYPE result = cache.getCachedString(adapter.set(data, offset, length));
         adapter.clear();

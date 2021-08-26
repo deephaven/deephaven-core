@@ -12,6 +12,8 @@ import io.deephaven.db.v2.sources.chunk.ShortChunk;
 import io.deephaven.db.v2.sources.chunk.Chunk;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
 import io.deephaven.libs.primitives.ShortPrimitives;
+import io.deephaven.qst.type.ShortType;
+import io.deephaven.qst.type.DbPrimitiveArrayType;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,6 +23,10 @@ import java.util.Arrays;
 public interface DbShortArray extends DbArrayBase<DbShortArray> {
 
     long serialVersionUID = -6562228894877343013L;
+
+    static DbPrimitiveArrayType<DbShortArray, Short> type() {
+        return DbPrimitiveArrayType.of(DbShortArray.class, ShortType.instance());
+    }
 
     short get(long i);
 

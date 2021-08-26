@@ -19,15 +19,15 @@ import java.util.concurrent.TimeUnit;
 @Fork(1)
 public class IndexIteration {
 
-    //@Param({/*100", "10000",*/ "1000000"/*, "10000000"*/})
+    // @Param({/*100", "10000",*/ "1000000"/*, "10000000"*/})
     private int indexCount = 1000000;
 
-    //@Param({"1","2", "4", "10", "100", "10000", "100000000"})
-    @Param({"1", "4", "16", "64","256"})
+    // @Param({"1","2", "4", "10", "100", "10000", "100000000"})
+    @Param({"1", "4", "16", "64", "256"})
     private int avgElementsPerRange;
 
-//    @Param({"1", "2", "4", "10", "100", "10000", "100000000"})
-//    private int sparsity;
+    // @Param({"1", "2", "4", "10", "100", "10000", "100000000"})
+    // private int sparsity;
 
     @Param({"1", "2", "4", "16"})
     private int setsCount;
@@ -58,7 +58,8 @@ public class IndexIteration {
         int j = 0;
         for (int i = 0; i < rangeCount - 1; i++) {
             indexRanges[2 * i] = lastPos + 1 + random.nextInt(2 * avgElementsPerRange - 1);
-            int step = 1 + Math.max(0, Math.min(random.nextInt(2 * avgElementsPerRange - 1), remainingCount - rangeCount));
+            int step =
+                    1 + Math.max(0, Math.min(random.nextInt(2 * avgElementsPerRange - 1), remainingCount - rangeCount));
             lastPos = indexRanges[2 * i + 1] = indexRanges[2 * i] + step;
             remainingCount -= step;
             indexPoints[j++] = indexRanges[2 * i];
@@ -155,7 +156,8 @@ public class IndexIteration {
         fillChunkDirectByItems(orderedKeys.asKeyIndicesChunk(), doubleChunk, sourceId);
     }
 
-    private void fillChunkDirectByRange(LongChunk<OrderedKeyRanges> ranges, WritableDoubleChunk doubleChunk, int sourceId) {
+    private void fillChunkDirectByRange(LongChunk<OrderedKeyRanges> ranges, WritableDoubleChunk doubleChunk,
+            int sourceId) {
         int pos = 0;
         final int size = ranges.size();
         for (int i = 0; i < size; i += 2) {
@@ -167,7 +169,8 @@ public class IndexIteration {
         doubleChunk.setSize(pos);
     }
 
-    private void fillChunkDirectByItems(LongChunk<OrderedKeyIndices> indices, WritableDoubleChunk doubleChunk, int sourceId) {
+    private void fillChunkDirectByItems(LongChunk<OrderedKeyIndices> indices, WritableDoubleChunk doubleChunk,
+            int sourceId) {
         final int size = indices.size();
         doubleChunk.setSize(0);
         for (int i = 0; i < size; i++) {
@@ -182,7 +185,8 @@ public class IndexIteration {
         }
     }
 
-    private int fillChunkByIndexRangeIterator(Index.RangeIterator it, int rangeStart, int size, WritableDoubleChunk doubleChunk, int sourceId) {
+    private int fillChunkByIndexRangeIterator(Index.RangeIterator it, int rangeStart, int size,
+            WritableDoubleChunk doubleChunk, int sourceId) {
         int pos = 0;
         int rangeEnd = (int) it.currentRangeEnd() + 1;
         int length = rangeEnd - rangeStart;
@@ -200,7 +204,8 @@ public class IndexIteration {
         return rangeStart + length;
     }
 
-    private int[] fillChunkDirectByRangeIndexIteration(int posInRange, int rangeStart, int size, WritableDoubleChunk doubleChunk, int sourceId) {
+    private int[] fillChunkDirectByRangeIndexIteration(int posInRange, int rangeStart, int size,
+            WritableDoubleChunk doubleChunk, int sourceId) {
         int pos = 0;
         int rangeEnd = (int) indexRanges[posInRange + 1];
         int length = rangeEnd - rangeStart;
@@ -215,7 +220,7 @@ public class IndexIteration {
         length = size - pos;
         doubleChunk.copyFromArray(sets[sourceId], rangeStart, pos, length);
         doubleChunk.setSize(pos + length);
-        return new int[]{posInRange, rangeStart + length};
+        return new int[] {posInRange, rangeStart + length};
     }
 
 
@@ -260,11 +265,10 @@ public class IndexIteration {
     boolean printed = false;
 
     private void print(double sum) {
-/*        Assert.assertEquals(sum, expectedSum, 0.0001 * expectedSum);
-        if (!printed) {
-            System.out.println("Sum = " + sum);
-            printed = true;
-        }*/
+        /*
+         * Assert.assertEquals(sum, expectedSum, 0.0001 * expectedSum); if (!printed) { System.out.println("Sum = " +
+         * sum); printed = true; }
+         */
     }
 
     @Benchmark
@@ -300,7 +304,8 @@ public class IndexIteration {
         for (int step = 0; step < stepCount; step++) {
             int[] posInRangeAndRangeStart = null;
             for (int i = 0; i < chunks.length; i++) {
-                posInRangeAndRangeStart = fillChunkDirectByRangeIndexIteration(lastPosInRange, rangeStart, chunkSize, chunks[i], i);
+                posInRangeAndRangeStart =
+                        fillChunkDirectByRangeIndexIteration(lastPosInRange, rangeStart, chunkSize, chunks[i], i);
             }
             lastPosInRange = posInRangeAndRangeStart[0];
             rangeStart = posInRangeAndRangeStart[1];
@@ -331,7 +336,8 @@ public class IndexIteration {
             sum = sum(sum);
             bh.consume(result);
         }
-        indexChunk = WritableLongChunk.writableChunkWrap(indexPoints, (indexCount / chunkSize) * chunkSize, indexCount % chunkSize);
+        indexChunk = WritableLongChunk.writableChunkWrap(indexPoints, (indexCount / chunkSize) * chunkSize,
+                indexCount % chunkSize);
         for (int i = 0; i < chunks.length; i++) {
             fillChunkDirectByItems(indexChunk, chunks[i], i);
         }
@@ -397,8 +403,9 @@ public class IndexIteration {
         bh.consume(result);
         print(sum);
     }
-    //    private void fillChunkByIndexIterator(Index.Iterator it, int size, DoubleChunk doubleChunk, int sourceId) {
-    //    private int fillChunkByIndexRangeIterator(Index.RangeIterator it, int rangeStart, int size, DoubleChunk doubleChunk, int sourceId) {
+    // private void fillChunkByIndexIterator(Index.Iterator it, int size, DoubleChunk doubleChunk, int sourceId) {
+    // private int fillChunkByIndexRangeIterator(Index.RangeIterator it, int rangeStart, int size, DoubleChunk
+    // doubleChunk, int sourceId) {
 
     public static void main(String[] args) throws RunnerException {
         BenchUtil.run(IndexIteration.class);
@@ -406,11 +413,8 @@ public class IndexIteration {
 
     double sum(double prevSum) {
         /*
-        for (int i = 0; i < result.size(); i++) {
-            prevSum += result.get(i);
-        }
-        return prevSum;
-        */
+         * for (int i = 0; i < result.size(); i++) { prevSum += result.get(i); } return prevSum;
+         */
         return 0;
     }
 }

@@ -50,7 +50,8 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();
-        final String[] columnSpecs = request.getGroupByColumnSpecsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] columnSpecs =
+                request.getGroupByColumnSpecsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
         final SelectColumn[] expressions = SelectColumnFactory.getExpressions(columnSpecs);
 
         // note: we don't use the output from validateColumnExpressions because the headBy/tailBy
@@ -59,7 +60,8 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
 
 
         // note that headBy/tailBy use ungroup which currently requires the LTM lock
-        return liveTableMonitor.sharedLock().computeLocked(() -> realTableOperation.apply(parent, request.getNumRows(), columnSpecs));
+        return liveTableMonitor.sharedLock()
+                .computeLocked(() -> realTableOperation.apply(parent, request.getNumRows(), columnSpecs));
     }
 
     @Singleton

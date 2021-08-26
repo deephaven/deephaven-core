@@ -12,7 +12,8 @@ import java.util.function.Consumer;
 /**
  * {@link TableLocationKeyFinder Location finder} that delivers a known set of {@link ImmutableTableLocationKey keys}.
  */
-public final class KnownLocationKeyFinder<TLK extends ImmutableTableLocationKey> implements TableLocationKeyFinder<TLK> {
+public final class KnownLocationKeyFinder<TLK extends ImmutableTableLocationKey>
+        implements TableLocationKeyFinder<TLK> {
 
     private final List<TLK> knownKeys;
 
@@ -22,9 +23,9 @@ public final class KnownLocationKeyFinder<TLK extends ImmutableTableLocationKey>
         this.knownKeys = knownKeys.length == 0
                 ? Collections.emptyList()
                 : Collections.unmodifiableList(
-                knownKeys.length == 1
-                        ? Collections.singletonList(knownKeys[0])
-                        : Arrays.asList(knownKeys));
+                        knownKeys.length == 1
+                                ? Collections.singletonList(knownKeys[0])
+                                : Arrays.asList(knownKeys));
     }
 
     /**

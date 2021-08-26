@@ -48,8 +48,10 @@ public class GenerateFigureImmutable {
     private final Collection<Predicate<JavaFunction>> skips;
     private final Function<JavaFunction, String> functionNamer;
 
-    private GenerateFigureImmutable(final boolean isInterface, final String[] imports, final String[] interfaces, final String[] seriesInterfaces,
-                                    final Collection<Predicate<JavaFunction>> skips, final Function<JavaFunction, String> functionNamer) throws ClassNotFoundException {
+    private GenerateFigureImmutable(final boolean isInterface, final String[] imports, final String[] interfaces,
+            final String[] seriesInterfaces,
+            final Collection<Predicate<JavaFunction>> skips, final Function<JavaFunction, String> functionNamer)
+            throws ClassNotFoundException {
         this.outputClass = isInterface ? CLASS_NAME_INTERFACE : CLASS_NAME_IMPLEMENTATION;
         this.isInterface = isInterface;
         this.outputClassNameShort = this.outputClass.substring(outputClass.lastIndexOf('.') + 1);
@@ -97,8 +99,7 @@ public class GenerateFigureImmutable {
                 f.getReturnType(),
                 f.getParameterTypes(),
                 f.getParameterNames(),
-                f.isVarArgs()
-        );
+                f.isVarArgs());
     }
 
     private void addPublicNonStatic(Method m) {
@@ -179,7 +180,7 @@ public class GenerateFigureImmutable {
                 result.addAll(typesToImport(a));
             }
         } else if (t instanceof TypeVariable) {
-            //type variables are generic so they don't need importing
+            // type variables are generic so they don't need importing
             return result;
         } else if (t instanceof GenericArrayType) {
             GenericArrayType at = (GenericArrayType) t;
@@ -198,10 +199,10 @@ public class GenerateFigureImmutable {
             sb.append(" extends ");
             sb.append("java.io.Serializable");
 
-            for (final String[] ii : new String[][]{interfaces, seriesInterfaces}) {
+            for (final String[] ii : new String[][] {interfaces, seriesInterfaces}) {
                 for (final String iface : ii) {
-//                    final String[] siface = iface.split("[.]");
-//                    final String name = siface[siface.length - 1];
+                    // final String[] siface = iface.split("[.]");
+                    // final String name = siface[siface.length - 1];
                     sb.append(", ").append(iface);
                 }
             }
@@ -217,8 +218,10 @@ public class GenerateFigureImmutable {
         String code = "/*\n" +
                 " * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending\n" +
                 " */\n\n" +
-                "/****************************************************************************************************************************\n" +
-                " ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run GenerateFigureImmutable or \"./gradlew :Generators:generateFigureImmutable\" to regenerate\n" +
+                "/****************************************************************************************************************************\n"
+                +
+                " ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - Run GenerateFigureImmutable or \"./gradlew :Generators:generateFigureImmutable\" to regenerate\n"
+                +
                 " ****************************************************************************************************************************/\n\n";
 
         code += "package io.deephaven.db.plot;\n\n";
@@ -233,7 +236,8 @@ public class GenerateFigureImmutable {
         code += "/** An interface for constructing plots.  A Figure is immutable, and all function calls return a new immutable Figure instance.";
         code += "*/\n";
         code += "@SuppressWarnings({\"unused\", \"RedundantCast\", \"SameParameterValue\"})\n";
-        code += "public" + (isInterface ? " interface " : " class ") + outputClassNameShort + generateImplements() + " {\n";
+        code += "public" + (isInterface ? " interface " : " class ") + outputClassNameShort + generateImplements()
+                + " {\n";
 
         code += "\n";
         code += createConstructor();
@@ -297,7 +301,9 @@ public class GenerateFigureImmutable {
                 "    private final Map<AxesLocation, AxisLocation> lastAxisMap;\n" +
                 "    private final Map<AxesLocation, SeriesLocation> lastSeriesMap;\n" +
                 "\n" +
-                "    private " + outputClassNameShort + "(final BaseFigureImpl figure, final ChartLocation lastChart, final AxesLocation lastAxes, final AxisLocation lastAxis, final SeriesLocation lastSeries, final Map<ChartLocation, AxesLocation> lastAxesMap, final Map<AxesLocation, AxisLocation> lastAxisMap, final Map<AxesLocation, SeriesLocation> lastSeriesMap) {\n" +
+                "    private " + outputClassNameShort
+                + "(final BaseFigureImpl figure, final ChartLocation lastChart, final AxesLocation lastAxes, final AxisLocation lastAxis, final SeriesLocation lastSeries, final Map<ChartLocation, AxesLocation> lastAxesMap, final Map<AxesLocation, AxisLocation> lastAxisMap, final Map<AxesLocation, SeriesLocation> lastSeriesMap) {\n"
+                +
                 "        this.figure = Require.neqNull(figure, \"figure\");\n" +
                 "        this.lastChart = lastChart;\n" +
                 "        this.lastAxes = lastAxes;\n" +
@@ -334,7 +340,8 @@ public class GenerateFigureImmutable {
                 "        this(new BaseFigureImpl(numRows,numCols));\n" +
                 "    }\n" +
                 "\n" +
-                "    private AxesLocation resolveLastAxes(final BaseFigureImpl figure, final ChartLocation chartLoc){\n" +
+                "    private AxesLocation resolveLastAxes(final BaseFigureImpl figure, final ChartLocation chartLoc){\n"
+                +
                 "        if(chartLoc == null){\n" +
                 "            return null;\n" +
                 "        }\n" +
@@ -364,7 +371,8 @@ public class GenerateFigureImmutable {
                 "        return axs.dimension() <= 0 ? null : new AxisLocation(axs.axis(axs.dimension()-1));\n" +
                 "    }\n" +
                 "\n" +
-                "    private SeriesLocation resolveLastSeries(final BaseFigureImpl figure, final AxesLocation axesLoc){\n" +
+                "    private SeriesLocation resolveLastSeries(final BaseFigureImpl figure, final AxesLocation axesLoc){\n"
+                +
                 "        if(axesLoc == null){\n" +
                 "            return null;\n" +
                 "        }\n" +
@@ -393,7 +401,9 @@ public class GenerateFigureImmutable {
                 "        final AxesLocation axesLoc = this.lastAxes;\n" +
                 "        final AxisLocation axisLoc = this.lastAxis;\n" +
                 "        final SeriesLocation seriesLoc = this.lastSeries;\n" +
-                "        return new " + outputClassNameShort + "(figure, chartLoc, axesLoc, axisLoc, seriesLoc, this.lastAxesMap, this.lastAxisMap, this.lastSeriesMap);\n" +
+                "        return new " + outputClassNameShort
+                + "(figure, chartLoc, axesLoc, axisLoc, seriesLoc, this.lastAxesMap, this.lastAxisMap, this.lastSeriesMap);\n"
+                +
                 "    }\n" +
                 "\n" +
                 "    private " + outputClassNameShort + " make(final ChartImpl chart){\n" +
@@ -402,7 +412,9 @@ public class GenerateFigureImmutable {
                 "        final AxesLocation axesLoc = resolveLastAxes(figure, chartLoc);\n" +
                 "        final AxisLocation axisLoc = resolveLastAxis(figure, axesLoc);\n" +
                 "        final SeriesLocation seriesLoc = resolveLastSeries(figure, axesLoc);\n" +
-                "        return new " + outputClassNameShort + "(figure, chartLoc, axesLoc, axisLoc, seriesLoc, this.lastAxesMap, this.lastAxisMap, this.lastSeriesMap);\n" +
+                "        return new " + outputClassNameShort
+                + "(figure, chartLoc, axesLoc, axisLoc, seriesLoc, this.lastAxesMap, this.lastAxisMap, this.lastSeriesMap);\n"
+                +
                 "    }\n" +
                 "\n" +
                 "    private " + outputClassNameShort + " make(final AxesImpl axes){\n" +
@@ -411,7 +423,9 @@ public class GenerateFigureImmutable {
                 "        final AxesLocation axesLoc = new AxesLocation(axes);\n" +
                 "        final AxisLocation axisLoc = resolveLastAxis(figure, axesLoc);\n" +
                 "        final SeriesLocation seriesLoc = resolveLastSeries(figure, axesLoc);\n" +
-                "        return new " + outputClassNameShort + "(figure, chartLoc, axesLoc, axisLoc, seriesLoc, this.lastAxesMap, this.lastAxisMap, this.lastSeriesMap);\n" +
+                "        return new " + outputClassNameShort
+                + "(figure, chartLoc, axesLoc, axisLoc, seriesLoc, this.lastAxesMap, this.lastAxisMap, this.lastSeriesMap);\n"
+                +
                 "    }\n" +
                 "\n" +
                 "    private " + outputClassNameShort + " make(final AxesImpl axes, final AxisImpl axis){\n" +
@@ -420,7 +434,9 @@ public class GenerateFigureImmutable {
                 "        final AxesLocation axesLoc = axes == null ? this.lastAxes : new AxesLocation(axes);\n" +
                 "        final AxisLocation axisLoc = new AxisLocation(axis);\n" +
                 "        final SeriesLocation seriesLoc = resolveLastSeries(figure, axesLoc);\n" +
-                "        return new " + outputClassNameShort + "(figure, chartLoc, axesLoc, axisLoc, seriesLoc, this.lastAxesMap, this.lastAxisMap, this.lastSeriesMap);\n" +
+                "        return new " + outputClassNameShort
+                + "(figure, chartLoc, axesLoc, axisLoc, seriesLoc, this.lastAxesMap, this.lastAxisMap, this.lastSeriesMap);\n"
+                +
                 "    }\n" +
                 "\n" +
                 "    private " + outputClassNameShort + " make(final SeriesInternal series){\n" +
@@ -429,7 +445,9 @@ public class GenerateFigureImmutable {
                 "        final AxesLocation axesLoc = new AxesLocation(series.axes());\n" +
                 "        final AxisLocation axisLoc = resolveLastAxis(figure, axesLoc);\n" +
                 "        final SeriesLocation seriesLoc = new SeriesLocation(series);\n" +
-                "        return new " + outputClassNameShort + "(figure, chartLoc, axesLoc, axisLoc, seriesLoc, this.lastAxesMap, this.lastAxisMap, this.lastSeriesMap);\n" +
+                "        return new " + outputClassNameShort
+                + "(figure, chartLoc, axesLoc, axisLoc, seriesLoc, this.lastAxesMap, this.lastAxisMap, this.lastSeriesMap);\n"
+                +
                 "    }\n" +
                 "\n" +
                 "\n" +
@@ -453,16 +471,20 @@ public class GenerateFigureImmutable {
                 "    }\n" +
                 "\n" +
                 "    private AxisImpl axis(final BaseFigureImpl figure) {\n" +
-                "        if( this.lastAxis == null ) { throw new PlotRuntimeException(\"No axes have been selected.\", figure); }\n" +
+                "        if( this.lastAxis == null ) { throw new PlotRuntimeException(\"No axes have been selected.\", figure); }\n"
+                +
                 "        AxisImpl a = this.lastAxis.get(figure);\n" +
-                "        if( a == null ) { throw new PlotRuntimeException(\"No axes have been selected.\", figure); }\n" +
+                "        if( a == null ) { throw new PlotRuntimeException(\"No axes have been selected.\", figure); }\n"
+                +
                 "        return a;\n" +
                 "    }\n" +
                 "\n" +
                 "    private Series series(final BaseFigureImpl figure) {\n" +
-                "        if( this.lastSeries == null ) { throw new PlotRuntimeException(\"No series has been selected.\", figure); }\n" +
+                "        if( this.lastSeries == null ) { throw new PlotRuntimeException(\"No series has been selected.\", figure); }\n"
+                +
                 "        Series s = this.lastSeries.get(figure);\n" +
-                "        if( s == null ) { throw new PlotRuntimeException(\"No series has been selected.\", figure); }\n" +
+                "        if( s == null ) { throw new PlotRuntimeException(\"No series has been selected.\", figure); }\n"
+                +
                 "        return s;\n" +
                 "    }\n" +
                 "\n" +
@@ -470,147 +492,172 @@ public class GenerateFigureImmutable {
     }
 
     private String createFigureFuncs() {
-        return
-                "    /**\n" +
-                        "     * Creates a displayable figure that can be sent to the client.\n" +
-                        "     *\n" +
-                        "     * @return a displayable version of the figure\n" +
-                        "     */\n" +
-                        "    " + (isInterface ? "" : "@Override public ") + "Figure" + (isInterface ? "" : "Impl") + " show()" +
-                        (isInterface ? ";\n" : " {\n"
+        return "    /**\n" +
+                "     * Creates a displayable figure that can be sent to the client.\n" +
+                "     *\n" +
+                "     * @return a displayable version of the figure\n" +
+                "     */\n" +
+                "    " + (isInterface ? "" : "@Override public ") + "Figure" + (isInterface ? "" : "Impl") + " show()" +
+                (isInterface ? ";\n"
+                        : " {\n"
                                 + indent(2) + "final BaseFigureImpl fc = onDisplay();\n"
                                 + indent(2) + "return new FigureWidget(make(fc));\n"
-                                + indent(1) + "}\n") +
-                        (isInterface ? "\n" +
+                                + indent(1) + "}\n")
+                +
+                (isInterface ? "\n" +
                         "\n" +
                         "    @Override  Figure save( java.lang.String saveLocation );\n" +
                         "\n" +
                         "    @Override  Figure save( java.lang.String saveLocation, int width, int height );\n" +
                         "\n" +
-                        "    @Override  Figure save( java.lang.String saveLocation, boolean wait, long timeoutSeconds );\n" +
+                        "    @Override  Figure save( java.lang.String saveLocation, boolean wait, long timeoutSeconds );\n"
+                        +
                         "\n" +
-                        "    @Override  Figure save( java.lang.String saveLocation, int width, int height, boolean wait, long timeoutSeconds );\n" :
-                        "\n" + "    @Override public  FigureImpl save( java.lang.String saveLocation ) {\n" +
+                        "    @Override  Figure save( java.lang.String saveLocation, int width, int height, boolean wait, long timeoutSeconds );\n"
+                        : "\n" + "    @Override public  FigureImpl save( java.lang.String saveLocation ) {\n" +
                                 "        final BaseFigureImpl fc = onDisplay();\n" +
                                 "        figure(fc).save( saveLocation );\n" +
                                 "        return make(fc);\n" +
                                 "    }\n" +
                                 "\n" +
-                                "    @Override public  FigureImpl save( java.lang.String saveLocation, int width, int height ) {\n" +
+                                "    @Override public  FigureImpl save( java.lang.String saveLocation, int width, int height ) {\n"
+                                +
                                 "        final BaseFigureImpl fc = onDisplay();\n" +
                                 "        figure(fc).save( saveLocation, width, height );\n" +
                                 "        return make(fc);\n" +
                                 "    }\n" +
                                 "\n" +
                                 "\n" +
-                                "    @Override public  FigureImpl save( java.lang.String saveLocation, boolean wait, long timeoutSeconds ) {\n" +
+                                "    @Override public  FigureImpl save( java.lang.String saveLocation, boolean wait, long timeoutSeconds ) {\n"
+                                +
                                 "        final BaseFigureImpl fc = onDisplay();\n" +
                                 "        figure(fc).save( saveLocation, wait, timeoutSeconds );\n" +
                                 "        return make(fc);\n" +
                                 "    }\n" +
                                 "\n" +
-                                "    @Override public  FigureImpl save( java.lang.String saveLocation, int width, int height, boolean wait, long timeoutSeconds ) {\n" +
+                                "    @Override public  FigureImpl save( java.lang.String saveLocation, int width, int height, boolean wait, long timeoutSeconds ) {\n"
+                                +
                                 "        final BaseFigureImpl fc = onDisplay();\n" +
                                 "        figure(fc).save( saveLocation, width, height, wait, timeoutSeconds );\n" +
                                 "        return make(fc);\n" +
                                 "    }\n\n")
-                + (isInterface ? "" : "    /**\n" +
-                        "     * Perform operations required to display the plot.\n" +
-                        "     */\n" +
-                        "    private BaseFigureImpl onDisplay() {\n" +
-                        "        final FigureImpl fig = applyFunctionalProperties();\n" +
-                        "        final BaseFigureImpl fc = fig.figure.copy();\n" +
-                        "        fc.validateInitialization();\n" +
-                        "        return fc;\n" +
-                        "    }\n\n" +
-                        "    /**\n" +
-                        "     * Apply functions to our tables and consolidate them.\n" +
-                        "     */\n" +
-                        "    private FigureImpl applyFunctionalProperties() {\n" +
-                        "        final Map<Table, java.util.Set<java.util.function.Function<Table, Table>>> tableFunctionMap = getFigure().getTableFunctionMap();\n" +
-                        "        final Map<io.deephaven.db.v2.TableMap, java.util.Set<java.util.function.Function<io.deephaven.db.v2.TableMap, io.deephaven.db.v2.TableMap>>> tableMapFunctionMap = getFigure().getTableMapFunctionMap();\n" +
-                        "        final java.util.List<io.deephaven.db.plot.util.functions.FigureImplFunction> figureFunctionList = getFigure().getFigureFunctionList();\n" +
-                        "        final Map<Table, Table> finalTableComputation = new HashMap<>();\n" +
-                        "        final Map<io.deephaven.db.v2.TableMap, io.deephaven.db.v2.TableMap> finalTableMapComputation = new HashMap<>();\n" +
-                        "        final java.util.Set<Table> allTables = new java.util.HashSet<>();\n" +
-                        "        final java.util.Set<io.deephaven.db.v2.TableMap> allTableMaps = new java.util.HashSet<>();\n" +
-                        "\n" +
-                        "        for(final io.deephaven.db.plot.util.tables.TableHandle h : getFigure().getTableHandles()) {\n" +
-                        "            allTables.add(h.getTable());\n" +
-                        "        }\n" +
-                        "\n" +
-                        "        for(final io.deephaven.db.plot.util.tables.TableMapHandle h : getFigure().getTableMapHandles()) {\n" +
-                        "            if(h instanceof io.deephaven.db.plot.util.tables.TableBackedTableMapHandle) {\n" +
-                        "                allTables.add(((io.deephaven.db.plot.util.tables.TableBackedTableMapHandle) h).getTable());\n" +
-                        "            }\n" +
-                        "            if(h.getTableMap() != null) {\n" +
-                        "                allTableMaps.add(h.getTableMap());\n" +
-                        "            }\n" +
-                        "        }\n" +
-                        "\n" +
-                        "        for(final Table initTable : allTables) {\n" +
-                        "            if(tableFunctionMap.get(initTable) != null) {\n" +
-                        "\n" +
-                        "                finalTableComputation.computeIfAbsent(initTable, t -> {\n" +
-                        "                    final java.util.Set<java.util.function.Function<Table, Table>> functions = tableFunctionMap.get(initTable);\n" +
-                        "                    Table resultTable = initTable;\n" +
-                        "\n" +
-                        "                    for(final java.util.function.Function<Table, Table> f : functions) {\n" +
-                        "                        resultTable = f.apply(resultTable);\n" +
-                        "                    }\n" +
-                        "\n" +
-                        "                    return resultTable;\n" +
-                        "                });\n" +
-                        "            } else {\n" +
-                        "                finalTableComputation.put(initTable, initTable);\n" +
-                        "            }\n" +
-                        "        }\n" +
-                        "\n" +
-                        "\n" +
-                        "        for(final io.deephaven.db.plot.util.tables.TableHandle h : getFigure().getTableHandles()) {\n" +
-                        "            h.setTable(finalTableComputation.get(h.getTable()));\n" +
-                        "        }\n" +
-                        "\n" +
-                        "        for(final io.deephaven.db.plot.util.tables.TableMapHandle h : getFigure().getTableMapHandles()) {\n" +
-                        "            if(h instanceof io.deephaven.db.plot.util.tables.TableBackedTableMapHandle) {\n" +
-                        "                ((io.deephaven.db.plot.util.tables.TableBackedTableMapHandle) h).setTable(finalTableComputation.get(((io.deephaven.db.plot.util.tables.TableBackedTableMapHandle) h).getTable()));\n" +
-                        "            }\n" +
-                        "        }\n" +
-                        "\n" +
-                        "        for(final io.deephaven.db.v2.TableMap initTableMap : allTableMaps) {\n" +
-                        "            if(tableMapFunctionMap.get(initTableMap) != null) {\n" +
-                        "                finalTableMapComputation.computeIfAbsent(initTableMap, t -> {\n" +
-                        "                    final java.util.Set<java.util.function.Function<io.deephaven.db.v2.TableMap, io.deephaven.db.v2.TableMap>> functions = tableMapFunctionMap.get(initTableMap);\n" +
-                        "                    io.deephaven.db.v2.TableMap resultTableMap = initTableMap;\n" +
-                        "\n" +
-                        "                    for(final java.util.function.Function<io.deephaven.db.v2.TableMap, io.deephaven.db.v2.TableMap> f : functions) {\n" +
-                        "                        resultTableMap = f.apply(resultTableMap);\n" +
-                        "                    }\n" +
-                        "\n" +
-                        "                    return resultTableMap;\n" +
-                        "                });\n" +
-                        "            } else {\n" +
-                        "                finalTableMapComputation.put(initTableMap, initTableMap);\n" +
-                        "            }\n" +
-                        "        }\n" +
-                        "\n" +
-                        "        for(final io.deephaven.db.plot.util.tables.TableMapHandle h : getFigure().getTableMapHandles()) {\n" +
-                        "            h.setTableMap(finalTableMapComputation.get(h.getTableMap()));\n" +
-                        "        }\n" +
-                        "\n" +
-                        "        FigureImpl finalFigure = this;\n" +
-                        "        for(final java.util.function.Function<FigureImpl, FigureImpl> figureFunction : figureFunctionList) {\n" +
-                        "            finalFigure = figureFunction.apply(finalFigure);\n" +
-                        "        }\n" +
-                        "\n" +
-                        "        tableFunctionMap.clear();\n" +
-                        "        tableMapFunctionMap.clear();\n" +
-                        "        figureFunctionList.clear();\n" +
-                        "\n" +
-                        "        return finalFigure;\n" +
-                        "    }"
-                        + "\n"
-                        + "\n");
+                + (isInterface ? ""
+                        : "    /**\n" +
+                                "     * Perform operations required to display the plot.\n" +
+                                "     */\n" +
+                                "    private BaseFigureImpl onDisplay() {\n" +
+                                "        final FigureImpl fig = applyFunctionalProperties();\n" +
+                                "        final BaseFigureImpl fc = fig.figure.copy();\n" +
+                                "        fc.validateInitialization();\n" +
+                                "        return fc;\n" +
+                                "    }\n\n" +
+                                "    /**\n" +
+                                "     * Apply functions to our tables and consolidate them.\n" +
+                                "     */\n" +
+                                "    private FigureImpl applyFunctionalProperties() {\n" +
+                                "        final Map<Table, java.util.Set<java.util.function.Function<Table, Table>>> tableFunctionMap = getFigure().getTableFunctionMap();\n"
+                                +
+                                "        final Map<io.deephaven.db.v2.TableMap, java.util.Set<java.util.function.Function<io.deephaven.db.v2.TableMap, io.deephaven.db.v2.TableMap>>> tableMapFunctionMap = getFigure().getTableMapFunctionMap();\n"
+                                +
+                                "        final java.util.List<io.deephaven.db.plot.util.functions.FigureImplFunction> figureFunctionList = getFigure().getFigureFunctionList();\n"
+                                +
+                                "        final Map<Table, Table> finalTableComputation = new HashMap<>();\n" +
+                                "        final Map<io.deephaven.db.v2.TableMap, io.deephaven.db.v2.TableMap> finalTableMapComputation = new HashMap<>();\n"
+                                +
+                                "        final java.util.Set<Table> allTables = new java.util.HashSet<>();\n" +
+                                "        final java.util.Set<io.deephaven.db.v2.TableMap> allTableMaps = new java.util.HashSet<>();\n"
+                                +
+                                "\n" +
+                                "        for(final io.deephaven.db.plot.util.tables.TableHandle h : getFigure().getTableHandles()) {\n"
+                                +
+                                "            allTables.add(h.getTable());\n" +
+                                "        }\n" +
+                                "\n" +
+                                "        for(final io.deephaven.db.plot.util.tables.TableMapHandle h : getFigure().getTableMapHandles()) {\n"
+                                +
+                                "            if(h instanceof io.deephaven.db.plot.util.tables.TableBackedTableMapHandle) {\n"
+                                +
+                                "                allTables.add(((io.deephaven.db.plot.util.tables.TableBackedTableMapHandle) h).getTable());\n"
+                                +
+                                "            }\n" +
+                                "            if(h.getTableMap() != null) {\n" +
+                                "                allTableMaps.add(h.getTableMap());\n" +
+                                "            }\n" +
+                                "        }\n" +
+                                "\n" +
+                                "        for(final Table initTable : allTables) {\n" +
+                                "            if(tableFunctionMap.get(initTable) != null) {\n" +
+                                "\n" +
+                                "                finalTableComputation.computeIfAbsent(initTable, t -> {\n" +
+                                "                    final java.util.Set<java.util.function.Function<Table, Table>> functions = tableFunctionMap.get(initTable);\n"
+                                +
+                                "                    Table resultTable = initTable;\n" +
+                                "\n" +
+                                "                    for(final java.util.function.Function<Table, Table> f : functions) {\n"
+                                +
+                                "                        resultTable = f.apply(resultTable);\n" +
+                                "                    }\n" +
+                                "\n" +
+                                "                    return resultTable;\n" +
+                                "                });\n" +
+                                "            } else {\n" +
+                                "                finalTableComputation.put(initTable, initTable);\n" +
+                                "            }\n" +
+                                "        }\n" +
+                                "\n" +
+                                "\n" +
+                                "        for(final io.deephaven.db.plot.util.tables.TableHandle h : getFigure().getTableHandles()) {\n"
+                                +
+                                "            h.setTable(finalTableComputation.get(h.getTable()));\n" +
+                                "        }\n" +
+                                "\n" +
+                                "        for(final io.deephaven.db.plot.util.tables.TableMapHandle h : getFigure().getTableMapHandles()) {\n"
+                                +
+                                "            if(h instanceof io.deephaven.db.plot.util.tables.TableBackedTableMapHandle) {\n"
+                                +
+                                "                ((io.deephaven.db.plot.util.tables.TableBackedTableMapHandle) h).setTable(finalTableComputation.get(((io.deephaven.db.plot.util.tables.TableBackedTableMapHandle) h).getTable()));\n"
+                                +
+                                "            }\n" +
+                                "        }\n" +
+                                "\n" +
+                                "        for(final io.deephaven.db.v2.TableMap initTableMap : allTableMaps) {\n" +
+                                "            if(tableMapFunctionMap.get(initTableMap) != null) {\n" +
+                                "                finalTableMapComputation.computeIfAbsent(initTableMap, t -> {\n" +
+                                "                    final java.util.Set<java.util.function.Function<io.deephaven.db.v2.TableMap, io.deephaven.db.v2.TableMap>> functions = tableMapFunctionMap.get(initTableMap);\n"
+                                +
+                                "                    io.deephaven.db.v2.TableMap resultTableMap = initTableMap;\n" +
+                                "\n" +
+                                "                    for(final java.util.function.Function<io.deephaven.db.v2.TableMap, io.deephaven.db.v2.TableMap> f : functions) {\n"
+                                +
+                                "                        resultTableMap = f.apply(resultTableMap);\n" +
+                                "                    }\n" +
+                                "\n" +
+                                "                    return resultTableMap;\n" +
+                                "                });\n" +
+                                "            } else {\n" +
+                                "                finalTableMapComputation.put(initTableMap, initTableMap);\n" +
+                                "            }\n" +
+                                "        }\n" +
+                                "\n" +
+                                "        for(final io.deephaven.db.plot.util.tables.TableMapHandle h : getFigure().getTableMapHandles()) {\n"
+                                +
+                                "            h.setTableMap(finalTableMapComputation.get(h.getTableMap()));\n" +
+                                "        }\n" +
+                                "\n" +
+                                "        FigureImpl finalFigure = this;\n" +
+                                "        for(final java.util.function.Function<FigureImpl, FigureImpl> figureFunction : figureFunctionList) {\n"
+                                +
+                                "            finalFigure = figureFunction.apply(finalFigure);\n" +
+                                "        }\n" +
+                                "\n" +
+                                "        tableFunctionMap.clear();\n" +
+                                "        tableMapFunctionMap.clear();\n" +
+                                "        figureFunctionList.clear();\n" +
+                                "\n" +
+                                "        return finalFigure;\n" +
+                                "    }"
+                                + "\n"
+                                + "\n");
     }
 
     private static String createInstanceGetter(final JavaFunction f) {
@@ -722,26 +769,34 @@ public class GenerateFigureImmutable {
             s += indent(2) + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs + ");\n" +
                     indent(2) + "return make(fc);\n";
         } else if (returnClass != null && Chart.class.isAssignableFrom(returnClass)) {
-            s += indent(2) + "final ChartImpl chart = (ChartImpl) " + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs + ");\n" +
+            s += indent(2) + "final ChartImpl chart = (ChartImpl) " + createInstanceGetter(f) + "."
+                    + signature.getMethodName() + "(" + callArgs + ");\n" +
                     indent(2) + "return make(chart);\n";
         } else if (returnClass != null && Axes.class.isAssignableFrom(returnClass)) {
-            s += indent(2) + "final AxesImpl axes = (AxesImpl) " + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs + ");\n" +
+            s += indent(2) + "final AxesImpl axes = (AxesImpl) " + createInstanceGetter(f) + "."
+                    + signature.getMethodName() + "(" + callArgs + ");\n" +
                     indent(2) + "return make(axes);\n";
-        } else if (returnClass != null && Axis.class.isAssignableFrom(returnClass) && f.getClassName().equals("io.deephaven.db.plot.Axes")) {
+        } else if (returnClass != null && Axis.class.isAssignableFrom(returnClass)
+                && f.getClassName().equals("io.deephaven.db.plot.Axes")) {
             s += indent(2) + "final AxesImpl axes = " + createInstanceGetter(f) + ";\n";
-            s += indent(2) + "final AxisImpl axis = (AxisImpl) axes." + signature.getMethodName() + "(" + callArgs + ");\n" +
+            s += indent(2) + "final AxisImpl axis = (AxisImpl) axes." + signature.getMethodName() + "(" + callArgs
+                    + ");\n" +
                     indent(2) + "return make(axes, axis);\n";
         } else if (returnClass != null && Axis.class.isAssignableFrom(returnClass)) {
-            s += indent(2) + "final AxisImpl axis = (AxisImpl) " + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs + ");\n" +
+            s += indent(2) + "final AxisImpl axis = (AxisImpl) " + createInstanceGetter(f) + "."
+                    + signature.getMethodName() + "(" + callArgs + ");\n" +
                     indent(2) + "return make(null, axis);\n";
         } else if (returnClass != null && DataSeries.class.isAssignableFrom(returnClass)) {
-            s += indent(2) + "final DataSeriesInternal series = (DataSeriesInternal) " + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs + ");\n" +
+            s += indent(2) + "final DataSeriesInternal series = (DataSeriesInternal) " + createInstanceGetter(f) + "."
+                    + signature.getMethodName() + "(" + callArgs + ");\n" +
                     indent(2) + "return make(series);\n";
         } else if (returnClass != null && Series.class.isAssignableFrom(returnClass)) {
-            s += indent(2) + "final SeriesInternal series = (SeriesInternal) " + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs + ");\n" +
+            s += indent(2) + "final SeriesInternal series = (SeriesInternal) " + createInstanceGetter(f) + "."
+                    + signature.getMethodName() + "(" + callArgs + ");\n" +
                     indent(2) + "return make(series);\n";
         } else if (returnClass != null && MultiSeries.class.isAssignableFrom(returnClass)) {
-            s += indent(2) + "final " + returnClass.getSimpleName() + " mseries = " + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs + ");\n" +
+            s += indent(2) + "final " + returnClass.getSimpleName() + " mseries = " + createInstanceGetter(f) + "."
+                    + signature.getMethodName() + "(" + callArgs + ");\n" +
                     indent(2) + "return make((SeriesInternal) mseries);\n";
         } else if (returnClass != null && void.class.equals(returnClass)) {
             s += indent(2) + createInstanceGetter(f) + "." + signature.getMethodName() + "(" + callArgs + ");\n" +
@@ -797,7 +852,8 @@ public class GenerateFigureImmutable {
                 s += indent(2) + "} else if( series instanceof " + f.getClassNameShort() + "){\n";
             }
 
-            s += indent(3) + returnClass.getSimpleName() + " result = ((" + f.getClassNameShort() + ") series)." + f.getMethodName() + "(" + callArgs + ");\n";
+            s += indent(3) + returnClass.getSimpleName() + " result = ((" + f.getClassNameShort() + ") series)."
+                    + f.getMethodName() + "(" + callArgs + ");\n";
 
             if (DataSeries.class.isAssignableFrom(returnClass)) {
                 s += indent(3) + "return make((DataSeriesInternal)result);\n";
@@ -805,27 +861,30 @@ public class GenerateFigureImmutable {
                 s += indent(3) + "return make((SeriesInternal)result);\n";
             } else {
                 throw new IllegalStateException("UnsupportedReturnType: " + returnType + " " + f);
-//                System.out.println("WARN: UnsupportedReturnType: " + returnType + " " + f);
-//                s += indent(3) + "return make(fc);";
+                // System.out.println("WARN: UnsupportedReturnType: " + returnType + " " + f);
+                // s += indent(3) + "return make(fc);";
             }
 
             s += indent(2) + "} ";
 
-            if(!f.getClassNameShort().equals("MultiSeries") && !f.getClassNameShort().equals("XYDataSeriesFunction")) {
-                 s+= makeMultiSeriesGetter(f);
+            if (!f.getClassNameShort().equals("MultiSeries") && !f.getClassNameShort().equals("XYDataSeriesFunction")) {
+                s += makeMultiSeriesGetter(f);
             }
 
             firstFunc = false;
         }
         s += "else {\n" +
-                indent(3) + "throw new PlotUnsupportedOperationException(\"Series type does not support this method.  seriesType=\" + series.getClass() + \" method='" + signature.trim() + "'\", figure);\n" +
+                indent(3)
+                + "throw new PlotUnsupportedOperationException(\"Series type does not support this method.  seriesType=\" + series.getClass() + \" method='"
+                + signature.trim() + "'\", figure);\n" +
                 indent(2) + "}\n";
         s += indent(1) + "}\n";
 
         return s;
     }
 
-    private Map<String, TreeSet<GroovyStaticImportGenerator.JavaFunction>> commonSignatureGroups(final String[] interfaces) throws ClassNotFoundException {
+    private Map<String, TreeSet<GroovyStaticImportGenerator.JavaFunction>> commonSignatureGroups(
+            final String[] interfaces) throws ClassNotFoundException {
         final Map<String, TreeSet<GroovyStaticImportGenerator.JavaFunction>> methods = new TreeMap<>();
 
         final Set<GroovyStaticImportGenerator.JavaFunction> functionSet = new HashSet<>();
@@ -841,9 +900,11 @@ public class GenerateFigureImmutable {
 
                 if (!isStatic && isPublic && !isObject) {
                     final GroovyStaticImportGenerator.JavaFunction f = new GroovyStaticImportGenerator.JavaFunction(m);
-                    if(functionSet.add(f)) {    //avoids repeating methods that have the same parameter types but different parameter names
+                    if (functionSet.add(f)) { // avoids repeating methods that have the same parameter types but
+                                              // different parameter names
                         final String key = createFunctionSignature(f);
-                        final TreeSet<GroovyStaticImportGenerator.JavaFunction> mm = methods.computeIfAbsent(key, k -> new TreeSet<>());
+                        final TreeSet<GroovyStaticImportGenerator.JavaFunction> mm =
+                                methods.computeIfAbsent(key, k -> new TreeSet<>());
                         mm.add(f);
                     }
                 }
@@ -856,7 +917,8 @@ public class GenerateFigureImmutable {
     private static String makeMultiSeriesGetter(final JavaFunction f) {
         final String args = createMultiSeriesArgs(f);
         return "else if(series instanceof MultiSeries) {\n" +
-                "                final MultiSeries result = ((MultiSeries) series)." +  f.getMethodName() + "(" + args + ");\n" +
+                "                final MultiSeries result = ((MultiSeries) series)." + f.getMethodName() + "(" + args
+                + ");\n" +
                 "                return make((SeriesInternal) result);\n" +
                 "        } ";
     }
@@ -865,14 +927,15 @@ public class GenerateFigureImmutable {
         final Type[] types = f.getParameterTypes();
         final String[] names = f.getParameterNames();
         String args = String.join(", ", names);
-        if(!names[names.length - 1].equals("keys")) {
+        if (!names[names.length - 1].equals("keys")) {
             args += ", io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY";
         }
 
         return args;
     }
 
-    private static void generateFile(final String devroot, final boolean assertNoChange, final boolean isInterface) throws ClassNotFoundException, IOException {
+    private static void generateFile(final String devroot, final boolean assertNoChange, final boolean isInterface)
+            throws ClassNotFoundException, IOException {
 
         log.setLevel(Level.WARNING);
         log.warning("Running GenerateFigureImmutable assertNoChange=" + assertNoChange);
@@ -913,18 +976,26 @@ public class GenerateFigureImmutable {
                 return x.equals(new JavaFunction(PlotExceptionCause.class.getMethod("getPlotInfo")));
             } catch (NoSuchMethodException e) {
                 throw new RuntimeException(e);
-            }}, x -> {
+            }
+        }, x -> {
             try {
                 return x.equals(new JavaFunction(BaseFigureImpl.class.getMethod("save", String.class))) ||
-                        x.equals(new JavaFunction(BaseFigureImpl.class.getMethod("save", String.class, int.class, int.class))) ||
-                        x.equals(new JavaFunction(BaseFigureImpl.class.getMethod("save", String.class, boolean.class, long.class))) ||
-                        x.equals(new JavaFunction(BaseFigureImpl.class.getMethod("save", String.class, int.class, int.class, boolean.class, long.class)));
+                        x.equals(new JavaFunction(
+                                BaseFigureImpl.class.getMethod("save", String.class, int.class, int.class)))
+                        ||
+                        x.equals(new JavaFunction(
+                                BaseFigureImpl.class.getMethod("save", String.class, boolean.class, long.class)))
+                        ||
+                        x.equals(new JavaFunction(BaseFigureImpl.class.getMethod("save", String.class, int.class,
+                                int.class, boolean.class, long.class)));
             } catch (NoSuchMethodException e) {
                 throw new RuntimeException(e);
-            }});
+            }
+        });
 
 
-        @SuppressWarnings("unchecked") GenerateFigureImmutable gen = new GenerateFigureImmutable(isInterface, imports, interfaces,
+        @SuppressWarnings("unchecked")
+        GenerateFigureImmutable gen = new GenerateFigureImmutable(isInterface, imports, interfaces,
                 seriesInterfaces, skips, JavaFunction::getMethodName);
 
         final String code = gen.generateCode();
@@ -936,7 +1007,8 @@ public class GenerateFigureImmutable {
         if (assertNoChange) {
             String oldCode = new String(Files.readAllBytes(Paths.get(file)));
             if (!code.equals(oldCode)) {
-                throw new RuntimeException("Change in generated code.  Run GenerateFigureImmutable or \"./gradlew :Generators:generateFigureImmutable\" to regenerate\n");
+                throw new RuntimeException(
+                        "Change in generated code.  Run GenerateFigureImmutable or \"./gradlew :Generators:generateFigureImmutable\" to regenerate\n");
             }
         } else {
 

@@ -18,7 +18,7 @@ import java.security.PrivilegedAction;
 import java.util.List;
 import java.util.Set;
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 /**
  * General utilities for NIO
  */
@@ -26,22 +26,21 @@ public class NioUtil {
 
     private static final String JAVA_8_SPEC_VERSION = "1.8";
 
-    //----------------------------------------------------------------
-    /** Use reflection to change the collection implementations so
-     * iteration operations used in the selector implementation will
-     * not produce garbage.
+    // ----------------------------------------------------------------
+    /**
+     * Use reflection to change the collection implementations so iteration operations used in the selector
+     * implementation will not produce garbage.
      *
-     * <p> This is only applied when the system property {@code java.specification.version} is
-     * equal to "1.8".
+     * <p>
+     * This is only applied when the system property {@code java.specification.version} is equal to "1.8".
      *
-     * <P> We can do this because, by looking at the source code,
-     * we can tell that there are no simultaneous iterations so
-     * reusing one iterator is OK. Because of concurrent modification
-     * issues and thread safety issues, this is generally likely to be
-     * the case anyway. The implementation of selector is not likely
-     * to change between minor JDK revisions. A major JDK release
-     * might produce a rewrite, but in that case we can check the JDK
-     * version and apply the appropriate set of patches. */
+     * <P>
+     * We can do this because, by looking at the source code, we can tell that there are no simultaneous iterations so
+     * reusing one iterator is OK. Because of concurrent modification issues and thread safety issues, this is generally
+     * likely to be the case anyway. The implementation of selector is not likely to change between minor JDK revisions.
+     * A major JDK release might produce a rewrite, but in that case we can check the JDK version and apply the
+     * appropriate set of patches.
+     */
     public static Selector reduceSelectorGarbage(Selector selector) {
         final String javaSpecificationVersion = System.getProperty("java.specification.version");
         if (JAVA_8_SPEC_VERSION.equals(javaSpecificationVersion)) {
@@ -80,7 +79,8 @@ public class NioUtil {
                 selectedKeysField.set(selector, newSelectedKeys);
                 publicSelectedKeysField.set(selector, newSelectedKeys);
 
-                if (System.getProperty("os.name").startsWith("Windows") && System.getProperty("java.vendor").startsWith("Oracle")) {
+                if (System.getProperty("os.name").startsWith("Windows")
+                        && System.getProperty("java.vendor").startsWith("Oracle")) {
                     Class<?> windowsSelectorImplClass = Class.forName("sun.nio.ch.WindowsSelectorImpl");
                     Require.instanceOf(selector, "selector", windowsSelectorImplClass);
 

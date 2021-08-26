@@ -12,10 +12,11 @@ import org.jpy.PyObject;
 class PythonUtilities {
 
     /**
-     * Gets the python function that should be called by a listener.  The input can be either (1) a callable or
-     * (2) an object which provides an "onUpdate" method.
+     * Gets the python function that should be called by a listener. The input can be either (1) a callable or (2) an
+     * object which provides an "onUpdate" method.
      *
-     * @param pyObject python listener object.  This should either be a callable or an object which provides an "onUpdate" method.
+     * @param pyObject python listener object. This should either be a callable or an object which provides an
+     *        "onUpdate" method.
      * @return python function that should be called by a listener.
      * @throws IllegalArgumentException python listener object is not a valid listener.
      */

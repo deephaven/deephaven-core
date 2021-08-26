@@ -23,7 +23,7 @@ public class ProcessInfoLogLogger extends TableLoggerImpl2<ProcessInfoLogLogger.
     }
 
     interface ISetter extends WritableRowContainer {
-        void log(Row.Flags flags, String id,String type,String key,String value) throws java.io.IOException;
+        void log(Row.Flags flags, String id, String type, String key, String value) throws java.io.IOException;
     }
 
     class DirectSetter extends BaseSetter implements ISetter {
@@ -40,7 +40,7 @@ public class ProcessInfoLogLogger extends TableLoggerImpl2<ProcessInfoLogLogger.
         }
 
         @Override
-        public void log(Row.Flags flags, String id,String type,String key,String value) throws java.io.IOException {
+        public void log(Row.Flags flags, String id, String type, String key, String value) throws java.io.IOException {
             setRowFlags(flags);
             this.Id.set(id);
             this.Type.set(type);
@@ -62,8 +62,7 @@ public class ProcessInfoLogLogger extends TableLoggerImpl2<ProcessInfoLogLogger.
                 .add("Id", String.class)
                 .add("Type", String.class)
                 .add("Key", String.class)
-                .add("Value", String.class)
-                ;
+                .add("Value", String.class);
         columnNames = cols.getColumnNames();
         columnDbTypes = cols.getDbTypes();
     }
@@ -79,8 +78,8 @@ public class ProcessInfoLogLogger extends TableLoggerImpl2<ProcessInfoLogLogger.
     }
 
     public void log(
-            final Row.Flags flags, final String id, final String type, final String key, final String value
-    ) throws IOException {
+            final Row.Flags flags, final String id, final String type, final String key, final String value)
+            throws IOException {
         verifyCondition(isInitialized(), "init() must be called before calling log()");
         verifyCondition(!isClosed, "cannot call log() after the logger is closed");
         verifyCondition(!isShuttingDown, "cannot call log() while the logger is shutting down");

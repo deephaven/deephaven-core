@@ -39,7 +39,7 @@ public abstract class InstrumentedShiftAwareListenerAdapter extends Instrumented
      *
      * @param source The source table this listener will subscribe to - needed for preserving referential integrity
      * @param retain Whether a hard reference to this listener should be maintained to prevent it from being collected.
-     *               In most scenarios, it's better to specify {@code false} and keep a reference in the calling code.
+     *        In most scenarios, it's better to specify {@code false} and keep a reference in the calling code.
      */
     public InstrumentedShiftAwareListenerAdapter(@NotNull final DynamicTable source, final boolean retain) {
         this(null, source, retain);
@@ -49,9 +49,10 @@ public abstract class InstrumentedShiftAwareListenerAdapter extends Instrumented
      * @param description A description for the UpdatePerformanceTracker to append to its entry description
      * @param source The source table this listener will subscribe to - needed for preserving referential integrity
      * @param retain Whether a hard reference to this listener should be maintained to prevent it from being collected.
-     *               In most scenarios, it's better to specify {@code false} and keep a reference in the calling code.
+     *        In most scenarios, it's better to specify {@code false} and keep a reference in the calling code.
      */
-    public InstrumentedShiftAwareListenerAdapter(@Nullable final String description, @NotNull final DynamicTable source, final boolean retain) {
+    public InstrumentedShiftAwareListenerAdapter(@Nullable final String description, @NotNull final DynamicTable source,
+            final boolean retain) {
         super(description);
         this.source = Require.neqNull(source, "source");
         if (this.retain = retain) {

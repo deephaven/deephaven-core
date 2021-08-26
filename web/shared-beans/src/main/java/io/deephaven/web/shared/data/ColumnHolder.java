@@ -9,8 +9,7 @@ public class ColumnHolder implements Serializable {
     private String type;
     private ColumnData columnData;
 
-    public ColumnHolder() {
-    }
+    public ColumnHolder() {}
 
     public ColumnHolder(String name, String type, ColumnData columnData) {
         this.name = name;

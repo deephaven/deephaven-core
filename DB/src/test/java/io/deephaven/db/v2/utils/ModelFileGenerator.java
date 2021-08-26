@@ -34,7 +34,8 @@ public class ModelFileGenerator {
         final String processedClassDef = processClassDef(rawClassDef);
         final byte[] encoded = Files.readAllBytes(Paths.get(getPath()));
         final String currentVersion = new String(encoded);
-        TestCase.assertEquals("Code generation results have changed - if you are comfortable with the change, run generateFile above to update the reference implementation",
+        TestCase.assertEquals(
+                "Code generation results have changed - if you are comfortable with the change, run generateFile above to update the reference implementation",
                 currentVersion, processedClassDef);
     }
 

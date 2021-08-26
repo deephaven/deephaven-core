@@ -44,19 +44,21 @@ public interface ColumnLocation extends StringUtils.StringKeyedObject, NamedImpl
     boolean exists();
 
     /**
-     * <p>Get the metadata object stored with this column, or null if no such data exists.
-     * <p>This is typically a value to range map (grouping metadata). The value to range map, if non-null, is a map from
-     * unique (boxed) column values for this location to the associated ranges in which they occur.
-     * Ranges are either 2-element int[]s, or 2-element long[]s.
+     * <p>
+     * Get the metadata object stored with this column, or null if no such data exists.
+     * <p>
+     * This is typically a value to range map (grouping metadata). The value to range map, if non-null, is a map from
+     * unique (boxed) column values for this location to the associated ranges in which they occur. Ranges are either
+     * 2-element int[]s, or 2-element long[]s.
      *
      * @return The metadata stored with this column, or null if no such data exists
      */
     @Nullable
     <METADATA_TYPE> METADATA_TYPE getMetadata(@NotNull ColumnDefinition<?> columnDefinition);
 
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // ColumnRegion Factories
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
     /**
      * @param columnDefinition The {@link ColumnDefinition} used to lookup type information
@@ -114,18 +116,18 @@ public interface ColumnLocation extends StringUtils.StringKeyedObject, NamedImpl
      */
     <TYPE> ColumnRegionObject<TYPE, Values> makeColumnRegionObject(@NotNull ColumnDefinition<TYPE> columnDefinition);
 
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // StringKeyedObject implementation
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
     @Override
     default String getStringRepresentation() {
         return getName();
     }
 
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // LogOutputAppendable implementation / toString() override helper
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
     @Override
     default LogOutput append(@NotNull final LogOutput logOutput) {

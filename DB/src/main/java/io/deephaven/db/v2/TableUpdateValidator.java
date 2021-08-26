@@ -23,8 +23,10 @@ import java.util.Collections;
 import java.util.function.Supplier;
 
 public class TableUpdateValidator implements QueryTable.Operation {
-    private static final boolean useSharedContext = Configuration.getInstance().getBooleanForClassWithDefault(TableUpdateValidator.class, "useSharedContext", true);
-    private static final boolean aggressiveUpdateValidation = Configuration.getInstance().getBooleanForClassWithDefault(TableUpdateValidator.class, "aggressiveUpdateValidation", false);
+    private static final boolean useSharedContext = Configuration.getInstance()
+            .getBooleanForClassWithDefault(TableUpdateValidator.class, "useSharedContext", true);
+    private static final boolean aggressiveUpdateValidation = Configuration.getInstance()
+            .getBooleanForClassWithDefault(TableUpdateValidator.class, "aggressiveUpdateValidation", false);
     private static final int CHUNK_SIZE = 4096;
 
     public static TableUpdateValidator make(final QueryTable tableToValidate) {
@@ -100,7 +102,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
         final ShiftAwareListener listener;
         try (final SafeCloseable ignored1 = maybeOpenSharedContext();
-             final SafeCloseable ignored2 = new SafeCloseableList(columnInfos)) {
+                final SafeCloseable ignored2 = new SafeCloseableList(columnInfos)) {
             updateValues(ModifiedColumnSet.ALL, trackingIndex, usePrev);
 
             listener = new BaseTable.ShiftAwareListenerImpl(getDescription(), tableToValidate, resultTable) {
@@ -124,12 +126,13 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
     public void deepValidation() {
         try (final SafeCloseable ignored1 = maybeOpenSharedContext();
-             final SafeCloseable ignored2 = new SafeCloseableList(columnInfos)) {
+                final SafeCloseable ignored2 = new SafeCloseableList(columnInfos)) {
 
             validate();
             validateValues("EndOfTickValidation", ModifiedColumnSet.ALL, trackingIndex, false, false);
             if (!issues.isEmpty()) {
-                final StringBuilder result = new StringBuilder("Table to validate " + getDescription() + " has inconsistent state:");
+                final StringBuilder result =
+                        new StringBuilder("Table to validate " + getDescription() + " has inconsistent state:");
                 for (final String issue : issues) {
                     result.append("\n - ").append(issue);
                 }
@@ -145,10 +148,11 @@ public class TableUpdateValidator implements QueryTable.Operation {
         }
 
         try (final SafeCloseable ignored1 = maybeOpenSharedContext();
-             final SafeCloseable ignored2 = new SafeCloseableList(columnInfos)) {
+                final SafeCloseable ignored2 = new SafeCloseableList(columnInfos)) {
             if (!upstream.modifiedColumnSet.isCompatibleWith(validationMCS)) {
-                noteIssue(() -> "upstream.modifiedColumnSet is not compatible with table.newModifiedColumnSet(...): upstream="
-                        + upstream.modifiedColumnSet + " initialized=" + validationMCS);
+                noteIssue(
+                        () -> "upstream.modifiedColumnSet is not compatible with table.newModifiedColumnSet(...): upstream="
+                                + upstream.modifiedColumnSet + " initialized=" + validationMCS);
             }
 
             // remove
@@ -156,7 +160,8 @@ public class TableUpdateValidator implements QueryTable.Operation {
                 validateValues("pre-update", ModifiedColumnSet.ALL, trackingIndex, true, false);
             } else {
                 validateValues("pre-update removed", ModifiedColumnSet.ALL, upstream.removed, true, false);
-                validateValues("pre-update modified", upstream.modifiedColumnSet, upstream.getModifiedPreShift(), true, false);
+                validateValues("pre-update modified", upstream.modifiedColumnSet, upstream.getModifiedPreShift(), true,
+                        false);
             }
 
             validateIndexesEqual("pre-update index", trackingIndex, tableToValidate.getIndex().getPrevIndex());
@@ -170,12 +175,14 @@ public class TableUpdateValidator implements QueryTable.Operation {
             if (aggressiveUpdateValidation) {
                 final Index unmodified = trackingIndex.minus(upstream.modified);
                 validateValues("post-shift unmodified", ModifiedColumnSet.ALL, unmodified, false, false);
-                validateValues("post-shift unmodified columns", upstream.modifiedColumnSet, upstream.modified, false, true);
+                validateValues("post-shift unmodified columns", upstream.modifiedColumnSet, upstream.modified, false,
+                        true);
             }
 
             // added
             if (trackingIndex.overlaps(upstream.added)) {
-                noteIssue(() -> "post-shift index contains rows that are added: " + trackingIndex.intersect(upstream.added));
+                noteIssue(() -> "post-shift index contains rows that are added: "
+                        + trackingIndex.intersect(upstream.added));
             }
             trackingIndex.insert(upstream.added);
             validateIndexesEqual("post-update index", trackingIndex, tableToValidate.getIndex());
@@ -185,7 +192,8 @@ public class TableUpdateValidator implements QueryTable.Operation {
             updateValues(upstream.modifiedColumnSet, upstream.modified, false);
 
             if (!issues.isEmpty()) {
-                StringBuilder result = new StringBuilder("Table to validate " + getDescription() + " generated an erroneous update:");
+                StringBuilder result =
+                        new StringBuilder("Table to validate " + getDescription() + " generated an erroneous update:");
                 for (String issue : issues) {
                     result.append("\n - ").append(issue);
                 }
@@ -210,9 +218,11 @@ public class TableUpdateValidator implements QueryTable.Operation {
         }
     }
 
-    // TODO: Should this string array actually just be the table output? with columns like 'expected', 'actual', 'row', 'cycle', etc?
+    // TODO: Should this string array actually just be the table output? with columns like 'expected', 'actual', 'row',
+    // 'cycle', etc?
     private final int MAX_ISSUES = 10;
     private final ArrayList<String> issues = new ArrayList<>();
+
     private void noteIssue(Supplier<String> issue) {
         if (issues.size() < MAX_ISSUES) {
             issues.add(issue.get());
@@ -220,7 +230,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
     }
 
     private void validateValues(final String what, final ModifiedColumnSet columnsToCheck, final Index toValidate,
-                                final boolean usePrev, final boolean invertMCS) {
+            final boolean usePrev, final boolean invertMCS) {
         try (final OrderedKeys.Iterator it = toValidate.getOrderedKeysIterator()) {
             while (it.hasMore()) {
                 final OrderedKeys subKeys = it.getNextOrderedKeysWithLength(CHUNK_SIZE);
@@ -249,7 +259,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
     }
 
     /**
-     * Some things won't last forever, like a DbArray that is really a column wrapper.  We need to turn those into
+     * Some things won't last forever, like a DbArray that is really a column wrapper. We need to turn those into
      * something that will persist properly until the next clock cycle.
      *
      * @param fromSource
@@ -311,7 +321,8 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
             this.source = tableToValidate.getColumnSource(columnName);
             this.isPrimitive = source.getType().isPrimitive();
-            this.expectedSource = SparseArrayColumnSource.getSparseMemoryColumnSource(source.getType(), source.getComponentType());
+            this.expectedSource =
+                    SparseArrayColumnSource.getSparseMemoryColumnSource(source.getType(), source.getComponentType());
 
             this.chunkEquals = ChunkEquals.makeEqual(source.getChunkType());
         }
@@ -393,7 +404,8 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
         public void validateValues(final String what, final OrderedKeys toValidate, final boolean usePrev) {
             Assert.leq(toValidate.size(), "toValidate.size()", CHUNK_SIZE, "CHUNK_SIZE");
-            final Chunk<? extends Attributes.Values> expected = expectedSource.getChunk(expectedGetContext(), toValidate);
+            final Chunk<? extends Attributes.Values> expected =
+                    expectedSource.getChunk(expectedGetContext(), toValidate);
             final Chunk<? extends Attributes.Values> actual = getSourceChunk(toValidate, usePrev);
             chunkEquals.equal(expected, actual, equalValuesDest());
             MutableInt off = new MutableInt();
@@ -406,8 +418,10 @@ public class TableUpdateValidator implements QueryTable.Operation {
                 noteIssue(() -> {
                     Object eValue = expectedSource.get(i);
                     Object aValue = usePrev ? source.getPrev(i) : source.get(i);
-                    String chunkEValue = ChunkUtils.extractKeyStringFromChunk(expectedSource.getChunkType(), expected, off.intValue() - 1);
-                    String chunkAValue = ChunkUtils.extractKeyStringFromChunk(source.getChunkType(), actual, off.intValue() - 1);
+                    String chunkEValue = ChunkUtils.extractKeyStringFromChunk(expectedSource.getChunkType(), expected,
+                            off.intValue() - 1);
+                    String chunkAValue =
+                            ChunkUtils.extractKeyStringFromChunk(source.getChunkType(), actual, off.intValue() - 1);
                     return what + (usePrev ? " (previous)" : "") +
                             " columnName=" + name + " k=" + i +
                             " (from source) expected=" + eValue + " actual=" + aValue +
@@ -417,7 +431,8 @@ public class TableUpdateValidator implements QueryTable.Operation {
         }
 
         private Chunk<? extends Attributes.Values> getSourceChunk(OrderedKeys orderedKeys, boolean usePrev) {
-            return usePrev ? source.getPrevChunk(sourceGetContext(), orderedKeys) : source.getChunk(sourceGetContext(), orderedKeys);
+            return usePrev ? source.getPrevChunk(sourceGetContext(), orderedKeys)
+                    : source.getChunk(sourceGetContext(), orderedKeys);
         }
 
         @Override

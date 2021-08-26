@@ -27,7 +27,7 @@ public class SsaTestHelpers {
 
     @NotNull
     public static TstUtils.SortedIntGenerator getGeneratorForShort() {
-        return new TstUtils.SortedIntGenerator(Short.MIN_VALUE + 1, (int)Short.MAX_VALUE);
+        return new TstUtils.SortedIntGenerator(Short.MIN_VALUE + 1, (int) Short.MAX_VALUE);
     }
 
     public static Table prepareTestTableForShort(QueryTable table) {
@@ -77,7 +77,8 @@ public class SsaTestHelpers {
 
     public static Table prepareTestTableForObject(QueryTable table) {
         // an update might be faster, but updateView ensures we break when object equality is not the same as ==
-        return LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> table.updateView("Value=String.format(`%06d`, Value)"));
+        return LiveTableMonitor.DEFAULT.sharedLock()
+                .computeLocked(() -> table.updateView("Value=String.format(`%06d`, Value)"));
     }
 
     public static final class TestDescriptor {

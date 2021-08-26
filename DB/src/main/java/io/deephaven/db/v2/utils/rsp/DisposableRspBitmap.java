@@ -7,8 +7,7 @@ import io.deephaven.db.v2.utils.rsp.container.Container;
  */
 public final class DisposableRspBitmap extends RspBitmap {
 
-    public DisposableRspBitmap() {
-    }
+    public DisposableRspBitmap() {}
 
     public DisposableRspBitmap(long start, long end) {
         super(start, end);

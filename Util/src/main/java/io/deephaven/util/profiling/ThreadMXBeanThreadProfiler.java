@@ -14,7 +14,8 @@ import java.lang.management.ThreadMXBean;
 public abstract class ThreadMXBeanThreadProfiler<BEAN_TYPE extends ThreadMXBean> implements ThreadProfiler {
 
     @VisibleForTesting
-    static final boolean TRY_ENABLE_THREAD_CPU_TIME = Configuration.getInstance().getBooleanForClassWithDefault(ThreadMXBeanThreadProfiler.class, "tryEnableThreadCpuTime", true);
+    static final boolean TRY_ENABLE_THREAD_CPU_TIME = Configuration.getInstance()
+            .getBooleanForClassWithDefault(ThreadMXBeanThreadProfiler.class, "tryEnableThreadCpuTime", true);
 
     /**
      * The bean for measurements.
@@ -27,7 +28,7 @@ public abstract class ThreadMXBeanThreadProfiler<BEAN_TYPE extends ThreadMXBean>
     private final boolean cpuProfilingAvailable;
 
     protected ThreadMXBeanThreadProfiler() {
-        //noinspection unchecked
+        // noinspection unchecked
         threadMXBean = (BEAN_TYPE) ManagementFactory.getThreadMXBean();
 
         if (!CPU_PROFILING_ENABLED) {
@@ -35,11 +36,14 @@ public abstract class ThreadMXBeanThreadProfiler<BEAN_TYPE extends ThreadMXBean>
             return;
         }
 
-        if (threadMXBean.isCurrentThreadCpuTimeSupported() && !threadMXBean.isThreadCpuTimeEnabled() && TRY_ENABLE_THREAD_CPU_TIME) {
+        if (threadMXBean.isCurrentThreadCpuTimeSupported() && !threadMXBean.isThreadCpuTimeEnabled()
+                && TRY_ENABLE_THREAD_CPU_TIME) {
             try {
                 threadMXBean.setThreadCpuTimeEnabled(true);
             } catch (UnsupportedOperationException e) {
-                throw new UnsupportedOperationException("Failed to enable thread cpu time - set ThreadMXBeanThreadProfiler.tryEnableThreadCpuTime=false to proceed without it", e);
+                throw new UnsupportedOperationException(
+                        "Failed to enable thread cpu time - set ThreadMXBeanThreadProfiler.tryEnableThreadCpuTime=false to proceed without it",
+                        e);
             }
         }
         cpuProfilingAvailable = threadMXBean.isCurrentThreadCpuTimeSupported() && threadMXBean.isThreadCpuTimeEnabled();

@@ -7,10 +7,10 @@ import io.deephaven.db.v2.sources.chunk.*;
 
 public class ChunkAdapter<T> {
     public static <T> ChunkAdapter<T> create(Class type, final WritableChunkSink baseline,
-                                             final WritableChunkSink delta) {
-        //noinspection unchecked
-        return type == Boolean.class ? (ChunkAdapter<T>) new BooleanChunkAdapter(baseline, delta) :
-                new ChunkAdapter<>(baseline, delta);
+            final WritableChunkSink delta) {
+        // noinspection unchecked
+        return type == Boolean.class ? (ChunkAdapter<T>) new BooleanChunkAdapter(baseline, delta)
+                : new ChunkAdapter<>(baseline, delta);
     }
 
     /**

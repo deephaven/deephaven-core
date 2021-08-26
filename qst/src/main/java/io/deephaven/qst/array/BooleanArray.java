@@ -64,7 +64,7 @@ public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
     }
 
     @Override
-    public final BooleanType type() {
+    public final BooleanType componentType() {
         return BooleanType.instance();
     }
 
@@ -90,7 +90,7 @@ public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
     }
 
     public static class Builder extends PrimitiveArrayHelper<byte[]>
-        implements ArrayBuilder<Boolean, BooleanArray, Builder> {
+            implements ArrayBuilder<Boolean, BooleanArray, Builder> {
 
         private Builder(int initialCapacity) {
             super(new byte[initialCapacity]);

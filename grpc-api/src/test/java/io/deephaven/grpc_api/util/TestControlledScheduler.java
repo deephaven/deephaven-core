@@ -17,7 +17,8 @@ public class TestControlledScheduler implements Scheduler {
 
     private long currentTimeInNs = 0;
 
-    private final TreeMultimap<DBDateTime, Runnable> workQueue = TreeMultimap.create(Ordering.natural(), Ordering.arbitrary());
+    private final TreeMultimap<DBDateTime, Runnable> workQueue =
+            TreeMultimap.create(Ordering.natural(), Ordering.arbitrary());
 
     /**
      * Runs the first queued command if there are any.

@@ -69,11 +69,10 @@ public abstract class UngroupedColumnSource<T> extends AbstractColumnSource<T> {
                 return new UngroupedBoxedLongDbArrayColumnSource(column);
             } else if (column.getComponentType() == Short.class || column.getComponentType() == short.class) {
                 return new UngroupedBoxedShortDbArrayColumnSource(column);
-            }  else {
+            } else {
                 return new UngroupedDbArrayColumnSource(column);
             }
-        }
-        else if (DbArrayBase.class.isAssignableFrom(column.getType())) {
+        } else if (DbArrayBase.class.isAssignableFrom(column.getType())) {
             if (column.getComponentType() == Byte.class || column.getComponentType() == byte.class) {
                 return new UngroupedByteDbArrayColumnSource(column);
             } else if (column.getComponentType() == Character.class || column.getComponentType() == char.class) {
@@ -96,7 +95,7 @@ public abstract class UngroupedColumnSource<T> extends AbstractColumnSource<T> {
                 return new UngroupedByteArrayColumnSource(column);
             } else if (column.getComponentType() == char.class) {
                 return new UngroupedCharArrayColumnSource(column);
-            } else if ( column.getComponentType() == double.class) {
+            } else if (column.getComponentType() == double.class) {
                 return new UngroupedDoubleArrayColumnSource(column);
             } else if (column.getComponentType() == float.class) {
                 return new UngroupedFloatArrayColumnSource(column);
@@ -108,8 +107,7 @@ public abstract class UngroupedColumnSource<T> extends AbstractColumnSource<T> {
                 return new UngroupedShortArrayColumnSource(column);
             } else if (column.getComponentType() == boolean.class) {
                 return new UngroupedBooleanArrayColumnSource(column);
-            }
-            else if (column.getComponentType() == Byte.class) {
+            } else if (column.getComponentType() == Byte.class) {
                 return new UngroupedBoxedByteArrayColumnSource(column);
             } else if (column.getComponentType() == Character.class) {
                 return new UngroupedBoxedCharArrayColumnSource(column);
@@ -129,6 +127,7 @@ public abstract class UngroupedColumnSource<T> extends AbstractColumnSource<T> {
                 return new UngroupedArrayColumnSource(column);
             }
         }
-        throw new UnsupportedOperationException("column.getType() = " + column.getType() + " column.getClass() = " + column.getClass());
+        throw new UnsupportedOperationException(
+                "column.getType() = " + column.getType() + " column.getClass() = " + column.getClass());
     }
 }

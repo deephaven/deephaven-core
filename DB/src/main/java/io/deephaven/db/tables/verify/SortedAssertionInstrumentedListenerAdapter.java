@@ -16,7 +16,7 @@ import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.db.v2.utils.ReadOnlyIndex;
 
 public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ShiftAwareListenerImpl {
-    private static final int CHUNK_SIZE = 1<<16;
+    private static final int CHUNK_SIZE = 1 << 16;
     private final String description;
     private final String column;
     private final SortingOrder order;
@@ -26,14 +26,13 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ShiftA
     private final SortCheck sortCheck;
 
     public SortedAssertionInstrumentedListenerAdapter(String description,
-                                                      DynamicTable parent,
-                                                      DynamicTable dependent,
-                                                      String columnName,
-                                                      SortingOrder order) {
+            DynamicTable parent,
+            DynamicTable dependent,
+            String columnName,
+            SortingOrder order) {
         super(
                 "assertSorted(" + (description == null ? "" : description) + ", " + columnName + ", " + order + ')',
-                parent, dependent
-        );
+                parent, dependent);
         this.description = description;
         this.column = columnName;
         this.order = order;
@@ -45,12 +44,14 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ShiftA
 
     @Override
     public void onUpdate(final Update upstream) {
-        final boolean modifiedRows = upstream.modified.nonempty() && upstream.modifiedColumnSet.containsAny(parentColumnSet);
+        final boolean modifiedRows =
+                upstream.modified.nonempty() && upstream.modifiedColumnSet.containsAny(parentColumnSet);
         if (upstream.added.nonempty() || modifiedRows) {
             final Index rowsOfInterest = modifiedRows ? upstream.added.union(upstream.modified) : upstream.added;
             try (final Index ignored = modifiedRows ? rowsOfInterest : null;
-                 final Index toProcess = makeAdjacentIndex(rowsOfInterest)) {
-                Assert.assertion(toProcess.subsetOf(parentIndex), "toProcess.subsetOf(parentIndex)", makeAdjacentIndex(rowsOfInterest), "toProcess", parentIndex, "parentIndex");
+                    final Index toProcess = makeAdjacentIndex(rowsOfInterest)) {
+                Assert.assertion(toProcess.subsetOf(parentIndex), "toProcess.subsetOf(parentIndex)",
+                        makeAdjacentIndex(rowsOfInterest), "toProcess", parentIndex, "parentIndex");
                 doCheck(toProcess);
             }
         }
@@ -61,18 +62,21 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ShiftA
         doCheckStatic(toProcess, parentColumnSource, sortCheck, description, column, order);
     }
 
-    public static void doCheckStatic(Index toProcess, ColumnSource<?> parentColumnSource, SortCheck sortCheck, String description, String column, SortingOrder order) {
-        final int contextSize = (int)Math.min(CHUNK_SIZE, toProcess.size());
+    public static void doCheckStatic(Index toProcess, ColumnSource<?> parentColumnSource, SortCheck sortCheck,
+            String description, String column, SortingOrder order) {
+        final int contextSize = (int) Math.min(CHUNK_SIZE, toProcess.size());
 
         try (final ChunkSource.GetContext getContext = parentColumnSource.makeGetContext(contextSize);
-             final OrderedKeys.Iterator okIt = toProcess.getOrderedKeysIterator()) {
+                final OrderedKeys.Iterator okIt = toProcess.getOrderedKeysIterator()) {
             while (okIt.hasMore()) {
                 final OrderedKeys chunkOk = okIt.getNextOrderedKeysWithLength(contextSize);
                 final Chunk<? extends Attributes.Values> valuesChunk = parentColumnSource.getChunk(getContext, chunkOk);
                 final int firstUnsorted = sortCheck.sortCheck(valuesChunk);
                 if (firstUnsorted >= 0) {
-                    final String value1 = ChunkUtils.extractKeyStringFromChunk(valuesChunk.getChunkType(), valuesChunk, firstUnsorted);
-                    final String value2 = ChunkUtils.extractKeyStringFromChunk(valuesChunk.getChunkType(), valuesChunk, firstUnsorted + 1);
+                    final String value1 = ChunkUtils.extractKeyStringFromChunk(valuesChunk.getChunkType(), valuesChunk,
+                            firstUnsorted);
+                    final String value2 = ChunkUtils.extractKeyStringFromChunk(valuesChunk.getChunkType(), valuesChunk,
+                            firstUnsorted + 1);
                     throw new SortedAssertionFailure(description, column, order, value1, value2);
                 }
             }
@@ -84,7 +88,7 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ShiftA
             final Index.SequentialBuilder processBuilder = Index.CURRENT_FACTORY.getSequentialBuilder();
             long lastPosition = parentIndex.size() - 1;
             long lastUsedPosition = 0;
-            for (ReadOnlyIndex.RangeIterator rangeIterator = inverted.rangeIterator(); rangeIterator.hasNext(); ) {
+            for (ReadOnlyIndex.RangeIterator rangeIterator = inverted.rangeIterator(); rangeIterator.hasNext();) {
                 rangeIterator.next();
                 long start = rangeIterator.currentRangeStart();
                 long end = rangeIterator.currentRangeEnd();

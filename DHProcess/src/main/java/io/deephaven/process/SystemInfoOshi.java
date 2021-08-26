@@ -37,10 +37,10 @@ public abstract class SystemInfoOshi implements PropertySet {
     public static SystemInfoOshi forCurrentProcess() {
         final SystemInfo info = new SystemInfo();
         return ImmutableSystemInfoOshi.builder()
-            .operatingSystem(OperatingSystemOshi.from(info.getOperatingSystem()))
-            .computerSystem(ComputerSystemOshi.from(info.getHardware().getComputerSystem()))
-            .systemMemory(SystemMemoryOshi.from(info.getHardware().getMemory()))
-            .systemCpu(SystemCpuOshi.from(info.getHardware().getProcessor()))
-            .build();
+                .operatingSystem(OperatingSystemOshi.from(info.getOperatingSystem()))
+                .computerSystem(ComputerSystemOshi.from(info.getHardware().getComputerSystem()))
+                .systemMemory(SystemMemoryOshi.from(info.getHardware().getMemory()))
+                .systemCpu(SystemCpuOshi.from(info.getHardware().getProcessor()))
+                .build();
     }
 }

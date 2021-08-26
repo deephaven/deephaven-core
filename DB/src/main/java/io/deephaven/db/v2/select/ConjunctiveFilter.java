@@ -38,7 +38,7 @@ public class ConjunctiveFilter extends ComposedFilter {
 
     @Override
     public Index filter(Index selection, Index fullSet, Table table, boolean usePrev) {
-        Index matched = selection.clone();  // TODO(kosak): probably not needed
+        Index matched = selection.clone(); // TODO(kosak): probably not needed
 
         for (SelectFilter filter : componentFilters) {
             if (Thread.interrupted()) {
@@ -53,7 +53,8 @@ public class ConjunctiveFilter extends ComposedFilter {
 
     @Override
     public ConjunctiveFilter copy() {
-        return new ConjunctiveFilter(Arrays.stream(getComponentFilters()).map(SelectFilter::copy).toArray(SelectFilter[]::new));
+        return new ConjunctiveFilter(
+                Arrays.stream(getComponentFilters()).map(SelectFilter::copy).toArray(SelectFilter[]::new));
     }
 
     @Override

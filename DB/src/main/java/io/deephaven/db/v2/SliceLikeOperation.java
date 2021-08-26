@@ -9,14 +9,17 @@ import io.deephaven.db.v2.utils.Index;
 public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
     public static SliceLikeOperation slice(final QueryTable parent, final long firstPositionInclusive,
-                                           final long lastPositionExclusive, final String op) {
+            final long lastPositionExclusive, final String op) {
 
         if (firstPositionInclusive < 0 && lastPositionExclusive > 0) {
-            throw new IllegalArgumentException("Can not slice with a negative first position (" + firstPositionInclusive + ") and positive last position (" + lastPositionExclusive + ")");
+            throw new IllegalArgumentException("Can not slice with a negative first position (" + firstPositionInclusive
+                    + ") and positive last position (" + lastPositionExclusive + ")");
         }
         // note: first >= 0 && last < 0 is allowed, otherwise first must be less than last
-        if ((firstPositionInclusive < 0 || lastPositionExclusive >= 0) && lastPositionExclusive < firstPositionInclusive) {
-            throw new IllegalArgumentException("Can not slice with a first position (" + firstPositionInclusive + ") after last position (" + lastPositionExclusive + ")");
+        if ((firstPositionInclusive < 0 || lastPositionExclusive >= 0)
+                && lastPositionExclusive < firstPositionInclusive) {
+            throw new IllegalArgumentException("Can not slice with a first position (" + firstPositionInclusive
+                    + ") after last position (" + lastPositionExclusive + ")");
         }
 
         return new SliceLikeOperation(op, op + "(" + firstPositionInclusive + ", " + lastPositionExclusive + ")",
@@ -38,7 +41,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
                 0, 0, false) {
             @Override
             protected long getFirstPositionInclusive() {
-                return - (long)Math.ceil(percent * parent.size());
+                return -(long) Math.ceil(percent * parent.size());
             }
         };
     }
@@ -52,8 +55,8 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
     private QueryTable resultTable;
 
     private SliceLikeOperation(final String operation, final String description, final QueryTable parent,
-                               final long firstPositionInclusive, final long lastPositionExclusive,
-                               final boolean mayBeFlat) {
+            final long firstPositionInclusive, final long lastPositionExclusive,
+            final boolean mayBeFlat) {
         this.operation = operation;
         this.description = description;
         this.parent = parent;

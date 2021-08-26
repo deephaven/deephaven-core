@@ -33,9 +33,9 @@ public class CompressedRangeSetReader {
 
     public static ByteBuffer writeRange(RangeSet s) {
         long offset = 0;
-        ByteBuffer payload = ByteBuffer.allocate(s.rangeCount() * 2 * (8 + 1) + 1);//max size it would need to be
+        ByteBuffer payload = ByteBuffer.allocate(s.rangeCount() * 2 * (8 + 1) + 1);// max size it would need to be
         payload.order(ByteOrder.LITTLE_ENDIAN);
-        ShortBuffer shorts = ShortBuffer.allocate(s.rangeCount() * 2);//assuming that every range will need 2 shorts
+        ShortBuffer shorts = ShortBuffer.allocate(s.rangeCount() * 2);// assuming that every range will need 2 shorts
         for (Iterator<Range> it = s.rangeIterator(); it.hasNext();) {
             Range r = it.next();
             if (r.getLast() == r.getFirst()) {
@@ -55,7 +55,8 @@ public class CompressedRangeSetReader {
         return sliced;
     }
 
-    private static long appendWithDeltaOffset(ByteBuffer payload, ShortBuffer shorts, long offset, long value, boolean negate) {
+    private static long appendWithDeltaOffset(ByteBuffer payload, ShortBuffer shorts, long offset, long value,
+            boolean negate) {
         if (value >= offset + Short.MAX_VALUE) {
             flushShorts(payload, shorts);
 
@@ -70,7 +71,7 @@ public class CompressedRangeSetReader {
     }
 
     private static void flushShorts(ByteBuffer payload, ShortBuffer shorts) {
-        for (int offset = 0; offset < shorts.position(); ) {
+        for (int offset = 0; offset < shorts.position();) {
             int byteCount = 0;
             while (offset + byteCount < shorts.position() && (shorts.get(offset + byteCount) < Byte.MAX_VALUE
                     && shorts.get(offset + byteCount) > Byte.MIN_VALUE)) {
@@ -106,7 +107,8 @@ public class CompressedRangeSetReader {
                     }
                 }
                 // if we have a small number of trailing bytes, tack them onto the end
-                if (consecutiveBytes > 0 && consecutiveBytes <= 3 && (offset + shortCount + consecutiveBytes == shorts.position())) {
+                if (consecutiveBytes > 0 && consecutiveBytes <= 3
+                        && (offset + shortCount + consecutiveBytes == shorts.position())) {
                     shortCount += consecutiveBytes;
                 }
                 if (shortCount >= 2) {
@@ -176,8 +178,7 @@ public class CompressedRangeSetReader {
                 default:
                     throw new IllegalStateException("Bad command: " + command + " at position " + data.position());
             }
-        }
-        while (true);
+        } while (true);
 
     }
 

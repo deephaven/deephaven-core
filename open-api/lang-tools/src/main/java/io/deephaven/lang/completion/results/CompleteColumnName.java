@@ -13,8 +13,8 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * A class specifically for completing column names;
- * to be called after the completer has discovered the name of the column to match.
+ * A class specifically for completing column names; to be called after the completer has discovered the name of the
+ * column to match.
  *
  */
 public class CompleteColumnName extends CompletionBuilder {
@@ -23,20 +23,18 @@ public class CompleteColumnName extends CompletionBuilder {
     private final ChunkerInvoke invoke;
 
     public CompleteColumnName(
-        ChunkerCompleter completer,
-        Node node,
-        ChunkerInvoke invoke
-    ) {
+            ChunkerCompleter completer,
+            Node node,
+            ChunkerInvoke invoke) {
         super(completer);
         this.node = node;
         this.invoke = invoke;
     }
 
     public void doCompletion(
-        Collection<CompletionItem.Builder> results,
-        CompletionRequest request,
-        String colName
-    ) {
+            Collection<CompletionItem.Builder> results,
+            CompletionRequest request,
+            String colName) {
         final String src;
         final DocumentRange.Builder range;
         src = node == null ? "" : node.toSource();
@@ -63,13 +61,13 @@ public class CompleteColumnName extends CompletionBuilder {
             if (node != null) {
                 final Token suffix = node.jjtGetLastToken().next;
                 if (suffix != null && suffix.kind == ChunkerConstants.WHITESPACE) {
-                    b.setLength(b.length()-1);
+                    b.setLength(b.length() - 1);
                 }
             }
         } else {
             // we don't want to erase anything the user has after the =
             // we also want to detect and respect their whitespace usage
-            if (ind < src.length() && Character.isWhitespace(src.charAt(ind+1))) {
+            if (ind < src.length() && Character.isWhitespace(src.charAt(ind + 1))) {
                 b.append(" ");
             }
             b.append(src.substring(ind));
@@ -87,8 +85,8 @@ public class CompleteColumnName extends CompletionBuilder {
                 .setLength(len)
                 .setLabel(item)
                 .getTextEditBuilder()
-                        .setText(item)
-                        .setRange(range);
+                .setText(item)
+                .setRange(range);
         results.add(result);
     }
 }

@@ -11,7 +11,8 @@ public interface KeyRangeGroupingProvider<DATA_TYPE> extends GroupingProvider<DA
 
     /**
      * Add a column location for consideration when constructing groupings.
-     * @param columnLocation    The column location to add
+     * 
+     * @param columnLocation The column location to add
      * @param addedIndexInTable The location's index in the table
      */
     void addSource(@NotNull ColumnLocation columnLocation, @NotNull ReadOnlyIndex locationIndexInTable);

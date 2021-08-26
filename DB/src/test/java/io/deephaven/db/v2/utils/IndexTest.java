@@ -9,7 +9,7 @@ public class IndexTest {
         long curr = 10;
 
         @Override
-        public void close() { }
+        public void close() {}
 
         @Override
         public long nextLong() {

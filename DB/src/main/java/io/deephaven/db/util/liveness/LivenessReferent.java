@@ -21,8 +21,8 @@ public interface LivenessReferent {
     }
 
     /**
-     * If this referent is "live", behave as {@link #retainReference()} and return true.
-     * Otherwise, returns false rather than throwing an exception.
+     * If this referent is "live", behave as {@link #retainReference()} and return true. Otherwise, returns false rather
+     * than throwing an exception.
      *
      * @return True if this referent was retained, false otherwise
      */

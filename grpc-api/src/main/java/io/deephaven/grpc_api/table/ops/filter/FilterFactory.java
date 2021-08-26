@@ -63,7 +63,8 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
     }
 
     @Override
-    public SelectFilter onComparison(CompareCondition.CompareOperation operation, CaseSensitivity caseSensitivity, Value lhs, Value rhs) {
+    public SelectFilter onComparison(CompareCondition.CompareOperation operation, CaseSensitivity caseSensitivity,
+            Value lhs, Value rhs) {
         switch (operation) {
             case LESS_THAN:
             case LESS_THAN_OR_EQUAL:
@@ -72,7 +73,8 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
                 return generateNumericConditionFilter(operation, lhs, rhs);
             case EQUALS:
             case NOT_EQUALS:
-                // At this point, we shouldn't be able to be optimized to a match filter, so we'll tostring and build a condition
+                // At this point, we shouldn't be able to be optimized to a match filter, so we'll tostring and build a
+                // condition
                 // and let the DBLangParser turn the "==" into the appropriate java call
                 // Note that case insensitive checks aren't supported on this path
                 if (caseSensitivity != CaseSensitivity.MATCH_CASE) {
@@ -85,7 +87,8 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
         }
     }
 
-    private SelectFilter generateNumericConditionFilter(CompareCondition.CompareOperation operation, Value lhs, Value rhs) {
+    private SelectFilter generateNumericConditionFilter(CompareCondition.CompareOperation operation, Value lhs,
+            Value rhs) {
         boolean invert;
         String columName;
         Literal value;
@@ -133,16 +136,21 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
                 FormulaParserConfiguration.parser);
     }
 
-    private io.deephaven.gui.table.filters.Condition rangeCondition(CompareCondition.CompareOperation operation, boolean invert) {
+    private io.deephaven.gui.table.filters.Condition rangeCondition(CompareCondition.CompareOperation operation,
+            boolean invert) {
         switch (operation) {
             case LESS_THAN:
-                return invert ? io.deephaven.gui.table.filters.Condition.GREATER_THAN_OR_EQUAL : io.deephaven.gui.table.filters.Condition.LESS_THAN;
+                return invert ? io.deephaven.gui.table.filters.Condition.GREATER_THAN_OR_EQUAL
+                        : io.deephaven.gui.table.filters.Condition.LESS_THAN;
             case LESS_THAN_OR_EQUAL:
-                return invert ? io.deephaven.gui.table.filters.Condition.GREATER_THAN : io.deephaven.gui.table.filters.Condition.LESS_THAN_OR_EQUAL;
+                return invert ? io.deephaven.gui.table.filters.Condition.GREATER_THAN
+                        : io.deephaven.gui.table.filters.Condition.LESS_THAN_OR_EQUAL;
             case GREATER_THAN:
-                return invert ? io.deephaven.gui.table.filters.Condition.LESS_THAN_OR_EQUAL : io.deephaven.gui.table.filters.Condition.GREATER_THAN;
+                return invert ? io.deephaven.gui.table.filters.Condition.LESS_THAN_OR_EQUAL
+                        : io.deephaven.gui.table.filters.Condition.GREATER_THAN;
             case GREATER_THAN_OR_EQUAL:
-                return invert ? io.deephaven.gui.table.filters.Condition.LESS_THAN : io.deephaven.gui.table.filters.Condition.GREATER_THAN_OR_EQUAL;
+                return invert ? io.deephaven.gui.table.filters.Condition.LESS_THAN
+                        : io.deephaven.gui.table.filters.Condition.GREATER_THAN_OR_EQUAL;
             case EQUALS:
             case NOT_EQUALS:
             case UNRECOGNIZED:
@@ -152,7 +160,8 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
     }
 
     @Override
-    public SelectFilter onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType) {
+    public SelectFilter onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity,
+            MatchType matchType) {
         assert target.getDataCase() == Value.DataCase.REFERENCE;
         Reference reference = target.getReference();
         String[] values = new String[candidatesList.size()];
@@ -167,7 +176,8 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
                 values[i] = FilterPrinter.printNoEscape(literal);
             }
         }
-        return new MatchFilter(caseSensitivity(caseSensitivity), matchType(matchType), reference.getColumnName(), values);
+        return new MatchFilter(caseSensitivity(caseSensitivity), matchType(matchType), reference.getColumnName(),
+                values);
     }
 
     private MatchFilter.CaseSensitivity caseSensitivity(CaseSensitivity caseSensitivity) {
@@ -211,18 +221,23 @@ public class FilterFactory implements FilterVisitor<SelectFilter> {
     }
 
     @Override
-    public SelectFilter onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity, MatchType matchType) {
-        return new StringContainsFilter(caseSensitivity(caseSensitivity), matchType(matchType), reference.getColumnName(), searchString);
+    public SelectFilter onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity,
+            MatchType matchType) {
+        return new StringContainsFilter(caseSensitivity(caseSensitivity), matchType(matchType),
+                reference.getColumnName(), searchString);
     }
 
     @Override
-    public SelectFilter onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity, MatchType matchType) {
-        return new RegexFilter(caseSensitivity(caseSensitivity), matchType(matchType), reference.getColumnName(), regex);
+    public SelectFilter onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity,
+            MatchType matchType) {
+        return new RegexFilter(caseSensitivity(caseSensitivity), matchType(matchType), reference.getColumnName(),
+                regex);
     }
 
     @Override
     public SelectFilter onSearch(String searchString, List<Reference> optionalReferencesList) {
-        final Set<String> columnNames = optionalReferencesList.stream().map(Reference::getColumnName).collect(Collectors.toSet());
+        final Set<String> columnNames =
+                optionalReferencesList.stream().map(Reference::getColumnName).collect(Collectors.toSet());
         SelectFilter[] selectFilters = SelectFilterFactory.expandQuickFilter(table, searchString, columnNames);
         if (selectFilters.length == 0) {
             return SelectNoneFilter.INSTANCE;

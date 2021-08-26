@@ -18,10 +18,8 @@ public class SortPair {
 
     public static SortPair of(SortColumn sortColumn) {
         return new SortPair(
-            sortColumn.column().name(),
-            sortColumn.order() == Order.ASCENDING ?
-                SortingOrder.Ascending :
-                SortingOrder.Descending);
+                sortColumn.column().name(),
+                sortColumn.order() == Order.ASCENDING ? SortingOrder.Ascending : SortingOrder.Descending);
     }
 
     private final String column;
@@ -29,6 +27,7 @@ public class SortPair {
 
     /**
      * Create an ascending SortPair for name.
+     * 
      * @param name the column name to sort by
      * @return an ascending SortPair for name
      */
@@ -38,16 +37,18 @@ public class SortPair {
 
     /**
      * Create an array of ascending SortPair for names.
+     * 
      * @param names the column names to sort by
      * @return an ascending SortPair array for names
      */
-    public static SortPair [] ascendingPairs(String... names) {
+    public static SortPair[] ascendingPairs(String... names) {
         return Arrays.stream(names).map(name -> new SortPair(name, SortingOrder.Ascending)).toArray(SortPair[]::new);
     }
 
 
     /**
      * Create an descending SortPair for name.
+     * 
      * @param name the column name to sort by
      * @return an descending SortPair for name
      */
@@ -57,10 +58,11 @@ public class SortPair {
 
     /**
      * Create an array of descending SortPair for names.
+     * 
      * @param names the column names to sort by
      * @return an descending SortPair array for names
      */
-    public static SortPair [] descendingPairs(String... names) {
+    public static SortPair[] descendingPairs(String... names) {
         return Arrays.stream(names).map(name -> new SortPair(name, SortingOrder.Descending)).toArray(SortPair[]::new);
     }
 
@@ -85,8 +87,10 @@ public class SortPair {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         final SortPair sortPair = (SortPair) o;
         return order == sortPair.order && Objects.equals(column, sortPair.column);
     }

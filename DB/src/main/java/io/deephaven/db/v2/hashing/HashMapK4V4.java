@@ -42,7 +42,7 @@ public abstract class HashMapK4V4 extends HashMapBase {
 
         // Did we run out of empty slots?
         if (nonEmptySlots >= rehashThreshold) {
-            // This means we're low on empty slots.  We might be low on empty slots because we've done a lot of
+            // This means we're low on empty slots. We might be low on empty slots because we've done a lot of
             // deletions of previous items (in this case 'size' could be small), or because we've done a lot of
             // insertions (in this case 'size' would be close to 'nonEmptySlots'). In the former case we would rather
             // rehash to the same size. In the latter case we would like to grow the hash table. The heuristic we use to
@@ -144,7 +144,7 @@ public abstract class HashMapK4V4 extends HashMapBase {
         final int offset = (1 + (hash1 % (numBuckets - 2))) * (4 * 2);
         final int probeStart = probe;
         while (true) {
-            probe = (int)(((long)probe + offset) % length);
+            probe = (int) (((long) probe + offset) % length);
             if (probe == probeStart) {
                 throw new IllegalStateException("Wrapped around? Impossible.");
             }

@@ -5,7 +5,8 @@ import io.deephaven.db.v2.sources.WritableSource;
 
 public interface FormulaColumn extends SelectColumn {
 
-    static FormulaColumn createFormulaColumn(String columnName, String formulaString, FormulaParserConfiguration parser) {
+    static FormulaColumn createFormulaColumn(String columnName, String formulaString,
+            FormulaParserConfiguration parser) {
         switch (parser) {
             case Deephaven:
                 return new DhFormulaColumn(columnName, formulaString);

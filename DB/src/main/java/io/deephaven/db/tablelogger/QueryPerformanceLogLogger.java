@@ -32,7 +32,7 @@ public class QueryPerformanceLogLogger
 
     interface ISetter extends WritableRowContainer {
         void log(Row.Flags flags, final long evaluationNumber,
-                 QueryProcessingResults queryProcessingResults, QueryPerformanceNugget nugget) throws IOException;
+                QueryProcessingResults queryProcessingResults, QueryPerformanceNugget nugget) throws IOException;
     }
 
     class DirectSetter extends BaseSetter implements ISetter {
@@ -75,8 +75,8 @@ public class QueryPerformanceLogLogger
         @Override
         public void log(
                 final Row.Flags flags, final long evaluationNumber,
-                final QueryProcessingResults queryProcessingResults, final QueryPerformanceNugget nugget
-        ) throws IOException {
+                final QueryProcessingResults queryProcessingResults, final QueryPerformanceNugget nugget)
+                throws IOException {
             setRowFlags(flags);
             this.ProcessUniqueId.set(processUniqueId);
             this.EvaluationNumber.setLong(evaluationNumber);
@@ -85,7 +85,8 @@ public class QueryPerformanceLogLogger
                     ? null
                     : DBTimeUtils.millisToTime(
                             nugget.getStartClockTime() + DBTimeUtils.nanosToMillis(nugget.getTotalTimeNanos())));
-            this.DurationNanos.setLong(nugget.getTotalTimeNanos() == null ? QueryConstants.NULL_LONG : nugget.getTotalTimeNanos());
+            this.DurationNanos.setLong(
+                    nugget.getTotalTimeNanos() == null ? QueryConstants.NULL_LONG : nugget.getTotalTimeNanos());
             this.CpuNanos.setLong(nugget.getCpuNanos());
             this.UserCpuNanos.setLong(nugget.getUserCpuNanos());
             this.TotalMemoryFree.setLong(nugget.getEndFreeMemory());
@@ -99,7 +100,7 @@ public class QueryPerformanceLogLogger
             this.Exception.set(queryProcessingResults.getException());
         }
     }
-    
+
     @Override
     protected String threadName() {
         return TABLE_NAME;
@@ -120,13 +121,12 @@ public class QueryPerformanceLogLogger
                 .add("TotalMemoryFree", long.class)
                 .add("TotalMemoryUsed", long.class)
                 .add("FreeMemoryChange", long.class)
-                .add("TotalMemoryChange",long.class)
-                .add("AllocatedBytes",long.class)
-                .add("PoolAllocatedBytes",long.class)
+                .add("TotalMemoryChange", long.class)
+                .add("AllocatedBytes", long.class)
+                .add("PoolAllocatedBytes", long.class)
                 .add("WasInterrupted", Boolean.class)
-                .add("IsReplayer",Boolean.class)
-                .add("Exception", String.class)
-                ;
+                .add("IsReplayer", Boolean.class)
+                .add("Exception", String.class);
         columnNames = cols.getColumnNames();
         columnDbTypes = cols.getDbTypes();
     }
@@ -138,16 +138,15 @@ public class QueryPerformanceLogLogger
     }
 
     public void log(final long evaluationNumber,
-                    final QueryProcessingResults queryProcessingResults,
-                    final QueryPerformanceNugget nugget
-    ) throws IOException {
+            final QueryProcessingResults queryProcessingResults,
+            final QueryPerformanceNugget nugget) throws IOException {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS, evaluationNumber, queryProcessingResults, nugget);
     }
 
     public void log(
             final Row.Flags flags, final long evaluationNumber,
-            final QueryProcessingResults queryProcessingResults, final QueryPerformanceNugget nugget
-    ) throws IOException {
+            final QueryProcessingResults queryProcessingResults, final QueryPerformanceNugget nugget)
+            throws IOException {
         verifyCondition(isInitialized(), "init() must be called before calling log()");
         verifyCondition(!isClosed, "cannot call log() after the logger is closed");
         verifyCondition(!isShuttingDown, "cannot call log() while the logger is shutting down");

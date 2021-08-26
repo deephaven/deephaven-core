@@ -16,7 +16,7 @@ public class IterableUtils {
     }
 
     public static <T> StringBuilder appendSeparatedList(StringBuilder sb, Iterable<T> s, String separator,
-                                                        Function<T, String> renderer) {
+            Function<T, String> renderer) {
         String currentSep = "";
         for (T element : s) {
             sb.append(currentSep);

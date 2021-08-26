@@ -29,7 +29,7 @@ import java.util.function.Function;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 1, time = 1)
 @Measurement(iterations = 5, time = 1)
-@Timeout(time=45)
+@Timeout(time = 45)
 @Fork(1)
 public class PercentileByBenchmark {
     private TableBenchmarkState state;
@@ -58,7 +58,7 @@ public class PercentileByBenchmark {
     private Table table;
 
     private String keyName;
-    private String [] keyColumnNames;
+    private String[] keyColumnNames;
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
@@ -77,7 +77,7 @@ public class PercentileByBenchmark {
             }
         }
 
-        switch(tableType) {
+        switch (tableType) {
             case "Historical":
                 builder = BenchmarkTools.persistentTableBuilder("Karl", size)
                         .setPartitioningFormula("${autobalance_single}")
@@ -96,8 +96,10 @@ public class PercentileByBenchmark {
 
         builder.setSeed(0xDEADBEEF).addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
 
-        final EnumStringColumnGenerator stringKey = (EnumStringColumnGenerator) BenchmarkTools.stringCol("KeyString", keyCount, 6, 6, 0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
-        final ColumnGenerator intKey = BenchmarkTools.seqNumberCol("KeyInt", int.class, 0, 1, keyCount, SequentialNumColumnGenerator.Mode.RollAtLimit);
+        final EnumStringColumnGenerator stringKey = (EnumStringColumnGenerator) BenchmarkTools.stringCol("KeyString",
+                keyCount, 6, 6, 0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
+        final ColumnGenerator intKey = BenchmarkTools.seqNumberCol("KeyInt", int.class, 0, 1, keyCount,
+                SequentialNumColumnGenerator.Mode.RollAtLimit);
 
         System.out.println("Key type: " + keyType);
         switch (keyType) {
@@ -145,13 +147,13 @@ public class PercentileByBenchmark {
                 builder.addColumn(BenchmarkTools.numberCol("ValueToSum2", double.class));
             case 1:
                 builder.addColumn(BenchmarkTools.numberCol("ValueToSum1", int.class));
-            break;
+                break;
             default:
                 throw new IllegalArgumentException("Can not initialize with " + valueCount + " values.");
         }
 
         if (grouped) {
-            ((PersistentBenchmarkTableBuilder)builder).addGroupingColumns(keyName);
+            ((PersistentBenchmarkTableBuilder) builder).addGroupingColumns(keyName);
         }
 
         final BenchmarkTable bmt = builder
@@ -196,8 +198,11 @@ public class PercentileByBenchmark {
             fut = (t) -> t.by(new PercentileByStateFactoryImpl(0.99), keyColumnNames);
         } else if (percentileMode.equals("tdigest")) {
             fut = (t) -> {
-                final NonKeyColumnAggregationFactory aggregationContextFactory = new NonKeyColumnAggregationFactory((type, resultName, exposeInternalColumns) -> new TDigestPercentileOperator(type, 100.0, 0.99, resultName));
-                return ChunkedOperatorAggregationHelper.aggregation(aggregationContextFactory, (QueryTable)t, SelectColumnFactory.getExpressions(keyColumnNames));
+                final NonKeyColumnAggregationFactory aggregationContextFactory =
+                        new NonKeyColumnAggregationFactory((type, resultName,
+                                exposeInternalColumns) -> new TDigestPercentileOperator(type, 100.0, 0.99, resultName));
+                return ChunkedOperatorAggregationHelper.aggregation(aggregationContextFactory, (QueryTable) t,
+                        SelectColumnFactory.getExpressions(keyColumnNames));
             };
         } else {
             throw new IllegalArgumentException("Bad mode: " + percentileMode);
@@ -208,12 +213,13 @@ public class PercentileByBenchmark {
     @Benchmark
     public Table percentileByIncremental(@NotNull final Blackhole bh) {
         final Function<Table, Table> fut = getFunction();
-        final Table result = IncrementalBenchmark.incrementalBenchmark((t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> fut.apply(t)), table);
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> fut.apply(t)), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
-    public static void main(String [] args) throws RunnerException {
+    public static void main(String[] args) throws RunnerException {
         final int heapGb = 12;
         BenchUtil.run(heapGb, PercentileByBenchmark.class);
     }

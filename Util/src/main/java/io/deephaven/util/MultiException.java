@@ -5,8 +5,8 @@ import java.io.PrintWriter;
 import java.util.List;
 
 /**
- * An exception to use when a series of operations must all be executed, but may all throw exceptions themselves.
- * This allows for retention of all exception data.
+ * An exception to use when a series of operations must all be executed, but may all throw exceptions themselves. This
+ * allows for retention of all exception data.
  */
 public class MultiException extends Exception {
 
@@ -67,7 +67,7 @@ public class MultiException extends Exception {
     }
 
     private static Throwable getFirstCause(Throwable[] causes) {
-        if(causes == null || causes.length == 0) {
+        if (causes == null || causes.length == 0) {
             return null;
         }
 
@@ -84,8 +84,8 @@ public class MultiException extends Exception {
     @Override
     public void printStackTrace(PrintWriter s) {
         super.printStackTrace(s);
-        for(int i = 0; i<causes.length; i++) {
-            s.println("Cause " + (i+1) + ":");
+        for (int i = 0; i < causes.length; i++) {
+            s.println("Cause " + (i + 1) + ":");
             causes[i].printStackTrace(s);
         }
     }
@@ -93,8 +93,8 @@ public class MultiException extends Exception {
     @Override
     public void printStackTrace(PrintStream s) {
         super.printStackTrace(s);
-        for(int i = 0; i<causes.length; i++) {
-            s.println("Cause " + (i+1) + ":");
+        for (int i = 0; i < causes.length; i++) {
+            s.println("Cause " + (i + 1) + ":");
             causes[i].printStackTrace(s);
         }
     }
@@ -103,7 +103,7 @@ public class MultiException extends Exception {
     public String getMessage() {
         StringBuilder sb = new StringBuilder();
         sb.append(super.getMessage()).append(": ");
-        for(int i = 0; i<causes.length; i++) {
+        for (int i = 0; i < causes.length; i++) {
             sb.append("Cause ").append(i).append(": ");
             sb.append(causes[i].toString());
             sb.append('\n');

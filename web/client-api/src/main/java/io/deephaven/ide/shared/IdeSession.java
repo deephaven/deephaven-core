@@ -46,10 +46,9 @@ public class IdeSession extends HasEventHandling {
 
     @JsIgnore
     public IdeSession(
-        WorkerConnection connection,
-        Ticket connectionResult,
-        JsRunnable closer
-    ) {
+            WorkerConnection connection,
+            Ticket connectionResult,
+            JsRunnable closer) {
         this.result = connectionResult;
         cancelled = new JsSet<>();
         this.connection = connection;
@@ -103,10 +102,10 @@ public class IdeSession extends HasEventHandling {
         BindTableToVariableRequest bindRequest = new BindTableToVariableRequest();
         bindRequest.setTableId(table.getHandle().makeTicket());
         bindRequest.setVariableName(name);
-        return Callbacks.grpcUnaryPromise(c ->
-                connection.consoleServiceClient().bindTableToVariable(bindRequest, connection.metadata(), c::apply))
-                .then(ignore -> Promise.resolve((Void)null)
-        );
+        return Callbacks
+                .grpcUnaryPromise(c -> connection.consoleServiceClient().bindTableToVariable(bindRequest,
+                        connection.metadata(), c::apply))
+                .then(ignore -> Promise.resolve((Void) null));
     }
 
     public void close() {
@@ -139,13 +138,12 @@ public class IdeSession extends HasEventHandling {
         CancellablePromise<JsCommandResult> result = promise.asPromise(
                 res -> new JsCommandResult(res),
                 () -> {
-//                    cancelled.add(handle);
-//                    CancelCommandRequest cancelRequest = new CancelCommandRequest();
-//                    cancelRequest.setCommandid();
-//                    connection.consoleServiceClient().cancelCommand(cancelRequest, connection.metadata());
+                    // cancelled.add(handle);
+                    // CancelCommandRequest cancelRequest = new CancelCommandRequest();
+                    // cancelRequest.setCommandid();
+                    // connection.consoleServiceClient().cancelCommand(cancelRequest, connection.metadata());
                     throw new UnsupportedOperationException("cancelCommand");
-                }
-        );
+                });
 
         CommandInfo commandInfo = new CommandInfo(code, result);
         final CustomEventInit event = CustomEventInit.create();
@@ -155,9 +153,10 @@ public class IdeSession extends HasEventHandling {
         return result;
     }
 
-    private VariableDefinition[] copyVariables(JsArray<io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.VariableDefinition> list) {
+    private VariableDefinition[] copyVariables(
+            JsArray<io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.VariableDefinition> list) {
         VariableDefinition[] array = new VariableDefinition[0];
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         list.forEach((item, p1, p2) -> array[array.length] = new VariableDefinition(item.getName(), item.getType()));
         return array;
     }
@@ -181,8 +180,7 @@ public class IdeSession extends HasEventHandling {
 
         JsLog.debug("Opening document for autocomplete ", request);
         connection.consoleServiceClient().openDocument(request, connection.metadata(),
-            (p0, p1)-> JsLog.debug("open doc response", p0, p1)
-        );
+                (p0, p1) -> JsLog.debug("open doc response", p0, p1));
     }
 
     public void changeDocument(Object params) {
@@ -198,7 +196,7 @@ public class IdeSession extends HasEventHandling {
 
         final JsArrayLike<Object> changes = jsMap.getAny("contentChanges").asArrayLike();
         final JsArray<TextDocumentContentChangeEvent> changeList = new JsArray<>();
-        for (int i = 0; i < changes.getLength(); i ++ ) {
+        for (int i = 0; i < changes.getLength(); i++) {
             final JsPropertyMap<Object> change = changes.getAnyAt(i).asPropertyMap();
             final TextDocumentContentChangeEvent changeItem = new TextDocumentContentChangeEvent();
             changeItem.setText(change.getAny("text").asString());
@@ -244,7 +242,7 @@ public class IdeSession extends HasEventHandling {
         request.setConsoleId(this.result);
 
         LazyPromise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>> promise = new LazyPromise<>();
-        connection.consoleServiceClient().getCompletionItems(request, connection.metadata(), (p0, p1)->{
+        connection.consoleServiceClient().getCompletionItems(request, connection.metadata(), (p0, p1) -> {
             JsLog.debug("Got completions", p0, p1);
             promise.succeed(cleanupItems(p1.getItemsList()));
         });
@@ -256,7 +254,7 @@ public class IdeSession extends HasEventHandling {
     private JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem> cleanupItems(final JsArray itemsList) {
         JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem> cleaned = new JsArray<>();
         if (itemsList != null) {
-            for (int i = 0; i < itemsList.getLength(); i++ ) {
+            for (int i = 0; i < itemsList.getLength(); i++) {
                 final CompletionItem item = (CompletionItem) itemsList.getAt(i);
                 final io.deephaven.web.shared.ide.lsp.CompletionItem copy = LspTranslate.toJs(item);
                 cleaned.push(copy);

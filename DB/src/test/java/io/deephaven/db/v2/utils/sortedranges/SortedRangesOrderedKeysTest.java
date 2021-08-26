@@ -8,7 +8,8 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Test;
 
 public class SortedRangesOrderedKeysTest extends OrderedKeysTestBase {
-    @Override protected OrderedKeys create(long... values) {
+    @Override
+    protected OrderedKeys create(long... values) {
         SortedRanges sar = SortedRanges.makeForKnownRange(values[0], values[values.length - 1], true);
         if (sar == null) {
             throw new IllegalStateException();
@@ -96,7 +97,7 @@ public class SortedRangesOrderedKeysTest extends OrderedKeysTestBase {
         sr = sr.add(15);
         sr = sr.addRange(20, 29);
         try (final OrderedKeys ok = sr.getOrderedKeysByKeyRange(5, 24)) {
-            final long[] expected = new long[]{5, 6, 7, 8, 9, 15, 20, 21, 22, 23, 24};
+            final long[] expected = new long[] {5, 6, 7, 8, 9, 15, 20, 21, 22, 23, 24};
             final MutableInt i = new MutableInt(0);
             ok.forEachLong((final long v) -> {
                 final int j = i.intValue();
@@ -114,7 +115,7 @@ public class SortedRangesOrderedKeysTest extends OrderedKeysTestBase {
         sr = sr.addRange(0, 2);
         sr = sr.add(7);
         sr = sr.addRange(12, 14);
-        final long[] expected = new long[]{ 0, 1, 2, 7, 12, 13, 14 };
+        final long[] expected = new long[] {0, 1, 2, 7, 12, 13, 14};
         int i = 0;
         try (final OrderedKeys.Iterator it = sr.getOrderedKeysIterator()) {
             while (it.hasMore()) {
@@ -171,10 +172,10 @@ public class SortedRangesOrderedKeysTest extends OrderedKeysTestBase {
         sr = sr.add(7);
         sr = sr.addRange(9, 12);
         try (final SortedRangesOrderedKeys ok = new SortedRangesOrderedKeys(sr);
-             final SortedRangesOrderedKeys ok2 =
-                     (SortedRangesOrderedKeys) ok.getOrderedKeysByPosition(3, 7);
-             final SortedRangesOrderedKeys ok3 =
-                     (SortedRangesOrderedKeys) ok2.getOrderedKeysByPosition(2, 5)) {
+                final SortedRangesOrderedKeys ok2 =
+                        (SortedRangesOrderedKeys) ok.getOrderedKeysByPosition(3, 7);
+                final SortedRangesOrderedKeys ok3 =
+                        (SortedRangesOrderedKeys) ok2.getOrderedKeysByPosition(2, 5)) {
             ok.validate();
             ok2.validate();
             ok3.validate();

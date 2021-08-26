@@ -51,11 +51,13 @@ public class TestSimpleReferenceManager {
 
         Arrays.stream(items, 0, 500).forEach(SUT::add);
 
-        int expectedSum = 500*(499+0)/2;
+        int expectedSum = 500 * (499 + 0) / 2;
         testSumExpectations(SUT, expectedSum);
 
-        Arrays.stream(items, 0, 500).forEach((final IntRef item) -> TestCase.assertSame(item, SUT.getFirstItem((final MutableInt other) -> item == other)));
-        Arrays.stream(items, 0, 500).forEach((final IntRef item) -> TestCase.assertSame(item, SUT.getFirstReference((final MutableInt other) -> item == other)));
+        Arrays.stream(items, 0, 500).forEach((final IntRef item) -> TestCase.assertSame(item,
+                SUT.getFirstItem((final MutableInt other) -> item == other)));
+        Arrays.stream(items, 0, 500).forEach((final IntRef item) -> TestCase.assertSame(item,
+                SUT.getFirstReference((final MutableInt other) -> item == other)));
 
         items[200].clear();
         expectedSum -= 200;
@@ -76,21 +78,22 @@ public class TestSimpleReferenceManager {
         testSumExpectations(SUT, expectedSum);
 
         Arrays.stream(items, 500, 1000).forEach(SUT::add);
-        expectedSum += 500*(999+500)/2;
+        expectedSum += 500 * (999 + 500) / 2;
         testSumExpectations(SUT, expectedSum);
 
         SUT.removeAll(Arrays.asList(Arrays.copyOfRange(items, 600, 700)));
         Arrays.stream(items, 700, 800).forEach(IntRef::clear);
-        expectedSum -= 200*(799+600)/2;
+        expectedSum -= 200 * (799 + 600) / 2;
         testSumExpectations(SUT, expectedSum);
 
         Arrays.stream(items, 0, 100).forEach(IntRef::clear);
         SUT.remove(items[0]);
-        expectedSum -= 100*(99+0)/2;
+        expectedSum -= 100 * (99 + 0) / 2;
         testSumExpectations(SUT, expectedSum);
     }
 
-    private void testSumExpectations(@NotNull final SimpleReferenceManager<MutableInt, SimpleReference<MutableInt>> SUT, final int expectedSum) {
+    private void testSumExpectations(@NotNull final SimpleReferenceManager<MutableInt, SimpleReference<MutableInt>> SUT,
+            final int expectedSum) {
         final MutableInt sum = new MutableInt();
         SUT.forEach((final SimpleReference<MutableInt> ref, final MutableInt item) -> {
             TestCase.assertSame(ref, item);

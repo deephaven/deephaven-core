@@ -1,15 +1,8 @@
 plugins {
     id 'java-library'
-    id 'com.diffplug.spotless'
 }
 
 dependencies {
     api project(':proto:proto-backplane-grpc')
     api 'org.apache.arrow:flight-grpc:4.0.1'
-}
-
-spotless {
-    java {
-        eclipse().configFile("${rootDir}/style/eclipse-java-google-style.xml")
-    }
 }

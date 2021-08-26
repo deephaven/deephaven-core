@@ -35,7 +35,8 @@ import java.util.Random;
 public class FuzzerTest {
     private static final String TEST_ROOT = System.getProperty("devroot", ".");
     private static final String DB_ROOT = TEST_ROOT + "/tmp/" + FuzzerTest.class.getSimpleName() + "_DBRoot";
-    private static final boolean REALTIME_FUZZER_ENABLED = Configuration.getInstance().getBooleanWithDefault("FuzzerTest.realTime", false);
+    private static final boolean REALTIME_FUZZER_ENABLED =
+            Configuration.getInstance().getBooleanWithDefault("FuzzerTest.realTime", false);
 
     JUnit4LiveTableTestCase framework = new JUnit4LiveTableTestCase();
 
@@ -57,10 +58,12 @@ public class FuzzerTest {
         }
     }
 
-    private static final List<FuzzDescriptor> INTERESTING_SEEDS = new ArrayList<FuzzDescriptor>() {{
-        //Add interesting seed combinations here and they will automatically be tested.
-        //Query seed, Table seed
-    }};
+    private static final List<FuzzDescriptor> INTERESTING_SEEDS = new ArrayList<FuzzDescriptor>() {
+        {
+            // Add interesting seed combinations here and they will automatically be tested.
+            // Query seed, Table seed
+        }
+    };
 
     private void cleanupPersistence() {
         System.gc();
@@ -80,7 +83,7 @@ public class FuzzerTest {
 
     private void setupPersistence() {
         cleanupPersistence();
-        //noinspection ResultOfMethodCallIgnored
+        // noinspection ResultOfMethodCallIgnored
         new File(DB_ROOT + File.separatorChar + "Definitions").mkdirs();
     }
 
@@ -112,7 +115,8 @@ public class FuzzerTest {
         testFuzzerScriptFile(0, "/DB/src/test/java/io/deephaven/db/v2/fuzzertest.groovy", true);
     }
 
-    private void testFuzzerScriptFile(final long timeSeed, String s, boolean realtime) throws IOException, InterruptedException {
+    private void testFuzzerScriptFile(final long timeSeed, String s, boolean realtime)
+            throws IOException, InterruptedException {
         final Random timeRandom = new Random(timeSeed);
         final String groovyString = FileUtils.readTextFile(new File(Configuration.getInstance().getDevRootPath() + s));
 
@@ -163,7 +167,8 @@ public class FuzzerTest {
             query.append(qf.getTablePreamble(fuzzDescriptor.tableSeed));
             query.append(qf.generateQuery(fuzzDescriptor.tableSeed));
 
-            System.out.println("Running test=======================\n TableSeed: " + fuzzDescriptor.tableSeed + " QuerySeed: " + fuzzDescriptor.tableSeed);
+            System.out.println("Running test=======================\n TableSeed: " + fuzzDescriptor.tableSeed
+                    + " QuerySeed: " + fuzzDescriptor.tableSeed);
             System.out.println(query.toString());
 
             session.evaluateScript(query.toString());
@@ -184,18 +189,18 @@ public class FuzzerTest {
         }
     }
 
-//    @Test
-//    public void testLargeFuzzerSeed() throws IOException, InterruptedException {
-//        final int segmentSize = 50;
-//        for (int firstRun = 0; firstRun < 100; firstRun += segmentSize) {
-//            LiveTableMonitor.DEFAULT.resetForUnitTests(false);
-//            final int lastRun = firstRun + segmentSize - 1;
-//            System.out.println("Performing runs " + firstRun + " to " + lastRun);
-////            runLargeFuzzerSetWithSeed(1583849877513833000L, firstRun, lastRun);
-//            runLargeFuzzerSetWithSeed(1583865378974605000L, firstRun, lastRun);
-//            System.gc();
-//        }
-//    }
+    // @Test
+    // public void testLargeFuzzerSeed() throws IOException, InterruptedException {
+    // final int segmentSize = 50;
+    // for (int firstRun = 0; firstRun < 100; firstRun += segmentSize) {
+    // LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+    // final int lastRun = firstRun + segmentSize - 1;
+    // System.out.println("Performing runs " + firstRun + " to " + lastRun);
+    //// runLargeFuzzerSetWithSeed(1583849877513833000L, firstRun, lastRun);
+    // runLargeFuzzerSetWithSeed(1583865378974605000L, firstRun, lastRun);
+    // System.gc();
+    // }
+    // }
 
     @Test
     public void testLargeSetOfFuzzerQueriesRealtime() throws IOException, InterruptedException {
@@ -218,7 +223,8 @@ public class FuzzerTest {
         }
     }
 
-    private void runLargeFuzzerSetWithSeed(long mainTestSeed, int firstRun, int lastRun, boolean realtime, int stepsToRun, int sleepTime) throws IOException, InterruptedException {
+    private void runLargeFuzzerSetWithSeed(long mainTestSeed, int firstRun, int lastRun, boolean realtime,
+            int stepsToRun, int sleepTime) throws IOException, InterruptedException {
 
         final QueryFactory qf = new QueryFactory();
         System.out.println("// TestSeed: " + mainTestSeed + "L");
@@ -274,9 +280,13 @@ public class FuzzerTest {
             final long freeMemory = RuntimeMemory.getInstance().freeMemory();
             final long usedMemory = totalMemory - freeMemory;
 
-            //noinspection unchecked,OptionalGetWithoutIsPresent
-            final long maxTableSize = session.getBinding().getVariables().values().stream().filter(x -> x instanceof Table).mapToLong(x -> ((Table) x).size()).max().getAsLong();
-            System.out.println((System.currentTimeMillis() - startTime) +  "ms: After Step = " + fstep + ", Used = " + commaFormat.format(usedMemory) + ", Free = " + commaFormat.format(freeMemory) + " / Total Memory: " + commaFormat.format(totalMemory) + ", TimeTable Size = " + timeTable.size() + ", Largest Table: " + maxTableSize);
+            // noinspection unchecked,OptionalGetWithoutIsPresent
+            final long maxTableSize = session.getBinding().getVariables().values().stream()
+                    .filter(x -> x instanceof Table).mapToLong(x -> ((Table) x).size()).max().getAsLong();
+            System.out.println((System.currentTimeMillis() - startTime) + "ms: After Step = " + fstep + ", Used = "
+                    + commaFormat.format(usedMemory) + ", Free = " + commaFormat.format(freeMemory)
+                    + " / Total Memory: " + commaFormat.format(totalMemory) + ", TimeTable Size = " + timeTable.size()
+                    + ", Largest Table: " + maxTableSize);
 
             if (realtime) {
                 Thread.sleep(sleepTime);
@@ -290,11 +300,13 @@ public class FuzzerTest {
         }
 
         final long loopEnd = System.currentTimeMillis();
-        System.out.println("Elapsed time: " + (loopEnd - start) + "ms, loop: " + (loopEnd - loopStart) + "ms" + (realtime ? "" : (", sim: " + (double)(now.longValue() - fakeStart.getNanos()) / DBTimeUtils.SECOND)) + ", ttSize: " + timeTable.size());
+        System.out.println("Elapsed time: " + (loopEnd - start) + "ms, loop: " + (loopEnd - loopStart) + "ms"
+                + (realtime ? "" : (", sim: " + (double) (now.longValue() - fakeStart.getNanos()) / DBTimeUtils.SECOND))
+                + ", ttSize: " + timeTable.size());
     }
 
     private void annotateBinding(GroovyDeephavenSession session) {
-        //noinspection unchecked
+        // noinspection unchecked
         session.getBinding().getVariables().forEach((k, v) -> {
             if (v instanceof Table) {
                 ((Table) v).setAttribute("BINDING_VARIABLE_NAME", k);
@@ -303,19 +315,19 @@ public class FuzzerTest {
     }
 
     private void addPrintListener(GroovyDeephavenSession session, final String variable, List<Object> hardReferences) {
-        final Table table = (Table)session.getVariable(variable);
+        final Table table = (Table) session.getVariable(variable);
         System.out.println(variable);
         TableTools.showWithIndex(table);
         System.out.println();
         if (table.isLive()) {
             final FuzzerPrintListener listener = new FuzzerPrintListener(variable, table);
-            ((DynamicTable)table).listenForUpdates(listener);
+            ((DynamicTable) table).listenForUpdates(listener);
             hardReferences.add(listener);
         }
     }
 
     private void validateBindingTables(GroovyDeephavenSession session, List<Object> hardReferences) {
-        //noinspection unchecked
+        // noinspection unchecked
         session.getBinding().getVariables().forEach((k, v) -> {
             if (v instanceof QueryTable && ((QueryTable) v).isRefreshing()) {
                 addValidator(hardReferences, k.toString(), (QueryTable) v);
@@ -324,14 +336,15 @@ public class FuzzerTest {
     }
 
     private void validateBindingTableMapConstituents(GroovyDeephavenSession session, List<Object> hardReferences) {
-        //noinspection unchecked
+        // noinspection unchecked
         session.getBinding().getVariables().forEach((k, v) -> {
             if (v instanceof LocalTableMap && ((LocalTableMap) v).isRefreshing()) {
                 for (final Object tablemapKey : ((LocalTableMap) v).getKeySet()) {
-                    addValidator(hardReferences, k.toString() + "_" + tablemapKey, (QueryTable)((LocalTableMap) v).get(tablemapKey));
+                    addValidator(hardReferences, k.toString() + "_" + tablemapKey,
+                            (QueryTable) ((LocalTableMap) v).get(tablemapKey));
                 }
                 final TableMap.Listener listener = (key, table) -> {
-                    addValidator(hardReferences, k.toString() + "_" + key, (QueryTable)table);
+                    addValidator(hardReferences, k.toString() + "_" + key, (QueryTable) table);
                 };
                 hardReferences.add(listener);
                 ((LocalTableMap) v).addListener(listener);

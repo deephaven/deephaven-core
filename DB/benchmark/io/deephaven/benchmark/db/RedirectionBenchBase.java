@@ -41,6 +41,7 @@ public abstract class RedirectionBenchBase {
         public final int steps;
         public final String[] fillCols;
         public final WritableChunk<Attributes.Values> chunk;
+
         public QueryData(
                 final Table live,
                 final IncrementalReleaseFilter incrementalReleaseFilter,

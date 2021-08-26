@@ -29,21 +29,38 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
     private static final Set<String> AJ_METHOD_NAMES = new HashSet<>();
     static {
         try {
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("size"), (proxy, method, args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy)).size());
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("coalesce"), (proxy, method, args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy)).coalesce());
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getDefinition"), (proxy, method, args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy)).getDefinition());
-            HIJACKED_DELEGATIONS.put(TransformableTableMap.class.getMethod("asTable", boolean.class, boolean.class, boolean.class), (proxy, method, args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy)).asTable((boolean)args[0], (boolean)args[1], (boolean)args[2]));
-            HIJACKED_DELEGATIONS.put(TransformableTableMap.class.getMethod("merge"), (proxy, method, args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy)).merge());
-            HIJACKED_DELEGATIONS.put(TransformableTableMap.class.getMethod("asTableMap"), (proxy, method, args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy)).asTableMap());
-            HIJACKED_DELEGATIONS.put(TransformableTableMap.class.getMethod("asTableBuilder"), (proxy, method, args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy)).asTableBuilder());
-            HIJACKED_DELEGATIONS.put(Object.class.getMethod("toString"), (proxy, method, args) -> Proxy.getInvocationHandler(proxy).toString());
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("size"),
+                    (proxy, method, args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy)).size());
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("coalesce"),
+                    (proxy, method, args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy)).coalesce());
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getDefinition"), (proxy, method,
+                    args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy)).getDefinition());
+            HIJACKED_DELEGATIONS.put(
+                    TransformableTableMap.class.getMethod("asTable", boolean.class, boolean.class, boolean.class),
+                    (proxy, method, args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy))
+                            .asTable((boolean) args[0], (boolean) args[1], (boolean) args[2]));
+            HIJACKED_DELEGATIONS.put(TransformableTableMap.class.getMethod("merge"),
+                    (proxy, method, args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy)).merge());
+            HIJACKED_DELEGATIONS.put(TransformableTableMap.class.getMethod("asTableMap"),
+                    (proxy, method, args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy)).asTableMap());
+            HIJACKED_DELEGATIONS.put(TransformableTableMap.class.getMethod("asTableBuilder"), (proxy, method,
+                    args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy)).asTableBuilder());
+            HIJACKED_DELEGATIONS.put(Object.class.getMethod("toString"),
+                    (proxy, method, args) -> Proxy.getInvocationHandler(proxy).toString());
 
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttribute", String.class), (proxy, method, args) -> ((TableMapProxyHandler)Proxy.getInvocationHandler(proxy)).getAttribute((String)args[0]));
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttributeNames"), (proxy, method, args) -> ((TableMapProxyHandler)Proxy.getInvocationHandler(proxy)).getAttributeNames());
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("hasAttribute", String.class), (proxy, method, args) -> ((TableMapProxyHandler)Proxy.getInvocationHandler(proxy)).hasAttribute((String)args[0]));
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttributes"), (proxy, method, args) -> ((TableMapProxyHandler)Proxy.getInvocationHandler(proxy)).getAttributes(true, Collections.emptySet()));
-            //noinspection unchecked
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttributes", Collection.class), (proxy, method, args) -> ((TableMapProxyHandler)Proxy.getInvocationHandler(proxy)).getAttributes(true, (Collection<String>)args[0]));
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttribute", String.class), (proxy, method,
+                    args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy)).getAttribute((String) args[0]));
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttributeNames"), (proxy, method,
+                    args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy)).getAttributeNames());
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("hasAttribute", String.class), (proxy, method,
+                    args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy)).hasAttribute((String) args[0]));
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttributes"),
+                    (proxy, method, args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy))
+                            .getAttributes(true, Collections.emptySet()));
+            // noinspection unchecked
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttributes", Collection.class),
+                    (proxy, method, args) -> ((TableMapProxyHandler) Proxy.getInvocationHandler(proxy))
+                            .getAttributes(true, (Collection<String>) args[0]));
 
             COALESCING_METHODS.add(Table.class.getMethod("getIndex"));
             COALESCING_METHODS.add(Table.class.getMethod("getColumnSource", String.class));
@@ -69,14 +86,18 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
     private final boolean sanityCheckJoins;
     private Table coalesced;
 
-    public static Table makeProxy(TableMap localTableMap, boolean strictKeys, boolean allowCoalesce, boolean sanityCheckJoins) {
-        return (Table)Proxy.newProxyInstance(TableMapProxyHandler.class.getClassLoader(), new Class[]{TableMapProxy.class}, new TableMapProxyHandler(localTableMap, strictKeys, allowCoalesce, sanityCheckJoins));
+    public static Table makeProxy(TableMap localTableMap, boolean strictKeys, boolean allowCoalesce,
+            boolean sanityCheckJoins) {
+        return (Table) Proxy.newProxyInstance(TableMapProxyHandler.class.getClassLoader(),
+                new Class[] {TableMapProxy.class},
+                new TableMapProxyHandler(localTableMap, strictKeys, allowCoalesce, sanityCheckJoins));
     }
 
     public interface TableMapProxy extends Table, TransformableTableMap {
     }
 
-    private TableMapProxyHandler(TableMap underlyingTableMap, boolean strictKeys, boolean allowCoalesce, boolean sanityCheckJoins) {
+    private TableMapProxyHandler(TableMap underlyingTableMap, boolean strictKeys, boolean allowCoalesce,
+            boolean sanityCheckJoins) {
         this.underlyingTableMap = underlyingTableMap;
         this.strictKeys = strictKeys;
         this.allowCoalesce = allowCoalesce;
@@ -147,12 +168,16 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
                     tempOther.removeAll(ourKeys);
                     ourKeys.removeAll(otherKeys);
 
-                    throw new IllegalArgumentException("Strict keys is set, but key sets differ left missing=" + ourKeys.toString() + ", right missing=" + tempOther.toString());
+                    throw new IllegalArgumentException("Strict keys is set, but key sets differ left missing="
+                            + ourKeys.toString() + ", right missing=" + tempOther.toString());
                 }
 
-                // if we are strict and a key is added, we know something has gone wrong; because they can't be added at exactly the same time
+                // if we are strict and a key is added, we know something has gone wrong; because they can't be added at
+                // exactly the same time
                 final TableMap.KeyListener enforceStrictListener = key -> {
-                    throw new IllegalStateException("When operating on a TableMapProxy, keys may not be added after the initial merge() call when strictKeys is set, key=" + key);
+                    throw new IllegalStateException(
+                            "When operating on a TableMapProxy, keys may not be added after the initial merge() call when strictKeys is set, key="
+                                    + key);
                 };
                 underlyingTableMap.addKeyListener(enforceStrictListener);
                 otherMap.addKeyListener(enforceStrictListener);
@@ -182,16 +207,19 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
                     final Class keyClass = keyValue.getClass();
                     if (Collection.class.isAssignableFrom(keyClass)) {
                         // we should have a collection of Strings
-                        //noinspection unchecked
-                        keyColumns.addAll(Arrays.asList(MatchPairFactory.getExpressions((Collection<String>) (keyValue))));
+                        // noinspection unchecked
+                        keyColumns.addAll(
+                                Arrays.asList(MatchPairFactory.getExpressions((Collection<String>) (keyValue))));
                     } else if (String.class.isAssignableFrom(keyClass)) {
                         // we need to turn into MatchPairs
-                        keyColumns.addAll(Arrays.asList(MatchPairFactory.getExpressions(StringUtils.splitToCollection((String) keyValue))));
+                        keyColumns.addAll(Arrays.asList(
+                                MatchPairFactory.getExpressions(StringUtils.splitToCollection((String) keyValue))));
                     } else if (MatchPair[].class.isAssignableFrom(keyClass)) {
                         keyColumns.addAll(Arrays.asList((MatchPair[]) keyValue));
                     }
 
-                    final String description = method.getName() + "(" + MatchPair.matchString(keyColumns.toArray(new MatchPair[keyColumns.size()])) + ")";
+                    final String description = method.getName() + "("
+                            + MatchPair.matchString(keyColumns.toArray(new MatchPair[keyColumns.size()])) + ")";
 
                     if (skipLast) {
                         keyColumns.remove(keyColumns.size() - 1);
@@ -207,10 +235,12 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
                         final Table rightTable = otherMap.get(tableKey);
 
                         final Table leftKeyTable = leftTable.selectDistinct(leftKeyNames);
-                        references.add(verifyDisjointJoinKeys(description + " Left", joinKeyToTableKey, tableKey, leftKeyNames, leftKeyTable));
+                        references.add(verifyDisjointJoinKeys(description + " Left", joinKeyToTableKey, tableKey,
+                                leftKeyNames, leftKeyTable));
 
                         final Table rightKeyTable = rightTable.selectDistinct(rightKeyNames);
-                        references.add(verifyDisjointJoinKeys(description + " Right", joinKeyToTableKey, tableKey, rightKeyNames, rightKeyTable));
+                        references.add(verifyDisjointJoinKeys(description + " Right", joinKeyToTableKey, tableKey,
+                                rightKeyNames, rightKeyTable));
                     }
                 }
             }
@@ -232,11 +262,13 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
         });
     }
 
-    private Object verifyDisjointJoinKeys(final String description, final Map<Object, Object> joinKeyToTableKey, final Object tableKey, final String[] keyNames, final Table keyTable) {
-        final JoinSanityListener listener = new JoinSanityListener(description, joinKeyToTableKey, tableKey, keyNames, keyTable);
+    private Object verifyDisjointJoinKeys(final String description, final Map<Object, Object> joinKeyToTableKey,
+            final Object tableKey, final String[] keyNames, final Table keyTable) {
+        final JoinSanityListener listener =
+                new JoinSanityListener(description, joinKeyToTableKey, tableKey, keyNames, keyTable);
         listener.checkSanity(keyTable.getIndex());
 
-        if (((DynamicTable)keyTable).isRefreshing()) {
+        if (((DynamicTable) keyTable).isRefreshing()) {
             ((DynamicTable) keyTable).listenForUpdates(listener);
             return listener;
         } else {
@@ -278,7 +310,8 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
     }
 
     private TransformableTableMap.AsTableBuilder asTableBuilder() {
-        return new TransformableTableMap.AsTableBuilder(underlyingTableMap).allowCoalesce(allowCoalesce).sanityCheckJoin(sanityCheckJoins).strictKeys(strictKeys);
+        return new TransformableTableMap.AsTableBuilder(underlyingTableMap).allowCoalesce(allowCoalesce)
+                .sanityCheckJoin(sanityCheckJoins).strictKeys(strictKeys);
     }
 
     @Override
@@ -305,7 +338,8 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
         while (it.hasNext()) {
             final boolean hasAttribute = it.next().hasAttribute(name);
             if (hasAttribute != expected) {
-                throw new IllegalArgumentException("Underlying tables do not have consistent presence for attribute " + name);
+                throw new IllegalArgumentException(
+                        "Underlying tables do not have consistent presence for attribute " + name);
             }
         }
         return expected;
@@ -321,7 +355,8 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
         while (it.hasNext()) {
             final Object thisAttribute = it.next().getAttribute(name);
             if (!(Objects.equals(thisAttribute, expected))) {
-                throw new IllegalArgumentException("Underlying tables do not have consistent value for attribute " + name);
+                throw new IllegalArgumentException(
+                        "Underlying tables do not have consistent value for attribute " + name);
             }
         }
         return expected;
@@ -330,8 +365,8 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
     /**
      * Get the common attributes for the merged table.
      *
-     * @param assertConsistency if true, throw an IllegalArgumentException if the attributes are not consistent; otherwise
-     *                          return only the attributes which are consistent
+     * @param assertConsistency if true, throw an IllegalArgumentException if the attributes are not consistent;
+     *        otherwise return only the attributes which are consistent
      * @param excluded a set of attributes to exclude from the result
      * @return the set of common attributes for the merged table
      */
@@ -353,7 +388,8 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
             } else {
                 boolean expectedCopied = false;
                 // make a set of consistent attributes
-                for (final Iterator<Map.Entry<String, Object>> expectedIt = expected.entrySet().iterator(); expectedIt.hasNext(); ) {
+                for (final Iterator<Map.Entry<String, Object>> expectedIt = expected.entrySet().iterator(); expectedIt
+                        .hasNext();) {
                     final Map.Entry<String, Object> expectedEntry = expectedIt.next();
                     final Object expectedValue = expectedEntry.getValue();
                     final Object thisValue = theseAttributes.get(expectedEntry.getKey());
@@ -405,7 +441,8 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
         private final String description;
         private final Map<Object, Object> joinKeyToTableKey;
 
-        private JoinSanityListener(String description, Map<Object, Object> joinKeyToTableKey, Object tableKey, String[] keyNames, Table keyTable) {
+        private JoinSanityListener(String description, Map<Object, Object> joinKeyToTableKey, Object tableKey,
+                String[] keyNames, Table keyTable) {
             super("TableMapProxy JoinSanityListener-" + description, (DynamicTable) keyTable, false);
             this.description = description;
             this.joinKeyToTableKey = joinKeyToTableKey;
@@ -421,12 +458,13 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
 
         private void checkSanity(Index index) {
             synchronized (joinKeyToTableKey) {
-                for (final Index.Iterator it = index.iterator(); it.hasNext(); ) {
+                for (final Index.Iterator it = index.iterator(); it.hasNext();) {
                     final long indexKey = it.nextLong();
                     final Object joinKey = TableTools.getKey(keyColumns, indexKey);
                     final Object existing = joinKeyToTableKey.putIfAbsent(joinKey, tableKey);
                     if (existing != null && !Objects.equals(existing, tableKey)) {
-                        throw new IllegalArgumentException(description + " join key \"" + joinKey + "\" exists in multiple TableMap keys, \"" + existing + "\" and \"" + tableKey + "\"");
+                        throw new IllegalArgumentException(description + " join key \"" + joinKey
+                                + "\" exists in multiple TableMap keys, \"" + existing + "\" and \"" + tableKey + "\"");
                     }
                 }
             }

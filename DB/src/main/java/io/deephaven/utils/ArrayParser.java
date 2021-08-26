@@ -10,8 +10,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A simple wrapper for string-to-array parsing. Parsers are kept in a cache per-delimiter so that we avoid
- * recompiling the pattern regex.
+ * A simple wrapper for string-to-array parsing. Parsers are kept in a cache per-delimiter so that we avoid recompiling
+ * the pattern regex.
  */
 public class ArrayParser {
 
@@ -61,7 +61,7 @@ public class ArrayParser {
     /**
      * Parse the given string as an array of doubles, based upon the delimiter.
      *
-     * @param value  string to parse
+     * @param value string to parse
      * @param strict enforce format strictly
      * @return array of parsed values
      */
@@ -72,7 +72,7 @@ public class ArrayParser {
     /**
      * Parse the given string as an array of longs, based upon the delimiter.
      *
-     * @param value  string the to parse
+     * @param value string the to parse
      * @param strict enforce format strictly
      * @return array of parsed values
      */
@@ -83,10 +83,10 @@ public class ArrayParser {
     /**
      * Create a properly typed array from the input string based upon the delimiter, given a supplier.
      *
-     * @param value           The array string value
-     * @param strict          if strict processing should be used
+     * @param value The array string value
+     * @param strict if strict processing should be used
      * @param elementSupplier a supplier to convert a stream of element strings to items of the correct types
-     * @param <T>             the type
+     * @param <T> the type
      * @return an array of values of the specified type
      */
     public <T> T getArray(String value, boolean strict, Function<Stream<String>, T> elementSupplier) {
@@ -113,7 +113,8 @@ public class ArrayParser {
         try {
             return Arrays.stream(pattern.split(value.trim().substring(1, value.length() - 1))).map(String::trim);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Value submitted for Array parsing doesn't match needed format: " + value, e);
+            throw new IllegalArgumentException(
+                    "Value submitted for Array parsing doesn't match needed format: " + value, e);
         }
     }
 
@@ -136,8 +137,8 @@ public class ArrayParser {
      */
     public String encodeArray(double[] array) {
         return array == null
-                ? null :
-                "[" + Arrays.stream(array).mapToObj(Double::toString).collect(Collectors.joining(delimiter)) + "]";
+                ? null
+                : "[" + Arrays.stream(array).mapToObj(Double::toString).collect(Collectors.joining(delimiter)) + "]";
     }
 
     /**
@@ -148,7 +149,7 @@ public class ArrayParser {
      */
     public String encodeArray(long[] array) {
         return array == null
-                ? null :
-                "[" + Arrays.stream(array).mapToObj(Long::toString).collect(Collectors.joining(delimiter)) + "]";
+                ? null
+                : "[" + Arrays.stream(array).mapToObj(Long::toString).collect(Collectors.joining(delimiter)) + "]";
     }
 }

@@ -23,16 +23,18 @@ import java.util.Map;
 
 public class SourceColumn implements SelectColumn {
 
-    @NotNull private final String sourceName;
-    @NotNull private final String destName;
+    @NotNull
+    private final String sourceName;
+    @NotNull
+    private final String destName;
     private ColumnDefinition sourceDefinition;
     private ColumnSource sourceColumn;
 
     public SourceColumn(String columnName) {
-        this(columnName,columnName);
+        this(columnName, columnName);
     }
 
-    public SourceColumn(String sourceName,String destName) {
+    public SourceColumn(String sourceName, String destName) {
         this.sourceName = NameValidator.validateColumnName(sourceName);
         this.destName = NameValidator.validateColumnName(destName);
     }
@@ -104,7 +106,9 @@ public class SourceColumn implements SelectColumn {
     }
 
     @NotNull
-    public String getSourceName() { return sourceName; }
+    public String getSourceName() {
+        return sourceName;
+    }
 
     @Override
     public MatchPair getMatchPair() {
@@ -133,8 +137,10 @@ public class SourceColumn implements SelectColumn {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         SourceColumn that = (SourceColumn) o;
 

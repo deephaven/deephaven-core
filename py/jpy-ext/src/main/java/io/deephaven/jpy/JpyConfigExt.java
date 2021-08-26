@@ -52,12 +52,12 @@ public class JpyConfigExt implements LogOutputAppendable {
             }
             if (initialized) {
                 throw new IllegalStateException(
-                    "Already initialized - this should not happen, unless there is some weird class unloading going on?");
+                        "Already initialized - this should not happen, unless there is some weird class unloading going on?");
             }
             PyLibInitializer.initPyLib(
-                config.getPythonLib().map(Path::toString).orElse(null),
-                config.getJpyLib().map(Path::toString).orElse(null),
-                config.getJdlLib().map(Path::toString).orElse(null));
+                    config.getPythonLib().map(Path::toString).orElse(null),
+                    config.getJpyLib().map(Path::toString).orElse(null),
+                    config.getJdlLib().map(Path::toString).orElse(null));
             initialized = true;
         }
     }
@@ -105,12 +105,12 @@ public class JpyConfigExt implements LogOutputAppendable {
     @Override
     public LogOutput append(LogOutput logOutput) {
         return logOutput
-            .append("flags=").append(JpyConfigExt::format, config.getFlags())
-            .append(",programName=").append(JpyConfigExt::format, config.getProgramName().orElse(null))
-            .append(",pythonHome=").append(JpyConfigExt::format, config.getPythonHome().orElse(null))
-            .append(",pythonLib=").append(JpyConfigExt::format, config.getPythonLib().orElse(null))
-            .append(",jpyLib=").append(JpyConfigExt::format, config.getJpyLib().orElse(null))
-            .append(",jdlLib=").append(JpyConfigExt::format, config.getJdlLib().orElse(null))
-            .append(",extras=").append(JpyConfigExt::format, config.getExtraPaths());
+                .append("flags=").append(JpyConfigExt::format, config.getFlags())
+                .append(",programName=").append(JpyConfigExt::format, config.getProgramName().orElse(null))
+                .append(",pythonHome=").append(JpyConfigExt::format, config.getPythonHome().orElse(null))
+                .append(",pythonLib=").append(JpyConfigExt::format, config.getPythonLib().orElse(null))
+                .append(",jpyLib=").append(JpyConfigExt::format, config.getJpyLib().orElse(null))
+                .append(",jdlLib=").append(JpyConfigExt::format, config.getJdlLib().orElse(null))
+                .append(",extras=").append(JpyConfigExt::format, config.getExtraPaths());
     }
 }

@@ -15,8 +15,13 @@ public abstract class LongType extends PrimitiveTypeBase<Long> {
     }
 
     @Override
-    public final Class<Long> primitiveClass() {
+    public final Class<Long> clazz() {
         return long.class;
+    }
+
+    @Override
+    public final NativeArrayType<long[], Long> arrayType() {
+        return NativeArrayType.of(long[].class, this);
     }
 
     @Override

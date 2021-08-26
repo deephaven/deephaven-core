@@ -24,9 +24,14 @@ public class OHLCDataSeriesSwappableTableArray extends OHLCDataSeriesArray imple
     private final String closeCol;
     private Table localTable;
 
-    public OHLCDataSeriesSwappableTableArray(final AxesImpl axes, final int id, final Comparable name, @NotNull final SwappableTable swappableTable, final String timeCol, final String openCol, final String highCol, final String lowCol, final String closeCol) {
-        super(axes, id, name, new IndexableNumericDataSwappableTable(swappableTable, timeCol, new PlotInfo(axes, name)), new IndexableNumericDataSwappableTable(swappableTable, openCol, new PlotInfo(axes, name)),
-                new IndexableNumericDataSwappableTable(swappableTable, highCol, new PlotInfo(axes, name)), new IndexableNumericDataSwappableTable(swappableTable, lowCol, new PlotInfo(axes, name)), new IndexableNumericDataSwappableTable(swappableTable, closeCol, new PlotInfo(axes, name)));
+    public OHLCDataSeriesSwappableTableArray(final AxesImpl axes, final int id, final Comparable name,
+            @NotNull final SwappableTable swappableTable, final String timeCol, final String openCol,
+            final String highCol, final String lowCol, final String closeCol) {
+        super(axes, id, name, new IndexableNumericDataSwappableTable(swappableTable, timeCol, new PlotInfo(axes, name)),
+                new IndexableNumericDataSwappableTable(swappableTable, openCol, new PlotInfo(axes, name)),
+                new IndexableNumericDataSwappableTable(swappableTable, highCol, new PlotInfo(axes, name)),
+                new IndexableNumericDataSwappableTable(swappableTable, lowCol, new PlotInfo(axes, name)),
+                new IndexableNumericDataSwappableTable(swappableTable, closeCol, new PlotInfo(axes, name)));
 
         ArgumentValidations.assertNotNull(timeCol, "timeCol", getPlotInfo());
         ArgumentValidations.assertNotNull(openCol, "openCol", getPlotInfo());

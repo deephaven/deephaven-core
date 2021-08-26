@@ -22,11 +22,14 @@ public class CompressedFileUtil {
 
     public static final long UINT_TO_LONG = 0xFFFFFFFFL;
     public static final int BZIP2_MAGIC = ((int) 'B') | (((int) 'Z') << 8) | (((int) 'h') << 16);
-    public static final String[] COMPRESSION_EXTENSIONS=new String[] {".gz", ".tgz", ".tar.gz", ".zip", ".bz2", ".7z"};
-    private static final int TAR_CHECKSUM_OFFSET = TarConstants.NAMELEN + TarConstants.MODELEN + TarConstants.UIDLEN + TarConstants.GIDLEN + TarConstants.SIZELEN + TarConstants.MODTIMELEN;
+    public static final String[] COMPRESSION_EXTENSIONS =
+            new String[] {".gz", ".tgz", ".tar.gz", ".zip", ".bz2", ".7z"};
+    private static final int TAR_CHECKSUM_OFFSET = TarConstants.NAMELEN + TarConstants.MODELEN + TarConstants.UIDLEN
+            + TarConstants.GIDLEN + TarConstants.SIZELEN + TarConstants.MODTIMELEN;
 
     /**
      * Unzip the file
+     * 
      * @param file The file to bunzip2
      */
     public static int bunzip2(File file) throws IOException {
@@ -47,7 +50,7 @@ public class CompressedFileUtil {
      * Files need to be in the same directory, otherwise Tar complains about windows paths
      *
      * @param archiveName
-     * @param baseDir     the directory where the input files are located
+     * @param baseDir the directory where the input files are located
      * @param inputFiles
      * @throws IOException
      */
@@ -69,7 +72,7 @@ public class CompressedFileUtil {
             tarCmdList.add(inputFiles[i]);
         }
 
-        //System.out.println(tarCmdList);
+        // System.out.println(tarCmdList);
         ProcessExecutor p = exec(tarCmdList, baseDir, "tar.out", "tar.err");
         try {
             p.waitFor();
@@ -89,7 +92,7 @@ public class CompressedFileUtil {
         tarCmdList.add("tar");
         tarCmdList.add("xvjof");
         tarCmdList.add(archive.getName());
-        //System.out.println(tarCmd);
+        // System.out.println(tarCmd);
         ProcessExecutor p = exec(tarCmdList, workDir, "tar.out", "tar.err");
         try {
             p.waitFor();
@@ -135,8 +138,8 @@ public class CompressedFileUtil {
      * Execute another system process
      *
      * @param commandList array, see ProcessBuilder
-     * @param stdoutFile  redirect output if not null
-     * @param stderrFile  redirect output if not null
+     * @param stdoutFile redirect output if not null
+     * @param stderrFile redirect output if not null
      */
     private static ProcessExecutor exec(List commandList, String workDir, String stdoutFile, String stderrFile) {
         return new ProcessExecutor(commandList, workDir, stdoutFile, stderrFile);
@@ -145,21 +148,24 @@ public class CompressedFileUtil {
     public static InputStream openPossiblyCompressedFiles(String[] fileNames) throws IOException {
         List<MultiFileInputStream.DecoratedInputStream> inputStreams = new ArrayList<>();
         for (String currentFileName : fileNames) {
-            inputStreams.add(new MultiFileInputStream.DecoratedInputStream(currentFileName, openPossiblyCompressedFile(currentFileName)));
+            inputStreams.add(new MultiFileInputStream.DecoratedInputStream(currentFileName,
+                    openPossiblyCompressedFile(currentFileName)));
         }
-        return new MultiFileInputStream(inputStreams.toArray(new MultiFileInputStream.DecoratedInputStream[inputStreams.size()]));
+        return new MultiFileInputStream(
+                inputStreams.toArray(new MultiFileInputStream.DecoratedInputStream[inputStreams.size()]));
     }
 
-    /** If the given file doesn't exist, looks to see if a compressed
-     * version of the file exists. If no file is found, returns the
-     * original file name. */
+    /**
+     * If the given file doesn't exist, looks to see if a compressed version of the file exists. If no file is found,
+     * returns the original file name.
+     */
     public static String addCompressionExtensionIfNeeded(String sFileName) {
-        File file=new File(sFileName);
+        File file = new File(sFileName);
         if (!file.exists()) {
             for (String sExtension : COMPRESSION_EXTENSIONS) {
-                File altFile=new File(file.toString()+sExtension);
+                File altFile = new File(file.toString() + sExtension);
                 if (altFile.exists()) {
-                    file=altFile;
+                    file = altFile;
                     break;
                 }
             }
@@ -167,18 +173,20 @@ public class CompressedFileUtil {
         return file.toString();
     }
 
-    /** Open the file, automatically determining if it has been
-     * zipped, GZipped, BZip2'd or not. The returned input stream
-     * will be buffered. See also
-     * {@link #addCompressionExtensionIfNeeded}. */
-    public static InputStream openPossiblyCompressedFile(String sFileName, Boolean useMicrosPcapEmulation) throws IOException {
+    /**
+     * Open the file, automatically determining if it has been zipped, GZipped, BZip2'd or not. The returned input
+     * stream will be buffered. See also {@link #addCompressionExtensionIfNeeded}.
+     */
+    public static InputStream openPossiblyCompressedFile(String sFileName, Boolean useMicrosPcapEmulation)
+            throws IOException {
         if (useMicrosPcapEmulation == null) {
             return openPossiblyCompressedFile(new FileInputStreamFactory(sFileName));
         }
 
         InputStream inputStream = openPossiblyCompressedFile(sFileName, null);
         final boolean markSupported = inputStream.markSupported();
-        if (markSupported) inputStream.mark(4);
+        if (markSupported)
+            inputStream.mark(4);
 
         final int magic4 = getMagic4(inputStream, getMagic2(inputStream));
 
@@ -196,14 +204,16 @@ public class CompressedFileUtil {
         return openPossiblyCompressedFile(sFileName, true);
     }
 
-    public static InputStream openPossiblyCompressedFile(String sFileName, int bufferedSize, Boolean useMicrosPcapEmulation) throws IOException {
+    public static InputStream openPossiblyCompressedFile(String sFileName, int bufferedSize,
+            Boolean useMicrosPcapEmulation) throws IOException {
         if (useMicrosPcapEmulation == null) {
             return openPossiblyCompressedFile(new FileInputStreamFactory(sFileName, bufferedSize));
         }
 
         InputStream inputStream = openPossiblyCompressedFile(sFileName, bufferedSize, null);
         final boolean markSupported = inputStream.markSupported();
-        if (markSupported) inputStream.mark(4);
+        if (markSupported)
+            inputStream.mark(4);
 
         final int magic4 = getMagic4(inputStream, getMagic2(inputStream));
 
@@ -221,17 +231,21 @@ public class CompressedFileUtil {
         return openPossiblyCompressedFile(sFileName, bufferedSize, true);
     }
 
-    /** Open the file, automatically determining if it has been
-     * zipped, GZipped, BZip2'd or not. */
+    /**
+     * Open the file, automatically determining if it has been zipped, GZipped, BZip2'd or not.
+     */
     public static InputStream openPossiblyCompressedFile(InputStreamFactory inputStreamFactory) throws IOException {
-        InputStreamFactory decompressedInputStreamFactory = createInputStreamFactoryForPossiblyCompressedStream(inputStreamFactory);
-        decompressedInputStreamFactory = createInputStreamFactoryForPossiblyTarredStream(decompressedInputStreamFactory);
+        InputStreamFactory decompressedInputStreamFactory =
+                createInputStreamFactoryForPossiblyCompressedStream(inputStreamFactory);
+        decompressedInputStreamFactory =
+                createInputStreamFactoryForPossiblyTarredStream(decompressedInputStreamFactory);
         InputStream inputStream = decompressedInputStreamFactory.createInputStream();
         return inputStream;
     }
 
-    //----------------------------------------------------------------
-    public static InputStreamFactory createInputStreamFactoryForPossiblyCompressedStream(final InputStreamFactory inputStreamFactory) throws IOException {
+    // ----------------------------------------------------------------
+    public static InputStreamFactory createInputStreamFactoryForPossiblyCompressedStream(
+            final InputStreamFactory inputStreamFactory) throws IOException {
         // Read in the header
         final InputStream testStream = inputStreamFactory.createInputStream();
         int nMagic2 = getMagic2(testStream);
@@ -273,14 +287,16 @@ public class CompressedFileUtil {
                     ZipInputStream zipInputStream = new ZipInputStream(inputStreamFactory.createInputStream());
                     ZipEntry zipEntry = zipInputStream.getNextEntry();
                     if (null == zipEntry) {
-                        throw new FileNotFoundException("No zip entries in " + inputStreamFactory.getDescription() + ".");
+                        throw new FileNotFoundException(
+                                "No zip entries in " + inputStreamFactory.getDescription() + ".");
                     }
                     m_sSubFileName = zipEntry.getName();
                     return zipInputStream;
                 }
 
                 public String getDescription() {
-                    return "zipped " + inputStreamFactory.getDescription() + (null == m_sSubFileName ? "" : " (sub-file \"" + m_sSubFileName + "\")");
+                    return "zipped " + inputStreamFactory.getDescription()
+                            + (null == m_sSubFileName ? "" : " (sub-file \"" + m_sSubFileName + "\")");
                 }
             };
 
@@ -291,16 +307,19 @@ public class CompressedFileUtil {
 
                 public InputStream createInputStream() throws IOException {
                     SevenZipInputStream zipInputStream = new SevenZipInputStream(inputStreamFactory);
-                    SevenZipInputStream.Entry entry = zipInputStream.getNextEntry(SevenZipInputStream.Behavior.SKIP_WHEN_NO_STREAM);
+                    SevenZipInputStream.Entry entry =
+                            zipInputStream.getNextEntry(SevenZipInputStream.Behavior.SKIP_WHEN_NO_STREAM);
                     if (null == entry) {
-                        throw new FileNotFoundException("No zip entries in " + inputStreamFactory.getDescription() + ".");
+                        throw new FileNotFoundException(
+                                "No zip entries in " + inputStreamFactory.getDescription() + ".");
                     }
                     m_sSubFileName = entry.getName();
                     return zipInputStream;
                 }
 
                 public String getDescription() {
-                    return "7zipped " + inputStreamFactory.getDescription() + (null == m_sSubFileName ? "" : " (sub-file \"" + m_sSubFileName + "\")");
+                    return "7zipped " + inputStreamFactory.getDescription()
+                            + (null == m_sSubFileName ? "" : " (sub-file \"" + m_sSubFileName + "\")");
                 }
             };
         } else {
@@ -319,7 +338,8 @@ public class CompressedFileUtil {
     }
 
     public static long getMagic6(InputStream testStream, int nMagic4) throws IOException {
-        return ((testStream.read() & UINT_TO_LONG) << 32) | ((testStream.read() & UINT_TO_LONG) << 40) | (nMagic4 & UINT_TO_LONG);
+        return ((testStream.read() & UINT_TO_LONG) << 32) | ((testStream.read() & UINT_TO_LONG) << 40)
+                | (nMagic4 & UINT_TO_LONG);
     }
 
     public static int getMagic4(InputStream testStream, int nMagic2) throws IOException {
@@ -330,8 +350,9 @@ public class CompressedFileUtil {
         return testStream.read() | (testStream.read() << 8);
     }
 
-    //----------------------------------------------------------------
-    public static InputStreamFactory createInputStreamFactoryForPossiblyTarredStream(final InputStreamFactory inputStreamFactory) throws IOException {
+    // ----------------------------------------------------------------
+    public static InputStreamFactory createInputStreamFactoryForPossiblyTarredStream(
+            final InputStreamFactory inputStreamFactory) throws IOException {
         // Read in the header
         byte[] header = new byte[TarConstants.DEFAULT_RCDSIZE];
         InputStream testStream = inputStreamFactory.createInputStream();
@@ -367,7 +388,8 @@ public class CompressedFileUtil {
             private String m_sSubFileName;
 
             public InputStream createInputStream() throws IOException {
-                TarArchiveInputStream tarInputStream = new TarArchiveInputStream(inputStreamFactory.createInputStream());
+                TarArchiveInputStream tarInputStream =
+                        new TarArchiveInputStream(inputStreamFactory.createInputStream());
                 TarArchiveEntry tarEntry = tarInputStream.getNextTarEntry();
                 if (null == tarEntry) {
                     throw new FileNotFoundException("No tar entries in " + inputStreamFactory.getDescription() + ".");
@@ -377,7 +399,8 @@ public class CompressedFileUtil {
             }
 
             public String getDescription() {
-                return "tarred " + inputStreamFactory.getDescription() + (null == m_sSubFileName ? "" : " (sub-file \"" + m_sSubFileName + "\")");
+                return "tarred " + inputStreamFactory.getDescription()
+                        + (null == m_sSubFileName ? "" : " (sub-file \"" + m_sSubFileName + "\")");
             }
         };
 
@@ -431,7 +454,7 @@ public class CompressedFileUtil {
             if (fileName != null) {
                 writer = new FileWriter(fileName);
             }
-            //setDaemon(true);
+            // setDaemon(true);
         }
 
         public void run() {
@@ -442,7 +465,7 @@ public class CompressedFileUtil {
                     throw new UncheckedIOException("Error while writing to pipe.", e);
                 }
                 try {
-                    //we need a very quick sleep, otherwise the executed process is being slowed down by java
+                    // we need a very quick sleep, otherwise the executed process is being slowed down by java
                     Thread.sleep(50);
                 } catch (InterruptedException x) {
                     return;
@@ -477,7 +500,7 @@ public class CompressedFileUtil {
         }
     }
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     public static class FileInputStreamFactory implements InputStreamFactory {
 
         private final String m_sFileName;

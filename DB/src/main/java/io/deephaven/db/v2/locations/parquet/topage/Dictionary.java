@@ -28,8 +28,7 @@ public class Dictionary<T, ATTR extends Attributes.Any> implements StringSetImpl
     }
 
     public final T get(long index) {
-        return index < 0 || index >= objects.size() ? null :
-                objects.get((int)index);
+        return index < 0 || index >= objects.size() ? null : objects.get((int) index);
     }
 
     public final int rget(int highestIndex, T value) {

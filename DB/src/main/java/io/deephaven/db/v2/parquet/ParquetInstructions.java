@@ -15,9 +15,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
- * This class provides instructions intended for read and write parquet operations (which take
- * it as an optional argument) specifying desired transformations.  Examples are
- * mapping column names and use of specific codecs during (de)serialization.
+ * This class provides instructions intended for read and write parquet operations (which take it as an optional
+ * argument) specifying desired transformations. Examples are mapping column names and use of specific codecs during
+ * (de)serialization.
  */
 public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
@@ -59,29 +59,38 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         return defaultMaximumDictionaryKeys;
     }
 
-    public ParquetInstructions() {
-    }
+    public ParquetInstructions() {}
 
     public final String getColumnNameFromParquetColumnNameOrDefault(final String parquetColumnName) {
         final String mapped = getColumnNameFromParquetColumnName(parquetColumnName);
         return (mapped != null) ? mapped : parquetColumnName;
     }
+
     public abstract String getParquetColumnNameFromColumnNameOrDefault(final String columnName);
+
     public abstract String getColumnNameFromParquetColumnName(final String parquetColumnName);
-    @Override public abstract String getCodecName(final String columnName);
-    @Override public abstract String getCodecArgs(final String columnName);
+
+    @Override
+    public abstract String getCodecName(final String columnName);
+
+    @Override
+    public abstract String getCodecArgs(final String columnName);
+
     /**
-     * @return A hint that the writer should use dictionary-based encoding for writing this column; never evaluated
-     * for non-String columns, defaults to false
+     * @return A hint that the writer should use dictionary-based encoding for writing this column; never evaluated for
+     *         non-String columns, defaults to false
      */
     public abstract boolean useDictionary(String columnName);
 
     public abstract String getCompressionCodecName();
+
     /**
      * @return The maximum number of unique keys the writer should add to a dictionary page before switching to
-     * non-dictionary encoding; never evaluated for non-String columns, ignored if {@link #useDictionary(String)}
+     *         non-dictionary encoding; never evaluated for non-String columns, ignored if
+     *         {@link #useDictionary(String)}
      */
     public abstract int getMaximumDictionaryKeys();
+
     public abstract boolean isLegacyParquet();
 
     @VisibleForTesting
@@ -103,18 +112,22 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         public String getParquetColumnNameFromColumnNameOrDefault(final String columnName) {
             return columnName;
         }
+
         @Override
         public String getColumnNameFromParquetColumnName(final String parquetColumnName) {
             return null;
         }
+
         @Override
         public String getCodecName(final String columnName) {
             return null;
         }
+
         @Override
         public String getCodecArgs(final String columnName) {
             return null;
         }
+
         @Override
         public boolean useDictionary(final String columnName) {
             return false;
@@ -154,6 +167,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         public String getParquetColumnName() {
             return parquetColumnName != null ? parquetColumnName : columnName;
         }
+
         public ColumnInstructions setParquetColumnName(final String parquetColumnName) {
             this.parquetColumnName = parquetColumnName;
             return this;
@@ -162,6 +176,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         public String getCodecName() {
             return codecName;
         }
+
         public ColumnInstructions setCodecName(final String codecName) {
             this.codecName = codecName;
             return this;
@@ -170,6 +185,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         public String getCodecArgs() {
             return codecArgs;
         }
+
         public ColumnInstructions setCodecArgs(final String codecArgs) {
             this.codecArgs = codecArgs;
             return this;
@@ -178,6 +194,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         public boolean useDictionary() {
             return useDictionary;
         }
+
         public void useDictionary(final boolean useDictionary) {
             this.useDictionary = useDictionary;
         }
@@ -186,9 +203,9 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     private static final class ReadOnly extends ParquetInstructions {
         private final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions;
         /**
-         * Note parquetColumnNameToInstructions may be null while columnNameToInstructions is not null;
-         * We only store entries in parquetColumnNameToInstructions when the parquetColumnName is
-         * different than the columnName (ie, the column name mapping is not the default mapping)
+         * Note parquetColumnNameToInstructions may be null while columnNameToInstructions is not null; We only store
+         * entries in parquetColumnNameToInstructions when the parquetColumnName is different than the columnName (ie,
+         * the column name mapping is not the default mapping)
          */
         private final KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToInstructions;
         private final String compressionCodecName;
@@ -208,7 +225,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             this.isLegacyParquet = isLegacyParquet;
         }
 
-        private String getOrDefault(final String columnName, final String defaultValue, final Function<ColumnInstructions, String> fun) {
+        private String getOrDefault(final String columnName, final String defaultValue,
+                final Function<ColumnInstructions, String> fun) {
             if (columnNameToInstructions == null) {
                 return defaultValue;
             }
@@ -219,7 +237,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return fun.apply(ci);
         }
 
-        private boolean getOrDefault(final String columnName, final boolean defaultValue, final Predicate<ColumnInstructions> fun) {
+        private boolean getOrDefault(final String columnName, final boolean defaultValue,
+                final Predicate<ColumnInstructions> fun) {
             if (columnNameToInstructions == null) {
                 return defaultValue;
             }
@@ -281,16 +300,14 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             // noinspection unchecked
             return (columnNameToInstructions == null)
                     ? null
-                    : (KeyedObjectHashMap<String, ColumnInstructions>) columnNameToInstructions.clone()
-                    ;
+                    : (KeyedObjectHashMap<String, ColumnInstructions>) columnNameToInstructions.clone();
         }
 
         KeyedObjectHashMap<String, ColumnInstructions> copyParquetColumnNameToInstructions() {
             // noinspection unchecked
             return (parquetColumnNameToInstructions == null)
                     ? null
-                    : (KeyedObjectHashMap<String, ColumnInstructions>) parquetColumnNameToInstructions.clone()
-                    ;
+                    : (KeyedObjectHashMap<String, ColumnInstructions>) parquetColumnNameToInstructions.clone();
         }
 
         private static boolean sameCodecMappings(final ReadOnly r1, final ReadOnly r2) {
@@ -327,8 +344,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private int maximumDictionaryKeys = defaultMaximumDictionaryKeys;
         private boolean isLegacyParquet;
 
-        public Builder() {
-        }
+        public Builder() {}
 
         public Builder(final ParquetInstructions parquetInstructions) {
             if (parquetInstructions == EMPTY) {
@@ -349,12 +365,13 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         private void newParquetColumnNameToInstructionsMap() {
-            parquetColumnNameToInstructions = new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<String, ColumnInstructions>() {
-                @Override
-                public String getKey(@NotNull final ColumnInstructions value) {
-                    return value.getParquetColumnName();
-                }
-            });
+            parquetColumnNameToInstructions =
+                    new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<String, ColumnInstructions>() {
+                        @Override
+                        public String getKey(@NotNull final ColumnInstructions value) {
+                            return value.getParquetColumnName();
+                        }
+                    });
         }
 
         public Builder addColumnNameMapping(final String parquetColumnName, final String columnName) {
@@ -379,7 +396,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     }
                     throw new IllegalArgumentException(
                             "Cannot add a mapping from parquetColumnName=" + parquetColumnName
-                            + ": columnName=" + columnName + " already mapped to parquetColumnName=" + ci.parquetColumnName);
+                                    + ": columnName=" + columnName + " already mapped to parquetColumnName="
+                                    + ci.parquetColumnName);
                 }
             } else {
                 ci = new ColumnInstructions(columnName);
@@ -392,14 +410,17 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 return this;
             }
 
-            final ColumnInstructions fromParquetColumnNameInstructions = parquetColumnNameToInstructions.get(parquetColumnName);
+            final ColumnInstructions fromParquetColumnNameInstructions =
+                    parquetColumnNameToInstructions.get(parquetColumnName);
             if (fromParquetColumnNameInstructions != null) {
                 if (fromParquetColumnNameInstructions == ci) {
                     return this;
                 }
                 throw new IllegalArgumentException(
-                        "Cannot add new mapping from parquetColumnName=" + parquetColumnName + " to columnName=" + columnName
-                                + ": already mapped to columnName=" + fromParquetColumnNameInstructions.getColumnName());
+                        "Cannot add new mapping from parquetColumnName=" + parquetColumnName + " to columnName="
+                                + columnName
+                                + ": already mapped to columnName="
+                                + fromParquetColumnNameInstructions.getColumnName());
             }
             ci.setParquetColumnName(parquetColumnName);
             parquetColumnNameToInstructions.put(parquetColumnName, ci);
@@ -422,10 +443,10 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         /**
-         * Set a hint that the writer should use dictionary-based encoding for writing this column; never evaluated
-         * for non-String columns.
+         * Set a hint that the writer should use dictionary-based encoding for writing this column; never evaluated for
+         * non-String columns.
          *
-         * @param columnName    The column name
+         * @param columnName The column name
          * @param useDictionary The hint value
          */
         public Builder useDictionary(final String columnName, final boolean useDictionary) {
@@ -453,8 +474,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         /**
          * Set the maximum number of unique keys the writer should add to a dictionary page before switching to
-         * non-dictionary encoding; never evaluated for non-String columns, ignored if
-         * {@link #useDictionary(String) use dictionary} is set for the column.
+         * non-dictionary encoding; never evaluated for non-String columns, ignored if {@link #useDictionary(String) use
+         * dictionary} is set for the column.
          *
          * @param maximumDictionaryKeys The maximum number of dictionary keys; must be {@code >= 0}
          */
@@ -471,9 +492,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         public ParquetInstructions build() {
             final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructionsOut = columnNameToInstructions;
             columnNameToInstructions = null;
-            final KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToColumnNameOut = parquetColumnNameToInstructions;
+            final KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToColumnNameOut =
+                    parquetColumnNameToInstructions;
             parquetColumnNameToInstructions = null;
-            return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut, compressionCodecName, maximumDictionaryKeys, isLegacyParquet);
+            return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut, compressionCodecName,
+                    maximumDictionaryKeys, isLegacyParquet);
         }
     }
 

@@ -57,8 +57,9 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
                 TableTools.doubleCol("yLow", dataYLow),
                 TableTools.doubleCol("yHigh", dataYHigh));
 
-        final TableHandle h = new TableHandle( t, "x", "y", "yLow", "yHigh");
-        final XYErrorBarDataSeriesTableArray series = new XYErrorBarDataSeriesTableArray(chart.newAxes(),1 , "Test", h, "x", null,null, "y", "yLow", "yHigh", false, true);
+        final TableHandle h = new TableHandle(t, "x", "y", "yLow", "yHigh");
+        final XYErrorBarDataSeriesTableArray series = new XYErrorBarDataSeriesTableArray(chart.newAxes(), 1, "Test", h,
+                "x", null, null, "y", "yLow", "yHigh", false, true);
 
         assertEquals(series.getX(0), 0.0);
         assertEquals(series.getX(5), 5.0);
@@ -85,10 +86,12 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
         final BaseFigureImpl figure = new BaseFigureImpl();
         final ChartImpl chart = figure.newChart();
 
-        final QueryTable liveTable = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y",  1, 2, 3), c("yLow",  0, 1, 2), c("yHigh",  11, 22, 33));
+        final QueryTable liveTable = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", 1, 2, 3),
+                c("yLow", 0, 1, 2), c("yHigh", 11, 22, 33));
 
         final TableHandle h = new TableHandle(liveTable, "x", "y", "yLow", "yHigh");
-        final XYErrorBarDataSeriesTableArray series = new XYErrorBarDataSeriesTableArray(chart.newAxes(),1 , "Test", h, "x", null, null, "y", "yLow", "yHigh", false, true);
+        final XYErrorBarDataSeriesTableArray series = new XYErrorBarDataSeriesTableArray(chart.newAxes(), 1, "Test", h,
+                "x", null, null, "y", "yLow", "yHigh", false, true);
 
 
         assertEquals(series.getX(4), Double.NaN);
@@ -126,8 +129,9 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
                 TableTools.doubleCol("yLow", dataYLow),
                 TableTools.doubleCol("yHigh", dataYHigh));
 
-        final TableHandle h = new TableHandle( t, "x", "y", "yLow", "yHigh");
-        XYErrorBarDataSeriesTableArray series = new XYErrorBarDataSeriesTableArray(chart.newAxes(),1 , "Test", h, "x", null, null, "y", "yLow", "yHigh", false, true);
+        final TableHandle h = new TableHandle(t, "x", "y", "yLow", "yHigh");
+        XYErrorBarDataSeriesTableArray series = new XYErrorBarDataSeriesTableArray(chart.newAxes(), 1, "Test", h, "x",
+                null, null, "y", "yLow", "yHigh", false, true);
         XYErrorBarDataSeriesTableArray copy = series.copy(chart.newAxes());
 
         series.size();

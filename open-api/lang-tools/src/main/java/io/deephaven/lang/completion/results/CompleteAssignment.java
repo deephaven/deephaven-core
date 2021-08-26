@@ -11,8 +11,8 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * A class specifically for completing assignment statements;
- * to be called after the completer has discovered the cursor near an assignment token.
+ * A class specifically for completing assignment statements; to be called after the completer has discovered the cursor
+ * near an assignment token.
  *
  */
 public class CompleteAssignment extends CompletionBuilder {
@@ -28,11 +28,10 @@ public class CompleteAssignment extends CompletionBuilder {
     }
 
     public void doCompletion(
-        Collection<CompletionItem.Builder> results,
-        CompletionRequest request,
-        String varName,
-        boolean methodMatched
-    ) {
+            Collection<CompletionItem.Builder> results,
+            CompletionRequest request,
+            String varName,
+            boolean methodMatched) {
         final CompletionOptions opts = new CompletionOptions().setPrevTokens("=", " ");
         if (assign.getValue() == null) {
             // There is no value after the =, so try adding a . or ( to complete the expression.

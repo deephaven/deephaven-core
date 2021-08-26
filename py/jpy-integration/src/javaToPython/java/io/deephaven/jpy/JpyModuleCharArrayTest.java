@@ -23,7 +23,7 @@ public class JpyModuleCharArrayTest extends JpyModuleArrayTestBase<char[]> {
     @Override
     void fillAsDesired(char[] array) {
         for (int i = 0; i < array.length; ++i) {
-            array[i] = (char)i;
+            array[i] = (char) i;
         }
     }
 }

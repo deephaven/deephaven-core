@@ -33,12 +33,14 @@ public class TestThreadProfiler {
         threadMXBean = (com.sun.management.ThreadMXBean) ManagementFactory.getThreadMXBean();
         final ThreadMXBean threadMXBean = (com.sun.management.ThreadMXBean) ManagementFactory.getThreadMXBean();
         if (threadMXBean.isCurrentThreadCpuTimeSupported()) {
-            if (ThreadMXBeanThreadProfiler.TRY_ENABLE_THREAD_CPU_TIME && (oldThreadCpuTimeEnabled = threadMXBean.isThreadCpuTimeEnabled())) {
+            if (ThreadMXBeanThreadProfiler.TRY_ENABLE_THREAD_CPU_TIME
+                    && (oldThreadCpuTimeEnabled = threadMXBean.isThreadCpuTimeEnabled())) {
                 threadMXBean.setThreadCpuTimeEnabled(false);
             }
         }
         if (threadMXBean.isThreadAllocatedMemorySupported()) {
-            if (SunThreadMXBeanThreadProfiler.TRY_ENABLE_THREAD_ALLOCATED_MEMORY && (oldThreadAllocatedMemoryEnabled = threadMXBean.isThreadAllocatedMemoryEnabled())) {
+            if (SunThreadMXBeanThreadProfiler.TRY_ENABLE_THREAD_ALLOCATED_MEMORY
+                    && (oldThreadAllocatedMemoryEnabled = threadMXBean.isThreadAllocatedMemoryEnabled())) {
                 threadMXBean.setThreadAllocatedMemoryEnabled(false);
             }
         }
@@ -47,10 +49,13 @@ public class TestThreadProfiler {
 
     @AfterClass
     public static void tearDownOnce() {
-        if (threadMXBean.isCurrentThreadCpuTimeSupported() && ThreadMXBeanThreadProfiler.TRY_ENABLE_THREAD_CPU_TIME && oldThreadCpuTimeEnabled) {
+        if (threadMXBean.isCurrentThreadCpuTimeSupported() && ThreadMXBeanThreadProfiler.TRY_ENABLE_THREAD_CPU_TIME
+                && oldThreadCpuTimeEnabled) {
             threadMXBean.setThreadCpuTimeEnabled(true);
         }
-        if (threadMXBean.isThreadAllocatedMemorySupported() && SunThreadMXBeanThreadProfiler.TRY_ENABLE_THREAD_ALLOCATED_MEMORY && oldThreadAllocatedMemoryEnabled) {
+        if (threadMXBean.isThreadAllocatedMemorySupported()
+                && SunThreadMXBeanThreadProfiler.TRY_ENABLE_THREAD_ALLOCATED_MEMORY
+                && oldThreadAllocatedMemoryEnabled) {
             threadMXBean.setThreadAllocatedMemoryEnabled(true);
         }
     }
@@ -113,7 +118,8 @@ public class TestThreadProfiler {
         final long elapsedCpuNanos = endCpuNanos - startCpuNanos;
         final long elapsedUserNanos = endUserNanos - startUserNanos;
 
-        System.out.println("TestThreadProfiler: Spent " + elapsedCpuNanos + "ns (" + elapsedUserNanos + " ns user) calculating fib(92) == " + fib_curr);
+        System.out.println("TestThreadProfiler: Spent " + elapsedCpuNanos + "ns (" + elapsedUserNanos
+                + " ns user) calculating fib(92) == " + fib_curr);
         TestCase.assertEquals(7540113804746346429L, fib_curr);
         if (STRICT_MODE) {
             TestCase.assertTrue(elapsedUserNanos <= elapsedCpuNanos);

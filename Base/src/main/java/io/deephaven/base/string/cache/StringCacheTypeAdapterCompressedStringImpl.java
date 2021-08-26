@@ -11,7 +11,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public class StringCacheTypeAdapterCompressedStringImpl implements StringCacheTypeAdapter<CompressedString> {
 
-    public static final StringCacheTypeAdapter<CompressedString> INSTANCE = new StringCacheTypeAdapterCompressedStringImpl();
+    public static final StringCacheTypeAdapter<CompressedString> INSTANCE =
+            new StringCacheTypeAdapterCompressedStringImpl();
 
     private static final CompressedString EMPTY_VALUE = new CompressedString("");
 

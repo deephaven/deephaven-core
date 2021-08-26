@@ -12,8 +12,7 @@ import java.math.BigInteger;
 import static io.deephaven.web.shared.data.ColumnValue.*;
 
 /**
- * A tool for turning javascript objects (and all their "glory")
- * into usable {@link ColumnValue} objects.
+ * A tool for turning javascript objects (and all their "glory") into usable {@link ColumnValue} objects.
  *
  * This is only usable within client code.
  */
@@ -22,22 +21,23 @@ public class ColumnValueDehydrater {
     public static String serialize(String type, Object value) {
         return serialize(type, value, false);
     }
+
     private static String serialize(String type, Object value, boolean arrayComponent) {
         // Should be symmetric with ColumnValueRehydrater.
         // for now, we will fall back to .toString support
 
-        if (value == null || ("null".equals(value) && !"java.lang.String".equals(type) )) {
+        if (value == null || ("null".equals(value) && !"java.lang.String".equals(type))) {
             // we'll permit the string "null" if the type is a string, otherwise assume client
             // accidentally toString'd a null value
             return nullSentinel();
         }
         if (type.contains("[]")) {
             if (!JsArray.isArray(value)) {
-                throw new UnsupportedOperationException("Expected array type " + type +" but got " + value);
+                throw new UnsupportedOperationException("Expected array type " + type + " but got " + value);
             }
             final String componentType = type.replace("[]", "");
             StringBuilder result = new StringBuilder();
-            Js.<JsArray<Object>>uncheckedCast(value).forEach((v, i, a)->{
+            Js.<JsArray<Object>>uncheckedCast(value).forEach((v, i, a) -> {
                 if (result.length() > 0) {
                     result.append(ARRAY_DELIMITER);
                 }
@@ -82,14 +82,14 @@ public class ColumnValueDehydrater {
             case "number": {
                 // only support number-y types.
                 double val = (double) value;
-                switch(type) {
+                switch (type) {
                     case "java.lang.String":
                         return String.valueOf(value);
                     case "int":
                     case "java.lang.Integer":
                         // perhaps add (optional) validation that users are actually sending ints.
                         // like `web.typesafe=true` to turn on paranoia checks.
-                        return val == Integer.MIN_VALUE ? nullSentinel() : Integer.toString((int)val);
+                        return val == Integer.MIN_VALUE ? nullSentinel() : Integer.toString((int) val);
                     case "double":
                     case "java.lang.Double":
                     case "java.math.BigDecimal":
@@ -100,24 +100,24 @@ public class ColumnValueDehydrater {
                     case "io.deephaven.db.tables.utils.DBDateTime":
                         // TODO: check if Long.MIN_VALUE actually works as expected from js;
                         // in theory, the cast here will make the rounding, if any, equivalent
-                        return val == (double)Long.MIN_VALUE ? nullSentinel() : Long.toString((long)val);
+                        return val == (double) Long.MIN_VALUE ? nullSentinel() : Long.toString((long) val);
                     case "byte":
                     case "java.lang.Byte":
-                        return val == Byte.MIN_VALUE ? nullSentinel() : Byte.toString((byte)val);
+                        return val == Byte.MIN_VALUE ? nullSentinel() : Byte.toString((byte) val);
                     case "boolean":
                     case "java.lang.Boolean":
                         checkBooleanValue(val);
-                        assert val == (byte)val : "Malformed boolean value " + val;
-                        return Byte.toString((byte)val);
+                        assert val == (byte) val : "Malformed boolean value " + val;
+                        return Byte.toString((byte) val);
                     case "char":
                     case "java.lang.Character":
                         return val == Character.MAX_VALUE - 1 ? nullSentinel() : String.valueOf(value).substring(0, 1);
                     case "short":
                     case "java.lang.Short":
-                        return val == Short.MIN_VALUE ? nullSentinel() : Short.toString((short)val);
+                        return val == Short.MIN_VALUE ? nullSentinel() : Short.toString((short) val);
                     case "float":
                     case "java.lang.Float":
-                        return val == Float.MIN_VALUE ? nullSentinel() : Float.toString((float)val);
+                        return val == Float.MIN_VALUE ? nullSentinel() : Float.toString((float) val);
                     default:
                         throw unsupported(value);
                 }
@@ -126,10 +126,10 @@ public class ColumnValueDehydrater {
 
                 String v = (String) value;
 
-                switch(type) {
+                switch (type) {
                     case "java.lang.String":
                         return arrayComponent ? v : // arrays are escaped in the forEach loop above
-                            v.replaceAll(nullSentinel(), ESCAPER + nullSentinel());
+                                v.replaceAll(nullSentinel(), ESCAPER + nullSentinel());
                     case "io.deephaven.db.tables.utils.DBDateTime":
                         // TODO: check if datetime string to parse into a long timestamp.
                         // otherwise, we expect long ints for DBDateTime (for now)
@@ -170,7 +170,8 @@ public class ColumnValueDehydrater {
                     case "java.lang.Character":
                         return v.substring(0, 1);
                 }
-                assert !(arrayComponent && v.contains(escaper())): "\\1 is a control character that should not be sent in unhandled array types.";
+                assert !(arrayComponent && v.contains(escaper()))
+                        : "\\1 is a control character that should not be sent in unhandled array types.";
                 return v; // good luck
             }
             case "object": {
@@ -204,6 +205,7 @@ public class ColumnValueDehydrater {
         }
         return name;
     }
+
     private static Function findFunction(Object value, String prefix) {
         // This probably isn't the correct way to "guess" enum values,
         // but we can probably come up with the correct heuristic for
@@ -225,10 +227,11 @@ public class ColumnValueDehydrater {
     }
 
     private static UnsupportedOperationException unsupported(Object value) {
-        return new UnsupportedOperationException("Cannot handle " + Js.typeof(value) +" : " + value);
+        return new UnsupportedOperationException("Cannot handle " + Js.typeof(value) + " : " + value);
     }
 
     private static IllegalArgumentException illegal(String type, Object value) {
-        return new IllegalArgumentException("Cannot handle " + Js.typeof(value) +" value " + value + " for " + type + " column");
+        return new IllegalArgumentException(
+                "Cannot handle " + Js.typeof(value) + " value " + value + " for " + type + " column");
     }
 }

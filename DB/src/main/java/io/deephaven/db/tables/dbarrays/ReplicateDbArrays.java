@@ -38,25 +38,33 @@ public class ReplicateDbArrays {
         serialVersionUIDs.put("io.deephaven.db.tables.dbarrays.DbDoubleArrayDirect", 3262776153086160765L);
         serialVersionUIDs.put("io.deephaven.db.tables.dbarrays.DbFloatArrayDirect", -8263599481663466384L);
 
-        ReplicatePrimitiveCode.charToAllButBooleanAndFloats(DbCharArray.class, ReplicatePrimitiveCode.MAIN_SRC, serialVersionUIDs);
+        ReplicatePrimitiveCode.charToAllButBooleanAndFloats(DbCharArray.class, ReplicatePrimitiveCode.MAIN_SRC,
+                serialVersionUIDs);
 
-        final String floatPath = ReplicatePrimitiveCode.charToFloat(DbCharArray.class, ReplicatePrimitiveCode.MAIN_SRC, serialVersionUIDs);
+        final String floatPath = ReplicatePrimitiveCode.charToFloat(DbCharArray.class, ReplicatePrimitiveCode.MAIN_SRC,
+                serialVersionUIDs);
         final File floatFile = new File(floatPath);
         List<String> floatLines = FileUtils.readLines(floatFile, Charset.defaultCharset());
-        floatLines = ReplicateUtilities.simpleFixup(floatLines, "elementEquals", "aArray\\.get\\(ei\\) != bArray\\.get\\(ei\\)",
+        floatLines = ReplicateUtilities.simpleFixup(floatLines, "elementEquals",
+                "aArray\\.get\\(ei\\) != bArray\\.get\\(ei\\)",
                 "Float.floatToIntBits(aArray.get(ei)) != Float.floatToIntBits(bArray.get(ei))");
         FileUtils.writeLines(floatFile, floatLines);
 
-        final String doublePath = ReplicatePrimitiveCode.charToDouble(DbCharArray.class, ReplicatePrimitiveCode.MAIN_SRC, serialVersionUIDs);
+        final String doublePath = ReplicatePrimitiveCode.charToDouble(DbCharArray.class,
+                ReplicatePrimitiveCode.MAIN_SRC, serialVersionUIDs);
         final File doubleFile = new File(doublePath);
         List<String> doubleLines = FileUtils.readLines(doubleFile, Charset.defaultCharset());
-        doubleLines = ReplicateUtilities.simpleFixup(doubleLines, "elementEquals", "aArray\\.get\\(ei\\) != bArray\\.get\\(ei\\)",
+        doubleLines = ReplicateUtilities.simpleFixup(doubleLines, "elementEquals",
+                "aArray\\.get\\(ei\\) != bArray\\.get\\(ei\\)",
                 "Double.doubleToLongBits(aArray.get(ei)) != Double.doubleToLongBits(bArray.get(ei))");
         FileUtils.writeLines(doubleFile, doubleLines);
 
-        ReplicatePrimitiveCode.charToAllButBoolean(DbCharArrayDirect.class, ReplicatePrimitiveCode.MAIN_SRC, serialVersionUIDs);
-        ReplicatePrimitiveCode.charToAllButBoolean(DbCharArraySlice.class, ReplicatePrimitiveCode.MAIN_SRC, serialVersionUIDs);
-        ReplicatePrimitiveCode.charToAllButBoolean(DbSubCharArray.class, ReplicatePrimitiveCode.MAIN_SRC, serialVersionUIDs);
+        ReplicatePrimitiveCode.charToAllButBoolean(DbCharArrayDirect.class, ReplicatePrimitiveCode.MAIN_SRC,
+                serialVersionUIDs);
+        ReplicatePrimitiveCode.charToAllButBoolean(DbCharArraySlice.class, ReplicatePrimitiveCode.MAIN_SRC,
+                serialVersionUIDs);
+        ReplicatePrimitiveCode.charToAllButBoolean(DbSubCharArray.class, ReplicatePrimitiveCode.MAIN_SRC,
+                serialVersionUIDs);
 
         // Uncomment if running from the IDE:
         // io.deephaven.db.v2.dbarrays.ReplicateDbArrayColumnWrappers.main(new String[0]);

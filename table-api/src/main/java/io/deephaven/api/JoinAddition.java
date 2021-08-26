@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * A join addition represents a {@link #newColumn() new column} that should be added as the result
- * of a join, brought over from an {@link #existingColumn() existing column}.
+ * A join addition represents a {@link #newColumn() new column} that should be added as the result of a join, brought
+ * over from an {@link #existingColumn() existing column}.
  *
  * @see TableOperations#join(Object, Collection, Collection, int)
  * @see TableOperations#naturalJoin(Object, Collection, Collection)
@@ -32,7 +32,7 @@ public interface JoinAddition extends Serializable {
         final int ix = x.indexOf('=');
         if (ix < 0) {
             throw new IllegalArgumentException(String.format(
-                "Unable to parse addition '%s', expected form '<newColumn>=<existingColumn>'", x));
+                    "Unable to parse addition '%s', expected form '<newColumn>=<existingColumn>'", x));
         }
         ColumnName newColumn = ColumnName.parse(x.substring(0, ix));
         ColumnName existingColumn = ColumnName.parse(x.substring(ix + 1));

@@ -11,22 +11,22 @@ import io.deephaven.base.testing.BaseArrayTestCase;
  */
 public class TestAxisLocation extends BaseArrayTestCase {
 
-    public void testLocation(){
-        final BaseFigureImpl fig1 = new BaseFigureImpl(3,2);
-        final ChartImpl c11 = fig1.newChart(2,1);
+    public void testLocation() {
+        final BaseFigureImpl fig1 = new BaseFigureImpl(3, 2);
+        final ChartImpl c11 = fig1.newChart(2, 1);
         final AxesImpl a11 = c11.newAxes();
         final AxesImpl a12 = c11.newAxes();
-        a11.plot("S1", new double[]{1,2,3},new double[]{4,5,6});
-        a12.plot("S2", new double[]{1,2,3},new double[]{4,5,6});
+        a11.plot("S1", new double[] {1, 2, 3}, new double[] {4, 5, 6});
+        a12.plot("S2", new double[] {1, 2, 3}, new double[] {4, 5, 6});
         final AxisImpl ax11 = a11.axis(0);
         final AxisImpl ax12 = a12.axis(1);
 
-        final BaseFigureImpl fig2 = new BaseFigureImpl(3,2);
-        final ChartImpl c21 = fig2.newChart(2,1);
+        final BaseFigureImpl fig2 = new BaseFigureImpl(3, 2);
+        final ChartImpl c21 = fig2.newChart(2, 1);
         final AxesImpl a21 = c21.newAxes();
         final AxesImpl a22 = c21.newAxes();
-        a21.plot("S1", new double[]{1,2,3},new double[]{4,5,6});
-        a22.plot("S2", new double[]{1,2,3},new double[]{4,5,6});
+        a21.plot("S1", new double[] {1, 2, 3}, new double[] {4, 5, 6});
+        a22.plot("S2", new double[] {1, 2, 3}, new double[] {4, 5, 6});
         final AxisImpl ax21 = a21.axis(0);
         final AxisImpl ax22 = a22.axis(1);
 

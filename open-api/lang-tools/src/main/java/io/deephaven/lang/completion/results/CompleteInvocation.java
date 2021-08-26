@@ -14,8 +14,8 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * A class specifically for completing invocations;
- * to be called with method results when the cursor is somewhere that a method is valid.
+ * A class specifically for completing invocations; to be called with method results when the cursor is somewhere that a
+ * method is valid.
  *
  */
 public class CompleteInvocation extends CompletionBuilder {
@@ -76,15 +76,16 @@ public class CompleteInvocation extends CompletionBuilder {
         res.append(method.getName()).append("(");
         CompletionItem.Builder result =
                 CompletionItem.newBuilder()
-                .setStart(start)
-                .setLength(length)
-                // let the user know where this method is coming from (include class name in display completion);
-                .setLabel(displayCompletion);
+                        .setStart(start)
+                        .setLength(length)
+                        // let the user know where this method is coming from (include class name in display
+                        // completion);
+                        .setLabel(displayCompletion);
         result.getTextEditBuilder()
                 .setText(res.toString())
                 .setRange(range);
         // in the future, we should enable adding
-        // explicit import statements for static methods.  For now, we're assuming all static methods
+        // explicit import statements for static methods. For now, we're assuming all static methods
         // already came from imports, but we'll want to handle this explicitly for more exotic cases in the future.
         results.add(result);
     }

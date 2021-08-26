@@ -5,11 +5,11 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.grpcWeb.transports.http.fetch",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.grpcWeb.transports.http.fetch",
+        namespace = JsPackage.GLOBAL)
 public class Fetch {
-  public static native TransportFactory FetchReadableStreamTransport(Object init);
+    public static native TransportFactory FetchReadableStreamTransport(Object init);
 
-  public static native boolean detectFetchSupport();
+    public static native boolean detectFetchSupport();
 }

@@ -121,12 +121,14 @@ public class TestIntrusiveDoublyLinkedQueue {
         }
         TestCase.assertEquals(nodes.size(), ti);
 
-        //noinspection unchecked
-        for (final Predicate<IntNode> predicate : new Predicate[] {n -> ((IntNode)n).value % 2 == 0, n -> ((IntNode)n).value % 3 == 0, n -> ((IntNode)n).value % 4 == 0}) {
+        // noinspection unchecked
+        for (final Predicate<IntNode> predicate : new Predicate[] {n -> ((IntNode) n).value % 2 == 0,
+                n -> ((IntNode) n).value % 3 == 0, n -> ((IntNode) n).value % 4 == 0}) {
 
-            final Map<Boolean, List<IntNode>> partitioned = nodes.stream().collect(Collectors.partitioningBy(predicate));
+            final Map<Boolean, List<IntNode>> partitioned =
+                    nodes.stream().collect(Collectors.partitioningBy(predicate));
 
-            for (final boolean partitionToKeep : new boolean[]{false, true}) {
+            for (final boolean partitionToKeep : new boolean[] {false, true}) {
                 // Put all nodes in
                 nodes.forEach(queue::offer);
 
@@ -226,7 +228,7 @@ public class TestIntrusiveDoublyLinkedQueue {
     @Test
     public void testInsert() {
         final IntrusiveDoublyLinkedQueue<IntNode> queue = new IntrusiveDoublyLinkedQueue<>(new IntNodeAdapter());
-        for (int at : new int[]{ -1, 1, 100}) {
+        for (int at : new int[] {-1, 1, 100}) {
             try {
                 queue.insert(new IntNode(0), at);
                 TestCase.fail("Unexpectedly succeeded in inserting at " + at + " in an empty queue");
@@ -239,7 +241,7 @@ public class TestIntrusiveDoublyLinkedQueue {
         TestCase.assertFalse(queue.isEmpty());
         TestCase.assertEquals(1, queue.size());
         TestCase.assertEquals(0, queue.peek().value);
-        for (int at : new int[]{ -1, 2, 100}) {
+        for (int at : new int[] {-1, 2, 100}) {
             try {
                 queue.insert(new IntNode(2), at);
                 TestCase.fail("Unexpectedly succeeded in inserting at " + at + " in queue with size=1");
@@ -250,7 +252,7 @@ public class TestIntrusiveDoublyLinkedQueue {
 
         queue.insert(new IntNode(1), 1);
         TestCase.assertEquals(2, queue.size());
-        for (int at : new int[]{ -1, 3, 100}) {
+        for (int at : new int[] {-1, 3, 100}) {
             try {
                 queue.insert(new IntNode(3), at);
                 TestCase.fail("Unexpectedly succeeded in inserting at " + at + " in queue with size=2");

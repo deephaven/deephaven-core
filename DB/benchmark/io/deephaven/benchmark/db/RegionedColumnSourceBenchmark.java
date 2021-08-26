@@ -29,7 +29,7 @@ import static io.deephaven.benchmarking.BenchmarkTools.applySparsity;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Warmup(iterations = 1, time = 1)
 @Measurement(iterations = 10, time = 5)
-@Timeout(time=10)
+@Timeout(time = 10)
 @Fork(1)
 public class RegionedColumnSourceBenchmark {
 
@@ -41,7 +41,7 @@ public class RegionedColumnSourceBenchmark {
     @Param({"128", "1024", "8192", "65536"})
     private int chunkCapacity;
 
-    @Param({"Fill", "Get" /*, "Default", "Legacy" */})
+    @Param({"Fill", "Get" /* , "Default", "Legacy" */})
     private String mode;
 
     @Param({"false", "true"})
@@ -66,19 +66,22 @@ public class RegionedColumnSourceBenchmark {
     private enum Copier {
         Int() {
             @Override
-            final void copy(@NotNull final ColumnSource columnSource, @NotNull final WritableChunk<Values> destination, final long key) {
+            final void copy(@NotNull final ColumnSource columnSource, @NotNull final WritableChunk<Values> destination,
+                    final long key) {
                 destination.asWritableIntChunk().add(columnSource.getInt(key));
             }
         },
         Long() {
             @Override
-            final void copy(@NotNull final ColumnSource columnSource, @NotNull final WritableChunk<Values> destination, final long key) {
+            final void copy(@NotNull final ColumnSource columnSource, @NotNull final WritableChunk<Values> destination,
+                    final long key) {
                 destination.asWritableLongChunk().add(columnSource.getLong(key));
             }
         },
         Object() {
             @Override
-            final void copy(@NotNull final ColumnSource columnSource, @NotNull final WritableChunk<Values> destination, final long key) {
+            final void copy(@NotNull final ColumnSource columnSource, @NotNull final WritableChunk<Values> destination,
+                    final long key) {
                 destination.asWritableObjectChunk().add(columnSource.get(key));
             }
         };
@@ -165,7 +168,7 @@ public class RegionedColumnSourceBenchmark {
         switch (mode) {
             case "Fill":
                 try (final ColumnSource.FillContext fillContext = inputSource.makeFillContext(chunkCapacity);
-                     final OrderedKeys.Iterator oki = inputTable.getIndex().getOrderedKeysIterator()) {
+                        final OrderedKeys.Iterator oki = inputTable.getIndex().getOrderedKeysIterator()) {
                     while (oki.hasMore()) {
                         final OrderedKeys ok = oki.getNextOrderedKeysWithLength(chunkCapacity);
                         inputSource.fillChunk(fillContext, destination, ok);
@@ -175,7 +178,7 @@ public class RegionedColumnSourceBenchmark {
                 break;
             case "Get":
                 try (final ColumnSource.GetContext getContext = inputSource.makeGetContext(chunkCapacity);
-                     final OrderedKeys.Iterator oki = inputTable.getIndex().getOrderedKeysIterator()) {
+                        final OrderedKeys.Iterator oki = inputTable.getIndex().getOrderedKeysIterator()) {
                     while (oki.hasMore()) {
                         final OrderedKeys ok = oki.getNextOrderedKeysWithLength(chunkCapacity);
                         bh.consume(inputSource.getChunk(getContext, ok));
@@ -184,7 +187,7 @@ public class RegionedColumnSourceBenchmark {
                 break;
             case "Default":
                 try (final ColumnSource.FillContext fillContext = inputSource.makeFillContext(chunkCapacity);
-                     final OrderedKeys.Iterator oki = inputTable.getIndex().getOrderedKeysIterator()) {
+                        final OrderedKeys.Iterator oki = inputTable.getIndex().getOrderedKeysIterator()) {
                     while (oki.hasMore()) {
                         final OrderedKeys ok = oki.getNextOrderedKeysWithLength(chunkCapacity);
                         inputSource.defaultFillChunk(fillContext, destination, ok);
@@ -193,7 +196,7 @@ public class RegionedColumnSourceBenchmark {
                 }
                 break;
             case "Legacy":
-                for (final Index.Iterator ii = inputTable.getIndex().iterator(); ii.hasNext(); ) {
+                for (final Index.Iterator ii = inputTable.getIndex().iterator(); ii.hasNext();) {
                     destination.setSize(0);
                     ii.forEachLong(k -> {
                         copier.copy(inputSource, destination, k);

@@ -10,15 +10,13 @@ public class SerializableCodec<T> implements ObjectCodec<T> {
     private static final SerializableCodec INSTANCE = new SerializableCodec();
 
     public static <T> SerializableCodec<T> create() {
-        //noinspection unchecked
+        // noinspection unchecked
         return INSTANCE;
     }
 
-    private SerializableCodec() {
-    }
+    private SerializableCodec() {}
 
-    public SerializableCodec(@SuppressWarnings("unused") String dummy){
-    }
+    public SerializableCodec(@SuppressWarnings("unused") String dummy) {}
 
     @NotNull
     @Override
@@ -55,7 +53,7 @@ public class SerializableCodec<T> implements ObjectCodec<T> {
         try {
             final ByteArrayInputStream byteInput = new ByteArrayInputStream(input, offset, length);
             final ObjectInputStream objectInput = new ObjectInputStream(byteInput);
-            //noinspection unchecked
+            // noinspection unchecked
             return (T) objectInput.readObject();
         } catch (IOException e) {
             throw new UncheckedIOException(e);

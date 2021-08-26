@@ -38,7 +38,8 @@ public class PidFileUtil {
      * @param processName The name to be used for the per-process unique portion of the PID file's path
      * @throws IllegalStateException If pidFile exists or cannot be created/opened
      */
-    public static void checkAndCreatePidFileForProcessName(@NotNull final Configuration configuration, @NotNull final String processName) {
+    public static void checkAndCreatePidFileForProcessName(@NotNull final Configuration configuration,
+            @NotNull final String processName) {
         final String directoryName = configuration.getProperty(PID_FILE_DIRECTORY_PROPERTY);
         checkAndCreatePidFile(new File(directoryName, processName + FILE_SUFFIX));
     }
@@ -80,8 +81,9 @@ public class PidFileUtil {
         }
 
         try {
-            if(!pidFile.createNewFile()) {
-                throw new IllegalStateException("Pid file " + pidFile + " already exists - check running process and manually delete if necessary");
+            if (!pidFile.createNewFile()) {
+                throw new IllegalStateException("Pid file " + pidFile
+                        + " already exists - check running process and manually delete if necessary");
             }
         } catch (IOException e) {
             throw new IllegalStateException("Unable to create pid file " + pidFile, e);

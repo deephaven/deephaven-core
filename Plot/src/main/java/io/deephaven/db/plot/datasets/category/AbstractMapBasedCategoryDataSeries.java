@@ -17,7 +17,8 @@ public abstract class AbstractMapBasedCategoryDataSeries extends AbstractCategor
         super(axes, id, name);
     }
 
-    public AbstractMapBasedCategoryDataSeries(final AxesImpl axes, final int id, final Comparable name, final AbstractCategoryDataSeries series) {
+    public AbstractMapBasedCategoryDataSeries(final AxesImpl axes, final int id, final Comparable name,
+            final AbstractCategoryDataSeries series) {
         super(axes, id, name, series);
     }
 
@@ -41,7 +42,8 @@ public abstract class AbstractMapBasedCategoryDataSeries extends AbstractCategor
     }
 
     @Override
-    public <COLOR extends Integer> AbstractCategoryDataSeries pointColorInteger(final Function<Comparable, COLOR> colors) {
+    public <COLOR extends Integer> AbstractCategoryDataSeries pointColorInteger(
+            final Function<Comparable, COLOR> colors) {
         return super.pointColorInteger(constructMapFromData(colors));
     }
 
@@ -59,7 +61,7 @@ public abstract class AbstractMapBasedCategoryDataSeries extends AbstractCategor
         ArgumentValidations.assertNotNull(function, "function", getPlotInfo());
         final Map<Double, T> map = new HashMap<>();
 
-        for(final Comparable category : categories()) {
+        for (final Comparable category : categories()) {
             final double value = getValue(category).doubleValue();
             map.put(value, function.apply(value));
         }
@@ -71,7 +73,7 @@ public abstract class AbstractMapBasedCategoryDataSeries extends AbstractCategor
         ArgumentValidations.assertNotNull(function, "function", getPlotInfo());
         final Map<Comparable, T> map = new HashMap<>();
 
-        for(final Comparable category : categories()) {
+        for (final Comparable category : categories()) {
             map.put(category, function.apply(category));
         }
 

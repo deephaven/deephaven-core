@@ -25,14 +25,15 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
     private void testFlatten(int size) {
         final Random random = new Random(0);
         final TstUtils.ColumnInfo columnInfo[];
-        final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(new String[]{"Sym", "intCol", "doubleCol"},
-                new TstUtils.SetGenerator<>("a", "b","c","d"),
-                new TstUtils.IntGenerator(10, 100, 0.1),
-                new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
+        final QueryTable queryTable = getTable(size, random,
+                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
+                        new TstUtils.SetGenerator<>("a", "b", "c", "d"),
+                        new TstUtils.IntGenerator(10, 100, 0.1),
+                        new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
         if (printTableUpdates) {
             showWithIndex(queryTable);
         }
-        final EvalNuggetInterface en[] = new EvalNuggetInterface[]{
+        final EvalNuggetInterface en[] = new EvalNuggetInterface[] {
                 new FlatChecker(queryTable.flatten()),
                 new TableComparator(queryTable, queryTable.flatten()),
                 new EvalNugget() {
@@ -50,7 +51,8 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
                         return queryTable.flatten().updateView("i2=intCol*2");
                     }
                 },
-                new TableComparator(queryTable.updateView("i2=intCol*2").flatten(), queryTable.flatten().updateView("i2=intCol*2")),
+                new TableComparator(queryTable.updateView("i2=intCol*2").flatten(),
+                        queryTable.flatten().updateView("i2=intCol*2")),
         };
         for (int i = 0; i < 100; i++) {
             simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
@@ -82,7 +84,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
 
         final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
 
-        helper.modAndValidate(()-> {
+        helper.modAndValidate(() -> {
             addToTable(queryTable, i(70, 71, 78, 81), longCol("intCol", 70, 71, 78, 81));
             queryTable.notifyListeners(i(70, 71, 78, 81), i(), i(24, 46, 74, 100, 104));
         }, indexByRange(10, 13), i(), indexByRange(2, 9));
@@ -90,12 +92,12 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
 
     @Test
     public void testLegacyFlattenModifications() {
-        QueryTableTest.testLegacyFlattenModifications(arg -> (QueryTable)arg.flatten());
+        QueryTableTest.testLegacyFlattenModifications(arg -> (QueryTable) arg.flatten());
     }
 
     @Test
     public void testRemoveWithLowMod() {
-        Integer [] data = new Integer[10];
+        Integer[] data = new Integer[10];
         for (int ii = 0; ii < data.length; ++ii) {
             data[ii] = ii * 10;
         }
@@ -112,7 +114,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
 
     @Test
     public void testLegacyRemoveWithLowMod() {
-        Integer [] data = new Integer[10];
+        Integer[] data = new Integer[10];
         for (int ii = 0; ii < data.length; ++ii) {
             data[ii] = ii * 10;
         }
@@ -129,7 +131,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
 
     @Test
     public void testRemoveWithHighMod() {
-        Integer [] data = new Integer[10];
+        Integer[] data = new Integer[10];
         for (int ii = 0; ii < data.length; ++ii) {
             data[ii] = ii * 10;
         }
@@ -147,7 +149,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
 
     @Test
     public void testLegacyRemoveWithHighMod() {
-        Integer [] data = new Integer[10];
+        Integer[] data = new Integer[10];
         for (int ii = 0; ii < data.length; ++ii) {
             data[ii] = ii * 10;
         }
@@ -183,7 +185,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
             addToTable(queryTable, i(70, 71, 78, 81), longCol("intCol", 70, 71, 78, 81));
             TstUtils.removeRows(queryTable, i());
             queryTable.notifyListeners(i(70, 71, 78, 81), i(), i(24, 46, 74, 100, 104));
-        }, i(4, 5, 8, 9), i(), i(2,3,6,10,13), shiftDataByValues(4, 5, 2, 6, 9, 4));
+        }, i(4, 5, 8, 9), i(), i(2, 3, 6, 10, 13), shiftDataByValues(4, 5, 2, 6, 9, 4));
     }
 
     @Test
@@ -217,7 +219,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
 
         long updateCount = 0;
 
-        public interface ListenerFactory <T extends ListenerBase> {
+        public interface ListenerFactory<T extends ListenerBase> {
             T newListener(QueryTable queryTable);
         }
 
@@ -234,15 +236,17 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
 
             validator = TableUpdateValidator.make(this.sourceTable);
             final QueryTable validatorTable = validator.getResultTable();
-            final ShiftAwareListener validatorTableListener = new InstrumentedShiftAwareListenerAdapter(validatorTable, false) {
-                @Override
-                public void onUpdate(Update upstream) {}
+            final ShiftAwareListener validatorTableListener =
+                    new InstrumentedShiftAwareListenerAdapter(validatorTable, false) {
+                        @Override
+                        public void onUpdate(Update upstream) {}
 
-                @Override
-                public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
-                    TestCase.fail(originalException.getMessage());
-                }
-            };
+                        @Override
+                        public void onFailureInternal(Throwable originalException,
+                                UpdatePerformanceTracker.Entry sourceEntry) {
+                            TestCase.fail(originalException.getMessage());
+                        }
+                    };
             validatorTable.listenForUpdates(validatorTableListener);
 
             showWithIndex(sourceTable);
@@ -253,7 +257,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }
 
         void modAndValidate(final Runnable modTable, final Index added, final Index removed, final Index modified,
-                            final IndexShiftData shifted) {
+                final IndexShiftData shifted) {
             ++updateCount;
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(modTable::run);
@@ -284,20 +288,20 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
     }
 
     private static void validate(final SimpleListener listener, final long count, final Index added,
-                                 final Index removed, final Index modified) {
+            final Index removed, final Index modified) {
         Assert.assertEquals("simpleListener.getCount()", count, listener.getCount());
         Assert.assertEquals("simpleListener.added", added, listener.added);
         Assert.assertEquals("simpleListener.removed", removed, listener.removed);
-        Assert.assertEquals("simpleListener.modified", modified,  listener.modified);
+        Assert.assertEquals("simpleListener.modified", modified, listener.modified);
     }
 
     private static void validate(final SimpleShiftAwareListener listener, final long count, final Index added,
-                                 final Index removed, final Index modified, final IndexShiftData shifted) {
+            final Index removed, final Index modified, final IndexShiftData shifted) {
         Assert.assertEquals("simpleListener.getCount()", count, listener.getCount());
         Assert.assertEquals("simpleListener.added", added, listener.update.added);
         Assert.assertEquals("simpleListener.removed", removed, listener.update.removed);
-        Assert.assertEquals("simpleListener.modified", modified,  listener.update.modified);
-        Assert.assertEquals("simpleListener.shifted", shifted,  listener.update.shifted);
+        Assert.assertEquals("simpleListener.modified", modified, listener.update.modified);
+        Assert.assertEquals("simpleListener.shifted", shifted, listener.update.shifted);
     }
 
     /**

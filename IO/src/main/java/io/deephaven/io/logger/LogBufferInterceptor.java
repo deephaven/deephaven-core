@@ -39,7 +39,7 @@ public class LogBufferInterceptor extends LogBuffer implements LogSink.Intercept
             // We don't support MAILER log lines.
             return;
         }
-        // TODO: Lighter weight synchronization?  Off-thread the StreamLoggerImpl's sink?
+        // TODO: Lighter weight synchronization? Off-thread the StreamLoggerImpl's sink?
         synchronized (this) {
             if (next == null) {
                 next = new LogBufferRecord();

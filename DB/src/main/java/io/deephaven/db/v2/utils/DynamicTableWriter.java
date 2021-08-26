@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 
 /**
  * The DynamicTableWriter creates an in-memory table using ArrayBackedColumnSources of the type specified in the
- * constructor.  You can retrieve the table using the {@code getTable} function.
+ * constructor. You can retrieve the table using the {@code getTable} function.
  * <p>
  * This class is not thread safe, you must synchronize externally.
  */
@@ -47,19 +47,21 @@ public class DynamicTableWriter implements TableWriter {
     /**
      * Creates a TableWriter that produces an in-memory table using the provided column names and types.
      *
-     * @param columnNames    the names of the columns in the output table (and our input)
-     * @param columnTypes    the types of the columns in the output table (must be compatible with the input)
+     * @param columnNames the names of the columns in the output table (and our input)
+     * @param columnTypes the types of the columns in the output table (must be compatible with the input)
      * @param constantValues a Map of columns with constant values
      */
     @SuppressWarnings("WeakerAccess")
-    public DynamicTableWriter(final String[] columnNames, final Class<?>[] columnTypes, final Map<String, Object> constantValues) {
+    public DynamicTableWriter(final String[] columnNames, final Class<?>[] columnTypes,
+            final Map<String, Object> constantValues) {
         final Map<String, ColumnSource> sources = new LinkedHashMap<>();
         arrayColumnSources = new ArrayBackedColumnSource[columnTypes.length];
         allocatedSize = 256;
         for (int i = 0; i < columnTypes.length; i++) {
             if (constantValues.containsKey(columnNames[i])) {
-                final SingleValueColumnSource singleValueColumnSource = SingleValueColumnSource.getSingleValueColumnSource(columnTypes[i]);
-                //noinspection unchecked
+                final SingleValueColumnSource singleValueColumnSource =
+                        SingleValueColumnSource.getSingleValueColumnSource(columnTypes[i]);
+                // noinspection unchecked
                 singleValueColumnSource.set(constantValues.get(columnNames[i]));
                 sources.put(columnNames[i], singleValueColumnSource);
             } else {
@@ -78,7 +80,8 @@ public class DynamicTableWriter implements TableWriter {
                 continue;
             }
             final int index = ii;
-            factoryMap.put(columns[index].getName(), (currentRow) -> createRowSetter(columns[index].getType(), arrayColumnSources[index]));
+            factoryMap.put(columns[index].getName(),
+                    (currentRow) -> createRowSetter(columns[index].getType(), arrayColumnSources[index]));
         }
     }
 
@@ -88,7 +91,7 @@ public class DynamicTableWriter implements TableWriter {
      * @param columnNames the names of the columns in the output table (and our input)
      * @param columnTypes the types of the columns in the output table (must be compatible with the input)
      */
-    public DynamicTableWriter(final String [] columnNames, final Class<?> [] columnTypes) {
+    public DynamicTableWriter(final String[] columnNames, final Class<?>[] columnTypes) {
         this(columnNames, columnTypes, Collections.emptyMap());
     }
 
@@ -122,8 +125,8 @@ public class DynamicTableWriter implements TableWriter {
     }
 
     /**
-     * Returns a row writer, which allocates the row.  You may get setters for the row, and then call addRowToTableIndex when
-     * you are finished.  Because the row is allocated when you call this function, it is possible to get several
+     * Returns a row writer, which allocates the row. You may get setters for the row, and then call addRowToTableIndex
+     * when you are finished. Because the row is allocated when you call this function, it is possible to get several
      * Row objects before calling addRowToTableIndex.
      * <p>
      * This contrasts with {@code DynamicTableWriter.getSetter}, which allocates a single row; and you must call
@@ -137,8 +140,8 @@ public class DynamicTableWriter implements TableWriter {
     }
 
     /**
-     * Returns a RowSetter for the given column.  If required, a Row object is allocated.  You can not mix calls
-     * with {@code getSetter} and {@code getRowWriter}.  After setting each column, you must call {@code addRowToTableIndex},
+     * Returns a RowSetter for the given column. If required, a Row object is allocated. You can not mix calls with
+     * {@code getSetter} and {@code getRowWriter}. After setting each column, you must call {@code addRowToTableIndex},
      * before beginning to write the next row.
      *
      * @param name column name.
@@ -195,8 +198,8 @@ public class DynamicTableWriter implements TableWriter {
     }
 
     /**
-     * This is a convenience function so that you can log an entire row at a time using a Map.  You must specify all
-     * values in the setters map (and can't have any extras).  The type of the value must be castable to the type of the
+     * This is a convenience function so that you can log an entire row at a time using a Map. You must specify all
+     * values in the setters map (and can't have any extras). The type of the value must be castable to the type of the
      * setter.
      *
      * @param values a map from column name to value for the row to be logged
@@ -207,7 +210,7 @@ public class DynamicTableWriter implements TableWriter {
             throw new RuntimeException("Incompatible logRow call: " + values.keySet() + " != " + factoryMap.keySet());
         }
         for (final Map.Entry<String, Object> value : values.entrySet()) {
-            //noinspection unchecked
+            // noinspection unchecked
             getSetter(value.getKey()).set(value.getValue());
         }
         writeRow();
@@ -222,10 +225,11 @@ public class DynamicTableWriter implements TableWriter {
     @SuppressWarnings("unused")
     public void logRow(Object... values) {
         if (values.length != factoryMap.size()) {
-            throw new RuntimeException("Incompatible logRow call, values length=" + values.length + " != setters=" + factoryMap.size());
+            throw new RuntimeException(
+                    "Incompatible logRow call, values length=" + values.length + " != setters=" + factoryMap.size());
         }
         for (int ii = 0; ii < values.length; ++ii) {
-            //noinspection unchecked
+            // noinspection unchecked
             getSetter(columnNames[ii]).set(values[ii]);
         }
         writeRow();
@@ -233,8 +237,7 @@ public class DynamicTableWriter implements TableWriter {
     }
 
     @Override
-    public void flush() {
-    }
+    public void flush() {}
 
 
     @Override
@@ -369,7 +372,7 @@ public class DynamicTableWriter implements TableWriter {
 
         @Override
         void writeToColumnSource() {
-            //noinspection unchecked
+            // noinspection unchecked
             columnSource.set(row, pendingBoolean);
         }
     }
@@ -549,7 +552,7 @@ public class DynamicTableWriter implements TableWriter {
 
         @Override
         void writeToColumnSource() {
-            //noinspection unchecked
+            // noinspection unchecked
             columnSource.set(row, pendingObject);
         }
     }
@@ -567,7 +570,8 @@ public class DynamicTableWriter implements TableWriter {
 
     private class DynamicTableRow implements Row {
         private int row = lastSetterRow;
-        private final Map<String, RowSetterImpl> setterMap = factoryMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, (e) -> (e.getValue().apply(row))));
+        private final Map<String, RowSetterImpl> setterMap = factoryMap.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, (e) -> (e.getValue().apply(row))));
         private Row.Flags flags = Flags.SingleRow;
 
         @Override

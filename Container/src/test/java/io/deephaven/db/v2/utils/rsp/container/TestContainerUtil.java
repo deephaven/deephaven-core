@@ -25,7 +25,8 @@ public class TestContainerUtil {
         short[] data1 = {-19, -17, -15, -13, -11, -9, -7, -5, -3};
         Assert.assertEquals(8, ContainerUtil.branchyUnsignedBinarySearch(data1, 0, data1.length, data1[8]));
         Assert.assertEquals(0, ContainerUtil.branchyUnsignedBinarySearch(data1, 0, data1.length, data1[0]));
-        Assert.assertEquals(data1.length - 1, ContainerUtil.branchyUnsignedBinarySearch(data1, data1.length - 1, data1.length, data1[data1.length - 1]));
+        Assert.assertEquals(data1.length - 1, ContainerUtil.branchyUnsignedBinarySearch(data1, data1.length - 1,
+                data1.length, data1[data1.length - 1]));
         Assert.assertEquals(-1, ContainerUtil.branchyUnsignedBinarySearch(data1, 0, 0, (short) 0));
         Assert.assertEquals(-10, ContainerUtil.branchyUnsignedBinarySearch(data1, 0, data1.length, (short) -1));
     }
@@ -41,7 +42,7 @@ public class TestContainerUtil {
 
     @Test
     public void testPartialRadixSortEmpty() {
-        int[] data = new int[]{};
+        int[] data = new int[] {};
         int[] test = Arrays.copyOf(data, data.length);
         ContainerUtil.partialRadixSort(test);
         Assert.assertArrayEquals(data, test);
@@ -49,7 +50,7 @@ public class TestContainerUtil {
 
     @Test
     public void testPartialRadixSortIsStableInSameKey() {
-        int[] data = new int[]{25, 1, 0, 10};
+        int[] data = new int[] {25, 1, 0, 10};
         int[] test = Arrays.copyOf(data, data.length);
         ContainerUtil.partialRadixSort(test);
         Assert.assertArrayEquals(data, test);
@@ -59,9 +60,9 @@ public class TestContainerUtil {
     public void testPartialRadixSortSortsKeysCorrectly() {
         int key1 = 1 << 16;
         int key2 = 1 << 17;
-        int[] data = new int[]{key2 | 25, key1 | 1, 0, key2 | 10, 25, key1 | 10, key1, 10};
+        int[] data = new int[] {key2 | 25, key1 | 1, 0, key2 | 10, 25, key1 | 10, key1, 10};
         // sort by keys, leave values stable
-        int[] expected = new int[]{0, 25, 10, key1 | 1, key1 | 10, key1, key2 | 25, key2 | 10};
+        int[] expected = new int[] {0, 25, 10, key1 | 1, key1 | 10, key1, key2 | 25, key2 | 10};
         int[] test = Arrays.copyOf(data, data.length);
         ContainerUtil.partialRadixSort(test);
         Assert.assertArrayEquals(expected, test);
@@ -71,10 +72,10 @@ public class TestContainerUtil {
     public void testPartialRadixSortSortsKeysCorrectlyWithDuplicates() {
         int key1 = 1 << 16;
         int key2 = 1 << 17;
-        int[] data = new int[]{key2 | 25, key1 | 1, 0, key2 | 10, 25, key1 | 10, key1, 10,
+        int[] data = new int[] {key2 | 25, key1 | 1, 0, key2 | 10, 25, key1 | 10, key1, 10,
                 key2 | 25, key1 | 1, 0, key2 | 10, 25, key1 | 10, key1, 10};
         // sort by keys, leave values stable
-        int[] expected = new int[]{0, 25, 10, 0, 25, 10, key1 | 1, key1 | 10, key1, key1 | 1, key1 | 10, key1,
+        int[] expected = new int[] {0, 25, 10, 0, 25, 10, key1 | 1, key1 | 10, key1, key1 | 1, key1 | 10, key1,
                 key2 | 25, key2 | 10, key2 | 25, key2 | 10};
         int[] test = Arrays.copyOf(data, data.length);
         ContainerUtil.partialRadixSort(test);
@@ -93,10 +94,14 @@ public class TestContainerUtil {
     @Test
     public void testIterateUntil() {
         short[] data = {0, 3, 16, 18, 21, 29, 30, -342};
-        Assert.assertEquals(1, ContainerUtil.iterateUntil(data, 0, data.length, ContainerUtil.toIntUnsigned((short) 3)));
-        Assert.assertEquals(5, ContainerUtil.iterateUntil(data, 0, data.length, ContainerUtil.toIntUnsigned((short) 28)));
-        Assert.assertEquals(5, ContainerUtil.iterateUntil(data, 0, data.length, ContainerUtil.toIntUnsigned((short) 29)));
-        Assert.assertEquals(7, ContainerUtil.iterateUntil(data, 0, data.length, ContainerUtil.toIntUnsigned((short) -342)));
+        Assert.assertEquals(1,
+                ContainerUtil.iterateUntil(data, 0, data.length, ContainerUtil.toIntUnsigned((short) 3)));
+        Assert.assertEquals(5,
+                ContainerUtil.iterateUntil(data, 0, data.length, ContainerUtil.toIntUnsigned((short) 28)));
+        Assert.assertEquals(5,
+                ContainerUtil.iterateUntil(data, 0, data.length, ContainerUtil.toIntUnsigned((short) 29)));
+        Assert.assertEquals(7,
+                ContainerUtil.iterateUntil(data, 0, data.length, ContainerUtil.toIntUnsigned((short) -342)));
     }
 
     @Test

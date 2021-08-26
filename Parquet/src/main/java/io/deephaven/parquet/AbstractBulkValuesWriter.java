@@ -11,25 +11,22 @@ public abstract class AbstractBulkValuesWriter<T, L> extends ValuesWriter implem
 
     @Override
     public int writeBulkVector(T bulkValues, IntBuffer repeatCount, RunLengthBitPackingHybridEncoder rlEncoder,
-                               RunLengthBitPackingHybridEncoder dlEncoder, int nonNullValueCount, L nullValue) throws IOException {
+            RunLengthBitPackingHybridEncoder dlEncoder, int nonNullValueCount, L nullValue) throws IOException {
         IntBuffer nullsOffsets = writeBulkFilterNulls(bulkValues, nullValue, nonNullValueCount).nullOffsets;
         return applyDlAndRl(repeatCount, rlEncoder, dlEncoder, nullsOffsets);
     }
 
     @NotNull
     int applyDlAndRl(IntBuffer repeatCount, RunLengthBitPackingHybridEncoder rlEncoder,
-                             RunLengthBitPackingHybridEncoder dlEncoder,
-                             IntBuffer nullsOffsets) throws IOException {
+            RunLengthBitPackingHybridEncoder dlEncoder,
+            IntBuffer nullsOffsets) throws IOException {
         int valueCount = 0;
         int leafCount = 0;
 
         nullsOffsets.flip();
         int nextNullOffset = nullsOffsets.hasRemaining() ? nullsOffsets.get() : Integer.MAX_VALUE;
         /*
-         DL: 0 - null row
-         DL: 1 - empty array
-         DL: 2 - null element
-         DL: 3 - non-null array element
+         * DL: 0 - null row DL: 1 - empty array DL: 2 - null element DL: 3 - non-null array element
          */
 
         while (repeatCount.hasRemaining()) {

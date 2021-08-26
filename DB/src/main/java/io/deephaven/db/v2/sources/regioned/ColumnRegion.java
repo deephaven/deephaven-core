@@ -24,7 +24,8 @@ public interface ColumnRegion<ATTR extends Any> extends Page<ATTR>, Releasable {
         }
 
         @Override
-        public void fillChunkAppend(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination, final int length) {
+        public void fillChunkAppend(@NotNull final FillContext context,
+                @NotNull final WritableChunk<? super ATTR> destination, final int length) {
             final int offset = destination.size();
 
             destination.fillWithNullValue(offset, length);

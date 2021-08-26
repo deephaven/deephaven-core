@@ -47,7 +47,8 @@ public abstract class TableInfo {
     }
 
     public final Map<String, GroupingColumnInfo> groupingColumnMap() {
-        return groupingColumns().stream().collect(Collectors.toMap(GroupingColumnInfo::columnName, Function.identity()));
+        return groupingColumns().stream()
+                .collect(Collectors.toMap(GroupingColumnInfo::columnName, Function.identity()));
     }
 
     public final Map<String, ColumnTypeInfo> columnTypeMap() {
@@ -69,7 +70,7 @@ public abstract class TableInfo {
 
     /**
      * @return List of {@link ColumnTypeInfo column types} for columns requiring non-default deserialization or type
-     * selection
+     *         selection
      */
     public abstract List<ColumnTypeInfo> columnTypes();
 

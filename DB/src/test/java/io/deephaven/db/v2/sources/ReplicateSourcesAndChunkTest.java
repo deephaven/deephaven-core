@@ -23,19 +23,27 @@ public class ReplicateSourcesAndChunkTest {
         ReplicateSourcesAndChunks.main(args);
 
         ReplicatePrimitiveCode.charToAllButBoolean(TestCharacterArraySource.class, ReplicatePrimitiveCode.TEST_SRC);
-        fixupBooleanColumnSourceTest(ReplicatePrimitiveCode.charToBooleanAsByte(TestCharacterArraySource.class, ReplicatePrimitiveCode.TEST_SRC, Collections.emptyMap()));
-        fixupObjectColumnSourceTest(ReplicatePrimitiveCode.charToObject(TestCharacterArraySource.class, ReplicatePrimitiveCode.TEST_SRC));
+        fixupBooleanColumnSourceTest(ReplicatePrimitiveCode.charToBooleanAsByte(TestCharacterArraySource.class,
+                ReplicatePrimitiveCode.TEST_SRC, Collections.emptyMap()));
+        fixupObjectColumnSourceTest(
+                ReplicatePrimitiveCode.charToObject(TestCharacterArraySource.class, ReplicatePrimitiveCode.TEST_SRC));
 
-        ReplicatePrimitiveCode.charToAllButBoolean(TestCharacterSparseArraySource.class, ReplicatePrimitiveCode.TEST_SRC);
-        fixupBooleanColumnSourceTest(ReplicatePrimitiveCode.charToBooleanAsByte(TestCharacterSparseArraySource.class, ReplicatePrimitiveCode.TEST_SRC, Collections.emptyMap()));
-        fixupObjectColumnSourceTest(ReplicatePrimitiveCode.charToObject(TestCharacterSparseArraySource.class, ReplicatePrimitiveCode.TEST_SRC));
+        ReplicatePrimitiveCode.charToAllButBoolean(TestCharacterSparseArraySource.class,
+                ReplicatePrimitiveCode.TEST_SRC);
+        fixupBooleanColumnSourceTest(ReplicatePrimitiveCode.charToBooleanAsByte(TestCharacterSparseArraySource.class,
+                ReplicatePrimitiveCode.TEST_SRC, Collections.emptyMap()));
+        fixupObjectColumnSourceTest(ReplicatePrimitiveCode.charToObject(TestCharacterSparseArraySource.class,
+                ReplicatePrimitiveCode.TEST_SRC));
 
         ReplicatePrimitiveCode.charToAll(TestCharChunk.class, ReplicatePrimitiveCode.TEST_SRC);
         fixupChunkTest(ReplicatePrimitiveCode.charToObject(TestCharChunk.class, ReplicatePrimitiveCode.TEST_SRC));
 
-        ReplicatePrimitiveCode.charToAllButBoolean(TestCharacterDeltaAwareColumnSource.class, ReplicatePrimitiveCode.TEST_SRC);
-        fixupBooleanDeltaAwareColumnSourceTest(ReplicatePrimitiveCode.charToBooleanAsByte(TestCharacterDeltaAwareColumnSource.class, ReplicatePrimitiveCode.TEST_SRC, Collections.emptyMap()));
-        fixupObjectDeltaAwareColumnSourceTest(ReplicatePrimitiveCode.charToObject(TestCharacterDeltaAwareColumnSource.class, ReplicatePrimitiveCode.TEST_SRC));
+        ReplicatePrimitiveCode.charToAllButBoolean(TestCharacterDeltaAwareColumnSource.class,
+                ReplicatePrimitiveCode.TEST_SRC);
+        fixupBooleanDeltaAwareColumnSourceTest(ReplicatePrimitiveCode.charToBooleanAsByte(
+                TestCharacterDeltaAwareColumnSource.class, ReplicatePrimitiveCode.TEST_SRC, Collections.emptyMap()));
+        fixupObjectDeltaAwareColumnSourceTest(ReplicatePrimitiveCode
+                .charToObject(TestCharacterDeltaAwareColumnSource.class, ReplicatePrimitiveCode.TEST_SRC));
     }
 
     private static void fixupObjectColumnSourceTest(String objectPath) throws IOException {
@@ -50,8 +58,7 @@ public class ReplicateSourcesAndChunkTest {
                 "dest.getObject", "dest.get",
                 "source.getPrevObject", "source.getPrev",
                 "new ObjectArraySource\\(\\)", "new ObjectArraySource<>\\(String.class\\)",
-                "new ObjectSparseArraySource\\(\\)", "new ObjectSparseArraySource<>\\(String.class\\)"
-        );
+                "new ObjectSparseArraySource\\(\\)", "new ObjectSparseArraySource<>\\(String.class\\)");
         lines = removeRegion(lines, "boxing imports");
         FileUtils.writeLines(objectFile, lines);
     }
@@ -70,16 +77,23 @@ public class ReplicateSourcesAndChunkTest {
                 "asBooleanChunk", "asObjectChunk",
                 "BooleanChunk.chunkWrap", "ObjectChunk.chunkWrap",
                 "BooleanChunkEquals", "ObjectChunkEquals",
-                "WritableBooleanChunk.makeWritableChunk", "WritableObjectChunk.makeWritableChunk"
-        );
+                "WritableBooleanChunk.makeWritableChunk", "WritableObjectChunk.makeWritableChunk");
 
         lines = simpleFixup(lines, "arrayFill", "NULL_BOOLEAN", "BooleanUtils.NULL_BOOLEAN_AS_BYTE");
         lines = simpleFixup(lines, "testsourcesink", "ChunkType.Boolean", "ChunkType.Object");
 
-        lines = applyFixup(lines, "fromsource", "(.*)checkFromSource\\((.*)byte fromSource(.*)\\) \\{", m -> Collections.singletonList(m.group(1) + "checkFromSource(" + m.group(2) + "Boolean fromSource" + m.group(3) + ") {"));
-        lines = applyFixup(lines, "fromsource", "(.*)checkFromSource\\((.*)byte fromChunk(.*)\\) \\{", m -> Collections.singletonList(m.group(1) + "checkFromSource(" + m.group(2) + "Boolean fromChunk" + m.group(3) + ") {"));
-        lines = applyFixup(lines, "fromvalues", "(.*)checkFromValues\\((.*)byte fromChunk(.*)\\) \\{", m -> Collections.singletonList(m.group(1) + "checkFromValues(" + m.group(2) + "Boolean fromChunk" + m.group(3) + ") {"));
-        lines = applyFixup(lines, "fromvalues", "(.*)fromValues, fromChunk\\);", m -> Collections.singletonList(m.group(1) + "fromValues == BooleanUtils.NULL_BOOLEAN_AS_BYTE ? null : fromValues == BooleanUtils.TRUE_BOOLEAN_AS_BYTE, fromChunk);"));
+        lines = applyFixup(lines, "fromsource", "(.*)checkFromSource\\((.*)byte fromSource(.*)\\) \\{",
+                m -> Collections.singletonList(
+                        m.group(1) + "checkFromSource(" + m.group(2) + "Boolean fromSource" + m.group(3) + ") {"));
+        lines = applyFixup(lines, "fromsource", "(.*)checkFromSource\\((.*)byte fromChunk(.*)\\) \\{",
+                m -> Collections.singletonList(
+                        m.group(1) + "checkFromSource(" + m.group(2) + "Boolean fromChunk" + m.group(3) + ") {"));
+        lines = applyFixup(lines, "fromvalues", "(.*)checkFromValues\\((.*)byte fromChunk(.*)\\) \\{",
+                m -> Collections.singletonList(
+                        m.group(1) + "checkFromValues(" + m.group(2) + "Boolean fromChunk" + m.group(3) + ") {"));
+        lines = applyFixup(lines, "fromvalues", "(.*)fromValues, fromChunk\\);", m -> Collections.singletonList(m
+                .group(1)
+                + "fromValues == BooleanUtils.NULL_BOOLEAN_AS_BYTE ? null : fromValues == BooleanUtils.TRUE_BOOLEAN_AS_BYTE, fromChunk);"));
         lines = removeRegion(lines, "samecheck");
         lines = addImport(lines, BooleanUtils.class);
         lines = addImport(lines, WritableObjectChunk.class);
@@ -88,8 +102,7 @@ public class ReplicateSourcesAndChunkTest {
             lines = removeImport(lines, "import io.deephaven.db.v2.sources.chunk.Attributes.OrderedKeyRanges;");
         }
         lines = simpleFixup(lines, "elementGet",
-                "getBoolean", "getByte"
-                );
+                "getBoolean", "getByte");
         FileUtils.writeLines(booleanFile, lines);
     }
 
@@ -114,15 +127,14 @@ public class ReplicateSourcesAndChunkTest {
         final File booleanFile = new File(booleanPath);
         List<String> lines = FileUtils.readLines(booleanFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
-                "Map<Long, Boolean>", "Map<Long, Byte>",  // covers Map and HashMap
+                "Map<Long, Boolean>", "Map<Long, Byte>", // covers Map and HashMap
                 "source.getBoolean", "source.getByte",
                 "source.getPrevBoolean", "source.getPrevByte",
                 "NULL_BOOLEAN", "BooleanUtils.NULL_BOOLEAN_AS_BYTE",
                 "byte.class", "boolean.class",
                 "BooleanChunk<Values>", "ObjectChunk<Boolean, Values>",
                 "asBooleanChunk", "asObjectChunk",
-                "values.get\\((.*)\\)", "io.deephaven.db.util.BooleanUtils.booleanAsByte(values.get($1))"
-        );
+                "values.get\\((.*)\\)", "io.deephaven.db.util.BooleanUtils.booleanAsByte(values.get($1))");
         lines = addImport(lines, BooleanUtils.class);
         lines = addImport(lines, ObjectChunk.class);
         FileUtils.writeLines(booleanFile, lines);

@@ -5,5 +5,5 @@ import jsinterop.annotations.JsType;
 
 @JsType(isNative = true, name = "dhinternal.jspb.Map.Iterator", namespace = JsPackage.GLOBAL)
 public interface Iterator<T> {
-  IteratorResult<T> next();
+    IteratorResult<T> next();
 }

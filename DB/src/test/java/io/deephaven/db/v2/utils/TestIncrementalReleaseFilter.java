@@ -63,7 +63,7 @@ public class TestIncrementalReleaseFilter extends LiveTableTestCase {
 
     static public <T> T sleepValue(long duration, T retVal) {
         final Object blech = new Object();
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (blech) {
             try {
                 final long seconds = duration / 1000000000L;
@@ -90,7 +90,8 @@ public class TestIncrementalReleaseFilter extends LiveTableTestCase {
         final Table source = TableTools.emptyTable(1_000_000);
         TableTools.show(source);
 
-        final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter = new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true, new ClockTimeProvider(new RealTimeClock()));
+        final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter =
+                new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true, new ClockTimeProvider(new RealTimeClock()));
         final Table filtered = source.where(incrementalReleaseFilter);
 
         final Table updated = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> filtered.update("I=ii"));
@@ -107,10 +108,12 @@ public class TestIncrementalReleaseFilter extends LiveTableTestCase {
         final Table source = TableTools.emptyTable(10_000);
         TableTools.show(source);
 
-        final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter = new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true, new ClockTimeProvider(new RealTimeClock()));
+        final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter =
+                new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true, new ClockTimeProvider(new RealTimeClock()));
         final Table filtered = source.where(incrementalReleaseFilter);
 
-        final Table updated = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> filtered.update("I=io.deephaven.db.v2.utils.TestIncrementalReleaseFilter.sleepValue(100000, ii)"));
+        final Table updated = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> filtered
+                .update("I=io.deephaven.db.v2.utils.TestIncrementalReleaseFilter.sleepValue(100000, ii)"));
 
         int cycles = 0;
         while (filtered.size() < source.size()) {

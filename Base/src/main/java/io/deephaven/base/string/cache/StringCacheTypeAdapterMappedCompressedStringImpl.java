@@ -9,9 +9,11 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Type adapter for MappedCompressedStrings.
  */
-public class StringCacheTypeAdapterMappedCompressedStringImpl implements StringCacheTypeAdapter<MappedCompressedString> {
+public class StringCacheTypeAdapterMappedCompressedStringImpl
+        implements StringCacheTypeAdapter<MappedCompressedString> {
 
-    public static final StringCacheTypeAdapter<MappedCompressedString> INSTANCE = new StringCacheTypeAdapterMappedCompressedStringImpl();
+    public static final StringCacheTypeAdapter<MappedCompressedString> INSTANCE =
+            new StringCacheTypeAdapterMappedCompressedStringImpl();
 
     private static final MappedCompressedString EMPTY_VALUE = new MappedCompressedString("");
 

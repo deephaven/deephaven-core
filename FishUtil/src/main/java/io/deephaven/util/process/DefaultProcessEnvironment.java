@@ -31,7 +31,8 @@ public class DefaultProcessEnvironment extends BaseProcessEnvironment {
     static class Factory implements ProcessEnvironment.Factory {
 
         @Override
-        public ProcessEnvironment make(@NotNull final Configuration configuration, @NotNull final String mainClassName, @NotNull final Logger log) {
+        public ProcessEnvironment make(@NotNull final Configuration configuration, @NotNull final String mainClassName,
+                @NotNull final Logger log) {
             return new DefaultProcessEnvironment(mainClassName, log);
         }
     }

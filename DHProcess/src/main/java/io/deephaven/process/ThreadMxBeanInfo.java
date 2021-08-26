@@ -17,12 +17,12 @@ public abstract class ThreadMxBeanInfo implements PropertySet {
 
     public static ThreadMxBeanInfo of(ThreadMXBean bean) {
         return ImmutableThreadMxBeanInfo.builder()
-            .isCurrentThreadCpuTimeSupported(bean.isCurrentThreadCpuTimeSupported())
-            .isObjectMonitorUsageSupported(bean.isObjectMonitorUsageSupported())
-            .isSynchronizerUsageSupported(bean.isSynchronizerUsageSupported())
-            .isThreadContentionMonitoringSupported(bean.isThreadContentionMonitoringSupported())
-            .isThreadCpuTimeSupported(bean.isThreadCpuTimeSupported())
-            .build();
+                .isCurrentThreadCpuTimeSupported(bean.isCurrentThreadCpuTimeSupported())
+                .isObjectMonitorUsageSupported(bean.isObjectMonitorUsageSupported())
+                .isSynchronizerUsageSupported(bean.isSynchronizerUsageSupported())
+                .isThreadContentionMonitoringSupported(bean.isThreadContentionMonitoringSupported())
+                .isThreadCpuTimeSupported(bean.isThreadCpuTimeSupported())
+                .build();
     }
 
     @Value.Parameter

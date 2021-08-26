@@ -24,7 +24,8 @@ public class OrderedKeysKeyRangesChunkImpl implements OrderedKeys {
     // Calculating size is O(n), so once computed let's cache the result.
     private long cachedSize = 0;
 
-    private OrderedKeysKeyRangesChunkImpl(final LongChunk<OrderedKeyRanges> backingChunk, final WritableLongChunk<OrderedKeyRanges> toReleaseChunk) {
+    private OrderedKeysKeyRangesChunkImpl(final LongChunk<OrderedKeyRanges> backingChunk,
+            final WritableLongChunk<OrderedKeyRanges> toReleaseChunk) {
         this.minKeyValue = 0;
         this.maxKeyValue = Long.MAX_VALUE;
         this.backingChunk = backingChunk;
@@ -53,9 +54,9 @@ public class OrderedKeysKeyRangesChunkImpl implements OrderedKeys {
     }
 
     private OrderedKeysKeyRangesChunkImpl(final LongChunk<OrderedKeyRanges> backingChunk,
-                                  final WritableLongChunk<OrderedKeyRanges> toReleaseChunk,
-                                  final long minKeyValue,
-                                  final long maxKeyValue) {
+            final WritableLongChunk<OrderedKeyRanges> toReleaseChunk,
+            final long minKeyValue,
+            final long maxKeyValue) {
         this.minKeyValue = minKeyValue;
         this.maxKeyValue = maxKeyValue;
         this.backingChunk = backingChunk;
@@ -79,15 +80,15 @@ public class OrderedKeysKeyRangesChunkImpl implements OrderedKeys {
     }
 
     private OrderedKeysKeyRangesChunkImpl(final LongChunk<OrderedKeyRanges> backingChunk,
-                                  final long minKeyValue,
-                                  final long maxKeyValue) {
+            final long minKeyValue,
+            final long maxKeyValue) {
         this(backingChunk, null, minKeyValue, maxKeyValue);
 
     }
 
     private OrderedKeysKeyRangesChunkImpl(final WritableLongChunk<OrderedKeyRanges> backingChunkToOwn,
-                                  final long minKeyValue,
-                                  final long maxKeyValue) {
+            final long minKeyValue,
+            final long maxKeyValue) {
         this(backingChunkToOwn, backingChunkToOwn, minKeyValue, maxKeyValue);
 
     }
@@ -98,6 +99,7 @@ public class OrderedKeysKeyRangesChunkImpl implements OrderedKeys {
 
         /**
          * Advances {@code offset} and {@code currKeyValue} to the new values after skipping {@code numberOfKeys} items.
+         * 
          * @param numberOfKeys the number of items to skip
          * @return true iff we haven't fallen off the end of the container
          */
@@ -360,7 +362,8 @@ public class OrderedKeysKeyRangesChunkImpl implements OrderedKeys {
             asKeyRangesChunk = WritableLongChunk.makeWritableChunk(backingChunk.size());
             backingChunk.copyToChunk(0, asKeyRangesChunk, 0, backingChunk.size());
             asKeyRangesChunk.set(0, Math.max(minKeyValue, asKeyRangesChunk.get(0)));
-            asKeyRangesChunk.set(backingChunk.size() - 1, Math.min(maxKeyValue, asKeyRangesChunk.get(backingChunk.size() - 1)));
+            asKeyRangesChunk.set(backingChunk.size() - 1,
+                    Math.min(maxKeyValue, asKeyRangesChunk.get(backingChunk.size() - 1)));
         }
         return asKeyRangesChunk;
     }
@@ -440,9 +443,9 @@ public class OrderedKeysKeyRangesChunkImpl implements OrderedKeys {
         final long e0 = backingChunk.get(1);
         if (backingChunk.size() == 2) {
             return forEachInRange(
-                Math.max(minKeyValue, s0),
-                Math.min(maxKeyValue, e0),
-                lc);
+                    Math.max(minKeyValue, s0),
+                    Math.min(maxKeyValue, e0),
+                    lc);
         }
         if (!forEachInRange(
                 Math.max(minKeyValue, s0),

@@ -32,8 +32,8 @@ public class SoftRecycler<T> {
     /**
      * @param capacity Capacity of the recycler
      * @param constructItem A callback that creates a new item
-     * @param sanitizeItem Optional. A callback that sanitizes the item before reuse. Pass null if no sanitization
-     *                     is needed.
+     * @param sanitizeItem Optional. A callback that sanitizes the item before reuse. Pass null if no sanitization is
+     *        needed.
      */
     public SoftRecycler(int capacity, Supplier<T> constructItem, Consumer<T> sanitizeItem) {
         this.capacity = capacity;

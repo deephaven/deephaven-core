@@ -12,16 +12,16 @@ import java.util.Arrays;
 public class IntrusiveSoftLRU<T> {
     private final Adapter<T> adapter;
 
-    private final int [] nexts;
-    private final int [] prevs;
-    private final SoftReference<T> [] softReferences;
+    private final int[] nexts;
+    private final int[] prevs;
+    private final SoftReference<T>[] softReferences;
 
     private int tail;
 
     private static final SoftReference<?> NULL = new SoftReference<>(null);
 
     private static <T> SoftReference<T> getNull() {
-        //noinspection unchecked
+        // noinspection unchecked
         return (SoftReference<T>) NULL;
     }
 
@@ -31,22 +31,22 @@ public class IntrusiveSoftLRU<T> {
         this.adapter = adapter;
         this.tail = 0;
 
-        nexts = new int [maxSize];
-        prevs = new int [maxSize];
+        nexts = new int[maxSize];
+        prevs = new int[maxSize];
 
-        //noinspection unchecked
-        softReferences = new SoftReference [maxSize];
+        // noinspection unchecked
+        softReferences = new SoftReference[maxSize];
 
         Arrays.fill(softReferences, getNull());
 
-        nexts[0] = maxSize -1;
+        nexts[0] = maxSize - 1;
 
         for (int i = 1; i < maxSize; ++i) {
-            nexts[i] = i-1;
-            prevs[i-1] = i;
+            nexts[i] = i - 1;
+            prevs[i - 1] = i;
         }
 
-        prevs[maxSize-1] = 0;
+        prevs[maxSize - 1] = 0;
     }
 
     public synchronized void touch(@NotNull T t) {
@@ -68,8 +68,8 @@ public class IntrusiveSoftLRU<T> {
                 int prev = prevs[slot];
                 int next = nexts[slot];
 
-                nexts[prev]= next;
-                prevs[next]= prev;
+                nexts[prev] = next;
+                prevs[next] = prev;
 
                 // Move this entry to be the new head
                 nexts[slot] = head;
@@ -124,6 +124,7 @@ public class IntrusiveSoftLRU<T> {
         SoftReference<T> getOwner(T t);
 
         int getSlot(T t);
+
         void setSlot(T t, int slot);
     }
 
@@ -132,6 +133,7 @@ public class IntrusiveSoftLRU<T> {
         SoftReference<T> getOwner();
 
         int getSlot();
+
         void setSlot(int slot);
 
         class Impl<T extends Impl<T>> implements Node<T> {
@@ -140,7 +142,7 @@ public class IntrusiveSoftLRU<T> {
             private int slot;
 
             protected Impl() {
-                //noinspection unchecked
+                // noinspection unchecked
                 owner = new SoftReference<>((T) this);
                 slot = -1;
             }
@@ -166,7 +168,7 @@ public class IntrusiveSoftLRU<T> {
             private static final IntrusiveSoftLRU.Adapter<?> INSTANCE = new Adapter<>();
 
             public static <T extends Node<T>> IntrusiveSoftLRU.Adapter<T> getInstance() {
-                //noinspection unchecked
+                // noinspection unchecked
                 return (IntrusiveSoftLRU.Adapter<T>) INSTANCE;
             }
 

@@ -10,8 +10,7 @@ public class HandleMapping implements Serializable {
     private TableHandle source;
     private TableHandle newId;
 
-    public HandleMapping() {
-    }
+    public HandleMapping() {}
 
     public HandleMapping(TableHandle source, TableHandle newId) {
         this.source = source;
@@ -58,8 +57,8 @@ public class HandleMapping implements Serializable {
     @Override
     public String toString() {
         return "HandleMapping{" +
-            "source=" + source +
-            ", newId=" + newId +
-            '}';
+                "source=" + source +
+                ", newId=" + newId +
+                '}';
     }
 }

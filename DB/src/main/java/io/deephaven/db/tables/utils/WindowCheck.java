@@ -27,12 +27,18 @@ public class WindowCheck {
     private WindowCheck() {}
 
     /**
-     * <p>Adds a Boolean column that is false when a timestamp column is older than windowNanos.</p>
+     * <p>
+     * Adds a Boolean column that is false when a timestamp column is older than windowNanos.
+     * </p>
      *
-     * <p>If the timestamp is greater than or equal to the curent time - windowNanos, then the result column is true.
-     * If the timestamp is null; the InWindow value is null.</p>
+     * <p>
+     * If the timestamp is greater than or equal to the curent time - windowNanos, then the result column is true. If
+     * the timestamp is null; the InWindow value is null.
+     * </p>
      *
-     * <p>The resultant table ticks whenever the input table ticks, or modifies a row when it passes out of the window.</p>
+     * <p>
+     * The resultant table ticks whenever the input table ticks, or modifies a row when it passes out of the window.
+     * </p>
      *
      * @param table the input table
      * @param timestampColumn the timestamp column to monitor in table
@@ -58,14 +64,16 @@ public class WindowCheck {
      * @param addToMonitor should we add this to the LiveTableMonitor
      * @return a pair of the result table and the TimeWindowListener that drives it
      */
-    static Pair<Table, TimeWindowListener> addTimeWindowInternal(TimeProvider timeProvider, Table table, String timestampColumn, long windowNanos, String inWindowColumn, boolean addToMonitor) {
+    static Pair<Table, TimeWindowListener> addTimeWindowInternal(TimeProvider timeProvider, Table table,
+            String timestampColumn, long windowNanos, String inWindowColumn, boolean addToMonitor) {
         final Map<String, ColumnSource> resultColumns = new LinkedHashMap<>(table.getColumnSourceMap());
 
         final InWindowColumnSource inWindowColumnSource;
         if (timeProvider == null) {
             inWindowColumnSource = new InWindowColumnSource(table, timestampColumn, windowNanos);
         } else {
-            inWindowColumnSource = new InWindowColumnSourceWithTimeProvider(timeProvider, table, timestampColumn, windowNanos);
+            inWindowColumnSource =
+                    new InWindowColumnSourceWithTimeProvider(timeProvider, table, timestampColumn, windowNanos);
         }
         inWindowColumnSource.init();
         resultColumns.put(inWindowColumn, inWindowColumnSource);
@@ -75,7 +83,8 @@ public class WindowCheck {
         if (table instanceof DynamicTable) {
             final DynamicTable dynamicSource = (DynamicTable) table;
             final WindowListenerRecorder recorder = new WindowListenerRecorder(dynamicSource, result);
-            final TimeWindowListener timeWindowListener = new TimeWindowListener(inWindowColumn, inWindowColumnSource, recorder, dynamicSource, result);
+            final TimeWindowListener timeWindowListener =
+                    new TimeWindowListener(inWindowColumn, inWindowColumnSource, recorder, dynamicSource, result);
             recorder.setMergedListener(timeWindowListener);
             dynamicSource.listenForUpdates(recorder);
             table.getIndex().forAllLongs(timeWindowListener::addIndex);
@@ -91,8 +100,8 @@ public class WindowCheck {
     }
 
     /**
-     * The TimeWindowListener maintains a priority queue of rows that are within a configured window, when they pass
-     * out of the window, the InWindow column is set to false and a modification tick happens.
+     * The TimeWindowListener maintains a priority queue of rows that are within a configured window, when they pass out
+     * of the window, the InWindow column is set to false and a modification tick happens.
      *
      * It implements LiveTable, so that we can be inserted into the LiveTableMonitor.
      */
@@ -143,7 +152,7 @@ public class WindowCheck {
          * @param result our initialized result table
          */
         private TimeWindowListener(final String inWindowColumnName, final InWindowColumnSource inWindowColumnSource,
-                                   final ListenerRecorder recorder, final DynamicTable source, final QueryTable result) {
+                final ListenerRecorder recorder, final DynamicTable source, final QueryTable result) {
             super(Collections.singleton(recorder), Collections.singleton(source), "WindowCheck", result);
             this.source = source;
             this.recorder = recorder;
@@ -168,7 +177,8 @@ public class WindowCheck {
 
             this.indexToEntry = new TLongObjectHashMap<>();
 
-            this.mcsTransformer = source.newModifiedColumnSetTransformer(result, source.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+            this.mcsTransformer = source.newModifiedColumnSetTransformer(result,
+                    source.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
             this.mcsNewColumns = result.newModifiedColumnSet(inWindowColumnName);
             this.reusableModifiedColumnSet = new ModifiedColumnSet(this.mcsNewColumns);
         }
@@ -248,8 +258,8 @@ public class WindowCheck {
         }
 
         /**
-         * Handles modified indices.  If they are outside of the window, they need to be removed from the queue.  If
-         * they are inside the window, they need to be (re)inserted into the queue.
+         * Handles modified indices. If they are outside of the window, they need to be removed from the queue. If they
+         * are inside the window, they need to be (re)inserted into the queue.
          */
         private void updateIndex(final long index, DBDateTime currentTimestamp) {
             Entry entry = indexToEntry.remove(index);
@@ -273,6 +283,7 @@ public class WindowCheck {
 
         /**
          * If the value of the timestamp is within the window, insert it into the queue and map.
+         * 
          * @param index the index inserted into the table
          */
         private void addIndex(long index) {
@@ -339,7 +350,7 @@ public class WindowCheck {
             final Index resultIndex = result.getIndex();
             final Index.RandomBuilder builder = Index.FACTORY.getRandomBuilder();
 
-            final Entry [] entries = new Entry[priorityQueue.size()];
+            final Entry[] entries = new Entry[priorityQueue.size()];
             priorityQueue.dump(entries, 0);
             Arrays.stream(entries).mapToLong(entry -> entry.index).forEach(builder::addKey);
 
@@ -347,8 +358,9 @@ public class WindowCheck {
             Assert.eq(inQueue.size(), "inQueue.size()", priorityQueue.size(), "priorityQueue.size()");
             final boolean condition = inQueue.subsetOf(resultIndex);
             if (!condition) {
-                //noinspection ConstantConditions
-                Assert.assertion(condition, "inQueue.subsetOf(resultIndex)", inQueue, "inQueue", resultIndex, "resultIndex", inQueue.minus(resultIndex), "inQueue.minus(resultIndex)");
+                // noinspection ConstantConditions
+                Assert.assertion(condition, "inQueue.subsetOf(resultIndex)", inQueue, "inQueue", resultIndex,
+                        "resultIndex", inQueue.minus(resultIndex), "inQueue.minus(resultIndex)");
             }
         }
 
@@ -362,7 +374,8 @@ public class WindowCheck {
     private static class InWindowColumnSourceWithTimeProvider extends InWindowColumnSource {
         final private TimeProvider timeProvider;
 
-        InWindowColumnSourceWithTimeProvider(TimeProvider timeProvider, Table table, String timestampColumn, long windowNanos) {
+        InWindowColumnSourceWithTimeProvider(TimeProvider timeProvider, Table table, String timestampColumn,
+                long windowNanos) {
             super(table, timestampColumn, windowNanos);
             this.timeProvider = Require.neqNull(timeProvider, "timeProvider");
         }
@@ -373,7 +386,8 @@ public class WindowCheck {
         }
     }
 
-    private static class InWindowColumnSource extends AbstractColumnSource<Boolean> implements MutableColumnSourceGetDefaults.ForBoolean {
+    private static class InWindowColumnSource extends AbstractColumnSource<Boolean>
+            implements MutableColumnSourceGetDefaults.ForBoolean {
         private final long windowNanos;
         private final ColumnSource<DBDateTime> timeStampSource;
 
@@ -386,7 +400,7 @@ public class WindowCheck {
             super(Boolean.class);
             this.windowNanos = windowNanos;
 
-            //noinspection unchecked
+            // noinspection unchecked
             this.timeStampSource = table.getColumnSource(timestampColumn);
             if (!DBDateTime.class.isAssignableFrom(timeStampSource.getType())) {
                 throw new IllegalArgumentException(timestampColumn + " is not of type DBDateTime!");
@@ -394,7 +408,8 @@ public class WindowCheck {
         }
 
         /**
-         * Initialize the first currentTime.  Called outside the constructor, because subclasses may overload getTimeNanos().
+         * Initialize the first currentTime. Called outside the constructor, because subclasses may overload
+         * getTimeNanos().
          */
         private void init() {
             currentTime = getTimeNanos();

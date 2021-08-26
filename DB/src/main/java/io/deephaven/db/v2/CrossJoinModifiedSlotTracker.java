@@ -21,7 +21,8 @@ import java.util.function.Consumer;
 /**
  * A tracker for modified cross join hash table slots.
  *
- * After adding an entry, you get back a cookie, which must be passed in on future modification operations for that slot.
+ * After adding an entry, you get back a cookie, which must be passed in on future modification operations for that
+ * slot.
  */
 class CrossJoinModifiedSlotTracker {
     static final long NULL_COOKIE = 0;
@@ -43,6 +44,7 @@ class CrossJoinModifiedSlotTracker {
     boolean finishedRightProcessing = false;
 
     private final RightIncrementalChunkedCrossJoinStateManager jsm;
+
     CrossJoinModifiedSlotTracker(RightIncrementalChunkedCrossJoinStateManager jsm) {
         this.jsm = jsm;
     }
@@ -66,8 +68,8 @@ class CrossJoinModifiedSlotTracker {
         Index rightModified;
         IndexShiftData innerShifted;
 
-        Index leftIndex;    // reference, NOT a copy
-        Index rightIndex;   // reference, NOT a copy
+        Index leftIndex; // reference, NOT a copy
+        Index rightIndex; // reference, NOT a copy
 
         private SlotState() {
             keyChunk.ensureCapacityPreserve(START_SLOT_CHUNK_SIZE);
@@ -168,7 +170,7 @@ class CrossJoinModifiedSlotTracker {
             // make our right index be what it needs to be
             final long oldRightSize = rightIndex.size();
             try (final Index added = innerAdded.getIndex();
-                 final Index removed = innerRemoved.getIndex()) {
+                    final Index removed = innerRemoved.getIndex()) {
                 rightIndex.remove(removed);
 
                 // then we shift
@@ -181,7 +183,8 @@ class CrossJoinModifiedSlotTracker {
                     jsm.onRightGroupInsertion(rightIndex, added, slotLocation);
                 }
 
-                Assert.eq(oldRightSize + added.size() - removed.size(), "oldRightSize + added.size() - removed.size()", rightIndex.size(), "rightIndex.size()");
+                Assert.eq(oldRightSize + added.size() - removed.size(), "oldRightSize + added.size() - removed.size()",
+                        rightIndex.size(), "rightIndex.size()");
             }
 
             // now translate added && modified; accumulate them too
@@ -208,7 +211,8 @@ class CrossJoinModifiedSlotTracker {
                     } else if (flag == FLAG_MOD) {
                         modifiedBuilder.appendKey(downstreamOffset);
                     } else {
-                        throw new IllegalStateException("CrossJoinModifiedSlotTracker encountered unexpected flag value: " + flag);
+                        throw new IllegalStateException(
+                                "CrossJoinModifiedSlotTracker encountered unexpected flag value: " + flag);
                     }
                 }
             }
@@ -282,8 +286,10 @@ class CrossJoinModifiedSlotTracker {
         }
     }
 
-    /** the location that we must write to in modified slots; also if we have a pointer that falls outside
-     * the range [0, pointer); then we know it is invalid */
+    /**
+     * the location that we must write to in modified slots; also if we have a pointer that falls outside the range [0,
+     * pointer); then we know it is invalid
+     */
     private long pointer;
     /** how many slots we have allocated */
     private long allocated;
@@ -335,8 +341,8 @@ class CrossJoinModifiedSlotTracker {
     }
 
     /**
-     * Is this cookie within our valid range (greater than or equal to our generation, but less than the pointer
-     * after adjustment?
+     * Is this cookie within our valid range (greater than or equal to our generation, but less than the pointer after
+     * adjustment?
      *
      * @param cookie the cookie to check for validity
      *

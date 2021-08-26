@@ -29,7 +29,7 @@ public class ResultSizeProfiler implements InternalProfiler {
 
     @Override
     public Collection<? extends Result> afterIteration(BenchmarkParams benchmarkParams, IterationParams iterationParams,
-                                                       IterationResult result) {
+            IterationResult result) {
         return Collections.singleton(new ScalarResult("Result size", resultSize, "rows", AggregationPolicy.AVG));
     }
 

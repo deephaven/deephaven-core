@@ -22,11 +22,11 @@ public class BusinessPeriod implements Serializable {
         this.startTime = startTime;
         this.endTime = endTime;
 
-        if(startTime == null || endTime == null){
+        if (startTime == null || endTime == null) {
             throw new IllegalArgumentException("Null argument: startTime=" + startTime + " endTime=" + endTime);
         }
 
-        if(startTime.getNanos() > endTime.getNanos()){
+        if (startTime.getNanos() > endTime.getNanos()) {
             throw new IllegalArgumentException("Start is after end: startTime=" + startTime + " endTime=" + endTime);
         }
     }
@@ -64,7 +64,7 @@ public class BusinessPeriod implements Serializable {
      * @param time time.
      * @return true if the time is in this period; otherwise, false.
      */
-    public boolean contains(final DBDateTime time){
+    public boolean contains(final DBDateTime time) {
         return time != null && (startTime.getNanos() <= time.getNanos() && time.getNanos() <= endTime.getNanos());
     }
 }

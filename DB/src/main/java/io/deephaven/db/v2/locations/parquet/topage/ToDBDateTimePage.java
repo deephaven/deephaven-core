@@ -21,10 +21,10 @@ public abstract class ToDBDateTimePage<ATTR extends Attributes.Any> extends ToLo
     private static final ToDBDateTimePage NANOS_INSTANCE = new ToDBDateTimePageFromNanos();
 
     @SuppressWarnings("unchecked")
-    public static <ATTR extends Attributes.Any>
-    ToPage<ATTR, DBDateTime[]> create(@NotNull final Class<?> nativeType, final LogicalTypeAnnotation.TimeUnit unit) {
+    public static <ATTR extends Attributes.Any> ToPage<ATTR, DBDateTime[]> create(@NotNull final Class<?> nativeType,
+            final LogicalTypeAnnotation.TimeUnit unit) {
         if (DBDateTime.class.equals(nativeType)) {
-            switch(unit) {
+            switch (unit) {
                 case MILLIS:
                     return MILLIS_INSTANCE;
                 case MICROS:
@@ -36,12 +36,14 @@ public abstract class ToDBDateTimePage<ATTR extends Attributes.Any> extends ToLo
             }
         }
 
-        throw new IllegalArgumentException("The native type for a DBDateTime column is " + nativeType.getCanonicalName());
+        throw new IllegalArgumentException(
+                "The native type for a DBDateTime column is " + nativeType.getCanonicalName());
     }
 
     protected ToDBDateTimePage() {}
 
-    protected static DbArray<DBDateTime> makeDbArrayHelper(final long[] result, final LongFunction<DBDateTime> unitToTime) {
+    protected static DbArray<DBDateTime> makeDbArrayHelper(final long[] result,
+            final LongFunction<DBDateTime> unitToTime) {
         DBDateTime[] to = new DBDateTime[result.length];
 
         for (int i = 0; i < result.length; ++i) {
@@ -79,6 +81,7 @@ public abstract class ToDBDateTimePage<ATTR extends Attributes.Any> extends ToLo
         public DbArray<DBDateTime> makeDbArray(long[] result) {
             return makeDbArrayHelper(result, DBTimeUtils::microsToTime);
         }
+
         @Override
         public final long[] convertResult(@NotNull final Object result) {
             return convertResultHelper(result, DBTimeUtils::microsToNanos);
@@ -91,6 +94,7 @@ public abstract class ToDBDateTimePage<ATTR extends Attributes.Any> extends ToLo
         public DbArray<DBDateTime> makeDbArray(long[] result) {
             return makeDbArrayHelper(result, DBTimeUtils::millisToTime);
         }
+
         @Override
         public final long[] convertResult(@NotNull final Object result) {
             return convertResultHelper(result, DBTimeUtils::millisToNanos);

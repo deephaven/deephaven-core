@@ -11,6 +11,7 @@ import java.util.Collection;
 
 public class BenchUtil {
     public static final int defaultHeapGb = 4;
+
     public static void run(final Class c) {
         run(defaultHeapGb, c);
     }
@@ -18,7 +19,7 @@ public class BenchUtil {
     public static void run(final int heapGb, final Class c, String... benchmarkMethods) {
         final String[] regexes;
         if (benchmarkMethods.length == 0) {
-            regexes = new String[] { c.getSimpleName() };
+            regexes = new String[] {c.getSimpleName()};
         } else {
             regexes = new String[benchmarkMethods.length];
             int i = 0;

@@ -29,7 +29,8 @@ public class ClassList {
     }
 
     @NotNull
-    public static Collection<Class<?>> readClassListAsCollection(String resourceName) throws IOException, ClassNotFoundException {
+    public static Collection<Class<?>> readClassListAsCollection(String resourceName)
+            throws IOException, ClassNotFoundException {
         final ArrayList<String> classString = getClassStrings(resourceName);
 
         ArrayList<Class<?>> result = new ArrayList<>(classString.size());

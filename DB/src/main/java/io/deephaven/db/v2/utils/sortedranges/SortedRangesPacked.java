@@ -11,7 +11,9 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
     }
 
     @Override
-    public boolean fits(final long start, final long end) { return offset <= start && end - offset <= maxValueForType(); }
+    public boolean fits(final long start, final long end) {
+        return offset <= start && end - offset <= maxValueForType();
+    }
 
     @Override
     public boolean fitsForAppend(final long end) {
@@ -156,7 +158,8 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
                 return makeMyType(targetData, newOffset, count, cardinality);
             }
             offset = newOffset;
-            if (DEBUG) validate();
+            if (DEBUG)
+                validate();
             return this;
         }
         newOffset = first + shiftOffset;
@@ -167,7 +170,8 @@ public abstract class SortedRangesPacked<ArrayType> extends SortedRangesTyped<Ar
         }
         rebaseAndShift(data, newOffset, shiftOffset, this, first);
         offset = newOffset;
-        if (DEBUG) validate();
+        if (DEBUG)
+            validate();
         return this;
     }
 

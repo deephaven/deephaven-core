@@ -36,13 +36,13 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
     private final RealTableOperation<T> realTableOperation;
 
     protected JoinTablesGrpcImpl(final LiveTableMonitor liveTableMonitor,
-                                 final Function<BatchTableRequest.Operation, T> getRequest,
-                                 final Function<T, Ticket> getTicket,
-                                 final MultiDependencyFunction<T> getDependencies,
-                                 final Function<T, List<String>> getColMatchList,
-                                 final Function<T, List<String>> getColAddList,
-                                 final RealTableOperation<T> realTableOperation) {
-            super(getRequest, getTicket, getDependencies);
+            final Function<BatchTableRequest.Operation, T> getRequest,
+            final Function<T, Ticket> getTicket,
+            final MultiDependencyFunction<T> getDependencies,
+            final Function<T, List<String>> getColMatchList,
+            final Function<T, List<String>> getColAddList,
+            final RealTableOperation<T> realTableOperation) {
+        super(getRequest, getTicket, getDependencies);
         this.liveTableMonitor = liveTableMonitor;
         this.getColMatchList = getColMatchList;
         this.getColAddList = getColAddList;
@@ -55,7 +55,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
             MatchPairFactory.getExpressions(getColMatchList.apply(request));
             MatchPairFactory.getExpressions(getColAddList.apply(request));
         } catch (final ExpressionException err) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, err.getMessage() + ": " + err.getProblemExpression());
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    err.getMessage() + ": " + err.getProblemExpression());
         }
     }
 
@@ -70,7 +71,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
             columnsToMatch = MatchPairFactory.getExpressions(getColMatchList.apply(request));
             columnsToAdd = MatchPairFactory.getExpressions(getColAddList.apply(request));
         } catch (final ExpressionException err) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, err.getMessage() + ": " + err.getProblemExpression());
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    err.getMessage() + ": " + err.getProblemExpression());
         }
 
         final Table lhs = sourceTables.get(0).get();
@@ -94,7 +96,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
 
         @Inject
         protected AsOfJoinTablesGrpcImpl(LiveTableMonitor liveTableMonitor) {
-            super(liveTableMonitor, BatchTableRequest.Operation::getAsOfJoin, AsOfJoinTablesRequest::getResultId, EXTRACT_DEPS,
+            super(liveTableMonitor, BatchTableRequest.Operation::getAsOfJoin, AsOfJoinTablesRequest::getResultId,
+                    EXTRACT_DEPS,
                     AsOfJoinTablesRequest::getColumnsToMatchList, AsOfJoinTablesRequest::getColumnsToAddList,
                     AsOfJoinTablesGrpcImpl::doJoin);
         }
@@ -109,8 +112,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
         }
 
         public static Table doJoin(final Table lhs, final Table rhs,
-                     final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
-                     final AsOfJoinTablesRequest request) {
+                final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
+                final AsOfJoinTablesRequest request) {
             Table.AsOfMatchRule matchRule = Table.AsOfMatchRule.valueOf(request.getAsOfMatchRule().name());
             switch (matchRule) {
                 case LESS_THAN:
@@ -133,14 +136,15 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
 
         @Inject
         public CrossJoinTablesGrpcImpl(final LiveTableMonitor liveTableMonitor) {
-            super(liveTableMonitor, BatchTableRequest.Operation::getCrossJoin, CrossJoinTablesRequest::getResultId, EXTRACT_DEPS,
+            super(liveTableMonitor, BatchTableRequest.Operation::getCrossJoin, CrossJoinTablesRequest::getResultId,
+                    EXTRACT_DEPS,
                     CrossJoinTablesRequest::getColumnsToMatchList, CrossJoinTablesRequest::getColumnsToAddList,
                     CrossJoinTablesGrpcImpl::doJoin);
         }
 
         public static Table doJoin(final Table lhs, final Table rhs,
-                                   final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
-                                   final CrossJoinTablesRequest request) {
+                final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
+                final CrossJoinTablesRequest request) {
             int reserveBits = request.getReserveBits();
             if (reserveBits <= 0) {
                 return lhs.join(rhs, columnsToMatch, columnsToAdd); // use the default number of reserve_bits
@@ -158,14 +162,15 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
 
         @Inject
         public ExactJoinTablesGrpcImpl(final LiveTableMonitor liveTableMonitor) {
-            super(liveTableMonitor, BatchTableRequest.Operation::getExactJoin, ExactJoinTablesRequest::getResultId, EXTRACT_DEPS,
+            super(liveTableMonitor, BatchTableRequest.Operation::getExactJoin, ExactJoinTablesRequest::getResultId,
+                    EXTRACT_DEPS,
                     ExactJoinTablesRequest::getColumnsToMatchList, ExactJoinTablesRequest::getColumnsToAddList,
                     ExactJoinTablesGrpcImpl::doJoin);
         }
 
         public static Table doJoin(final Table lhs, final Table rhs,
-                                   final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
-                                   final ExactJoinTablesRequest request) {
+                final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
+                final ExactJoinTablesRequest request) {
             return lhs.exactJoin(rhs, columnsToMatch, columnsToAdd);
         }
     }
@@ -178,14 +183,15 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
 
         @Inject
         public LeftJoinTablesGrpcImpl(final LiveTableMonitor liveTableMonitor) {
-            super(liveTableMonitor, BatchTableRequest.Operation::getLeftJoin, LeftJoinTablesRequest::getResultId, EXTRACT_DEPS,
+            super(liveTableMonitor, BatchTableRequest.Operation::getLeftJoin, LeftJoinTablesRequest::getResultId,
+                    EXTRACT_DEPS,
                     LeftJoinTablesRequest::getColumnsToMatchList, LeftJoinTablesRequest::getColumnsToAddList,
                     LeftJoinTablesGrpcImpl::doJoin);
         }
 
         public static Table doJoin(final Table lhs, final Table rhs,
-                                   final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
-                                   final LeftJoinTablesRequest request) {
+                final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
+                final LeftJoinTablesRequest request) {
             return lhs.leftJoin(rhs, columnsToMatch, columnsToAdd);
         }
     }
@@ -198,14 +204,15 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
 
         @Inject
         public NaturalJoinTablesGrpcImpl(final LiveTableMonitor liveTableMonitor) {
-            super(liveTableMonitor, BatchTableRequest.Operation::getNaturalJoin, NaturalJoinTablesRequest::getResultId, EXTRACT_DEPS,
+            super(liveTableMonitor, BatchTableRequest.Operation::getNaturalJoin, NaturalJoinTablesRequest::getResultId,
+                    EXTRACT_DEPS,
                     NaturalJoinTablesRequest::getColumnsToMatchList, NaturalJoinTablesRequest::getColumnsToAddList,
                     NaturalJoinTablesGrpcImpl::doJoin);
         }
 
         public static Table doJoin(final Table lhs, final Table rhs,
-                                   final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
-                                   final NaturalJoinTablesRequest request) {
+                final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
+                final NaturalJoinTablesRequest request) {
             return lhs.naturalJoin(rhs, columnsToMatch, columnsToAdd);
         }
     }

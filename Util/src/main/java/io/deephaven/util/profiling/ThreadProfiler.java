@@ -8,8 +8,10 @@ import io.deephaven.util.QueryConstants;
  */
 public interface ThreadProfiler {
 
-    boolean CPU_PROFILING_ENABLED = Configuration.getInstance().getBooleanForClassWithDefault(ThreadProfiler.class, "cpuProfilingEnabled", true);
-    boolean MEMORY_PROFILING_ENABLED = Configuration.getInstance().getBooleanForClassWithDefault(ThreadProfiler.class, "memoryProfilingEnabled", true);
+    boolean CPU_PROFILING_ENABLED = Configuration.getInstance().getBooleanForClassWithDefault(ThreadProfiler.class,
+            "cpuProfilingEnabled", true);
+    boolean MEMORY_PROFILING_ENABLED = Configuration.getInstance().getBooleanForClassWithDefault(ThreadProfiler.class,
+            "memoryProfilingEnabled", true);
 
     /**
      * Check if memory profiling (e.g. {@link #getCurrentThreadAllocatedBytes()}) is available (supported and enabled).
@@ -22,7 +24,7 @@ public interface ThreadProfiler {
      * Get the approximate number of total bytes allocated by the current thread.
      *
      * @return The approximate number of total bytes allocated by the current thread, or
-     * {@link QueryConstants#NULL_LONG} if unavailable.
+     *         {@link QueryConstants#NULL_LONG} if unavailable.
      */
     long getCurrentThreadAllocatedBytes();
 
@@ -39,7 +41,7 @@ public interface ThreadProfiler {
      * CPU time measurement started.
      *
      * @return The approximate number of total nanoseconds the current thread has executed, or
-     * {@link QueryConstants#NULL_LONG} if unavailable.
+     *         {@link QueryConstants#NULL_LONG} if unavailable.
      */
     long getCurrentThreadCpuTime();
 
@@ -48,7 +50,7 @@ public interface ThreadProfiler {
      * measurement started.
      *
      * @return The approximate number of total nanoseconds the current thread has executed in user mode, or
-     * {@link QueryConstants#NULL_LONG} if unavailable.
+     *         {@link QueryConstants#NULL_LONG} if unavailable.
      */
     long getCurrentThreadUserTime();
 

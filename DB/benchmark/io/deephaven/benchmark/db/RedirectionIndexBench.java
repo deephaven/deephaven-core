@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 1, time = 30)
 @Measurement(iterations = 3, time = 20)
-@Timeout(time=60)
+@Timeout(time = 60)
 @Fork(1)
 public class RedirectionIndexBench extends RedirectionBenchBase {
     @Param({"10000000"})
@@ -55,7 +55,8 @@ public class RedirectionIndexBench extends RedirectionBenchBase {
         final Table t1 = bmTable1.getTable().coalesce();
         final Table t2 = bmTable2.getTable().coalesce();
         final long sizePerStep = Math.max(t1.size() / steps, 1);
-        final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(sizePerStep, sizePerStep);
+        final IncrementalReleaseFilter incrementalReleaseFilter =
+                new IncrementalReleaseFilter(sizePerStep, sizePerStep);
         final Table live;
         if (doSelect) {
             live = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(
@@ -70,12 +71,11 @@ public class RedirectionIndexBench extends RedirectionBenchBase {
                 live,
                 incrementalReleaseFilter,
                 steps,
-                new String[]{ joinCol },
-                WritableLongChunk.makeWritableChunk(chunkCapacity)
-        );
+                new String[] {joinCol},
+                WritableLongChunk.makeWritableChunk(chunkCapacity));
     }
 
-    public static void main(String [] args) {
+    public static void main(String[] args) {
         BenchUtil.run(RedirectionIndexBench.class);
     }
 }

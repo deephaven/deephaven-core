@@ -4,6 +4,7 @@ import io.deephaven.benchmarking.generator.random.ExtendedRandom;
 
 /**
  * A {@link ColumnGenerator} That generates a typed number value randomly.
+ * 
  * @param <T>
  */
 public class RandomNumColumnGenerator<T extends Number> extends AbstractNumColumnGenerator<T> {
@@ -26,57 +27,69 @@ public class RandomNumColumnGenerator<T extends Number> extends AbstractNumColum
     }
 
     @Override
-    public byte getByte() { return (byte)getInt(); }
+    public byte getByte() {
+        return (byte) getInt();
+    }
 
     @Override
-    public short getShort() { return (short)getInt(); }
+    public short getShort() {
+        return (short) getInt();
+    }
 
     @Override
-    public int getInt() { return generator.nextInt((int)min, (int)max); }
+    public int getInt() {
+        return generator.nextInt((int) min, (int) max);
+    }
 
     @Override
-    public long getLong() { return generator.nextLong((long)min, (long)max); }
+    public long getLong() {
+        return generator.nextLong((long) min, (long) max);
+    }
 
     @Override
-    public float getFloat() { return (float)getDouble(); }
+    public float getFloat() {
+        return (float) getDouble();
+    }
 
     @Override
-    public double getDouble() { return generator.nextDouble(min, max); }
+    public double getDouble() {
+        return generator.nextDouble(min, max);
+    }
 
     private static <T extends Number> double getUpperBoundForType(Class<T> type) {
-        if(type == byte.class || type == Byte.class) {
+        if (type == byte.class || type == Byte.class) {
             return Byte.MAX_VALUE;
-        } else if( type == short.class || type == Short.class) {
+        } else if (type == short.class || type == Short.class) {
             return Short.MAX_VALUE;
-        } else if(type == int.class || type == Integer.class) {
+        } else if (type == int.class || type == Integer.class) {
             return Integer.MAX_VALUE;
-        } else if(type == long.class || type == Long.class) {
+        } else if (type == long.class || type == Long.class) {
             return Long.MAX_VALUE;
-        } else if(type == float.class || type == Float.class) {
+        } else if (type == float.class || type == Float.class) {
             return Float.MAX_VALUE;
-        } else if(type == double.class || type == Double.class) {
+        } else if (type == double.class || type == Double.class) {
             return Double.MAX_VALUE;
         }
 
-        throw new IllegalStateException("Unsupported Number type: "+type.toGenericString());
+        throw new IllegalStateException("Unsupported Number type: " + type.toGenericString());
     }
 
     private static <T extends Number> double getLowerBoundForType(Class<T> type) {
-        if(type == byte.class || type == Byte.class) {
+        if (type == byte.class || type == Byte.class) {
             return Byte.MIN_VALUE;
-        } else if( type == short.class || type == Short.class) {
+        } else if (type == short.class || type == Short.class) {
             return Short.MIN_VALUE;
-        } else if(type == int.class || type == Integer.class) {
+        } else if (type == int.class || type == Integer.class) {
             return Integer.MIN_VALUE;
-        } else if(type == long.class || type == Long.class) {
+        } else if (type == long.class || type == Long.class) {
             return Long.MIN_VALUE;
-        } else if(type == float.class || type == Float.class) {
+        } else if (type == float.class || type == Float.class) {
             return Float.MIN_VALUE;
-        } else if(type == double.class || type == Double.class) {
+        } else if (type == double.class || type == Double.class) {
             return Double.MIN_VALUE;
         }
 
-        throw new IllegalStateException("Unsupported Number type: "+type.toGenericString());
+        throw new IllegalStateException("Unsupported Number type: " + type.toGenericString());
     }
 
 }

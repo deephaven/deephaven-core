@@ -21,27 +21,26 @@ import static io.deephaven.util.QueryConstants.*;
  * Creates {@link ColumnHandler} instances with specified data types.
  */
 public class ColumnHandlerFactory implements Serializable {
-    private ColumnHandlerFactory(){}
+    private ColumnHandlerFactory() {}
 
     private static final long serialVersionUID = -6737880834225877984L;
 
     public enum TypeClassification {
-        INTEGER(true),
-        FLOATINGPOINT(true),
-        TIME(true),
-        PAINT(false),
-        COMPARABLE(false),
-        OBJECT(false);
+        INTEGER(true), FLOATINGPOINT(true), TIME(true), PAINT(false), COMPARABLE(false), OBJECT(false);
+
         TypeClassification(boolean isNumeric) {
             this.isNumeric = isNumeric;
         }
+
         private boolean isNumeric;
-        public boolean isNumeric() { return isNumeric; }
+
+        public boolean isNumeric() {
+            return isNumeric;
+        }
     }
 
     /**
-     * Holds a table column. Allows access to the column's data
-     * and the underlying table.
+     * Holds a table column. Allows access to the column's data and the underlying table.
      */
     public interface ColumnHandler {
 
@@ -92,8 +91,7 @@ public class ColumnHandlerFactory implements Serializable {
          * Gets the object in row {@code i} of the column as a double.
          *
          *
-         * @throws UnsupportedOperationException if the value in
-         *                  the column can not be converted to double
+         * @throws UnsupportedOperationException if the value in the column can not be converted to double
          * @param i index
          * @return column's value at row {@code i} as a double
          */
@@ -141,7 +139,9 @@ public class ColumnHandlerFactory implements Serializable {
             return getDataColumn().get(i);
         }
 
-        public Class type() { return type; }
+        public Class type() {
+            return type;
+        }
 
         public abstract TypeClassification typeClassification();
 
@@ -157,7 +157,8 @@ public class ColumnHandlerFactory implements Serializable {
         private final PlotInfo plotInfo;
         private transient DataColumn dataColumn;
 
-        private ColumnHandlerHandle(final TableHandle tableHandle, final String columnName, final Class type, final PlotInfo plotInfo) {
+        private ColumnHandlerHandle(final TableHandle tableHandle, final String columnName, final Class type,
+                final PlotInfo plotInfo) {
             this.type = type;
             ArgumentValidations.assertColumnsInTable(tableHandle, plotInfo, columnName);
             this.tableHandle = tableHandle;
@@ -189,7 +190,9 @@ public class ColumnHandlerFactory implements Serializable {
             return getDataColumn().get(i);
         }
 
-        public Class type() { return type; }
+        public Class type() {
+            return type;
+        }
 
         public abstract TypeClassification typeClassification();
 
@@ -199,15 +202,15 @@ public class ColumnHandlerFactory implements Serializable {
     /**
      * Creates a new ColumnHandler instance with a numeric {@link TypeClassification}.
      *
-     * @throws io.deephaven.base.verify.RequirementFailure {@code tableHandle} and {@code columnName}
-     *                                              must not be null.
-     * @throws IllegalArgumentException  if {@code columnName} is not a column in the table
+     * @throws io.deephaven.base.verify.RequirementFailure {@code tableHandle} and {@code columnName} must not be null.
+     * @throws IllegalArgumentException if {@code columnName} is not a column in the table
      * @throws UnsupportedOperationException data in the {@code columnName} must be numeric
      * @param tableHandle holds the table
      * @param columnName column in the table
      * @return new numeric ColumnHandler
      */
-    public static ColumnHandler newNumericHandler(final TableHandle tableHandle, final String columnName, final PlotInfo plotInfo) {
+    public static ColumnHandler newNumericHandler(final TableHandle tableHandle, final String columnName,
+            final PlotInfo plotInfo) {
         ArgumentValidations.assertNotNull(tableHandle, "tableHandle", plotInfo);
         ArgumentValidations.assertNotNull(columnName, "columnName", plotInfo);
         ArgumentValidations.assertColumnsInTable(tableHandle.getTable(), plotInfo, columnName);
@@ -410,16 +413,16 @@ public class ColumnHandlerFactory implements Serializable {
 
             };
         } else {
-            throw new UnsupportedOperationException("Unsupported numeric data type: columnName=" + columnName + " type=" + type);
+            throw new UnsupportedOperationException(
+                    "Unsupported numeric data type: columnName=" + columnName + " type=" + type);
         }
     }
 
     /**
      * Creates a new ColumnHandler instance with a numeric {@link TypeClassification}.
      *
-     * @throws io.deephaven.base.verify.RequirementFailure {@code table} and {@code columnName}
-     *                                              must not be null.
-     * @throws IllegalArgumentException  if {@code columnName} is not a column in the table
+     * @throws io.deephaven.base.verify.RequirementFailure {@code table} and {@code columnName} must not be null.
+     * @throws IllegalArgumentException if {@code columnName} is not a column in the table
      * @throws UnsupportedOperationException data in the column must be numeric
      * @param table table
      * @param columnName column in the table
@@ -627,23 +630,24 @@ public class ColumnHandlerFactory implements Serializable {
 
             };
         } else {
-            throw new UnsupportedOperationException("Unsupported numeric data type: columnName=" + columnName + " type=" + type);
+            throw new UnsupportedOperationException(
+                    "Unsupported numeric data type: columnName=" + columnName + " type=" + type);
         }
     }
 
     /**
      * Creates a new ColumnHandler instance with a comparable {@link TypeClassification}.
      *
-     * @throws io.deephaven.base.verify.RequirementFailure {@code tableHandle} and {@code columnName}
-     *                                              must not be null.
-     * @throws IllegalArgumentException  if {@code columnName} is not a column in the table
+     * @throws io.deephaven.base.verify.RequirementFailure {@code tableHandle} and {@code columnName} must not be null.
+     * @throws IllegalArgumentException if {@code columnName} is not a column in the table
      * @throws UnsupportedOperationException data in the {@code columnName} must be {@link Comparable}
      * @param tableHandle holds the table
      * @param columnName column in the table
      * @return new comparable ColumnHandler
      */
     @SuppressWarnings("WeakerAccess")
-    public static ColumnHandler newComparableHandler(final TableHandle tableHandle, final String columnName, final PlotInfo plotInfo) {
+    public static ColumnHandler newComparableHandler(final TableHandle tableHandle, final String columnName,
+            final PlotInfo plotInfo) {
         ArgumentValidations.assertNotNull(tableHandle, "tableHandle", plotInfo);
         ArgumentValidations.assertNotNull(columnName, "columnName", plotInfo);
 
@@ -658,28 +662,30 @@ public class ColumnHandlerFactory implements Serializable {
 
                 @Override
                 public double getDouble(int i) {
-                    throw new PlotUnsupportedOperationException("Double conversion not supported for comparables", plotInfo);
+                    throw new PlotUnsupportedOperationException("Double conversion not supported for comparables",
+                            plotInfo);
                 }
 
             };
         } else {
-            throw new PlotUnsupportedOperationException("Unsupported data type: columnName=" + columnName + " type=" + type, plotInfo);
+            throw new PlotUnsupportedOperationException(
+                    "Unsupported data type: columnName=" + columnName + " type=" + type, plotInfo);
         }
     }
 
     /**
      * Creates a new ColumnHandler instance with a comparable {@link TypeClassification}.
      *
-     * @throws io.deephaven.base.verify.RequirementFailure {@code table} and {@code columnName}
-     *                                              must not be null.
-     * @throws IllegalArgumentException  if {@code columnName} is not a column in the {@code table}
+     * @throws io.deephaven.base.verify.RequirementFailure {@code table} and {@code columnName} must not be null.
+     * @throws IllegalArgumentException if {@code columnName} is not a column in the {@code table}
      * @throws UnsupportedOperationException data in the column must be {@link Comparable}
      * @param table table
      * @param columnName column in the table
      * @return new comparable ColumnHandler
      */
     @SuppressWarnings("WeakerAccess")
-    public static ColumnHandler newComparableHandler(final Table table, final String columnName, final PlotInfo plotInfo) {
+    public static ColumnHandler newComparableHandler(final Table table, final String columnName,
+            final PlotInfo plotInfo) {
         ArgumentValidations.assertNotNull(table, "table", plotInfo);
         ArgumentValidations.assertNotNull(columnName, "columnName", plotInfo);
 
@@ -694,26 +700,28 @@ public class ColumnHandlerFactory implements Serializable {
 
                 @Override
                 public double getDouble(int i) {
-                    throw new PlotUnsupportedOperationException("Double conversion not supported for comparables", plotInfo);
+                    throw new PlotUnsupportedOperationException("Double conversion not supported for comparables",
+                            plotInfo);
                 }
 
             };
         } else {
-            throw new PlotUnsupportedOperationException("Unsupported data type: columnName=" + columnName + " type=" + type, plotInfo);
+            throw new PlotUnsupportedOperationException(
+                    "Unsupported data type: columnName=" + columnName + " type=" + type, plotInfo);
         }
     }
 
     /**
      * Creates a new ColumnHandler instance with a object {@link TypeClassification}.
      *
-     * @throws io.deephaven.base.verify.RequirementFailure {@code tableHandle} and {@code columnName}
-     *                                              must not be null.
-     * @throws IllegalArgumentException  if {@code columnName} is not a column in the table
+     * @throws io.deephaven.base.verify.RequirementFailure {@code tableHandle} and {@code columnName} must not be null.
+     * @throws IllegalArgumentException if {@code columnName} is not a column in the table
      * @param tableHandle holds the table
      * @param columnName column in the table
      * @return new object ColumnHandler
      */
-    public static ColumnHandler newObjectHandler(final TableHandle tableHandle, final String columnName, final PlotInfo plotInfo) {
+    public static ColumnHandler newObjectHandler(final TableHandle tableHandle, final String columnName,
+            final PlotInfo plotInfo) {
         ArgumentValidations.assertNotNull(tableHandle, "tableHandle", plotInfo);
         ArgumentValidations.assertNotNull(columnName, "columnName", plotInfo);
 
@@ -734,15 +742,13 @@ public class ColumnHandlerFactory implements Serializable {
     /**
      * Creates a new ColumnHandler instance with a object {@link TypeClassification}.
      *
-     * @throws io.deephaven.base.verify.RequirementFailure {@code table} and {@code columnName}
-     *                                              must not be null.
-     * @throws IllegalArgumentException  if {@code columnName} is not a column in the {@code table}
+     * @throws io.deephaven.base.verify.RequirementFailure {@code table} and {@code columnName} must not be null.
+     * @throws IllegalArgumentException if {@code columnName} is not a column in the {@code table}
      * @param table table
      * @param columnName column in the table
      * @return new object ColumnHandler
-     * @throws io.deephaven.base.verify.RequirementFailure {@code table} and {@code columnName}
-     *                                                    must not be null.
-     * @throws IllegalArgumentException                   if {@code columnName} is not a column in the {@code table}
+     * @throws io.deephaven.base.verify.RequirementFailure {@code table} and {@code columnName} must not be null.
+     * @throws IllegalArgumentException if {@code columnName} is not a column in the {@code table}
      */
     public static ColumnHandler newObjectHandler(final Table table, final String columnName, final PlotInfo plotInfo) {
         ArgumentValidations.assertNotNull(table, "table", plotInfo);

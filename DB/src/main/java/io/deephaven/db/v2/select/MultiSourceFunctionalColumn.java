@@ -36,23 +36,27 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     private ColumnSource<?>[] sourceColumns;
     private ColumnSource<?>[] prevSources;
 
-    @NotNull private final String destName;
-    @NotNull private final Class<D> destDataType;
-    @NotNull private final BiFunction<Long, ColumnSource[], D> function;
-    @NotNull private final Class componentType;
+    @NotNull
+    private final String destName;
+    @NotNull
+    private final Class<D> destDataType;
+    @NotNull
+    private final BiFunction<Long, ColumnSource[], D> function;
+    @NotNull
+    private final Class componentType;
 
     public MultiSourceFunctionalColumn(@NotNull List<String> sourceNames,
-                                       @NotNull String destName,
-                                       @NotNull Class<D> destDataType,
-                                       @NotNull BiFunction<Long, ColumnSource[], D> function) {
+            @NotNull String destName,
+            @NotNull Class<D> destDataType,
+            @NotNull BiFunction<Long, ColumnSource[], D> function) {
         this(sourceNames, destName, destDataType, Object.class, function);
     }
 
     public MultiSourceFunctionalColumn(@NotNull List<String> sourceNames,
-                                       @NotNull String destName,
-                                       @NotNull Class<D> destDataType,
-                                       @NotNull Class componentType,
-                                       @NotNull BiFunction<Long, ColumnSource[], D> function) {
+            @NotNull String destName,
+            @NotNull Class<D> destDataType,
+            @NotNull Class componentType,
+            @NotNull BiFunction<Long, ColumnSource[], D> function) {
         this.sourceNames = sourceNames.stream()
                 .map(NameValidator::validateColumnName)
                 .collect(Collectors.toList());
@@ -76,12 +80,13 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
 
     @Override
     public List<String> initInputs(Index index, Map<String, ? extends ColumnSource> columnsOfInterest) {
-        if(sourceColumns == null) {
+        if (sourceColumns == null) {
             final List<ColumnSource<?>> localSources = new ArrayList<>(sourceNames.size());
             final List<ColumnSource<?>> localPrev = new ArrayList<>(sourceNames.size());
 
             // the column overrides occur when we are in the midst of an update; but we only reinterpret columns with an
-            // updateView, not as part of a generalized update.  Thus if this is happening our assumptions have been violated
+            // updateView, not as part of a generalized update. Thus if this is happening our assumptions have been
+            // violated
             // and we could provide the wrong answer by not paying attention to the columnsOverride
             sourceNames.forEach(name -> {
                 final ColumnSource localSourceColumnSource = columnsOfInterest.get(name);
@@ -90,7 +95,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
                 }
 
                 localSources.add(localSourceColumnSource);
-                //noinspection unchecked
+                // noinspection unchecked
                 localPrev.add(new PrevColumnSource<>(localSourceColumnSource));
             });
 
@@ -106,7 +111,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
         final MutableObject<List<String>> missingColumnsHolder = new MutableObject<>();
         sourceNames.forEach(name -> {
             final ColumnDefinition sourceColumnDefinition = columnDefinitionMap.get(name);
-            if(sourceColumnDefinition == null) {
+            if (sourceColumnDefinition == null) {
                 List<String> missingColumnsList;
                 if ((missingColumnsList = missingColumnsHolder.getValue()) == null) {
                     missingColumnsHolder.setValue(missingColumnsList = new ArrayList<>());
@@ -164,17 +169,17 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
 
             @Override
             public void fillChunk(@NotNull FillContext fillContext,
-                                  @NotNull final WritableChunk<? super Values> destination,
-                                  @NotNull final OrderedKeys orderedKeys) {
-                final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext)fillContext;
+                    @NotNull final WritableChunk<? super Values> destination,
+                    @NotNull final OrderedKeys orderedKeys) {
+                final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext) fillContext;
                 ctx.chunkFiller.fillByIndices(this, orderedKeys, destination);
             }
 
             @Override
             public void fillPrevChunk(@NotNull FillContext fillContext,
-                                      @NotNull final WritableChunk<? super Values> destination,
-                                      @NotNull final OrderedKeys orderedKeys) {
-                final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext)fillContext;
+                    @NotNull final WritableChunk<? super Values> destination,
+                    @NotNull final OrderedKeys orderedKeys) {
+                final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext) fillContext;
                 ctx.chunkFiller.fillByIndices(this, orderedKeys, destination);
             }
         });

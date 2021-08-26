@@ -7,6 +7,7 @@ package io.deephaven.base.clock;
 public interface Clock {
 
     long currentTimeMillis();
+
     long currentTimeMicros();
 
     interface Factory {
@@ -14,27 +15,44 @@ public interface Clock {
     }
 
     class Null implements Clock {
-        @Override public long currentTimeMillis() { return 0; }
-        @Override public long currentTimeMicros() { return 0; }
+        @Override
+        public long currentTimeMillis() {
+            return 0;
+        }
+
+        @Override
+        public long currentTimeMicros() {
+            return 0;
+        }
     }
+
     Null NULL = new Null();
 
     /**
-     * This implementation just returns the last value passed to set().  It allows for precise control over
-     * when clock calls are made to the underlying system (e.g. AppClock.currentTimeMicros()).
+     * This implementation just returns the last value passed to set(). It allows for precise control over when clock
+     * calls are made to the underlying system (e.g. AppClock.currentTimeMicros()).
      */
     class Cached implements Clock {
         private long cachedNowMicros;
 
-        public void set(long nowMicros) { cachedNowMicros = nowMicros; }
+        public void set(long nowMicros) {
+            cachedNowMicros = nowMicros;
+        }
 
-        @Override public final long currentTimeMillis() { return cachedNowMicros / 1000; }
-        @Override public final long currentTimeMicros() { return cachedNowMicros; }
+        @Override
+        public final long currentTimeMillis() {
+            return cachedNowMicros / 1000;
+        }
+
+        @Override
+        public final long currentTimeMicros() {
+            return cachedNowMicros;
+        }
     }
 
     /**
-     * This implementation is similar to cached, except that is calls set() itself on a the Clock
-     * instance given to the constructor exactly once between reset() calls.
+     * This implementation is similar to cached, except that is calls set() itself on a the Clock instance given to the
+     * constructor exactly once between reset() calls.
      */
     class CachedOnDemand implements Clock {
         private final Clock realClock;
@@ -44,17 +62,29 @@ public interface Clock {
             this.realClock = realClock;
         }
 
-        public void set() { cachedNowMicros = realClock.currentTimeMicros(); }
-        public void reset() { cachedNowMicros = 0; }
+        public void set() {
+            cachedNowMicros = realClock.currentTimeMicros();
+        }
+
+        public void reset() {
+            cachedNowMicros = 0;
+        }
 
         private long maybeUpdate() {
-            if ( cachedNowMicros == 0 ) {
+            if (cachedNowMicros == 0) {
                 set();
             }
             return cachedNowMicros;
         }
 
-        @Override public final long currentTimeMillis() { return maybeUpdate() / 1000; }
-        @Override public final long currentTimeMicros() { return maybeUpdate(); }
+        @Override
+        public final long currentTimeMillis() {
+            return maybeUpdate() / 1000;
+        }
+
+        @Override
+        public final long currentTimeMicros() {
+            return maybeUpdate();
+        }
     }
 }

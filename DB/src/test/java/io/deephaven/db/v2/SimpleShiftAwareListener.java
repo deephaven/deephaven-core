@@ -37,12 +37,13 @@ public class SimpleShiftAwareListener extends InstrumentedShiftAwareListenerAdap
     public String toString() {
         return "SimpleShiftAwareListener{" +
                 "count=" + count +
-                (update == null ? "" : (
-                ", added=" + update.added +
-                ", removed=" + update.removed +
-                ", modified=" + update.modified +
-                ", shifted=" + update.shifted +
-                ", modifiedColumnSet=" + update.modifiedColumnSet)) +
+                (update == null ? ""
+                        : (", added=" + update.added +
+                                ", removed=" + update.removed +
+                                ", modified=" + update.modified +
+                                ", shifted=" + update.shifted +
+                                ", modifiedColumnSet=" + update.modifiedColumnSet))
+                +
                 '}';
     }
 

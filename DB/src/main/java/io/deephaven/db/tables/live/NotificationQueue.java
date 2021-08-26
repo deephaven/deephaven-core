@@ -19,9 +19,9 @@ public interface NotificationQueue {
     interface Notification extends Runnable, LogOutputAppendable, IntrusiveDoublyLinkedNode<Notification> {
         /**
          * Terminal notifications guarantee that they will not queue additional notifications or mutate data structures
-         * that should result in additional notifications.
-         * They are in turn guaranteed to be called after all non-terminal notifications for a given cycle through
-         * the notification queue.
+         * that should result in additional notifications. They are in turn guaranteed to be called after all
+         * non-terminal notifications for a given cycle through the notification queue.
+         * 
          * @return True iff this notification is terminal.
          */
         boolean isTerminal();
@@ -37,7 +37,7 @@ public interface NotificationQueue {
         boolean mustExecuteWithLtmLock();
 
         /**
-         * Can this notification be executed?  That is, are all of it's dependencies satisfied.
+         * Can this notification be executed? That is, are all of it's dependencies satisfied.
          *
          * @param step The step for which we are testing satisfaction
          * @return true if this notification can be executed, false if it has unmet dependencies
@@ -70,9 +70,9 @@ public interface NotificationQueue {
     void addNotification(@NotNull Notification notification);
 
     /**
-     * Add a notification for this NotificationQueue to deliver (by invoking its run() method), iff the delivery step
-     * is the current step and the update cycle for that step is still in process.
-     * This is only supported for non-terminal notifications.
+     * Add a notification for this NotificationQueue to deliver (by invoking its run() method), iff the delivery step is
+     * the current step and the update cycle for that step is still in process. This is only supported for non-terminal
+     * notifications.
      *
      * @param notification The notification to add
      * @param deliveryStep The step to deliver this notification on

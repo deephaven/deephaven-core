@@ -31,7 +31,7 @@ public class ShiftData {
         int removedIndex = 0;
         TLongList removedPositions = removedKeys[0];
         TLongList removedCount = removedKeys[1];
-        for (Index.RangeIterator addedIt = addedPos.rangeIterator();addedIt.hasNext();){
+        for (Index.RangeIterator addedIt = addedPos.rangeIterator(); addedIt.hasNext();) {
             addedIt.next();
             int startOffset = (int) addedIt.currentRangeStart();
             int endOffset = (int) addedIt.currentRangeEnd();
@@ -44,14 +44,14 @@ public class ShiftData {
                 deleteCount += removedCount.get(removedIndex);
                 removedIndex++;
             }
-            addRange(startOffset,endOffset,deleteCount);
+            addRange(startOffset, endOffset, deleteCount);
         }
         while (removedIndex < removedPositions.size()) {
             removeRange(removedPositions.get(removedIndex), removedCount.get(removedIndex));
             removedIndex++;
         }
         if (runningSize > 0) {
-            if (startIndex.get(runningSize-1) <= (index.size() -added.size() + removed.size() - 1)) {
+            if (startIndex.get(runningSize - 1) <= (index.size() - added.size() + removed.size() - 1)) {
                 endIndex.set(runningSize - 1, (int) (index.size() - added.size() + removed.size() - 1));
             } else {
                 runningSize--;
@@ -60,8 +60,8 @@ public class ShiftData {
         size = runningSize;
     }
 
-    void addRange(long firstIndex, long lastIndex,long deletionCount){
-        if (lastIndex - firstIndex+1 == deletionCount) {
+    void addRange(long firstIndex, long lastIndex, long deletionCount) {
+        if (lastIndex - firstIndex + 1 == deletionCount) {
             return;
         }
         if (runningSize > 0) {
@@ -72,7 +72,8 @@ public class ShiftData {
         long newStartIndex = firstIndex + deletionCount - runningOffset;
         runningOffset = lastIndex + runningOffset + 1 - (deletionCount + firstIndex);
 
-        if (runningSize > 0 && ((newStartIndex + runningOffset) == (startIndex.get(runningSize - 1) + offsets.get(runningSize - 1)))) {
+        if (runningSize > 0 && ((newStartIndex + runningOffset) == (startIndex.get(runningSize - 1)
+                + offsets.get(runningSize - 1)))) {
             startIndex.set(runningSize - 1, newStartIndex);
             offsets.set(runningSize - 1, runningOffset);
         } else {
@@ -83,7 +84,7 @@ public class ShiftData {
         }
     }
 
-    void removeRange(long firstIndex,long count){
+    void removeRange(long firstIndex, long count) {
         if (runningSize > 0) {
             endIndex.set(runningSize - 1, firstIndex - runningOffset - 1);
         }
@@ -91,7 +92,8 @@ public class ShiftData {
         long newStartIndex = firstIndex - runningOffset + count;
         runningOffset = runningOffset - count;
 
-        if (runningSize > 0 && (newStartIndex + runningOffset == startIndex.get(runningSize-1) + offsets.get(runningSize-1))) {
+        if (runningSize > 0
+                && (newStartIndex + runningOffset == startIndex.get(runningSize - 1) + offsets.get(runningSize - 1))) {
             startIndex.set(runningSize - 1, newStartIndex);
             offsets.set(runningSize - 1, runningOffset);
         } else {
@@ -103,11 +105,11 @@ public class ShiftData {
     }
 
     public interface ShiftCallback {
-        void shift(long start,long end,long offset);
+        void shift(long start, long end, long offset);
     }
 
 
-    public void applyDataShift(ShiftCallback shiftCallback){
+    public void applyDataShift(ShiftCallback shiftCallback) {
         int startPos = 0;
         int currentPos = 0;
         while (currentPos < size) {
@@ -115,17 +117,17 @@ public class ShiftData {
                 while (currentPos < size && offsets.get(currentPos) > 0) {
                     currentPos++;
                 }
-                for (int ii = currentPos - 1;ii >= startPos;ii--) {
+                for (int ii = currentPos - 1; ii >= startPos; ii--) {
                     shiftCallback.shift(startIndex.get(ii), endIndex.get(ii), offsets.get(ii));
                 }
             } else if (offsets.get(startPos) < 0) {
                 while (currentPos < size && offsets.get(currentPos) < 0) {
                     currentPos++;
                 }
-                for (int ii = startPos;ii < currentPos;ii++) {
+                for (int ii = startPos; ii < currentPos; ii++) {
                     shiftCallback.shift(startIndex.get(ii), endIndex.get(ii), offsets.get(ii));
                 }
-            } else  {
+            } else {
                 while (currentPos < size && offsets.get(currentPos) == 0) {
                     currentPos++;
                 }

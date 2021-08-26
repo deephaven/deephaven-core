@@ -121,8 +121,8 @@ public enum DBTimeZone {
 
     private DateTimeZone timeZone;
 
-    DBTimeZone(DateTimeZone timeZone){
-        this.timeZone=timeZone;
+    DBTimeZone(DateTimeZone timeZone) {
+        this.timeZone = timeZone;
     }
 
     /**
@@ -152,7 +152,8 @@ public enum DBTimeZone {
 
     private static DBTimeZone lookupByOffset(DateTimeZone dateTimeZone) {
         for (DBTimeZone zone : values()) {
-            if (zone.getTimeZone().getOffset(System.currentTimeMillis()) == dateTimeZone.getOffset(System.currentTimeMillis())) {
+            if (zone.getTimeZone().getOffset(System.currentTimeMillis()) == dateTimeZone
+                    .getOffset(System.currentTimeMillis())) {
                 return zone;
             }
         }

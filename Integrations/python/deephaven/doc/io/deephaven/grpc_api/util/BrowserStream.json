@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.grpc_api.util.BrowserStream",
+ "methods": {
+  "onError": ":param e: java.lang.RuntimeException",
+  "onMessageReceived": ":param message: BrowserStream.T"
+ },
+ "path": "io.deephaven.grpc_api.util.BrowserStream",
+ "typeName": "class"
+}

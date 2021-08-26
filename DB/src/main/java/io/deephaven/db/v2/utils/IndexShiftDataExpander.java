@@ -16,8 +16,8 @@ import java.io.ObjectOutputStream;
 import java.util.function.BiConsumer;
 
 /**
- * Expands {@link ShiftAwareListener#onUpdate(ShiftAwareListener.Update)}'s Update into a backward compatible
- * ARM (added, removed, modified) by expanding keyspace shifts.
+ * Expands {@link ShiftAwareListener#onUpdate(ShiftAwareListener.Update)}'s Update into a backward compatible ARM
+ * (added, removed, modified) by expanding keyspace shifts.
  *
  * Using this is almost always less efficient than using the Update directly.
  */
@@ -27,6 +27,7 @@ public class IndexShiftDataExpander implements SafeCloseable {
 
     /**
      * Generates the backwards compatible ARM from an ARMS update.
+     * 
      * @param update The usptream update.
      */
     public IndexShiftDataExpander(final ShiftAwareListener.Update update, final Index sourceIndex) {
@@ -47,7 +48,8 @@ public class IndexShiftDataExpander implements SafeCloseable {
 
             // Conceptually we can group modifies into two: a) modifies that were not part of any shift, and b) modifies
             // that are now at a shift destination. Group A is in upstream's modified set already. Group B indices
-            // either existed last cycle or it did not. If it existed last cycle, then it should remain in the modified set.
+            // either existed last cycle or it did not. If it existed last cycle, then it should remain in the modified
+            // set.
             // If it did not exist last cycle then it is accounted for in `this.update.added`. The is one more group of
             // modified rows. These are rows that existed in both previous and current indexes but were shifted.
             // Thus we need to add mods for shifted rows and remove any rows that are added (by old definition).
@@ -67,7 +69,7 @@ public class IndexShiftDataExpander implements SafeCloseable {
 
             // consider all rows that are in a shift region as modified (if they still exist)
             try (final Index addedByShift = addedByShiftB.getIndex();
-                 final Index rmByShift = removedByShiftB.getIndex()) {
+                    final Index rmByShift = removedByShiftB.getIndex()) {
                 addedByShift.insert(rmByShift);
                 addedByShift.retain(sourceIndex);
                 this.update.modified.insert(addedByShift);
@@ -85,6 +87,7 @@ public class IndexShiftDataExpander implements SafeCloseable {
 
     /**
      * Fetch the resulting index of added values.
+     * 
      * @return added index
      */
     public Index getAdded() {
@@ -93,6 +96,7 @@ public class IndexShiftDataExpander implements SafeCloseable {
 
     /**
      * Fetch the resulting index of removed values.
+     * 
      * @return removed index
      */
     public Index getRemoved() {
@@ -101,6 +105,7 @@ public class IndexShiftDataExpander implements SafeCloseable {
 
     /**
      * Fetch the resulting index of modified values.
+     * 
      * @return modified index
      */
     public Index getModified() {
@@ -118,11 +123,13 @@ public class IndexShiftDataExpander implements SafeCloseable {
      * Immutable, re-usable {@link IndexShiftDataExpander} for an empty set of changes.
      */
     public static IndexShiftDataExpander EMPTY = new IndexShiftDataExpander(new ShiftAwareListener.Update(
-            Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex(), IndexShiftData.EMPTY,
+            Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex(),
+            IndexShiftData.EMPTY,
             ModifiedColumnSet.ALL), Index.FACTORY.getEmptyIndex());
 
     /**
      * Perform backwards compatible validation checks.
+     * 
      * @param sourceIndex the underlying index that apply to added/removed/modified
      */
     public void validate(final Index sourceIndex) {
@@ -147,8 +154,9 @@ public class IndexShiftDataExpander implements SafeCloseable {
 
         String serializedIndices = null;
         if (BaseTable.PRINT_SERIALIZED_UPDATE_OVERLAPS) {
-            // The indices are really rather complicated, if we fail this check let's generate a serialized representation
-            // of them that can later be loaded into a debugger.  If this fails, we'll ignore it and continue with our
+            // The indices are really rather complicated, if we fail this check let's generate a serialized
+            // representation
+            // of them that can later be loaded into a debugger. If this fails, we'll ignore it and continue with our
             // regularly scheduled exception.
             try {
                 final StringBuilder outputBuffer = new StringBuilder();
@@ -162,7 +170,8 @@ public class IndexShiftDataExpander implements SafeCloseable {
                         outputBuffer.append(Base64.byteArrayToBase64(byteArrayOutputStream.toByteArray()));
                         byteArrayOutputStream.reset();
                         objectOutputStream.reset();
-                    } catch (final Exception ignored) {}
+                    } catch (final Exception ignored) {
+                    }
                 };
 
                 append.accept("getIndex().getPrevIndex=", sourceIndex.getPrevIndex());
@@ -172,7 +181,8 @@ public class IndexShiftDataExpander implements SafeCloseable {
                 append.accept("modified=", update.modified);
 
                 serializedIndices = outputBuffer.toString();
-            } catch (final Exception ignored) {}
+            } catch (final Exception ignored) {
+            }
         }
 
         // If we're still here, we know that things are off the rails, and we want to fire the assertion
@@ -207,7 +217,7 @@ public class IndexShiftDataExpander implements SafeCloseable {
         }
 
         Assert.assertion(false, "!(previousContainsAdds || previousMissingRemovals || " +
-                        "previousMissingModifications || currentMissingAdds || currentContainsRemovals || " +
-                        "currentMissingModifications)", indexUpdateErrorMessage);
+                "previousMissingModifications || currentMissingAdds || currentContainsRemovals || " +
+                "currentMissingModifications)", indexUpdateErrorMessage);
     }
 }

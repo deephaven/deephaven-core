@@ -12,7 +12,8 @@ import java.io.IOException;
 public class TestModelInputSerializerDeserializer extends BaseArrayTestCase {
 
     public void testSerializeDeserialize() throws IOException, ClassNotFoundException {
-        final String filename = Configuration.getInstance().getTempPath("test") + "TestModelInputSerializerDeserializer.ser";
+        final String filename =
+                Configuration.getInstance().getTempPath("test") + "TestModelInputSerializerDeserializer.ser";
 
         final ModelInputSerializer<Integer> serializer = new ModelInputSerializer<>(filename);
 
@@ -34,7 +35,7 @@ public class TestModelInputSerializerDeserializer extends BaseArrayTestCase {
             deserializer.next();
             fail("Should have thrown an exception");
         } catch (IOException e) {
-            //pass
+            // pass
         }
     }
 

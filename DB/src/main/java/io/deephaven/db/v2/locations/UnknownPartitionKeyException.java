@@ -12,7 +12,8 @@ public class UnknownPartitionKeyException extends UncheckedDeephavenException {
         super("Unknown partition key " + partitionKey);
     }
 
-    public UnknownPartitionKeyException(@NotNull final String partitionKey, @NotNull final TableLocationKey locationKey) {
+    public UnknownPartitionKeyException(@NotNull final String partitionKey,
+            @NotNull final TableLocationKey locationKey) {
         super("Unknown partition key " + partitionKey + " for table location key " + locationKey);
     }
 }

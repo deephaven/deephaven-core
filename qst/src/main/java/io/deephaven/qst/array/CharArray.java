@@ -1,7 +1,6 @@
 package io.deephaven.qst.array;
 
 import io.deephaven.qst.type.CharType;
-import io.deephaven.qst.type.PrimitiveType;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -64,7 +63,7 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
     }
 
     @Override
-    public final PrimitiveType<Character> type() {
+    public final CharType componentType() {
         return CharType.instance();
     }
 
@@ -90,7 +89,7 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
     }
 
     public static class Builder extends PrimitiveArrayHelper<char[]>
-        implements ArrayBuilder<Character, CharArray, Builder> {
+            implements ArrayBuilder<Character, CharArray, Builder> {
 
         private Builder(int initialCapacity) {
             super(new char[initialCapacity]);

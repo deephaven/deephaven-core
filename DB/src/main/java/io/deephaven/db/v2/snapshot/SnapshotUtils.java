@@ -28,12 +28,10 @@ public class SnapshotUtils {
     }
 
     /**
-     * For each name in stampColumns:
-     * - identify a stamp source (namely 'stampColumns.get(name)')
-     * - a row in that stamp source (namely 'stampKey')
-     * - a stamp dest (namely the column identified by 'destColumns.get(name)')
-     * - a bunch of destination rows (namely all the rows defined in 'destIndex')
-     * Then "spray" that single source value over those destination values.
+     * For each name in stampColumns: - identify a stamp source (namely 'stampColumns.get(name)') - a row in that stamp
+     * source (namely 'stampKey') - a stamp dest (namely the column identified by 'destColumns.get(name)') - a bunch of
+     * destination rows (namely all the rows defined in 'destIndex') Then "spray" that single source value over those
+     * destination values.
      *
      * @param stampColumns The stamp columns that serve as the source data
      * @param stampKey The source key
@@ -54,12 +52,10 @@ public class SnapshotUtils {
     }
 
     /**
-     * Like the above, but with a singleton destination. For each name in stampColumns:
-     * - identify a stamp source (namely 'stampColumns.get(name)')
-     * - a row in that stamp source (namely 'stampKey')
-     * - a stamp dest (namely the column identified by 'destColumns.get(name)')
-     * - a row in the destination (namely 'destKey')
-     * Then copy the source value to the destination value.
+     * Like the above, but with a singleton destination. For each name in stampColumns: - identify a stamp source
+     * (namely 'stampColumns.get(name)') - a row in that stamp source (namely 'stampKey') - a stamp dest (namely the
+     * column identified by 'destColumns.get(name)') - a row in the destination (namely 'destKey') Then copy the source
+     * value to the destination value.
      *
      * @param stampColumns The stamp columns that serve as the source data
      * @param stampKey The source key
@@ -79,8 +75,8 @@ public class SnapshotUtils {
     }
 
     /**
-     * For each name in srcColumns, copy all the data at srcColumns.get(name) (with a range of rows defined by
-     * srcIndex) to a column indicated by destColumns.get(name) (with a range of rows defined by destIndex).
+     * For each name in srcColumns, copy all the data at srcColumns.get(name) (with a range of rows defined by srcIndex)
+     * to a column indicated by destColumns.get(name) (with a range of rows defined by destIndex).
      *
      * @param srcColumns The stamp columns that serve as the source data
      * @param srcIndex The keys in the srcColumns we are reading from

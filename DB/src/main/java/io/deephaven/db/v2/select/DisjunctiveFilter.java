@@ -71,7 +71,8 @@ public class DisjunctiveFilter extends ComposedFilter {
 
     @Override
     public DisjunctiveFilter copy() {
-        return new DisjunctiveFilter(Arrays.stream(getComponentFilters()).map(SelectFilter::copy).toArray(SelectFilter[]::new));
+        return new DisjunctiveFilter(
+                Arrays.stream(getComponentFilters()).map(SelectFilter::copy).toArray(SelectFilter[]::new));
     }
 
     @Override

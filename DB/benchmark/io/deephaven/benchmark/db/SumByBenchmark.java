@@ -31,7 +31,7 @@ import static io.deephaven.db.v2.by.ComboAggregateFactory.AggMax;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 1, time = 1)
 @Measurement(iterations = 5, time = 1)
-@Timeout(time=15)
+@Timeout(time = 15)
 @Fork(1)
 public class SumByBenchmark {
     private TableBenchmarkState state;
@@ -48,7 +48,7 @@ public class SumByBenchmark {
     @Param({"10000000"})
     private int size;
 
-    @Param({"1000", "1000000"})  // 0 can only be used with "Hone" keyType.
+    @Param({"1000", "1000000"}) // 0 can only be used with "Hone" keyType.
     private int keyCount;
 
     @Param({"1", "8"})
@@ -57,7 +57,7 @@ public class SumByBenchmark {
     private Table table;
 
     private String keyName;
-    private String [] keyColumnNames;
+    private String[] keyColumnNames;
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
@@ -76,7 +76,7 @@ public class SumByBenchmark {
             }
         }
 
-        switch(tableType) {
+        switch (tableType) {
             case "Historical":
                 builder = BenchmarkTools.persistentTableBuilder("Karl", size)
                         .setPartitioningFormula("${autobalance_single}")
@@ -95,8 +95,10 @@ public class SumByBenchmark {
 
         builder.setSeed(0xDEADBEEF).addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
 
-        final EnumStringColumnGenerator stringKey = (EnumStringColumnGenerator) BenchmarkTools.stringCol("KeyString", keyCount, 6, 6, 0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
-        final ColumnGenerator intKey = BenchmarkTools.seqNumberCol("KeyInt", int.class, 0, 1, keyCount, SequentialNumColumnGenerator.Mode.RollAtLimit);
+        final EnumStringColumnGenerator stringKey = (EnumStringColumnGenerator) BenchmarkTools.stringCol("KeyString",
+                keyCount, 6, 6, 0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
+        final ColumnGenerator intKey = BenchmarkTools.seqNumberCol("KeyInt", int.class, 0, 1, keyCount,
+                SequentialNumColumnGenerator.Mode.RollAtLimit);
 
         System.out.println("Key type: " + keyType);
         switch (keyType) {
@@ -144,13 +146,13 @@ public class SumByBenchmark {
                 builder.addColumn(BenchmarkTools.numberCol("ValueToSum2", double.class));
             case 1:
                 builder.addColumn(BenchmarkTools.numberCol("ValueToSum1", int.class));
-            break;
+                break;
             default:
                 throw new IllegalArgumentException("Can not initialize with " + valueCount + " values.");
         }
 
         if (grouped) {
-            ((PersistentBenchmarkTableBuilder)builder).addGroupingColumns(keyName);
+            ((PersistentBenchmarkTableBuilder) builder).addGroupingColumns(keyName);
         }
 
         final BenchmarkTable bmt = builder
@@ -189,14 +191,16 @@ public class SumByBenchmark {
 
     @Benchmark
     public Table sumByIncremental(@NotNull final Blackhole bh) {
-        final Table result = IncrementalBenchmark.incrementalBenchmark((t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.sumBy(keyColumnNames)), table);
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.sumBy(keyColumnNames)), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table sumByRolling(@NotNull final Blackhole bh) {
-        final Table result = IncrementalBenchmark.rollingBenchmark((t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.sumBy(keyColumnNames)), table);
+        final Table result = IncrementalBenchmark.rollingBenchmark(
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.sumBy(keyColumnNames)), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -210,44 +214,58 @@ public class SumByBenchmark {
 
     @Benchmark
     public Table minByIncremental(@NotNull final Blackhole bh) {
-        final Table result = IncrementalBenchmark.incrementalBenchmark((t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.minBy(keyColumnNames)), table);
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.minBy(keyColumnNames)), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table minByRolling(@NotNull final Blackhole bh) {
-        final Table result = IncrementalBenchmark.rollingBenchmark((t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.minBy(keyColumnNames)), table);
+        final Table result = IncrementalBenchmark.rollingBenchmark(
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.minBy(keyColumnNames)), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table minMaxByStatic(@NotNull final Blackhole bh) {
-        final ComboAggregateFactory.ComboBy minCols = AggMin(IntStream.range(1, valueCount + 1).mapToObj(ii -> "Min" + ii + "=ValueToSum" + ii).toArray(String[]::new));
-        final ComboAggregateFactory.ComboBy maxCols = AggMax(IntStream.range(1, valueCount + 1).mapToObj(ii -> "Max" + ii + "=ValueToSum" + ii).toArray(String[]::new));
+        final ComboAggregateFactory.ComboBy minCols = AggMin(IntStream.range(1, valueCount + 1)
+                .mapToObj(ii -> "Min" + ii + "=ValueToSum" + ii).toArray(String[]::new));
+        final ComboAggregateFactory.ComboBy maxCols = AggMax(IntStream.range(1, valueCount + 1)
+                .mapToObj(ii -> "Max" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
-        final Table result = IncrementalBenchmark.rollingBenchmark((t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(minCols, maxCols))), table);
+        final Table result = IncrementalBenchmark.rollingBenchmark(
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(minCols, maxCols))),
+                table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table minMaxByIncremental(@NotNull final Blackhole bh) {
-        final ComboAggregateFactory.ComboBy minCols = AggMin(IntStream.range(1, valueCount + 1).mapToObj(ii -> "Min" + ii + "=ValueToSum" + ii).toArray(String[]::new));
-        final ComboAggregateFactory.ComboBy maxCols = AggMax(IntStream.range(1, valueCount + 1).mapToObj(ii -> "Max" + ii + "=ValueToSum" + ii).toArray(String[]::new));
+        final ComboAggregateFactory.ComboBy minCols = AggMin(IntStream.range(1, valueCount + 1)
+                .mapToObj(ii -> "Min" + ii + "=ValueToSum" + ii).toArray(String[]::new));
+        final ComboAggregateFactory.ComboBy maxCols = AggMax(IntStream.range(1, valueCount + 1)
+                .mapToObj(ii -> "Max" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
-        final Table result = IncrementalBenchmark.rollingBenchmark((t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(minCols, maxCols))), table);
+        final Table result = IncrementalBenchmark.rollingBenchmark(
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(minCols, maxCols))),
+                table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table minMaxByRolling(@NotNull final Blackhole bh) {
-        final ComboAggregateFactory.ComboBy minCols = AggMin(IntStream.range(1, valueCount + 1).mapToObj(ii -> "Min" + ii + "=ValueToSum" + ii).toArray(String[]::new));
-        final ComboAggregateFactory.ComboBy maxCols = AggMax(IntStream.range(1, valueCount + 1).mapToObj(ii -> "Max" + ii + "=ValueToSum" + ii).toArray(String[]::new));
+        final ComboAggregateFactory.ComboBy minCols = AggMin(IntStream.range(1, valueCount + 1)
+                .mapToObj(ii -> "Min" + ii + "=ValueToSum" + ii).toArray(String[]::new));
+        final ComboAggregateFactory.ComboBy maxCols = AggMax(IntStream.range(1, valueCount + 1)
+                .mapToObj(ii -> "Max" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
-        final Table result = IncrementalBenchmark.rollingBenchmark((t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(minCols, maxCols))), table);
+        final Table result = IncrementalBenchmark.rollingBenchmark(
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(minCols, maxCols))),
+                table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -261,7 +279,8 @@ public class SumByBenchmark {
 
     @Benchmark
     public Table varByIncremental(@NotNull final Blackhole bh) {
-        final Table result = IncrementalBenchmark.incrementalBenchmark((t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.varBy(keyColumnNames)), table);
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.varBy(keyColumnNames)), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -275,12 +294,13 @@ public class SumByBenchmark {
 
     @Benchmark
     public Table avgByIncremental(@NotNull final Blackhole bh) {
-        final Table result = IncrementalBenchmark.incrementalBenchmark((t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.avgBy(keyColumnNames)), table);
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.avgBy(keyColumnNames)), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
-    public static void main(String [] args) {
+    public static void main(String[] args) {
         final int heapGb = 12;
         final String benchName = SumByBenchmark.class.getSimpleName();
         BenchUtil.run(heapGb, SumByBenchmark.class, "sumByStatic", "sumByIncremental");

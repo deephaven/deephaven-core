@@ -53,8 +53,10 @@ public interface ShiftAwareListener extends ListenerBase {
         // Cached version of prevModified index.
         private volatile Index prevModified;
 
-        // Field updater for refCount, so we can avoid creating an {@link java.util.concurrent.atomic.AtomicInteger} for each instance.
-        private static final AtomicIntegerFieldUpdater<Update> REFERENCE_COUNT_UPDATER = AtomicIntegerFieldUpdater.newUpdater(Update.class, "refCount");
+        // Field updater for refCount, so we can avoid creating an {@link java.util.concurrent.atomic.AtomicInteger} for
+        // each instance.
+        private static final AtomicIntegerFieldUpdater<Update> REFERENCE_COUNT_UPDATER =
+                AtomicIntegerFieldUpdater.newUpdater(Update.class, "refCount");
 
         // Ensure that we clean up only after all copies of the update are released.
         private volatile int refCount = 1;
@@ -62,7 +64,7 @@ public interface ShiftAwareListener extends ListenerBase {
         public Update() {}
 
         public Update(final Index added, final Index removed, final Index modified, final IndexShiftData shifted,
-                      final ModifiedColumnSet modifiedColumnSet) {
+                final ModifiedColumnSet modifiedColumnSet) {
             this.added = added;
             this.removed = removed;
             this.modified = modified;
@@ -72,6 +74,7 @@ public interface ShiftAwareListener extends ListenerBase {
 
         /**
          * Increment the reference count on this object.
+         * 
          * @return {@code this} for convenience
          */
         public Update acquire() {
@@ -146,6 +149,7 @@ public interface ShiftAwareListener extends ListenerBase {
 
         /**
          * This helper iterates through the modified index and supplies both the pre-shift and post-shift keys per row.
+         * 
          * @param consumer a consumer to feed the modified pre-shift and post-shift key values to.
          */
         public void forAllModified(final BiConsumer<Long, Long> consumer) {
@@ -191,12 +195,13 @@ public interface ShiftAwareListener extends ListenerBase {
 
         @Override
         public LogOutput append(LogOutput logOutput) {
-             return logOutput.append('{')
+            return logOutput.append('{')
                     .append("added=").append(added)
                     .append(", removed=").append(removed)
                     .append(", modified=").append(modified)
                     .append(", shifted=").append(shifted == null ? "{}" : shifted.toString())
-                    .append(", modifiedColumnSet=").append(modifiedColumnSet == null ? "{EMPTY}" : modifiedColumnSet.toString())
+                    .append(", modifiedColumnSet=")
+                    .append(modifiedColumnSet == null ? "{EMPTY}" : modifiedColumnSet.toString())
                     .append("}");
         }
     }

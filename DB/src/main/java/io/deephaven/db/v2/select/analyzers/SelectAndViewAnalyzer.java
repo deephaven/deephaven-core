@@ -20,7 +20,9 @@ import java.util.*;
 import java.util.stream.Stream;
 
 public abstract class SelectAndViewAnalyzer {
-    public enum Mode { VIEW_LAZY, VIEW_EAGER, SELECT_STATIC, SELECT_REFRESHING, SELECT_REDIRECTED_REFRESHING}
+    public enum Mode {
+        VIEW_LAZY, VIEW_EAGER, SELECT_STATIC, SELECT_REFRESHING, SELECT_REDIRECTED_REFRESHING
+    }
 
     public static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource> columnSources,
             Index index, ModifiedColumnSet parentMcs, boolean publishTheseSources, SelectColumn... selectColumns) {
@@ -39,14 +41,18 @@ public abstract class SelectAndViewAnalyzer {
             analyzer.updateColumnDefinitionsFromTopLayer(columnDefinitions);
             sc.initDef(columnDefinitions);
             sc.initInputs(index, columnsOfInterest);
-            final Stream<String> allDependencies = Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream());
+            final Stream<String> allDependencies =
+                    Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream());
             final String[] distinctDeps = allDependencies.distinct().toArray(String[]::new);
             final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentMcs);
 
-            if (sc instanceof SourceColumn || (sc instanceof SwitchColumn && ((SwitchColumn) sc).getRealColumn() instanceof SourceColumn)) {
+            if (sc instanceof SourceColumn
+                    || (sc instanceof SwitchColumn && ((SwitchColumn) sc).getRealColumn() instanceof SourceColumn)) {
                 final ColumnSource sccs = sc.getDataView();
-                if ((sccs instanceof SparseArrayColumnSource || sccs instanceof ArrayBackedColumnSource) && !DbArrayBase.class.isAssignableFrom(sc.getReturnedType())) {
-                    analyzer = analyzer.createLayerForPreserve(sc.getName(), sc, sc.getDataView(), distinctDeps, mcsBuilder);
+                if ((sccs instanceof SparseArrayColumnSource || sccs instanceof ArrayBackedColumnSource)
+                        && !DbArrayBase.class.isAssignableFrom(sc.getReturnedType())) {
+                    analyzer = analyzer.createLayerForPreserve(sc.getName(), sc, sc.getDataView(), distinctDeps,
+                            mcsBuilder);
                     continue;
                 }
             }
@@ -67,7 +73,8 @@ public abstract class SelectAndViewAnalyzer {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
                     // created array with the proper componentType (in the case of DbArrays).
                     final WritableSource scs = sc.newDestInstance(targetSize);
-                    analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, null, distinctDeps, mcsBuilder, false);
+                    analyzer =
+                            analyzer.createLayerForSelect(sc.getName(), sc, scs, null, distinctDeps, mcsBuilder, false);
                     break;
                 }
                 case SELECT_REDIRECTED_REFRESHING:
@@ -81,7 +88,8 @@ public abstract class SelectAndViewAnalyzer {
                         underlyingSource = scs;
                         scs = new RedirectedColumnSource(redirectionIndex, underlyingSource, index.intSize());
                     }
-                    analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, underlyingSource, distinctDeps, mcsBuilder, redirectionIndex != null);
+                    analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, underlyingSource, distinctDeps,
+                            mcsBuilder, redirectionIndex != null);
                     break;
                 }
                 default:
@@ -91,7 +99,8 @@ public abstract class SelectAndViewAnalyzer {
         return analyzer;
     }
 
-    private static SelectAndViewAnalyzer createBaseLayer(Map<String, ColumnSource> sources, boolean publishTheseSources) {
+    private static SelectAndViewAnalyzer createBaseLayer(Map<String, ColumnSource> sources,
+            boolean publishTheseSources) {
         return new BaseLayer(sources, publishTheseSources);
     }
 
@@ -102,7 +111,8 @@ public abstract class SelectAndViewAnalyzer {
     private SelectAndViewAnalyzer createLayerForSelect(String name, SelectColumn sc,
             WritableSource<Attributes.Values> cs, WritableSource<Attributes.Values> underlyingSource,
             String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected) {
-        return new SelectColumnLayer(this, name, sc, cs, underlyingSource, parentColumnDependencies, mcsBuilder, isRedirected);
+        return new SelectColumnLayer(this, name, sc, cs, underlyingSource, parentColumnDependencies, mcsBuilder,
+                isRedirected);
     }
 
     private SelectAndViewAnalyzer createLayerForView(String name, SelectColumn sc, ColumnSource cs,
@@ -117,17 +127,22 @@ public abstract class SelectAndViewAnalyzer {
 
     abstract void populateModifiedColumnSetRecurse(ModifiedColumnSet mcsBuilder, Set<String> remainingDepsToSatisfy);
 
-    enum GetMode { All, New, Published }
+    enum GetMode {
+        All, New, Published
+    }
 
     public final Map<String, ColumnSource> getAllColumnSources() {
         return getColumnSourcesRecurse(GetMode.All);
     }
+
     public final Map<String, ColumnSource> getNewColumnSources() {
         return getColumnSourcesRecurse(GetMode.New);
     }
+
     public final Map<String, ColumnSource> getPublishedColumnSources() {
         return getColumnSourcesRecurse(GetMode.Published);
     }
+
     abstract Map<String, ColumnSource> getColumnSourcesRecurse(GetMode mode);
 
     public static class UpdateHelper implements SafeCloseable {
@@ -152,10 +167,12 @@ public abstract class SelectAndViewAnalyzer {
 
         private void ensure(boolean withModifies) {
             if (withModifies && shiftedWithModifies == null) {
-                shiftedWithModifies = SafeCloseablePair.downcast(upstream.shifted.extractParallelShiftedRowsFromPostShiftIndex(getExisting()));
+                shiftedWithModifies = SafeCloseablePair
+                        .downcast(upstream.shifted.extractParallelShiftedRowsFromPostShiftIndex(getExisting()));
             } else if (!withModifies && shiftedWithoutModifies == null) {
                 try (final Index candidates = getExisting().minus(upstream.modified)) {
-                    shiftedWithoutModifies = SafeCloseablePair.downcast(upstream.shifted.extractParallelShiftedRowsFromPostShiftIndex(candidates));
+                    shiftedWithoutModifies = SafeCloseablePair
+                            .downcast(upstream.shifted.extractParallelShiftedRowsFromPostShiftIndex(candidates));
                 }
             }
         }
@@ -197,15 +214,15 @@ public abstract class SelectAndViewAnalyzer {
      * Apply this update to this SelectAndViewAnalyzer.
      *
      * @param upstream the upstream update
-     * @param toClear  rows that used to exist and no longer exist
+     * @param toClear rows that used to exist and no longer exist
      * @param helper convenience class that memoizes reusable calculations for this update
      */
     public abstract void applyUpdate(ShiftAwareListener.Update upstream, ReadOnlyIndex toClear, UpdateHelper helper);
 
     /**
-     * Our job here is to calculate the effects: a map from incoming column to a list of columns that it effects.
-     * We do this in two stages. In the first stage we create a map from column to (set of dependent columns).
-     * In the second stage we reverse that map.
+     * Our job here is to calculate the effects: a map from incoming column to a list of columns that it effects. We do
+     * this in two stages. In the first stage we create a map from column to (set of dependent columns). In the second
+     * stage we reverse that map.
      */
     public final Map<String, String[]> calcEffects() {
         final Map<String, Set<String>> dependsOn = calcDependsOnRecurse();
@@ -227,6 +244,7 @@ public abstract class SelectAndViewAnalyzer {
         }
         return result;
     }
+
     abstract Map<String, Set<String>> calcDependsOnRecurse();
 
     public abstract SelectAndViewAnalyzer getInner();

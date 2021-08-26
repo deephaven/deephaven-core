@@ -45,11 +45,12 @@ public class TestCharSequenceAdapterBuilder extends TestCase {
         assertEquals(builder.toString(), "dancing");
         assertEquals(builder.hashCode(), "dancing".hashCode());
 
-        assertTrue(CharSequenceUtils.contentEquals(builder.append((byte)' '), "dancing "));
+        assertTrue(CharSequenceUtils.contentEquals(builder.append((byte) ' '), "dancing "));
         assertEquals(builder.toString(), "dancing ");
         assertEquals(builder.hashCode(), "dancing ".hashCode());
 
-        assertTrue(CharSequenceUtils.contentEquals(builder.append("dancing with the stars!".getBytes(), 17, 5), "dancing stars"));
+        assertTrue(CharSequenceUtils.contentEquals(builder.append("dancing with the stars!".getBytes(), 17, 5),
+                "dancing stars"));
         assertEquals(builder.toString(), "dancing stars");
         assertEquals(builder.hashCode(), "dancing stars".hashCode());
     }

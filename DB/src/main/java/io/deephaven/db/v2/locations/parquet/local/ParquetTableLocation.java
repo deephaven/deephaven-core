@@ -42,12 +42,12 @@ class ParquetTableLocation extends AbstractTableLocation {
     private volatile RowGroupReader[] rowGroupReaders;
 
     ParquetTableLocation(@NotNull final TableKey tableKey,
-                         @NotNull final ParquetTableLocationKey tableLocationKey,
-                         @NotNull final ParquetInstructions readInstructions) {
+            @NotNull final ParquetTableLocationKey tableLocationKey,
+            @NotNull final ParquetInstructions readInstructions) {
         super(tableKey, tableLocationKey, false);
         this.readInstructions = readInstructions;
         final ParquetMetadata parquetMetadata;
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (tableLocationKey) {
             parquetFileReader = tableLocationKey.getFileReader();
             parquetMetadata = tableLocationKey.getMetadata();
@@ -72,11 +72,12 @@ class ParquetTableLocation extends AbstractTableLocation {
         }
 
         // TODO (https://github.com/deephaven/deephaven-core/issues/958):
-        //     When/if we support _metadata files for Deephaven-written Parquet tables, we may need to revise this
-        //     in order to read *this* file's metadata, rather than inheriting file metadata from the _metadata file.
-        //     Obvious issues included grouping table paths, codecs, etc.
-        //     Presumably, we could store per-file instances of the metadata in the _metadata file's map.
-        final Optional<TableInfo> tableInfo = ParquetSchemaReader.parseMetadata(parquetMetadata.getFileMetaData().getKeyValueMetaData());
+        // When/if we support _metadata files for Deephaven-written Parquet tables, we may need to revise this
+        // in order to read *this* file's metadata, rather than inheriting file metadata from the _metadata file.
+        // Obvious issues included grouping table paths, codecs, etc.
+        // Presumably, we could store per-file instances of the metadata in the _metadata file's map.
+        final Optional<TableInfo> tableInfo =
+                ParquetSchemaReader.parseMetadata(parquetMetadata.getFileMetaData().getKeyValueMetaData());
         groupingColumns = tableInfo.map(TableInfo::groupingColumnMap).orElse(Collections.emptyMap());
         columnTypes = tableInfo.map(TableInfo::columnTypeMap).orElse(Collections.emptyMap());
 
@@ -89,8 +90,7 @@ class ParquetTableLocation extends AbstractTableLocation {
     }
 
     @Override
-    public void refresh() {
-    }
+    public void refresh() {}
 
     File getParquetFile() {
         return ((ParquetTableLocationKey) getKey()).getFile();
@@ -137,8 +137,10 @@ class ParquetTableLocation extends AbstractTableLocation {
     protected ParquetColumnLocation<Values> makeColumnLocation(@NotNull final String columnName) {
         final String parquetColumnName = readInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName);
         final String[] columnPath = parquetColumnNameToPath.get(parquetColumnName);
-        final List<String> nameList = columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
-        final ColumnChunkReader[] columnChunkReaders = Arrays.stream(getRowGroupReaders()).map(rgr -> rgr.getColumnChunk(nameList)).toArray(ColumnChunkReader[]::new);
+        final List<String> nameList =
+                columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
+        final ColumnChunkReader[] columnChunkReaders = Arrays.stream(getRowGroupReaders())
+                .map(rgr -> rgr.getColumnChunk(nameList)).toArray(ColumnChunkReader[]::new);
         final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
         return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
                 exists ? columnChunkReaders : null,

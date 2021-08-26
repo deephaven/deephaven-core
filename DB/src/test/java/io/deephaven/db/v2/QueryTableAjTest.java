@@ -99,13 +99,13 @@ public class QueryTableAjTest {
 
     @Test
     public void testAjStatic() {
-        //noinspection unchecked
+        // noinspection unchecked
         testAjStatic(TstUtils::c, TstUtils::c);
     }
 
     @Test
     public void testAjStaticGrouped() {
-        //noinspection unchecked
+        // noinspection unchecked
         testAjStatic(TstUtils::cG, TstUtils::cG);
     }
 
@@ -126,30 +126,37 @@ public class QueryTableAjTest {
         final Table result = left.aj(right, "Bucket,LeftStamp=RightStamp", "Sentinel");
         System.out.println("Result");
         TableTools.showWithIndex(result);
-        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"), result.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                result.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{1, 2, 5, NULL_INT, NULL_INT, 5}, intColumn(result, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {1, 2, 5, NULL_INT, NULL_INT, 5}, intColumn(result, "Sentinel"));
 
         final Table ltResult = left.aj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
         System.out.println("LT Result");
         TableTools.showWithIndex(ltResult);
-        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"), ltResult.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                ltResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{NULL_INT, 2, 3, NULL_INT, NULL_INT, 5}, intColumn(ltResult, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {NULL_INT, 2, 3, NULL_INT, NULL_INT, 5},
+                intColumn(ltResult, "Sentinel"));
 
         final Table reverseResult = left.raj(right, "Bucket,LeftStamp=RightStamp", "Sentinel");
         System.out.println("Reverse Result");
         TableTools.showWithIndex(reverseResult);
-        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"), reverseResult.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                reverseResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{1, 4, 5, NULL_INT, 6, NULL_INT}, intColumn(reverseResult, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {1, 4, 5, NULL_INT, 6, NULL_INT},
+                intColumn(reverseResult, "Sentinel"));
 
         final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
         System.out.println("Reverse Result GT");
         TableTools.showWithIndex(reverseResultGt);
-        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"), reverseResultGt.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                reverseResultGt.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{3, 4, NULL_INT, NULL_INT, 6, NULL_INT}, intColumn(reverseResultGt, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {3, 4, NULL_INT, NULL_INT, 6, NULL_INT},
+                intColumn(reverseResultGt, "Sentinel"));
     }
 
     @Test
@@ -171,30 +178,36 @@ public class QueryTableAjTest {
         final Table result = left.aj(right, "Bucket,LeftStamp=RightStamp", "Sentinel");
         System.out.println("Result");
         TableTools.showWithIndex(result);
-        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"), result.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                result.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{3, 2, 4, 2, NULL_INT, 5, 5, 1}, intColumn(result, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {3, 2, 4, 2, NULL_INT, 5, 5, 1}, intColumn(result, "Sentinel"));
 
         final Table ltResult = left.aj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
         System.out.println("LT Result");
         TableTools.showWithIndex(ltResult);
-        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"), ltResult.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                ltResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{2, 1, NULL_INT, 1, NULL_INT, 5, NULL_INT, NULL_INT}, intColumn(ltResult, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {2, 1, NULL_INT, 1, NULL_INT, 5, NULL_INT, NULL_INT},
+                intColumn(ltResult, "Sentinel"));
 
         final Table reverseResult = left.raj(right, "Bucket,LeftStamp=RightStamp", "Sentinel");
         System.out.println("Reverse Result");
         TableTools.showWithIndex(reverseResult);
-        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"), reverseResult.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                reverseResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{3, 2, 4, 2, 4, NULL_INT, 5, 1}, intColumn(reverseResult, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {3, 2, 4, 2, 4, NULL_INT, 5, 1}, intColumn(reverseResult, "Sentinel"));
 
         final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
         System.out.println("Reverse Result GT");
         TableTools.showWithIndex(reverseResultGt);
-        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"), reverseResultGt.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                reverseResultGt.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{NULL_INT, 3, NULL_INT, 3, 4, NULL_INT, NULL_INT, 2}, intColumn(reverseResultGt, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {NULL_INT, 3, NULL_INT, 3, 4, NULL_INT, NULL_INT, 2},
+                intColumn(reverseResultGt, "Sentinel"));
     }
 
     @Test
@@ -219,30 +232,36 @@ public class QueryTableAjTest {
         final Table result = left.aj(right, "Bucket,LeftStamp=RightStamp", "Sentinel");
         System.out.println("Result");
         TableTools.showWithIndex(result);
-        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"), result.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                result.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{3, 2, 4, 2, NULL_INT, 5, 5, 1}, intColumn(result, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {3, 2, 4, 2, NULL_INT, 5, 5, 1}, intColumn(result, "Sentinel"));
 
         final Table ltResult = left.aj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
         System.out.println("LT Result");
         TableTools.showWithIndex(ltResult);
-        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"), ltResult.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                ltResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{2, 1, NULL_INT, 1, NULL_INT, 5, NULL_INT, NULL_INT}, intColumn(ltResult, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {2, 1, NULL_INT, 1, NULL_INT, 5, NULL_INT, NULL_INT},
+                intColumn(ltResult, "Sentinel"));
 
         final Table reverseResult = left.raj(right, "Bucket,LeftStamp=RightStamp", "Sentinel");
         System.out.println("Reverse Result");
         TableTools.showWithIndex(reverseResult);
-        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"), reverseResult.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                reverseResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{3, 2, 4, 2, 4, NULL_INT, 5, 1}, intColumn(reverseResult, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {3, 2, 4, 2, 4, NULL_INT, 5, 1}, intColumn(reverseResult, "Sentinel"));
 
         final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
         System.out.println("Reverse Result GT");
         TableTools.showWithIndex(reverseResultGt);
-        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"), reverseResultGt.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                reverseResultGt.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{NULL_INT, 3, NULL_INT, 3, 4, NULL_INT, NULL_INT, 2}, intColumn(reverseResultGt, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {NULL_INT, 3, NULL_INT, 3, 4, NULL_INT, NULL_INT, 2},
+                intColumn(reverseResultGt, "Sentinel"));
     }
 
     @Test
@@ -259,7 +278,8 @@ public class QueryTableAjTest {
         final Table result = left.aj(right, "Bucket,LeftStamp=RightStamp", "Sentinel");
         System.out.println("Result");
         TableTools.showWithIndex(result);
-        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"), result.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                result.getDefinition().getColumnNames());
 
         BaseArrayTestCase.assertEquals(CollectionUtil.ZERO_LENGTH_INT_ARRAY, intColumn(result, "Sentinel"));
     }
@@ -276,9 +296,10 @@ public class QueryTableAjTest {
                 intCol("Sentinel", 1, 2));
 
         final Table result = left.aj(right, "Bucket,LeftStamp=RightStamp", "Sentinel");
-        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"), result.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                result.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{NULL_INT, NULL_INT, 1}, intColumn(result, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {NULL_INT, NULL_INT, 1}, intColumn(result, "Sentinel"));
 
         final Table left2 = TableTools.newTable(
                 c("Bucket", 1, 2),
@@ -290,9 +311,10 @@ public class QueryTableAjTest {
                 intCol("Sentinel", 1, 2, 3));
 
         final Table result2 = left2.aj(right2, "Bucket,LeftStamp=RightStamp", "Sentinel");
-        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"), result.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                result.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{NULL_INT, 1}, intColumn(result2, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {NULL_INT, 1}, intColumn(result2, "Sentinel"));
     }
 
     @Test
@@ -314,30 +336,36 @@ public class QueryTableAjTest {
         final Table result = left.aj(right, "Bucket,LeftStamp=RightStamp", "Sentinel");
         System.out.println("Result");
         TableTools.showWithIndex(result);
-        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"), result.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                result.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{3, 2, 4, 2, NULL_INT, 5, 5, 1}, intColumn(result, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {3, 2, 4, 2, NULL_INT, 5, 5, 1}, intColumn(result, "Sentinel"));
 
         final Table ltResult = left.aj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
         System.out.println("LT Result");
         TableTools.showWithIndex(ltResult);
-        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"), ltResult.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                ltResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{2, 1, NULL_INT, 1, NULL_INT, 5, NULL_INT, NULL_INT}, intColumn(ltResult, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {2, 1, NULL_INT, 1, NULL_INT, 5, NULL_INT, NULL_INT},
+                intColumn(ltResult, "Sentinel"));
 
         final Table reverseResult = left.raj(right, "Bucket,LeftStamp=RightStamp", "Sentinel");
         System.out.println("Reverse Result");
         TableTools.showWithIndex(reverseResult);
-        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"), reverseResult.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                reverseResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{3, 2, 4, 2, 4, NULL_INT, 5, 1}, intColumn(reverseResult, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {3, 2, 4, 2, 4, NULL_INT, 5, 1}, intColumn(reverseResult, "Sentinel"));
 
         final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
         System.out.println("Reverse Result GT");
         TableTools.showWithIndex(reverseResultGt);
-        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"), reverseResultGt.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
+                reverseResultGt.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{NULL_INT, 3, NULL_INT, 3, 4, NULL_INT, NULL_INT, 2}, intColumn(reverseResultGt, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {NULL_INT, 3, NULL_INT, 3, 4, NULL_INT, NULL_INT, 2},
+                intColumn(reverseResultGt, "Sentinel"));
     }
 
     @Test
@@ -364,33 +392,39 @@ public class QueryTableAjTest {
         final Table result = left.aj(right, leftStamp + "=" + rightStamp, "Sentinel");
         System.out.println("Result");
         TableTools.showWithIndex(result);
-        assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"), result.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"),
+                result.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{1, 5, 0, 1, 3, 5}, intColumn(result, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {1, 5, 0, 1, 3, 5}, intColumn(result, "Sentinel"));
 
         final Table ltResult = left.aj(right, leftStamp + "<" + rightStamp, "Sentinel");
         System.out.println("LT Result");
         TableTools.showWithIndex(ltResult);
-        assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"), ltResult.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"),
+                ltResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{0, 3, NULL_INT, 1, 2, 3}, intColumn(ltResult, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {0, 3, NULL_INT, 1, 2, 3}, intColumn(ltResult, "Sentinel"));
 
         final Table reverseResult = left.raj(right, leftStamp + "=" + rightStamp, "Sentinel");
         System.out.println("Reverse Result");
         TableTools.showWithIndex(reverseResult);
-        assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"), reverseResult.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"),
+                reverseResult.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{1, 4, 0, 2, 3, 4}, intColumn(reverseResult, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {1, 4, 0, 2, 3, 4}, intColumn(reverseResult, "Sentinel"));
 
         final Table reverseResultGt = left.raj(right, leftStamp + ">" + rightStamp, "Sentinel");
         System.out.println("Reverse Result GT");
         TableTools.showWithIndex(reverseResultGt);
-        assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"), reverseResultGt.getDefinition().getColumnNames());
+        assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"),
+                reverseResultGt.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(new int[]{2, NULL_INT, 1, 2, 4, NULL_INT}, intColumn(reverseResultGt, "Sentinel"));
+        BaseArrayTestCase.assertEquals(new int[] {2, NULL_INT, 1, 2, 4, NULL_INT},
+                intColumn(reverseResultGt, "Sentinel"));
     }
 
-    private void tickCheck(Table left, boolean key, final String stampColumn, final String firstUnsorted, final String secondUnsorted) {
+    private void tickCheck(Table left, boolean key, final String stampColumn, final String firstUnsorted,
+            final String secondUnsorted) {
         final QueryTable right = TstUtils.testRefreshingTable(stringCol("SingleKey", "Key", "Key", "Key"),
                 byteCol("ByteCol", (byte) 1, (byte) 2, (byte) 3),
                 longCol("LongCol", 1, 2, 3),
@@ -398,25 +432,29 @@ public class QueryTableAjTest {
                 col("BoolCol", null, false, true),
                 stringCol("StringCol", "A", "B", "C"));
 
-        final QueryTable result1 = (QueryTable)left.aj(right, (key ? "SingleKey," : "") + stampColumn, "Dummy=LongCol");
+        final QueryTable result1 =
+                (QueryTable) left.aj(right, (key ? "SingleKey," : "") + stampColumn, "Dummy=LongCol");
         try {
             base.setExpectError(true);
             final io.deephaven.db.v2.ErrorListener listener = new io.deephaven.db.v2.ErrorListener(result1);
             result1.listenForUpdates(listener);
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                        addToTable(right, i(4, 5, 6),
-                                stringCol("SingleKey", "Key", "Key", "Key"),
-                                byteCol("ByteCol", (byte) 4, (byte) 6, (byte) 5),
-                                longCol("LongCol", 4, 6, 5),
-                                doubleCol("DoubleCol", 4, 6, 5),
-                                stringCol("StringCol", "A", "D", "C"),
-                                col("BoolCol", null, true, false));
-                        right.notifyListeners(i(4, 5, 6), i(), i());
-                    });
+                addToTable(right, i(4, 5, 6),
+                        stringCol("SingleKey", "Key", "Key", "Key"),
+                        byteCol("ByteCol", (byte) 4, (byte) 6, (byte) 5),
+                        longCol("LongCol", 4, 6, 5),
+                        doubleCol("DoubleCol", 4, 6, 5),
+                        stringCol("StringCol", "A", "D", "C"),
+                        col("BoolCol", null, true, false));
+                right.notifyListeners(i(4, 5, 6), i(), i());
+            });
 
             assertNotNull(listener.originalException);
-            assertEquals("Right stamp columns must be sorted, but are not for " + (key ? "Key " : "[] (zero key columns) ") + firstUnsorted + " came before " + secondUnsorted, listener.originalException.getMessage());
+            assertEquals(
+                    "Right stamp columns must be sorted, but are not for " + (key ? "Key " : "[] (zero key columns) ")
+                            + firstUnsorted + " came before " + secondUnsorted,
+                    listener.originalException.getMessage());
         } finally {
             base.setExpectError(false);
         }
@@ -427,13 +465,18 @@ public class QueryTableAjTest {
         for (int seed = 0; seed < 10; ++seed) {
             for (int leftSize = 10; leftSize <= 10000; leftSize *= 10) {
                 for (int rightSize = 10; rightSize <= 10000; rightSize *= 10) {
-                    for (boolean reverse : new boolean[]{false, true}) {
-                        for (boolean noexact : new boolean[]{false, true}) {
-                            System.out.println("Seed=" + seed + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", reverse=" + reverse + ", noexact=" + noexact);
-                            testAjRandomStatic(seed, leftSize, rightSize, reverse, noexact, ColumnInfo.ColAttributes.None, ColumnInfo.ColAttributes.None);
-                            testAjRandomStatic(seed, leftSize, rightSize, reverse, noexact, ColumnInfo.ColAttributes.Grouped, ColumnInfo.ColAttributes.None);
-                            testAjRandomStatic(seed, leftSize, rightSize, reverse, noexact, ColumnInfo.ColAttributes.None, ColumnInfo.ColAttributes.Grouped);
-                            testAjRandomStatic(seed, leftSize, rightSize, reverse, noexact, ColumnInfo.ColAttributes.Grouped, ColumnInfo.ColAttributes.Grouped);
+                    for (boolean reverse : new boolean[] {false, true}) {
+                        for (boolean noexact : new boolean[] {false, true}) {
+                            System.out.println("Seed=" + seed + ", leftSize=" + leftSize + ", rightSize=" + rightSize
+                                    + ", reverse=" + reverse + ", noexact=" + noexact);
+                            testAjRandomStatic(seed, leftSize, rightSize, reverse, noexact,
+                                    ColumnInfo.ColAttributes.None, ColumnInfo.ColAttributes.None);
+                            testAjRandomStatic(seed, leftSize, rightSize, reverse, noexact,
+                                    ColumnInfo.ColAttributes.Grouped, ColumnInfo.ColAttributes.None);
+                            testAjRandomStatic(seed, leftSize, rightSize, reverse, noexact,
+                                    ColumnInfo.ColAttributes.None, ColumnInfo.ColAttributes.Grouped);
+                            testAjRandomStatic(seed, leftSize, rightSize, reverse, noexact,
+                                    ColumnInfo.ColAttributes.Grouped, ColumnInfo.ColAttributes.Grouped);
                         }
                     }
                 }
@@ -441,19 +484,24 @@ public class QueryTableAjTest {
         }
     }
 
-    private void testAjRandomStatic(int seed, int leftSize, int rightSize, boolean reverse, boolean noexact, ColumnInfo.ColAttributes leftAttributes, ColumnInfo.ColAttributes rightAttributes) {
+    private void testAjRandomStatic(int seed, int leftSize, int rightSize, boolean reverse, boolean noexact,
+            ColumnInfo.ColAttributes leftAttributes, ColumnInfo.ColAttributes rightAttributes) {
         final Random random = new Random(seed);
 
-        final QueryTable leftTable = getTable(false, leftSize, random, initColumnInfos(new String[]{"Bucket", "LeftStamp", "LeftSentinel"},
-                Arrays.asList(Collections.singletonList(leftAttributes), Collections.emptyList(), Collections.emptyList()),
-                new TstUtils.SetGenerator<>("Alpha", "Bravo", "Charlie", "Delta"),
-                new TstUtils.IntGenerator(0, 10000),
-                new TstUtils.IntGenerator(10_000_000, 10_010_000)));
-        final QueryTable rightTable = getTable(false, rightSize, random, initColumnInfos(new String[]{"Bucket", "RightStamp", "RightSentinel"},
-                Arrays.asList(Collections.singletonList(rightAttributes), Collections.emptyList(), Collections.emptyList()),
-                new TstUtils.SetGenerator<>("Alpha", "Bravo", "Charlie", "Echo"),
-                new TstUtils.SortedIntGenerator(0, 10000),
-                new TstUtils.IntGenerator(20_000_000, 20_010_000)));
+        final QueryTable leftTable = getTable(false, leftSize, random,
+                initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
+                        Arrays.asList(Collections.singletonList(leftAttributes), Collections.emptyList(),
+                                Collections.emptyList()),
+                        new TstUtils.SetGenerator<>("Alpha", "Bravo", "Charlie", "Delta"),
+                        new TstUtils.IntGenerator(0, 10000),
+                        new TstUtils.IntGenerator(10_000_000, 10_010_000)));
+        final QueryTable rightTable = getTable(false, rightSize, random,
+                initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
+                        Arrays.asList(Collections.singletonList(rightAttributes), Collections.emptyList(),
+                                Collections.emptyList()),
+                        new TstUtils.SetGenerator<>("Alpha", "Bravo", "Charlie", "Echo"),
+                        new TstUtils.SortedIntGenerator(0, 10000),
+                        new TstUtils.IntGenerator(20_000_000, 20_010_000)));
 
         final String stampMatch = "LeftStamp" + (noexact ? (reverse ? ">" : "<") : "=") + "RightStamp";
         final Table result;
@@ -492,16 +540,20 @@ public class QueryTableAjTest {
 
         final Random random = new Random(seed);
 
-        final QueryTable leftTable = getTable(false, leftSize, random, initColumnInfos(new String[]{"Bucket", "LeftStamp", "LeftSentinel"},
-                new TstUtils.StringGenerator(leftSize / 10),
-                new TstUtils.IntGenerator(0, 100000),
-                new TstUtils.IntGenerator(10_000_000, 10_010_000)));
-        final QueryTable rightTable = getTable(false, rightSize, random, initColumnInfos(new String[]{"Bucket", "RightStamp", "RightSentinel"},
-                new TstUtils.StringGenerator(rightSize / 10),
-                new TstUtils.SortedIntGenerator(0, 100000),
-                new TstUtils.IntGenerator(20_000_000, 20_010_000)));
+        final QueryTable leftTable = getTable(false, leftSize, random,
+                initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
+                        new TstUtils.StringGenerator(leftSize / 10),
+                        new TstUtils.IntGenerator(0, 100000),
+                        new TstUtils.IntGenerator(10_000_000, 10_010_000)));
+        final QueryTable rightTable = getTable(false, rightSize, random,
+                initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
+                        new TstUtils.StringGenerator(rightSize / 10),
+                        new TstUtils.SortedIntGenerator(0, 100000),
+                        new TstUtils.IntGenerator(20_000_000, 20_010_000)));
 
-        final Table result = AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_LEFT_CONTROL, leftTable, (QueryTable)rightTable.reverse(), MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true);
+        final Table result = AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_LEFT_CONTROL, leftTable,
+                (QueryTable) rightTable.reverse(), MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true);
 
         final TableMap bucketResults = result.byExternal("Bucket");
         final TableMap leftBucket = leftTable.byExternal("Bucket");
@@ -547,7 +599,8 @@ public class QueryTableAjTest {
                             continue;
                         }
 
-                        System.out.println("Seed=" + seed + ", nodeSize=" + nodeSize + ", leftSize=" + leftSize + ", rightSize=" + rightSize);
+                        System.out.println("Seed=" + seed + ", nodeSize=" + nodeSize + ", leftSize=" + leftSize
+                                + ", rightSize=" + rightSize);
                         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                             testAjRandomLeftStaticRightIncremental(seed, nodeSize, leftSize, rightSize);
                         }
@@ -572,21 +625,28 @@ public class QueryTableAjTest {
 
         for (int leftSize = initialTableSize; leftSize <= maximumTableSize; leftSize *= tableMultiplier) {
             for (int rightSize = initialTableSize; rightSize <= maximumTableSize; rightSize *= tableMultiplier) {
-                for (int leftNodeSize = initialNodeSize; leftNodeSize <= maximumNodeSize; leftNodeSize *= nodeMultiplier) {
+                for (int leftNodeSize = initialNodeSize; leftNodeSize <= maximumNodeSize; leftNodeSize *=
+                        nodeMultiplier) {
                     if (leftNodeSize / nodeMultiplier > leftSize) {
                         continue;
                     }
 
-                    for (int rightNodeSize = initialNodeSize; rightNodeSize <= maximumNodeSize; rightNodeSize *= nodeMultiplier) {
+                    for (int rightNodeSize = initialNodeSize; rightNodeSize <= maximumNodeSize; rightNodeSize *=
+                            nodeMultiplier) {
                         if (rightNodeSize / nodeMultiplier > rightSize) {
                             continue;
                         }
 
                         for (int seed = 0; seed < seedCount; ++seed) {
-                            for (final JoinIncrement joinIncrement : new JoinIncrement[]{base.leftRightStepShift, base.leftRightConcurrentStepShift}) {
-                                System.out.println((System.currentTimeMillis() - startTime) + ": Seed=" + seed + ", leftNodeSize=" + leftNodeSize + ", rightNodeSize=" + rightNodeSize + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", joinIncrement=" + joinIncrement);
+                            for (final JoinIncrement joinIncrement : new JoinIncrement[] {base.leftRightStepShift,
+                                    base.leftRightConcurrentStepShift}) {
+                                System.out.println((System.currentTimeMillis() - startTime) + ": Seed=" + seed
+                                        + ", leftNodeSize=" + leftNodeSize + ", rightNodeSize=" + rightNodeSize
+                                        + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", joinIncrement="
+                                        + joinIncrement);
                                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                                    testAjRandomBothIncremental(seed, leftNodeSize, rightNodeSize, leftSize, rightSize, joinIncrement, int.class);
+                                    testAjRandomBothIncremental(seed, leftNodeSize, rightNodeSize, leftSize, rightSize,
+                                            joinIncrement, int.class);
                                 }
                             }
                             configurations++;
@@ -596,7 +656,8 @@ public class QueryTableAjTest {
             }
         }
 
-        System.out.println("Executed " + configurations + " configurations in " + (System.currentTimeMillis() - startTime) + "ms");
+        System.out.println(
+                "Executed " + configurations + " configurations in " + (System.currentTimeMillis() - startTime) + "ms");
     }
 
     @Test
@@ -614,21 +675,28 @@ public class QueryTableAjTest {
 
         for (int leftSize = initialTableSize; leftSize <= maximumTableSize; leftSize *= tableMultiplier) {
             for (int rightSize = initialTableSize; rightSize <= maximumTableSize; rightSize *= tableMultiplier) {
-                for (int leftNodeSize = initialNodeSize; leftNodeSize <= maximumNodeSize; leftNodeSize *= nodeMultiplier) {
+                for (int leftNodeSize = initialNodeSize; leftNodeSize <= maximumNodeSize; leftNodeSize *=
+                        nodeMultiplier) {
                     if (leftNodeSize / nodeMultiplier > leftSize) {
                         continue;
                     }
 
-                    for (int rightNodeSize = initialNodeSize; rightNodeSize <= maximumNodeSize; rightNodeSize *= nodeMultiplier) {
+                    for (int rightNodeSize = initialNodeSize; rightNodeSize <= maximumNodeSize; rightNodeSize *=
+                            nodeMultiplier) {
                         if (rightNodeSize / nodeMultiplier > rightSize) {
                             continue;
                         }
 
                         for (int seed = 0; seed < seedCount; ++seed) {
-                            for (JoinIncrement joinIncrement : new JoinIncrement[]{base.leftRightStepShift, base.leftRightConcurrentStepShift}) {
-                                System.out.println((System.currentTimeMillis() - startTime) + ": Seed=" + seed + ", leftNodeSize=" + leftNodeSize + ", rightNodeSize=" + rightNodeSize + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", joinIncrement=" + joinIncrement);
+                            for (JoinIncrement joinIncrement : new JoinIncrement[] {base.leftRightStepShift,
+                                    base.leftRightConcurrentStepShift}) {
+                                System.out.println((System.currentTimeMillis() - startTime) + ": Seed=" + seed
+                                        + ", leftNodeSize=" + leftNodeSize + ", rightNodeSize=" + rightNodeSize
+                                        + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", joinIncrement="
+                                        + joinIncrement);
                                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                                    testAjRandomBothIncremental(seed, leftNodeSize, rightNodeSize, leftSize, rightSize, joinIncrement, char.class);
+                                    testAjRandomBothIncremental(seed, leftNodeSize, rightNodeSize, leftSize, rightSize,
+                                            joinIncrement, char.class);
                                 }
                             }
                             configurations++;
@@ -638,7 +706,8 @@ public class QueryTableAjTest {
             }
         }
 
-        System.out.println("Executed " + configurations + " configurations in " + (System.currentTimeMillis() - startTime) + "ms");
+        System.out.println(
+                "Executed " + configurations + " configurations in " + (System.currentTimeMillis() - startTime) + "ms");
     }
 
     @Test
@@ -656,53 +725,61 @@ public class QueryTableAjTest {
 
         for (int leftSize = initialTableSize; leftSize <= maximumTableSize; leftSize *= tableMultiplier) {
             for (int rightSize = initialTableSize; rightSize <= maximumTableSize; rightSize *= tableMultiplier) {
-                for (int leftNodeSize = initialNodeSize; leftNodeSize <= maximumNodeSize; leftNodeSize *= nodeMultiplier) {
+                for (int leftNodeSize = initialNodeSize; leftNodeSize <= maximumNodeSize; leftNodeSize *=
+                        nodeMultiplier) {
                     if (leftNodeSize / nodeMultiplier > leftSize) {
                         continue;
                     }
 
-                    for (int rightNodeSize = initialNodeSize; rightNodeSize <= maximumNodeSize; rightNodeSize *= nodeMultiplier) {
+                    for (int rightNodeSize = initialNodeSize; rightNodeSize <= maximumNodeSize; rightNodeSize *=
+                            nodeMultiplier) {
                         if (rightNodeSize / nodeMultiplier > rightSize) {
                             continue;
                         }
 
                         for (int seed = 0; seed < seedCount; ++seed) {
-                            for (JoinIncrement joinIncrement : new JoinIncrement[]{base.leftRightStepShift, base.leftRightConcurrentStepShift}) {
-                                System.out.println((System.currentTimeMillis() - startTime) + ": Seed=" + seed + ", leftNodeSize=" + leftNodeSize + ", rightNodeSize=" + rightNodeSize + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", joinIncrement=" + joinIncrement);
+                            for (JoinIncrement joinIncrement : new JoinIncrement[] {base.leftRightStepShift,
+                                    base.leftRightConcurrentStepShift}) {
+                                System.out.println((System.currentTimeMillis() - startTime) + ": Seed=" + seed
+                                        + ", leftNodeSize=" + leftNodeSize + ", rightNodeSize=" + rightNodeSize
+                                        + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", joinIncrement="
+                                        + joinIncrement);
                                 final int fRightNodeSize = rightNodeSize;
                                 final int fLeftNodeSize = leftNodeSize;
                                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                                    testAjRandomIncrementalWithInitial(seed, leftNodeSize, rightNodeSize, leftSize, rightSize, joinIncrement, true, true, false, false, true, false, new JoinControl() {
-                                        @Override
-                                        int tableSizeForRightBuild(Table rightTable) {
-                                            return 1 << 2;
-                                        }
+                                    testAjRandomIncrementalWithInitial(seed, leftNodeSize, rightNodeSize, leftSize,
+                                            rightSize, joinIncrement, true, true, false, false, true, false,
+                                            new JoinControl() {
+                                                @Override
+                                                int tableSizeForRightBuild(Table rightTable) {
+                                                    return 1 << 2;
+                                                }
 
-                                        @Override
-                                        int tableSizeForLeftBuild(Table leftTable) {
-                                            return 1 << 2;
-                                        }
+                                                @Override
+                                                int tableSizeForLeftBuild(Table leftTable) {
+                                                    return 1 << 2;
+                                                }
 
-                                        @Override
-                                        double getMaximumLoadFactor() {
-                                            return 20.0;
-                                        }
+                                                @Override
+                                                double getMaximumLoadFactor() {
+                                                    return 20.0;
+                                                }
 
-                                        @Override
-                                        double getTargetLoadFactor() {
-                                            return 19.0;
-                                        }
+                                                @Override
+                                                double getTargetLoadFactor() {
+                                                    return 19.0;
+                                                }
 
-                                        @Override
-                                        int rightSsaNodeSize() {
-                                            return fRightNodeSize;
-                                        }
+                                                @Override
+                                                int rightSsaNodeSize() {
+                                                    return fRightNodeSize;
+                                                }
 
-                                        @Override
-                                        int leftSsaNodeSize() {
-                                            return fLeftNodeSize;
-                                        }
-                                    }, int.class);
+                                                @Override
+                                                int leftSsaNodeSize() {
+                                                    return fLeftNodeSize;
+                                                }
+                                            }, int.class);
                                 }
                             }
                             configurations++;
@@ -712,34 +789,46 @@ public class QueryTableAjTest {
             }
         }
 
-        System.out.println("Executed " + configurations + " configurations in " + (System.currentTimeMillis() - startTime) + "ms");
+        System.out.println(
+                "Executed " + configurations + " configurations in " + (System.currentTimeMillis() - startTime) + "ms");
     }
 
 
     private void testAjRandomLeftStaticRightIncremental(int seed, int nodeSize, int leftSize, int rightSize) {
-        testAjRandomIncrementalWithInitial(seed, -1, nodeSize, leftSize, rightSize, base.rightStepShift, false, true, false, true, true, true, int.class);
+        testAjRandomIncrementalWithInitial(seed, -1, nodeSize, leftSize, rightSize, base.rightStepShift, false, true,
+                false, true, true, true, int.class);
     }
 
-    private void testAjRandomBothIncremental(int seed, int leftNodeSize, int rightNodeSize, int leftSize, int rightSize, JoinIncrement joinIncrement, Class stampType) {
+    private void testAjRandomBothIncremental(int seed, int leftNodeSize, int rightNodeSize, int leftSize, int rightSize,
+            JoinIncrement joinIncrement, Class stampType) {
         // zero keys
-        testAjRandomIncrementalWithInitial(seed, leftNodeSize, rightNodeSize, leftSize, rightSize, joinIncrement, true, true, false, true, false, false, stampType);
+        testAjRandomIncrementalWithInitial(seed, leftNodeSize, rightNodeSize, leftSize, rightSize, joinIncrement, true,
+                true, false, true, false, false, stampType);
         // buckets
-        testAjRandomIncrementalWithInitial(seed, leftNodeSize, rightNodeSize, leftSize, rightSize, joinIncrement, true, true, false, false, true, false, stampType);
+        testAjRandomIncrementalWithInitial(seed, leftNodeSize, rightNodeSize, leftSize, rightSize, joinIncrement, true,
+                true, false, false, true, false, stampType);
     }
 
     @SuppressWarnings("SameParameterValue")
-    private void testAjRandomIncrementalWithInitial(int seed, int leftNodeSize, int rightNodeSize, int leftSize, int rightSize, JoinIncrement joinIncrement, boolean leftRefreshing, boolean rightRefreshing, boolean initialOnly, boolean withZeroKeys, boolean withBuckets, boolean withReverse, Class stampType) {
-        testAjRandomIncrementalWithInitial(seed, leftNodeSize, rightNodeSize, leftSize, rightSize, joinIncrement, leftRefreshing, rightRefreshing, initialOnly, withZeroKeys, withBuckets, withReverse, getJoinControlWithNodeSize(leftNodeSize, rightNodeSize), stampType);
+    private void testAjRandomIncrementalWithInitial(int seed, int leftNodeSize, int rightNodeSize, int leftSize,
+            int rightSize, JoinIncrement joinIncrement, boolean leftRefreshing, boolean rightRefreshing,
+            boolean initialOnly, boolean withZeroKeys, boolean withBuckets, boolean withReverse, Class stampType) {
+        testAjRandomIncrementalWithInitial(seed, leftNodeSize, rightNodeSize, leftSize, rightSize, joinIncrement,
+                leftRefreshing, rightRefreshing, initialOnly, withZeroKeys, withBuckets, withReverse,
+                getJoinControlWithNodeSize(leftNodeSize, rightNodeSize), stampType);
     }
 
     @SuppressWarnings("SameParameterValue")
-    private void testAjRandomIncrementalWithInitial(int seed,int leftNodeSize, int rightNodeSize, int leftSize, int rightSize, JoinIncrement joinIncrement, boolean leftRefreshing, boolean rightRefreshing, boolean initialOnly, boolean withZeroKeys, boolean withBuckets, boolean withReverse, JoinControl control, Class stampType) {
+    private void testAjRandomIncrementalWithInitial(int seed, int leftNodeSize, int rightNodeSize, int leftSize,
+            int rightSize, JoinIncrement joinIncrement, boolean leftRefreshing, boolean rightRefreshing,
+            boolean initialOnly, boolean withZeroKeys, boolean withBuckets, boolean withReverse, JoinControl control,
+            Class stampType) {
         final Logger log = new StreamLoggerImpl();
 
         final Random random = new Random(seed);
         final int maxSteps = 10;
 
-        final ColumnInfo [] leftColumnInfo;
+        final ColumnInfo[] leftColumnInfo;
         final String[] smallSet = {"Alpha", "Bravo", "Charlie", "Delta", "Echo"};
         final Set<String> set1;
         final Set<String> set2;
@@ -748,8 +837,10 @@ public class QueryTableAjTest {
             set1 = Arrays.stream(smallSet).filter(x -> random.nextDouble() < 0.75).collect(Collectors.toSet());
             set2 = Arrays.stream(smallSet).filter(x -> random.nextDouble() < 0.75).collect(Collectors.toSet());
         } else {
-            set1 = IntStream.range(0, smallestSize * 2).filter(x -> random.nextDouble() < 0.75).mapToObj(x -> "B" + x).collect(Collectors.toSet());
-            set2 = IntStream.range(0, smallestSize * 2).filter(x -> random.nextDouble() < 0.75).mapToObj(x -> "B" + x).collect(Collectors.toSet());
+            set1 = IntStream.range(0, smallestSize * 2).filter(x -> random.nextDouble() < 0.75).mapToObj(x -> "B" + x)
+                    .collect(Collectors.toSet());
+            set2 = IntStream.range(0, smallestSize * 2).filter(x -> random.nextDouble() < 0.75).mapToObj(x -> "B" + x)
+                    .collect(Collectors.toSet());
         }
 
         final Generator leftStampGenerator;
@@ -768,19 +859,21 @@ public class QueryTableAjTest {
             throw new IllegalArgumentException();
         }
 
-        final QueryTable leftTable = getTable(leftRefreshing, leftSize, random, leftColumnInfo = initColumnInfos(new String[]{"Truthiness", "Bucket", "LeftStamp", "LeftSentinel"},
-                new BooleanGenerator(),
-                new SetGenerator<>(String.class, set1),
-                leftStampGenerator,
-                new TstUtils.IntGenerator(10_000_000, 10_010_000)));
-        final ColumnInfo [] rightColumnInfo;
-        final QueryTable rightTable = getTable(rightRefreshing, rightSize, random, rightColumnInfo = initColumnInfos(new String[]{"Truthiness", "Bucket", "RightStamp", "RightSentinel"},
-                new BooleanGenerator(),
-                new TstUtils.SetGenerator<>(String.class, set2),
-                rightStampGenerator,
-                new TstUtils.IntGenerator(20_000_000, 20_010_000)));
+        final QueryTable leftTable = getTable(leftRefreshing, leftSize, random,
+                leftColumnInfo = initColumnInfos(new String[] {"Truthiness", "Bucket", "LeftStamp", "LeftSentinel"},
+                        new BooleanGenerator(),
+                        new SetGenerator<>(String.class, set1),
+                        leftStampGenerator,
+                        new TstUtils.IntGenerator(10_000_000, 10_010_000)));
+        final ColumnInfo[] rightColumnInfo;
+        final QueryTable rightTable = getTable(rightRefreshing, rightSize, random,
+                rightColumnInfo = initColumnInfos(new String[] {"Truthiness", "Bucket", "RightStamp", "RightSentinel"},
+                        new BooleanGenerator(),
+                        new TstUtils.SetGenerator<>(String.class, set2),
+                        rightStampGenerator,
+                        new TstUtils.IntGenerator(20_000_000, 20_010_000)));
 
-        final QueryTable rightSorted = sortRight ? (QueryTable)rightTable.sort("RightStamp") : rightTable;
+        final QueryTable rightSorted = sortRight ? (QueryTable) rightTable.sort("RightStamp") : rightTable;
 
         if (LiveTableTestCase.printTableUpdates) {
             System.out.println("Left: ");
@@ -789,7 +882,7 @@ public class QueryTableAjTest {
             TableTools.showWithIndex(rightTable, 20);
         }
 
-        // we compare our initial values to the static case; which we have a separate test for.  This is meant to give
+        // we compare our initial values to the static case; which we have a separate test for. This is meant to give
         // us some confidence in our initial algorithm, whcih we then use to compare the incrmental results.
         if (withZeroKeys) {
             doInitialAjComparison(leftTable, rightSorted, "LeftStamp=RightStamp", false, false, control);
@@ -812,37 +905,68 @@ public class QueryTableAjTest {
             return;
         }
 
-        final QueryTable rightReversed = (QueryTable)rightSorted.reverse();
+        final QueryTable rightReversed = (QueryTable) rightSorted.reverse();
 
-        final EvalNuggetInterface [] en = Stream.concat(Stream.concat(!withZeroKeys ? Stream.empty() : Stream.concat(
-                Stream.of(
-                // aj
-                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightSorted, MatchPairFactory.getExpressions("LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Ascending, false)),
-                // < aj
-                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightSorted, AjMatchPairFactory.getExpressions(false, "LeftStamp<RightStamp").first, MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Ascending, true))
-                ),
-                !withReverse ? Stream.empty() : Stream.of(
-                // raj
-                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightReversed, MatchPairFactory.getExpressions("LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, false)),
-                // > raj
-                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightReversed, AjMatchPairFactory.getExpressions(true, "LeftStamp>RightStamp").first, MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true))
-                )),
-                !withBuckets ? Stream.empty() : Stream.of(
-                // aj, with a bucket
-                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightSorted, MatchPairFactory.getExpressions("Truthiness", "Bucket", "LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Ascending, false)),
-                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightSorted, MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Ascending, false)),
-                // < aj, with a bucket
-                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightSorted, AjMatchPairFactory.getExpressions(false, "Bucket", "LeftStamp<RightStamp").first, MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Ascending, true))
-                )),
-                !withBuckets || !withReverse ? Stream.empty() : Stream.of(
-                // raj, with a bucket
-                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightReversed, MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, false)),
-                // > raj, with a bucket
-                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightReversed, AjMatchPairFactory.getExpressions(true, "Bucket", "LeftStamp>RightStamp").first, MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), SortingOrder.Descending, true)))
-        ).toArray(EvalNuggetInterface[]::new);
+        final EvalNuggetInterface[] en = Stream.concat(Stream.concat(!withZeroKeys ? Stream.empty()
+                : Stream.concat(
+                        Stream.of(
+                                // aj
+                                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightSorted,
+                                        MatchPairFactory.getExpressions("LeftStamp=RightStamp"),
+                                        MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
+                                        SortingOrder.Ascending, false)),
+                                // < aj
+                                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightSorted,
+                                        AjMatchPairFactory.getExpressions(false, "LeftStamp<RightStamp").first,
+                                        MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
+                                        SortingOrder.Ascending, true))),
+                        !withReverse ? Stream.empty()
+                                : Stream.of(
+                                        // raj
+                                        EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightReversed,
+                                                MatchPairFactory.getExpressions("LeftStamp=RightStamp"),
+                                                MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
+                                                SortingOrder.Descending, false)),
+                                        // > raj
+                                        EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightReversed,
+                                                AjMatchPairFactory.getExpressions(true, "LeftStamp>RightStamp").first,
+                                                MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
+                                                SortingOrder.Descending, true)))),
+                !withBuckets ? Stream.empty()
+                        : Stream.of(
+                                // aj, with a bucket
+                                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightSorted,
+                                        MatchPairFactory.getExpressions("Truthiness", "Bucket", "LeftStamp=RightStamp"),
+                                        MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
+                                        SortingOrder.Ascending, false)),
+                                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightSorted,
+                                        MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                                        MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
+                                        SortingOrder.Ascending, false)),
+                                // < aj, with a bucket
+                                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightSorted,
+                                        AjMatchPairFactory.getExpressions(false, "Bucket",
+                                                "LeftStamp<RightStamp").first,
+                                        MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
+                                        SortingOrder.Ascending, true)))),
+                !withBuckets || !withReverse ? Stream.empty()
+                        : Stream.of(
+                                // raj, with a bucket
+                                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightReversed,
+                                        MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                                        MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
+                                        SortingOrder.Descending, false)),
+                                // > raj, with a bucket
+                                EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightReversed,
+                                        AjMatchPairFactory.getExpressions(true, "Bucket", "LeftStamp>RightStamp").first,
+                                        MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
+                                        SortingOrder.Descending, true))))
+                .toArray(EvalNuggetInterface[]::new);
 
         for (int step = 0; step < maxSteps; step++) {
-            System.out.println("Step = " + step + (leftNodeSize > 0 ? ", leftNodeSize=" + leftNodeSize : "") + ", rightNodeSize=" + rightNodeSize + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", seed = " + seed + ", joinIncrement=" + joinIncrement);
+            System.out.println("Step = " + step + (leftNodeSize > 0 ? ", leftNodeSize=" + leftNodeSize : "")
+                    + ", rightNodeSize=" + rightNodeSize + ", leftSize=" + leftSize + ", rightSize=" + rightSize
+                    + ", seed = " + seed + ", joinIncrement=" + joinIncrement);
             if (LiveTableTestCase.printTableUpdates) {
                 System.out.println("Left Table:" + leftTable.size());
                 showWithIndex(leftTable, 100);
@@ -861,17 +985,24 @@ public class QueryTableAjTest {
         }
     }
 
-    private void doInitialAjComparison(QueryTable leftTable, QueryTable rightTable, String columnsToMatch, boolean reverse, boolean disallowMatch, JoinControl control) {
+    private void doInitialAjComparison(QueryTable leftTable, QueryTable rightTable, String columnsToMatch,
+            boolean reverse, boolean disallowMatch, JoinControl control) {
         final Logger log = new StreamLoggerImpl();
 
-        final Table staticResult = reverse ? leftTable.silent().raj(rightTable.silent(), columnsToMatch, "RightSentinel") : leftTable.silent().aj(rightTable.silent(), columnsToMatch, "RightSentinel");
+        final Table staticResult =
+                reverse ? leftTable.silent().raj(rightTable.silent(), columnsToMatch, "RightSentinel")
+                        : leftTable.silent().aj(rightTable.silent(), columnsToMatch, "RightSentinel");
         if (LiveTableTestCase.printTableUpdates) {
             System.out.println("Static: ");
             TableTools.showWithIndex(staticResult);
         }
 
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            final Table refreshingResult = AsOfJoinHelper.asOfJoin(control, leftTable, reverse ? ((QueryTable)rightTable.reverse()) : rightTable, AjMatchPairFactory.getExpressions(reverse, columnsToMatch.split(",")).first, MatchPairFactory.getExpressions("RightStamp", "RightSentinel"), reverse ? SortingOrder.Descending : SortingOrder.Ascending, disallowMatch);
+            final Table refreshingResult = AsOfJoinHelper.asOfJoin(control, leftTable,
+                    reverse ? ((QueryTable) rightTable.reverse()) : rightTable,
+                    AjMatchPairFactory.getExpressions(reverse, columnsToMatch.split(",")).first,
+                    MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
+                    reverse ? SortingOrder.Descending : SortingOrder.Ascending, disallowMatch);
 
             if (LiveTableTestCase.printTableUpdates) {
                 System.out.println("Refreshing: ");
@@ -908,22 +1039,25 @@ public class QueryTableAjTest {
     }
 
 
-    private void testAjRandomIncremental(JoinIncrement joinIncrement, int seed, int leftSize, int rightSize, boolean leftRefreshing, boolean rightRefreshing) {
+    private void testAjRandomIncremental(JoinIncrement joinIncrement, int seed, int leftSize, int rightSize,
+            boolean leftRefreshing, boolean rightRefreshing) {
         final Random random = new Random(seed);
         final int maxSteps = 10;
 
-        final ColumnInfo [] leftColumnInfo;
-        final QueryTable leftTable = getTable(leftRefreshing, leftSize, random, leftColumnInfo = initColumnInfos(new String[]{"Bucket", "LeftStamp", "LeftSentinel"},
-                new TstUtils.SetGenerator<>("Alpha", "Bravo", "Charlie", "Delta"),
-                new TstUtils.IntGenerator(0, 10000),
-                new TstUtils.IntGenerator(10_000_000, 10_010_000)));
-        final ColumnInfo [] rightColumnInfo;
-        final QueryTable rightTable = getTable(rightRefreshing, rightSize, random, rightColumnInfo = initColumnInfos(new String[]{"Bucket", "RightStamp", "RightSentinel"},
-                new TstUtils.SetGenerator<>("Alpha", "Bravo", "Charlie", "Echo"),
-                new TstUtils.SortedIntGenerator(0, 10000),
-                new TstUtils.IntGenerator(20_000_000, 20_010_000)));
+        final ColumnInfo[] leftColumnInfo;
+        final QueryTable leftTable = getTable(leftRefreshing, leftSize, random,
+                leftColumnInfo = initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
+                        new TstUtils.SetGenerator<>("Alpha", "Bravo", "Charlie", "Delta"),
+                        new TstUtils.IntGenerator(0, 10000),
+                        new TstUtils.IntGenerator(10_000_000, 10_010_000)));
+        final ColumnInfo[] rightColumnInfo;
+        final QueryTable rightTable = getTable(rightRefreshing, rightSize, random,
+                rightColumnInfo = initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
+                        new TstUtils.SetGenerator<>("Alpha", "Bravo", "Charlie", "Echo"),
+                        new TstUtils.SortedIntGenerator(0, 10000),
+                        new TstUtils.IntGenerator(20_000_000, 20_010_000)));
 
-        final EvalNuggetInterface [] en = new EvalNuggetInterface[] {
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
@@ -975,7 +1109,8 @@ public class QueryTableAjTest {
         };
 
         for (int step = 0; step < maxSteps; step++) {
-            System.out.println("Step = " + step + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", seed = " + seed + ", joinIncrement=" + joinIncrement);
+            System.out.println("Step = " + step + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", seed = "
+                    + seed + ", joinIncrement=" + joinIncrement);
             if (LiveTableTestCase.printTableUpdates) {
                 System.out.println("Left Table:" + leftTable.size());
                 showWithIndex(leftTable, 100);
@@ -995,30 +1130,35 @@ public class QueryTableAjTest {
         final Random random = new Random(seed);
         final int maxSteps = 3;
 
-        final ColumnInfo [] leftColumnInfo;
+        final ColumnInfo[] leftColumnInfo;
         final int leftSize = 32000;
         final int rightSize = 32000;
-        final QueryTable leftTable = getTable(true, 100000, random, leftColumnInfo = initColumnInfos(new String[]{"Bucket", "LeftStamp", "LeftSentinel"},
-                new TstUtils.StringGenerator(leftSize),
-                new TstUtils.IntGenerator(0, 100000),
-                new TstUtils.IntGenerator(10_000_000, 10_010_000)));
-        final ColumnInfo [] rightColumnInfo;
-        final QueryTable rightTable = getTable(false, 100000, random, rightColumnInfo = initColumnInfos(new String[]{"Bucket", "RightStamp", "RightSentinel"},
-                new TstUtils.StringGenerator(leftSize),
-                new TstUtils.SortedIntGenerator(0, 100000),
-                new TstUtils.IntGenerator(20_000_000, 20_010_000)));
+        final QueryTable leftTable = getTable(true, 100000, random,
+                leftColumnInfo = initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
+                        new TstUtils.StringGenerator(leftSize),
+                        new TstUtils.IntGenerator(0, 100000),
+                        new TstUtils.IntGenerator(10_000_000, 10_010_000)));
+        final ColumnInfo[] rightColumnInfo;
+        final QueryTable rightTable = getTable(false, 100000, random,
+                rightColumnInfo = initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
+                        new TstUtils.StringGenerator(leftSize),
+                        new TstUtils.SortedIntGenerator(0, 100000),
+                        new TstUtils.IntGenerator(20_000_000, 20_010_000)));
 
-        final EvalNuggetInterface [] en = new EvalNuggetInterface[] {
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_RIGHT_CONTROL, leftTable, rightTable, MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightSentinel"), SortingOrder.Ascending, false);
+                        return AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_RIGHT_CONTROL, leftTable, rightTable,
+                                MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                                MatchPairFactory.getExpressions("RightSentinel"), SortingOrder.Ascending, false);
                     }
                 },
         };
 
         for (int step = 0; step < maxSteps; step++) {
-            System.out.println("Step = " + step + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", seed = " + seed + ", joinIncrement=" + joinIncrement);
+            System.out.println("Step = " + step + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", seed = "
+                    + seed + ", joinIncrement=" + joinIncrement);
             if (LiveTableTestCase.printTableUpdates) {
                 System.out.println("Left Table:" + leftTable.size());
                 showWithIndex(leftTable, 100);
@@ -1033,9 +1173,11 @@ public class QueryTableAjTest {
         final TIntArrayList expectedStamp = new TIntArrayList();
         final TIntArrayList expectedSentinel = new TIntArrayList();
 
-        final int [] leftStampArray = (int[]) leftTable.getColumn("LeftStamp").getDirect();
-        final int [] rightStampArray = rightTable == null ? CollectionUtil.ZERO_LENGTH_INT_ARRAY :  (int[]) rightTable.getColumn("RightStamp").getDirect();
-        final int [] rightSentinelArray =rightTable == null ? CollectionUtil.ZERO_LENGTH_INT_ARRAY : (int[]) rightTable.getColumn("RightSentinel").getDirect();
+        final int[] leftStampArray = (int[]) leftTable.getColumn("LeftStamp").getDirect();
+        final int[] rightStampArray = rightTable == null ? CollectionUtil.ZERO_LENGTH_INT_ARRAY
+                : (int[]) rightTable.getColumn("RightStamp").getDirect();
+        final int[] rightSentinelArray = rightTable == null ? CollectionUtil.ZERO_LENGTH_INT_ARRAY
+                : (int[]) rightTable.getColumn("RightSentinel").getDirect();
 
         for (final int leftStamp : leftStampArray) {
             final int rightPosition = Arrays.binarySearch(rightStampArray, leftStamp);
@@ -1051,7 +1193,8 @@ public class QueryTableAjTest {
                     if (noexact) {
                         positionToUse = rightPosition;
                         if (reverse) {
-                            while (positionToUse < rightStampArray.length && rightStampArray[positionToUse] == leftStamp) {
+                            while (positionToUse < rightStampArray.length
+                                    && rightStampArray[positionToUse] == leftStamp) {
                                 positionToUse++;
                             }
                             if (positionToUse == rightStampArray.length) {
@@ -1072,11 +1215,13 @@ public class QueryTableAjTest {
                     } else {
                         positionToUse = rightPosition;
                         if (reverse) {
-                            while (positionToUse > 0 && rightStampArray[positionToUse] == rightStampArray[positionToUse - 1]) {
+                            while (positionToUse > 0
+                                    && rightStampArray[positionToUse] == rightStampArray[positionToUse - 1]) {
                                 positionToUse--;
                             }
                         } else {
-                            while (positionToUse < rightStampArray.length - 1 && rightStampArray[positionToUse] == rightStampArray[positionToUse + 1]) {
+                            while (positionToUse < rightStampArray.length - 1
+                                    && rightStampArray[positionToUse] == rightStampArray[positionToUse + 1]) {
                                 positionToUse++;
                             }
                         }
@@ -1095,7 +1240,8 @@ public class QueryTableAjTest {
 
         QueryScope.addParam("__rightStampExpected", expectedStamp);
         QueryScope.addParam("__rightSentinelExpected", expectedSentinel);
-        final Table expected = leftTable.update("RightStamp=__rightStampExpected.get(i)", "RightSentinel=__rightSentinelExpected.get(i)");
+        final Table expected = leftTable.update("RightStamp=__rightStampExpected.get(i)",
+                "RightSentinel=__rightSentinelExpected.get(i)");
 
         if (LiveTableTestCase.printTableUpdates) {
             System.out.println("Left:");
@@ -1124,7 +1270,7 @@ public class QueryTableAjTest {
         final int size = 100;
         final int scale = 1000;
         final long timeOffset = DBDateTime.now().getNanos();
-        final String [] columnNames = {"MyBoolean", "MyChar"};
+        final String[] columnNames = {"MyBoolean", "MyChar"};
 
         QueryScope.addParam("random", random);
         QueryScope.addParam("scale", scale);
@@ -1145,8 +1291,7 @@ public class QueryTableAjTest {
                             "MyShort=(short)(i%19==0 ? null : (int)(scale*(Math.random()*2-1)))",
                             "MyByte=(Byte)(i%19==0 ? null : new Byte( Integer.toString((int)(Byte.MAX_VALUE*(Math.random()*2-1)))))",
                             "MyBigDecimal=(i%21==0 ? null : new java.math.BigDecimal(scale*(Math.random()*2-1)))",
-                            "MyBigInteger=(i%22==0 ? null : new java.math.BigInteger(Integer.toString((int)(scale*(Math.random()*2-1)))))"
-                    );
+                            "MyBigInteger=(i%22==0 ? null : new java.math.BigInteger(Integer.toString((int)(scale*(Math.random()*2-1)))))");
 
             final Table staticTwo = emptyTable(size)
                     .update("Timestamp= i%23 == 0 ? null : new DBDateTime(timeOffset + (long)(scale*(Math.random()*2-0.1))*100_000_000L)",
@@ -1161,16 +1306,17 @@ public class QueryTableAjTest {
                             "MyShort=(short)(i%19==0 ? null : (int)(scale*(Math.random()*2-1)))",
                             "MyByte=(Byte)(i%19==0 ? null : new Byte( Integer.toString((int)(Byte.MAX_VALUE*(Math.random()*2-1)))))",
                             "MyBigDecimal=(i%21==0 ? null : new java.math.BigDecimal(scale*(Math.random()*2-1)))",
-                            "MyBigInteger=(i%22==0 ? null : new java.math.BigInteger(Integer.toString((int)(scale*(Math.random()*2-1)))))"
-                    );
+                            "MyBigInteger=(i%22==0 ? null : new java.math.BigInteger(Integer.toString((int)(scale*(Math.random()*2-1)))))");
 
             final Table static2ts = staticTwo.sort("Timestamp");
 
             for (final String column : columnNames) {
                 TableTools.showWithIndex(static2ts);
-                final Table resultZk = staticOne.aj(staticTwo.sort(column), column, "Extra=OtherTimestamp,Extra2=MyLong,Check=" + column);
+                final Table resultZk = staticOne.aj(staticTwo.sort(column), column,
+                        "Extra=OtherTimestamp,Extra2=MyLong,Check=" + column);
                 TableTools.showWithIndex(resultZk);
-                final Table resultTs = staticOne.aj(static2ts, column + ",Timestamp", "Extra=OtherTimestamp,Extra2=MyLong,Check=" + column);
+                final Table resultTs = staticOne.aj(static2ts, column + ",Timestamp",
+                        "Extra=OtherTimestamp,Extra2=MyLong,Check=" + column);
                 TableTools.showWithIndex(resultTs);
             }
         } finally {
@@ -1190,37 +1336,44 @@ public class QueryTableAjTest {
             final Random random = new Random(seed);
             final int maxSteps = 5;
 
-            final ColumnInfo [] leftColumnInfo;
+            final ColumnInfo[] leftColumnInfo;
             final int leftSize = 32000;
             final int rightSize = 32000;
-            final QueryTable leftTable = getTable(true, 100000, random, leftColumnInfo = initColumnInfos(new String[]{"Bucket", "LeftStamp", "LeftSentinel"},
-                    new TstUtils.StringGenerator(leftSize),
-                    new TstUtils.IntGenerator(0, 100000),
-                    new TstUtils.IntGenerator(10_000_000, 10_010_000)));
-            final ColumnInfo [] rightColumnInfo;
-            final QueryTable rightTable = getTable(true, 100000, random, rightColumnInfo = initColumnInfos(new String[]{"Bucket", "RightStamp", "RightSentinel"},
-                    new TstUtils.StringGenerator(leftSize),
-                    new TstUtils.SortedIntGenerator(0, 100000),
-                    new TstUtils.IntGenerator(20_000_000, 20_010_000)));
+            final QueryTable leftTable = getTable(true, 100000, random,
+                    leftColumnInfo = initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
+                            new TstUtils.StringGenerator(leftSize),
+                            new TstUtils.IntGenerator(0, 100000),
+                            new TstUtils.IntGenerator(10_000_000, 10_010_000)));
+            final ColumnInfo[] rightColumnInfo;
+            final QueryTable rightTable = getTable(true, 100000, random,
+                    rightColumnInfo = initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
+                            new TstUtils.StringGenerator(leftSize),
+                            new TstUtils.SortedIntGenerator(0, 100000),
+                            new TstUtils.IntGenerator(20_000_000, 20_010_000)));
 
-            final EvalNuggetInterface [] en = new EvalNuggetInterface[] {
+            final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                     new EvalNugget() {
                         @Override
                         protected Table e() {
-                            return AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_RIGHT_CONTROL, (QueryTable)leftTable.sort("LeftStamp"), rightTable, MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"), MatchPairFactory.getExpressions("RightSentinel"), SortingOrder.Ascending, false);
+                            return AsOfJoinHelper.asOfJoin(QueryTableJoinTest.SMALL_RIGHT_CONTROL,
+                                    (QueryTable) leftTable.sort("LeftStamp"), rightTable,
+                                    MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
+                                    MatchPairFactory.getExpressions("RightSentinel"), SortingOrder.Ascending, false);
                         }
                     },
             };
 
             for (int step = 0; step < maxSteps; step++) {
-                System.out.println("Step = " + step + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", seed = " + seed + ", joinIncrement=" + joinIncrement);
+                System.out.println("Step = " + step + ", leftSize=" + leftSize + ", rightSize=" + rightSize
+                        + ", seed = " + seed + ", joinIncrement=" + joinIncrement);
                 if (LiveTableTestCase.printTableUpdates) {
                     System.out.println("Left Table:" + leftTable.size());
                     showWithIndex(leftTable, 100);
                     System.out.println("Right Table:" + rightTable.size());
                     showWithIndex(rightTable, 100);
                 }
-                joinIncrement.step(leftSize, rightSize, leftTable, rightTable, leftColumnInfo, rightColumnInfo, en, random);
+                joinIncrement.step(leftSize, rightSize, leftTable, rightTable, leftColumnInfo, rightColumnInfo, en,
+                        random);
             }
         }
     }

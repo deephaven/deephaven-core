@@ -41,10 +41,14 @@ public class ReplicateSourcesAndChunks {
         replicateSingleValues();
         ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharacterArraySource.class, ReplicatePrimitiveCode.MAIN_SRC);
         ReplicatePrimitiveCode.charToAllButBoolean(CharAggregateColumnSource.class, ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToAllButBoolean(UngroupedCharArrayColumnSource.class, ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToAllButBoolean(UngroupedCharDbArrayColumnSource.class, ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToAllButBoolean(UngroupedBoxedCharDbArrayColumnSource.class, ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToAllButBoolean(UngroupedBoxedCharArrayColumnSource.class, ReplicatePrimitiveCode.MAIN_SRC);
+        ReplicatePrimitiveCode.charToAllButBoolean(UngroupedCharArrayColumnSource.class,
+                ReplicatePrimitiveCode.MAIN_SRC);
+        ReplicatePrimitiveCode.charToAllButBoolean(UngroupedCharDbArrayColumnSource.class,
+                ReplicatePrimitiveCode.MAIN_SRC);
+        ReplicatePrimitiveCode.charToAllButBoolean(UngroupedBoxedCharDbArrayColumnSource.class,
+                ReplicatePrimitiveCode.MAIN_SRC);
+        ReplicatePrimitiveCode.charToAllButBoolean(UngroupedBoxedCharArrayColumnSource.class,
+                ReplicatePrimitiveCode.MAIN_SRC);
         ReplicatePrimitiveCode.charToAllButBoolean(ImmutableCharArraySource.class, ReplicatePrimitiveCode.MAIN_SRC);
         ReplicatePrimitiveCode.charToAll(SizedCharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
 
@@ -76,7 +80,8 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateObjectSingleValue() throws IOException {
-        final String className = ReplicatePrimitiveCode.charToObject(CharacterSingleValueSource.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className =
+                ReplicatePrimitiveCode.charToObject(CharacterSingleValueSource.class, ReplicatePrimitiveCode.MAIN_SRC);
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -90,8 +95,7 @@ public class ReplicateSourcesAndChunks {
                 "set\\(Object", "set(T",
                 "set\\(long key, Object", "set(long key, T",
                 "final ObjectChunk", "final ObjectChunk<T, ? extends Attributes.Values>",
-                "unbox\\((.*)\\)", "$1"
-        );
+                "unbox\\((.*)\\)", "$1");
         lines = ReplicateUtilities.removeRegion(lines, "UnboxedSetter");
         lines = ReplicateUtilities.replaceRegion(lines, "Constructor", Arrays.asList(
                 "    public ObjectSingleValueSource(Class<T> type) {",
@@ -108,7 +112,8 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateObjectChunkColumnSource() throws IOException {
-        final String className = ReplicatePrimitiveCode.charToObject(CharChunkColumnSource.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className =
+                ReplicatePrimitiveCode.charToObject(CharChunkColumnSource.class, ReplicatePrimitiveCode.MAIN_SRC);
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -118,15 +123,14 @@ public class ReplicateSourcesAndChunks {
                 "Object getObject", "T get",
                 "Object current", "T current",
                 "ObjectChunk<\\? extends Attributes.Values>", "ObjectChunk<T, ? extends Attributes.Values>",
-                "QueryConstants.NULL_OBJECT", "null"
-        );
+                "QueryConstants.NULL_OBJECT", "null");
 
         lines = ReplicateUtilities.replaceRegion(lines, "constructor", Arrays.asList(
-        "    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType) {",
+                "    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType) {",
                 "        this(type, componentType, new TLongArrayList());",
                 "    }",
                 "",
-        "    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType, final TLongArrayList firstOffsetForData) {",
+                "    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType, final TLongArrayList firstOffsetForData) {",
                 "        super(type, componentType);",
                 "        this.firstOffsetForData = firstOffsetForData;",
                 "    }"
@@ -139,7 +143,8 @@ public class ReplicateSourcesAndChunks {
     private static void replicateSparseArraySources() throws IOException {
         replicateOneOrN();
 
-        ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharacterSparseArraySource.class, ReplicatePrimitiveCode.MAIN_SRC);
+        ReplicatePrimitiveCode.charToAllButBooleanAndLong(CharacterSparseArraySource.class,
+                ReplicatePrimitiveCode.MAIN_SRC);
         replicateSparseLongSource();
 
         replicateSparseBooleanSource();
@@ -160,18 +165,19 @@ public class ReplicateSourcesAndChunks {
         List<String> classLines = FileUtils.readLines(classFile, Charset.defaultCharset());
 
         classLines = replaceRegion(classLines, "ApplyDecoder", Arrays.asList(
-        "    public final <T> T applyDecoder(ObjectDecoder<T> decoder) {",
-        "        return decoder.decode(data, offset, size);",
-        "    }",
-        "",
-        "    public final <T> T applyDecoder(ObjectDecoder<T> decoder, int offsetSrc, int length) {",
-        "        return decoder.decode(data, offset + offsetSrc, length);",
-        "    }"));
+                "    public final <T> T applyDecoder(ObjectDecoder<T> decoder) {",
+                "        return decoder.decode(data, offset, size);",
+                "    }",
+                "",
+                "    public final <T> T applyDecoder(ObjectDecoder<T> decoder, int offsetSrc, int length) {",
+                "        return decoder.decode(data, offset + offsetSrc, length);",
+                "    }"));
         classLines = replaceRegion(classLines, "ApplyDecoderImports", Collections.singletonList(
                 "import io.deephaven.util.codec.ObjectDecoder;"));
 
         FileUtils.writeLines(classFile, classLines);
     }
+
     private static void replicateBooleanChunks() throws IOException {
         final String className = ReplicatePrimitiveCode.charToBoolean(CharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
         final File classFile = new File(className);
@@ -193,18 +199,17 @@ public class ReplicateSourcesAndChunks {
                 "ObjectChunk<ATTR", "ObjectChunk<T, ATTR",
                 "ObjectChunk<[?] ", "ObjectChunk<T, ? ",
                 "ObjectChunk<Any> EMPTY", "ObjectChunk<Object, Any> EMPTY",
-                "static T\\[\\] makeArray", "static <T> T[] makeArray"
-        );
+                "static T\\[\\] makeArray", "static <T> T[] makeArray");
 
         lines = replaceRegion(lines, "makeArray", Arrays.asList(
-        "    public static <T> T[] makeArray(int capacity) {",
-        "        if (capacity == 0) {",
-        "            //noinspection unchecked",
-        "            return (T[]) ArrayUtils.EMPTY_OBJECT_ARRAY;",
-        "        }",
-        "        //noinspection unchecked",
-        "        return (T[])new Object[capacity];",
-        "    }"));
+                "    public static <T> T[] makeArray(int capacity) {",
+                "        if (capacity == 0) {",
+                "            //noinspection unchecked",
+                "            return (T[]) ArrayUtils.EMPTY_OBJECT_ARRAY;",
+                "        }",
+                "        //noinspection unchecked",
+                "        return (T[])new Object[capacity];",
+                "    }"));
         lines = ReplicateUtilities.removeRegion(lines, "BufferImports");
         lines = ReplicateUtilities.removeRegion(lines, "CopyToBuffer");
         lines = expandDowncast(lines, "ObjectChunk");
@@ -217,7 +222,8 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateObjectChunkChunks() throws IOException {
-        final String className = ReplicatePrimitiveCode.charToObject(CharChunkChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className =
+                ReplicatePrimitiveCode.charToObject(CharChunkChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -229,16 +235,16 @@ public class ReplicateSourcesAndChunks {
                 "ObjectChunk<ATTR>\\[]", "ObjectChunk<T, ATTR>[]",
                 "Object\\[]\\[]", "T[][]",
                 "Object get", "T get",
-                "(  +)innerData = ", "$1//noinspection unchecked" + "\n$1innerData = (T[][])"
-        );
+                "(  +)innerData = ", "$1//noinspection unchecked" + "\n$1innerData = (T[][])");
 
         lines = expandDowncast(lines, "ObjectChunkChunk");
         FileUtils.writeLines(classFile, lines);
     }
 
     private static void replicateWritableChunks() throws IOException {
-        final List<String> files = ReplicatePrimitiveCode.charToAllButBoolean(WritableCharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
-        for(String fileName : files) {
+        final List<String> files =
+                ReplicatePrimitiveCode.charToAllButBoolean(WritableCharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        for (String fileName : files) {
             final File classFile = new File(fileName);
             List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
             lines = ReplicateUtilities.removeRegion(lines, "SortFixup");
@@ -249,19 +255,26 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateWritableBooleanChunks() throws IOException {
-        final String writableBooleanChunkClassName = ReplicatePrimitiveCode.charToBoolean(WritableCharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String writableBooleanChunkClassName =
+                ReplicatePrimitiveCode.charToBoolean(WritableCharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
         final File writableBooleanChunkClassFile = new File(writableBooleanChunkClassName);
-        List<String> writableBooleanChunkClassLines = FileUtils.readLines(writableBooleanChunkClassFile, Charset.defaultCharset());
-        writableBooleanChunkClassLines = ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "BufferImports");
-        writableBooleanChunkClassLines = ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "CopyFromBuffer");
-        writableBooleanChunkClassLines = ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImports");
-        writableBooleanChunkClassLines = ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImpl");
+        List<String> writableBooleanChunkClassLines =
+                FileUtils.readLines(writableBooleanChunkClassFile, Charset.defaultCharset());
+        writableBooleanChunkClassLines =
+                ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "BufferImports");
+        writableBooleanChunkClassLines =
+                ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "CopyFromBuffer");
+        writableBooleanChunkClassLines =
+                ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImports");
+        writableBooleanChunkClassLines =
+                ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImpl");
         writableBooleanChunkClassLines = ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "sort");
         FileUtils.writeLines(writableBooleanChunkClassFile, writableBooleanChunkClassLines);
     }
 
     private static void replicateWritableObjectChunks() throws IOException {
-        final String className = ReplicatePrimitiveCode.charToObject(WritableCharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className =
+                ReplicatePrimitiveCode.charToObject(WritableCharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -273,17 +286,16 @@ public class ReplicateSourcesAndChunks {
                 " <ATTR", " <T, ATTR",
                 "Object value", "T value",
                 "( +)(final T\\[] typedArray)", "$1//noinspection unchecked" + "\n$1$2",
-                "NULL_OBJECT", "null"
-        );
+                "NULL_OBJECT", "null");
         lines = ReplicateUtilities.removeRegion(lines, "CopyFromBuffer");
         lines = ReplicateUtilities.removeRegion(lines, "FillWithNullValueImports");
         lines = ReplicateUtilities.removeRegion(lines, "BufferImports");
         lines = expandDowncast(lines, "WritableObjectChunk");
-        lines = ReplicateUtilities.replaceRegion(lines,"fillWithBoxedValue",Arrays.asList(
+        lines = ReplicateUtilities.replaceRegion(lines, "fillWithBoxedValue", Arrays.asList(
                 "    @Override\n" +
-                "    public final void fillWithBoxedValue(int offset, int size, Object value) {\n" +
-                "        fillWithValue(offset,size, (T)value);\n" +
-                "    }"));
+                        "    public final void fillWithBoxedValue(int offset, int size, Object value) {\n" +
+                        "        fillWithValue(offset,size, (T)value);\n" +
+                        "    }"));
         lines = ReplicateUtilities.addImport(lines, DhObjectComparisons.class);
         lines = ReplicateUtilities.replaceRegion(lines, "sort", Arrays.asList(
                 "    @Override",
@@ -300,19 +312,26 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateWritableBooleanChunkChunks() throws IOException {
-        final String writableBooleanChunkClassName = ReplicatePrimitiveCode.charToBoolean(WritableCharChunkChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String writableBooleanChunkClassName =
+                ReplicatePrimitiveCode.charToBoolean(WritableCharChunkChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
         final File writableBooleanChunkClassFile = new File(writableBooleanChunkClassName);
-        List<String> writableBooleanChunkClassLines = FileUtils.readLines(writableBooleanChunkClassFile, Charset.defaultCharset());
-        writableBooleanChunkClassLines = ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "BufferImports");
-        writableBooleanChunkClassLines = ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "CopyFromBuffer");
-        writableBooleanChunkClassLines = ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImports");
-        writableBooleanChunkClassLines = ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImpl");
+        List<String> writableBooleanChunkClassLines =
+                FileUtils.readLines(writableBooleanChunkClassFile, Charset.defaultCharset());
+        writableBooleanChunkClassLines =
+                ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "BufferImports");
+        writableBooleanChunkClassLines =
+                ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "CopyFromBuffer");
+        writableBooleanChunkClassLines =
+                ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImports");
+        writableBooleanChunkClassLines =
+                ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImpl");
         writableBooleanChunkClassLines = ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "sort");
         FileUtils.writeLines(writableBooleanChunkClassFile, writableBooleanChunkClassLines);
     }
 
     private static void replicateWritableObjectChunkChunks() throws IOException {
-        final String className = ReplicatePrimitiveCode.charToObject(WritableCharChunkChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className =
+                ReplicatePrimitiveCode.charToObject(WritableCharChunkChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -323,8 +342,7 @@ public class ReplicateSourcesAndChunks {
                 "WritableObjectChunk<[?]", "WritableObjectChunk<?, ATTR",
                 "Object value", "T value",
                 "( +)(final T\\[] realType)", "$1//noinspection unchecked" + "\n$1$2",
-                "NULL_OBJECT", "null"
-        );
+                "NULL_OBJECT", "null");
         lines = ReplicateUtilities.removeRegion(lines, "CopyFromBuffer");
         lines = ReplicateUtilities.removeRegion(lines, "FillWithNullValueImports");
         lines = ReplicateUtilities.removeRegion(lines, "BufferImports");
@@ -338,7 +356,8 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateResettableObjectChunks() throws IOException {
-        final String className = ReplicatePrimitiveCode.charToObject(ResettableCharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className =
+                ReplicatePrimitiveCode.charToObject(ResettableCharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -347,9 +366,9 @@ public class ReplicateSourcesAndChunks {
                 "ObjectChunk<[?] ", "ObjectChunk<T, ? ",
                 "Object\\[]", "T[]",
                 "ResettableObjectChunk<ATTR", "ResettableObjectChunk<T, ATTR",
-                "( +)this\\(ArrayUtils.EMPTY_OBJECT_ARRAY", "$1//noinspection unchecked" + "\n$1this((T[])ArrayUtils.EMPTY_OBJECT_ARRAY",
-                "( +)(final T\\[] typedArray)", "$1//noinspection unchecked" + "\n$1$2"
-        );
+                "( +)this\\(ArrayUtils.EMPTY_OBJECT_ARRAY",
+                "$1//noinspection unchecked" + "\n$1this((T[])ArrayUtils.EMPTY_OBJECT_ARRAY",
+                "( +)(final T\\[] typedArray)", "$1//noinspection unchecked" + "\n$1$2");
         lines = expandDowncast(lines, "ResettableObjectChunk");
         FileUtils.writeLines(classFile, lines);
     }
@@ -360,7 +379,8 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateResettableWritableObjectChunks() throws IOException {
-        final String className = ReplicatePrimitiveCode.charToObject(ResettableWritableCharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className =
+                ReplicatePrimitiveCode.charToObject(ResettableWritableCharChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -369,9 +389,9 @@ public class ReplicateSourcesAndChunks {
                 "ObjectChunk<[?] ", "ObjectChunk<T, ? ",
                 "Object\\[]", "T[]",
                 "ResettableObjectChunk<ATTR", "ResettableObjectChunk<T, ATTR",
-                "( +)this\\(ArrayUtils.EMPTY_OBJECT_ARRAY", "$1//noinspection unchecked" + "\n$1this((T[])ArrayUtils.EMPTY_OBJECT_ARRAY",
-                "( +)(final T\\[] typedArray)", "$1//noinspection unchecked" + "\n$1$2"
-        );
+                "( +)this\\(ArrayUtils.EMPTY_OBJECT_ARRAY",
+                "$1//noinspection unchecked" + "\n$1this((T[])ArrayUtils.EMPTY_OBJECT_ARRAY",
+                "( +)(final T\\[] typedArray)", "$1//noinspection unchecked" + "\n$1$2");
         lines = expandDowncast(lines, "ResettableWritableObjectChunk");
         FileUtils.writeLines(classFile, lines);
     }
@@ -382,7 +402,8 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateResettableWritableObjectChunkChunks() throws IOException {
-        final String className = ReplicatePrimitiveCode.charToObject(ResettableWritableCharChunkChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className = ReplicatePrimitiveCode.charToObject(ResettableWritableCharChunkChunk.class,
+                ReplicatePrimitiveCode.MAIN_SRC);
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -391,9 +412,9 @@ public class ReplicateSourcesAndChunks {
                 "WritableObjectChunk<ATTR", "WritableObjectChunk<T, ATTR",
                 "WritableObjectChunk<[?]", "WritableObjectChunk<T, ?",
                 "Object\\[]", "T[]",
-                "( +)this\\(ArrayUtils.EMPTY_OBJECT_ARRAY", "$1//noinspection unchecked" + "\n$1this((T[])ArrayUtils.EMPTY_OBJECT_ARRAY",
-                "( +)(final T\\[] typedArray)", "$1//noinspection unchecked" + "\n$1$2"
-        );
+                "( +)this\\(ArrayUtils.EMPTY_OBJECT_ARRAY",
+                "$1//noinspection unchecked" + "\n$1this((T[])ArrayUtils.EMPTY_OBJECT_ARRAY",
+                "( +)(final T\\[] typedArray)", "$1//noinspection unchecked" + "\n$1$2");
 
         lines = expandDowncast(lines, "ResettableWritableObjectChunkChunk");
 
@@ -406,7 +427,8 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateResettableObjectChunkChunks() throws IOException {
-        final String className = ReplicatePrimitiveCode.charToObject(ResettableCharChunkChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className =
+                ReplicatePrimitiveCode.charToObject(ResettableCharChunkChunk.class, ReplicatePrimitiveCode.MAIN_SRC);
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -414,15 +436,15 @@ public class ReplicateSourcesAndChunks {
                 "ResettableObjectChunkChunk<ATTR", "ResettableObjectChunkChunk<T, ATTR",
                 "ObjectChunk<ATTR", "ObjectChunk<T, ATTR",
                 "ObjectChunk<[?]", "ObjectChunk<T, ?",
-                "ObjectChunkChunk<ATTR", "ObjectChunkChunk<T, ATTR"
-        );
+                "ObjectChunkChunk<ATTR", "ObjectChunkChunk<T, ATTR");
         lines = expandDowncast(lines, "ResettableObjectChunkChunk");
         FileUtils.writeLines(classFile, lines);
     }
 
     private static void replicateFactories() throws IOException {
         ReplicatePrimitiveCode.charToAllButBoolean(CharChunkFactory.class, ReplicatePrimitiveCode.MAIN_SRC);
-        final String className = ReplicatePrimitiveCode.charToBoolean(CharChunkFactory.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className =
+                ReplicatePrimitiveCode.charToBoolean(CharChunkFactory.class, ReplicatePrimitiveCode.MAIN_SRC);
         final File classFile = new File(className);
         List<String> classLines = FileUtils.readLines(classFile, Charset.defaultCharset());
         classLines = ReplicateUtilities.replaceRegion(classLines, "dbArrayWrap", Arrays.asList(
@@ -446,27 +468,31 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateObjectChunkFiller() throws IOException {
-        final String className = ReplicatePrimitiveCode.charToObject(CharChunkFiller.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String className =
+                ReplicatePrimitiveCode.charToObject(CharChunkFiller.class, ReplicatePrimitiveCode.MAIN_SRC);
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
                 "ObjectChunk<\\?", "ObjectChunk<Object, ?",
                 "src.getObject", "src.get",
-                "src.getPrevObject", "src.getPrev"
-        );
+                "src.getPrevObject", "src.getPrev");
         FileUtils.writeLines(classFile, lines);
     }
 
     private static void replicateSparseLongSource() throws IOException {
         // this is super hokey, but we need to preserve the Long thing that we replicate to
-        final String longBasePath = ReplicatePrimitiveCode.basePathForClass(LongSparseArraySource.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String longBasePath =
+                ReplicatePrimitiveCode.basePathForClass(LongSparseArraySource.class, ReplicatePrimitiveCode.MAIN_SRC);
 
-        final File longSparseArraySourceFile = new File(longBasePath, LongSparseArraySource.class.getSimpleName() + ".java");
-        final File abstractLongSparseArraySourceFile = new File(longBasePath, AbstractSparseLongArraySource.class.getSimpleName() + ".java");
+        final File longSparseArraySourceFile =
+                new File(longBasePath, LongSparseArraySource.class.getSimpleName() + ".java");
+        final File abstractLongSparseArraySourceFile =
+                new File(longBasePath, AbstractSparseLongArraySource.class.getSimpleName() + ".java");
 
 
         final String longSparseCode = FileUtils.readFileToString(longSparseArraySourceFile, Charset.defaultCharset());
-        ReplicatePrimitiveCode.charToLong(CharacterSparseArraySource.class, ReplicatePrimitiveCode.MAIN_SRC, Collections.emptyMap());
+        ReplicatePrimitiveCode.charToLong(CharacterSparseArraySource.class, ReplicatePrimitiveCode.MAIN_SRC,
+                Collections.emptyMap());
 
         Files.delete(abstractLongSparseArraySourceFile.toPath());
         Files.move(longSparseArraySourceFile.toPath(), abstractLongSparseArraySourceFile.toPath());
@@ -475,7 +501,8 @@ public class ReplicateSourcesAndChunks {
 
         List<String> abstractLines = FileUtils.readLines(abstractLongSparseArraySourceFile, Charset.defaultCharset());
         abstractLines = globalReplacements(abstractLines, "LongSparseArraySource", "AbstractSparseLongArraySource",
-                "public class AbstractSparseLongArraySource extends SparseArrayColumnSource<Long> implements MutableColumnSourceGetDefaults.ForLong", "abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumnSource<T> implements MutableColumnSourceGetDefaults.LongBacked<T>",
+                "public class AbstractSparseLongArraySource extends SparseArrayColumnSource<Long> implements MutableColumnSourceGetDefaults.ForLong",
+                "abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumnSource<T> implements MutableColumnSourceGetDefaults.LongBacked<T>",
                 "ColumnSource<Long>", "ColumnSource<T>");
         abstractLines = replaceRegion(abstractLines, "constructor", Arrays.asList(
                 "    AbstractSparseLongArraySource(Class<T> type) {",
@@ -484,14 +511,16 @@ public class ReplicateSourcesAndChunks {
         abstractLines = replaceRegion(abstractLines, "boxed methods", Collections.emptyList());
         abstractLines = replaceRegion(abstractLines, "copy method", Collections.emptyList());
         abstractLines = simpleFixup(abstractLines, "getChunk", "LongChunk<Values> getChunk", "Chunk<Values> getChunk");
-        abstractLines = simpleFixup(abstractLines, "getPrevChunk", "LongChunk<Values> getPrevChunk", "Chunk<Values> getPrevChunk");
+        abstractLines = simpleFixup(abstractLines, "getPrevChunk", "LongChunk<Values> getPrevChunk",
+                "Chunk<Values> getPrevChunk");
         abstractLines = standardCleanups(abstractLines);
 
         FileUtils.writeLines(abstractLongSparseArraySourceFile, abstractLines);
     }
 
     private static void replicateSparseBooleanSource() throws IOException {
-        final String booleanPath = ReplicatePrimitiveCode.charToBooleanAsByte(CharacterSparseArraySource.class, ReplicatePrimitiveCode.MAIN_SRC, Collections.emptyMap());
+        final String booleanPath = ReplicatePrimitiveCode.charToBooleanAsByte(CharacterSparseArraySource.class,
+                ReplicatePrimitiveCode.MAIN_SRC, Collections.emptyMap());
         final File booleanFile = new File(booleanPath);
         List<String> lines = FileUtils.readLines(booleanFile, Charset.defaultCharset());
 
@@ -506,20 +535,33 @@ public class ReplicateSourcesAndChunks {
                 "ObjectChunk<[?] extends Values>", "ObjectChunk<Boolean, ? extends Values>",
                 "BooleanChunk<[?] super Values>", "ObjectChunk<Boolean, ? super Values>",
                 "ObjectChunk<[?] super Values>", "ObjectChunk<Boolean, ? super Values>");
-        lines = simpleFixup(lines, "primitive get", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE", "getBoolean", "getByte", "getPrevBoolean", "getPrevByte");
+        lines = simpleFixup(lines, "primitive get", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE", "getBoolean", "getByte",
+                "getPrevBoolean", "getPrevByte");
 
-        lines = replaceRegion(lines, "copyFromTypedArray", Arrays.asList("                    for (int jj = 0; jj < length; ++jj) {", "                         chunk.set(jj + ctx.offset, BooleanUtils.byteAsBoolean(ctx.block[sIndexWithinBlock + jj]));", "                    }"));
-        lines = replaceRegion(lines, "copyToTypedArray", Arrays.asList("                for (int jj = 0; jj < length; ++jj) {", "                    block[sIndexWithinBlock + jj] = BooleanUtils.booleanAsByte(chunk.get(offset + jj));", "                }"));
+        lines = replaceRegion(lines, "copyFromTypedArray", Arrays.asList(
+                "                    for (int jj = 0; jj < length; ++jj) {",
+                "                         chunk.set(jj + ctx.offset, BooleanUtils.byteAsBoolean(ctx.block[sIndexWithinBlock + jj]));",
+                "                    }"));
+        lines = replaceRegion(lines, "copyToTypedArray", Arrays.asList(
+                "                for (int jj = 0; jj < length; ++jj) {",
+                "                    block[sIndexWithinBlock + jj] = BooleanUtils.booleanAsByte(chunk.get(offset + jj));",
+                "                }"));
 
-        lines = applyFixup(lines, "fillByKeys", "(.*chunk.set\\(.*, )(ctx\\.block.*)(\\);.*)", m -> Collections.singletonList(m.group(1) + "BooleanUtils.byteAsBoolean(" + m.group(2) + ")"  + m.group(3)));
-        lines = applyFixup(lines, "fillByUnorderedKeys", "(.*byteChunk.set\\(.*, )(block.*)(\\);.*)", m -> Collections.singletonList(m.group(1) + "BooleanUtils.byteAsBoolean(" + m.group(2) + ")"  + m.group(3)));
-        lines = applyFixup(lines, "fillFromChunkByKeys", "(.*)(chunk.get\\(.*\\));", m -> Collections.singletonList(m.group(1) + "BooleanUtils.booleanAsByte(" + m.group(2) + ");"));
-        lines = applyFixup(lines, "fillFromChunkUnordered", "(.*)(chunk.get\\(.*\\));", m -> Collections.singletonList(m.group(1) + "BooleanUtils.booleanAsByte(" + m.group(2) + ");"));
+        lines = applyFixup(lines, "fillByKeys", "(.*chunk.set\\(.*, )(ctx\\.block.*)(\\);.*)", m -> Collections
+                .singletonList(m.group(1) + "BooleanUtils.byteAsBoolean(" + m.group(2) + ")" + m.group(3)));
+        lines = applyFixup(lines, "fillByUnorderedKeys", "(.*byteChunk.set\\(.*, )(block.*)(\\);.*)", m -> Collections
+                .singletonList(m.group(1) + "BooleanUtils.byteAsBoolean(" + m.group(2) + ")" + m.group(3)));
+        lines = applyFixup(lines, "fillFromChunkByKeys", "(.*)(chunk.get\\(.*\\));",
+                m -> Collections.singletonList(m.group(1) + "BooleanUtils.booleanAsByte(" + m.group(2) + ");"));
+        lines = applyFixup(lines, "fillFromChunkUnordered", "(.*)(chunk.get\\(.*\\));",
+                m -> Collections.singletonList(m.group(1) + "BooleanUtils.booleanAsByte(" + m.group(2) + ");"));
 
         lines = simpleFixup(lines, "allocateNullFilledBlock", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
-        lines = simpleFixup(lines, "boxed methods", "box\\(getBoolean\\(", "BooleanUtils.byteAsBoolean(getByte(", "box\\(getPrevBoolean\\(", "BooleanUtils.byteAsBoolean(getPrevByte(");
+        lines = simpleFixup(lines, "boxed methods", "box\\(getBoolean\\(", "BooleanUtils.byteAsBoolean(getByte(",
+                "box\\(getPrevBoolean\\(", "BooleanUtils.byteAsBoolean(getPrevByte(");
         lines = simpleFixup(lines, "boxed methods", "unbox", "BooleanUtils.booleanAsByte");
-        lines = applyFixup(lines, "constructor", "(.*super\\().*(\\);.*)", m -> Collections.singletonList(m.group(1) + "Boolean.class" + m.group(2)));
+        lines = applyFixup(lines, "constructor", "(.*super\\().*(\\);.*)",
+                m -> Collections.singletonList(m.group(1) + "Boolean.class" + m.group(2)));
 
         lines = removeRegion(removeRegion(lines, "getChunk"), "getPrevChunk");
         lines = replaceRegion(lines, "getChunk", Arrays.asList(
@@ -533,17 +575,19 @@ public class ReplicateSourcesAndChunks {
                 "        return getPrevChunkByFilling(context, orderedKeys).asObjectChunk();",
                 "    }"));
 
-        lines = simpleFixup(lines, "fillByUnorderedKeys", "WritableObjectChunk byteChunk", "WritableObjectChunk<Boolean, ? super Values> byteChunk");
+        lines = simpleFixup(lines, "fillByUnorderedKeys", "WritableObjectChunk byteChunk",
+                "WritableObjectChunk<Boolean, ? super Values> byteChunk");
         lines = simpleFixup(lines, "fillByUnorderedKeys", "byteChunk", "booleanObjectChunk");
-        lines = simpleFixup(lines, "fillByUnorderedKeys", "BooleanUtils\\.byteAsBoolean\\(blockToUse == null \\? NULL_BOOLEAN : blockToUse\\[indexWithinBlock\\]\\)", "blockToUse == null ? NULL_BOOLEAN : BooleanUtils.byteAsBoolean(blockToUse[indexWithinBlock])");
+        lines = simpleFixup(lines, "fillByUnorderedKeys",
+                "BooleanUtils\\.byteAsBoolean\\(blockToUse == null \\? NULL_BOOLEAN : blockToUse\\[indexWithinBlock\\]\\)",
+                "blockToUse == null ? NULL_BOOLEAN : BooleanUtils.byteAsBoolean(blockToUse[indexWithinBlock])");
 
         lines = simpleFixup(lines, "serialization",
                 "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE",
                 "ObjectChunk", "ByteChunk",
                 "BooleanChunk", "ByteChunk",
                 "<Boolean>", "<Byte>",
-                "<Boolean, Values>", "<Values>"
-                );
+                "<Boolean, Values>", "<Values>");
 
         lines = insertRegion(lines, "serialization", Arrays.asList(
                 "    WritableSource reinterpretForSerialization() {",
@@ -596,8 +640,8 @@ public class ReplicateSourcesAndChunks {
                 "        }",
                 "",
                 "        @Override",
-                "        public void ensureCapacity(long capacity) {",
-                "            wrapped.ensureCapacity(capacity);",
+                "        public void ensureCapacity(long capacity, boolean nullFilled) {",
+                "            wrapped.ensureCapacity(capacity, nullFilled);",
                 "        }",
                 "",
                 "        @Override",
@@ -806,13 +850,13 @@ public class ReplicateSourcesAndChunks {
                 "                }",
                 "            }",
                 "        }",
-                "    }"
-                ));
+                "    }"));
         FileUtils.writeLines(booleanFile, lines);
     }
 
     private static void replicateSparseObjectSource() throws IOException {
-        final String objectPath = ReplicatePrimitiveCode.charToObject(CharacterSparseArraySource.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String objectPath =
+                ReplicatePrimitiveCode.charToObject(CharacterSparseArraySource.class, ReplicatePrimitiveCode.MAIN_SRC);
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
 
@@ -822,7 +866,8 @@ public class ReplicateSourcesAndChunks {
         lines = globalReplacements(lines, "ObjectOneOrN.Block([0-2])", "ObjectOneOrN.Block$1<T>");
 
         lines = globalReplacements(lines,
-                "public class ObjectSparseArraySource extends SparseArrayColumnSource<Object> implements MutableColumnSourceGetDefaults.ForObject", "public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> implements MutableColumnSourceGetDefaults.ForObject<T>",
+                "public class ObjectSparseArraySource extends SparseArrayColumnSource<Object> implements MutableColumnSourceGetDefaults.ForObject",
+                "public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> implements MutableColumnSourceGetDefaults.ForObject<T>",
                 "Object[ ]?\\[\\]", "T []",
                 "NULL_OBJECT", "null",
                 "getObject", "get",
@@ -861,8 +906,7 @@ public class ReplicateSourcesAndChunks {
                 "        super(type, componentType);",
                 "        blocks = new ObjectOneOrN.Block0<>();",
                 "        isArrayType = DbArrayBase.class.isAssignableFrom(type);",
-                "    }"
-        ));
+                "    }"));
 
         lines = replaceRegion(lines, "move method", Arrays.asList(
                 "    @Override",
@@ -900,7 +944,8 @@ public class ReplicateSourcesAndChunks {
 
     private static void replicateOneOrN() throws IOException {
         ReplicatePrimitiveCode.charToAll(CharOneOrN.class, ReplicatePrimitiveCode.MAIN_SRC);
-        final String objectOneOrNPath = ReplicatePrimitiveCode.charToObject(CharOneOrN.class, ReplicatePrimitiveCode.MAIN_SRC);
+        final String objectOneOrNPath =
+                ReplicatePrimitiveCode.charToObject(CharOneOrN.class, ReplicatePrimitiveCode.MAIN_SRC);
         final File oneOrNFile = new File(objectOneOrNPath);
         List<String> lines = FileUtils.readLines(oneOrNFile, Charset.defaultCharset());
 
@@ -909,16 +954,14 @@ public class ReplicateSourcesAndChunks {
                 "Object \\[\\]", "T []", "SoftRecycler<Object", "SoftRecycler<T",
                 "QueryConstants.NULL_OBJECT", "null",
                 "new Object\\[BLOCK2_SIZE\\]\\[\\];",
-                "(T[][])new Object[BLOCK2_SIZE][];"
-                );
+                "(T[][])new Object[BLOCK2_SIZE][];");
 
         lines = simpleFixup(lines, "Block0", "Block1", "Block1<T>", "Block2", "Block2<T>");
         lines = simpleFixup(lines, "Block1", "Block2", "Block2<T>");
 
         lines = globalReplacements(lines,
                 "new Block2<T>\\[BLOCK1_SIZE\\]", "new Block2[BLOCK1_SIZE]",
-                "new Block1<T>\\[BLOCK0_SIZE\\]", "new Block1[BLOCK0_SIZE]"
-                );
+                "new Block1<T>\\[BLOCK0_SIZE\\]", "new Block1[BLOCK0_SIZE]");
 
         FileUtils.writeLines(oneOrNFile, lines);
     }

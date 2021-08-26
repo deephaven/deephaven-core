@@ -23,8 +23,8 @@ public interface ColumnChunkReader {
     long numValues();
 
     /**
-     * @return The depth of the number of nested repeated fields this column is a part of.
-     * 0 means this is a simple (non-repeating) field,  1 means this is a flat array.
+     * @return The depth of the number of nested repeated fields this column is a part of. 0 means this is a simple
+     *         (non-repeating) field, 1 means this is a flat array.
      */
     int getMaxRl();
 

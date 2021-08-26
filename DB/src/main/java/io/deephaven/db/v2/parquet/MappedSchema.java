@@ -10,16 +10,14 @@ import org.apache.parquet.schema.Types.MessageTypeBuilder;
 import static io.deephaven.db.v2.parquet.TypeInfos.getTypeInfo;
 
 /**
- * Represents the results of a successful mapping between a {@link TableDefinition} and a
- * {@link MessageType}.
+ * Represents the results of a successful mapping between a {@link TableDefinition} and a {@link MessageType}.
  */
 class MappedSchema {
 
     static MappedSchema create(
             final TableDefinition definition,
             final ParquetInstructions instructions,
-            final ColumnDefinition... extraColumns
-    ) {
+            final ColumnDefinition... extraColumns) {
         final MessageTypeBuilder builder = Types.buildMessage();
         for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
             TypeInfos.TypeInfo typeInfo = getTypeInfo(columnDefinition, instructions);

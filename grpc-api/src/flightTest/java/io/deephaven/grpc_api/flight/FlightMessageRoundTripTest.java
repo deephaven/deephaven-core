@@ -61,8 +61,8 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.*;
 
 /**
- * Deliberately much lower in scope (and running time) than BarrageMessageRoundTripTest, the only purpose
- * of this test is to verify that we can round trip
+ * Deliberately much lower in scope (and running time) than BarrageMessageRoundTripTest, the only purpose of this test
+ * is to verify that we can round trip
  */
 public class FlightMessageRoundTripTest {
     @Module
@@ -92,14 +92,18 @@ public class FlightMessageRoundTripTest {
         Set<ServerInterceptor> interceptors();
 
         FlightServiceGrpcBinding flightService();
+
         SessionServiceGrpcImpl sessionGrpcService();
+
         SessionService sessionService();
+
         AbstractScriptSession scriptSession();
 
         @Component.Builder
         interface Builder {
             @BindsInstance
             Builder withScheduler(final Scheduler scheduler);
+
             @BindsInstance
             Builder withSessionTokenExpireTmMs(@Named("session.tokenExpireMs") long tokenExpireMs);
 
@@ -120,7 +124,8 @@ public class FlightMessageRoundTripTest {
     public void setup() throws IOException {
         TestComponent component = DaggerFlightMessageRoundTripTest_TestComponent
                 .builder()
-                .withScheduler(new Scheduler.DelegatingImpl(Executors.newSingleThreadExecutor(), Executors.newScheduledThreadPool(1)))
+                .withScheduler(new Scheduler.DelegatingImpl(Executors.newSingleThreadExecutor(),
+                        Executors.newScheduledThreadPool(1)))
                 .withSessionTokenExpireTmMs(60_000_000)
                 .build();
 
@@ -133,27 +138,30 @@ public class FlightMessageRoundTripTest {
 
         scriptSession = component.scriptSession();
 
-        client = FlightClient.builder().location(Location.forGrpcInsecure("localhost", actualPort)).allocator(new RootAllocator()).intercept(info -> new FlightClientMiddleware() {
-            @Override
-            public void onBeforeSendingHeaders(CallHeaders outgoingHeaders) {
-                final UUID currSession = sessionToken;
-                if (currSession != null) {
-                    outgoingHeaders.insert(SessionServiceGrpcImpl.DEEPHAVEN_SESSION_ID, currSession.toString());
-                }
-            }
-            @Override
-            public void onHeadersReceived(CallHeaders incomingHeaders) {
-            }
-            @Override
-            public void onCallCompleted(CallStatus status) {
-            }
-        }).build();
+        client = FlightClient.builder().location(Location.forGrpcInsecure("localhost", actualPort))
+                .allocator(new RootAllocator()).intercept(info -> new FlightClientMiddleware() {
+                    @Override
+                    public void onBeforeSendingHeaders(CallHeaders outgoingHeaders) {
+                        final UUID currSession = sessionToken;
+                        if (currSession != null) {
+                            outgoingHeaders.insert(SessionServiceGrpcImpl.DEEPHAVEN_SESSION_ID, currSession.toString());
+                        }
+                    }
+
+                    @Override
+                    public void onHeadersReceived(CallHeaders incomingHeaders) {}
+
+                    @Override
+                    public void onCallCompleted(CallStatus status) {}
+                }).build();
         channel = ManagedChannelBuilder.forTarget("localhost:" + actualPort)
                 .usePlaintext()
                 .build();
-        SessionServiceGrpc.SessionServiceBlockingStub sessionServiceClient = SessionServiceGrpc.newBlockingStub(channel);
+        SessionServiceGrpc.SessionServiceBlockingStub sessionServiceClient =
+                SessionServiceGrpc.newBlockingStub(channel);
 
-        HandshakeResponse response = sessionServiceClient.newSession(HandshakeRequest.newBuilder().setAuthProtocol(1).build());
+        HandshakeResponse response =
+                sessionServiceClient.newSession(HandshakeRequest.newBuilder().setAuthProtocol(1).build());
         assertNotNull(response.getSessionToken());
         sessionToken = UUID.fromString(response.getSessionToken().toStringUtf8());
 
@@ -248,10 +256,11 @@ public class FlightMessageRoundTripTest {
 
         // some nulls in columns
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty= ((i % 2) == 0) ? i : (int)null"));
-        assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty= ((i % 2) == 0) ? String.valueOf(i) : (String)null"));
+        assertRoundTripDataEqual(
+                TableTools.emptyTable(10).update("empty= ((i % 2) == 0) ? String.valueOf(i) : (String)null"));
 
         // list columns TODO(#755): support for DBArray
-//        assertRoundTripDataEqual(TableTools.emptyTable(5).update("A=i").by().join(TableTools.emptyTable(5)));
+        // assertRoundTripDataEqual(TableTools.emptyTable(5).update("A=i").by().join(TableTools.emptyTable(5)));
     }
 
     @Test
@@ -300,8 +309,10 @@ public class FlightMessageRoundTripTest {
             scriptSession.setVariable(tickingTableName, tickingTable);
 
             // test fetch info from scoped ticket
-            assertSchemaMatchesTable(client.getSchema(arrowFlightDescriptorForName(staticTableName)).getSchema(), table);
-            assertSchemaMatchesTable(client.getSchema(arrowFlightDescriptorForName(tickingTableName)).getSchema(), tickingTable);
+            assertSchemaMatchesTable(client.getSchema(arrowFlightDescriptorForName(staticTableName)).getSchema(),
+                    table);
+            assertSchemaMatchesTable(client.getSchema(arrowFlightDescriptorForName(tickingTableName)).getSchema(),
+                    tickingTable);
 
             // test list flights which runs through scoped tickets
             final MutableInt seenTables = new MutableInt();
@@ -354,12 +365,15 @@ public class FlightMessageRoundTripTest {
     }
 
     private void assertSchemaMatchesTable(Schema schema, Table table) {
-        Assert.eq(schema.getFields().size(), "schema.getFields().size()", table.getColumns().length, "table.getColumns().length");
-        Assert.equals(BarrageSchemaUtil.schemaToTableDefinition(schema), "BarrageSchemaUtil.schemaToTableDefinition(schema)",
+        Assert.eq(schema.getFields().size(), "schema.getFields().size()", table.getColumns().length,
+                "table.getColumns().length");
+        Assert.equals(BarrageSchemaUtil.schemaToTableDefinition(schema),
+                "BarrageSchemaUtil.schemaToTableDefinition(schema)",
                 table.getDefinition(), "table.getDefinition()");
     }
 
     private static int nextTicket = 1;
+
     private void assertRoundTripDataEqual(Table deephavenTable) throws InterruptedException, ExecutionException {
         // bind the table in the session
         Flight.Ticket dhTableTicket = ExportTicketHelper.exportIdToArrowTicket(nextTicket++);
@@ -397,6 +411,7 @@ public class FlightMessageRoundTripTest {
         // check that contents match
         assertEquals(deephavenTable.size(), uploadedTable.size());
         assertEquals(deephavenTable.getDefinition(), uploadedTable.getDefinition());
-        assertEquals(0, (long) TableTools.diffPair(deephavenTable, uploadedTable, 0, EnumSet.noneOf(TableDiff.DiffItems.class)).getSecond());
+        assertEquals(0, (long) TableTools
+                .diffPair(deephavenTable, uploadedTable, 0, EnumSet.noneOf(TableDiff.DiffItems.class)).getSecond());
     }
 }

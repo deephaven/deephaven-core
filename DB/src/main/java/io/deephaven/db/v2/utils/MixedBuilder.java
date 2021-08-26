@@ -12,7 +12,7 @@ public class MixedBuilder implements TreeIndexImpl.RandomBuilder {
             MixedBuilder.class, "pqSizeThreshold", 2 * 1024 * 1024);
 
     private static final int addAsIndexThreshold = Configuration.getInstance().getIntegerForClassWithDefault(
-            MixedBuilder.class,"addAsIndexThreshold", 64 * 1024);
+            MixedBuilder.class, "addAsIndexThreshold", 64 * 1024);
 
     public MixedBuilder(final int pqInitialCapacity) {
         accumIndex = null;

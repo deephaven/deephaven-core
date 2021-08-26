@@ -42,7 +42,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         final long size = usePrev ? index.sizePrev() : index.size();
 
         for (Map.Entry<String, ColumnSource> entry : parent.getColumnSourceMap().entrySet()) {
-            //noinspection unchecked
+            // noinspection unchecked
             resultColumns.put(entry.getKey(), new ReadOnlyRedirectedColumnSource(redirectionIndex, entry.getValue()));
         }
 

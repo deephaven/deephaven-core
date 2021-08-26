@@ -36,7 +36,8 @@ public class SessionService {
     private final SessionCleanupJob sessionCleanupJob = new SessionCleanupJob();
 
     @Inject()
-    public SessionService(final Scheduler scheduler, final SessionState.Factory sessionFactory, @Named("session.tokenExpireMs") final long tokenExpireMs) {
+    public SessionService(final Scheduler scheduler, final SessionState.Factory sessionFactory,
+            @Named("session.tokenExpireMs") final long tokenExpireMs) {
         this.scheduler = scheduler;
         this.sessionFactory = sessionFactory;
         this.tokenExpireMs = tokenExpireMs;
@@ -81,14 +82,16 @@ public class SessionService {
 
         synchronized (session) {
             expiration = session.getExpiration();
-            if (expiration != null && expiration.deadline.getMillis() - tokenExpireMs + tokenRotateMs > now.getMillis()) {
+            if (expiration != null
+                    && expiration.deadline.getMillis() - tokenExpireMs + tokenRotateMs > now.getMillis()) {
                 // current token is not old enough to rotate
                 return expiration;
             }
 
             do {
                 newUUID = UuidCreator.getRandomBased();
-                expiration = new TokenExpiration(newUUID, DBTimeUtils.millisToTime(now.getMillis() + tokenExpireMs), session);
+                expiration = new TokenExpiration(newUUID, DBTimeUtils.millisToTime(now.getMillis() + tokenExpireMs),
+                        session);
             } while (tokenToSession.putIfAbsent(newUUID, expiration) != null);
 
             if (initialToken) {
@@ -99,7 +102,7 @@ public class SessionService {
         }
         outstandingCookies.addLast(expiration);
 
-        synchronized(this) {
+        synchronized (this) {
             if (!cleanupJobInstalled) {
                 cleanupJobInstalled = true;
                 scheduler.runAtTime(expiration.deadline, sessionCleanupJob);
@@ -163,6 +166,7 @@ public class SessionService {
 
     /**
      * Reduces the liveness of the session.
+     * 
      * @param session the session to close
      */
     public void closeSession(final SessionState session) {
@@ -216,7 +220,8 @@ public class SessionService {
                 outstandingCookies.poll();
 
                 synchronized (next.session) {
-                    if (next.session.getExpiration() != null && next.session.getExpiration().deadline.getMillis() <= now.getMillis()) {
+                    if (next.session.getExpiration() != null
+                            && next.session.getExpiration().deadline.getMillis() <= now.getMillis()) {
                         next.session.onExpired();
                     }
                 }

@@ -70,7 +70,7 @@ public class SwitchColumn implements SelectColumn {
         List<String> usedColumns = realColumn.initDef(columnDefinitionMap);
         if (realColumn instanceof DhFormulaColumn) {
             FormulaColumnPython formulaColumnPython = ((DhFormulaColumn) realColumn).getFormulaColumnPython();
-            realColumn = formulaColumnPython != null ? formulaColumnPython: realColumn;
+            realColumn = formulaColumnPython != null ? formulaColumnPython : realColumn;
         }
         return usedColumns;
     }

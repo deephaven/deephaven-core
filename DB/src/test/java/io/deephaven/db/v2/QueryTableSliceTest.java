@@ -30,12 +30,13 @@ public class QueryTableSliceTest extends QueryTableTestBase {
     private void testSliceIncremental(final String ctxt, final int size) throws IOException {
         final Random random = new Random(0);
         final TstUtils.ColumnInfo columnInfo[];
-        final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(new String[]{"Sym", "intCol", "doubleCol", "Keys"},
-                new TstUtils.SetGenerator<>("a", "b","c","d"),
-                new TstUtils.IntGenerator(10, 100),
-                new TstUtils.SetGenerator<>(10.1, 20.1, 30.1),
-                new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1)));
-        final EvalNugget en[] = new EvalNugget[]{
+        final QueryTable queryTable = getTable(size, random,
+                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "Keys"},
+                        new TstUtils.SetGenerator<>("a", "b", "c", "d"),
+                        new TstUtils.IntGenerator(10, 100),
+                        new TstUtils.SetGenerator<>(10.1, 20.1, 30.1),
+                        new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1)));
+        final EvalNugget en[] = new EvalNugget[] {
                 EvalNugget.from(() -> queryTable.head(0)),
                 EvalNugget.from(() -> queryTable.update("x = Keys").head(0)),
                 EvalNugget.from(() -> queryTable.updateView("x = Keys").head(0)),
@@ -350,7 +351,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
 
         for (int j = 1; j < 100; j += 7) {
             final QueryTable upTable = getTable(true, 0, new Random(0), new ColumnInfo[0]);
-            final QueryTable queryTable = (QueryTable)upTable.updateView("I=i", "II=ii");
+            final QueryTable queryTable = (QueryTable) upTable.updateView("I=i", "II=ii");
             final EvalNugget[] en = {
                     EvalNugget.from(() -> queryTable.slice(-35, 0))
             };
@@ -361,8 +362,9 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                     Index added = Index.FACTORY.getIndexByRange(ii * jj, (ii + 1) * jj - 1);
                     upTable.getIndex().insert(added);
-                    ShiftAwareListener.Update update = new ShiftAwareListener.Update(added, Index.FACTORY.getEmptyIndex(),
-                            Index.FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY);
+                    ShiftAwareListener.Update update =
+                            new ShiftAwareListener.Update(added, Index.FACTORY.getEmptyIndex(),
+                                    Index.FACTORY.getEmptyIndex(), IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY);
                     upTable.notifyListeners(update);
                 });
 
@@ -372,13 +374,14 @@ public class QueryTableSliceTest extends QueryTableTestBase {
     }
 
     public void testLongTail() {
-        final Table bigTable = emptyTable(2*(long)(Integer.MAX_VALUE)).updateView("I=i", "II=ii");
+        final Table bigTable = emptyTable(2 * (long) (Integer.MAX_VALUE)).updateView("I=i", "II=ii");
         final Table tailed = bigTable.tail(1);
-        assertEquals(2L*Integer.MAX_VALUE - 1, tailed.getColumn("II").get(0));
+        assertEquals(2L * Integer.MAX_VALUE - 1, tailed.getColumn("II").get(0));
     }
 
     public void testZeroHead() {
-        final QueryTable table = TstUtils.testRefreshingTable(Index.FACTORY.getIndexByRange(10, 35), TableTools.charCol("letter", "abcdefghijklmnopqrstuvwxyz".toCharArray()));
+        final QueryTable table = TstUtils.testRefreshingTable(Index.FACTORY.getIndexByRange(10, 35),
+                TableTools.charCol("letter", "abcdefghijklmnopqrstuvwxyz".toCharArray()));
         final Table noRows = table.head(0);
         assertEquals(0, noRows.size());
         assertFalse(noRows.isLive());
@@ -388,7 +391,8 @@ public class QueryTableSliceTest extends QueryTableTestBase {
     }
 
     public void testSlice() {
-        final QueryTable table = TstUtils.testRefreshingTable(Index.FACTORY.getIndexByRange(10, 35), TableTools.charCol("letter", "abcdefghijklmnopqrstuvwxyz".toCharArray()));
+        final QueryTable table = TstUtils.testRefreshingTable(Index.FACTORY.getIndexByRange(10, 35),
+                TableTools.charCol("letter", "abcdefghijklmnopqrstuvwxyz".toCharArray()));
 
         doSliceTest(table, "abcdefghij", 0, 10);
         doSliceTest(table, "cdefghij", 2, 10);
@@ -408,7 +412,8 @@ public class QueryTableSliceTest extends QueryTableTestBase {
 
     private void doSliceTest(QueryTable table, String expected, int firstPositionInclusive, int lastPositionExclusive) {
         final StringBuilder chars = new StringBuilder();
-        table.slice(firstPositionInclusive, lastPositionExclusive).characterColumnIterator("letter").forEachRemaining((Procedure.UnaryChar) chars::append);
+        table.slice(firstPositionInclusive, lastPositionExclusive).characterColumnIterator("letter")
+                .forEachRemaining((Procedure.UnaryChar) chars::append);
         final String result = chars.toString();
         assertEquals(expected, result);
     }
@@ -437,11 +442,12 @@ public class QueryTableSliceTest extends QueryTableTestBase {
     private void testHeadTailPctIncremental(final String ctxt, final int size) throws IOException {
         final Random random = new Random(0);
         final ColumnInfo[] columnInfo;
-        final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(new String[]{"Sym", "intCol", "doubleCol"},
-                new SetGenerator<>("a", "b","c","d"),
-                new IntGenerator(10, 100),
-                new SetGenerator<>(10.1, 20.1, 30.1)));
-        final EvalNugget[] en = new EvalNugget[]{
+        final QueryTable queryTable = getTable(size, random,
+                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
+                        new SetGenerator<>("a", "b", "c", "d"),
+                        new IntGenerator(10, 100),
+                        new SetGenerator<>(10.1, 20.1, 30.1)));
+        final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
                         return queryTable.headPct(0.5);

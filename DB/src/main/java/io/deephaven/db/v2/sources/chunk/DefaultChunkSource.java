@@ -42,7 +42,8 @@ public interface DefaultChunkSource<ATTR extends Attributes.Any> extends ChunkSo
     interface WithPrev<ATTR extends Attributes.Any> extends DefaultChunkSource<ATTR>, ChunkSource.WithPrev<ATTR> {
 
         @Override
-        default Chunk<? extends ATTR> getPrevChunk(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
+        default Chunk<? extends ATTR> getPrevChunk(@NotNull final GetContext context,
+                @NotNull final OrderedKeys orderedKeys) {
             return getPrevChunkByFilling(context, orderedKeys);
         }
 
@@ -54,7 +55,8 @@ public interface DefaultChunkSource<ATTR extends Attributes.Any> extends ChunkSo
         }
 
         @FinalDefault
-        default Chunk<ATTR> getPrevChunkByFilling(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
+        default Chunk<ATTR> getPrevChunkByFilling(@NotNull final GetContext context,
+                @NotNull final OrderedKeys orderedKeys) {
             WritableChunk<ATTR> chunk = DefaultGetContext.getWritableChunk(context);
             fillPrevChunk(DefaultGetContext.getFillContext(context), chunk, orderedKeys);
             return chunk;
@@ -81,7 +83,8 @@ public interface DefaultChunkSource<ATTR extends Attributes.Any> extends ChunkSo
                 }
 
                 @Override
-                public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, @NotNull OrderedKeys orderedKeys) {
+                public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination,
+                        @NotNull OrderedKeys orderedKeys) {
                     chunkSource.fillPrevChunk(context, destination, orderedKeys);
                 }
 
@@ -109,15 +112,15 @@ public interface DefaultChunkSource<ATTR extends Attributes.Any> extends ChunkSo
     }
 
     /**
-     * An alternative set of defaults which may typically be used by {@link ChunkSource}s which support a get
-     * method which only works for contiguous ranges.  They should just implement
-     * {@link #getChunk(GetContext, long, long)}.
+     * An alternative set of defaults which may typically be used by {@link ChunkSource}s which support a get method
+     * which only works for contiguous ranges. They should just implement {@link #getChunk(GetContext, long, long)}.
      */
     interface SupportsContiguousGet<ATTR extends Attributes.Any> extends DefaultChunkSource<ATTR> {
         @Override
-        default Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
-            return orderedKeys.isContiguous() ? getChunk(context, orderedKeys.firstKey(), orderedKeys.lastKey()) :
-                    getChunkByFilling(context, orderedKeys);
+        default Chunk<? extends ATTR> getChunk(@NotNull final GetContext context,
+                @NotNull final OrderedKeys orderedKeys) {
+            return orderedKeys.isContiguous() ? getChunk(context, orderedKeys.firstKey(), orderedKeys.lastKey())
+                    : getChunkByFilling(context, orderedKeys);
         }
 
         @Override

@@ -10,8 +10,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * A class specifically for completing table names;
- * to be called after the completer has discovered the name of the table.
+ * A class specifically for completing table names; to be called after the completer has discovered the name of the
+ * table.
  *
  */
 public class CompleteTableName extends CompletionBuilder {
@@ -26,10 +26,9 @@ public class CompleteTableName extends CompletionBuilder {
     }
 
     public void doCompletion(
-        Node node,
-        Set<CompletionItem.Builder> results,
-        CompletionRequest request
-    ) {
+            Node node,
+            Set<CompletionItem.Builder> results,
+            CompletionRequest request) {
         final int argInd = invoke.indexOfArgument(node);
         final String qt = getCompleter().getQuoteType(node);
         final DocumentRange.Builder range;
@@ -65,7 +64,7 @@ public class CompleteTableName extends CompletionBuilder {
                 range = replaceTokens(first, last, request);
             }
         } else if (argInd == 1) {
-            // The cursor is on the table name argument.  Replace the string node itself.
+            // The cursor is on the table name argument. Replace the string node itself.
             range = replaceNode(node, request);
             if (node instanceof ChunkerString) {
                 final Token last = node.jjtGetLastToken();
@@ -83,21 +82,21 @@ public class CompleteTableName extends CompletionBuilder {
 
                 }
             }
-        } else if (argInd > 1){
-            // The cursor is on an argument after the table name.  Replace from the cursor backwards.
-            matches.forEach(match->{
+        } else if (argInd > 1) {
+            // The cursor is on an argument after the table name. Replace from the cursor backwards.
+            matches.forEach(match -> {
                 getCompleter().addMatch(results, node, match, request, qt, ")");
             });
             return;
         } else {
             assert argInd == -1;
             // cursor is on a comma near where the table name goes...
-            matches.forEach(match->{
+            matches.forEach(match -> {
                 getCompleter().addMatch(results, node, match, request, qt, ")");
             });
             return;
         }
-        matches.forEach(match->{
+        matches.forEach(match -> {
             StringBuilder b = new StringBuilder();
             b.append(qt);
             b.append(match);
@@ -122,8 +121,8 @@ public class CompleteTableName extends CompletionBuilder {
                     .setLength(len)
                     .setLabel(item)
                     .getTextEditBuilder()
-                        .setText(item)
-                        .setRange(range);
+                    .setText(item)
+                    .setRange(range);
             results.add(result);
         });
     }

@@ -27,8 +27,10 @@ public class NamingThreadFactory implements ThreadFactory {
         this.daemon = daemon;
     }
 
-    @Override public Thread newThread(@NotNull final Runnable r) {
-        final Thread thread = new Thread(threadGroup, r, clazz.getSimpleName() + "-" + name + "-" + threadCounter.incrementAndGet());
+    @Override
+    public Thread newThread(@NotNull final Runnable r) {
+        final Thread thread =
+                new Thread(threadGroup, r, clazz.getSimpleName() + "-" + name + "-" + threadCounter.incrementAndGet());
         thread.setDaemon(daemon);
         return thread;
     }

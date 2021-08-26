@@ -13,7 +13,8 @@ public interface AggregationContextFactory {
      * key columns? Instances whose operators could have side effects or are already {@link KeyOnlyAggregationFactory}
      * should return false.
      *
-     * @return Whether to allow a {@link KeyOnlyAggregationFactory} to be substituted for this when there are only key columns
+     * @return Whether to allow a {@link KeyOnlyAggregationFactory} to be substituted for this when there are only key
+     *         columns
      */
     default boolean allowKeyOnlySubstitution() {
         return false;
@@ -22,7 +23,7 @@ public interface AggregationContextFactory {
     /**
      * Make an {@link AggregationContext} for this aggregation.
      *
-     * @param table          The source {@link Table} to aggregate
+     * @param table The source {@link Table} to aggregate
      * @param groupByColumns The key column names
      * @return A new or safely reusable {@link AggregationContext}
      */

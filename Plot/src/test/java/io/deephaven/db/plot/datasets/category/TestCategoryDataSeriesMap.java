@@ -18,16 +18,16 @@ public class TestCategoryDataSeriesMap extends BaseArrayTestCase {
     private static final int[] dataX = new int[SIZE];
     private static final double[] dataY = new double[dataX.length];
     static {
-        for(int i = 0; i < dataX.length; i++) {
+        for (int i = 0; i < dataX.length; i++) {
             dataX[i] = i;
             dataY[i] = i % 10 == 0 ? Double.NaN : 2 * i;
         }
     }
 
-    private static final int[] dataXMisMatched = new int[SIZE-1];
+    private static final int[] dataXMisMatched = new int[SIZE - 1];
     private static final String[] invalidY = new String[SIZE];
     static {
-        for(int i = 0; i < dataXMisMatched.length; i++) {
+        for (int i = 0; i < dataXMisMatched.length; i++) {
             dataXMisMatched[i] = i;
             invalidY[i] = null;
         }
@@ -50,25 +50,25 @@ public class TestCategoryDataSeriesMap extends BaseArrayTestCase {
         try {
             new CategoryDataSeriesMap(a, 2, "Test", null, dy);
             TestCase.fail("Expected an Exception");
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
 
         try {
             new CategoryDataSeriesMap(a, 3, "Test", dx, null);
             TestCase.fail("Expected an Exception");
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
         }
 
         try {
             new CategoryDataSeriesMap(a, 4, "Test", dxMismatched, dy);
             TestCase.fail("Expected an Exception");
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("match"));
         }
 
-        for(int i = 0; i < dataXMisMatched.length; i++) {
+        for (int i = 0; i < dataXMisMatched.length; i++) {
             invalidY[i] = "S";
         }
 
@@ -76,7 +76,7 @@ public class TestCategoryDataSeriesMap extends BaseArrayTestCase {
         try {
             new CategoryDataSeriesMap(a, 6, "Test", dyInvalid, dy);
             TestCase.fail("Expected an Exception");
-        } catch(UnsupportedOperationException e) {
+        } catch (UnsupportedOperationException e) {
             assertTrue(e.getMessage().contains("repeated"));
         }
     }
@@ -94,13 +94,14 @@ public class TestCategoryDataSeriesMap extends BaseArrayTestCase {
         map2.gradientVisible(true);
         map2.lineColor("green");
         map2.pointColor("red");
-        map2.pointSize(TableTools.newTable(TableTools.intCol("Values", dataX), TableTools.intCol("Sizes", dataX)), "Values", "Sizes");
+        map2.pointSize(TableTools.newTable(TableTools.intCol("Values", dataX), TableTools.intCol("Sizes", dataX)),
+                "Values", "Sizes");
         map2.pointLabelFormat("{1}");
         map2.toolTipPattern("0.00E0");
         map2.seriesColor(2);
         final CategoryDataSeriesMap map2Copy = map2.copy(new BaseFigureImpl().newChart().newAxes());
 
-        //initialize the AssociativeDataTable dataset holding the point sizes
+        // initialize the AssociativeDataTable dataset holding the point sizes
         map2Copy.getPointSize(dataX[0]);
 
         testCopy(map2, map2Copy);

@@ -1,8 +1,8 @@
 /*
  * (c) the authors Licensed under the Apache License, Version 2.0.
  *
- * The code in this file is a heavily modified version of the
- * original in the RoaringBitmap library; please see https://roaringbitmap.org/
+ * The code in this file is a heavily modified version of the original in the RoaringBitmap library; please see
+ * https://roaringbitmap.org/
  *
  */
 package io.deephaven.db.v2.utils.rsp.container;
@@ -19,8 +19,8 @@ import static io.deephaven.db.v2.utils.rsp.container.PositionHint.resetIfNotNull
 /**
  * This container takes the form of runs of consecutive values (effectively, run-length encoding).
  * <p>
- * Adding and removing content from this container might make it wasteful so regular calls to
- * "runOptimize" might be warranted.
+ * Adding and removing content from this container might make it wasteful so regular calls to "runOptimize" might be
+ * warranted.
  */
 public final class RunContainer extends Container {
     // Sizing of a short array object in a 64 bit JVM (Hotspot) uses
@@ -33,7 +33,7 @@ public final class RunContainer extends Container {
     private static final boolean ENABLE_GALLOPING_AND = false;
 
     private static int branchyUnsignedInterleavedBinarySearch(final short[] array, final int begin,
-                                                              final int end, final short k) {
+            final int end, final short k) {
         int ikey = toIntUnsigned(k);
         int low = begin;
         int high = end - 1;
@@ -53,7 +53,7 @@ public final class RunContainer extends Container {
 
     // starts with binary search and finishes with a sequential search
     private static int hybridUnsignedInterleavedBinarySearch(final short[] array, final int begin,
-                                                             final int end, final short k) {
+            final int end, final short k) {
         int ikey = toIntUnsigned(k);
         // next line accelerates the possibly common case where the value would
         // be inserted at the end
@@ -93,7 +93,7 @@ public final class RunContainer extends Container {
     }
 
     private static int unsignedInterleavedBinarySearch(final short[] array, final int begin,
-                                                       final int end, final short k) {
+            final int end, final short k) {
         if (ContainerUtil.USE_HYBRID_BINSEARCH) {
             return hybridUnsignedInterleavedBinarySearch(array, begin, end, k);
         } else {
@@ -165,13 +165,13 @@ public final class RunContainer extends Container {
      * Create an run container with a run of ones from start to end.
      *
      * @param start first index
-     * @param end  last index (range is exclusive)
+     * @param end last index (range is exclusive)
      */
     public RunContainer(final int start, final int end) {
         nbrruns = 1;
         valueslength = new short[2 * DEFAULT_INIT_SIZE_IN_RUNS];
         valueslength[0] = (short) start;
-        final int d =  end - start;
+        final int d = end - start;
         valueslength[1] = (short) (d - 1);
         cardinality = d;
     }
@@ -195,7 +195,7 @@ public final class RunContainer extends Container {
         int kLen = toIntUnsigned(src.getLength(0));
         int kEndPos = kLen;
         int ostart = -1;
-        int oend = -1;  // inclusive
+        int oend = -1; // inclusive
         int run = 0;
         for (int pos = startRank; pos < endRank; ++pos) {
             while (kEndPos < pos) {
@@ -296,13 +296,13 @@ public final class RunContainer extends Container {
     }
 
     /**
-     * Construct a new RunContainer backed by the provided array. Note that if you modify the
-     * RunContainer a new array may be produced.
+     * Construct a new RunContainer backed by the provided array. Note that if you modify the RunContainer a new array
+     * may be produced.
      *
-     * @param array   array where the data is stored
+     * @param array array where the data is stored
      * @param numRuns number of runs (each using 2 shorts in the buffer)
      */
-    //@VisibleForTesting
+    // @VisibleForTesting
     RunContainer(final short[] array, final int numRuns) {
         if (array.length < 2 * numRuns) {
             throw new RuntimeException("Mismatch between buffer and numRuns");
@@ -315,12 +315,12 @@ public final class RunContainer extends Container {
     }
 
     /**
-     * Construct a new RunContainer using the provided array.  The container takes ownership of the array.
+     * Construct a new RunContainer using the provided array. The container takes ownership of the array.
      *
-     * @param valueslength array with valid runs, in increasing unsigned short order.  The container
-     *                     takes ownership of this array.
-     * @param nbrruns      number of runs (the array should contain 2*n elements).
-     * @param cardinality  total cardinality in the runs.
+     * @param valueslength array with valid runs, in increasing unsigned short order. The container takes ownership of
+     *        this array.
+     * @param nbrruns number of runs (the array should contain 2*n elements).
+     * @param cardinality total cardinality in the runs.
      */
     public static RunContainer makeByWrapping(final short[] valueslength, final int nbrruns, final int cardinality) {
         return new RunContainer(valueslength, nbrruns, cardinality);
@@ -407,10 +407,10 @@ public final class RunContainer extends Container {
     }
 
     private Container isetImpl(final short k,
-                               int index,
-                               final PositionHint positionHint,
-                               final Supplier<RunContainer> self,
-                               final Supplier<RunContainer> copy) {
+            int index,
+            final PositionHint positionHint,
+            final Supplier<RunContainer> self,
+            final Supplier<RunContainer> copy) {
         index = -index - 2;// points to preceding value, possibly -1
         final int kAsInt = toIntUnsigned(k);
         if (index >= 0) {// possible match
@@ -530,8 +530,7 @@ public final class RunContainer extends Container {
         if (resultCardUpperBound <= ArrayContainer.SWITCH_CONTAINER_CARDINALITY_THRESHOLD) {
             final ArrayContainer answer = new ArrayContainer(resultCardUpperBound);
             final SearchRangeIterator xit = x.getShortRangeIterator(0);
-            RUNS:
-            for (int run = 0; run < nbrruns; ++run) {
+            RUNS: for (int run = 0; run < nbrruns; ++run) {
                 final int runStart = getValueAsInt(run);
                 final int runLast = runStart + getLengthAsInt(run);
                 final boolean valid = xit.advance(runStart);
@@ -701,7 +700,7 @@ public final class RunContainer extends Container {
         final RunContainer ans;
         if (inPlace) {
             ans = this;
-            ans.cardinality = 0;  // we are going to building ourselves over on top of the same array.
+            ans.cardinality = 0; // we are going to building ourselves over on top of the same array.
         } else {
             ans = new RunContainer(erun - srun + 1);
         }
@@ -943,12 +942,11 @@ public final class RunContainer extends Container {
     /**
      * @param x a value to check for membership to this container
      * @param i a position in runs space where to begin a binary search
-     * @return the index of the run that contains x, if x is contained in some existing run; if
-     * x is not part of an existing run, -(index+1) where index is the position where x
-     * would be "inserted".  Note "inserting" x may mean either (a) adding x as the new ending
-     * for the run in the <em><previous/em> position, (b) inserting a new run with only x pushing
-     * the run in the position returned right, or (c) inserting x as the new start of
-     * the existing run in that position.
+     * @return the index of the run that contains x, if x is contained in some existing run; if x is not part of an
+     *         existing run, -(index+1) where index is the position where x would be "inserted". Note "inserting" x may
+     *         mean either (a) adding x as the new ending for the run in the <em><previous/em> position, (b) inserting a
+     *         new run with only x pushing the run in the position returned right, or (c) inserting x as the new start
+     *         of the existing run in that position.
      */
     int searchFrom(final short x, final int i) {
         int index = unsignedInterleavedBinarySearch(valueslength, i, nbrruns, x);
@@ -1106,8 +1104,8 @@ public final class RunContainer extends Container {
     private static int nextRunsCapacity(final int oldRuns) {
         return (oldRuns == 0) ? DEFAULT_INIT_SIZE_IN_RUNS
                 : oldRuns < 32 ? runsSizeRounding(oldRuns * 2)
-                : oldRuns < 512 ? runsSizeRounding(oldRuns * 3 / 2)
-                : runsSizeRounding(oldRuns * 5 / 4);
+                        : oldRuns < 512 ? runsSizeRounding(oldRuns * 3 / 2)
+                                : runsSizeRounding(oldRuns * 5 / 4);
 
     }
 
@@ -1151,8 +1149,7 @@ public final class RunContainer extends Container {
      *
      * @param index the index of the run.
      * @return the length of the run at the index.
-     * @throws ArrayIndexOutOfBoundsException if index is negative or larger than the index of the
-     *                                        last run.
+     * @throws ArrayIndexOutOfBoundsException if index is negative or larger than the index of the last run.
      */
     public short getLength(final int index) {
         return valueslength[2 * index + 1];
@@ -1370,8 +1367,7 @@ public final class RunContainer extends Container {
      *
      * @param index the index of the run.
      * @return the value of the first element of the run at the index.
-     * @throws ArrayIndexOutOfBoundsException if index is negative or larger than the index of the
-     *                                        last run.
+     * @throws ArrayIndexOutOfBoundsException if index is negative or larger than the index of the last run.
      */
     public short getValue(final int index) {
         return valueslength[2 * index];
@@ -1518,7 +1514,8 @@ public final class RunContainer extends Container {
         }
         final RunContainer ans;
         if (shared) {
-            final short[] newValuesLength = getValuesLengthInBiggerArray(runsShortArraySizeRounding(capacityForAns / 2));
+            final short[] newValuesLength =
+                    getValuesLengthInBiggerArray(runsShortArraySizeRounding(capacityForAns / 2));
             ans = makeByWrapping(newValuesLength, nbrruns, cardinality);
         } else {
             ans = this;
@@ -1577,8 +1574,8 @@ public final class RunContainer extends Container {
     private int nextCapacity() {
         int newCapacity = (valueslength.length == 0) ? DEFAULT_INIT_SIZE_IN_RUNS
                 : valueslength.length < 64 ? valueslength.length * 2
-                : valueslength.length < 1024 ? valueslength.length * 3 / 2
-                : valueslength.length * 5 / 4;
+                        : valueslength.length < 1024 ? valueslength.length * 3 / 2
+                                : valueslength.length * 5 / 4;
         return newCapacity;
     }
 
@@ -1669,7 +1666,7 @@ public final class RunContainer extends Container {
         if (shared) {
             ans = new RunContainer(Arrays.copyOf(valueslength, valueslength.length), 0, 0);
         } else {
-            nbrruns = 0;   // losing nbrruns, which is stashed in myNbrRuns.
+            nbrruns = 0; // losing nbrruns, which is stashed in myNbrRuns.
             cardinality = 0;
             ans = this;
         }
@@ -1775,13 +1772,13 @@ public final class RunContainer extends Container {
     /**
      * Calculate the result of an or between two RunContainers storing the result in a RunContainer.
      *
-     * @param dst       A RunContainer where to store the result.  Its nbrruns field member should be zero on entry.
-     * @param src       A RunContainer with source data for the RunContainer part of the or; if the same object as
-     *                  dst, the operation is done in place and the data in src is expected to shifted by srcOffset.
-     * @param srcRuns   The number of runs in src; as a separate argument since dst and src may be the same object,
-     *                  in which case nbrruns for src is also cero.
+     * @param dst A RunContainer where to store the result. Its nbrruns field member should be zero on entry.
+     * @param src A RunContainer with source data for the RunContainer part of the or; if the same object as dst, the
+     *        operation is done in place and the data in src is expected to shifted by srcOffset.
+     * @param srcRuns The number of runs in src; as a separate argument since dst and src may be the same object, in
+     *        which case nbrruns for src is also cero.
      * @param srcOffset An offset ot use while reading a particular position in src.
-     * @param other     A second RunContainer, to or against src.
+     * @param other A second RunContainer, to or against src.
      */
     private static void orImpl(
             final RunContainer dst,
@@ -2052,11 +2049,11 @@ public final class RunContainer extends Container {
     /**
      * Calculate the result of an or between a RunContainer and an ArrayContainer storing the result in a RunContainer.
      *
-     * @param dst       A RunContainer where to store the result.  Its nbrruns field member should be zero on entry.
-     * @param src       A RunContainer with source data for the RunContainer part of the or, potentially shifted by srcOffset.
-     * @param srcRuns   The number of runs in the srcValueslength array.
+     * @param dst A RunContainer where to store the result. Its nbrruns field member should be zero on entry.
+     * @param src A RunContainer with source data for the RunContainer part of the or, potentially shifted by srcOffset.
+     * @param srcRuns The number of runs in the srcValueslength array.
      * @param srcOffset An offset ot use while reading a particular position in the srcValueslength array.
-     * @param other     An ArrayContainer to or against.
+     * @param other An ArrayContainer to or against.
      */
     private static void orImpl(
             final RunContainer dst,
@@ -2254,7 +2251,7 @@ public final class RunContainer extends Container {
     // To recover rooms between begin(exclusive) and end(inclusive)
     private void recoverRoomsInRange(final int begin, final int end) {
         for (int run = begin + 1; run <= end; ++run) {
-           cardinality -= getLengthAsInt(run) + 1;
+            cardinality -= getLengthAsInt(run) + 1;
         }
         if (end + 1 < nbrruns) {
             copyValuesLength(valueslength, end + 1, valueslength, begin + 1,
@@ -2344,8 +2341,8 @@ public final class RunContainer extends Container {
     }
 
     /**
-     * Convert to Array or Bitmap container if the serialized form would be shorter. Exactly the same
-     * functionality as toEfficientContainer.
+     * Convert to Array or Bitmap container if the serialized form would be shorter. Exactly the same functionality as
+     * toEfficientContainer.
      */
 
     @Override
@@ -2401,7 +2398,7 @@ public final class RunContainer extends Container {
         int kLen = getLengthAsInt(0);
         int kEndPos = kLen;
         int ostart = -1;
-        int oend = -1;  // inclusive
+        int oend = -1; // inclusive
         while (inPositions.hasNext()) {
             inPositions.next();
             int istart = inPositions.start();
@@ -2443,7 +2440,7 @@ public final class RunContainer extends Container {
         int kLen = getLengthAsInt(0);
         int kEnd = kStart + kLen;
         int ostart = -1;
-        int oend = -1;  // inclusive
+        int oend = -1; // inclusive
         do {
             inValues.next();
             int istart = inValues.start();
@@ -2554,8 +2551,7 @@ public final class RunContainer extends Container {
     }
 
     /**
-     * Append a value to a RunContainer.
-     * Callers must guarantee there is no need to grow the array for appending.
+     * Append a value to a RunContainer. Callers must guarantee there is no need to grow the array for appending.
      *
      * @param val a value to append.
      */
@@ -2564,10 +2560,9 @@ public final class RunContainer extends Container {
     }
 
     /**
-     * Append a run to a RunContainer.
-     * Callers must guarantee there is no need to grow the array for appending.
+     * Append a run to a RunContainer. Callers must guarantee there is no need to grow the array for appending.
      *
-     * @param start  the value for the start of the run.
+     * @param start the value for the start of the run.
      * @param length the length of the run.
      */
     void smartAppend(final short start, final short length) {
@@ -2590,8 +2585,8 @@ public final class RunContainer extends Container {
     }
 
     /**
-     * Append a value to a RunContainer, or remove it if already there (as in an XOR operation).
-     * Callers must guarantee there is no need to grow the array for appending.
+     * Append a value to a RunContainer, or remove it if already there (as in an XOR operation). Callers must guarantee
+     * there is no need to grow the array for appending.
      *
      * @param val a value to append.
      */
@@ -2600,10 +2595,10 @@ public final class RunContainer extends Container {
     }
 
     /**
-     * Append a run to a RunContainer, or remove from it if some values already there (as in an XOR operation).
-     * Callers must guarantee there is no need to grow the array for appending.
+     * Append a run to a RunContainer, or remove from it if some values already there (as in an XOR operation). Callers
+     * must guarantee there is no need to grow the array for appending.
      *
-     * @param start  the value for the start of the run.
+     * @param start the value for the start of the run.
      * @param length the length of the run.
      */
     private void smartAppendForXor(final short start, final short length) {
@@ -2822,7 +2817,7 @@ public final class RunContainer extends Container {
             return x.cowRef();
         }
         // if the cardinality of the array is small, guess that the output will still be a run container
-        final int arbitrary_threshold = 32;  // 32 is arbitrary here
+        final int arbitrary_threshold = 32; // 32 is arbitrary here
         final int xCard = x.getCardinality();
         if (xCard < arbitrary_threshold) {
             if (xCard == 0) {
@@ -3175,7 +3170,8 @@ public final class RunContainer extends Container {
 
     @Override
     public boolean overlaps(final ArrayContainer c) {
-        return (getCardinality() < c.getCardinality()) ? ContainerUtil.overlaps(this, c) : ContainerUtil.overlaps(c, this);
+        return (getCardinality() < c.getCardinality()) ? ContainerUtil.overlaps(this, c)
+                : ContainerUtil.overlaps(c, this);
     }
 
     @Override

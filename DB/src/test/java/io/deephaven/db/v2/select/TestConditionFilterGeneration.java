@@ -24,12 +24,12 @@ public class TestConditionFilterGeneration {
         QueryLibrary.resetLibrary();
     }
 
-    //    @Test
+    // @Test
     public void generateFile() throws FileNotFoundException {
         new ModelFileGenerator(FilterKernelSample.class).generateFile(getClassDefString());
     }
 
-    //    @Test
+    // @Test
     public void generateArrayFile() throws FileNotFoundException {
         new ModelFileGenerator(FilterKernelArraySample.class).generateFile(getArrayClassDefString());
     }
@@ -51,7 +51,8 @@ public class TestConditionFilterGeneration {
         QueryScope.getScope().putParam("p3", "10");
         final Table t = TableTools.emptyTable(10).select("v1 = (short)1", "v2 = 1.1");
 
-        final ConditionFilter conditionFilter = (ConditionFilter) ConditionFilter.createConditionFilter("`foo`.equals((p1+p2+v1+v2) + p3)");
+        final ConditionFilter conditionFilter =
+                (ConditionFilter) ConditionFilter.createConditionFilter("`foo`.equals((p1+p2+v1+v2) + p3)");
         conditionFilter.init(t.getDefinition());
         return conditionFilter.getClassBodyStr();
     }
@@ -60,7 +61,8 @@ public class TestConditionFilterGeneration {
     private static String getArrayClassDefString() {
         final Table t = TableTools.emptyTable(10).select("v1 = (short)1", "v2 = 1.1");
 
-        final ConditionFilter conditionFilter = (ConditionFilter) ConditionFilter.createConditionFilter("v1_.size() == v2_.size()");
+        final ConditionFilter conditionFilter =
+                (ConditionFilter) ConditionFilter.createConditionFilter("v1_.size() == v2_.size()");
         conditionFilter.init(t.getDefinition());
         return conditionFilter.getClassBodyStr();
     }

@@ -16,17 +16,25 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 1, time = 15)
 @Measurement(iterations = 3, time = 15)
-@Timeout(time=30)
+@Timeout(time = 30)
 @Fork(1)
 public class NaturalJoinMultipleColumnsFillChunkBench extends RedirectionBenchBase {
-    @Param({"true"}) private boolean skipResultsProcessing = true;
-    @Param({"2000000"}) private int tableSize;
-    @Param({"true"}) private boolean doSelect;
-    @Param({"100"}) private int steps;
-    @Param({"1", "2", "5", "15"}) private int numberOfJoinColumns;
-    @Param({"0"}) private int t1NumberOfAdditionalColumns;
-    @Param({"0"}) private int t2NumberOfAdditionalColumns;
-    @Param({"4096"}) private int chunkCapacity;
+    @Param({"true"})
+    private boolean skipResultsProcessing = true;
+    @Param({"2000000"})
+    private int tableSize;
+    @Param({"true"})
+    private boolean doSelect;
+    @Param({"100"})
+    private int steps;
+    @Param({"1", "2", "5", "15"})
+    private int numberOfJoinColumns;
+    @Param({"0"})
+    private int t1NumberOfAdditionalColumns;
+    @Param({"0"})
+    private int t2NumberOfAdditionalColumns;
+    @Param({"4096"})
+    private int chunkCapacity;
 
     private String[] t1Cols;
     private String sortCol;
@@ -80,20 +88,21 @@ public class NaturalJoinMultipleColumnsFillChunkBench extends RedirectionBenchBa
             final String col = "T2I" + i;
             builder2.addColumn(BenchmarkTools.numberCol(col, int.class, -10_000_000, 10_000_000));
             t2Cols[nT2Cols++] = col;
-            joinColumnsToAdd[i]= col;
+            joinColumnsToAdd[i] = col;
         }
         final BenchmarkTable bmTable2 = builder2.build();
         final Table t1 = bmTable1.getTable().coalesce();
         final Table t2 = bmTable2.getTable().coalesce();
         final long sizePerStep = Math.max(t1.size() / steps, 1);
-        final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(sizePerStep, sizePerStep);
+        final IncrementalReleaseFilter incrementalReleaseFilter =
+                new IncrementalReleaseFilter(sizePerStep, sizePerStep);
         final Table t1Released = t1.where(incrementalReleaseFilter);
         final Table live;
         final String joinColsStr = String.join(",", joinCols);
         final String joinColumnsToAddStr = String.join(",", joinColumnsToAdd);
         if (doSelect) {
-            live = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() ->
-                    t1Released.select(t1Cols).sort(sortCol).naturalJoin(t2, joinColsStr, joinColumnsToAddStr));
+            live = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(
+                    () -> t1Released.select(t1Cols).sort(sortCol).naturalJoin(t2, joinColsStr, joinColumnsToAddStr));
         } else {
             live = t1Released.sort(sortCol).naturalJoin(t2, joinColsStr, joinColumnsToAddStr);
         }
@@ -101,7 +110,7 @@ public class NaturalJoinMultipleColumnsFillChunkBench extends RedirectionBenchBa
                 live, incrementalReleaseFilter, steps, joinCols, WritableLongChunk.makeWritableChunk(chunkCapacity));
     }
 
-    public static void main(String [] args) {
+    public static void main(String[] args) {
         BenchUtil.run(NaturalJoinMultipleColumnsFillChunkBench.class);
     }
 }

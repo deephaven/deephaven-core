@@ -24,11 +24,13 @@ import static io.deephaven.db.tables.Table.TOTALS_TABLE_ATTRIBUTE;
 /**
  * Defines the default aggregations and display for a totals table.
  *
- * <p>The builder is intended to be passed to the {@link Table#setTotalsTable(TotalsTableBuilder)} operation after the
- * operations are applied.</p>
+ * <p>
+ * The builder is intended to be passed to the {@link Table#setTotalsTable(TotalsTableBuilder)} operation after the
+ * operations are applied.
+ * </p>
  */
 @ScriptApi
-public class TotalsTableBuilder implements Serializable  {
+public class TotalsTableBuilder implements Serializable {
     public static final long serialVersionUID = 1;
 
     private boolean showTotalsByDefault = false;
@@ -118,7 +120,7 @@ public class TotalsTableBuilder implements Serializable  {
     @ScriptApi
     public TotalsTableBuilder setOperation(String column, AggType operation, String format) {
         this.operationMap.put(column, EnumSet.of(operation));
-        if(format != null && !format.isEmpty()) {
+        if (format != null && !format.isEmpty()) {
             setFormat(column, operation, format);
         }
         return this;
@@ -170,8 +172,10 @@ public class TotalsTableBuilder implements Serializable  {
     /**
      * Adds an operation for a column.
      *
-     * <p>The add method is used instead of the {@link #setOperation(String, String)} method when more than one
-     * aggregation per input column is desired.</p>
+     * <p>
+     * The add method is used instead of the {@link #setOperation(String, String)} method when more than one aggregation
+     * per input column is desired.
+     * </p>
      *
      * @param column the name of the column to operate on
      * @param operation the aggregation operation for this column
@@ -186,8 +190,10 @@ public class TotalsTableBuilder implements Serializable  {
     /**
      * Adds an operation for a column.
      *
-     * <p>The add method is used instead of the {@link #setOperation(String, AggType, String)} method when more than one
-     * aggregation per input column is desired.</p>
+     * <p>
+     * The add method is used instead of the {@link #setOperation(String, AggType, String)} method when more than one
+     * aggregation per input column is desired.
+     * </p>
      *
      * @param column the name of the column to operate on
      * @param operation the aggregation operation for this column
@@ -197,8 +203,8 @@ public class TotalsTableBuilder implements Serializable  {
      */
     @ScriptApi
     public TotalsTableBuilder addOperation(String column, AggType operation, String format) {
-        this.operationMap.computeIfAbsent(column, k ->  EnumSet.of(operation)).add(operation);
-        if(format != null && !format.isEmpty()) {
+        this.operationMap.computeIfAbsent(column, k -> EnumSet.of(operation)).add(operation);
+        if (format != null && !format.isEmpty()) {
             setFormat(column, operation, format);
         }
         return this;
@@ -207,8 +213,10 @@ public class TotalsTableBuilder implements Serializable  {
     /**
      * Adds an operation for a column.
      *
-     * <p>The add method is used instead of the {@link #setOperation(String, String, String)} method when more than one
-     * aggregation per input column is desired.</p>
+     * <p>
+     * The add method is used instead of the {@link #setOperation(String, String, String)} method when more than one
+     * aggregation per input column is desired.
+     * </p>
      *
      * @param column the name of the column to operate on
      * @param operation the aggregation operation for this column
@@ -225,8 +233,10 @@ public class TotalsTableBuilder implements Serializable  {
     /**
      * Adds an operation for a column.
      *
-     * <p>The add method is used instead of the {@link #setOperation(String, String)} method when more than one
-     * aggregation per input column is desired.</p>
+     * <p>
+     * The add method is used instead of the {@link #setOperation(String, String)} method when more than one aggregation
+     * per input column is desired.
+     * </p>
      *
      * @param column the name of the column to operate on
      * @param operation the aggregation operation for this column
@@ -283,7 +293,7 @@ public class TotalsTableBuilder implements Serializable  {
      */
     @ScriptApi
     public TotalsTableBuilder setFormat(String column, String agg, String format) {
-        if("*".equals(agg)) {
+        if ("*".equals(agg)) {
             Arrays.stream(AggType.values())
                     .filter(op -> op != AggType.Skip && op != AggType.Array)
                     .forEach(op -> setFormat(column, op, format));
@@ -312,22 +322,24 @@ public class TotalsTableBuilder implements Serializable  {
      */
     public String buildDirective() {
         final StringBuilder builder = new StringBuilder();
-        builder.append(Boolean.toString(showTotalsByDefault)).append(',').append(Boolean.toString(showGrandTotalsByDefault)).append(',').append(defaultOperation).append(';');
-        operationMap.forEach((k, v) -> builder.append(k).append('=').append(v.stream().map(Object::toString).collect(Collectors.joining(":"))).append(','));
+        builder.append(Boolean.toString(showTotalsByDefault)).append(',')
+                .append(Boolean.toString(showGrandTotalsByDefault)).append(',').append(defaultOperation).append(';');
+        operationMap.forEach((k, v) -> builder.append(k).append('=')
+                .append(v.stream().map(Object::toString).collect(Collectors.joining(":"))).append(','));
         builder.append(';');
-        formatMap.forEach((k,v) ->
-                builder.append(k).append('=')
-                       .append(v.entrySet().stream().map(ent -> ent.getKey().toString()+':'+encodeFormula(ent.getValue())).collect(Collectors.joining("&")))
-                       .append(','));
+        formatMap.forEach((k, v) -> builder.append(k).append('=')
+                .append(v.entrySet().stream().map(ent -> ent.getKey().toString() + ':' + encodeFormula(ent.getValue()))
+                        .collect(Collectors.joining("&")))
+                .append(','));
 
         return builder.toString();
     }
 
     private static String encodeFormula(String formula) {
         try {
-            return URLEncoder.encode(formula,"UTF-8");
+            return URLEncoder.encode(formula, "UTF-8");
         } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException("Unable to encode formula "+ formula, e);
+            throw new RuntimeException("Unable to encode formula " + formula, e);
         }
     }
 
@@ -335,7 +347,7 @@ public class TotalsTableBuilder implements Serializable  {
         try {
             return URLDecoder.decode(encoded, "UTF-8");
         } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException("Unable to decode formula "+ encoded, e);
+            throw new RuntimeException("Unable to decode formula " + encoded, e);
         }
     }
 
@@ -347,14 +359,16 @@ public class TotalsTableBuilder implements Serializable  {
     /**
      * Create a totals table from a source table.
      *
-     * <p>Given a source table that has had a TotalsTableBuilder applied, create a new totals table from the table.
-     * If no TotalsTableBuilder has been applied, then the columns are summed.</p>
+     * <p>
+     * Given a source table that has had a TotalsTableBuilder applied, create a new totals table from the table. If no
+     * TotalsTableBuilder has been applied, then the columns are summed.
+     * </p>
      *
      * @param source the source table
      * @return an aggregated totals table
      */
     public static Table makeTotalsTable(Table source) {
-        return makeTotalsTable(source, (String)source.getAttribute(TOTALS_TABLE_ATTRIBUTE));
+        return makeTotalsTable(source, (String) source.getAttribute(TOTALS_TABLE_ATTRIBUTE));
     }
 
     /**
@@ -364,14 +378,16 @@ public class TotalsTableBuilder implements Serializable  {
      * @return a TotalsTableBuilder derived from the source table's totals table attribute
      */
     public static TotalsTableBuilder get(Table source) {
-        return fromDirective((String)source.getAttribute(TOTALS_TABLE_ATTRIBUTE));
+        return fromDirective((String) source.getAttribute(TOTALS_TABLE_ATTRIBUTE));
     }
 
     /**
      * Produce a TotalsTableBuilder from a directive string.
      *
-     * <p>The {@link #buildDirective()} method produces a String representation of a TotalsTableBuilder, this function
-     * is its inverse.</p>
+     * <p>
+     * The {@link #buildDirective()} method produces a String representation of a TotalsTableBuilder, this function is
+     * its inverse.
+     * </p>
      *
      * @param directive the directive.
      * @return a TotalsTableBuilder
@@ -382,8 +398,8 @@ public class TotalsTableBuilder implements Serializable  {
             return builder;
         }
 
-        final String [] splitSemi = directive.split(";");
-        final String [] frontMatter = splitSemi[0].split(",");
+        final String[] splitSemi = directive.split(";");
+        final String[] frontMatter = splitSemi[0].split(",");
 
         if (frontMatter.length < 3) {
             throw new IllegalArgumentException("Invalid " + TOTALS_TABLE_ATTRIBUTE + ": " + directive);
@@ -393,15 +409,16 @@ public class TotalsTableBuilder implements Serializable  {
         builder.setDefaultOperation(frontMatter[2]);
 
         if (splitSemi.length > 1) {
-            final String [] columnDirectives = splitSemi[1].split(",");
+            final String[] columnDirectives = splitSemi[1].split(",");
             for (final String columnDirective : columnDirectives) {
                 if (columnDirective.trim().isEmpty())
                     continue;
-                final String [] kv = columnDirective.split("=");
+                final String[] kv = columnDirective.split("=");
                 if (kv.length != 2) {
-                    throw new IllegalArgumentException("Invalid " + TOTALS_TABLE_ATTRIBUTE + ": " + directive + ", bad column " + columnDirective);
+                    throw new IllegalArgumentException(
+                            "Invalid " + TOTALS_TABLE_ATTRIBUTE + ": " + directive + ", bad column " + columnDirective);
                 }
-                final String [] operations = kv[1].split(":");
+                final String[] operations = kv[1].split(":");
                 for (final String op : operations) {
                     builder.addOperation(kv[0], op);
                 }
@@ -411,26 +428,30 @@ public class TotalsTableBuilder implements Serializable  {
         // Formats for aggregations are encoded as a comma separated list of
         // <Column>=<Agg>:<Format>&<Agg>:<Format>...;
         // Formats are URL encoded
-        if(splitSemi.length > 2) {
+        if (splitSemi.length > 2) {
             final String[] formatDirectives = splitSemi[2].split(",");
-            for(final String formatDirective : formatDirectives) {
-                if(formatDirective.trim().isEmpty()) {
+            for (final String formatDirective : formatDirectives) {
+                if (formatDirective.trim().isEmpty()) {
                     continue;
                 }
 
                 final String[] colAndFormats = formatDirective.split("=");
-                if(colAndFormats.length != 2) {
-                    throw new IllegalArgumentException("Invalid " + TOTALS_TABLE_ATTRIBUTE + ": " + directive + ", bad format " + formatDirective);
+                if (colAndFormats.length != 2) {
+                    throw new IllegalArgumentException(
+                            "Invalid " + TOTALS_TABLE_ATTRIBUTE + ": " + directive + ", bad format " + formatDirective);
                 }
 
                 final String[] formatsByAgg = colAndFormats[1].split("&");
-                for(final String formatForAgg : formatsByAgg) {
+                for (final String formatForAgg : formatsByAgg) {
                     final String[] aggAndFormat = formatForAgg.split(":");
-                    if(aggAndFormat.length != 2) {
-                        throw new IllegalArgumentException("Invalid " + TOTALS_TABLE_ATTRIBUTE + ": " + directive + ", bad format for agg" + formatForAgg +" in " + formatDirective);
+                    if (aggAndFormat.length != 2) {
+                        throw new IllegalArgumentException("Invalid " + TOTALS_TABLE_ATTRIBUTE + ": " + directive
+                                + ", bad format for agg" + formatForAgg + " in " + formatDirective);
                     }
 
-                    builder.setFormat(colAndFormats[0], EnumValue.caseInsensitiveValueOf(AggType.class, aggAndFormat[0]), decodeFormula(aggAndFormat[1]));
+                    builder.setFormat(colAndFormats[0],
+                            EnumValue.caseInsensitiveValueOf(AggType.class, aggAndFormat[0]),
+                            decodeFormula(aggAndFormat[1]));
                 }
             }
         }
@@ -446,7 +467,7 @@ public class TotalsTableBuilder implements Serializable  {
      * @return true if source has a totals table defined
      */
     public static boolean hasDefinedTotals(Table source) {
-        final String attr = (String)source.getAttribute(TOTALS_TABLE_ATTRIBUTE);
+        final String attr = (String) source.getAttribute(TOTALS_TABLE_ATTRIBUTE);
         return attr != null && !attr.isEmpty();
     }
 
@@ -470,7 +491,7 @@ public class TotalsTableBuilder implements Serializable  {
         final String[] formatSpecs = makeColumnFormats(source, builder);
 
         Table totalsTable = source.by(aggregationFactory, groupByColumns);
-        if(formatSpecs.length > 0) {
+        if (formatSpecs.length > 0) {
             totalsTable = totalsTable.formatColumns(makeColumnFormats(source, builder));
         }
 
@@ -481,7 +502,8 @@ public class TotalsTableBuilder implements Serializable  {
         if (!source.getColumnSourceMap().keySet().containsAll(columns)) {
             final Set<String> missing = new LinkedHashSet<>(columns);
             missing.removeAll(source.getColumnSourceMap().keySet());
-            throw new IllegalArgumentException("Missing columns for totals table " + missing + ", available columns " + source.getColumnSourceMap().keySet());
+            throw new IllegalArgumentException("Missing columns for totals table " + missing + ", available columns "
+                    + source.getColumnSourceMap().keySet());
         }
     }
 
@@ -490,18 +512,18 @@ public class TotalsTableBuilder implements Serializable  {
 
         final List<String> formatSpecs = new ArrayList<>();
 
-        builder.formatMap.forEach( (col, formats) -> {
+        builder.formatMap.forEach((col, formats) -> {
             final Set<AggType> aggsForCol = builder.operationMap.get(col);
 
             // If no aggregations were specified for this column, and the default op was not skip
             // add a format for col=format
-            if(aggsForCol == null || aggsForCol.isEmpty()) {
-                if(builder.defaultOperation == AggType.Skip) {
+            if (aggsForCol == null || aggsForCol.isEmpty()) {
+                if (builder.defaultOperation == AggType.Skip) {
                     return;
                 }
 
                 final String aggFormat = formats.get(builder.defaultOperation);
-                if(aggFormat == null || aggFormat.isEmpty()) {
+                if (aggFormat == null || aggFormat.isEmpty()) {
                     return;
                 }
 
@@ -509,12 +531,12 @@ public class TotalsTableBuilder implements Serializable  {
             } else {
                 for (final AggType agg : aggsForCol) {
                     final String aggFormat = formats.get(agg);
-                    if(aggFormat == null || aggFormat.isEmpty()) {
+                    if (aggFormat == null || aggFormat.isEmpty()) {
                         continue;
                     }
 
                     final String formatSpec = (aggsForCol.size() == 1) ? col + '=' + aggFormat
-                                                                       : col + "__" + agg + '=' + aggFormat;
+                            : col + "__" + agg + '=' + aggFormat;
                     formatSpecs.add(formatSpec);
                 }
             }
@@ -564,7 +586,8 @@ public class TotalsTableBuilder implements Serializable  {
         }
 
         final List<ComboAggregateFactory.ComboBy> aggregations = new ArrayList<>();
-        columnsByType.entrySet().stream().flatMap(e -> makeOperation(e.getKey(), e.getValue())).forEach(aggregations::add);
+        columnsByType.entrySet().stream().flatMap(e -> makeOperation(e.getKey(), e.getValue()))
+                .forEach(aggregations::add);
         return new ComboAggregateFactory(aggregations);
     }
 
@@ -579,13 +602,16 @@ public class TotalsTableBuilder implements Serializable  {
             case Max:
                 return Stream.of(ComboAggregateFactory.AggMax(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case First:
-                return Stream.of(ComboAggregateFactory.AggFirst(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream
+                        .of(ComboAggregateFactory.AggFirst(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case Last:
-                return Stream.of(ComboAggregateFactory.AggLast(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream
+                        .of(ComboAggregateFactory.AggLast(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case Sum:
                 return Stream.of(ComboAggregateFactory.AggSum(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case AbsSum:
-                return Stream.of(ComboAggregateFactory.AggAbsSum(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream
+                        .of(ComboAggregateFactory.AggAbsSum(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case Avg:
                 return Stream.of(ComboAggregateFactory.AggAvg(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case Std:
@@ -593,11 +619,14 @@ public class TotalsTableBuilder implements Serializable  {
             case Var:
                 return Stream.of(ComboAggregateFactory.AggVar(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case Unique:
-                return Stream.of(ComboAggregateFactory.AggUnique(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream
+                        .of(ComboAggregateFactory.AggUnique(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case CountDistinct:
-                return Stream.of(ComboAggregateFactory.AggCountDistinct(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream.of(ComboAggregateFactory
+                        .AggCountDistinct(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             case Distinct:
-                return Stream.of(ComboAggregateFactory.AggDistinct(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                return Stream
+                        .of(ComboAggregateFactory.AggDistinct(values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             default:
                 throw new IllegalStateException();
         }

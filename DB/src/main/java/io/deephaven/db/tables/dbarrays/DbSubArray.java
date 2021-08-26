@@ -31,7 +31,8 @@ public class DbSubArray<T> extends DbArray.Indirect<T> {
 
     @Override
     public DbArray<T> subArray(final long fromIndexInclusive, final long toIndexExclusive) {
-        return innerArray.subArrayByPositions(DbArrayBase.mapSelectedPositionRange(positions, fromIndexInclusive, toIndexExclusive));
+        return innerArray.subArrayByPositions(
+                DbArrayBase.mapSelectedPositionRange(positions, fromIndexInclusive, toIndexExclusive));
     }
 
     @Override
@@ -41,8 +42,8 @@ public class DbSubArray<T> extends DbArray.Indirect<T> {
 
     @Override
     public T[] toArray() {
-        //noinspection unchecked
-        final T[] result = (T[])Array.newInstance(getComponentType(), positions.length);
+        // noinspection unchecked
+        final T[] result = (T[]) Array.newInstance(getComponentType(), positions.length);
         for (int ii = 0; ii < positions.length; ++ii) {
             result[ii] = get(ii);
         }

@@ -16,11 +16,11 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * Represents a given "pixel" in the downsampled output - the first and last value within that pixel, and the
- * max/min value of each column we're interested in within that pixel.
+ * Represents a given "pixel" in the downsampled output - the first and last value within that pixel, and the max/min
+ * value of each column we're interested in within that pixel.
  *
- * The arrays of values for a given downsampled table are shared between all states, so each BucketState instance
- * tracks its own offset in those arrays.
+ * The arrays of values for a given downsampled table are shared between all states, so each BucketState instance tracks
+ * its own offset in those arrays.
  */
 public class BucketState {
     private final Index index = Index.FACTORY.getEmptyIndex();
@@ -45,7 +45,8 @@ public class BucketState {
         this.values = valueTrackers;
         this.trackNulls = trackNulls;
         if (trackNulls) {
-            this.nulls = IntStream.range(0, valueTrackers.length).mapToObj(ignore -> Index.FACTORY.getEmptyIndex()).toArray(Index[]::new);
+            this.nulls = IntStream.range(0, valueTrackers.length).mapToObj(ignore -> Index.FACTORY.getEmptyIndex())
+                    .toArray(Index[]::new);
         } else {
             this.nulls = null;
         }
@@ -63,7 +64,8 @@ public class BucketState {
         return offset;
     }
 
-    public void append(final long rowIndex, final Chunk<? extends Attributes.Values>[] valueChunks, final int chunkIndex) {
+    public void append(final long rowIndex, final Chunk<? extends Attributes.Values>[] valueChunks,
+            final int chunkIndex) {
         index.insert(rowIndex);
         for (int i = 0; i < values.length; i++) {
             values[i].append(offset, rowIndex, valueChunks[i], chunkIndex, trackNulls ? nulls[i] : null);
@@ -88,11 +90,12 @@ public class BucketState {
         }
     }
 
-    public void update(final long rowIndex, final Chunk<? extends Attributes.Values>[] valueChunks, final int chunkIndex) {
+    public void update(final long rowIndex, final Chunk<? extends Attributes.Values>[] valueChunks,
+            final int chunkIndex) {
         for (int i = 0; i < values.length; i++) {
             final Chunk<? extends Attributes.Values> valueChunk = valueChunks[i];
             if (valueChunk == null) {
-                continue;//skip, already decided to be unnecessary
+                continue;// skip, already decided to be unnecessary
             }
             values[i].update(offset, rowIndex, valueChunk, chunkIndex, trackNulls ? nulls[i] : null);
         }
@@ -129,7 +132,8 @@ public class BucketState {
         final int[] cols = IntStream.range(0, values.length)
                 .filter(i -> {
                     if (trackNulls) {
-                        // if all items are null, don't look for max/min - we can't be sure of this without null tracking
+                        // if all items are null, don't look for max/min - we can't be sure of this without null
+                        // tracking
                         if (nulls[i].size() == indexSize) {
                             // all items are null, so we can mark this as valid
                             values[i].maxValueValid(offset, true);
@@ -149,7 +153,7 @@ public class BucketState {
         // that those contexts are ready. In this case, we already know that the contexts exists, so there is no
         // need to populate them - if they didn't exist, we wouldn't need to rescan that column, when that column
         // was first marked as needing a rescan, we already created the context.
-        /*context.addYColumnsOfInterest(cols);*/
+        /* context.addYColumnsOfInterest(cols); */
 
         if (cols.length == 0) {
             return;
@@ -169,7 +173,7 @@ public class BucketState {
         final OrderedKeys.Iterator it = index.getOrderedKeysIterator();
         while (it.hasMore()) {
             final OrderedKeys next = it.getNextOrderedKeysWithLength(RunChartDownsample.CHUNK_SIZE);
-//                LongChunk<Attributes.Values> dateChunk = context.getXValues(next, false);
+            // LongChunk<Attributes.Values> dateChunk = context.getXValues(next, false);
             final LongChunk<Attributes.OrderedKeyIndices> keyChunk = next.asKeyIndicesChunk();
             final Chunk<? extends Attributes.Values>[] valueChunks = context.getYValues(cols, next, false);
 
@@ -177,7 +181,8 @@ public class BucketState {
             // this loop uses the prepared "which columns actually need testing" array
             for (int indexInChunk = 0; indexInChunk < keyChunk.size(); indexInChunk++) {
                 for (final int columnIndex : cols) {
-                    values[columnIndex].append(offset, keyChunk.get(indexInChunk), valueChunks[columnIndex], indexInChunk, trackNulls ? nulls[columnIndex] : null);
+                    values[columnIndex].append(offset, keyChunk.get(indexInChunk), valueChunks[columnIndex],
+                            indexInChunk, trackNulls ? nulls[columnIndex] : null);
                 }
             }
         }
@@ -273,7 +278,8 @@ public class BucketState {
         while (it.hasMore()) {
             final OrderedKeys next = it.getNextOrderedKeysWithLength(RunChartDownsample.CHUNK_SIZE);
             final LongChunk<Attributes.OrderedKeyIndices> keyChunk = next.asKeyIndicesChunk();
-            final Chunk<? extends Attributes.Values>[] valueChunks = context.getYValues(allYColumnIndexes, next, usePrev);
+            final Chunk<? extends Attributes.Values>[] valueChunks =
+                    context.getYValues(allYColumnIndexes, next, usePrev);
 
 
             for (int indexInChunk = 0; indexInChunk < keyChunk.size(); indexInChunk++) {
@@ -282,18 +288,29 @@ public class BucketState {
                         if (trackNulls) {
                             if (nulls[columnIndex].size() == index.size()) {
                                 // all entries are null
-                                Assert.eq(values[columnIndex].maxIndex(offset), "values[" + columnIndex + "].maxIndex(" + offset + ")", QueryConstants.NULL_LONG);
-                                Assert.eq(values[columnIndex].minIndex(offset), "values[" + columnIndex + "].minIndex(" + offset + ")", QueryConstants.NULL_LONG);
+                                Assert.eq(values[columnIndex].maxIndex(offset),
+                                        "values[" + columnIndex + "].maxIndex(" + offset + ")",
+                                        QueryConstants.NULL_LONG);
+                                Assert.eq(values[columnIndex].minIndex(offset),
+                                        "values[" + columnIndex + "].minIndex(" + offset + ")",
+                                        QueryConstants.NULL_LONG);
                             } else {
                                 // must have non-null max and min
-                                Assert.neq(values[columnIndex].maxIndex(offset), "values[" + columnIndex + "].maxIndex(" + offset + ")", QueryConstants.NULL_LONG);
-                                Assert.neq(values[columnIndex].minIndex(offset), "values[" + columnIndex + "].minIndex(" + offset + ")", QueryConstants.NULL_LONG);
+                                Assert.neq(values[columnIndex].maxIndex(offset),
+                                        "values[" + columnIndex + "].maxIndex(" + offset + ")",
+                                        QueryConstants.NULL_LONG);
+                                Assert.neq(values[columnIndex].minIndex(offset),
+                                        "values[" + columnIndex + "].minIndex(" + offset + ")",
+                                        QueryConstants.NULL_LONG);
                             }
                         } // else we really can't assert anything specific
-                        values[columnIndex].validate(offset, keyChunk.get(indexInChunk), valueChunks[columnIndex], indexInChunk, trackNulls ? nulls[columnIndex] : null);
+                        values[columnIndex].validate(offset, keyChunk.get(indexInChunk), valueChunks[columnIndex],
+                                indexInChunk, trackNulls ? nulls[columnIndex] : null);
                     } catch (final RuntimeException e) {
                         System.out.println(index);
-                        final String msg = "Bad data! indexInChunk=" + indexInChunk + ", col=" + columnIndex + ", usePrev=" + usePrev + ", offset=" + offset + ", index=" + keyChunk.get(indexInChunk);
+                        final String msg =
+                                "Bad data! indexInChunk=" + indexInChunk + ", col=" + columnIndex + ", usePrev="
+                                        + usePrev + ", offset=" + offset + ", index=" + keyChunk.get(indexInChunk);
                         throw new IllegalStateException(msg, e);
                     }
                 }

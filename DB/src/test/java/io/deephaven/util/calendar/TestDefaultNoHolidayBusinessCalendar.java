@@ -120,48 +120,54 @@ public class TestDefaultNoHolidayBusinessCalendar extends BaseArrayTestCase {
             noNonBusinessDays.previousNonBusinessDay();
             fail();
         } catch (UnsupportedOperationException e) {
-            //ok
+            // ok
         }
         try {
             noNonBusinessDays.previousNonBusinessDay(1);
             fail();
         } catch (UnsupportedOperationException e) {
-            //ok
+            // ok
         }
         try {
             noNonBusinessDays.previousNonBusinessDay("20190626");
             fail();
         } catch (UnsupportedOperationException e) {
-            //ok
+            // ok
         }
         try {
             noNonBusinessDays.nextNonBusinessDay();
             fail();
         } catch (UnsupportedOperationException e) {
-            //ok
+            // ok
         }
         try {
             noNonBusinessDays.nextNonBusinessDay(1);
             fail();
         } catch (UnsupportedOperationException e) {
-            //ok
+            // ok
         }
         try {
             noNonBusinessDays.nextNonBusinessDay("20190626");
             fail();
         } catch (UnsupportedOperationException e) {
-            //ok
+            // ok
         }
 
         assertEquals(noNonBusinessDays.nonBusinessDaysInRange("2010-01-01", "2019-01-01"), new String[0]);
-        assertEquals(noNonBusinessDays.diffNonBusinessNanos(DBTimeUtils.convertDateTime("2010-01-01T01:00:00.000000000 NY"), DBTimeUtils.convertDateTime("2019-01-01T01:00:00.000000000 NY")), 0);
+        assertEquals(
+                noNonBusinessDays.diffNonBusinessNanos(DBTimeUtils.convertDateTime("2010-01-01T01:00:00.000000000 NY"),
+                        DBTimeUtils.convertDateTime("2019-01-01T01:00:00.000000000 NY")),
+                0);
         assertEquals(noNonBusinessDays.numberOfNonBusinessDays("2010-01-01", "2019-01-01"), 0);
 
 
         assertEquals(noNonBusinessDays.name(), "noNonBusinessDays");
         assertEquals(noNonBusinessDays.timeZone(), DBTimeZone.TZ_NY);
-        assertEquals(noNonBusinessDays.standardBusinessDayLengthNanos(), 6 * DBTimeUtils.HOUR + (30 * DBTimeUtils.MINUTE));
-        assertEquals(noNonBusinessDays.getBusinessSchedule("2019-06-26").getSOBD(), onlyWeekends.getBusinessSchedule("2019-06-26").getSOBD());
-        assertEquals(noNonBusinessDays.getBusinessSchedule("2019-06-26").getEOBD(), onlyWeekends.getBusinessSchedule("2019-06-26").getEOBD());
+        assertEquals(noNonBusinessDays.standardBusinessDayLengthNanos(),
+                6 * DBTimeUtils.HOUR + (30 * DBTimeUtils.MINUTE));
+        assertEquals(noNonBusinessDays.getBusinessSchedule("2019-06-26").getSOBD(),
+                onlyWeekends.getBusinessSchedule("2019-06-26").getSOBD());
+        assertEquals(noNonBusinessDays.getBusinessSchedule("2019-06-26").getEOBD(),
+                onlyWeekends.getBusinessSchedule("2019-06-26").getEOBD());
     }
 }

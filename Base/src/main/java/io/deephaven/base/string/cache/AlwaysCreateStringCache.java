@@ -13,9 +13,12 @@ import org.jetbrains.annotations.NotNull;
  */
 public class AlwaysCreateStringCache<STRING_LIKE_TYPE extends CharSequence> implements StringCache<STRING_LIKE_TYPE> {
 
-    public static final StringCache<String> STRING_INSTANCE = new AlwaysCreateStringCache<>(StringCacheTypeAdapterStringImpl.INSTANCE);
-    public static final StringCache<CompressedString> COMPRESSED_STRING_INSTANCE = new AlwaysCreateStringCache<>(StringCacheTypeAdapterCompressedStringImpl.INSTANCE);
-    public static final StringCache<MappedCompressedString> MAPPED_COMPRESSED_STRING_INSTANCE = new AlwaysCreateStringCache<>(StringCacheTypeAdapterMappedCompressedStringImpl.INSTANCE);
+    public static final StringCache<String> STRING_INSTANCE =
+            new AlwaysCreateStringCache<>(StringCacheTypeAdapterStringImpl.INSTANCE);
+    public static final StringCache<CompressedString> COMPRESSED_STRING_INSTANCE =
+            new AlwaysCreateStringCache<>(StringCacheTypeAdapterCompressedStringImpl.INSTANCE);
+    public static final StringCache<MappedCompressedString> MAPPED_COMPRESSED_STRING_INSTANCE =
+            new AlwaysCreateStringCache<>(StringCacheTypeAdapterMappedCompressedStringImpl.INSTANCE);
 
     /**
      * Adapter to make and compare cache members.

@@ -36,19 +36,19 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
     private Map<Class, ReinterpretReference> reinterpretedSources;
 
     UnionColumnSource(@NotNull final Class<T> type,
-                      @Nullable final Class componentType,
-                      @NotNull final UnionRedirection unionRedirection,
-                      @NotNull final UnionSourceManager unionSourceManager) {
-        //noinspection unchecked
+            @Nullable final Class componentType,
+            @NotNull final UnionRedirection unionRedirection,
+            @NotNull final UnionSourceManager unionSourceManager) {
+        // noinspection unchecked
         this(type, componentType, unionRedirection, unionSourceManager, 0, new ColumnSource[8]);
     }
 
     private UnionColumnSource(@NotNull final Class<T> type,
-                              @Nullable final Class componentType,
-                              @NotNull final UnionRedirection unionRedirection,
-                              @NotNull final UnionSourceManager unionSourceManager,
-                              final int numSources,
-                              @NotNull final ColumnSource<T> [] subSources) {
+            @Nullable final Class componentType,
+            @NotNull final UnionRedirection unionRedirection,
+            @NotNull final UnionSourceManager unionSourceManager,
+            final int numSources,
+            @NotNull final ColumnSource<T>[] subSources) {
         super(type, componentType);
         this.unionRedirection = unionRedirection;
         this.unionSourceManager = unionSourceManager;
@@ -165,7 +165,8 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     private void checkPos(long index, int pos) {
         if (pos >= subSources.length) {
-            throw Assert.statementNeverExecuted("index: " + index + ", pos: " + pos + ", subSources.length: " + subSources.length);
+            throw Assert.statementNeverExecuted(
+                    "index: " + index + ", pos: " + pos + ", subSources.length: " + subSources.length);
         }
     }
 
@@ -306,24 +307,24 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public void fillChunk(@NotNull ColumnSource.FillContext _context,
-                          @NotNull WritableChunk<? super Values> destination,
-                          @NotNull OrderedKeys orderedKeys) {
+            @NotNull WritableChunk<? super Values> destination,
+            @NotNull OrderedKeys orderedKeys) {
         final FillContext context = (FillContext) _context;
         doFillChunk(context, destination, orderedKeys, false);
     }
 
     @Override
     public void fillPrevChunk(@NotNull ColumnSource.FillContext _context,
-                              @NotNull WritableChunk<? super Values> destination,
-                              @NotNull OrderedKeys orderedKeys) {
+            @NotNull WritableChunk<? super Values> destination,
+            @NotNull OrderedKeys orderedKeys) {
         final FillContext context = (FillContext) _context;
         doFillChunk(context, destination, orderedKeys, true);
     }
 
     private void doFillChunk(@NotNull FillContext context,
-                             @NotNull WritableChunk<? super Values> destination,
-                             @NotNull OrderedKeys orderedKeys,
-                             boolean usePrev) {
+            @NotNull WritableChunk<? super Values> destination,
+            @NotNull OrderedKeys orderedKeys,
+            boolean usePrev) {
         final int okSize = orderedKeys.intSize();
 
         // Safe to assume destination has sufficient size for the request.
@@ -341,8 +342,8 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         final long[] startOfIndices = usePrev ? unionRedirection.prevStartOfIndices : unionRedirection.startOfIndices;
 
         try (final OrderedKeys.Iterator okit = orderedKeys.getOrderedKeysIterator();
-             final ResettableWritableChunk<Any> resettableDestination = getChunkType().makeResettableWritableChunk();
-             final ShiftedOrderedKeys okHelper = new ShiftedOrderedKeys()) {
+                final ResettableWritableChunk<Any> resettableDestination = getChunkType().makeResettableWritableChunk();
+                final ShiftedOrderedKeys okHelper = new ShiftedOrderedKeys()) {
             int offset = 0;
             for (int tid = startTid; tid <= lastTid; ++tid) {
                 final int capacityRemaining = Math.min(context.chunkCapacity, okSize - offset);
@@ -388,7 +389,8 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             return;
         }
 
-        for (final Iterator<Map.Entry<Class, ReinterpretReference>> it = reinterpretedSources.entrySet().iterator(); it.hasNext(); ) {
+        for (final Iterator<Map.Entry<Class, ReinterpretReference>> it = reinterpretedSources.entrySet().iterator(); it
+                .hasNext();) {
             final Map.Entry<Class, ReinterpretReference> entry = it.next();
             final WeakReference<ReinterpretToOriginal> weakReference = entry.getValue();
             final ReinterpretToOriginal reinterpretToOriginal = weakReference.get();
@@ -396,7 +398,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
                 it.remove();
                 continue;
             }
-            //noinspection unchecked
+            // noinspection unchecked
             reinterpretToOriginal.appendColumnSource(sourceToAdd.reinterpret(entry.getKey()));
         }
     }
@@ -415,8 +417,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
     /**
      * Return the Union source manager that was used to create this table.
      */
-    public UnionSourceManager getUnionSourceManager()
-    {
+    public UnionSourceManager getUnionSourceManager() {
         return unionSourceManager;
     }
 
@@ -425,24 +426,28 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
+            @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         return unionSourceManager.allowsReinterpret()
-                && Arrays.stream(subSources).filter(Objects::nonNull).allMatch(cs -> cs.allowsReinterpret(alternateDataType));
+                && Arrays.stream(subSources).filter(Objects::nonNull)
+                        .allMatch(cs -> cs.allowsReinterpret(alternateDataType));
     }
 
     @Override
-    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        final WeakReference<ReinterpretToOriginal> reinterpretedSourceWeakReference = reinterpretedSources == null ? null : reinterpretedSources.get(alternateDataType);
+    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
+            @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        final WeakReference<ReinterpretToOriginal> reinterpretedSourceWeakReference =
+                reinterpretedSources == null ? null : reinterpretedSources.get(alternateDataType);
         if (reinterpretedSourceWeakReference != null) {
             final UnionColumnSource cachedValue = reinterpretedSourceWeakReference.get();
             if (cachedValue != null) {
-                //noinspection unchecked
+                // noinspection unchecked
                 return cachedValue;
             }
         }
 
-        //noinspection unchecked
-        final ColumnSource<ALTERNATE_DATA_TYPE> [] reinterpretedSubSources = new ColumnSource[subSources.length];
+        // noinspection unchecked
+        final ColumnSource<ALTERNATE_DATA_TYPE>[] reinterpretedSubSources = new ColumnSource[subSources.length];
         for (int ii = 0; ii < subSources.length; ++ii) {
             if (subSources[ii] == null) {
                 continue;
@@ -450,7 +455,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             reinterpretedSubSources[ii] = subSources[ii].reinterpret(alternateDataType);
         }
 
-        //noinspection unchecked
+        // noinspection unchecked
         final ReinterpretToOriginal<ALTERNATE_DATA_TYPE> reinterpretedSource =
                 new ReinterpretToOriginal(alternateDataType, numSources, reinterpretedSubSources, this);
 
@@ -476,7 +481,7 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         private final UnionColumnSource originalSource;
 
         private ReinterpretToOriginal(Class<ALTERNATE> alternateDataType, int numSources,
-                                      ColumnSource<ALTERNATE>[] reinterpretedSubSources, UnionColumnSource originalSource) {
+                ColumnSource<ALTERNATE>[] reinterpretedSubSources, UnionColumnSource originalSource) {
             super(alternateDataType, null, originalSource.unionRedirection,
                     originalSource.unionSourceManager, numSources, reinterpretedSubSources);
             this.originalSource = originalSource;
@@ -488,8 +493,9 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         }
 
         @Override
-        protected <ORIGINAL_TYPE> ColumnSource<ORIGINAL_TYPE> doReinterpret(@NotNull Class<ORIGINAL_TYPE> alternateDataType) {
-            //noinspection unchecked
+        protected <ORIGINAL_TYPE> ColumnSource<ORIGINAL_TYPE> doReinterpret(
+                @NotNull Class<ORIGINAL_TYPE> alternateDataType) {
+            // noinspection unchecked
             return (ColumnSource<ORIGINAL_TYPE>) originalSource;
         }
     }
@@ -500,5 +506,6 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
             return reinterpretReference.alternateDataType;
         }
     }
+
     private static final ReinterpretedClassKey REINTERPRETED_CLASS_KEY_INSTANCE = new ReinterpretedClassKey();
 }

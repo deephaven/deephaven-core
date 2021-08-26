@@ -5,8 +5,7 @@ import jsinterop.annotations.JsProperty;
 import java.io.Serializable;
 
 /**
- * Represents a serialized fishlib LogRecord,
- * suitable for display on javascript clients.
+ * Represents a serialized fishlib LogRecord, suitable for display on javascript clients.
  */
 public class LogItem implements Serializable {
 

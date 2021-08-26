@@ -21,21 +21,23 @@ import java.util.*;
 
 public class TableDiff {
     private static final int chunkSize = 1 << 16;
-    private static final EnumSet<DiffItems> DOUBLES_EXACT_AND_FRACTION = EnumSet.of(DiffItems.DoublesExact, DiffItems.DoubleFraction);
+    private static final EnumSet<DiffItems> DOUBLES_EXACT_AND_FRACTION =
+            EnumSet.of(DiffItems.DoublesExact, DiffItems.DoubleFraction);
     private static final double DOUBLE_EXACT_THRESHOLD = 0.0001;
     private static final double FLOAT_EXACT_THRESHOLD = 0.005;
 
     /**
      * Show the differences between two tables.
      *
-     * @param actualResult   the actual result from an operation
+     * @param actualResult the actual result from an operation
      * @param expectedResult the expected result from the operation
-     * @param maxDiffLines   the maximum number of lines in the output
-     * @param itemsToSkip    classes of changes to ignore
+     * @param maxDiffLines the maximum number of lines in the output
+     * @param itemsToSkip classes of changes to ignore
      * @return a pair containing an error description String and the first different line
      */
     @NotNull
-    static Pair<String, Long> diffInternal(Table actualResult, Table expectedResult, long maxDiffLines, EnumSet<DiffItems> itemsToSkip) {
+    static Pair<String, Long> diffInternal(Table actualResult, Table expectedResult, long maxDiffLines,
+            EnumSet<DiffItems> itemsToSkip) {
         final List<String> issues = new ArrayList<>();
         long firstDifferentPosition = Long.MAX_VALUE;
 
@@ -57,8 +59,10 @@ public class TableDiff {
 
         final Map<String, ? extends ColumnSource> actualNameToColumnSource = actualResult.getColumnSourceMap();
         final Map<String, ? extends ColumnSource> expectedNameToColumnSource = expectedResult.getColumnSourceMap();
-        final String[] actualColumnNames = actualResult.getDefinition().getColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-        final String[] expectedColumnNames = expectedResult.getDefinition().getColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] actualColumnNames =
+                actualResult.getDefinition().getColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] expectedColumnNames =
+                expectedResult.getDefinition().getColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
         for (final String actualColumnName : actualColumnNames) {
             if (!expectedNameToColumnSource.containsKey(actualColumnName)) {
@@ -79,12 +83,14 @@ public class TableDiff {
             } else {
                 if (actualColumnNames.length - 1 < ci) {
                     if (!itemsToSkip.contains(DiffItems.ColumnsOrder)) {
-                        issues.add("Expected column " + expectedColumnName + " is found but not on expected position (" + ci + ")");
+                        issues.add("Expected column " + expectedColumnName + " is found but not on expected position ("
+                                + ci + ")");
                     }
                 } else {
                     if (!expectedColumnName.equals(actualColumnNames[ci])) {
                         if (!itemsToSkip.contains(DiffItems.ColumnsOrder)) {
-                            issues.add("Expected column " + expectedColumnName + " is found but not on expected position (" + ci + ")");
+                            issues.add("Expected column " + expectedColumnName
+                                    + " is found but not on expected position (" + ci + ")");
                         }
                     }
                 }
@@ -92,7 +98,8 @@ public class TableDiff {
                 final Class<?> expectedType = expectedColumnSource.getType();
                 final Class<?> actualType = actualColumnSource.getType();
                 if (actualType != expectedType) {
-                    issues.add("Expected type of " + expectedColumnName + " is " + expectedType + " actual type is " + actualType);
+                    issues.add("Expected type of " + expectedColumnName + " is " + expectedType + " actual type is "
+                            + actualType);
                 } else {
                     columnNamesForDiff.add(expectedColumnName);
                 }
@@ -103,16 +110,17 @@ public class TableDiff {
         }
 
         try (final SafeCloseableList safeCloseables = new SafeCloseableList();
-             final SharedContext expectedSharedContext = SharedContext.makeSharedContext();
-             final SharedContext actualSharedContext = SharedContext.makeSharedContext();
-             final WritableBooleanChunk equalValues = WritableBooleanChunk.makeWritableChunk(chunkSize)) {
+                final SharedContext expectedSharedContext = SharedContext.makeSharedContext();
+                final SharedContext actualSharedContext = SharedContext.makeSharedContext();
+                final WritableBooleanChunk equalValues = WritableBooleanChunk.makeWritableChunk(chunkSize)) {
 
             final ColumnDiffContext[] columnContexts = columnNamesForDiff.stream()
-                    .map(name -> safeCloseables.add(new ColumnDiffContext(name, expectedNameToColumnSource.get(name), expectedSharedContext, actualNameToColumnSource.get(name), actualSharedContext)))
+                    .map(name -> safeCloseables.add(new ColumnDiffContext(name, expectedNameToColumnSource.get(name),
+                            expectedSharedContext, actualNameToColumnSource.get(name), actualSharedContext)))
                     .toArray(ColumnDiffContext[]::new);
 
             try (final OrderedKeys.Iterator expectedIterator = expectedResult.getIndex().getOrderedKeysIterator();
-                 final OrderedKeys.Iterator actualIterator = actualResult.getIndex().getOrderedKeysIterator()) {
+                    final OrderedKeys.Iterator actualIterator = actualResult.getIndex().getOrderedKeysIterator()) {
 
                 int columnsRemaining = columnContexts.length;
                 long position = 0;
@@ -125,7 +133,8 @@ public class TableDiff {
                         if (columnContext == null) {
                             continue;
                         }
-                        final long columnFirstDifferentPosition = columnContext.diffChunk(expectedChunkOk, actualChunkOk, equalValues, itemsToSkip, issues, position);
+                        final long columnFirstDifferentPosition = columnContext.diffChunk(expectedChunkOk,
+                                actualChunkOk, equalValues, itemsToSkip, issues, position);
                         if (columnFirstDifferentPosition == -1L) {
                             continue;
                         }
@@ -146,7 +155,8 @@ public class TableDiff {
         return makeResult(issues, maxDiffLines, firstDifferentPosition);
     }
 
-    private static Pair<String, Long> makeResult(@NotNull final List<String> issues, final long maxDiffLines, final long firstDifferentPosition) {
+    private static Pair<String, Long> makeResult(@NotNull final List<String> issues, final long maxDiffLines,
+            final long firstDifferentPosition) {
         final StringBuilder result = new StringBuilder();
         int count = 0;
         for (final String issue : issues) {
@@ -157,7 +167,7 @@ public class TableDiff {
             result.append(issue).append("\n");
             count++;
         }
-        //noinspection AutoBoxing
+        // noinspection AutoBoxing
         return new Pair<>(result.toString(), firstDifferentPosition == Long.MAX_VALUE ? 0 : firstDifferentPosition);
     }
 
@@ -166,8 +176,8 @@ public class TableDiff {
      */
     public enum DiffItems {
         /**
-         *  Doubles and Floats are not treated as differences if they are within {@link #DOUBLE_EXACT_THRESHOLD} or
-         *  {@link #FLOAT_EXACT_THRESHOLD}.
+         * Doubles and Floats are not treated as differences if they are within {@link #DOUBLE_EXACT_THRESHOLD} or
+         * {@link #FLOAT_EXACT_THRESHOLD}.
          */
         DoublesExact,
         /**
@@ -175,8 +185,8 @@ public class TableDiff {
          */
         ColumnsOrder,
         /**
-         *  Doubles and Floats are not treated as differences if they are within a factor of
-         *  {@link #DOUBLE_EXACT_THRESHOLD} or {@link #FLOAT_EXACT_THRESHOLD}.  DoublesExact must also be set.
+         * Doubles and Floats are not treated as differences if they are within a factor of
+         * {@link #DOUBLE_EXACT_THRESHOLD} or {@link #FLOAT_EXACT_THRESHOLD}. DoublesExact must also be set.
          */
         DoubleFraction
     }
@@ -192,10 +202,10 @@ public class TableDiff {
         private final ChunkEquals chunkEquals;
 
         private ColumnDiffContext(@NotNull final String name,
-                                  @NotNull final ColumnSource<?> expectedColumnSource,
-                                  @NotNull final SharedContext expectedSharedContext,
-                                  @NotNull final ColumnSource<?> actualColumnSource,
-                                  @NotNull final SharedContext actualSharedContext) {
+                @NotNull final ColumnSource<?> expectedColumnSource,
+                @NotNull final SharedContext expectedSharedContext,
+                @NotNull final ColumnSource<?> actualColumnSource,
+                @NotNull final SharedContext actualSharedContext) {
             this.name = name;
             this.expectedColumnSource = expectedColumnSource;
             expectedContext = expectedColumnSource.makeGetContext(chunkSize, expectedSharedContext);
@@ -209,20 +219,22 @@ public class TableDiff {
          * Diff a chunk's worth of values between the expected and actual column sources.
          *
          * @param expectedChunkOk The keys to get from the expected source
-         * @param actualChunkOk   The keys to get from the actual source
-         * @param equalValues     A place to store equality results
-         * @param itemsToSkip     {@link DiffItems} to skip
-         * @param issues          A place to record issues
-         * @param position        The row number to start from, 0-indexed
-         * @return -1 if the expected and actual chunks were equal, else the position in row space of the first difference
+         * @param actualChunkOk The keys to get from the actual source
+         * @param equalValues A place to store equality results
+         * @param itemsToSkip {@link DiffItems} to skip
+         * @param issues A place to record issues
+         * @param position The row number to start from, 0-indexed
+         * @return -1 if the expected and actual chunks were equal, else the position in row space of the first
+         *         difference
          */
         private long diffChunk(@NotNull final OrderedKeys expectedChunkOk,
-                               @NotNull final OrderedKeys actualChunkOk,
-                               @NotNull final WritableBooleanChunk equalValues,
-                               @NotNull final Set<DiffItems> itemsToSkip,
-                               @NotNull final List<String> issues,
-                               long position) {
-            final Chunk<? extends Values> expectedValues = expectedColumnSource.getChunk(expectedContext, expectedChunkOk);
+                @NotNull final OrderedKeys actualChunkOk,
+                @NotNull final WritableBooleanChunk equalValues,
+                @NotNull final Set<DiffItems> itemsToSkip,
+                @NotNull final List<String> issues,
+                long position) {
+            final Chunk<? extends Values> expectedValues =
+                    expectedColumnSource.getChunk(expectedContext, expectedChunkOk);
             final Chunk<? extends Values> actualValues = actualColumnSource.getChunk(actualContext, actualChunkOk);
 
             if (expectedValues.size() < actualValues.size()) {
@@ -246,15 +258,20 @@ public class TableDiff {
                     }
                     if (!ArrayUtils.equals(actualValue, expectedValue)) {
                         issues.add("Column " + name + " different from the expected set, first difference at row " +
-                                position + " encountered " + ArrayUtils.toString(actualValue) + " expected " + ArrayUtils.toString(expectedValue));
+                                position + " encountered " + ArrayUtils.toString(actualValue) + " expected "
+                                + ArrayUtils.toString(expectedValue));
                         return position;
                     }
                 } else if (chunkType == ChunkType.Float) {
                     final float expectedValue = expectedValues.asFloatChunk().get(ii);
                     final float actualValue = actualValues.asFloatChunk().get(ii);
-                    if (expectedValue == io.deephaven.util.QueryConstants.NULL_FLOAT || actualValue == io.deephaven.util.QueryConstants.NULL_FLOAT) {
-                        final String actualString = actualValue == io.deephaven.util.QueryConstants.NULL_FLOAT ? "null" : Float.toString(actualValue);
-                        final String expectString = expectedValue == io.deephaven.util.QueryConstants.NULL_FLOAT ? "null" : Float.toString(expectedValue);
+                    if (expectedValue == io.deephaven.util.QueryConstants.NULL_FLOAT
+                            || actualValue == io.deephaven.util.QueryConstants.NULL_FLOAT) {
+                        final String actualString = actualValue == io.deephaven.util.QueryConstants.NULL_FLOAT ? "null"
+                                : Float.toString(actualValue);
+                        final String expectString =
+                                expectedValue == io.deephaven.util.QueryConstants.NULL_FLOAT ? "null"
+                                        : Float.toString(expectedValue);
                         issues.add("Column " + name + " different from the expected set, first difference at row " +
                                 position + " encountered " + actualString + " expected " + expectString);
                         return position;
@@ -265,20 +282,25 @@ public class TableDiff {
                         // if we are different by more than 0.5%, then we have an error; otherwise it is within bounds
                         if (fracDiff > FLOAT_EXACT_THRESHOLD) {
                             issues.add("Column " + name + " different from the expected set, first difference at row " +
-                                    position + " encountered " + actualValue + " expected " + expectedValue + " (difference = " + difference + ")");
+                                    position + " encountered " + actualValue + " expected " + expectedValue
+                                    + " (difference = " + difference + ")");
                             return position;
                         }
                     } else if (difference > FLOAT_EXACT_THRESHOLD || !itemsToSkip.contains(DiffItems.DoublesExact)) {
                         issues.add("Column " + name + " different from the expected set, first difference at row " +
-                                position + " encountered " + actualValue + " expected " + expectedValue + " (difference = " + difference + ")");
+                                position + " encountered " + actualValue + " expected " + expectedValue
+                                + " (difference = " + difference + ")");
                         return position;
                     }
                 } else if (chunkType == ChunkType.Double) {
                     final double expectedValue = expectedValues.asDoubleChunk().get(ii);
                     final double actualValue = actualValues.asDoubleChunk().get(ii);
-                    if (expectedValue == io.deephaven.util.QueryConstants.NULL_DOUBLE || actualValue == io.deephaven.util.QueryConstants.NULL_DOUBLE) {
-                        final String actualString = actualValue == io.deephaven.util.QueryConstants.NULL_DOUBLE ? "null" : Double.toString(actualValue);
-                        final String expectString = expectedValue == QueryConstants.NULL_DOUBLE ? "null" : Double.toString(expectedValue);
+                    if (expectedValue == io.deephaven.util.QueryConstants.NULL_DOUBLE
+                            || actualValue == io.deephaven.util.QueryConstants.NULL_DOUBLE) {
+                        final String actualString = actualValue == io.deephaven.util.QueryConstants.NULL_DOUBLE ? "null"
+                                : Double.toString(actualValue);
+                        final String expectString =
+                                expectedValue == QueryConstants.NULL_DOUBLE ? "null" : Double.toString(expectedValue);
                         issues.add("Column " + name + " different from the expected set, first difference at row " +
                                 position + " encountered " + actualString + " expected " + expectString);
                         return position;
@@ -290,19 +312,23 @@ public class TableDiff {
                         // if we are different by more than 0.01%, then we have an error; otherwise it is within bounds
                         if (fracDiff > DOUBLE_EXACT_THRESHOLD) {
                             issues.add("Column " + name + " different from the expected set, first difference at row " +
-                                    position + " encountered " + actualValue + " expected " + expectedValue + " (difference = " + difference + ")");
+                                    position + " encountered " + actualValue + " expected " + expectedValue
+                                    + " (difference = " + difference + ")");
                             return position;
                         }
                     } else if (difference > DOUBLE_EXACT_THRESHOLD || !itemsToSkip.contains(DiffItems.DoublesExact)) {
                         issues.add("Column " + name + " different from the expected set, first difference at row " +
-                                position + " encountered " + actualValue + " expected " + expectedValue + " (difference = " + difference + ")");
+                                position + " encountered " + actualValue + " expected " + expectedValue
+                                + " (difference = " + difference + ")");
                         return position;
                     }
                 } else {
-                    //noinspection unchecked
-                    final String expectedString = ChunkUtils.extractKeyStringFromChunks(new ChunkType[]{chunkType}, new Chunk[]{expectedValues}, ii);
-                    //noinspection unchecked
-                    final String actualString = ChunkUtils.extractKeyStringFromChunks(new ChunkType[]{chunkType}, new Chunk[]{actualValues}, ii);
+                    // noinspection unchecked
+                    final String expectedString = ChunkUtils.extractKeyStringFromChunks(new ChunkType[] {chunkType},
+                            new Chunk[] {expectedValues}, ii);
+                    // noinspection unchecked
+                    final String actualString = ChunkUtils.extractKeyStringFromChunks(new ChunkType[] {chunkType},
+                            new Chunk[] {actualValues}, ii);
 
                     issues.add("Column " + name + " different from the expected set, first difference at row " +
                             position + " encountered " + actualString + " expected " + expectedString);

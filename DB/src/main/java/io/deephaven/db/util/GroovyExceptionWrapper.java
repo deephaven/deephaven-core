@@ -37,8 +37,8 @@ public class GroovyExceptionWrapper extends RuntimeException {
     }
 
     /**
-     * Returns a replacement for the original exception, except now wrapping the new cause, since
-     * the existing exception can't be given a new cause.
+     * Returns a replacement for the original exception, except now wrapping the new cause, since the existing exception
+     * can't be given a new cause.
      */
     private static Throwable replaceWithNewCause(final Throwable original, final Throwable replacementCause) {
         assert !(original instanceof GroovyException) && !(original instanceof GroovyRuntimeException);
@@ -55,7 +55,8 @@ public class GroovyExceptionWrapper extends RuntimeException {
         if (original.getMessage() == null) {
             try {
                 return originalClass.getConstructor(Throwable.class).newInstance(replacementCause);
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e1) {
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException
+                    | NoSuchMethodException e1) {
                 try {
                     final Throwable result = originalClass.newInstance();
                     result.initCause(replacementCause);
@@ -66,14 +67,18 @@ public class GroovyExceptionWrapper extends RuntimeException {
             }
         }
         try {
-            return originalClass.getConstructor(String.class, Throwable.class).newInstance(original.getMessage(), replacementCause);
-        } catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e1) {
+            return originalClass.getConstructor(String.class, Throwable.class).newInstance(original.getMessage(),
+                    replacementCause);
+        } catch (NoSuchMethodException | IllegalAccessException | InstantiationException
+                | InvocationTargetException e1) {
             try {
                 final Throwable result = originalClass.getConstructor(String.class).newInstance(original.getMessage());
                 result.initCause(replacementCause);
                 return result;
-            } catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e2) {
-                return new TranslatedException(original.getClass().getName() + ": " + original.getMessage(), replacementCause);
+            } catch (NoSuchMethodException | IllegalAccessException | InstantiationException
+                    | InvocationTargetException e2) {
+                return new TranslatedException(original.getClass().getName() + ": " + original.getMessage(),
+                        replacementCause);
             }
         }
     }

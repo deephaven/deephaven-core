@@ -49,7 +49,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     }
 
     @Override
-    public void applyUpdate(final ShiftAwareListener.Update upstream, final ReadOnlyIndex toClear, final UpdateHelper helper) {
+    public void applyUpdate(final ShiftAwareListener.Update upstream, final ReadOnlyIndex toClear,
+            final UpdateHelper helper) {
         final int PAGE_SIZE = 4096;
         final LongToIntFunction contextSize = (long size) -> size > PAGE_SIZE ? PAGE_SIZE : (int) size;
 
@@ -80,11 +81,14 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
         final boolean needGetContext = upstream.added.nonempty() || modifiesAffectUs;
         final boolean needDestContext = preMoveKeys.nonempty() || needGetContext;
-        final int chunkSourceContextSize = contextSize.applyAsInt(Math.max(upstream.added.size(), upstream.modified.size()));
+        final int chunkSourceContextSize =
+                contextSize.applyAsInt(Math.max(upstream.added.size(), upstream.modified.size()));
         final int destContextSize = contextSize.applyAsInt(Math.max(preMoveKeys.size(), chunkSourceContextSize));
 
-        try (final WritableChunkSink.FillFromContext destContext = needDestContext ? writableSource.makeFillFromContext(destContextSize) : null;
-             final ChunkSource.GetContext chunkSourceContext = needGetContext ? chunkSource.makeGetContext(chunkSourceContextSize) : null) {
+        try (final WritableChunkSink.FillFromContext destContext =
+                needDestContext ? writableSource.makeFillFromContext(destContextSize) : null;
+                final ChunkSource.GetContext chunkSourceContext =
+                        needGetContext ? chunkSource.makeGetContext(chunkSourceContextSize) : null) {
 
             // apply shifts!
             if (!isRedirected && preMoveKeys.nonempty()) {
@@ -92,9 +96,10 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 // note: we cannot use a get context here as destination is identical to source
                 final int shiftContextSize = contextSize.applyAsInt(preMoveKeys.size());
                 try (final ChunkSource.FillContext srcContext = writableSource.makeFillContext(shiftContextSize);
-                     final WritableChunk<Attributes.Values> chunk = writableSource.getChunkType().makeWritableChunk(shiftContextSize);
-                     final OrderedKeys.Iterator srcIter = preMoveKeys.getOrderedKeysIterator();
-                     final OrderedKeys.Iterator destIter = postMoveKeys.getOrderedKeysIterator()) {
+                        final WritableChunk<Attributes.Values> chunk =
+                                writableSource.getChunkType().makeWritableChunk(shiftContextSize);
+                        final OrderedKeys.Iterator srcIter = preMoveKeys.getOrderedKeysIterator();
+                        final OrderedKeys.Iterator destIter = postMoveKeys.getOrderedKeysIterator()) {
 
                     while (srcIter.hasMore()) {
                         final OrderedKeys srcKeys = srcIter.getNextOrderedKeysWithLength(PAGE_SIZE);

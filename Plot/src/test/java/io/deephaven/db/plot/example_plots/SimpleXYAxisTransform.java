@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ * * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  *
  */
 
@@ -26,8 +26,7 @@ public class SimpleXYAxisTransform {
                 .xLabel("X")
                 .yLabel("Y")
                 .yTransform(AxisTransforms.LOG)
-                .plotOrientation("H")
-                ;
+                .plotOrientation("H");
 
         ExamplePlotUtils.display(axs2);
     }

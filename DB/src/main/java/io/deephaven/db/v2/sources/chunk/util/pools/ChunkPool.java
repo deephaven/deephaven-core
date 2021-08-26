@@ -17,7 +17,8 @@ public interface ChunkPool {
      * released.
      *
      * @param capacity The minimum capacity for the result
-     * @return A {@link WritableChunk} of at least the specified {@code capacity} that belongs to the caller until released
+     * @return A {@link WritableChunk} of at least the specified {@code capacity} that belongs to the caller until
+     *         released
      */
     <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(int capacity);
 

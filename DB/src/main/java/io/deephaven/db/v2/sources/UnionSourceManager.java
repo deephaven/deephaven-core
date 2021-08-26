@@ -46,7 +46,8 @@ public class UnionSourceManager {
 
     private UpdateCommitter<UnionSourceManager> prevFlusher = null;
 
-    public UnionSourceManager(TableDefinition tableDefinition, @Nullable NotificationQueue.Dependency parentDependency){
+    public UnionSourceManager(TableDefinition tableDefinition,
+            @Nullable NotificationQueue.Dependency parentDependency) {
         // noinspection unchecked
         sources = tableDefinition.getColumnList().stream()
                 .map((cd) -> new UnionColumnSource(cd.getDataType(), cd.getComponentType(), unionRedirection, this))
@@ -110,6 +111,7 @@ public class UnionSourceManager {
 
     /**
      * Adds a table to the managed constituents.
+     * 
      * @param table the new table
      * @param onNewTableMapKey whether this table is being added after the initial setup
      */
@@ -120,14 +122,14 @@ public class UnionSourceManager {
         }
         Require.requirement(sources.size() == this.sources.length,
                 "sources.size() == this.sources.length", sources.size(),
-                "sources.size()",this.sources.length,"this.sources.length");
+                "sources.size()", this.sources.length, "this.sources.length");
         unionRedirection.appendTable(table.getIndex().lastKey());
 
         for (int i = 0; i < this.sources.length; i++) {
             final ColumnSource sourceToAdd = sources.get(names[i]);
-            Assert.assertion(sourceToAdd != null,"sources.get(names[i]) != null",names[i],
+            Assert.assertion(sourceToAdd != null, "sources.get(names[i]) != null", names[i],
                     "names[i]");
-            //noinspection unchecked
+            // noinspection unchecked
             this.sources[i].appendColumnSource(sourceToAdd);
         }
         final int tableId = tables.size();
@@ -206,7 +208,8 @@ public class UnionSourceManager {
     }
 
     class MergedUnionListener extends MergedListener {
-        MergedUnionListener(Collection<UnionListenerRecorder> recorders, String listenerDescription, QueryTable result) {
+        MergedUnionListener(Collection<UnionListenerRecorder> recorders, String listenerDescription,
+                QueryTable result) {
             super(recorders, Collections.emptyList(), listenerDescription, result);
         }
 
@@ -221,15 +224,18 @@ public class UnionSourceManager {
             long accumulatedShift = 0;
             int firstShiftingTable = tables.size();
             for (int tableId = 0; tableId < tables.size(); ++tableId) {
-                final long newShift = unionRedirection.computeShiftIfNeeded(tableId, tables.get(tableId).getIndex().lastKey());
-                unionRedirection.prevStartOfIndicesAlt[tableId] = unionRedirection.startOfIndices[tableId] += accumulatedShift;
+                final long newShift =
+                        unionRedirection.computeShiftIfNeeded(tableId, tables.get(tableId).getIndex().lastKey());
+                unionRedirection.prevStartOfIndicesAlt[tableId] =
+                        unionRedirection.startOfIndices[tableId] += accumulatedShift;
                 accumulatedShift += newShift;
                 if (newShift > 0 && tableId + 1 < firstShiftingTable) {
                     firstShiftingTable = tableId + 1;
                 }
             }
             // note: prevStart must be set irregardless of whether accumulatedShift is non-zero or not.
-            unionRedirection.prevStartOfIndicesAlt[tables.size()] = unionRedirection.startOfIndices[tables.size()] += accumulatedShift;
+            unionRedirection.prevStartOfIndicesAlt[tables.size()] =
+                    unionRedirection.startOfIndices[tables.size()] += accumulatedShift;
 
             if (accumulatedShift > 0) {
                 final int maxTableId = tables.size() - 1;
@@ -251,7 +257,8 @@ public class UnionSourceManager {
             final Index.SequentialBuilder updateRemovedBuilder = Index.FACTORY.getSequentialBuilder();
             final Index.SequentialBuilder updateModifiedBuilder = Index.FACTORY.getSequentialBuilder();
 
-            // listeners should be quiescent by the time we are processing this notification, because of the dependency tracking
+            // listeners should be quiescent by the time we are processing this notification, because of the dependency
+            // tracking
             int nextListenerId = 0;
             for (int tableId = 0; tableId < tables.size(); ++tableId) {
                 final long offset = unionRedirection.prevStartOfIndices[tableId];
@@ -261,7 +268,8 @@ public class UnionSourceManager {
                 // Listeners only contains ticking tables. However, we might need to shift tables that do not tick.
                 final ListenerRecorder listener =
                         (nextListenerId < listeners.size() && listeners.get(nextListenerId).tableId == tableId)
-                                ? listeners.get(nextListenerId++) : null;
+                                ? listeners.get(nextListenerId++)
+                                : null;
 
                 if (listener == null || listener.getNotificationStep() != currentStep) {
                     if (shiftDelta != 0) {
@@ -272,12 +280,14 @@ public class UnionSourceManager {
                 }
 
                 // Mark all dirty columns in this source table as dirty in aggregate.
-                modColumnTransformers.get(nextListenerId - 1).transform(listener.getModifiedColumnSet(), modifiedColumnSet);
+                modColumnTransformers.get(nextListenerId - 1).transform(listener.getModifiedColumnSet(),
+                        modifiedColumnSet);
 
                 final IndexShiftData shiftData = listener.getShifted();
 
                 updateAddedBuilder.appendIndexWithOffset(listener.getAdded(), unionRedirection.startOfIndices[tableId]);
-                updateModifiedBuilder.appendIndexWithOffset(listener.getModified(), unionRedirection.startOfIndices[tableId]);
+                updateModifiedBuilder.appendIndexWithOffset(listener.getModified(),
+                        unionRedirection.startOfIndices[tableId]);
 
                 if (shiftDelta == 0) {
                     try (final Index newRemoved = getShiftedPrevIndex(listener.getRemoved(), tableId)) {
@@ -285,9 +295,11 @@ public class UnionSourceManager {
                         index.remove(newRemoved);
                     }
                 } else {
-                    // If the shiftDelta is non-zero we have already updated the index above (because we used the new index),
+                    // If the shiftDelta is non-zero we have already updated the index above (because we used the new
+                    // index),
                     // otherwise we need to apply the removals (adjusted by the table's starting key)
-                    updateRemovedBuilder.appendIndexWithOffset(listener.getRemoved(), unionRedirection.prevStartOfIndices[tableId]);
+                    updateRemovedBuilder.appendIndexWithOffset(listener.getRemoved(),
+                            unionRedirection.prevStartOfIndices[tableId]);
                 }
 
                 // Apply and process shifts.
@@ -318,7 +330,8 @@ public class UnionSourceManager {
                                 }
                                 Assert.leq(beginRange, "beginRange", endRange, "endRange");
                                 shiftRemoveBuilder.appendRange(beginRange, endRange);
-                                okIt.getNextOrderedKeysThrough(endRange).forAllLongRanges((s, e) -> shiftAddedBuilder.appendRange(s + rangeDelta, e + rangeDelta));
+                                okIt.getNextOrderedKeysThrough(endRange).forAllLongRanges(
+                                        (s, e) -> shiftAddedBuilder.appendRange(s + rangeDelta, e + rangeDelta));
                             }
                         }
                     }
@@ -341,7 +354,7 @@ public class UnionSourceManager {
 
             // Finally add the new keys to the index in post-shift key-space.
             try (Index shiftRemoveIndex = shiftRemoveBuilder.getIndex();
-                 Index shiftAddedIndex = shiftAddedBuilder.getIndex()) {
+                    Index shiftAddedIndex = shiftAddedBuilder.getIndex()) {
                 index.remove(shiftRemoveIndex);
                 index.insert(shiftAddedIndex);
             }

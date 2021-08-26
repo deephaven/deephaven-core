@@ -80,7 +80,7 @@ public class DBLanguageParserDummyClass {
     public final InnerClass2 innerClass2Instance = new InnerClass2();
 
     public static double[] interpolate(double[] x, double[] y, double[] xi, NestedEnum anEnumArg, boolean extrapolate) {
-        return new double[]{0};
+        return new double[] {0};
     }
 
     public enum NestedEnum {
@@ -88,7 +88,9 @@ public class DBLanguageParserDummyClass {
     }
 
     public interface SubclassOfDBLanguageParserDummyClass {
-        enum EnumInInterface { THING_ONE, THING_TWO }
+        enum EnumInInterface {
+            THING_ONE, THING_TWO
+        }
     }
 
     public class InnerClass implements SubclassOfDBLanguageParserDummyClass {

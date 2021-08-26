@@ -33,8 +33,8 @@ public class PropertyInputStreamLoaderTraditionalTest extends TestCase {
     public void testContentFromFile() throws IOException, URISyntaxException {
         // ensure that the resource hello-world.prop is fully scoped out as a filesystem path
         String path = Paths
-            .get(PropertyInputStreamLoaderTraditionalTest.class.getResource("/hello-world.prop").toURI())
-            .toString();
+                .get(PropertyInputStreamLoaderTraditionalTest.class.getResource("/hello-world.prop").toURI())
+                .toString();
         final byte[] bytes;
         try (final InputStream in = open(path)) {
             bytes = IOUtils.toByteArray(in);

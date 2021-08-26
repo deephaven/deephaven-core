@@ -20,10 +20,10 @@ import static io.deephaven.db.tables.utils.DBTimeUtils.convertDateTime;
 
 public class TestDBDateTime extends BaseArrayTestCase {
 
-    public void testAll() throws Exception{
+    public void testAll() throws Exception {
         DateTime jodaDateTime = new DateTime("2010-01-01T12:13:14.999");
 
-        long nanos = jodaDateTime.getMillis()*1000000+123456;
+        long nanos = jodaDateTime.getMillis() * 1000000 + 123456;
 
         DBDateTime dateTime = new DBDateTime(nanos);
 
@@ -46,16 +46,16 @@ public class TestDBDateTime extends BaseArrayTestCase {
         assertEquals(1, new DBDateTime(123456).compareTo(new DBDateTime(123455)));
     }
 
-    public void testInstant(){
+    public void testInstant() {
         DateTime jodaDateTime = new DateTime("2010-01-11T12:13:14.999");
-        DBDateTime dateTime1 = new DBDateTime(jodaDateTime.getMillis()*1000000);
-        long nanos = jodaDateTime.getMillis()*1000000+123456;
+        DBDateTime dateTime1 = new DBDateTime(jodaDateTime.getMillis() * 1000000);
+        long nanos = jodaDateTime.getMillis() * 1000000 + 123456;
         DBDateTime dateTime2 = new DBDateTime(nanos);
 
         java.time.Instant target1 = java.time.Instant.ofEpochMilli(jodaDateTime.getMillis());
         assertEquals(target1, dateTime1.getInstant());
 
-        java.time.Instant target2 = java.time.Instant.ofEpochSecond(jodaDateTime.getMillis()/1000,999123456);
+        java.time.Instant target2 = java.time.Instant.ofEpochSecond(jodaDateTime.getMillis() / 1000, 999123456);
         assertEquals(target2, dateTime2.getInstant());
     }
 
@@ -63,8 +63,7 @@ public class TestDBDateTime extends BaseArrayTestCase {
         try {
             Date date = format.parse(dateStr);
             return date.getTime();
-        }
-        catch (ParseException e) {
+        } catch (ParseException e) {
             return 0;
         }
     }
@@ -122,7 +121,10 @@ public class TestDBDateTime extends BaseArrayTestCase {
         assertEquals(dayBefore, DBTimeUtils.lastBusinessDateNy(getMillisFromDateStr(format, today)));
         today = "2013-11-27";
         dayBefore = "2013-11-26";
-        assertEquals(dayBefore, DBTimeUtils.lastBusinessDateNy(getMillisFromDateStr(format, today)+1)); // make sure it advances just past midnight
+        assertEquals(dayBefore, DBTimeUtils.lastBusinessDateNy(getMillisFromDateStr(format, today) + 1)); // make sure
+                                                                                                          // it advances
+                                                                                                          // just past
+                                                                                                          // midnight
 
         // Rolling back should not work -- we have cached a later day
         today = "2013-11-26";
@@ -150,7 +152,7 @@ public class TestDBDateTime extends BaseArrayTestCase {
     public void testToDateString() {
         DBDateTime dateTime = convertDateTime("2016-11-06T04:00 UTC"); // 11/6 is the last day of DST
 
-        {   // America/New_York
+        { // America/New_York
             String zoneId = "America/New_York";
             assertEquals("2016-11-06", dateTime.toDateString(DBTimeZone.TZ_NY));
             assertEquals("2016-11-06", dateTime.toDateString(DateTimeZone.forID(zoneId)));
@@ -158,7 +160,7 @@ public class TestDBDateTime extends BaseArrayTestCase {
             assertEquals("2016-11-06", dateTime.toDateString(ZoneId.of(zoneId)));
         }
 
-        {   // EST - supported by joda; not java.time
+        { // EST - supported by joda; not java.time
             String zoneId = "EST";
             assertEquals("2016-11-05", dateTime.toDateString(DateTimeZone.forID(zoneId)));
 
@@ -169,7 +171,7 @@ public class TestDBDateTime extends BaseArrayTestCase {
             }
         }
 
-        {   // UTC
+        { // UTC
             String zoneId = "UTC";
             assertEquals("2016-11-06", dateTime.toDateString(DBTimeZone.TZ_UTC));
             assertEquals("2016-11-06", dateTime.toDateString(DateTimeZone.forID(zoneId)));
@@ -177,21 +179,21 @@ public class TestDBDateTime extends BaseArrayTestCase {
             assertEquals("2016-11-06", dateTime.toDateString(ZoneId.of(zoneId)));
         }
 
-        {   // Etc/GMT+2 - 2 hours *EAST*
+        { // Etc/GMT+2 - 2 hours *EAST*
             String zoneId = "Etc/GMT+2";
             assertEquals("2016-11-06", dateTime.toDateString(DateTimeZone.forID(zoneId)));
             assertEquals("2016-11-06", dateTime.toDateString(zoneId));
             assertEquals("2016-11-06", dateTime.toDateString(ZoneId.of(zoneId)));
         }
 
-        {   // Etc/GMT+4 -- 4 hours *WEST*
+        { // Etc/GMT+4 -- 4 hours *WEST*
             String zoneId = "Etc/GMT+4";
             assertEquals("2016-11-06", dateTime.toDateString(DateTimeZone.forID(zoneId)));
             assertEquals("2016-11-06", dateTime.toDateString(zoneId));
             assertEquals("2016-11-06", dateTime.toDateString(ZoneId.of(zoneId)));
         }
 
-        {   // Etc/GMT+2 -- 5 hours *WEST*
+        { // Etc/GMT+2 -- 5 hours *WEST*
             String zoneId = "Etc/GMT+5";
             assertEquals("2016-11-05", dateTime.toDateString(DateTimeZone.forID(zoneId)));
             assertEquals("2016-11-05", dateTime.toDateString(zoneId));

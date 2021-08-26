@@ -33,13 +33,12 @@ import static io.deephaven.db.tables.lang.DBLanguageFunctionUtil.minus;
 import static io.deephaven.db.tables.lang.DBLanguageFunctionUtil.plus;
 
 /**
- * This tool is meant to track periodic update events that take place in a LiveTableMonitor.  This generally includes
- * (1) LiveTable.refresh() invocations
- * (2) DynamicTable Listener notifications (see InstrumentedListener)
+ * This tool is meant to track periodic update events that take place in a LiveTableMonitor. This generally includes (1)
+ * LiveTable.refresh() invocations (2) DynamicTable Listener notifications (see InstrumentedListener)
  *
  * Note: Regarding thread safety, this class interacts with a singleton LiveTableMonitor and expects all calls to
- *       getEntry(), Entry.onUpdateStart(), and Entry.onUpdateEnd() to be performed while protected by the LTM's live
- *       jobs synchronizer.
+ * getEntry(), Entry.onUpdateStart(), and Entry.onUpdateEnd() to be performed while protected by the LTM's live jobs
+ * synchronizer.
  */
 public class UpdatePerformanceTracker {
 
@@ -104,21 +103,20 @@ public class UpdatePerformanceTracker {
     private class Driver implements Runnable {
         @Override
         public void run() {
-            //noinspection InfiniteLoopStatement
-            while(true) {
+            // noinspection InfiniteLoopStatement
+            while (true) {
                 final long intervalStartTimeNanos = System.nanoTime();
                 final long intervalStartTimeMillis = System.currentTimeMillis();
                 try {
                     Thread.sleep(REPORT_INTERVAL_MILLIS);
-                } catch(InterruptedException ignore) {
+                } catch (InterruptedException ignore) {
                     // should log, but no logger handy
                     // ignore
                 }
                 LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(
                         () -> finishInterval(intervalStartTimeMillis,
                                 System.currentTimeMillis(),
-                                System.nanoTime() - intervalStartTimeNanos
-                        ));
+                                System.nanoTime() - intervalStartTimeNanos));
             }
         }
     }
@@ -149,8 +147,7 @@ public class UpdatePerformanceTracker {
                     evaluationNumber,
                     operationNumber,
                     effectiveDescription,
-                    QueryPerformanceRecorder.getCallerLine()
-            ));
+                    QueryPerformanceRecorder.getCallerLine()));
         });
         final Entry entry = entryMu.getValue();
         if (!unitTestMode) {
@@ -162,27 +159,26 @@ public class UpdatePerformanceTracker {
 
     /**
      * Do entry maintenance, generate an interval performance report table for all active entries, and reset for the
-     * next interval.
-     * <b>Note:</b> This method is only called under the LiveTableMonitor instance's lock.  This ensures exclusive access to
-     *       the entries, and also prevents any other thread from removing from entries.
+     * next interval. <b>Note:</b> This method is only called under the LiveTableMonitor instance's lock. This ensures
+     * exclusive access to the entries, and also prevents any other thread from removing from entries.
+     * 
      * @param intervalStartTimeMillis interval start time in millis
      * @param intervalEndTimeMillis interval end time in millis
      * @param intervalDurationNanos interval duration in nanos
      */
-    private void finishInterval(final long intervalStartTimeMillis, final long intervalEndTimeMillis, final long intervalDurationNanos) {
-        /* Visit all entry references.
-         * For entries that no longer exist:
-         *   Remove by index from the entry list.
-         * For entries that still exist:
-         *   If the entry had non-zero usage in this interval, add it to the report.
-         *   Reset the entry for the next interval.
+    private void finishInterval(final long intervalStartTimeMillis, final long intervalEndTimeMillis,
+            final long intervalDurationNanos) {
+        /*
+         * Visit all entry references. For entries that no longer exist: Remove by index from the entry list. For
+         * entries that still exist: If the entry had non-zero usage in this interval, add it to the report. Reset the
+         * entry for the next interval.
          */
         final IntervalLevelDetails intervalLevelDetails =
                 new IntervalLevelDetails(intervalStartTimeMillis, intervalEndTimeMillis, intervalDurationNanos);
 
         boolean encounteredErrorLoggingToMemory = false;
 
-        for (final Iterator<WeakReference<Entry>> it = entries.iterator(); it.hasNext(); ) {
+        for (final Iterator<WeakReference<Entry>> it = entries.iterator(); it.hasNext();) {
             final WeakReference<Entry> entryReference = it.next();
             final Entry entry = entryReference == null ? null : entryReference.get();
             if (entry == null) {
@@ -191,7 +187,8 @@ public class UpdatePerformanceTracker {
             }
 
             if (entry.shouldLogEntryInterval()) {
-                encounteredErrorLoggingToMemory = logToMemory(intervalLevelDetails, entry, encounteredErrorLoggingToMemory);
+                encounteredErrorLoggingToMemory =
+                        logToMemory(intervalLevelDetails, entry, encounteredErrorLoggingToMemory);
             } else if (entry.intervalInvocationCount > 0) {
                 if (entry.totalUsedMemory > aggregatedSmallUpdatesEntry.totalUsedMemory) {
                     aggregatedSmallUpdatesEntry.totalUsedMemory = entry.totalUsedMemory;
@@ -229,8 +226,8 @@ public class UpdatePerformanceTracker {
     }
 
     private boolean logToMemory(final IntervalLevelDetails intervalLevelDetails,
-                                final Entry entry,
-                                final boolean encounteredErrorLoggingToMemory) {
+            final Entry entry,
+            final boolean encounteredErrorLoggingToMemory) {
         if (!encounteredErrorLoggingToMemory) {
             try {
                 tableLogger.getTableLogger().log(intervalLevelDetails, entry);
@@ -251,7 +248,8 @@ public class UpdatePerformanceTracker {
         private final long intervalEndTimeMillis;
         private final long intervalDurationNanos;
 
-        IntervalLevelDetails(final long intervalStartTimeMillis, final long intervalEndTimeMillis, final long intervalDurationNanos) {
+        IntervalLevelDetails(final long intervalStartTimeMillis, final long intervalEndTimeMillis,
+                final long intervalDurationNanos) {
             this.intervalStartTimeMillis = intervalStartTimeMillis;
             this.intervalEndTimeMillis = intervalEndTimeMillis;
             this.intervalDurationNanos = intervalDurationNanos;
@@ -306,7 +304,7 @@ public class UpdatePerformanceTracker {
         private long totalUsedMemory;
 
         private Entry(final int id, final int evaluationNumber, final int operationNumber,
-                      final String description, final String callerLine) {
+                final String description, final String callerLine) {
             this.id = id;
             this.evaluationNumber = evaluationNumber;
             this.operationNumber = operationNumber;
@@ -326,7 +324,7 @@ public class UpdatePerformanceTracker {
         }
 
         public final void onUpdateStart(final Index added, final Index removed, final Index modified,
-                                        final IndexShiftData shifted) {
+                final IndexShiftData shifted) {
             intervalAdded += added.size();
             intervalRemoved += removed.size();
             intervalModified += modified.size();
@@ -347,7 +345,8 @@ public class UpdatePerformanceTracker {
         public final void onUpdateEnd() {
             intervalUserCpuNanos = plus(intervalUserCpuNanos,
                     minus(ThreadProfiler.DEFAULT.getCurrentThreadUserTime(), startUserCpuNanos));
-            intervalCpuNanos = plus(intervalCpuNanos, minus(ThreadProfiler.DEFAULT.getCurrentThreadCpuTime(), startCpuNanos));
+            intervalCpuNanos =
+                    plus(intervalCpuNanos, minus(ThreadProfiler.DEFAULT.getCurrentThreadCpuTime(), startCpuNanos));
 
             intervalUsageNanos += System.nanoTime() - startTimeNanos;
 
@@ -396,30 +395,21 @@ public class UpdatePerformanceTracker {
 
         @Override
         public LogOutput append(final LogOutput logOutput) {
-            return logOutput.append("Entry{").
-                    append(", id=").append(id).
-                    append(", evaluationNumber=").append(evaluationNumber).
-                    append(", operationNumber=").append(operationNumber).
-                    append(", description='").append(description).append('\'').
-                    append(", callerLine='").append(callerLine).append('\'').
-                    append(", intervalUsageNanos=").append(intervalUsageNanos).
-                    append(", intervalInvocationCount=").append(intervalInvocationCount).
-                    append(", intervalCpuNanos=").append(intervalCpuNanos).
-                    append(", intervalUserCpuNanos=").append(intervalUserCpuNanos).
-                    append(", intervalAdded=").append(intervalAdded).
-                    append(", intervalRemoved=").append(intervalRemoved).
-                    append(", intervalModified=").append(intervalModified).
-                    append(", intervalShifted=").append(intervalShifted).
-                    append(", intervalAllocatedBytes=").append(intervalAllocatedBytes).
-                    append(", intervalPoolAllocatedBytes=").append(intervalPoolAllocatedBytes).
-                    append(", startCpuNanos=").append(startCpuNanos).
-                    append(", startUserCpuNanos=").append(startUserCpuNanos).
-                    append(", startTimeNanos=").append(startTimeNanos).
-                    append(", startAllocatedBytes=").append(startAllocatedBytes).
-                    append(", startPoolAllocatedBytes=").append(startPoolAllocatedBytes).
-                    append(", totalUsedMemory=").append(totalUsedMemory).
-                    append(", totalFreeMemory=").append(totalFreeMemory).
-                    append('}');
+            return logOutput.append("Entry{").append(", id=").append(id).append(", evaluationNumber=")
+                    .append(evaluationNumber).append(", operationNumber=").append(operationNumber)
+                    .append(", description='").append(description).append('\'').append(", callerLine='")
+                    .append(callerLine).append('\'').append(", intervalUsageNanos=").append(intervalUsageNanos)
+                    .append(", intervalInvocationCount=").append(intervalInvocationCount).append(", intervalCpuNanos=")
+                    .append(intervalCpuNanos).append(", intervalUserCpuNanos=").append(intervalUserCpuNanos)
+                    .append(", intervalAdded=").append(intervalAdded).append(", intervalRemoved=")
+                    .append(intervalRemoved).append(", intervalModified=").append(intervalModified)
+                    .append(", intervalShifted=").append(intervalShifted).append(", intervalAllocatedBytes=")
+                    .append(intervalAllocatedBytes).append(", intervalPoolAllocatedBytes=")
+                    .append(intervalPoolAllocatedBytes).append(", startCpuNanos=").append(startCpuNanos)
+                    .append(", startUserCpuNanos=").append(startUserCpuNanos).append(", startTimeNanos=")
+                    .append(startTimeNanos).append(", startAllocatedBytes=").append(startAllocatedBytes)
+                    .append(", startPoolAllocatedBytes=").append(startPoolAllocatedBytes).append(", totalUsedMemory=")
+                    .append(totalUsedMemory).append(", totalFreeMemory=").append(totalFreeMemory).append('}');
         }
 
         public int getId() {
@@ -493,7 +483,8 @@ public class UpdatePerformanceTracker {
         /**
          * Suppress de minimus update entry intervals using the properties defined in the QueryPerformanceNugget class.
          *
-         * @return if this nugget is significant enough to be logged, otherwise it is aggregated into the small update entry
+         * @return if this nugget is significant enough to be logged, otherwise it is aggregated into the small update
+         *         entry
          */
         boolean shouldLogEntryInterval() {
             return intervalInvocationCount > 0 &&

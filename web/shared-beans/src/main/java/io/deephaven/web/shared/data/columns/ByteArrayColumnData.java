@@ -5,8 +5,7 @@ import java.util.Arrays;
 public class ByteArrayColumnData extends ColumnData {
     private byte[] data;
 
-    public ByteArrayColumnData() {
-    }
+    public ByteArrayColumnData() {}
 
     public ByteArrayColumnData(byte[] data) {
         this.data = data;
@@ -22,8 +21,10 @@ public class ByteArrayColumnData extends ColumnData {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         ByteArrayColumnData that = (ByteArrayColumnData) o;
 

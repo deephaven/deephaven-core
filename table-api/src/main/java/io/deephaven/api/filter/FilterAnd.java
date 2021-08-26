@@ -11,8 +11,7 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 
 /**
- * Evaluates to {@code true} when all of the given {@link #filters() filters} evaluates to
- * {@code true}.
+ * Evaluates to {@code true} when all of the given {@link #filters() filters} evaluates to {@code true}.
  */
 @Immutable
 @BuildableStyle
@@ -59,7 +58,7 @@ public abstract class FilterAnd extends FilterBase implements Iterable<Filter> {
     final void checkSize() {
         if (filters().size() < 2) {
             throw new IllegalArgumentException(
-                String.format("%s must have at least 2 filters", FilterAnd.class));
+                    String.format("%s must have at least 2 filters", FilterAnd.class));
         }
     }
 

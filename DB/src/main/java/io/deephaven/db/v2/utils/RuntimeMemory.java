@@ -9,14 +9,16 @@ import java.text.DecimalFormat;
 /**
  * Cache memory utilization.
  *
- * <p>>Calling Runtime.getRuntime().getFreeMemory() is expensive; and we may do it a lot when we have automatically
- * computed tables, such as in a byExternal.  Instead of calling the runtime directly from the performance
+ * <p>
+ * >Calling Runtime.getRuntime().getFreeMemory() is expensive; and we may do it a lot when we have automatically
+ * computed tables, such as in a byExternal. Instead of calling the runtime directly from the performance
  * instrumentation framework, we call this class's methods; which cache the result for a configurable number of
  * milliseconds to avoid repeated calls that are not likely any different./p>
  *
- * <p>A
- * dditionally, we log our JVM heap usage on a regular basis; to enable users to quickly examine their worker
- * logs and understand memory issues.</p>
+ * <p>
+ * A dditionally, we log our JVM heap usage on a regular basis; to enable users to quickly examine their worker logs and
+ * understand memory issues.
+ * </p>
  */
 public class RuntimeMemory {
     /** The singleton instance. */

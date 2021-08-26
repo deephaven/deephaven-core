@@ -69,7 +69,8 @@ public class TestDirWatchService extends BaseArrayTestCase {
 
     public void testBasicFilesJavaFileWatch() throws Exception {
 
-        final String[] expectedResults = {STARTSWITH_FILE, STARTSWITH_FILE2, ENDSWITH_FILE, EXACT_MATCH_FILE, EXACT_MATCH_FILE, EXACT_MATCH_FILE2, EXACT_MATCH_FILE2, REGEX_MATCH_FILE};
+        final String[] expectedResults = {STARTSWITH_FILE, STARTSWITH_FILE2, ENDSWITH_FILE, EXACT_MATCH_FILE,
+                EXACT_MATCH_FILE, EXACT_MATCH_FILE2, EXACT_MATCH_FILE2, REGEX_MATCH_FILE};
         Arrays.sort(expectedResults);
 
         final DirWatchService service = new DirWatchService(dir.toString(),
@@ -80,7 +81,7 @@ public class TestDirWatchService extends BaseArrayTestCase {
         service.start();
 
         service.addFileWatchAtStart(DirWatchService.makeStartsWithMatcher("test"),
-                    (p, w) -> checkAndUpdate(p, w, STARTSWITH_FILE, STARTSWITH_FILE2));
+                (p, w) -> checkAndUpdate(p, w, STARTSWITH_FILE, STARTSWITH_FILE2));
 
         service.addFileWatchAtStart(DirWatchService.makeEndsWithMatcher("aaaa"),
                 (p, w) -> checkAndUpdate(p, w, ENDSWITH_FILE));
@@ -90,7 +91,8 @@ public class TestDirWatchService extends BaseArrayTestCase {
         service.addExactFileWatch(".oof.", "abcde",
                 (p, w) -> checkAndUpdate(p, w, EXACT_MATCH_FILE, EXACT_MATCH_FILE2));
 
-        // Add a second exact watch pair (one per separator), this should catch both the exact match files so increases the expected results to 8
+        // Add a second exact watch pair (one per separator), this should catch both the exact match files so increases
+        // the expected results to 8
         service.addExactFileWatch(".foo.", "abcde",
                 (p, w) -> checkAndUpdate(p, w, EXACT_MATCH_FILE, EXACT_MATCH_FILE2));
         service.addExactFileWatch(".oof.", "abcde",
@@ -171,7 +173,8 @@ public class TestDirWatchService extends BaseArrayTestCase {
 
     public void testBasicFilesPollFileWatch() throws Exception {
 
-        final String[] expectedResults = {STARTSWITH_FILE, STARTSWITH_FILE2, ENDSWITH_FILE, EXACT_MATCH_FILE, EXACT_MATCH_FILE2, REGEX_MATCH_FILE};
+        final String[] expectedResults = {STARTSWITH_FILE, STARTSWITH_FILE2, ENDSWITH_FILE, EXACT_MATCH_FILE,
+                EXACT_MATCH_FILE2, REGEX_MATCH_FILE};
         Arrays.sort(expectedResults);
 
         final DirWatchService service = new DirWatchService(dir.toString(),
@@ -261,7 +264,8 @@ public class TestDirWatchService extends BaseArrayTestCase {
             assertEquals(6, addedFiles.size());
             assertEquals(6, deletedFiles.size());
 
-            // On Mac sometimes the .delete() modifies a file before deleting it, resulting in a second entry for a file. Remove duplicates from this list before checking.
+            // On Mac sometimes the .delete() modifies a file before deleting it, resulting in a second entry for a
+            // file. Remove duplicates from this list before checking.
             final List<String> modifiedFilesNoDuplicates = modifiedFiles.stream()
                     .distinct()
                     .collect(Collectors.toList());
@@ -328,7 +332,7 @@ public class TestDirWatchService extends BaseArrayTestCase {
         assertFalse(exceptionOccurred);
     }
 
-    private synchronized void checkAndUpdate (Path p, WatchEvent.Kind k, String... fn) {
+    private synchronized void checkAndUpdate(Path p, WatchEvent.Kind k, String... fn) {
         final String s = p.getFileName().toString();
         notify();
         for (final String fileName : fn) {
@@ -353,7 +357,8 @@ public class TestDirWatchService extends BaseArrayTestCase {
     }
 
     @SuppressWarnings("unused")
-    private synchronized void watcherExceptionOccurred (final DirWatchService.ExceptionConsumerParameter consumerParameter) {
+    private synchronized void watcherExceptionOccurred(
+            final DirWatchService.ExceptionConsumerParameter consumerParameter) {
         exceptionOccurred = true;
     }
 

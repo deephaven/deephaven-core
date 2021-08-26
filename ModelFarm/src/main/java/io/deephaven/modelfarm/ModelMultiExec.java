@@ -51,10 +51,10 @@ public class ModelMultiExec<T> implements Model<T> {
 
     @Override
     public void exec(final T data) {
-        synchronized (models.getLock(data)){
+        synchronized (models.getLock(data)) {
             final Iterator<Model<T>> it = models.iterator(data);
 
-            while(it.hasNext()){
+            while (it.hasNext()) {
                 Model<T> m = it.next();
                 m.exec(data);
             }

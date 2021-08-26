@@ -8,6 +8,8 @@ import io.deephaven.db.v2.sources.chunk.Attributes;
 import io.deephaven.db.v2.sources.chunk.Chunk;
 import io.deephaven.db.v2.sources.chunk.ObjectChunk;
 import io.deephaven.db.v2.sources.chunk.WritableChunk;
+import io.deephaven.qst.type.DbGenericArrayType;
+import io.deephaven.qst.type.GenericType;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -20,10 +22,18 @@ public interface DbArray<T> extends DbArrayBase<DbArray<T>> {
 
     long serialVersionUID = 2691131699080413017L;
 
+    static <T> DbGenericArrayType<DbArray, T> type(GenericType<T> genericType) {
+        return DbGenericArrayType.of(DbArray.class, genericType);
+    }
+
     T get(long i);
+
     DbArray<T> subArray(long fromIndexInclusive, long toIndexExclusive);
-    DbArray<T> subArrayByPositions(long [] positions);
+
+    DbArray<T> subArrayByPositions(long[] positions);
+
     T[] toArray();
+
     Class<T> getComponentType();
 
     @Override
@@ -35,7 +45,7 @@ public interface DbArray<T> extends DbArrayBase<DbArray<T>> {
     T getPrev(long offset);
 
     @Override
-    default Chunk<Attributes.Values> toChunk()  {
+    default Chunk<Attributes.Values> toChunk() {
         return ObjectChunk.chunkWrap(toArray());
     }
 
@@ -43,7 +53,7 @@ public interface DbArray<T> extends DbArrayBase<DbArray<T>> {
 
     @Override
     default void fillChunk(WritableChunk destChunk) {
-        destChunk.asWritableObjectChunk().copyFromTypedArray(toArray(), 0, destChunk.size(), (int)size());
+        destChunk.asWritableObjectChunk().copyFromTypedArray(toArray(), 0, destChunk.size(), (int) size());
     }
 
     static String defaultValToString(final Object val) {
@@ -53,7 +63,7 @@ public interface DbArray<T> extends DbArrayBase<DbArray<T>> {
     /**
      * Helper method for implementing {@link Object#toString()}.
      *
-     * @param array       The DbArray to convert to a String
+     * @param array The DbArray to convert to a String
      * @param prefixLength The maximum prefix of the array to convert
      * @return The String representation of array
      */
@@ -82,7 +92,7 @@ public interface DbArray<T> extends DbArrayBase<DbArray<T>> {
      * Helper method for implementing {@link Object#equals(Object)}.
      *
      * @param aArray The LHS of the equality test (always a DbArray)
-     * @param b      The RHS of the equality test
+     * @param b The RHS of the equality test
      * @return Whether the two inputs are equal
      */
     static boolean equals(@NotNull final DbArray aArray, @Nullable final Object b) {

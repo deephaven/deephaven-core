@@ -24,26 +24,32 @@ public abstract class ParquetColumnRegionBase<ATTR extends Any>
 
         // We are making the following assumptions, so these basic functions are inlined rather than virtual calls.
         Require.eq(columnChunkPageStore.mask(), "columnChunkPageStore.mask()", mask(), "ColumnRegion.mask()");
-        Require.eq(columnChunkPageStore.firstRowOffset(), "columnChunkPageStore.firstRowOffset()", firstRowOffset(), "ColumnRegion.firstrRowOffset()");
+        Require.eq(columnChunkPageStore.firstRowOffset(), "columnChunkPageStore.firstRowOffset()", firstRowOffset(),
+                "ColumnRegion.firstrRowOffset()");
     }
 
     @Override
-    public final Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, @NotNull final OrderedKeys orderedKeys) {
+    public final Chunk<? extends ATTR> getChunk(@NotNull final GetContext context,
+            @NotNull final OrderedKeys orderedKeys) {
         return columnChunkPageStore.getChunk(context, orderedKeys);
     }
 
     @Override
-    public final Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, final long firstKey, final long lastKey) {
+    public final Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, final long firstKey,
+            final long lastKey) {
         return columnChunkPageStore.getChunk(context, firstKey, lastKey);
     }
 
     @Override
-    public final void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination, @NotNull final OrderedKeys orderedKeys) {
+    public final void fillChunk(@NotNull final FillContext context,
+            @NotNull final WritableChunk<? super ATTR> destination, @NotNull final OrderedKeys orderedKeys) {
         columnChunkPageStore.fillChunk(context, destination, orderedKeys);
     }
 
     @Override
-    public final void fillChunkAppend(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination, @NotNull final OrderedKeys.Iterator orderedKeysIterator) {
+    public final void fillChunkAppend(@NotNull final FillContext context,
+            @NotNull final WritableChunk<? super ATTR> destination,
+            @NotNull final OrderedKeys.Iterator orderedKeysIterator) {
         columnChunkPageStore.fillChunkAppend(context, destination, orderedKeysIterator);
     }
 

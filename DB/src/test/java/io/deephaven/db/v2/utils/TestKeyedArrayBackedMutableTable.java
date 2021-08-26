@@ -14,6 +14,8 @@ import io.deephaven.db.v2.TableUpdateValidator;
 import io.deephaven.test.junit4.JUnit4LiveTableTestCase;
 import io.deephaven.util.FunctionalInterfaces;
 import junit.framework.TestCase;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +43,8 @@ public class TestKeyedArrayBackedMutableTable {
 
     @Test
     public void testSimple() throws Exception {
-        final Table input = TableTools.newTable(stringCol("Name", "Fred", "George", "Earl"), stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "Wesayso"));
+        final Table input = TableTools.newTable(stringCol("Name", "Fred", "George", "Earl"),
+                stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "Wesayso"));
 
         final KeyedArrayBackedMutableTable kabut = KeyedArrayBackedMutableTable.make(input, "Name");
         final TableUpdateValidator validator = TableUpdateValidator.make("kabut", kabut);
@@ -70,7 +73,8 @@ public class TestKeyedArrayBackedMutableTable {
 
         assertTableEquals(TableTools.merge(input, input3, input4).lastBy("Name"), kabut);
 
-        final Table input5 = TableTools.newTable(stringCol("Name", "George"), stringCol("Employer", "Spacely Sprockets"));
+        final Table input5 =
+                TableTools.newTable(stringCol("Name", "George"), stringCol("Employer", "Spacely Sprockets"));
         handleDelayedRefresh(kabut, () -> mutableInputTable.add(input5));
         TableTools.showWithIndex(kabut);
 
@@ -97,7 +101,8 @@ public class TestKeyedArrayBackedMutableTable {
 
     @Test
     public void testAppendOnly() throws Exception {
-        final Table input = TableTools.newTable(stringCol("Name", "Fred", "George", "Earl"), stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "Wesayso"));
+        final Table input = TableTools.newTable(stringCol("Name", "Fred", "George", "Earl"),
+                stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "Wesayso"));
 
         final AppendOnlyArrayBackedMutableTable aoabmt = AppendOnlyArrayBackedMutableTable.make(input);
         final TableUpdateValidator validator = TableUpdateValidator.make("aoabmt", aoabmt);
@@ -107,10 +112,12 @@ public class TestKeyedArrayBackedMutableTable {
 
         assertTableEquals(input, aoabmt);
 
-        final MutableInputTable mutableInputTable = (MutableInputTable) aoabmt.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
+        final MutableInputTable mutableInputTable =
+                (MutableInputTable) aoabmt.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
         TestCase.assertNotNull(mutableInputTable);
 
-        final Table input2 = TableTools.newTable(stringCol("Name", "Randy", "George"), stringCol("Employer", "USGS", "Cogswell"));
+        final Table input2 =
+                TableTools.newTable(stringCol("Name", "Randy", "George"), stringCol("Employer", "USGS", "Cogswell"));
 
         handleDelayedRefresh(aoabmt, () -> mutableInputTable.add(input2));
         assertTableEquals(TableTools.merge(input, input2), aoabmt);
@@ -118,7 +125,8 @@ public class TestKeyedArrayBackedMutableTable {
 
     @Test
     public void testFilteredAndSorted() throws Exception {
-        final Table input = TableTools.newTable(stringCol("Name", "Fred", "George", "Earl"), stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "Wesayso"));
+        final Table input = TableTools.newTable(stringCol("Name", "Fred", "George", "Earl"),
+                stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "Wesayso"));
 
         final KeyedArrayBackedMutableTable kabut = KeyedArrayBackedMutableTable.make(input, "Name");
         final TableUpdateValidator validator = TableUpdateValidator.make("kabut", kabut);
@@ -140,8 +148,9 @@ public class TestKeyedArrayBackedMutableTable {
     }
 
     @Test
-    public void testAddRows() throws InterruptedException {
-        final Table input = TableTools.newTable(stringCol("Name", "Fred", "George", "Earl"), stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "Wesayso"));
+    public void testAddRows() throws Throwable {
+        final Table input = TableTools.newTable(stringCol("Name", "Fred", "George", "Earl"),
+                stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "Wesayso"));
 
         final KeyedArrayBackedMutableTable kabut = KeyedArrayBackedMutableTable.make(input, "Name");
         final TableUpdateValidator validator = TableUpdateValidator.make("kabut", kabut);
@@ -156,29 +165,29 @@ public class TestKeyedArrayBackedMutableTable {
 
         final Table input2 = TableTools.newTable(stringCol("Name", "Randy"), stringCol("Employer", "USGS"));
 
-        final Map<String, Object> randyMap = CollectionUtil.mapFromArray(String.class, Object.class, "Name", "Randy", "Employer", "USGS");
+        final Map<String, Object> randyMap =
+                CollectionUtil.mapFromArray(String.class, Object.class, "Name", "Randy", "Employer", "USGS");
         final TestStatusListener listener = new TestStatusListener();
         mutableInputTable.addRow(randyMap, true, listener);
         SleepUtil.sleep(100);
-        TestCase.assertFalse(listener.success);
+        listener.assertIncomplete();
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(kabut::refresh);
-        TestCase.assertTrue(listener.success);
         assertTableEquals(TableTools.merge(input, input2), kabut);
+        listener.waitForCompletion();
+        listener.assertSuccess();
 
         // TODO: should we throw the exception from the initial palce, should we defer edit checking to the LTM which
         // would make it consistent, but also slower to produce errors and uglier for reporting?
         final TestStatusListener listener2 = new TestStatusListener();
-        final Map<String, Object> randyMap2 = CollectionUtil.mapFromArray(String.class, Object.class, "Name", "Randy", "Employer", "Tegridy");
+        final Map<String, Object> randyMap2 =
+                CollectionUtil.mapFromArray(String.class, Object.class, "Name", "Randy", "Employer", "Tegridy");
         mutableInputTable.addRow(randyMap2, false, listener2);
         SleepUtil.sleep(100);
-        TestCase.assertFalse(listener2.success);
+        listener2.assertIncomplete();
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(kabut::refresh);
-        listener2.waitForCompletion();
-        TestCase.assertFalse(listener2.success);
-        TestCase.assertNotNull(listener2.error);
-        TestCase.assertEquals(IllegalArgumentException.class, listener2.error.getClass());
-        TestCase.assertEquals("Can not edit keys Randy", listener2.error.getMessage());
         assertTableEquals(TableTools.merge(input, input2), kabut);
+        listener2.waitForCompletion();
+        listener2.assertFailure(IllegalArgumentException.class, "Can not edit keys Randy");
     }
 
     @Test
@@ -196,7 +205,8 @@ public class TestKeyedArrayBackedMutableTable {
         final MutableInputTable mutableInputTable = (MutableInputTable) kabut.getAttribute(Table.INPUT_TABLE_ATTRIBUTE);
         TestCase.assertNotNull(mutableInputTable);
 
-        final Table input2 = TableTools.newTable(stringCol("Name", "George"), stringCol("Employer", "Spacely Sprockets"));
+        final Table input2 =
+                TableTools.newTable(stringCol("Name", "George"), stringCol("Employer", "Spacely Sprockets"));
 
         handleDelayedRefresh(kabut, () -> mutableInputTable.add(input2));
         assertTableEquals(input2, kabut);
@@ -210,7 +220,9 @@ public class TestKeyedArrayBackedMutableTable {
 
     @Test
     public void testSetRows() {
-        final Table input = TableTools.newTable(stringCol("Name", "Fred", "George", "Earl"), stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "Wesayso"), stringCol("Spouse", "Wilma", "Jane", "Fran"));
+        final Table input = TableTools.newTable(stringCol("Name", "Fred", "George", "Earl"),
+                stringCol("Employer", "Slate Rock and Gravel", "Spacely Sprockets", "Wesayso"),
+                stringCol("Spouse", "Wilma", "Jane", "Fran"));
 
         final KeyedArrayBackedMutableTable kabut = KeyedArrayBackedMutableTable.make(input, "Name");
         final TableUpdateValidator validator = TableUpdateValidator.make("kabut", kabut);
@@ -224,9 +236,11 @@ public class TestKeyedArrayBackedMutableTable {
         TestCase.assertNotNull(mutableInputTable);
 
         final Table defaultValues = input.where("Name=`George`");
-        final Table ex2 = TableTools.newTable(stringCol("Name", "George"), stringCol("Employer", "Cogswell"), stringCol("Spouse", "Jane"));
+        final Table ex2 = TableTools.newTable(stringCol("Name", "George"), stringCol("Employer", "Cogswell"),
+                stringCol("Spouse", "Jane"));
 
-        final Map<String, Object> cogMap = CollectionUtil.mapFromArray(String.class, Object.class, "Name", "George", "Employer", "Cogswell");
+        final Map<String, Object> cogMap =
+                CollectionUtil.mapFromArray(String.class, Object.class, "Name", "George", "Employer", "Cogswell");
         mutableInputTable.setRow(defaultValues, 0, cogMap);
         SleepUtil.sleep(100);
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(kabut::refresh);
@@ -238,25 +252,26 @@ public class TestKeyedArrayBackedMutableTable {
         Throwable error = null;
 
         @Override
-        public void onError(Throwable t) {
-            synchronized (this) {
-                if (success || error != null) {
-                    throw new IllegalStateException("Can not complete listener twice!");
-                }
-                error = t;
-                notifyAll();
+        public synchronized void onError(Throwable t) {
+            if (success || error != null) {
+                throw new IllegalStateException("Can not complete listener twice!");
             }
+            error = t;
+            notifyAll();
         }
 
         @Override
-        public void onSuccess() {
-            synchronized (this) {
-                if (success || error != null) {
-                    throw new IllegalStateException("Can not complete listener twice!");
-                }
-                success = true;
-                notifyAll();
+        public synchronized void onSuccess() {
+            if (success || error != null) {
+                throw new IllegalStateException("Can not complete listener twice!");
             }
+            success = true;
+            notifyAll();
+        }
+
+        private synchronized void assertIncomplete() {
+            TestCase.assertFalse(success);
+            TestCase.assertNull(error);
         }
 
         private void waitForCompletion() throws InterruptedException {
@@ -266,9 +281,26 @@ public class TestKeyedArrayBackedMutableTable {
                 }
             }
         }
+
+        private synchronized void assertSuccess() throws Throwable {
+            if (!success) {
+                throw error;
+            }
+        }
+
+        private synchronized void assertFailure(@NotNull final Class<? extends Throwable> errorClass,
+                @Nullable final String errorMessage) {
+            TestCase.assertFalse(success);
+            TestCase.assertNotNull(error);
+            TestCase.assertTrue(errorClass.isAssignableFrom(error.getClass()));
+            if (errorMessage != null) {
+                TestCase.assertEquals(errorMessage, error.getMessage());
+            }
+        }
     }
 
-    private void handleDelayedRefresh(final BaseArrayBackedMutableTable table, final FunctionalInterfaces.ThrowingRunnable<IOException> action) throws Exception {
+    private void handleDelayedRefresh(final BaseArrayBackedMutableTable table,
+            final FunctionalInterfaces.ThrowingRunnable<IOException> action) throws Exception {
         final Thread refreshThread;
         final CountDownLatch gate = new CountDownLatch(1);
 
@@ -294,7 +326,8 @@ public class TestKeyedArrayBackedMutableTable {
         try {
             refreshThread.join();
         } catch (InterruptedException e) {
-            throw new UncheckedDeephavenException("Interrupted unexpectedly while waiting for refresh cycle to complete", e);
+            throw new UncheckedDeephavenException(
+                    "Interrupted unexpectedly while waiting for refresh cycle to complete", e);
         }
     }
 }

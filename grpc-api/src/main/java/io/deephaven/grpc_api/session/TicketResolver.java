@@ -74,7 +74,8 @@ public interface TicketResolver {
      * @param descriptor the flight descriptor to retrieve a ticket for
      * @return a FlightInfo describing this flight
      */
-    SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(@Nullable SessionState session, Flight.FlightDescriptor descriptor);
+    SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(@Nullable SessionState session,
+            Flight.FlightDescriptor descriptor);
 
     /**
      * Create a human readable string to identify this ticket.

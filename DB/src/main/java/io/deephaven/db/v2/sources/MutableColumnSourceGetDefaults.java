@@ -14,7 +14,8 @@ public final class MutableColumnSourceGetDefaults {
     /**
      * Default interface for mutable Object {@link ColumnSource} implementations.
      */
-    public interface ForObject<DATA_TYPE> extends ColumnSourceGetDefaults.ForObject<DATA_TYPE>, MutableColumnSource<DATA_TYPE> {
+    public interface ForObject<DATA_TYPE>
+            extends ColumnSourceGetDefaults.ForObject<DATA_TYPE>, MutableColumnSource<DATA_TYPE> {
 
         @Override
         default Boolean getPrevBoolean(final long index) {
@@ -336,7 +337,8 @@ public final class MutableColumnSourceGetDefaults {
     /**
      * Default interface for mutable long-backed {@link ColumnSource} implementations.
      */
-    public interface LongBacked<DATA_TYPE> extends ColumnSourceGetDefaults.LongBacked<DATA_TYPE>, MutableColumnSource<DATA_TYPE> {
+    public interface LongBacked<DATA_TYPE>
+            extends ColumnSourceGetDefaults.LongBacked<DATA_TYPE>, MutableColumnSource<DATA_TYPE> {
 
         default Boolean getPrevBoolean(final long index) {
             throw new UnsupportedOperationException();

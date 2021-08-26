@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collections;
 import java.util.Map;
 
-public class FreezeByOperator implements IterativeChunkedAggregationOperator  {
+public class FreezeByOperator implements IterativeChunkedAggregationOperator {
     private final WritableSource<?> resultSource;
     private final String name;
     private final FreezeByHelper helper;
@@ -28,32 +28,43 @@ public class FreezeByOperator implements IterativeChunkedAggregationOperator  {
     }
 
     @Override
-    public void addChunk(BucketedContext context, Chunk<? extends Attributes.Values> values, LongChunk<? extends Attributes.KeyIndices> inputIndices, IntChunk<Attributes.KeyIndices> destinations, IntChunk<Attributes.ChunkPositions> startPositions, IntChunk<Attributes.ChunkLengths> length, WritableBooleanChunk<Attributes.Values> stateModified) {
+    public void addChunk(BucketedContext context, Chunk<? extends Attributes.Values> values,
+            LongChunk<? extends Attributes.KeyIndices> inputIndices, IntChunk<Attributes.KeyIndices> destinations,
+            IntChunk<Attributes.ChunkPositions> startPositions, IntChunk<Attributes.ChunkLengths> length,
+            WritableBooleanChunk<Attributes.Values> stateModified) {
         helper.addChunk(values, startPositions, destinations, length);
     }
 
     @Override
-    public void removeChunk(BucketedContext context, Chunk<? extends Attributes.Values> values, LongChunk<? extends Attributes.KeyIndices> inputIndices, IntChunk<Attributes.KeyIndices> destinations, IntChunk<Attributes.ChunkPositions> startPositions, IntChunk<Attributes.ChunkLengths> length, WritableBooleanChunk<Attributes.Values> stateModified) {
-    }
+    public void removeChunk(BucketedContext context, Chunk<? extends Attributes.Values> values,
+            LongChunk<? extends Attributes.KeyIndices> inputIndices, IntChunk<Attributes.KeyIndices> destinations,
+            IntChunk<Attributes.ChunkPositions> startPositions, IntChunk<Attributes.ChunkLengths> length,
+            WritableBooleanChunk<Attributes.Values> stateModified) {}
 
     @Override
-    public void modifyChunk(BucketedContext context, Chunk<? extends Attributes.Values> previousValues, Chunk<? extends Attributes.Values> newValues, LongChunk<? extends Attributes.KeyIndices> postShiftIndices, IntChunk<Attributes.KeyIndices> destinations, IntChunk<Attributes.ChunkPositions> startPositions, IntChunk<Attributes.ChunkLengths> length, WritableBooleanChunk<Attributes.Values> stateModified) {
-    }
+    public void modifyChunk(BucketedContext context, Chunk<? extends Attributes.Values> previousValues,
+            Chunk<? extends Attributes.Values> newValues, LongChunk<? extends Attributes.KeyIndices> postShiftIndices,
+            IntChunk<Attributes.KeyIndices> destinations, IntChunk<Attributes.ChunkPositions> startPositions,
+            IntChunk<Attributes.ChunkLengths> length, WritableBooleanChunk<Attributes.Values> stateModified) {}
 
     @Override
-    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Attributes.Values> values, LongChunk<? extends Attributes.KeyIndices> inputIndices, long destination) {
+    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Attributes.Values> values,
+            LongChunk<? extends Attributes.KeyIndices> inputIndices, long destination) {
         helper.addChunk(values, destination);
         return false;
     }
 
 
     @Override
-    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Attributes.Values> values, LongChunk<? extends Attributes.KeyIndices> inputIndices, long destination) {
+    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Attributes.Values> values,
+            LongChunk<? extends Attributes.KeyIndices> inputIndices, long destination) {
         return false;
     }
 
     @Override
-    public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Attributes.Values> previousValues, Chunk<? extends Attributes.Values> newValues, LongChunk<? extends Attributes.KeyIndices> postShiftIndices, long destination) {
+    public boolean modifyChunk(SingletonContext context, int chunkSize,
+            Chunk<? extends Attributes.Values> previousValues, Chunk<? extends Attributes.Values> newValues,
+            LongChunk<? extends Attributes.KeyIndices> postShiftIndices, long destination) {
         return false;
     }
 
@@ -64,7 +75,7 @@ public class FreezeByOperator implements IterativeChunkedAggregationOperator  {
 
     @Override
     public Map<String, ? extends ColumnSource<?>> getResultColumns() {
-        return Collections.singletonMap(name, (ColumnSource<?>)resultSource);
+        return Collections.singletonMap(name, (ColumnSource<?>) resultSource);
     }
 
     @Override
@@ -73,7 +84,8 @@ public class FreezeByOperator implements IterativeChunkedAggregationOperator  {
     }
 
     @Override
-    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream, @NotNull ReadOnlyIndex newDestinations) {
+    public void propagateUpdates(@NotNull ShiftAwareListener.Update downstream,
+            @NotNull ReadOnlyIndex newDestinations) {
         if (downstream.removed.nonempty()) {
             helper.clearIndex(downstream.removed);
         }
@@ -110,7 +122,8 @@ public class FreezeByOperator implements IterativeChunkedAggregationOperator  {
     }
 
     interface FreezeByHelper {
-        void addChunk(Chunk<? extends Attributes.Values> values, IntChunk<Attributes.ChunkPositions> startPositions, IntChunk<Attributes.KeyIndices> destinations, IntChunk<Attributes.ChunkLengths> length);
+        void addChunk(Chunk<? extends Attributes.Values> values, IntChunk<Attributes.ChunkPositions> startPositions,
+                IntChunk<Attributes.KeyIndices> destinations, IntChunk<Attributes.ChunkLengths> length);
 
         void addChunk(Chunk<? extends Attributes.Values> values, long destination);
 

@@ -58,7 +58,7 @@ public interface PageStore<ATTR extends Attributes.Any, INNER_ATTR extends ATTR,
 
     @Override
     default void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination,
-                           @NotNull final OrderedKeys orderedKeys) {
+            @NotNull final OrderedKeys orderedKeys) {
         if (orderedKeys.size() == 0) {
             return;
         }
@@ -75,8 +75,9 @@ public interface PageStore<ATTR extends Attributes.Any, INNER_ATTR extends ATTR,
     }
 
     @Override
-    default void fillChunkAppend(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination,
-                                 @NotNull final OrderedKeys.Iterator orderedKeysIterator) {
+    default void fillChunkAppend(@NotNull final FillContext context,
+            @NotNull final WritableChunk<? super ATTR> destination,
+            @NotNull final OrderedKeys.Iterator orderedKeysIterator) {
         long firstKey = orderedKeysIterator.peekNextKey();
         final long pageStoreMaxKey = maxRow(firstKey);
 
@@ -88,14 +89,15 @@ public interface PageStore<ATTR extends Attributes.Any, INNER_ATTR extends ATTR,
     }
 
     /**
-     * This is a helper which is the same as a call to {@link #fillChunkAppend}, except that some of the initial
-     * work has already been done for the first call to
+     * This is a helper which is the same as a call to {@link #fillChunkAppend}, except that some of the initial work
+     * has already been done for the first call to
      * {@link Page#fillChunkAppend(FillContext, WritableChunk, OrderedKeys.Iterator)} which we don't want to repeat.
      */
     // Should be private
     @FinalDefault
-    default void doFillChunkAppend(@NotNull final FillContext context, @NotNull final WritableChunk<? super ATTR> destination,
-                                   @NotNull final OrderedKeys orderedKeys, @NotNull final Page<INNER_ATTR> page) {
+    default void doFillChunkAppend(@NotNull final FillContext context,
+            @NotNull final WritableChunk<? super ATTR> destination,
+            @NotNull final OrderedKeys orderedKeys, @NotNull final Page<INNER_ATTR> page) {
         destination.setSize(0);
         try (final OrderedKeys.Iterator orderedKeysIterator = orderedKeys.getOrderedKeysIterator()) {
             page.fillChunkAppend(context, destination, orderedKeysIterator);

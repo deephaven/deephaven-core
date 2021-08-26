@@ -11,8 +11,7 @@ import java.io.Closeable;
 
 public class BrowserStream<T extends BrowserStream.MessageBase> implements Closeable {
     public enum Mode {
-        IN_ORDER,
-        MOST_RECENT
+        IN_ORDER, MOST_RECENT
     }
 
     public static class MessageBase {
@@ -36,8 +35,11 @@ public class BrowserStream<T extends BrowserStream.MessageBase> implements Close
 
     public interface Marshaller<T> {
         void onMessageReceived(T message);
+
         void onCancel();
+
         void onError(Throwable err);
+
         void onCompleted();
     }
 
@@ -73,19 +75,22 @@ public class BrowserStream<T extends BrowserStream.MessageBase> implements Close
     public void onMessageReceived(T message) {
         synchronized (this) {
             if (halfClosedSeq != -1 && message.sequence > halfClosedSeq) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Sequence sent after half close: closed seq=" + halfClosedSeq + " recv seq=" + message.sequence);
+                throw GrpcUtil.statusRuntimeException(Code.ABORTED, "Sequence sent after half close: closed seq="
+                        + halfClosedSeq + " recv seq=" + message.sequence);
             }
 
             if (message.isHalfClosed) {
                 if (halfClosedSeq != -1) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Already half closed: closed seq=" + halfClosedSeq + " recv seq=" + message.sequence);
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                            "Already half closed: closed seq=" + halfClosedSeq + " recv seq=" + message.sequence);
                 }
                 halfClosedSeq = message.sequence;
             }
 
             if (mode == Mode.IN_ORDER) {
                 if (message.sequence < nextSeq) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Duplicate sequence sent: next seq=" + nextSeq + " recv seq=" + message.sequence);
+                    throw GrpcUtil.statusRuntimeException(Code.OUT_OF_RANGE,
+                            "Duplicate sequence sent: next seq=" + nextSeq + " recv seq=" + message.sequence);
                 }
                 boolean queueMsg = false;
                 if (processingMessage) {
@@ -187,7 +192,7 @@ public class BrowserStream<T extends BrowserStream.MessageBase> implements Close
         private static final MessageInfoQueueAdapter INSTANCE = new MessageInfoQueueAdapter();
 
         private static <T extends MessageBase> RAPriQueue.Adapter<T> getInstance() {
-            //noinspection unchecked
+            // noinspection unchecked
             return (RAPriQueue.Adapter<T>) INSTANCE;
         }
 

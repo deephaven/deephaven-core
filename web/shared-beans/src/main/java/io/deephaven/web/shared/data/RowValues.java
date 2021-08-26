@@ -11,8 +11,7 @@ public class RowValues implements Serializable {
 
     private ColumnValue[] columns;
 
-    public RowValues() {
-    }
+    public RowValues() {}
 
     public RowValues(ColumnValue... values) {
         columns = values;
@@ -29,7 +28,7 @@ public class RowValues implements Serializable {
     @Override
     public String toString() {
         return "RowValues{" +
-            "columns=" + Arrays.toString(columns) + '}';
+                "columns=" + Arrays.toString(columns) + '}';
     }
 
     public boolean isEmpty() {

@@ -7,15 +7,18 @@ public interface ReverseLookup {
     /**
      * Gets the index value where key exists in the table, or the no-entry-value if it is not found in the table.
      *
-     * @param key a single object for a single column, or a {@link io.deephaven.datastructures.util.SmartKey} for multiple columns
+     * @param key a single object for a single column, or a {@link io.deephaven.datastructures.util.SmartKey} for
+     *        multiple columns
      * @return the row index where key exists in the table
      */
     long get(Object key);
 
     /**
-     * Gets the index value where key previously in the table, or the no-entry-value if it is was not found in the table.
+     * Gets the index value where key previously in the table, or the no-entry-value if it is was not found in the
+     * table.
      *
-     * @param key a single object for a single column, or a {@link io.deephaven.datastructures.util.SmartKey} for multiple columns
+     * @param key a single object for a single column, or a {@link io.deephaven.datastructures.util.SmartKey} for
+     *        multiple columns
      *
      * @return the row index where key previously existed in the table
      */

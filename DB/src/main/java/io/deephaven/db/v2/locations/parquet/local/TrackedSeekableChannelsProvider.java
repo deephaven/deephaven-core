@@ -43,14 +43,17 @@ public class TrackedSeekableChannelsProvider implements SeekableChannelsProvider
     }
 
     @Override
-    public final SeekableByteChannel getWriteChannel(@NotNull final Path filePath, final boolean append) throws IOException {
+    public final SeekableByteChannel getWriteChannel(@NotNull final Path filePath, final boolean append)
+            throws IOException {
         // NB: I'm not sure this is actually the intended behavior; the "truncate-once" is per-handle, not per file.
-        return new TrackedSeekableByteChannel(append ? fileHandleFactory.writeAppendCreateHandleCreator : new TruncateOnceFileCreator(fileHandleFactory), filePath.toFile());
+        return new TrackedSeekableByteChannel(append ? fileHandleFactory.writeAppendCreateHandleCreator
+                : new TruncateOnceFileCreator(fileHandleFactory), filePath.toFile());
     }
 
     private static final class TruncateOnceFileCreator implements FileHandleFactory.FileToHandleFunction {
 
-        private static final AtomicIntegerFieldUpdater<TruncateOnceFileCreator> FIRST_TIME_UPDATER = AtomicIntegerFieldUpdater.newUpdater(TruncateOnceFileCreator.class, "firstTime");
+        private static final AtomicIntegerFieldUpdater<TruncateOnceFileCreator> FIRST_TIME_UPDATER =
+                AtomicIntegerFieldUpdater.newUpdater(TruncateOnceFileCreator.class, "firstTime");
         private static final int FIRST_TIME_TRUE = 1;
         private static final int FIRST_TIME_FALSE = 0;
 

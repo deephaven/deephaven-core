@@ -14,9 +14,24 @@ import java.util.Random;
 @SuppressWarnings({"RedundantStringConstructorCall", "JUnit4AnnotatedMethodInJUnit3TestCase"})
 public class TestKeyedObjectCache extends TestCase {
 
-    private static final KeyedObjectKey<Object, Object> KEY = new KeyedObjectKey.Basic<Object, Object>() { @Override public Object getKey(Object o) { return o; } };
-    private static final Procedure.Unary<Object> POST = new Procedure.Unary<Object>() { @Override public void call(Object arg) { lastPost = arg; } };
-    private static final Random RANDOM = new Random() { @Override public int nextInt(int n) { return nextInt; } };
+    private static final KeyedObjectKey<Object, Object> KEY = new KeyedObjectKey.Basic<Object, Object>() {
+        @Override
+        public Object getKey(Object o) {
+            return o;
+        }
+    };
+    private static final Procedure.Unary<Object> POST = new Procedure.Unary<Object>() {
+        @Override
+        public void call(Object arg) {
+            lastPost = arg;
+        }
+    };
+    private static final Random RANDOM = new Random() {
+        @Override
+        public int nextInt(int n) {
+            return nextInt;
+        }
+    };
 
     private static Object lastPost = null;
     private static int nextInt = 0;

@@ -7,21 +7,20 @@ import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.Viewport;
 
 /**
- * An active binding describes the link between a {@link JsTable} and the
- * {@link ClientTableState} it is currently using.
+ * An active binding describes the link between a {@link JsTable} and the {@link ClientTableState} it is currently
+ * using.
  *
- * Each JsTable can only have one ActiveTableBinding; in order to get a new one,
- * you must "lose" your current one (note the private constructor).
+ * Each JsTable can only have one ActiveTableBinding; in order to get a new one, you must "lose" your current one (note
+ * the private constructor).
  *
  * This allows us to control transitions to/from an active state.
  *
- * Currently, the new state is created and a new binding built off of it, then the
- * old binding is paused.
+ * Currently, the new state is created and a new binding built off of it, then the old binding is paused.
  *
  * Equality semantics of this object are based solely on the JsTable object identity.
  *
- * Instances of these objects start life in the constructor of {@link JsTable}.
- * From there, the only way to get a new one is to tell the old one to change state.
+ * Instances of these objects start life in the constructor of {@link JsTable}. From there, the only way to get a new
+ * one is to tell the old one to change state.
  *
  */
 public class ActiveTableBinding implements HasTableState<ClientTableState> {
@@ -41,9 +40,8 @@ public class ActiveTableBinding implements HasTableState<ClientTableState> {
     private final ClientTableState state;
 
     /**
-     * This instance's one and only "paused form".
-     * We tightly control instances of these,
-     * so you can put them into a JsMap / IdentityHashMap.
+     * This instance's one and only "paused form". We tightly control instances of these, so you can put them into a
+     * JsMap / IdentityHashMap.
      */
     private final PausedTableBinding paused;
 
@@ -52,12 +50,11 @@ public class ActiveTableBinding implements HasTableState<ClientTableState> {
     /**
      * Our source state in a "paused form".
      *
-     * Note that this is "paused with respect to a given table";
-     * a given {@link ClientTableState} can have many concurrent
-     * Paused|ActiveTableBindings.
+     * Note that this is "paused with respect to a given table"; a given {@link ClientTableState} can have many
+     * concurrent Paused|ActiveTableBindings.
      *
-     * Note that all paused|active connected bindings should share the same table.
-     * When a new table copy is made, the new table must copy all bindings to the new table.
+     * Note that all paused|active connected bindings should share the same table. When a new table copy is made, the
+     * new table must copy all bindings to the new table.
      */
     private PausedTableBinding rollback;
     private Viewport viewport;
@@ -66,9 +63,8 @@ public class ActiveTableBinding implements HasTableState<ClientTableState> {
     private boolean subscriptionPending;
 
     private ActiveTableBinding(
-        JsTable table,
-        ClientTableState state
-    ) {
+            JsTable table,
+            ClientTableState state) {
         this.table = table;
         this.state = state;
         paused = new PausedTableBinding(this);
@@ -115,7 +111,7 @@ public class ActiveTableBinding implements HasTableState<ClientTableState> {
                 }
             }
         } else {
-            newSub = ((PausedTableBinding)existing).getActiveBinding();
+            newSub = ((PausedTableBinding) existing).getActiveBinding();
             newState.unpause(table);
         }
         return newSub;
@@ -142,7 +138,7 @@ public class ActiveTableBinding implements HasTableState<ClientTableState> {
         // so we wind up using the object itself in map keys,
         // ensure we pin lots of memory even if client code would have GC'ed. :'(
         return getClass() == o.getClass() &&
-            (table == ((ActiveTableBinding)o).table);
+                (table == ((ActiveTableBinding) o).table);
     }
 
     @Override
@@ -151,7 +147,8 @@ public class ActiveTableBinding implements HasTableState<ClientTableState> {
     }
 
     public void setRollback(PausedTableBinding rollback) {
-        assert rollback == null || rollback.getState().getResolution() == ClientTableState.ResolutionState.RUNNING : "Can't use binding as rollback if it is in state " + rollback.getState().getResolution();
+        assert rollback == null || rollback.getState().getResolution() == ClientTableState.ResolutionState.RUNNING
+                : "Can't use binding as rollback if it is in state " + rollback.getState().getResolution();
         this.rollback = rollback;
     }
 
@@ -159,12 +156,12 @@ public class ActiveTableBinding implements HasTableState<ClientTableState> {
         assert state.getActiveBinding(table) == null : "Cannot create binding for table more than once";
         final ActiveTableBinding sub = new ActiveTableBinding(table, state);
         if (!state.isRunning()) {
-            state.onFailed(e->{
+            state.onFailed(e -> {
                 if (table.isClosed()) {
                     return;
                 }
                 // State failed; rollback if needed.
-                if (table.getBinding() == sub){
+                if (table.getBinding() == sub) {
                     // we were the head of the table, go back and find a good node
                     sub.rollback();
                     sub.setRollback(null);
@@ -191,12 +188,12 @@ public class ActiveTableBinding implements HasTableState<ClientTableState> {
                 table.setState(rollback.getState());
                 break;
             case FAILED:
-                // we are a failed state.  Keep rolling back.
+                // we are a failed state. Keep rolling back.
                 rollback.rollback();
                 break;
             case RESOLVED:
             case UNRESOLVED:
-                // our rollback is in a pending state.  Update the table's expected state
+                // our rollback is in a pending state. Update the table's expected state
                 // so that our rollback will act as the master binding when it resolves.
                 table.setState(rollback.getState());
                 break;

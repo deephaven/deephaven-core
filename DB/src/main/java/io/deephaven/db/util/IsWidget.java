@@ -64,7 +64,7 @@ public class IsWidget {
     public static String[] getLiveWidgetVisibility(final Object object) {
         if (object instanceof LiveWidgetVisibilityProvider) {
             return ((LiveWidgetVisibilityProvider) object).getValidGroups();
-        } else if(object instanceof PyObject) {
+        } else if (object instanceof PyObject) {
             final PyObject pyObject = (PyObject) object;
             boolean isWidget = pyObject.hasAttribute(GET_WIDGET_VISIBILITY_ATTRIBUTE);
             if (isWidget) {
@@ -76,7 +76,8 @@ public class IsWidget {
                     }
                 }
             } else {
-                throw new StateException("PyObject " + object + " isLiveWidgetVisibilityProvider, but has no attribute " + GET_WIDGET_VISIBILITY_ATTRIBUTE);
+                throw new StateException("PyObject " + object + " isLiveWidgetVisibilityProvider, but has no attribute "
+                        + GET_WIDGET_VISIBILITY_ATTRIBUTE);
             }
         }
 
@@ -98,7 +99,7 @@ public class IsWidget {
     public static Table getTable(Object value) {
         if (value instanceof Table) {
             return (Table) value;
-        } else if(value instanceof PyObject) {
+        } else if (value instanceof PyObject) {
             return getTable((PyObject) value);
         }
         throw new OperationException("Can not convert value=" + value + " to a Table.");

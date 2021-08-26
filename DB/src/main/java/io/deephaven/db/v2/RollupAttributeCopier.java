@@ -7,7 +7,10 @@ import io.deephaven.db.v2.by.ByExternalChunkedOperator;
  * Copies attributes for constituent leafs or intermediate level rollups.
  */
 public class RollupAttributeCopier {
-    /** When creating constituent leaves, we set the appropriate TableMap and reverse lookup on each leaf we are creating. */
+    /**
+     * When creating constituent leaves, we set the appropriate TableMap and reverse lookup on each leaf we are
+     * creating.
+     */
     public final static ByExternalChunkedOperator.AttributeCopier LEAF_WITHCONSTITUENTS_INSTANCE = (pt, st) -> {
         pt.copyAttributes(st, BaseTable.CopyAttributeOperation.ByExternal);
         st.setAttribute(Table.ROLLUP_LEAF_ATTRIBUTE, RollupInfo.LeafType.Constituent);

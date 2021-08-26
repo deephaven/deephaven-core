@@ -26,7 +26,7 @@ import static io.deephaven.db.v2.TstUtils.initColumnInfos;
 
 public class TestTimeSeriesFilter extends LiveTableTestCase {
     public void testSimple() {
-        DBDateTime [] times = new DBDateTime[10];
+        DBDateTime[] times = new DBDateTime[10];
 
         final long startTime = System.currentTimeMillis() - (10 * times.length);
         for (int ii = 0; ii < times.length; ++ii) {
@@ -76,19 +76,23 @@ public class TestTimeSeriesFilter extends LiveTableTestCase {
         int size = 100;
         final Date startDate = format.parse("2015-03-23");
         Date endDate = format.parse("2015-03-24");
-        final QueryTable table = getTable(size, random, columnInfo = initColumnInfos(new String[]{"Date", "C1"},
+        final QueryTable table = getTable(size, random, columnInfo = initColumnInfos(new String[] {"Date", "C1"},
                 new TstUtils.DateGenerator(startDate, endDate),
                 new TstUtils.IntGenerator(1, 100)));
 
-        final UnitTestTimeSeriesFilter unitTestTimeSeriesFilter = new UnitTestTimeSeriesFilter(startDate.getTime(), "Date", "01:00:00");
+        final UnitTestTimeSeriesFilter unitTestTimeSeriesFilter =
+                new UnitTestTimeSeriesFilter(startDate.getTime(), "Date", "01:00:00");
         final ArrayList<WeakReference<UnitTestTimeSeriesFilter>> filtersToRefresh = new ArrayList<>();
 
-        EvalNugget en[] = new EvalNugget[]{
+        EvalNugget en[] = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
-                        UnitTestTimeSeriesFilter unitTestTimeSeriesFilter1 = new UnitTestTimeSeriesFilter(unitTestTimeSeriesFilter);
+                        UnitTestTimeSeriesFilter unitTestTimeSeriesFilter1 =
+                                new UnitTestTimeSeriesFilter(unitTestTimeSeriesFilter);
                         filtersToRefresh.add(new WeakReference<>(unitTestTimeSeriesFilter1));
-                        return LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.update("Date=new DBDateTime(Date.getTime() * 1000000L)").where(unitTestTimeSeriesFilter1));
+                        return LiveTableMonitor.DEFAULT.exclusiveLock()
+                                .computeLocked(() -> table.update("Date=new DBDateTime(Date.getTime() * 1000000L)")
+                                        .where(unitTestTimeSeriesFilter1));
                     }
                 },
         };

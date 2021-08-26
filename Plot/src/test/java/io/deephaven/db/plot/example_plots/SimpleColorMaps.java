@@ -45,7 +45,7 @@ public class SimpleColorMaps {
                 .plot("Test1", x, y)
                 .pointColorByY(val -> heatMap(0, 50, green, red).apply(val));
 
-        Range[] ranges = new Range[]{
+        Range[] ranges = new Range[] {
                 new Range(Double.NEGATIVE_INFINITY, 10, true, false),
                 new Range(10, 30, true, false),
                 new Range(30, Double.POSITIVE_INFINITY, true, true)};

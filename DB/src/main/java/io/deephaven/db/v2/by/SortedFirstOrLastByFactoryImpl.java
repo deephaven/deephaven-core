@@ -16,10 +16,11 @@ public class SortedFirstOrLastByFactoryImpl extends IterativeIndexStateFactory i
     final private boolean minimum;
 
     SortedFirstOrLastByFactoryImpl(boolean minimum, String... sortColumnNames) {
-        this(minimum,false, false, 0, sortColumnNames);
+        this(minimum, false, false, 0, sortColumnNames);
     }
 
-    SortedFirstOrLastByFactoryImpl(boolean minimum, boolean firstRollup, boolean secondRollup, int rollupIdentifier, String... sortColumnNames) {
+    SortedFirstOrLastByFactoryImpl(boolean minimum, boolean firstRollup, boolean secondRollup, int rollupIdentifier,
+            String... sortColumnNames) {
         super(firstRollup, secondRollup, rollupIdentifier);
         Require.gtZero(sortColumnNames.length, "sortColumnNames.length");
         this.sortColumnNames = sortColumnNames;
@@ -32,7 +33,7 @@ public class SortedFirstOrLastByFactoryImpl extends IterativeIndexStateFactory i
 
     private static final class MemoKey implements AggregationMemoKey {
         private final boolean minimum;
-        private final String [] sortColumnNames;
+        private final String[] sortColumnNames;
 
         private MemoKey(boolean minimum, String[] sortColumnNames) {
             this.minimum = minimum;
@@ -41,8 +42,10 @@ public class SortedFirstOrLastByFactoryImpl extends IterativeIndexStateFactory i
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
             final MemoKey memoKey = (MemoKey) o;
             return minimum == memoKey.minimum &&
                     Arrays.equals(sortColumnNames, memoKey.sortColumnNames);

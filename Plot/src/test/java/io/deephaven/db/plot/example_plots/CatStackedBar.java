@@ -29,8 +29,7 @@ public class CatStackedBar {
                 .catPlot("Test1", x1, y1).gradientVisible(true)
                 .catPlot("Test2", x2, y2)
                 .catPlot("Test3", x3, y3).group(2)
-                .yTicks(new double[]{1,5})
-                ;
+                .yTicks(new double[] {1, 5});
 
         ExamplePlotUtils.display(axs);
     }

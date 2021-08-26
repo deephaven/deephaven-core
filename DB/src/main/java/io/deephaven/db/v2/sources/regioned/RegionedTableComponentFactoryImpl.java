@@ -39,8 +39,7 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
 
     public static final RegionedTableComponentFactory INSTANCE = new RegionedTableComponentFactoryImpl();
 
-    private RegionedTableComponentFactoryImpl() {
-    }
+    private RegionedTableComponentFactoryImpl() {}
 
     @Override
     public ColumnSourceManager createColumnSourceManager(
@@ -54,22 +53,22 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
      * Create a new {@link RegionedColumnSource} appropriate to implement the supplied {@link ColumnDefinition}.
      *
      * @param columnDefinition The column definition
-     * @param <DATA_TYPE>      The data type of the column
+     * @param <DATA_TYPE> The data type of the column
      * @return A new RegionedColumnSource.
      */
     @SuppressWarnings("unchecked")
     @Override
     public <DATA_TYPE> RegionedColumnSource<DATA_TYPE> createRegionedColumnSource(
             @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition,
-            @NotNull final ColumnToCodecMappings codecMappings
-    ) {
+            @NotNull final ColumnToCodecMappings codecMappings) {
         Class<DATA_TYPE> dataType = TypeUtils.getBoxedType(columnDefinition.getDataType());
 
         if (columnDefinition.isPartitioning()) {
             return PartitioningSourceFactory.makePartitioningSource(dataType);
         }
 
-        final Supplier<RegionedColumnSource<?>> simpleImplementationSupplier = SIMPLE_DATA_TYPE_TO_REGIONED_COLUMN_SOURCE_SUPPLIER.get(dataType);
+        final Supplier<RegionedColumnSource<?>> simpleImplementationSupplier =
+                SIMPLE_DATA_TYPE_TO_REGIONED_COLUMN_SOURCE_SUPPLIER.get(dataType);
         if (simpleImplementationSupplier != null) {
             return (RegionedColumnSource<DATA_TYPE>) simpleImplementationSupplier.get();
         }
@@ -81,7 +80,8 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
                 return new RegionedColumnSourceObject.AsValues<>(dataType, columnDefinition.getComponentType());
             }
         } catch (IllegalArgumentException except) {
-            throw new UnsupportedOperationException("Can't create column for " + dataType + " in column definition " + columnDefinition, except);
+            throw new UnsupportedOperationException(
+                    "Can't create column for " + dataType + " in column definition " + columnDefinition, except);
         }
     }
 }

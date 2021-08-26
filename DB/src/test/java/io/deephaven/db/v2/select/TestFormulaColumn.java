@@ -41,11 +41,12 @@ import static junit.framework.TestCase.*;
 @Category(OutOfBandTest.class)
 public class TestFormulaColumn {
 
-    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance().getBooleanForClassWithDefault(TestFormulaColumn.class, "CompilerTools.logEnabled", false);
+    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
+            .getBooleanForClassWithDefault(TestFormulaColumn.class, "CompilerTools.logEnabled", false);
 
     @Parameterized.Parameters(name = "useKernelFormulasProperty = {0}")
     public static Collection<Object[]> data() {
-        return Arrays.asList(new Object[][] { new Object[] { false }, new Object[] { true } });
+        return Arrays.asList(new Object[][] {new Object[] {false}, new Object[] {true}});
     }
 
     private final Table testDataTable;
@@ -81,7 +82,7 @@ public class TestFormulaColumn {
         DhFormulaColumn.useKernelFormulasProperty = kernelFormulasSavedValue;
     }
 
-    //---------- TESTS
+    // ---------- TESTS
 
     @SuppressWarnings("RedundantCast")
     @Test
@@ -135,12 +136,12 @@ public class TestFormulaColumn {
     }
 
     /**
-     * FormulaColumns never return boxed types (except Boolean). If the formula itself evaluates to a boxed type,
-     * it will be unboxed.
+     * FormulaColumns never return boxed types (except Boolean). If the formula itself evaluates to a boxed type, it
+     * will be unboxed.
      */
     @Test
     public void testReturnUnboxedType() {
-        for(int row=0;row<testDataTable.size();row++) {
+        for (int row = 0; row < testDataTable.size(); row++) {
             checkPrimitive(row, "new Byte(ByteCol)", DBLanguageFunctionUtil.byteCast(BASE_VALUES[row]));
             checkPrimitive(row, "new Short(ShortCol)", DBLanguageFunctionUtil.shortCast(BASE_VALUES[row]));
             checkPrimitive(row, "new Character(CharCol)", DBLanguageFunctionUtil.charCast(BASE_VALUES[row]));
@@ -174,22 +175,22 @@ public class TestFormulaColumn {
 
     @Test
     public void testArrayEvaluation() {
-        check(1, "ByteCol_[i - 1]", (byte)BASE_VALUES[0]);
-        check(1, "ShortCol_[i - 1]", (short)BASE_VALUES[0]);
-        check(1, "CharCol_[i - 1]", (char)BASE_VALUES[0]);
-        check(1, "IntCol_[i - 1]", (int)BASE_VALUES[0]);
-        check(1, "LongCol_[i - 1]", (long)BASE_VALUES[0]);
-        check(1, "FloatCol_[i - 1]", (float)BASE_VALUES[0]);
-        check(1, "DoubleCol_[i - 1]", (double)BASE_VALUES[0]);
+        check(1, "ByteCol_[i - 1]", (byte) BASE_VALUES[0]);
+        check(1, "ShortCol_[i - 1]", (short) BASE_VALUES[0]);
+        check(1, "CharCol_[i - 1]", (char) BASE_VALUES[0]);
+        check(1, "IntCol_[i - 1]", (int) BASE_VALUES[0]);
+        check(1, "LongCol_[i - 1]", (long) BASE_VALUES[0]);
+        check(1, "FloatCol_[i - 1]", (float) BASE_VALUES[0]);
+        check(1, "DoubleCol_[i - 1]", (double) BASE_VALUES[0]);
         check(1, "BooleanCol_[i - 1]", false);
 
-        check(1, "ByteCol_[i]", (byte)BASE_VALUES[1]);
-        check(1, "ShortCol_[i]", (short)BASE_VALUES[1]);
-        check(1, "CharCol_[i]", (char)BASE_VALUES[1]);
-        check(1, "IntCol_[i]", (int)BASE_VALUES[1]);
-        check(1, "LongCol_[i]", (long)BASE_VALUES[1]);
-        check(1, "FloatCol_[i]", (float)BASE_VALUES[1]);
-        check(1, "DoubleCol_[i]", (double)BASE_VALUES[1]);
+        check(1, "ByteCol_[i]", (byte) BASE_VALUES[1]);
+        check(1, "ShortCol_[i]", (short) BASE_VALUES[1]);
+        check(1, "CharCol_[i]", (char) BASE_VALUES[1]);
+        check(1, "IntCol_[i]", (int) BASE_VALUES[1]);
+        check(1, "LongCol_[i]", (long) BASE_VALUES[1]);
+        check(1, "FloatCol_[i]", (float) BASE_VALUES[1]);
+        check(1, "DoubleCol_[i]", (double) BASE_VALUES[1]);
         check(1, "BooleanCol_[i]", true);
     }
 
@@ -218,7 +219,7 @@ public class TestFormulaColumn {
      */
     @Test
     public void testResolution() {
-        for(int row=0;row<testDataTable.size();row++) {
+        for (int row = 0; row < testDataTable.size(); row++) {
             String expression = "Math.sqrt(5.0)";
             Object result = Math.sqrt(5.0);
             checkPrimitive(row, expression, result);
@@ -268,35 +269,35 @@ public class TestFormulaColumn {
         }
     }
 
-//    // TODO: Make this test pass.
-//    public void testMethodNameUsedInFormulaClass1() {
-//        /* A Formula's local "get() method will take precedence over one made available in a static import;
-//           the parser should ensure that a method from a static import will not be masked by methods in
-//           a generated Formula class.
-//           (JLS 15.12.1; https://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.12.1)
-//         */
-//        QueryLibrary.importStatic(TestFormulaColumnAuxiliaryClass1.class);
-//        String expression = "get(27L)";
-//        checkPrimitive(0, expression, 27L);
-//    }
-//
-//    // TODO: Make this test pass.
-//    public void testMethodNameUsedInFormulaClass2() {
-//        /* A Formula's local "get() method will take precedence over one made available in a static import;
-//           the parser should ensure that a method from a static import will not be masked by methods in
-//           a generated Formula class.
-//           (JLS 15.12.1; https://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.12.1)
-//         */
-//        QueryLibrary.importStatic(TestFormulaColumnAuxiliaryClass2.class);
-//        String expression = "get(27L)";
-//        checkPrimitive(0, expression, 27L);
-//    }
+    // // TODO: Make this test pass.
+    // public void testMethodNameUsedInFormulaClass1() {
+    // /* A Formula's local "get() method will take precedence over one made available in a static import;
+    // the parser should ensure that a method from a static import will not be masked by methods in
+    // a generated Formula class.
+    // (JLS 15.12.1; https://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.12.1)
+    // */
+    // QueryLibrary.importStatic(TestFormulaColumnAuxiliaryClass1.class);
+    // String expression = "get(27L)";
+    // checkPrimitive(0, expression, 27L);
+    // }
+    //
+    // // TODO: Make this test pass.
+    // public void testMethodNameUsedInFormulaClass2() {
+    // /* A Formula's local "get() method will take precedence over one made available in a static import;
+    // the parser should ensure that a method from a static import will not be masked by methods in
+    // a generated Formula class.
+    // (JLS 15.12.1; https://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.12.1)
+    // */
+    // QueryLibrary.importStatic(TestFormulaColumnAuxiliaryClass2.class);
+    // String expression = "get(27L)";
+    // checkPrimitive(0, expression, 27L);
+    // }
 
     @Test
     public void testObjectConstruction() {
         String expression;
         Object result;
-        for(int row=0;row<testDataTable.size();row++) {
+        for (int row = 0; row < testDataTable.size(); row++) {
             expression = "new Integer(IntCol)";
             result = BASE_VALUES[row];
             check(row, expression, (int) result); // note that formula always return unboxed types
@@ -310,7 +311,7 @@ public class TestFormulaColumn {
             check(row, expression, result);
 
             expression = "new String(new char[] { 'a', 'b', 'c', 'd', 'e' }, 1, 4)";
-            result = new String(new char[]{'a', 'b', 'c', 'd', 'e'}, 1, 4);
+            result = new String(new char[] {'a', 'b', 'c', 'd', 'e'}, 1, 4);
             check(row, expression, result);
 
             expression = "new HashSet()";
@@ -383,7 +384,7 @@ public class TestFormulaColumn {
             assertEquals((double) QUERYSCOPE_OBJ_BASE_VALUE, result);
         }
 
-        {   // Ensure there are no NPEs from unboxing while evaluating a formula.
+        { // Ensure there are no NPEs from unboxing while evaluating a formula.
             FormulaColumn formulaColumn = FormulaColumn.createFormulaColumn("Foo", "(Double)null");
             formulaColumn.initDef(availableColumns);
             result = formulaColumn.getDataView().getDouble(0);
@@ -401,14 +402,16 @@ public class TestFormulaColumn {
         for (int i = 0; i < io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES.size(); i++) {
             final Class sourceType = primitiveTypes.get(i);
             final String sourceTypeName = sourceType.getName();
-            final String sourceColName = Character.toUpperCase(sourceTypeName.charAt(0)) + sourceTypeName.substring(1) + "Col";
+            final String sourceColName =
+                    Character.toUpperCase(sourceTypeName.charAt(0)) + sourceTypeName.substring(1) + "Col";
 
             for (int j = 0; j < io.deephaven.util.type.TypeUtils.PRIMITIVE_TYPES.size(); j++) {
                 final Class destType = primitiveTypes.get(j);
                 final String destTypeName = destType.getName();
 
                 String expression = "(" + destTypeName + ")" + sourceColName; // e.g. "TestCast=(int)myShortObj"
-                final Object[] expectedResults = new Object[testDataTable.intSize("TestFormulaColumn.testPrimitiveCasts")];
+                final Object[] expectedResults =
+                        new Object[testDataTable.intSize("TestFormulaColumn.testPrimitiveCasts")];
                 if (destType == boolean.class) {
                     expectedResults[0] = false;
                     expectedResults[1] = true;
@@ -421,18 +424,19 @@ public class TestFormulaColumn {
 
                 for (int row = 0; row < testDataTable.size(); row++) {
                     try {
-                        if (  // booleans can only be cast to/from booleans; should be a compile time exception otherwise
-                                sourceType == boolean.class ^ destType == boolean.class
-                                        // also, we should hit a runtime exception casting null to boolean (NPE while unboxing)
-                                        || (sourceType == boolean.class && row == NULL_ROW_INDEX)
-                                ) {
+                        if ( // booleans can only be cast to/from booleans; should be a compile time exception otherwise
+                        sourceType == boolean.class ^ destType == boolean.class
+                                // also, we should hit a runtime exception casting null to boolean (NPE while unboxing)
+                                || (sourceType == boolean.class && row == NULL_ROW_INDEX)) {
                             checkExpectingException(row, expression);
                         } else {
                             checkPrimitive(row, expression, expectedResults[row]);
                         }
                     } catch (Throwable ex) {
-                        throw new RuntimeException("Failed testing cast of " + sourceType.getName() + " to " + destType.getName() +
-                                " (i=" + i + ", j=" + j + ", row=" + row + "). Formula:\n" + expression, ex);
+                        throw new RuntimeException(
+                                "Failed testing cast of " + sourceType.getName() + " to " + destType.getName() +
+                                        " (i=" + i + ", j=" + j + ", row=" + row + "). Formula:\n" + expression,
+                                ex);
                     }
                 }
             }
@@ -451,7 +455,8 @@ public class TestFormulaColumn {
             final Class sourceType = boxedTypes.get(i);
             final String sourceTypeName = sourceType.getSimpleName();
             final String unboxedSourceTypeName = io.deephaven.util.type.TypeUtils.getUnboxedType(sourceType).getName();
-            final String unboxedSourceTypeNameProperCase = Character.toUpperCase(unboxedSourceTypeName.charAt(0)) + unboxedSourceTypeName.substring(1);
+            final String unboxedSourceTypeNameProperCase =
+                    Character.toUpperCase(unboxedSourceTypeName.charAt(0)) + unboxedSourceTypeName.substring(1);
             final String sourceColName = unboxedSourceTypeNameProperCase + "Col";
             final String boxedTypeConstructorCall = "new " + sourceTypeName + '(' + sourceColName + ')';
 
@@ -477,13 +482,16 @@ public class TestFormulaColumn {
                     expectedResults[2] = getBoxedBaseVal(2, destType);
 
                     boxedTypeNullPointer = '(' + sourceTypeName + ")null"; // e.g. "(Byte)null"
-                    boxedQueryConstantsNull = "new " + sourceTypeName + "(NULL_" + unboxedSourceTypeName.toUpperCase() + ')'; // e.g. new Byte(NULL_BYTE)
+                    boxedQueryConstantsNull =
+                            "new " + sourceTypeName + "(NULL_" + unboxedSourceTypeName.toUpperCase() + ')'; // e.g. new
+                                                                                                            // Byte(NULL_BYTE)
                 }
 
                 boolean compileTimeUnsupportedConversion =
                         // only unboxing or unboxing+widening is allowed; i > j means i wider than j
                         i > j
-                                // Booleans, and only Booleans, can be unboxed to booleans. Should be a parse exception otherwise
+                                // Booleans, and only Booleans, can be unboxed to booleans. Should be a parse exception
+                                // otherwise
                                 || sourceType == Boolean.class ^ destType == boolean.class
                                 // also, Byte/Short can't be cast to char
                                 || destType == char.class && (sourceType == Byte.class || sourceType == Short.class);
@@ -493,7 +501,9 @@ public class TestFormulaColumn {
                         try {
                             if (compileTimeUnsupportedConversion) {
                                 checkExpectingParseException(row, expression);
-                            } else if (sourceType == Boolean.class && row == NULL_ROW_INDEX) { // unboxing null reference causes runtime NPE
+                            } else if (sourceType == Boolean.class && row == NULL_ROW_INDEX) { // unboxing null
+                                                                                               // reference causes
+                                                                                               // runtime NPE
                                 checkExpectingException(row, NullPointerException.class, expression);
                             } else {
                                 checkPrimitive(row, expression, expectedResults[row]);
@@ -505,7 +515,8 @@ public class TestFormulaColumn {
 
                     if (!compileTimeUnsupportedConversion && !sourceType.equals(Boolean.class)) {
                         // Test unboxing a boxed QueryConstants null value. This should unbox, then convert.
-                        // Thus we should have: (short)new Integer(NULL_INT) --> shortCast(intCast(new Integer(NULL_INT))) --> NULL_SHORT
+                        // Thus we should have: (short)new Integer(NULL_INT) --> shortCast(intCast(new
+                        // Integer(NULL_INT))) --> NULL_SHORT
                         final String conversionOfBoxedQCNull = destTypeCast + boxedQueryConstantsNull;
                         checkPrimitive(conversionOfBoxedQCNull, expectedResults[NULL_ROW_INDEX]);
 
@@ -517,8 +528,10 @@ public class TestFormulaColumn {
 
 
                 } catch (Throwable ex) {
-                    throw new RuntimeException("Failed testing cast of " + sourceType.getName() + " to " + destType.getName() +
-                            " (i=" + i + ", j=" + j + "). Formula:\n" + expression, ex);
+                    throw new RuntimeException(
+                            "Failed testing cast of " + sourceType.getName() + " to " + destType.getName() +
+                                    " (i=" + i + ", j=" + j + "). Formula:\n" + expression,
+                            ex);
                 }
             }
         }
@@ -540,14 +553,14 @@ public class TestFormulaColumn {
 
     private void testWrapWithCastHelper(final Class type, final String cast) {
         final String theFormula = "theFormula";
-        final String expected = cast == null ? theFormula :
-                DBLanguageFunctionUtil.class.getCanonicalName() + '.' + cast + '(' + theFormula + ')';
+        final String expected = cast == null ? theFormula
+                : DBLanguageFunctionUtil.class.getCanonicalName() + '.' + cast + '(' + theFormula + ')';
         final TypeAnalyzer ta = TypeAnalyzer.create(type);
         final String possiblyWrappedExpression = ta.wrapWithCastIfNecessary(theFormula);
         Assert.equals(possiblyWrappedExpression, "possiblyWrappedExpression", expected);
     }
 
-    //---------- METHODS TO ASSIST WITH TESTING
+    // ---------- METHODS TO ASSIST WITH TESTING
 
     private FormulaColumn initCheck(String formulaString) {
         FormulaColumn formulaColumn = FormulaColumn.createFormulaColumn("Foo", formulaString);
@@ -556,7 +569,7 @@ public class TestFormulaColumn {
         return formulaColumn;
     }
 
-    ////---- These are just different versions of check():
+    //// ---- These are just different versions of check():
 
     private void check(int index, String formulaString, Object expectedResult) {
         FormulaColumn formulaColumn = initCheck(formulaString);
@@ -645,9 +658,9 @@ public class TestFormulaColumn {
     /**
      * Invokes the appropriate {@code check()} function for the boxed expected result
      *
-     * @param formulaString  The formula to check
+     * @param formulaString The formula to check
      * @param expectedResult The expected result. Must be a boxed type (e.g. {@link Integer}, {@link Character}, etc.
-     * @param index          The index to check
+     * @param index The index to check
      */
     private void checkPrimitive(int index, String formulaString, Object expectedResult) {
         Class unboxedType = expectedResult == null ? null : TypeUtils.getUnboxedType(expectedResult.getClass());
@@ -680,12 +693,13 @@ public class TestFormulaColumn {
     }
 
     /**
-     * @param index                 The index of {@link #testDataTable} at which {@code formulaString} should be evaluateds
-     * @param exceptionTypeToExpect Expect an exception of this type, and not of any other (i.e. runtime or compilation) exception.
-     *                              If null, any {@code Exception} is expected.
-     * @param formulaString         The formula to evaluate
+     * @param index The index of {@link #testDataTable} at which {@code formulaString} should be evaluateds
+     * @param exceptionTypeToExpect Expect an exception of this type, and not of any other (i.e. runtime or compilation)
+     *        exception. If null, any {@code Exception} is expected.
+     * @param formulaString The formula to evaluate
      */
-    private void checkExpectingException(int index, Class<? extends Exception> exceptionTypeToExpect, String formulaString) {
+    private void checkExpectingException(int index, Class<? extends Exception> exceptionTypeToExpect,
+            String formulaString) {
 
         final boolean expectSpecificInspection = exceptionTypeToExpect != null;
 
@@ -707,7 +721,8 @@ public class TestFormulaColumn {
 
         if (expectSpecificInspection) {
             if (!expectedExceptionWasThrown) {
-                throw new AssertionFailure("Expected exception " + exceptionTypeToExpect.getName() + " was not thrown; another exception was", theException);
+                throw new AssertionFailure("Expected exception " + exceptionTypeToExpect.getName()
+                        + " was not thrown; another exception was", theException);
             }
         } else if (!anyExceptionWasThrown) {
             fail("Should have thrown an exception");
@@ -733,7 +748,7 @@ public class TestFormulaColumn {
     /**
      * Returns true if {@code t} is an exception of {@code exceptionType} or was caused by one.
      *
-     * @param t             The throwable to check. Cannot be null.
+     * @param t The throwable to check. Cannot be null.
      * @param exceptionType The type to check against
      */
     private static boolean involvesExceptionType(Throwable t, Class<? extends Exception> exceptionType) {

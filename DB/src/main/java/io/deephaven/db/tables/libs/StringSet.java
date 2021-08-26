@@ -12,7 +12,7 @@ import java.util.function.ToIntFunction;
 /**
  * Interface for sets of Strings that can be mapped to a 64-bit long bitmap.
  */
-public interface StringSet extends Iterable<String>{
+public interface StringSet extends Iterable<String> {
 
     boolean contains(String value);
 

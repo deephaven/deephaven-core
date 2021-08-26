@@ -27,17 +27,17 @@ public class StandardStreamState {
 
         // get all of the out sinks
         List<OutputStream> outReceivers = receivers.stream()
-            .map(StandardStreamReceiver::receiveOut)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .collect(Collectors.toList());
+                .map(StandardStreamReceiver::receiveOut)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
 
         // get all of the err sinks
         List<OutputStream> errReceivers = receivers.stream()
-            .map(StandardStreamReceiver::receiveErr)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .collect(Collectors.toList());
+                .map(StandardStreamReceiver::receiveErr)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
 
         if (!outReceivers.isEmpty()) {
             PrintStream out = adapt(outReceivers);
@@ -61,7 +61,7 @@ public class StandardStreamState {
         if (outputStreams.size() == 1) {
             OutputStream out = outputStreams.get(0);
             if (out instanceof PrintStream) {
-                return (PrintStream)out;
+                return (PrintStream) out;
             }
             return new PrintStream(out, true, "ISO-8859-1");
         }

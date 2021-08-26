@@ -23,9 +23,9 @@ public class AsyncClientErrorNotifier {
     }
 
     public static void reportError(Throwable t) throws IOException {
-             final UpdateErrorReporter localReporter = reporter;
-             if (localReporter != null) {
-                 localReporter.reportUpdateError(t);
-             }
-         }
+        final UpdateErrorReporter localReporter = reporter;
+        if (localReporter != null) {
+            localReporter.reportUpdateError(t);
+        }
+    }
 }

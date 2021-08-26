@@ -20,16 +20,17 @@ import java.util.function.LongConsumer;
 @AbstractColumnSource.IsSerializable(value = true)
 public class TreeMapSource<T> extends AbstractColumnSource<T> {
     private long lastAdditionTime = LogicalClock.DEFAULT.currentStep();
-    protected final TreeMap<Long,T> data = new TreeMap<>();
-    private TreeMap<Long,T> prevData = new TreeMap<>();
+    protected final TreeMap<Long, T> data = new TreeMap<>();
+    private TreeMap<Long, T> prevData = new TreeMap<>();
 
     public TreeMapSource(Class<T> type) {
         super(type);
     }
-    public TreeMapSource(Class<T> type, Index index,T[] data) {
-        //noinspection unchecked
+
+    public TreeMapSource(Class<T> type, Index index, T[] data) {
+        // noinspection unchecked
         super(convertType(type));
-        add(index,data);
+        add(index, data);
         prevData = this.data;
     }
 
@@ -44,7 +45,7 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
         }
     }
 
-    public synchronized void add(final Index index, T[] vs){
+    public synchronized void add(final Index index, T[] vs) {
         if (groupToRange != null) {
             setGroupToRange(null);
         }
@@ -60,6 +61,7 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
 
         index.forAllLongs(new LongConsumer() {
             private final MutableInt ii = new MutableInt(0);
+
             @Override
             public void accept(final long v) {
                 data.put(v, vs[ii.intValue()]);
@@ -68,7 +70,7 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
         });
     }
 
-    public synchronized void remove(Index index){
+    public synchronized void remove(Index index) {
         if (groupToRange != null) {
             setGroupToRange(null);
         }
@@ -78,7 +80,7 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
             prevData = new TreeMap<>(this.data);
             lastAdditionTime = currentStep;
         }
-        for (final Index.Iterator iterator = index.iterator(); iterator.hasNext(); ) {
+        for (final Index.Iterator iterator = index.iterator(); iterator.hasNext();) {
             this.data.remove(iterator.nextLong());
         }
     }
@@ -118,22 +120,22 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public byte getByte(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Byte)get(index));
+        return io.deephaven.util.type.TypeUtils.unbox((Byte) get(index));
     }
 
     @Override
     public char getChar(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Character)get(index));
+        return io.deephaven.util.type.TypeUtils.unbox((Character) get(index));
     }
 
     @Override
     public double getDouble(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Double)get(index));
+        return io.deephaven.util.type.TypeUtils.unbox((Double) get(index));
     }
 
     @Override
     public float getFloat(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Float)get(index));
+        return io.deephaven.util.type.TypeUtils.unbox((Float) get(index));
     }
 
     @Override
@@ -143,12 +145,12 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public long getLong(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Long)get(index));
+        return io.deephaven.util.type.TypeUtils.unbox((Long) get(index));
     }
 
     @Override
     public short getShort(long index) {
-        return io.deephaven.util.type.TypeUtils.unbox((Short)get(index));
+        return io.deephaven.util.type.TypeUtils.unbox((Short) get(index));
     }
 
     @Override
@@ -202,6 +204,5 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public void startTrackingPrevValues() {
-    }
+    public void startTrackingPrevValues() {}
 }

@@ -18,8 +18,7 @@ public class RingBufferTest extends TestCase {
         try {
             rb.element();
             fail("queue should be empty");
-        }
-        catch ( NoSuchElementException x ) {
+        } catch (NoSuchElementException x) {
             // expected
         }
 
@@ -27,8 +26,7 @@ public class RingBufferTest extends TestCase {
         try {
             rb.remove();
             fail("queue should be empty");
-        }
-        catch ( NoSuchElementException x ) {
+        } catch (NoSuchElementException x) {
             // expected
         }
 
@@ -36,8 +34,7 @@ public class RingBufferTest extends TestCase {
         try {
             rb.back();
             fail("queue should be empty");
-        }
-        catch ( NoSuchElementException x ) {
+        } catch (NoSuchElementException x) {
             // expected
         }
     }
@@ -54,8 +51,7 @@ public class RingBufferTest extends TestCase {
         assertTrue(expectedHead == rb.peek());
         try {
             assertTrue(expectedHead == rb.element());
-        }
-        catch ( NoSuchElementException x ) {
+        } catch (NoSuchElementException x) {
             fail("queue should not be empty");
         }
     }
@@ -67,7 +63,8 @@ public class RingBufferTest extends TestCase {
         assertNotEmpty(rb, expectedSize, expectedHead);
     }
 
-    private void assertAddOverwrite(RingBuffer<Object> rb, Object newElement, int expectedSize, Object expectedHead, Object expectedOverwrite) {
+    private void assertAddOverwrite(RingBuffer<Object> rb, Object newElement, int expectedSize, Object expectedHead,
+            Object expectedOverwrite) {
         assertEquals(expectedOverwrite, rb.addOverwrite(newElement));
         assertEquals(newElement, rb.back());
         assertEquals(newElement, rb.peekLast());
@@ -96,32 +93,31 @@ public class RingBufferTest extends TestCase {
     }
 
     private void assertPoll(RingBuffer<Object> rb, int expectedSize, Object expectedHead) {
-        assertNotEmpty(rb, expectedSize,  expectedHead);
+        assertNotEmpty(rb, expectedSize, expectedHead);
         assertTrue(expectedHead == rb.poll());
     }
 
     private void assertRemove(RingBuffer<Object> rb, int expectedSize, Object expectedHead) {
-        assertNotEmpty(rb, expectedSize,  expectedHead);
+        assertNotEmpty(rb, expectedSize, expectedHead);
         try {
             assertTrue(expectedHead == rb.remove());
-        }
-        catch ( NoSuchElementException x ) {
+        } catch (NoSuchElementException x) {
             fail("queue should not be empty");
         }
     }
 
-    private void assertRemoveAtSwapLast(RingBuffer<Object> rb, int expectedSize, Object expectedHead, Object expectedResult, int offset) {
-        assertNotEmpty(rb, expectedSize,  expectedHead);
+    private void assertRemoveAtSwapLast(RingBuffer<Object> rb, int expectedSize, Object expectedHead,
+            Object expectedResult, int offset) {
+        assertNotEmpty(rb, expectedSize, expectedHead);
         try {
             assertTrue(expectedResult == rb.removeAtSwapLast(offset));
-        }
-        catch ( NoSuchElementException x ) {
+        } catch (NoSuchElementException x) {
             fail("queue should not be empty");
         }
     }
 
     private void assertContents(RingBuffer<Object> rb, Object... values) {
-        for(int vi = 0; vi < values.length; ++vi) {
+        for (int vi = 0; vi < values.length; ++vi) {
             assertEquals(rb.front(vi), values[vi]);
         }
     }
@@ -246,8 +242,8 @@ public class RingBufferTest extends TestCase {
         assertOffer(rb, C, 3, A);
         assertFull(rb);
 
-        assertAdd(rb, D, 4, A);     // need one add to grow it
-        assertOffer(rb, E, 5, A);   // NOTE: assumes capacity grows by at least a factor of two
+        assertAdd(rb, D, 4, A); // need one add to grow it
+        assertOffer(rb, E, 5, A); // NOTE: assumes capacity grows by at least a factor of two
         assertOffer(rb, F, 6, A);
 
         assertPoll(rb, 6, A);
@@ -260,7 +256,8 @@ public class RingBufferTest extends TestCase {
     }
 
     public void testGrowSimple() {
-        // In order to keep internal storage size as a power of 2, the following now applies: capacity = 2^ceil(log2(requestedCapacity+1)) - 1
+        // In order to keep internal storage size as a power of 2, the following now applies: capacity =
+        // 2^ceil(log2(requestedCapacity+1)) - 1
         RingBuffer<Object> rb = new RingBuffer<>(5);
 
         assertAdd(rb, A, 1, A);

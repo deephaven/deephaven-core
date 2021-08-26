@@ -2,9 +2,13 @@ package io.deephaven.db.v2.utils.sortedranges;
 
 public abstract class SortedRangesTyped<ArrayType> extends SortedRanges {
     protected abstract ArrayType makeArray(final int capacity);
+
     protected abstract void freeArray(ArrayType arr);
+
     protected abstract int capacityForLastIndex(int i, boolean isDense);
+
     protected abstract SortedRanges tryMakePackedType(final int maxPos, final long first, boolean isDense);
+
     protected abstract SortedRangesTyped<ArrayType> makeMyTypeAndOffset(int initialCapacity);
 
     protected ArrayType data;
@@ -25,7 +29,8 @@ public abstract class SortedRangesTyped<ArrayType> extends SortedRanges {
         this.cardinality = cardinality;
     }
 
-    protected final void copyDataForMoveToNew(final SortedRanges srOut, final int srcPos, final int dstPos, final int len) {
+    protected final void copyDataForMoveToNew(final SortedRanges srOut, final int srcPos, final int dstPos,
+            final int len) {
         for (int i = 0; i < srcPos; ++i) {
             srOut.unpackedSet(i, unpackedGet(i));
         }
@@ -110,12 +115,13 @@ public abstract class SortedRangesTyped<ArrayType> extends SortedRanges {
     }
 
     @Override
-    protected final SortedRanges ensureCanAppend(final int newLastPos, final long unpackedNewLastKey, final boolean writeCheck) {
+    protected final SortedRanges ensureCanAppend(final int newLastPos, final long unpackedNewLastKey,
+            final boolean writeCheck) {
         if (newLastPos < dataLength()) {
             return writeCheck ? getWriteRef() : this;
         }
         final long absUnpackedLastKey = Math.abs(unpackedNewLastKey);
-        boolean isDense = true;  // try smaller allocation for dense first.
+        boolean isDense = true; // try smaller allocation for dense first.
         int newCapacity = capacityForLastIndex(newLastPos, isDense);
         if (newCapacity == 0) {
             isDense = isDenseLongSample(first(), absUnpackedLastKey, count);

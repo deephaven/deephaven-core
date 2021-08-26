@@ -20,8 +20,8 @@ public class FormulaKernelAdapter extends io.deephaven.db.v2.select.Formula {
     private final GetHandler getHandler;
 
     public FormulaKernelAdapter(final Index index, final FormulaSourceDescriptor sourceDescriptor,
-                                final Map<String, ? extends ColumnSource> columnSources,
-                                final FormulaKernel kernel) {
+            final Map<String, ? extends ColumnSource> columnSources,
+            final FormulaKernel kernel) {
         super(index);
         this.sourceDescriptor = sourceDescriptor;
         this.columnSources = columnSources;
@@ -218,26 +218,29 @@ public class FormulaKernelAdapter extends io.deephaven.db.v2.select.Formula {
     }
 
     @Override
-    public void fillChunk(@NotNull final FillContext __context, @NotNull final WritableChunk<? super Values> __destination,
-                          @NotNull final OrderedKeys __orderedKeys) {
+    public void fillChunk(@NotNull final FillContext __context,
+            @NotNull final WritableChunk<? super Values> __destination,
+            @NotNull final OrderedKeys __orderedKeys) {
         fillChunkHelper(__context, __destination, __orderedKeys, false, true);
     }
 
     @Override
-    public void fillPrevChunk(@NotNull final FillContext __context, @NotNull final WritableChunk<? super Values> __destination,
-                              @NotNull final OrderedKeys __orderedKeys) {
+    public void fillPrevChunk(@NotNull final FillContext __context,
+            @NotNull final WritableChunk<? super Values> __destination,
+            @NotNull final OrderedKeys __orderedKeys) {
         fillChunkHelper(__context, __destination, __orderedKeys, true, true);
     }
 
-    private void fillChunkHelper(@NotNull final FillContext __context, @NotNull final WritableChunk<? super Values> __destination,
-                                 @NotNull final OrderedKeys __orderedKeys, final boolean usePrev, final boolean lookupI) {
+    private void fillChunkHelper(@NotNull final FillContext __context,
+            @NotNull final WritableChunk<? super Values> __destination,
+            @NotNull final OrderedKeys __orderedKeys, final boolean usePrev, final boolean lookupI) {
         final int orderedKeysSize = __orderedKeys.intSize();
         __destination.setSize(orderedKeysSize);
         // Shortcut if __orderedKeys is empty
         if (orderedKeysSize == 0) {
             return;
         }
-        final AdapterContext __typedContext = (AdapterContext)__context;
+        final AdapterContext __typedContext = (AdapterContext) __context;
         final Chunk<? extends Attributes.Values>[] sourceChunks = new Chunk[sourceDescriptor.sources.length];
         try (final OrderedKeys flat = Index.FACTORY.getFlatIndex(__orderedKeys.size())) {
             for (int ii = 0; ii < sourceDescriptor.sources.length; ++ii) {
@@ -282,7 +285,8 @@ public class FormulaKernelAdapter extends io.deephaven.db.v2.select.Formula {
                     default: {
                         final ColumnSource cs = columnSources.get(name);
                         final ColumnSource.GetContext ctx = __typedContext.sourceContexts[ii];
-                        sourceChunks[ii] = usePrev ? cs.getPrevChunk(ctx, __orderedKeys) : cs.getChunk(ctx, __orderedKeys);
+                        sourceChunks[ii] =
+                                usePrev ? cs.getPrevChunk(ctx, __orderedKeys) : cs.getChunk(ctx, __orderedKeys);
                     }
                 }
             }
@@ -334,10 +338,10 @@ public class FormulaKernelAdapter extends io.deephaven.db.v2.select.Formula {
         final FillContext kernelContext;
 
         AdapterContext(WritableIntChunk<OrderedKeyIndices> iChunk,
-                       WritableLongChunk<OrderedKeyIndices> iiChunk,
-                       WritableLongChunk<OrderedKeyIndices> kChunk,
-                       ColumnSource.GetContext[] sourceContexts,
-                       FillContext kernelContext) {
+                WritableLongChunk<OrderedKeyIndices> iiChunk,
+                WritableLongChunk<OrderedKeyIndices> kChunk,
+                ColumnSource.GetContext[] sourceContexts,
+                FillContext kernelContext) {
             this.iChunk = iChunk;
             this.iiChunk = iiChunk;
             this.kChunk = kChunk;

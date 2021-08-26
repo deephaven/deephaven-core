@@ -15,8 +15,7 @@ import java.util.Collection;
 public abstract class JoinTable extends JoinBase {
 
     /**
-     * The number of {@link #reserveBits() reserve bits} to use when it is not explicitly set during
-     * building.
+     * The number of {@link #reserveBits() reserve bits} to use when it is not explicitly set during building.
      *
      * <p>
      * By default, is 10. Can be changed with system property {@code JoinTable.reserveBits}.

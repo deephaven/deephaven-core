@@ -31,8 +31,7 @@ public class OHLCChart {
         Figure axs = cht.newAxes()
                 .xLabel("X")
                 .yLabel("Y")
-                .ohlcPlot("Test", date, open, high, low, close)
-                ;
+                .ohlcPlot("Test", date, open, high, low, close);
 
 
         ExamplePlotUtils.display(axs);

@@ -13,7 +13,8 @@ public class TextDocumentPositionParams implements Serializable {
 
     public TextDocumentPositionParams() {}
 
-    @JsIgnore TextDocumentPositionParams(JsPropertyMap<Object> source) {
+    @JsIgnore
+    TextDocumentPositionParams(JsPropertyMap<Object> source) {
         this();
 
         this.updateFromJsPropertyMap(source);

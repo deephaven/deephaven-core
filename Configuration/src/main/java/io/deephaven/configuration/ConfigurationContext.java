@@ -29,6 +29,7 @@ class ConfigurationContext {
 
     /**
      * Check whether the current system context matches one of the requested values in the specified scope
+     * 
      * @param token The name of the property to check
      * @param targetValues A list of possible values for the specified property, such as 'process.name=foo'
      * @return True if the specified property currently has a value equal to one of the target values, false otherwise.
@@ -41,19 +42,23 @@ class ConfigurationContext {
                 populateHostnames();
             }
             for (String aHostName : hostOptions) {
-                if (targetValues.contains(aHostName.toLowerCase())) return true;
+                if (targetValues.contains(aHostName.toLowerCase()))
+                    return true;
             }
             return false;
         } else {
             // check that the token value in the context matches for the current scope item
             final String contextValue = getContextItem(token);
-            if (contextValue == null) return false;
+            if (contextValue == null)
+                return false;
             return targetValues.contains(contextValue);
         }
     }
 
     /**
-     * Retrieve a specified context item. These are usually but not necessarily system properties or a small number of other environmental factors.
+     * Retrieve a specified context item. These are usually but not necessarily system properties or a small number of
+     * other environmental factors.
+     * 
      * @param token The name of the context item to look up.
      * @return The current value of the specified context item, or null if no value exists.
      */
@@ -89,7 +94,7 @@ class ConfigurationContext {
             final int dotPosition = hostName.indexOf(".");
             // If the name is X.y, then also allow just the leading 'X'
             if (dotPosition > 0) {
-                //noinspection RedundantStringOperation
+                // noinspection RedundantStringOperation
                 hostOptions.add(address.getHostName().substring(0, dotPosition));
             }
 
@@ -101,6 +106,7 @@ class ConfigurationContext {
 
     /**
      * Retrieve and store a specified system property's value.
+     * 
      * @param propertyName The system property to look up. If a value exists, it will be cached for later retrieval.
      * @return The value of the requested system property, or null if the property has no set value.
      */
@@ -113,8 +119,8 @@ class ConfigurationContext {
     }
 
     /**
-     * Return the configuration contexts. This is the list of system properties that may have been used to parse the configuration file.
-     * This collection will be immutable.
+     * Return the configuration contexts. This is the list of system properties that may have been used to parse the
+     * configuration file. This collection will be immutable.
      *
      * @return the configuration contexts.
      */

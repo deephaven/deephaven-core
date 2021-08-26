@@ -20,17 +20,23 @@ import java.util.function.Supplier;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 1, time = 10)
 @Measurement(iterations = 3, time = 7)
-@Timeout(time=20)
+@Timeout(time = 20)
 @Fork(1)
 public class ConditionFilterMultipleColumnsBench {
     protected TableBenchmarkState state;
     private boolean skipResultsProcessing = true;
-    @Param({"400000"}) private int tableSize;
-    @Param({"10"}) private int steps;
-    @Param({"1", "2", "10"}) private int nFilterCols;
-    @Param({"0"}) private int nAdditionalCols;
-    @Param({"5"}) private int pctFilteredOut;
-    @Param({"false"}) private boolean doSelect;
+    @Param({"400000"})
+    private int tableSize;
+    @Param({"10"})
+    private int steps;
+    @Param({"1", "2", "10"})
+    private int nFilterCols;
+    @Param({"0"})
+    private int nAdditionalCols;
+    @Param({"5"})
+    private int pctFilteredOut;
+    @Param({"false"})
+    private boolean doSelect;
 
     private Table inputTable;
     private String[] tCols;
@@ -98,7 +104,8 @@ public class ConditionFilterMultipleColumnsBench {
     @Setup(Level.Invocation)
     public void setupInvocation() {
         final long sizePerStep = Math.max(inputTable.size() / steps, 1);
-        final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(sizePerStep, sizePerStep);
+        final IncrementalReleaseFilter incrementalReleaseFilter =
+                new IncrementalReleaseFilter(sizePerStep, sizePerStep);
         final Table inputReleased = inputTable.where(incrementalReleaseFilter);
 
         final SelectFilter filter = ConditionFilter.createConditionFilter(filterExpression);
@@ -139,7 +146,7 @@ public class ConditionFilterMultipleColumnsBench {
         return state.setResult(result);
     }
 
-    public static void main(String [] args) {
+    public static void main(String[] args) {
         final int heapGb = 12;
         BenchUtil.run(heapGb, ConditionFilterMultipleColumnsBench.class);
     }

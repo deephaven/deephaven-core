@@ -35,8 +35,8 @@ import static io.deephaven.db.util.PythonScopeJpyImpl.CallableWrapper;
 /**
  * A ScriptSession that uses a JPy cpython interpreter internally.
  *
- * This is used for persistent queries or the DB console; Python code running remotely uses WorkerPythonEnvironment
- * for it's supporting structures.
+ * This is used for persistent queries or the DB console; Python code running remotely uses WorkerPythonEnvironment for
+ * it's supporting structures.
  */
 public class PythonDeephavenSession extends AbstractScriptSession implements ScriptSession {
     private static final Logger log = LoggerFactory.getLogger(PythonDeephavenSession.class);
@@ -104,8 +104,8 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     /**
-     * Creates a Python "{@link ScriptSession}", for use where we should only be reading from the
-     * scope, such as an IPython kernel session.
+     * Creates a Python "{@link ScriptSession}", for use where we should only be reading from the scope, such as an
+     * IPython kernel session.
      */
     public PythonDeephavenSession(PythonScope<?> scope) {
         super(false);
@@ -123,8 +123,9 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     /**
-     * Finds the specified script; and runs it as a file, or if it is a stream writes it to a temporary file in order
-     * to run it.
+     * Finds the specified script; and runs it as a file, or if it is a stream writes it to a temporary file in order to
+     * run it.
+     * 
      * @param script the script's name
      * @throws IOException if an error occurs reading or writing the script
      */
@@ -150,15 +151,15 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     @Override
     public Object getVariable(String name) throws QueryScope.MissingVariableException {
         return scope
-            .getValue(name)
-            .orElseThrow(() -> new QueryScope.MissingVariableException("No global variable for: " + name));
+                .getValue(name)
+                .orElseThrow(() -> new QueryScope.MissingVariableException("No global variable for: " + name));
     }
 
     @Override
     public <T> T getVariable(String name, T defaultValue) {
         return scope
-            .<T>getValueUnchecked(name)
-            .orElse(defaultValue);
+                .<T>getValueUnchecked(name)
+                .orElse(defaultValue);
     }
 
     @Override
@@ -169,7 +170,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
                 evaluator.evalScript(command);
             });
         } catch (InterruptedException e) {
-            throw new QueryCancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted" , e);
+            throw new QueryCancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted", e);
         }
     }
 
@@ -203,30 +204,30 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     @Override
-    public String scriptType() { return SCRIPT_TYPE; }
-
-    @Override
-    public void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader, ScriptPathLoaderState scriptLoaderState) {
+    public String scriptType() {
+        return SCRIPT_TYPE;
     }
 
     @Override
-    public void onApplicationInitializationEnd() {
-    }
+    public void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader,
+            ScriptPathLoaderState scriptLoaderState) {}
 
     @Override
-    public void setScriptPathLoader(Supplier<ScriptPathLoader> scriptPathLoader, boolean caching) {
-    }
+    public void onApplicationInitializationEnd() {}
 
     @Override
-    public void clearScriptPathLoader() {
-    }
+    public void setScriptPathLoader(Supplier<ScriptPathLoader> scriptPathLoader, boolean caching) {}
+
+    @Override
+    public void clearScriptPathLoader() {}
 
     @Override
     public boolean setUseOriginalScriptLoaderState(boolean useOriginal) {
         return true;
     }
 
-    //TODO core#41 move this logic into the python console instance or scope like this - can go further and move isWidget too
+    // TODO core#41 move this logic into the python console instance or scope like this - can go further and move
+    // isWidget too
     @Override
     public Object unwrapObject(Object object) {
         if (object instanceof PyObject) {
@@ -242,6 +243,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     private static final String GET_WIDGET_ATTRIBUTE = "getWidget";
+
     private static boolean isWidget(PyObject value) {
         if ((value != null && value.hasAttribute(GET_WIDGET_ATTRIBUTE))) {
             try (final PyObject widget = value.callMethod(GET_WIDGET_ATTRIBUTE)) {
@@ -251,6 +253,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
 
         return false;
     }
+
     private static LiveWidget getWidget(PyObject pyObject) {
         boolean isWidget = pyObject.hasAttribute(GET_WIDGET_ATTRIBUTE);
         if (isWidget) {
@@ -265,6 +268,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     private static final String GET_TABLE_ATTRIBUTE = "get_dh_table";
+
     private static boolean isTable(PyObject value) {
         if ((value != null && value.hasAttribute(GET_TABLE_ATTRIBUTE))) {
             try (final PyObject widget = value.callMethod(GET_TABLE_ATTRIBUTE)) {
@@ -274,6 +278,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
 
         return false;
     }
+
     private static Table getTable(PyObject pyObject) {
         if (pyObject.hasAttribute(GET_TABLE_ATTRIBUTE)) {
             try (final PyObject widget = pyObject.callMethod(GET_TABLE_ATTRIBUTE)) {

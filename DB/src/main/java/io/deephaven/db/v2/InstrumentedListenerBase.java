@@ -29,7 +29,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 
-public abstract class InstrumentedListenerBase extends LivenessArtifact implements ListenerBase, NotificationQueue.Dependency {
+public abstract class InstrumentedListenerBase extends LivenessArtifact
+        implements ListenerBase, NotificationQueue.Dependency {
 
     private static final Logger log = LoggerFactory.getLogger(InstrumentedListener.class);
 
@@ -65,13 +66,15 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact implemen
     }
 
     @Override
-    public NotificationQueue.Notification getErrorNotification(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+    public NotificationQueue.Notification getErrorNotification(Throwable originalException,
+            UpdatePerformanceTracker.Entry sourceEntry) {
         return new ErrorNotification(originalException, sourceEntry == null ? entry : sourceEntry);
     }
 
     @Override
     public LogOutput append(@NotNull final LogOutput logOutput) {
-        return logOutput.append("InstrumentedListener:(identity=").append(System.identityHashCode(this)).append(", ").append(entry).append(")");
+        return logOutput.append("InstrumentedListener:(identity=").append(System.identityHashCode(this)).append(", ")
+                .append(entry).append(")");
     }
 
     public boolean canExecute(final long step) {
@@ -81,7 +84,8 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact implemen
     @Override
     public boolean satisfied(final long step) {
         if (lastCompletedStep == step) {
-            LiveTableMonitor.DEFAULT.logDependencies().append("Already completed notification for ").append(this).endl();
+            LiveTableMonitor.DEFAULT.logDependencies().append("Already completed notification for ").append(this)
+                    .endl();
             return true;
         }
 
@@ -108,13 +112,13 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact implemen
     protected abstract void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry);
 
     protected final void onFailureInternalWithDependent(final DynamicTable dependent, final Throwable originalException,
-                                                     final UpdatePerformanceTracker.Entry sourceEntry) {
+            final UpdatePerformanceTracker.Entry sourceEntry) {
         dependent.notifyListenersOnError(originalException, sourceEntry);
 
-        // although we have notified the dependent tables, we should notify the client side as well.  In pretty
+        // although we have notified the dependent tables, we should notify the client side as well. In pretty
         // much every case we would expect this notification to happen anyway, but in the case of a GuiTableMap
         // from byExternal, the tables will have a hard reference, but would not actually have made it all the way
-        // back to the client.  Thus, the need for this additional reporting.
+        // back to the client. Thus, the need for this additional reporting.
         try {
             if (SystemicObjectTracker.isSystemic(dependent)) {
                 AsyncClientErrorNotifier.reportError(originalException);
@@ -160,7 +164,8 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact implemen
 
         @Override
         public LogOutput append(LogOutput output) {
-            return output.append("ErrorNotification{").append("originalException=").append(originalException.getMessage()).append(", sourceEntry=").append(sourceEntry).append("}");
+            return output.append("ErrorNotification{").append("originalException=")
+                    .append(originalException.getMessage()).append(", sourceEntry=").append(sourceEntry).append("}");
         }
     }
 
@@ -172,7 +177,8 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact implemen
             super(terminalListener);
             this.update = update.acquire();
             if (lastCompletedStep == LogicalClock.DEFAULT.currentStep()) {
-                throw Assert.statementNeverExecuted("Enqueued after lastCompletedStep already set to current step: " + toString());
+                throw Assert.statementNeverExecuted(
+                        "Enqueued after lastCompletedStep already set to current step: " + toString());
             }
             lastEnqueuedStep = LogicalClock.DEFAULT.currentStep();
         }
@@ -217,7 +223,8 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact implemen
 
             try {
                 if (lastCompletedStep == LogicalClock.DEFAULT.currentStep()) {
-                    throw new IllegalStateException("Executed after lastCompletedStep already set to current step: " + toString());
+                    throw new IllegalStateException(
+                            "Executed after lastCompletedStep already set to current step: " + toString());
                 }
 
                 invokeOnUpdate.run();
@@ -239,7 +246,7 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact implemen
                         .append(":\n").append(e).endl();
 
                 if (useVerboseLogging) {
-                    // This is a failure and shouldn't happen, so it is OK to be verbose here.  Particularly as it is not
+                    // This is a failure and shouldn't happen, so it is OK to be verbose here. Particularly as it is not
                     // clear what is actually going on in some cases of assertion failure related to the indices.
                     log.error().append("Listener is: ").append(this.toString()).endl();
                     log.error().append("Added: ").append(update.added.toString()).endl();

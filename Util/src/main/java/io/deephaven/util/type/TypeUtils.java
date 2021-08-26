@@ -23,8 +23,8 @@ import static io.deephaven.util.QueryConstants.*;
  */
 @SuppressWarnings("unused")
 public class TypeUtils {
-    private static final Map<Class,Class> primitiveToBoxed;
-    private static final Map<Class,Class> boxedToPrimitive;
+    private static final Map<Class, Class> primitiveToBoxed;
+    private static final Map<Class, Class> boxedToPrimitive;
 
     public static final Set<Class> PRIMITIVE_TYPES;
     public static final Set<Class> BOXED_TYPES;
@@ -36,16 +36,16 @@ public class TypeUtils {
         LinkedHashMap<Class, Class> boxedToPrimitiveTemp = new LinkedHashMap<>();
 
         // Note: ordering here matters! Tests in TestDBLanguageParser depend on it.
-        primitiveToBoxedTemp.put(byte.class,Byte.class);
-        primitiveToBoxedTemp.put(short.class,Short.class);
-        primitiveToBoxedTemp.put(char.class,Character.class);
-        primitiveToBoxedTemp.put(int.class,Integer.class);
-        primitiveToBoxedTemp.put(long.class,Long.class);
-        primitiveToBoxedTemp.put(float.class,Float.class);
-        primitiveToBoxedTemp.put(double.class,Double.class);
-        primitiveToBoxedTemp.put(boolean.class,Boolean.class);
+        primitiveToBoxedTemp.put(byte.class, Byte.class);
+        primitiveToBoxedTemp.put(short.class, Short.class);
+        primitiveToBoxedTemp.put(char.class, Character.class);
+        primitiveToBoxedTemp.put(int.class, Integer.class);
+        primitiveToBoxedTemp.put(long.class, Long.class);
+        primitiveToBoxedTemp.put(float.class, Float.class);
+        primitiveToBoxedTemp.put(double.class, Double.class);
+        primitiveToBoxedTemp.put(boolean.class, Boolean.class);
         for (Map.Entry<Class, Class> classClassEntry : primitiveToBoxedTemp.entrySet()) {
-            boxedToPrimitiveTemp.put(classClassEntry.getValue(),classClassEntry.getKey());
+            boxedToPrimitiveTemp.put(classClassEntry.getValue(), classClassEntry.getKey());
         }
 
         primitiveToBoxed = Collections.unmodifiableMap(primitiveToBoxedTemp);
@@ -53,7 +53,8 @@ public class TypeUtils {
 
         PRIMITIVE_TYPES = Collections.unmodifiableSet(primitiveToBoxedTemp.keySet());
         BOXED_TYPES = Collections.unmodifiableSet(new LinkedHashSet<>(primitiveToBoxedTemp.values()));
-        primitiveClassNameToClass = Collections.unmodifiableMap(PRIMITIVE_TYPES.stream().collect(Collectors.toMap(Class::getName, type -> type)));
+        primitiveClassNameToClass = Collections
+                .unmodifiableMap(PRIMITIVE_TYPES.stream().collect(Collectors.toMap(Class::getName, type -> type)));
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -62,9 +63,9 @@ public class TypeUtils {
     }
 
     /**
-     * Returns a reference type corresponding to the given {@code type}. If {@code type} is itself a reference
-     * type, then {@code type} is returned. If {@code type} is a primitive type, then the appropriate boxed type
-     * is returned.
+     * Returns a reference type corresponding to the given {@code type}. If {@code type} is itself a reference type,
+     * then {@code type} is returned. If {@code type} is a primitive type, then the appropriate boxed type is returned.
+     * 
      * @param type The type
      */
     public static Class getBoxedType(Class type) {
@@ -75,9 +76,10 @@ public class TypeUtils {
     }
 
     /**
-     * Returns the primitive type corresponding to the given {@code type}. If {@code type} is itself a primitive
-     * type, then {@code type} is returned. If {@code type} is neither a primitive type nor a boxed type, then
-     * {@code null} is returned.
+     * Returns the primitive type corresponding to the given {@code type}. If {@code type} is itself a primitive type,
+     * then {@code type} is returned. If {@code type} is neither a primitive type nor a boxed type, then {@code null} is
+     * returned.
+     * 
      * @param type The type
      * @return type's primitive equivalent, or null
      */
@@ -90,6 +92,7 @@ public class TypeUtils {
 
     /**
      * Same as {@link #getUnboxedType(Class)}, but returns non-wrapper classes unmolested.
+     * 
      * @param type The type
      * @return type's unboxed equivalent, or type
      */
@@ -98,7 +101,7 @@ public class TypeUtils {
         return unboxedType != null ? unboxedType : type;
     }
 
-    public static byte[] toByteArray(float[] array){
+    public static byte[] toByteArray(float[] array) {
         byte[] result = new byte[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (byte) array[i];
@@ -106,7 +109,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static byte[] toByteArray(int[] array){
+    public static byte[] toByteArray(int[] array) {
         byte[] result = new byte[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (byte) array[i];
@@ -114,7 +117,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static byte[] toByteArray(short[] array){
+    public static byte[] toByteArray(short[] array) {
         byte[] result = new byte[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (byte) array[i];
@@ -122,7 +125,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static byte[] toByteArray(long[] array){
+    public static byte[] toByteArray(long[] array) {
         byte[] result = new byte[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (byte) array[i];
@@ -130,7 +133,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static byte[] toByteArray(double[] array){
+    public static byte[] toByteArray(double[] array) {
         byte[] result = new byte[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (byte) array[i];
@@ -138,7 +141,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static float[] toFloatArray(byte[] array){
+    public static float[] toFloatArray(byte[] array) {
         float[] result = new float[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (float) array[i];
@@ -146,7 +149,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static float[] toFloatArray(int[] array){
+    public static float[] toFloatArray(int[] array) {
         float[] result = new float[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (float) array[i];
@@ -154,7 +157,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static float[] toFloatArray(short[] array){
+    public static float[] toFloatArray(short[] array) {
         float[] result = new float[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (float) array[i];
@@ -162,7 +165,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static float[] toFloatArray(long[] array){
+    public static float[] toFloatArray(long[] array) {
         float[] result = new float[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (float) array[i];
@@ -170,7 +173,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static float[] toFloatArray(double[] array){
+    public static float[] toFloatArray(double[] array) {
         float[] result = new float[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (float) array[i];
@@ -178,7 +181,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static short[] toShortArray(float[] array){
+    public static short[] toShortArray(float[] array) {
         short[] result = new short[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (short) array[i];
@@ -186,7 +189,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static short[] toShortArray(int[] array){
+    public static short[] toShortArray(int[] array) {
         short[] result = new short[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (short) array[i];
@@ -194,7 +197,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static short[] toShortArray(byte[] array){
+    public static short[] toShortArray(byte[] array) {
         short[] result = new short[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (short) array[i];
@@ -202,7 +205,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static short[] toShortArray(long[] array){
+    public static short[] toShortArray(long[] array) {
         short[] result = new short[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (short) array[i];
@@ -210,7 +213,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static short[] toShortArray(double[] array){
+    public static short[] toShortArray(double[] array) {
         short[] result = new short[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (short) array[i];
@@ -218,7 +221,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static long[] toLongArray(float[] array){
+    public static long[] toLongArray(float[] array) {
         long[] result = new long[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (long) array[i];
@@ -226,7 +229,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static long[] toLongArray(int[] array){
+    public static long[] toLongArray(int[] array) {
         long[] result = new long[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (long) array[i];
@@ -234,7 +237,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static long[] toLongArray(short[] array){
+    public static long[] toLongArray(short[] array) {
         long[] result = new long[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (long) array[i];
@@ -242,7 +245,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static long[] toLongArray(byte[] array){
+    public static long[] toLongArray(byte[] array) {
         long[] result = new long[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (long) array[i];
@@ -250,7 +253,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static long[] toLongArray(double[] array){
+    public static long[] toLongArray(double[] array) {
         long[] result = new long[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (long) array[i];
@@ -258,7 +261,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static int[] toIntArray(float[] array){
+    public static int[] toIntArray(float[] array) {
         int[] result = new int[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (int) array[i];
@@ -266,7 +269,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static int[] toIntArray(byte[] array){
+    public static int[] toIntArray(byte[] array) {
         int[] result = new int[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (int) array[i];
@@ -274,7 +277,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static int[] toIntArray(short[] array){
+    public static int[] toIntArray(short[] array) {
         int[] result = new int[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (int) array[i];
@@ -282,7 +285,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static int[] toIntArray(long[] array){
+    public static int[] toIntArray(long[] array) {
         int[] result = new int[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (int) array[i];
@@ -290,7 +293,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static int[] toIntArray(double[] array){
+    public static int[] toIntArray(double[] array) {
         int[] result = new int[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (int) array[i];
@@ -298,7 +301,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static double[] toDoubleArray(float[] array){
+    public static double[] toDoubleArray(float[] array) {
         double[] result = new double[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (double) array[i];
@@ -306,7 +309,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static double[] toDoubleArray(int[] array){
+    public static double[] toDoubleArray(int[] array) {
         double[] result = new double[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (double) array[i];
@@ -314,7 +317,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static double[] toDoubleArray(short[] array){
+    public static double[] toDoubleArray(short[] array) {
         double[] result = new double[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (double) array[i];
@@ -322,7 +325,7 @@ public class TypeUtils {
         return result;
     }
 
-    public static double[] toDoubleArray(long[] array){
+    public static double[] toDoubleArray(long[] array) {
         double[] result = new double[array.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = (double) array[i];
@@ -330,15 +333,16 @@ public class TypeUtils {
         return result;
     }
 
-    public static double[] toDoubleArray(double[] array){
+    public static double[] toDoubleArray(double[] array) {
         double[] result = new double[array.length];
         System.arraycopy(array, 0, result, 0, result.length);
         return result;
     }
 
-    public static boolean isConvertibleToPrimitive(Class type){
+    public static boolean isConvertibleToPrimitive(Class type) {
         final Class unboxedType = TypeUtils.getUnboxedType(type);
-        return unboxedType !=null && unboxedType != boolean.class; // TODO: isConvertibleToPrimitive(Boolean.class) == false ???
+        return unboxedType != null && unboxedType != boolean.class; // TODO: isConvertibleToPrimitive(Boolean.class) ==
+                                                                    // false ???
     }
 
     public static boolean isBoxedType(Class exprType) {
@@ -368,8 +372,7 @@ public class TypeUtils {
     }
 
     /**
-     * Whether the class is equal to one of the six numeric primitives:
-     * float, double, int, long, short, or byte.
+     * Whether the class is equal to one of the six numeric primitives: float, double, int, long, short, or byte.
      *
      * @param c class
      * @return true if {@code c} is a numeric primitive, false otherwise
@@ -516,7 +519,8 @@ public class TypeUtils {
      * @return true if the type is a DBDateTime or {@link Date}.
      */
     public static boolean isDateTime(Class type) {
-        return Date.class.isAssignableFrom(type) || type.getAnnotation(IsDateTime.class) != null && ((IsDateTime) type.getAnnotation(IsDateTime.class)).value();
+        return Date.class.isAssignableFrom(type) || type.getAnnotation(IsDateTime.class) != null
+                && ((IsDateTime) type.getAnnotation(IsDateTime.class)).value();
     }
 
     /**
@@ -560,34 +564,35 @@ public class TypeUtils {
     }
 
     /**
-     * Converts an Object to a String for writing to a workspace.  This is meant to be used in conjunction with
-     * {@code TypeUtils.fromString}.  Strings, Numbers, and primitives will all convert using {@code Obect.toString}.
-     * Serializable objects will be encoded in base64.  All others will return null.
+     * Converts an Object to a String for writing to a workspace. This is meant to be used in conjunction with
+     * {@code TypeUtils.fromString}. Strings, Numbers, and primitives will all convert using {@code Obect.toString}.
+     * Serializable objects will be encoded in base64. All others will return null.
      *
      * @param o the object to convert
      * @return a String representation of the object, null if it cannot be converted
      * @throws IOException if an IO error occurs during conversion
      */
     public static String objectToString(Object o) throws IOException {
-        if(o == null) {
+        if (o == null) {
             return null;
         }
 
         final Class<?> type = o.getClass();
         // isNumeric gets BigInteger and BigDecimal in addition to everything gotten by isConvertibleToPrimitive
-        if(type == String.class || isConvertibleToPrimitive(type) || isNumeric(type)) {
+        if (type == String.class || isConvertibleToPrimitive(type) || isNumeric(type)) {
             return o.toString();
-        } else if(o instanceof Serializable) {
+        } else if (o instanceof Serializable) {
             return encode64Serializable((Serializable) o);
         }
 
-        throw new RuntimeException("Failed to convert object of type " + type.getCanonicalName() + ".  Type not supported");
+        throw new RuntimeException(
+                "Failed to convert object of type " + type.getCanonicalName() + ".  Type not supported");
     }
 
     /**
-     * Creates an Object from a String.    This is meant to be used in conjunction with {@code TypeUtils.objectToString}
+     * Creates an Object from a String. This is meant to be used in conjunction with {@code TypeUtils.objectToString}
      * Strings, Numbers, and primitives will all parse using their boxed type parsing methods. Serializable types will
-     * be decoded from base64.  Returns null if the String fails to parse.
+     * be decoded from base64. Returns null if the String fails to parse.
      *
      * @param string the String to parse
      * @param typeString the Canonical Name of the class type
@@ -599,16 +604,16 @@ public class TypeUtils {
         final Class<?> type;
         try {
             type = Class.forName(typeString);
-            return Optional.ofNullable(fromString(string ,type));
+            return Optional.ofNullable(fromString(string, type));
         } catch (ClassNotFoundException e) {
             return Optional.empty();
         }
     }
 
     /**
-     * Creates an Object from a String.    This is meant to be used in conjunction with {@code TypeUtils.objectToString}
+     * Creates an Object from a String. This is meant to be used in conjunction with {@code TypeUtils.objectToString}
      * Strings, Numbers, and primitives will all parse using their boxed type parsing methods. Serializable types will
-     * be decoded from base64.  Returns null if the String fails to parse.
+     * be decoded from base64. Returns null if the String fails to parse.
      *
      * @param string the String to parse
      * @param type the type of the object
@@ -650,17 +655,20 @@ public class TypeUtils {
             throw new RuntimeException("Failed to parse " + string + "into type " + type.getCanonicalName(), e);
         }
 
-        throw new RuntimeException("Failed to parse " + string + "into type " + type.getCanonicalName() + ".  Type not supported");
+        throw new RuntimeException(
+                "Failed to parse " + string + "into type " + type.getCanonicalName() + ".  Type not supported");
     }
 
     /**
      * Encodes a Serializable Object into base64 String.
+     * 
      * @param serializable the object to encode
      * @return the base64 encoded string
      * @throws IOException if the string cannot be encoded
      */
     public static String encode64Serializable(Serializable serializable) throws IOException {
-        try(ByteArrayOutputStream bos = new ByteArrayOutputStream(); ObjectOutputStream os = new ObjectOutputStream(bos)) {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                ObjectOutputStream os = new ObjectOutputStream(bos)) {
             os.writeObject(serializable);
             return Base64.getEncoder().encodeToString(bos.toByteArray());
         }
@@ -675,7 +683,8 @@ public class TypeUtils {
      * @throws ClassNotFoundException if the Object type is unknown
      */
     public static Object decode64Serializable(String string) throws IOException, ClassNotFoundException {
-        try(ObjectInputStream is = new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(string)))) {
+        try (ObjectInputStream is =
+                new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(string)))) {
             return is.readObject();
         }
     }
@@ -691,11 +700,11 @@ public class TypeUtils {
             return (Class) paramType;
         } else if (paramType instanceof ParameterizedType) {
             return (Class) // We are asking the parameterized type for it's raw type, which is always Class
-                    ((ParameterizedType) paramType).getRawType();
+            ((ParameterizedType) paramType).getRawType();
         } else if (paramType instanceof WildcardType) {
             final Type[] upper = ((WildcardType) paramType).getUpperBounds();
             return getErasedType(upper[0]);
-        } else if (paramType instanceof java.lang.reflect.TypeVariable){
+        } else if (paramType instanceof java.lang.reflect.TypeVariable) {
             final Type[] bounds = ((TypeVariable) paramType).getBounds();
             if (bounds.length > 1) {
                 Class[] erasedBounds = new Class[bounds.length];
@@ -733,7 +742,7 @@ public class TypeUtils {
         } else if (two.isAssignableFrom(one)) {
             return two;
         }
-        // No luck on quick check...  Look in interfaces.
+        // No luck on quick check... Look in interfaces.
         Set<Class<?>> oneInterfaces = getFlattenedInterfaces(one);
         Set<Class<?>> twoInterfaces = getFlattenedInterfaces(two);
         // Keep only shared interfaces
@@ -741,9 +750,9 @@ public class TypeUtils {
         Class strongest = Object.class;
         for (Class<?> cls : oneInterfaces) {
             // There is a winning type...
-            if (strongest.isAssignableFrom(cls)){
+            if (strongest.isAssignableFrom(cls)) {
                 strongest = cls;
-            } else if (!cls.isAssignableFrom(strongest)){
+            } else if (!cls.isAssignableFrom(strongest)) {
                 return Object.class;
             }
         }
@@ -880,7 +889,7 @@ public class TypeUtils {
     }
 
     public static boolean unbox(Boolean value) {
-        //This will throw an NPE on a null value.
+        // This will throw an NPE on a null value.
         return value;
     }
 

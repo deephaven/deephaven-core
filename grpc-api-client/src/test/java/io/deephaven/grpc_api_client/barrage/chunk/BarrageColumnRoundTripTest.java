@@ -36,9 +36,10 @@ import java.util.function.IntFunction;
 
 public class BarrageColumnRoundTripTest extends LiveTableTestCase {
 
-    private static final ChunkInputStreamGenerator.Options OPT_DEFAULT_DH_NULLS = new ChunkInputStreamGenerator.Options.Builder()
-            .setUseDeephavenNulls(true)
-            .build();
+    private static final ChunkInputStreamGenerator.Options OPT_DEFAULT_DH_NULLS =
+            new ChunkInputStreamGenerator.Options.Builder()
+                    .setUseDeephavenNulls(true)
+                    .build();
     private static final ChunkInputStreamGenerator.Options OPT_DEFAULT = new ChunkInputStreamGenerator.Options.Builder()
             .build();
 
@@ -53,7 +54,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             testRoundTripSerialization(opts, char.class, (utO) -> {
                 final WritableCharChunk<Attributes.Values> chunk = utO.asWritableCharChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
-                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_CHAR : (char)random.nextInt());
+                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_CHAR : (char) random.nextInt());
                 }
             }, (utO, utC, subset) -> {
                 final WritableCharChunk<Attributes.Values> original = utO.asWritableCharChunk();
@@ -64,7 +65,8 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                     }
                 } else {
                     final MutableInt off = new MutableInt();
-                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)", computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
+                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)",
+                            computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
                 }
             });
         }
@@ -76,7 +78,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             testRoundTripSerialization(opts, byte.class, (utO) -> {
                 final WritableByteChunk<Attributes.Values> chunk = utO.asWritableByteChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
-                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_BYTE : (byte)random.nextInt());
+                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_BYTE : (byte) random.nextInt());
                 }
             }, (utO, utC, subset) -> {
                 final WritableByteChunk<Attributes.Values> original = utO.asWritableByteChunk();
@@ -87,7 +89,8 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                     }
                 } else {
                     final MutableInt off = new MutableInt();
-                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)", computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
+                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)",
+                            computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
                 }
             });
         }
@@ -99,7 +102,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             testRoundTripSerialization(opts, short.class, (utO) -> {
                 final WritableShortChunk<Attributes.Values> chunk = utO.asWritableShortChunk();
                 for (int i = 0; i < chunk.size(); ++i) {
-                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_SHORT : (short)random.nextInt());
+                    chunk.set(i, i % 7 == 0 ? QueryConstants.NULL_SHORT : (short) random.nextInt());
                 }
             }, (utO, utC, subset) -> {
                 final WritableShortChunk<Attributes.Values> original = utO.asWritableShortChunk();
@@ -110,7 +113,8 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                     }
                 } else {
                     final MutableInt off = new MutableInt();
-                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)", computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
+                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)",
+                            computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
                 }
             });
         }
@@ -133,7 +137,8 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                     }
                 } else {
                     final MutableInt off = new MutableInt();
-                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)", computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
+                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)",
+                            computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
                 }
             });
         }
@@ -156,7 +161,8 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                     }
                 } else {
                     final MutableInt off = new MutableInt();
-                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)", computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
+                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)",
+                            computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
                 }
             });
         }
@@ -179,7 +185,8 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                     }
                 } else {
                     final MutableInt off = new MutableInt();
-                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)", computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
+                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)",
+                            computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
                 }
             });
         }
@@ -202,46 +209,56 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                     }
                 } else {
                     final MutableInt off = new MutableInt();
-                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)", computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
+                    subset.forAllLongs(key -> Assert.equals(original.get((int) key), "original.get(key)",
+                            computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())"));
                 }
             });
         }
     }
 
     public void testObjectSerialization() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT, Object.class, initObjectChunk(Integer::toString), new ObjectIdentityValidator<>());
+        testRoundTripSerialization(OPT_DEFAULT, Object.class, initObjectChunk(Integer::toString),
+                new ObjectIdentityValidator<>());
     }
 
     public void testStringSerializationDHNulls() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT_DH_NULLS, String.class, initObjectChunk(Integer::toString), new ObjectIdentityValidator<>());
+        testRoundTripSerialization(OPT_DEFAULT_DH_NULLS, String.class, initObjectChunk(Integer::toString),
+                new ObjectIdentityValidator<>());
     }
 
     public void testStringSerialization() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT, Object.class, initObjectChunk(Integer::toString), new ObjectIdentityValidator<>());
+        testRoundTripSerialization(OPT_DEFAULT, Object.class, initObjectChunk(Integer::toString),
+                new ObjectIdentityValidator<>());
     }
 
     public void testUniqueToStringSerializationDHNulls() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT_DH_NULLS, Unique.class, initObjectChunk(Unique::new), new ObjectToStringValidator<>());
+        testRoundTripSerialization(OPT_DEFAULT_DH_NULLS, Unique.class, initObjectChunk(Unique::new),
+                new ObjectToStringValidator<>());
     }
 
     public void testUniqueToStringSerialization() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT, Unique.class, initObjectChunk(Unique::new), new ObjectToStringValidator<>());
+        testRoundTripSerialization(OPT_DEFAULT, Unique.class, initObjectChunk(Unique::new),
+                new ObjectToStringValidator<>());
     }
 
     public void testStringArrayDHNullsSerialization() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT_DH_NULLS, String[].class, BarrageColumnRoundTripTest::initStringArrayChunk, new ObjectIdentityValidator<>());
+        testRoundTripSerialization(OPT_DEFAULT_DH_NULLS, String[].class,
+                BarrageColumnRoundTripTest::initStringArrayChunk, new ObjectIdentityValidator<>());
     }
 
     public void testStringArraySerialization() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT, String[].class, BarrageColumnRoundTripTest::initStringArrayChunk, new ObjectIdentityValidator<>());
+        testRoundTripSerialization(OPT_DEFAULT, String[].class, BarrageColumnRoundTripTest::initStringArrayChunk,
+                new ObjectIdentityValidator<>());
     }
 
     public void testLongArraySerializationDHNulls() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT_DH_NULLS, long[].class, BarrageColumnRoundTripTest::initLongArrayChunk, new LongArrayIdentityValidator<>());
+        testRoundTripSerialization(OPT_DEFAULT_DH_NULLS, long[].class, BarrageColumnRoundTripTest::initLongArrayChunk,
+                new LongArrayIdentityValidator<>());
     }
 
     public void testLongArraySerialization() throws IOException {
-        testRoundTripSerialization(OPT_DEFAULT, long[].class, BarrageColumnRoundTripTest::initLongArrayChunk, new LongArrayIdentityValidator<>());
+        testRoundTripSerialization(OPT_DEFAULT, long[].class, BarrageColumnRoundTripTest::initLongArrayChunk,
+                new LongArrayIdentityValidator<>());
     }
 
     private static class Unique {
@@ -261,7 +278,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             if (!(obj instanceof Unique)) {
                 return false;
             }
-            final Unique other = (Unique)obj;
+            final Unique other = (Unique) obj;
             return value == other.value;
         }
     }
@@ -313,15 +330,15 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
 
     private interface Validator {
         void assertExpected(final WritableChunk<Attributes.Values> original,
-                            final WritableChunk<Attributes.Values> computed,
-                            @Nullable final OrderedKeys subset);
+                final WritableChunk<Attributes.Values> computed,
+                @Nullable final OrderedKeys subset);
     }
 
     private static final class ObjectIdentityValidator<T> implements Validator {
         @Override
         public void assertExpected(final WritableChunk<Attributes.Values> untypedOriginal,
-                                   final WritableChunk<Attributes.Values> unTypedComputed,
-                                   @Nullable OrderedKeys subset) {
+                final WritableChunk<Attributes.Values> unTypedComputed,
+                @Nullable OrderedKeys subset) {
             final WritableObjectChunk<T, Attributes.Values> original = untypedOriginal.asWritableObjectChunk();
             final WritableObjectChunk<T, Attributes.Values> computed = unTypedComputed.asWritableObjectChunk();
 
@@ -330,14 +347,14 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             }
             final MutableInt off = new MutableInt();
             subset.forAllLongs(key -> {
-                final T next = original.get((int)key);
+                final T next = original.get((int) key);
                 if (next == null) {
                     Assert.eqNull(computed.get(off.getAndIncrement()), "computed");
                 } else if (next.getClass().isArray()) {
-                    //noinspection unchecked
-                    final T[] nt = (T[])next;
-                    //noinspection unchecked
-                    final T[] ct = (T[])computed.get(off.getAndIncrement());
+                    // noinspection unchecked
+                    final T[] nt = (T[]) next;
+                    // noinspection unchecked
+                    final T[] ct = (T[]) computed.get(off.getAndIncrement());
                     Assert.equals(nt.length, "nt.length", ct.length, "ct.length");
                     for (int k = 0; k < nt.length; ++k) {
                         Assert.equals(nt[k], "nt[k]", ct[k], "ct[k]");
@@ -352,8 +369,8 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
     private static class ObjectToStringValidator<T> implements Validator {
         @Override
         public void assertExpected(final WritableChunk<Attributes.Values> untypedOriginal,
-                                   final WritableChunk<Attributes.Values> untypedComputed,
-                                   @Nullable OrderedKeys subset) {
+                final WritableChunk<Attributes.Values> untypedComputed,
+                @Nullable OrderedKeys subset) {
             final WritableObjectChunk<T, Attributes.Values> original = untypedOriginal.asWritableObjectChunk();
             final WritableObjectChunk<String, Attributes.Values> computed = untypedComputed.asWritableObjectChunk();
             if (subset == null) {
@@ -361,10 +378,10 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             }
             final MutableInt off = new MutableInt();
             subset.forAllLongs(key -> {
-                if (original.get((int)key) == null) {
+                if (original.get((int) key) == null) {
                     Assert.eqNull(computed.get(off.getAndIncrement()), "computed");
                 } else {
-                    Assert.equals(original.get((int)key).toString(), "original.get(key).toString()",
+                    Assert.equals(original.get((int) key).toString(), "original.get(key).toString()",
                             computed.get(off.getAndIncrement()), "computed.get(off.getAndIncrement())");
                 }
             });
@@ -374,8 +391,8 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
     private static final class LongArrayIdentityValidator<T> implements Validator {
         @Override
         public void assertExpected(final WritableChunk<Attributes.Values> untypedOriginal,
-                                   final WritableChunk<Attributes.Values> unTypedComputed,
-                                   @Nullable OrderedKeys subset) {
+                final WritableChunk<Attributes.Values> unTypedComputed,
+                @Nullable OrderedKeys subset) {
             final WritableObjectChunk<long[], Attributes.Values> original = untypedOriginal.asWritableObjectChunk();
             final WritableObjectChunk<long[], Attributes.Values> computed = unTypedComputed.asWritableObjectChunk();
             if (subset == null) {
@@ -383,7 +400,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             }
             final MutableInt off = new MutableInt();
             subset.forAllLongs(i -> {
-                final long[] nt = original.get((int)i);
+                final long[] nt = original.get((int) i);
                 if (nt == null) {
                     Assert.eqNull(computed.get(off.getAndIncrement()), "computed");
                 } else {
@@ -412,33 +429,43 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
         try {
             initData.accept(data);
 
-            final ChunkInputStreamGenerator generator = ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, type, data);
+            final ChunkInputStreamGenerator generator =
+                    ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, type, data);
 
             // full sub logic
-            try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos = new BarrageProtoUtil.ExposedByteArrayOutputStream()) {
+            try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
+                    new BarrageProtoUtil.ExposedByteArrayOutputStream()) {
                 final ChunkInputStreamGenerator.DrainableColumn column = generator.getInputStream(options, null);
                 final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
-                column.visitFieldNodes((numElements, nullCount) -> fieldNodes.add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
+                column.visitFieldNodes((numElements, nullCount) -> fieldNodes
+                        .add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
                 final TLongArrayList bufferNodes = new TLongArrayList();
                 column.visitBuffers(bufferNodes::add);
                 column.drainTo(baos);
-                final DataInput dis = new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
+                final DataInput dis =
+                        new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
 
-                rtData = (WritableChunk<Attributes.Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis);
+                rtData = (WritableChunk<Attributes.Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(
+                        options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis);
                 Assert.eq(data.size(), "data.size()", rtData.size(), "rtData.size()");
                 validator.assertExpected(data, rtData, null);
             }
 
             // empty subset
-            try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos = new BarrageProtoUtil.ExposedByteArrayOutputStream()) {
-                final ChunkInputStreamGenerator.DrainableColumn column = generator.getInputStream(options, Index.CURRENT_FACTORY.getEmptyIndex());
+            try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
+                    new BarrageProtoUtil.ExposedByteArrayOutputStream()) {
+                final ChunkInputStreamGenerator.DrainableColumn column =
+                        generator.getInputStream(options, Index.CURRENT_FACTORY.getEmptyIndex());
                 final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
-                column.visitFieldNodes((numElements, nullCount) -> fieldNodes.add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
+                column.visitFieldNodes((numElements, nullCount) -> fieldNodes
+                        .add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
                 final TLongArrayList bufferNodes = new TLongArrayList();
                 column.visitBuffers(bufferNodes::add);
                 column.drainTo(baos);
-                final DataInput dis = new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
-                rtData = (WritableChunk<Attributes.Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis);
+                final DataInput dis =
+                        new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
+                rtData = (WritableChunk<Attributes.Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(
+                        options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis);
                 Assert.eq(rtData.size(), "rtData.size()", 0);
             }
 
@@ -450,16 +477,20 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                     builder.appendKey(i);
                 }
             }
-            try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos = new BarrageProtoUtil.ExposedByteArrayOutputStream();
-                 final Index subset = builder.getIndex()) {
+            try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
+                    new BarrageProtoUtil.ExposedByteArrayOutputStream();
+                    final Index subset = builder.getIndex()) {
                 final ChunkInputStreamGenerator.DrainableColumn column = generator.getInputStream(options, subset);
                 final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
-                column.visitFieldNodes((numElements, nullCount) -> fieldNodes.add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
+                column.visitFieldNodes((numElements, nullCount) -> fieldNodes
+                        .add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
                 final TLongArrayList bufferNodes = new TLongArrayList();
                 column.visitBuffers(bufferNodes::add);
                 column.drainTo(baos);
-                final DataInput dis = new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
-                rtData = (WritableChunk<Attributes.Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis);
+                final DataInput dis =
+                        new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
+                rtData = (WritableChunk<Attributes.Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(
+                        options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis);
                 Assert.eq(subset.intSize(), "subset.intSize()", rtData.size(), "rtData.size()");
                 validator.assertExpected(data, rtData, subset);
             }

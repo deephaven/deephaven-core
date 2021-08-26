@@ -10,12 +10,11 @@ public final class IdentityKeyedObjectKey<KV> implements KeyedObjectKey<KV, KV> 
     private static final KeyedObjectKey<?, ?> INSTANCE = new IdentityKeyedObjectKey<>();
 
     public static <KV> KeyedObjectKey<KV, KV> getInstance() {
-        //noinspection unchecked
+        // noinspection unchecked
         return (KeyedObjectKey<KV, KV>) INSTANCE;
     }
 
-    private IdentityKeyedObjectKey() {
-    }
+    private IdentityKeyedObjectKey() {}
 
     @Override
     public KV getKey(final KV kv) {

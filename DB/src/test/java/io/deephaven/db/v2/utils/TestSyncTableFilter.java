@@ -29,15 +29,17 @@ public class TestSyncTableFilter extends LiveTableTestCase {
     }
 
     public void testSimple() {
-        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 1, 2, 2, 3, 3), intCol("Sentinel", 101, 102, 103, 104, 105, 106), col("Key", "a", "a", "a", "a", "a", "a"));
-        final QueryTable b = TstUtils.testRefreshingTable(longCol("ID", 0, 0, 2, 2, 4, 4), intCol("Sentinel", 201, 202, 203, 204, 205, 206), col("Key", "a", "a", "a", "a", "a", "a"));
+        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 1, 2, 2, 3, 3),
+                intCol("Sentinel", 101, 102, 103, 104, 105, 106), col("Key", "a", "a", "a", "a", "a", "a"));
+        final QueryTable b = TstUtils.testRefreshingTable(longCol("ID", 0, 0, 2, 2, 4, 4),
+                intCol("Sentinel", 201, 202, 203, 204, 205, 206), col("Key", "a", "a", "a", "a", "a", "a"));
 
         final SyncTableFilter.Builder builder = new SyncTableFilter.Builder("ID");
         builder.addTable("a", a);
         builder.addTable("b", b);
         final TableMap result = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(builder::build);
 
-        assertEquals(new String[]{"a", "b"}, result.getKeySet());
+        assertEquals(new String[] {"a", "b"}, result.getKeySet());
 
         final Table fa = result.get("a");
         final Table fb = result.get("b");
@@ -75,15 +77,17 @@ public class TestSyncTableFilter extends LiveTableTestCase {
     }
 
     public void testSimpleAddAgain() {
-        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 1, 2, 2, 3, 3), intCol("Sentinel", 101, 102, 103, 104, 105, 106), col("Key", "a", "a", "a", "a", "a", "a"));
-        final QueryTable b = TstUtils.testRefreshingTable(longCol("ID", 0, 0, 2, 2, 4, 4), intCol("Sentinel", 201, 202, 203, 204, 205, 206), col("Key", "a", "a", "a", "a", "a", "a"));
+        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 1, 2, 2, 3, 3),
+                intCol("Sentinel", 101, 102, 103, 104, 105, 106), col("Key", "a", "a", "a", "a", "a", "a"));
+        final QueryTable b = TstUtils.testRefreshingTable(longCol("ID", 0, 0, 2, 2, 4, 4),
+                intCol("Sentinel", 201, 202, 203, 204, 205, 206), col("Key", "a", "a", "a", "a", "a", "a"));
 
         final SyncTableFilter.Builder builder = new SyncTableFilter.Builder("ID");
         builder.addTable("a", a);
         builder.addTable("b", b);
         final TableMap result = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(builder::build);
 
-        assertEquals(new String[]{"a", "b"}, result.getKeySet());
+        assertEquals(new String[] {"a", "b"}, result.getKeySet());
 
         final Table fa = result.get("a");
         final Table fb = result.get("b");
@@ -105,7 +109,8 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         assertEquals("", TableTools.diff(fa, ex1a, 10));
         assertEquals("", TableTools.diff(fb, ex1b, 10));
 
-        final DynamicTable ex2a = newTable(longCol("ID", 5, 5, 5, 5), intCol("Sentinel", 107, 108, 109, 110), col("Key", "b", "b", "c", "c"));
+        final DynamicTable ex2a = newTable(longCol("ID", 5, 5, 5, 5), intCol("Sentinel", 107, 108, 109, 110),
+                col("Key", "b", "b", "c", "c"));
         final DynamicTable ex2b = newTable(longCol("ID", 5, 5), intCol("Sentinel", 207, 208), col("Key", "a", "a"));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -121,7 +126,8 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         assertEquals("", TableTools.diff(fa, ex2a, 10));
         assertEquals("", TableTools.diff(fb, ex2b, 10));
 
-        final DynamicTable ex3b = newTable(longCol("ID", 5, 5, 5), intCol("Sentinel", 207, 208, 209), col("Key", "a", "a", "a"));
+        final DynamicTable ex3b =
+                newTable(longCol("ID", 5, 5, 5), intCol("Sentinel", 207, 208, 209), col("Key", "a", "a", "a"));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(b, i(12, 13), longCol("ID", 5, 6), intCol("Sentinel", 209, 210), col("Key", "a", "a"));
@@ -151,15 +157,18 @@ public class TestSyncTableFilter extends LiveTableTestCase {
     }
 
     public void testNullAppearance() {
-        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 1, QueryConstants.NULL_LONG, QueryConstants.NULL_LONG, 3, 3), intCol("Sentinel", 101, 102, 103, 104, 105, 106), col("Key", "a", "a", "a", "a", "a", "a"));
-        final QueryTable b = TstUtils.testRefreshingTable(longCol("ID", 0, 0, 2, 2, 4, 4), intCol("Sentinel", 201, 202, 203, 204, 205, 206), col("Key", "a", "a", "a", "a", "a", "a"));
+        final QueryTable a = TstUtils.testRefreshingTable(
+                longCol("ID", 1, 1, QueryConstants.NULL_LONG, QueryConstants.NULL_LONG, 3, 3),
+                intCol("Sentinel", 101, 102, 103, 104, 105, 106), col("Key", "a", "a", "a", "a", "a", "a"));
+        final QueryTable b = TstUtils.testRefreshingTable(longCol("ID", 0, 0, 2, 2, 4, 4),
+                intCol("Sentinel", 201, 202, 203, 204, 205, 206), col("Key", "a", "a", "a", "a", "a", "a"));
 
         final SyncTableFilter.Builder builder = new SyncTableFilter.Builder().defaultId("ID").defaultKeys()
                 .addTable("a", a)
                 .addTable("b", b, "ID");
         final TableMap result = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(builder::build);
 
-        assertEquals(new String[]{"a", "b"}, result.getKeySet());
+        assertEquals(new String[] {"a", "b"}, result.getKeySet());
 
         final Table fa = result.get("a");
         final Table fb = result.get("b");
@@ -200,15 +209,18 @@ public class TestSyncTableFilter extends LiveTableTestCase {
     }
 
     public void testSimpleKeyed() {
-        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 1, 2, 2, 3, 3, 4, 4, 5, 5), intCol("Sentinel", 101, 102, 103, 104, 105, 106, 107, 108, 109, 110), col("Key", "a", "a", "b", "b", "a", "a", "a", "a", "b", "b"));
-        final QueryTable b = TstUtils.testRefreshingTable(longCol("Ego", 0, 0, 2, 2, 4, 4), intCol("Sentinel", 201, 202, 203, 204, 205, 206), col("Klyuch", "a", "a", "b", "b", "a", "a"));
+        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 1, 2, 2, 3, 3, 4, 4, 5, 5),
+                intCol("Sentinel", 101, 102, 103, 104, 105, 106, 107, 108, 109, 110),
+                col("Key", "a", "a", "b", "b", "a", "a", "a", "a", "b", "b"));
+        final QueryTable b = TstUtils.testRefreshingTable(longCol("Ego", 0, 0, 2, 2, 4, 4),
+                intCol("Sentinel", 201, 202, 203, 204, 205, 206), col("Klyuch", "a", "a", "b", "b", "a", "a"));
 
         final SyncTableFilter.Builder builder = new SyncTableFilter.Builder();
         builder.addTable("a", a, "ID", "Key");
         builder.addTable("b", b, "Ego", "Klyuch");
         final TableMap result = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(builder::build);
 
-        assertEquals(new String[]{"a", "b"}, result.getKeySet());
+        assertEquals(new String[] {"a", "b"}, result.getKeySet());
 
         final Table fa = result.get("a");
         final Table fb = result.get("b");
@@ -223,19 +235,24 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         TableTools.show(fa);
         TableTools.show(fb);
 
-        final DynamicTable ex1a = newTable(longCol("ID", 2, 2, 4, 4), intCol("Sentinel", 103, 104, 107, 108), col("Key", "b", "b", "a", "a"));
-        final DynamicTable ex1b = newTable(longCol("Ego", 2, 2, 4, 4), intCol("Sentinel", 203, 204, 205, 206), col("Klyuch", "b", "b", "a", "a"));
+        final DynamicTable ex1a = newTable(longCol("ID", 2, 2, 4, 4), intCol("Sentinel", 103, 104, 107, 108),
+                col("Key", "b", "b", "a", "a"));
+        final DynamicTable ex1b = newTable(longCol("Ego", 2, 2, 4, 4), intCol("Sentinel", 203, 204, 205, 206),
+                col("Klyuch", "b", "b", "a", "a"));
 
         assertEquals("", TableTools.diff(fa, ex1a, 10));
         assertEquals("", TableTools.diff(fb, ex1b, 10));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(b, i(10, 11), longCol("Ego", 5, 5), intCol("Sentinel", 207, 208), col("Klyuch", "b", "c"));
+            TstUtils.addToTable(b, i(10, 11), longCol("Ego", 5, 5), intCol("Sentinel", 207, 208),
+                    col("Klyuch", "b", "c"));
             b.notifyListeners(i(10, 11), i(), i());
         });
 
-        final DynamicTable ex2a = newTable(longCol("ID", 4, 4, 5, 5), intCol("Sentinel", 107, 108, 109, 110), col("Key", "a", "a", "b", "b"));
-        final DynamicTable ex2b = newTable(longCol("Ego", 4, 4, 5), intCol("Sentinel", 205, 206, 207), col("Klyuch", "a", "a", "b"));
+        final DynamicTable ex2a = newTable(longCol("ID", 4, 4, 5, 5), intCol("Sentinel", 107, 108, 109, 110),
+                col("Key", "a", "a", "b", "b"));
+        final DynamicTable ex2b =
+                newTable(longCol("Ego", 4, 4, 5), intCol("Sentinel", 205, 206, 207), col("Klyuch", "a", "a", "b"));
 
         assertEquals("", TableTools.diff(fa, ex2a, 10));
         assertEquals("", TableTools.diff(fb, ex2b, 10));
@@ -245,8 +262,10 @@ public class TestSyncTableFilter extends LiveTableTestCase {
             a.notifyListeners(i(20, 21), i(), i());
         });
 
-        final DynamicTable ex3a = newTable(longCol("ID", 4, 4, 5, 5, 5, 5), intCol("Sentinel", 107, 108, 109, 110, 111, 112), col("Key", "a", "a", "b", "b", "c", "c"));
-        final DynamicTable ex3b = newTable(longCol("Ego", 4, 4, 5, 5), intCol("Sentinel", 205, 206, 207, 208), col("Klyuch", "a", "a", "b", "c"));
+        final DynamicTable ex3a = newTable(longCol("ID", 4, 4, 5, 5, 5, 5),
+                intCol("Sentinel", 107, 108, 109, 110, 111, 112), col("Key", "a", "a", "b", "b", "c", "c"));
+        final DynamicTable ex3b = newTable(longCol("Ego", 4, 4, 5, 5), intCol("Sentinel", 205, 206, 207, 208),
+                col("Klyuch", "a", "a", "b", "c"));
 
         TableTools.showWithIndex(fa);
         TableTools.showWithIndex(fb);
@@ -263,13 +282,17 @@ public class TestSyncTableFilter extends LiveTableTestCase {
             a.notifyListeners(i(), i(), i(20, 21));
         });
 
-        final DynamicTable ex4a = newTable(longCol("ID", 4, 4, 5, 5, 5, 5), intCol("Sentinel", 107, 108, 109, 110, 113, 114), col("Key", "a", "a", "b", "b", "c", "c"));
+        final DynamicTable ex4a = newTable(longCol("ID", 4, 4, 5, 5, 5, 5),
+                intCol("Sentinel", 107, 108, 109, 110, 113, 114), col("Key", "a", "a", "b", "b", "c", "c"));
         assertEquals("", TableTools.diff(fa, ex4a, 10));
     }
 
     public void testErrorPropagation() {
-        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 1, 2, 2, 3, 3, 4, 4, 5, 5), intCol("Sentinel", 101, 102, 103, 104, 105, 106, 107, 108, 109, 110), col("Key", "a", "a", "b", "b", "a", "a", "a", "a", "b", "b"));
-        final QueryTable b = TstUtils.testRefreshingTable(longCol("Ego", 0, 0, 2, 2, 4, 4), intCol("Sentinel", 201, 202, 203, 204, 205, 206), col("Klyuch", "a", "a", "b", "b", "a", "a"));
+        final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1, 1, 2, 2, 3, 3, 4, 4, 5, 5),
+                intCol("Sentinel", 101, 102, 103, 104, 105, 106, 107, 108, 109, 110),
+                col("Key", "a", "a", "b", "b", "a", "a", "a", "a", "b", "b"));
+        final QueryTable b = TstUtils.testRefreshingTable(longCol("Ego", 0, 0, 2, 2, 4, 4),
+                intCol("Sentinel", 201, 202, 203, 204, 205, 206), col("Klyuch", "a", "a", "b", "b", "a", "a"));
 
         final SyncTableFilter.Builder builder = new SyncTableFilter.Builder();
         builder.addTable("a", a, "ID", "Key");
@@ -282,8 +305,8 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         fa.setAttribute("NAME", "a");
         fb.setAttribute("NAME", "b");
 
-        final ErrorListener la = new ErrorListener("fa", (DynamicTable)fa);
-        final ErrorListener lb = new ErrorListener("fb", (DynamicTable)fb);
+        final ErrorListener la = new ErrorListener("fa", (DynamicTable) fa);
+        final ErrorListener lb = new ErrorListener("fb", (DynamicTable) fb);
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
         allowingError(() -> {
@@ -306,7 +329,8 @@ public class TestSyncTableFilter extends LiveTableTestCase {
 
     public void testDependencies() {
         final QueryTable a = TstUtils.testRefreshingTable(longCol("ID", 1), intCol("Sentinel", 101), col("Key", "a"));
-        final QueryTable b = TstUtils.testRefreshingTable(longCol("Ego", 0, 1, 1), intCol("Sentinel", 201, 202, 203), col("Klyuch", "a", "a", "b"));
+        final QueryTable b = TstUtils.testRefreshingTable(longCol("Ego", 0, 1, 1), intCol("Sentinel", 201, 202, 203),
+                col("Klyuch", "a", "a", "b"));
 
         final SyncTableFilter.Builder builder = new SyncTableFilter.Builder();
         builder.addTable("a", a, "ID");
@@ -320,38 +344,42 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         fb.setAttribute("NAME", "b");
 
 
-        final Table fau = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> fa.update("SentinelDoubled=Sentinel*2"));
-        final Table fbu = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> fb.update("SentinelDoubled=Sentinel*2"));
-        final Table joined = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> fau.naturalJoin(fbu, "Key=Klyuch", "SB=Sentinel,SBD=SentinelDoubled"));
-        final Table sentSum = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> joined.update("SS=SBD+SentinelDoubled"));
+        final Table fau =
+                LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> fa.update("SentinelDoubled=Sentinel*2"));
+        final Table fbu =
+                LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> fb.update("SentinelDoubled=Sentinel*2"));
+        final Table joined = LiveTableMonitor.DEFAULT.sharedLock()
+                .computeLocked(() -> fau.naturalJoin(fbu, "Key=Klyuch", "SB=Sentinel,SBD=SentinelDoubled"));
+        final Table sentSum =
+                LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> joined.update("SS=SBD+SentinelDoubled"));
 
         TableTools.showWithIndex(sentSum);
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-        assertTrue(((BaseTable)sentSum).satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertTrue(((BaseTable) sentSum).satisfied(LogicalClock.DEFAULT.currentStep()));
         LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
         addToTable(a, i(1), longCol("ID", 1), intCol("Sentinel", 102), col("Key", "b"));
         a.notifyListeners(i(1), i(), i());
-        assertFalse(((BaseTable)fa).satisfied(LogicalClock.DEFAULT.currentStep()));
-        assertFalse(((BaseTable)fb).satisfied(LogicalClock.DEFAULT.currentStep()));
-        assertFalse(((BaseTable)sentSum).satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertFalse(((BaseTable) fa).satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertFalse(((BaseTable) fb).satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertFalse(((BaseTable) sentSum).satisfied(LogicalClock.DEFAULT.currentStep()));
 
         while (!((BaseTable) fa).satisfied(LogicalClock.DEFAULT.currentStep())) {
             LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
         }
-        assertTrue(((BaseTable)fa).satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertTrue(((BaseTable) fa).satisfied(LogicalClock.DEFAULT.currentStep()));
         LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
-        assertTrue(((BaseTable)fb).satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertTrue(((BaseTable) fb).satisfied(LogicalClock.DEFAULT.currentStep()));
 
-        assertFalse(((BaseTable)joined).satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertFalse(((BaseTable) joined).satisfied(LogicalClock.DEFAULT.currentStep()));
 
         LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
 
         TableTools.showWithIndex(sentSum);
-        int [] actual = (int[]) sentSum.getColumn("SS").getDirect();
-        int [] expected = new int[]{606, 610};
+        int[] actual = (int[]) sentSum.getColumn("SS").getDirect();
+        int[] expected = new int[] {606, 610};
         assertEquals(expected, actual);
     }
 
@@ -359,8 +387,7 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         final QueryTable source1 = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(10),
                 col("Partition", "A", "A", "B", "B", "C", "C", "C", "D", "D", "D"),
                 longCol("ID", 1, 2, /* B */ 1, 2, /* C */ 1, 2, 2, /* D */ 1, 2, 2),
-                intCol("Sentinel", 101, 102, 103, 104, 105, 106, 107, 108, 109, 110)
-        );
+                intCol("Sentinel", 101, 102, 103, 104, 105, 106, 107, 108, 109, 110));
 
         final QueryTable source2 = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(5),
                 col("Division", "A", "A", "B", "C", "C"),
@@ -370,20 +397,26 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         final TableMap sm1 = source1.updateView("SK1=k").byExternal("Partition");
         final TableMap sm2 = source2.updateView("SK2=k").byExternal("Division");
 
-        final TableMap bykey = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> new SyncTableFilter.Builder().addTable("source1", source1, "ID", "Partition").addTable("source2", source2, "ID", "Division").build());
+        final TableMap bykey = LiveTableMonitor.DEFAULT.sharedLock()
+                .computeLocked(() -> new SyncTableFilter.Builder().addTable("source1", source1, "ID", "Partition")
+                        .addTable("source2", source2, "ID", "Division").build());
         final Table s1f = bykey.get("source1");
         final Table s2f = bykey.get("source2");
         TableTools.showWithIndex(s1f);
         TableTools.showWithIndex(s2f);
 
-        final TableMap filteredByPartition = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> new SyncTableFilter.Builder("ID").addTableMap("source1", sm1).addTableMap("source2", sm2, "ID").build());
-        for (Object key: filteredByPartition.getKeySet()) {
+        final TableMap filteredByPartition =
+                LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> new SyncTableFilter.Builder("ID")
+                        .addTableMap("source1", sm1).addTableMap("source2", sm2, "ID").build());
+        for (Object key : filteredByPartition.getKeySet()) {
             System.out.println(key);
             TableTools.showWithIndex(filteredByPartition.get(key));
         }
 
-        final TableMap s1tm = new FilteredTableMap(filteredByPartition, sk -> ((SmartKey)sk).get(1).equals("source1"), sk -> ((SmartKey)sk).get(0));
-        final TableMap s2tm = new FilteredTableMap(filteredByPartition, sk -> ((SmartKey)sk).get(1).equals("source2"), sk -> ((SmartKey)sk).get(0));
+        final TableMap s1tm = new FilteredTableMap(filteredByPartition, sk -> ((SmartKey) sk).get(1).equals("source1"),
+                sk -> ((SmartKey) sk).get(0));
+        final TableMap s2tm = new FilteredTableMap(filteredByPartition, sk -> ((SmartKey) sk).get(1).equals("source2"),
+                sk -> ((SmartKey) sk).get(0));
 
         final Table s1merged = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(s1tm::merge);
         final Table s2merged = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(s2tm::merge);
@@ -394,7 +427,8 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         assertTableEquals(s2f, s2mergedSorted);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(source2, i(10, 11), col("Division", "D", "B"), longCol("ID", 2, 2), intCol("Sentinel", 206, 207));
+            addToTable(source2, i(10, 11), col("Division", "D", "B"), longCol("ID", 2, 2),
+                    intCol("Sentinel", 206, 207));
             source2.notifyListeners(i(10, 11), i(), i());
         });
 
@@ -405,9 +439,11 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         TableTools.showWithIndex(s2f);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(source2, i(12, 13), col("Division", "D", "E"), longCol("ID", 3, 3), intCol("Sentinel", 208, 209));
+            addToTable(source2, i(12, 13), col("Division", "D", "E"), longCol("ID", 3, 3),
+                    intCol("Sentinel", 208, 209));
             source2.notifyListeners(i(12, 13), i(), i());
-            addToTable(source1, i(10, 11, 12), col("Partition", "D", "D", "E"), longCol("ID", 3, 4, 3), intCol("Sentinel", 111, 112, 113));
+            addToTable(source1, i(10, 11, 12), col("Partition", "D", "D", "E"), longCol("ID", 3, 4, 3),
+                    intCol("Sentinel", 111, 112, 113));
             source1.notifyListeners(i(10, 11, 12), i(), i());
         });
 
@@ -430,51 +466,70 @@ public class TestSyncTableFilter extends LiveTableTestCase {
         final ColumnInfo[] columnInfoSet1;
         final ColumnInfo[] columnInfoSet2;
         final int size = 10;
-        final QueryTable source1Unfiltered = getTable(size, random, columnInfo1 = initColumnInfos(new String[]{"Partition", "ID", "Sentinel", "Truthy"},
-                new SetGenerator<>("a", "b","c","d", "e"),
-                new IncreasingSortedLongGenerator(2, 1000),
-                new IntGenerator(0, 1000000),
-                new BooleanGenerator()));
+        final QueryTable source1Unfiltered = getTable(size, random,
+                columnInfo1 = initColumnInfos(new String[] {"Partition", "ID", "Sentinel", "Truthy"},
+                        new SetGenerator<>("a", "b", "c", "d", "e"),
+                        new IncreasingSortedLongGenerator(2, 1000),
+                        new IntGenerator(0, 1000000),
+                        new BooleanGenerator()));
 
-        final QueryTable source2Unfiltered = getTable(size, random, columnInfo2 = initColumnInfos(new String[]{"Partition", "ID", "Sentinel", "Truthy"},
-                new SetGenerator<>("a", "b","c","d", "e"),
-                new IncreasingSortedLongGenerator(2, 1000),
-                new IntGenerator(0, 1000000),
-                new BooleanGenerator()));
+        final QueryTable source2Unfiltered = getTable(size, random,
+                columnInfo2 = initColumnInfos(new String[] {"Partition", "ID", "Sentinel", "Truthy"},
+                        new SetGenerator<>("a", "b", "c", "d", "e"),
+                        new IncreasingSortedLongGenerator(2, 1000),
+                        new IntGenerator(0, 1000000),
+                        new BooleanGenerator()));
 
-        final QueryTable filterSet1 = getTable(1, random, columnInfoSet1 = initColumnInfos(new String []{"Partition"}, new SetGenerator<>("a", "b", "c", "d", "e")));
-        final QueryTable filterSet2 = getTable(1, random, columnInfoSet2 = initColumnInfos(new String []{"Partition"}, new SetGenerator<>("a", "b", "c", "d", "e")));
+        final QueryTable filterSet1 = getTable(1, random, columnInfoSet1 =
+                initColumnInfos(new String[] {"Partition"}, new SetGenerator<>("a", "b", "c", "d", "e")));
+        final QueryTable filterSet2 = getTable(1, random, columnInfoSet2 =
+                initColumnInfos(new String[] {"Partition"}, new SetGenerator<>("a", "b", "c", "d", "e")));
 
-        final Table dummy = TableTools.newTable(col("Partition", "A"), longCol("ID", 0), intCol("Sentinel", 12345678), col("Truthy", true));
+        final Table dummy = TableTools.newTable(col("Partition", "A"), longCol("ID", 0), intCol("Sentinel", 12345678),
+                col("Truthy", true));
 
-        final Table source1 = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> TableTools.merge(dummy, source1Unfiltered.whereIn(filterSet1, "Partition").update("Truthy=!!Truthy")));
-        final Table source2 = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> TableTools.merge(dummy, source2Unfiltered.whereIn(filterSet2, "Partition").update("Truthy=!!Truthy")));
+        final Table source1 = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> TableTools.merge(dummy,
+                source1Unfiltered.whereIn(filterSet1, "Partition").update("Truthy=!!Truthy")));
+        final Table source2 = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> TableTools.merge(dummy,
+                source2Unfiltered.whereIn(filterSet2, "Partition").update("Truthy=!!Truthy")));
 
         final TableMap sm1 = source1.updateView("SK1=k").byExternal("Partition");
         final TableMap sm2 = source2.updateView("SK2=k").byExternal("Partition");
 
-        final TableMap bykey = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> new SyncTableFilter.Builder("ID", "Partition").addTable("source1", source1).addTable("source2", source2).build());
+        final TableMap bykey =
+                LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> new SyncTableFilter.Builder("ID", "Partition")
+                        .addTable("source1", source1).addTable("source2", source2).build());
         final Table s1f = bykey.get("source1");
         final Table s2f = bykey.get("source2");
 
-        final TableMap bykey2 = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> new SyncTableFilter.Builder("ID", "Partition", "Truthy").addTable("source1", source1).addTable("source2", source2).build());
+        final TableMap bykey2 = LiveTableMonitor.DEFAULT.sharedLock()
+                .computeLocked(() -> new SyncTableFilter.Builder("ID", "Partition", "Truthy")
+                        .addTable("source1", source1).addTable("source2", source2).build());
         final Table s1fKeyed = bykey2.get("source1");
         final Table s2fKeyed = bykey2.get("source2");
 
-        final TableMap filteredByPartition = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> new SyncTableFilter.Builder("ID").addTableMap("source1", sm1).addTableMap("source2", sm2).build());
-        final TableMap filteredByPartitionKeyed = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> new SyncTableFilter.Builder("ID", "Truthy").addTableMap("source1", sm1).addTableMap("source2", sm2).build());
+        final TableMap filteredByPartition =
+                LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> new SyncTableFilter.Builder("ID")
+                        .addTableMap("source1", sm1).addTableMap("source2", sm2).build());
+        final TableMap filteredByPartitionKeyed =
+                LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> new SyncTableFilter.Builder("ID", "Truthy")
+                        .addTableMap("source1", sm1).addTableMap("source2", sm2).build());
 
-        final TableMap s1tm = new FilteredTableMap(filteredByPartition, sk -> ((SmartKey)sk).get(1).equals("source1"), sk -> ((SmartKey)sk).get(0));
-        final TableMap s2tm = new FilteredTableMap(filteredByPartition, sk -> ((SmartKey)sk).get(1).equals("source2"), sk -> ((SmartKey)sk).get(0));
+        final TableMap s1tm = new FilteredTableMap(filteredByPartition, sk -> ((SmartKey) sk).get(1).equals("source1"),
+                sk -> ((SmartKey) sk).get(0));
+        final TableMap s2tm = new FilteredTableMap(filteredByPartition, sk -> ((SmartKey) sk).get(1).equals("source2"),
+                sk -> ((SmartKey) sk).get(0));
 
-        final TableMap s1tmKeyed = new FilteredTableMap(filteredByPartitionKeyed, sk -> ((SmartKey)sk).get(1).equals("source1"), sk -> ((SmartKey)sk).get(0));
-        final TableMap s2tmKeyed = new FilteredTableMap(filteredByPartitionKeyed, sk -> ((SmartKey)sk).get(1).equals("source2"), sk -> ((SmartKey)sk).get(0));
+        final TableMap s1tmKeyed = new FilteredTableMap(filteredByPartitionKeyed,
+                sk -> ((SmartKey) sk).get(1).equals("source1"), sk -> ((SmartKey) sk).get(0));
+        final TableMap s2tmKeyed = new FilteredTableMap(filteredByPartitionKeyed,
+                sk -> ((SmartKey) sk).get(1).equals("source2"), sk -> ((SmartKey) sk).get(0));
 
         final Table s1merged = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(s1tm::merge);
         final Table s2merged = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(s2tm::merge);
         final Table s1mergedSorted = s1merged.sort("SK1").dropColumns("SK1");
         final Table s2mergedSorted = s2merged.sort("SK2").dropColumns("SK2");
-        
+
         final Table s1KeyedMerged = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(s1tmKeyed::merge);
         final Table s2KeyedMerged = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(s2tmKeyed::merge);
         final Table s1KeyedMergedSorted = s1KeyedMerged.sort("SK1").dropColumns("SK1");

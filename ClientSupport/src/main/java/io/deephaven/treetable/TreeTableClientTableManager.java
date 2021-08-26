@@ -16,8 +16,10 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /**
- * This class manages instances of client -> set<table> because hierarchical tables will apply sorting/filtering to each individual table.
- * Instead of serializing and holding these references on the client, we will retain and manage their lifecycle here.
+ * This class manages instances of client -> set
+ * <table>
+ * because hierarchical tables will apply sorting/filtering to each individual table. Instead of serializing and holding
+ * these references on the client, we will retain and manage their lifecycle here.
  */
 @SuppressWarnings("rawtypes")
 public enum TreeTableClientTableManager {
@@ -26,6 +28,7 @@ public enum TreeTableClientTableManager {
     // TODO (deephaven/deephaven-core/issues/37): Refine this type into something useful, or refactor entirely.
     public interface Client<CLIENT_TYPE extends Client<CLIENT_TYPE>> {
         void addDisconnectHandler(@NotNull Consumer<CLIENT_TYPE> handler);
+
         void removeDisconnectHandler(@NotNull Consumer<CLIENT_TYPE> handler);
     }
 
@@ -71,20 +74,21 @@ public enum TreeTableClientTableManager {
         }
 
         TreeState getTreeState(int baseTableId, Supplier<SnapshotState> userStateFactory) {
-            final KeyedIntObjectHash.ValueFactory<TreeState> integerTreeStateValueFactory = new KeyedIntObjectHash.ValueFactory.Strict<TreeState>() {
-                @Override
-                public TreeState newValue(int key) {
-                    return new TreeState(key, userStateFactory.get());
-                }
-            };
+            final KeyedIntObjectHash.ValueFactory<TreeState> integerTreeStateValueFactory =
+                    new KeyedIntObjectHash.ValueFactory.Strict<TreeState>() {
+                        @Override
+                        public TreeState newValue(int key) {
+                            return new TreeState(key, userStateFactory.get());
+                        }
+                    };
 
             return retentionMap.putIfAbsent(baseTableId, integerTreeStateValueFactory);
         }
     }
 
     /**
-     * The state of a single hierarchical table.  This includes a unique {@link TableState} for each
-     * expanded row of the table.
+     * The state of a single hierarchical table. This includes a unique {@link TableState} for each expanded row of the
+     * table.
      */
     public static class TreeState {
         final Map<Object, TableState> expandedTables = new HashMap<>();
@@ -106,7 +110,8 @@ public enum TreeTableClientTableManager {
         }
 
         synchronized void releaseIf(Predicate<Object> test) {
-            for (final Iterator<Map.Entry<Object, TableState>> entryIterator = expandedTables.entrySet().iterator(); entryIterator.hasNext(); ) {
+            for (final Iterator<Map.Entry<Object, TableState>> entryIterator =
+                    expandedTables.entrySet().iterator(); entryIterator.hasNext();) {
                 final Map.Entry<Object, TableState> entry = entryIterator.next();
                 if (test.test(entry.getKey())) {
                     entry.getValue().release();
@@ -150,10 +155,11 @@ public enum TreeTableClientTableManager {
      * @return the {@link ClientState client state} for the specified client
      */
     public ClientState get(Client client) {
-        // Note that putIfAbsent(K, Factory<V>) is distinctly different in behavior from putIfAbsent(K,V).  It will return
-        // the new value, or the existing value,  it will not return null like putIfAbsent(K,V).
+        // Note that putIfAbsent(K, Factory<V>) is distinctly different in behavior from putIfAbsent(K,V). It will
+        // return
+        // the new value, or the existing value, it will not return null like putIfAbsent(K,V).
         return statesByClient.putIfAbsent(client, clt -> {
-            //noinspection unchecked
+            // noinspection unchecked
             client.addDisconnectHandler(DISCONNECT_HANDLER);
             return new ClientState(clt);
         });
@@ -163,9 +169,9 @@ public enum TreeTableClientTableManager {
     public void release(Client client) {
         final ClientState state = statesByClient.removeKey(client);
 
-        if(state != null) {
+        if (state != null) {
             state.releaseAll();
-            //noinspection unchecked
+            // noinspection unchecked
             client.removeDisconnectHandler(DISCONNECT_HANDLER);
         }
     }

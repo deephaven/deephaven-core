@@ -46,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
 public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dependency, SystemicObject {
 
     /** map to use for our backing store */
-    private final Map<Object,Table> internalMap;
+    private final Map<Object, Table> internalMap;
 
     /**
      * The expected definitions for the values in internalMap.
@@ -84,9 +84,9 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
     private transient ExecutorService executorService = null;
 
     /**
-     * The TableMaps don't know how to create empty tables for themselves, if the TableMap needs to be pre-populated,
-     * it must pass this callback into the constructor.  When the populateKeys call on the TableMap is invoked,
-     * the populate function is called for each of the new keys.
+     * The TableMaps don't know how to create empty tables for themselves, if the TableMap needs to be pre-populated, it
+     * must pass this callback into the constructor. When the populateKeys call on the TableMap is invoked, the populate
+     * function is called for each of the new keys.
      */
     @FunctionalInterface
     public interface PopulateCallback {
@@ -109,11 +109,13 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
     /**
      * Constructor to create an instance with a specific map, which may not be populated.
      *
-     * @param internalMap      the map to use for our backing store
+     * @param internalMap the map to use for our backing store
      * @param populateCallback the callback that is invoked when {@link #populateKeys(Object...)} is called
-     * @param constituentDefinition the definition of the constituent tables (optional, but by providing it, a TableMap with no constituents can be merged)
+     * @param constituentDefinition the definition of the constituent tables (optional, but by providing it, a TableMap
+     *        with no constituents can be merged)
      */
-    LocalTableMap(Map<Object, Table> internalMap, PopulateCallback populateCallback, TableDefinition constituentDefinition) {
+    LocalTableMap(Map<Object, Table> internalMap, PopulateCallback populateCallback,
+            TableDefinition constituentDefinition) {
         this.populateCallback = populateCallback;
         this.internalMap = internalMap;
         this.constituentDefinition = constituentDefinition;
@@ -133,7 +135,8 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
      * Constructor to create an instance with an empty default map.
      *
      * @param populateCallback the callback that is invoked when {@link #populateKeys(Object...)} is called
-     * @param constituentDefinition the definition of the constituent tables (optional, but by providing it, a TableMap with no constituents can be merged)
+     * @param constituentDefinition the definition of the constituent tables (optional, but by providing it, a TableMap
+     *        with no constituents can be merged)
      */
     public LocalTableMap(PopulateCallback populateCallback, TableDefinition constituentDefinition) {
         this(new LinkedHashMap<>(), populateCallback, constituentDefinition);
@@ -156,7 +159,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
     /**
      * Add a table to the map with the given key. Return the previous value, if any.
      *
-     * @param key   the key to add
+     * @param key the key to add
      * @param table the value to add
      * @return the previous table for the given key
      */
@@ -176,9 +179,9 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
         if (constituentDefinition != null) {
             if (!constituentDefinition.equalsIgnoreOrder(table.getDefinition())) {
                 throw new IllegalStateException(
-                  "Put table does not match expected constituent definition: "
-                    + constituentDefinition
-                    .getDifferenceDescription(table.getDefinition(), "existing", "new", "\n    "));
+                        "Put table does not match expected constituent definition: "
+                                + constituentDefinition
+                                        .getDifferenceDescription(table.getDefinition(), "existing", "new", "\n    "));
             }
         }
 
@@ -215,7 +218,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
 
     @Override
     public synchronized Table get(Object key) {
-        final Table result =  internalMap.get(key);
+        final Table result = internalMap.get(key);
         if (result != null && result.isLive()) {
             LivenessScopeStack.peek().manage(result);
         }
@@ -306,7 +309,8 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
     public TableMap transformTablesWithKey(BiFunction<Object, Table, Table> function) {
         final TableDefinition returnDefinition;
         if (constituentDefinition != null) {
-            final Table emptyTable = new QueryTable(constituentDefinition, Index.FACTORY.getEmptyIndex(), NullValueColumnSource.createColumnSourceMap(constituentDefinition));
+            final Table emptyTable = new QueryTable(constituentDefinition, Index.FACTORY.getEmptyIndex(),
+                    NullValueColumnSource.createColumnSourceMap(constituentDefinition));
             returnDefinition = function.apply(SENTINEL_KEY, emptyTable).getDefinition();
         } else {
             returnDefinition = null;
@@ -315,7 +319,8 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
     }
 
     @Override
-    public TableMap transformTablesWithKey(TableDefinition returnDefinition, BiFunction<Object, Table, Table> function) {
+    public TableMap transformTablesWithKey(TableDefinition returnDefinition,
+            BiFunction<Object, Table, Table> function) {
         final boolean shouldClear = QueryPerformanceRecorder.setCallsite();
         try {
             final ComputedTableMap result = new ComputedTableMap(this, returnDefinition);
@@ -323,7 +328,8 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
 
             if (executorService != null) {
                 final boolean doCheck = LiveTableMonitor.DEFAULT.getCheckTableOperations();
-                final boolean hasLtm = LiveTableMonitor.DEFAULT.sharedLock().isHeldByCurrentThread() || LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
+                final boolean hasLtm = LiveTableMonitor.DEFAULT.sharedLock().isHeldByCurrentThread()
+                        || LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
                 final Map<Object, Future<Table>> futures = new LinkedHashMap<>();
                 for (final Map.Entry<Object, Table> entry : entrySet()) {
                     futures.put(entry.getKey(), executorService.submit(() -> {
@@ -343,7 +349,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
                     final Table table;
                     try {
                         table = entry.getValue().get();
-                    } catch (InterruptedException|ExecutionException e) {
+                    } catch (InterruptedException | ExecutionException e) {
                         throw new UncheckedTableException("Failed to transform table for " + entry.getKey(), e);
                     }
                     result.insertWithApply(entry.getKey(), table, (k, t) -> t);
@@ -363,17 +369,19 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
             addListener(listener);
 
             if (isRefreshing()) {
-                // if we are refreshing, we want to add a parent reference, which turns the result refreshing; and ensures reachability
+                // if we are refreshing, we want to add a parent reference, which turns the result refreshing; and
+                // ensures reachability
                 result.addParentReference(listener);
             } else {
-                // if we are static, we only want to ensure reachability, but not turn the result refreshing; the listener will fire for
+                // if we are static, we only want to ensure reachability, but not turn the result refreshing; the
+                // listener will fire for
                 // populate calls, so the child map gets a value filled in properly
                 result.setListenerReference(listener);
             }
 
             return result;
         } finally {
-            if(shouldClear) {
+            if (shouldClear) {
                 QueryPerformanceRecorder.clearCallsite();
             }
         }
@@ -395,18 +403,21 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
         }
 
         final ThreadGroup threadGroup = new ThreadGroup("LocalTableMapTransform");
-        final NamingThreadFactory threadFactory = new NamingThreadFactory(threadGroup, LocalTableMap.class, "transformExecutor", true);
+        final NamingThreadFactory threadFactory =
+                new NamingThreadFactory(threadGroup, LocalTableMap.class, "transformExecutor", true);
         executorService = Executors.newFixedThreadPool(transformationThreads, threadFactory);
 
         return executorService;
     }
 
     @Override
-    public TableMap transformTablesWithMap(TableMap other, java.util.function.BiFunction<Table, Table, Table> function) {
+    public TableMap transformTablesWithMap(TableMap other,
+            java.util.function.BiFunction<Table, Table, Table> function) {
         final boolean shouldClear = QueryPerformanceRecorder.setCallsite();
 
         try {
-            final NotificationQueue.Dependency otherDependency = other instanceof NotificationQueue.Dependency ? (NotificationQueue.Dependency)other : null;
+            final NotificationQueue.Dependency otherDependency =
+                    other instanceof NotificationQueue.Dependency ? (NotificationQueue.Dependency) other : null;
             final ComputedTableMap result = new ComputedTableMap(this, null);
 
             final ExecutorService executorService = getTransformationExecutorService();
@@ -414,7 +425,8 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
             if (executorService != null) {
                 final boolean doCheck = LiveTableMonitor.DEFAULT.setCheckTableOperations(true);
                 LiveTableMonitor.DEFAULT.setCheckTableOperations(doCheck);
-                final boolean hasLtm = LiveTableMonitor.DEFAULT.sharedLock().isHeldByCurrentThread() || LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
+                final boolean hasLtm = LiveTableMonitor.DEFAULT.sharedLock().isHeldByCurrentThread()
+                        || LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
                 final Map<Object, Future<Table>> futures = new LinkedHashMap<>();
 
 
@@ -476,7 +488,8 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
             }
 
             if (otherRefreshing) {
-                result.addParentReference(other); // Sets result refreshing if necessary, adds a hard ref from result to other, and liveness reference from result to other
+                result.addParentReference(other); // Sets result refreshing if necessary, adds a hard ref from result to
+                                                  // other, and liveness reference from result to other
 
                 final Listener otherListener = new LivenessListener() {
                     @Override
@@ -501,7 +514,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
 
             return result;
         } finally {
-            if(shouldClear) {
+            if (shouldClear) {
                 QueryPerformanceRecorder.clearCallsite();
             }
         }
@@ -535,7 +548,8 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
                 return internalMap.values().iterator().next().getDefinition();
             }
         }
-        throw new UnsupportedOperationException("Can not convert TableMap with no constituents, or constituent definition, into a Table.");
+        throw new UnsupportedOperationException(
+                "Can not convert TableMap with no constituents, or constituent definition, into a Table.");
     }
 
     @Override
@@ -552,8 +566,10 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
             throw new IllegalStateException("Expected column source to be a UnionColumnSource.");
         }
 
-        final UnionSourceManager unionSourceManager = ((UnionColumnSource) (maybeUnionColumnSource)).getUnionSourceManager();
-        unionSourceManager.setDisallowReinterpret(); // TODO: Skip this call if we can determine that our entry set is static.
+        final UnionSourceManager unionSourceManager =
+                ((UnionColumnSource) (maybeUnionColumnSource)).getUnionSourceManager();
+        unionSourceManager.setDisallowReinterpret(); // TODO: Skip this call if we can determine that our entry set is
+                                                     // static.
         if (isRefreshing()) {
             unionSourceManager.noteUsingComponentsIsUnsafe();
             unionSourceManager.setRefreshing();
@@ -616,7 +632,8 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
             this.parent = parent;
             if (parent.isRefreshing()) {
                 setRefreshing(true);
-                // NB: No need to addParentReference - we hold a strong reference to our parent already for populateKeys.
+                // NB: No need to addParentReference - we hold a strong reference to our parent already for
+                // populateKeys.
                 manage(parent);
             }
             this.useGlobalTransformationThreadPool = parent.useGlobalTransformationThreadPool;
@@ -635,11 +652,13 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
         }
 
         private void insertWithApply(Object key, Table input, BiFunction<Object, Table, Table> operator) {
-            super.put(key, SystemicObjectTracker.executeSystemically(isSystemicObject(), () -> operator.apply(key, input)));
+            super.put(key,
+                    SystemicObjectTracker.executeSystemically(isSystemicObject(), () -> operator.apply(key, input)));
         }
 
         private void insertWithApply(Object key, Table ourInput, Table otherInput, BinaryOperator<Table> operator) {
-            super.put(key, SystemicObjectTracker.executeSystemically(isSystemicObject(), () -> operator.apply(ourInput, otherInput)));
+            super.put(key, SystemicObjectTracker.executeSystemically(isSystemicObject(),
+                    () -> operator.apply(ourInput, otherInput)));
         }
 
         private void setFlat() {
@@ -697,7 +716,8 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
 
                 @Override
                 public LogOutput append(LogOutput output) {
-                    return output.append("ComputedTableMap Notification{").append(System.identityHashCode(this)).append("}");
+                    return output.append("ComputedTableMap Notification{").append(System.identityHashCode(this))
+                            .append("}");
                 }
             });
         }
@@ -733,7 +753,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
      * Derived TableMaps will inherit this setting (but use their own thread pool).
      *
      * @return true if transformTables and transformTablesWithMap will use the global thread pool; false if they will
-     * use a private thread pool
+     *         use a private thread pool
      */
     public boolean useGlobalTransformationThreadPool() {
         return useGlobalTransformationThreadPool;
@@ -757,7 +777,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
 
     /**
      * Returns the number of transformation threads that will be used (if this TableMap is not configured to use the
-     * global thread pool).  If this TableMap is configured to use the global thread pool, then this value is ignored.
+     * global thread pool). If this TableMap is configured to use the global thread pool, then this value is ignored.
      *
      * @return the number of threads that will be used for transformations
      */
@@ -766,8 +786,8 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
     }
 
     /**
-     * Set the number of transformation threads that should be used. Additionally, the global transformation thread
-     * pool is disabled for this TableMap.
+     * Set the number of transformation threads that should be used. Additionally, the global transformation thread pool
+     * is disabled for this TableMap.
      *
      * Derived TableMaps will inherit this setting (but use their own thread pool).
      *

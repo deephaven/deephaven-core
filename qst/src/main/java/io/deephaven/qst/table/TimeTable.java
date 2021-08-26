@@ -10,8 +10,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * A time table adds rows at a fixed {@link #interval() interval} with a
- * {@link io.deephaven.qst.type.InstantType Timestamp} column.
+ * A time table adds rows at a fixed {@link #interval() interval} with a {@link io.deephaven.qst.type.InstantType
+ * Timestamp} column.
  */
 @Immutable
 @LeafStyle
@@ -30,27 +30,30 @@ public abstract class TimeTable extends TableBase {
      * The time table.
      *
      * <p>
-     * Note: {@code !TimeTable.of(timeout).equals(TimeTable.of(timeout))}.
+     * Note: {@code !TimeTable.of(interval).equals(TimeTable.of(interval))}.
      * 
-     * @param timeout the timeout
+     * @param interval the interval
      * @return the time table
      */
-    public static TimeTable of(Duration timeout) {
-        return builder().timeProvider(TimeProviderSystem.INSTANCE).interval(timeout)
-            .id(UUID.randomUUID()).build();
+    public static TimeTable of(Duration interval) {
+        return builder().timeProvider(TimeProviderSystem.INSTANCE).interval(interval)
+                .id(UUID.randomUUID()).build();
     }
 
     /**
      * The time table.
      *
-     * @param timeout the timeout
+     * @param interval the interval
      * @param startTime the start time
      * @return the time table
      */
-    public static TimeTable of(Duration timeout, Instant startTime) {
-        return builder().timeProvider(TimeProviderSystem.INSTANCE).interval(timeout)
-            .startTime(startTime).id(ZERO_UUID).build();
+    public static TimeTable of(Duration interval, Instant startTime) {
+        return builder().timeProvider(TimeProviderSystem.INSTANCE).interval(interval)
+                .startTime(startTime).id(ZERO_UUID).build();
     }
+
+    // Note: if new "of(...)" static methods are added here, they should likely be added to
+    // TableCreator.
 
     public abstract TimeProvider timeProvider();
 

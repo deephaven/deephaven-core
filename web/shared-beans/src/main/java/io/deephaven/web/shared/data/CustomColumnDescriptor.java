@@ -11,8 +11,8 @@ import java.util.Objects;
  *
  * This is here mostly to have a sane place to handle client introspection of custom column definitions.
  *
- * We should probably wire this into place for our internal guts, and convert to this form immediately
- * upon receiving input from user.
+ * We should probably wire this into place for our internal guts, and convert to this form immediately upon receiving
+ * input from user.
  *
  */
 public class CustomColumnDescriptor implements Serializable {
@@ -24,8 +24,8 @@ public class CustomColumnDescriptor implements Serializable {
     /**
      * Extracts the column name from a given column expression.
      *
-     * Based on the logic in io.deephaven.db.tables.select.SelectColumnFactory,
-     * the valid expressions take the form:
+     * Based on the logic in io.deephaven.db.tables.select.SelectColumnFactory, the valid expressions take the form:
+     * 
      * <pre>
      *     <ColumnName>
      *     <ColumnName>=<Expression>
@@ -33,11 +33,12 @@ public class CustomColumnDescriptor implements Serializable {
      *     last(<ColumnName>)
      * </pre>
      *
-     * So, we can safely extract a column name for this to have some semblance of identity semantics for custom column definitions.
+     * So, we can safely extract a column name for this to have some semblance of identity semantics for custom column
+     * definitions.
      *
      * Also, we are explicitly *NOT* supporting deprecated last() syntax, so it will be ignored.
      *
-     * @param expression A valid column expression.  We perform no validation beyond an assertion on the resulting name.
+     * @param expression A valid column expression. We perform no validation beyond an assertion on the resulting name.
      * @return A valid column name if the input column expression is itself valid.
      */
     private static String extractColumnName(String expression) {

@@ -14,7 +14,8 @@ public interface LivenessManager {
      */
     default void manage(@NotNull final LivenessReferent referent) {
         if (!tryManage(referent)) {
-            throw new LivenessStateException(this + " failed to add " + referent.getReferentDescription() + ", which is no longer live");
+            throw new LivenessStateException(
+                    this + " failed to add " + referent.getReferentDescription() + ", which is no longer live");
         }
     }
 

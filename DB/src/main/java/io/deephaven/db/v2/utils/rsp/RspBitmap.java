@@ -1,13 +1,11 @@
 package io.deephaven.db.v2.utils.rsp;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.db.v2.sources.chunk.Attributes.OrderedKeyIndices;
 import io.deephaven.db.v2.sources.chunk.LongChunk;
 import io.deephaven.db.v2.utils.*;
 import io.deephaven.db.v2.utils.singlerange.SingleRange;
 import io.deephaven.db.v2.utils.sortedranges.SortedRanges;
 import io.deephaven.util.annotations.VisibleForTesting;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import io.deephaven.db.v2.utils.rsp.container.*;
@@ -54,8 +52,8 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
 
     @Override
     protected final RspBitmap make(final RspArray src,
-                                   final int startIdx, final long startOffset,
-                                   final int endIdx, final long endOffset) {
+            final int startIdx, final long startOffset,
+            final int endIdx, final long endOffset) {
         return new RspBitmap(src, startIdx, startOffset, endIdx, endOffset);
     }
 
@@ -127,7 +125,8 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         return rb;
     }
 
-    public void addValuesUnsafeNoWriteCheck(final LongChunk<OrderedKeyIndices> values, final int offset, final int length) {
+    public void addValuesUnsafeNoWriteCheck(final LongChunk<OrderedKeyIndices> values, final int offset,
+            final int length) {
         int lengthFromThisSpan;
         final WorkData wd = workDataPerThread.get();
         final MutableObject<SortedRanges> sortedRangesMu = getWorkSortedRangesMutableObject(wd);
@@ -173,21 +172,21 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     private static int countContiguousHighBitsMatches(final LongChunk<OrderedKeyIndices> values,
-                                                      final int offset, final int length,
-                                                      final long highBits) {
+            final int offset, final int length,
+            final long highBits) {
         for (int vi = 0; vi < length; ++vi) {
             if (highBits(values.get(vi + offset)) != highBits) {
-                return vi ;
+                return vi;
             }
         }
         return length;
     }
 
     private Container createOrUpdateContainerForValues(@NotNull final LongChunk<OrderedKeyIndices> values,
-                                                              final int offset, final int length,
-                                                              final boolean existing,
-                                                              final int keyIdx,
-                                                              Container container) {
+            final int offset, final int length,
+            final boolean existing,
+            final int keyIdx,
+            Container container) {
         final long firstValue = values.get(offset);
         if (length == 1) {
             // We're adding only one value
@@ -255,7 +254,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     private static Container makeValuesContainer(final LongChunk<OrderedKeyIndices> values,
-                                                 final int offset, final int length) {
+            final int offset, final int length) {
         if (length <= ArrayContainer.SWITCH_CONTAINER_CARDINALITY_THRESHOLD) {
             final short[] valuesArray = new short[length];
             for (int vi = 0; vi < length; ++vi) {
@@ -271,8 +270,8 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     private static Container addValuesToContainer(final LongChunk<OrderedKeyIndices> values,
-                                                  final int offset, final int length,
-                                                  Container container) {
+            final int offset, final int length,
+            Container container) {
         if (container.getCardinality() <= length / 2) {
             return makeValuesContainer(values, offset, length).ior(container);
         }
@@ -288,7 +287,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         return rb;
     }
 
-    // Does not update cardinality cache.  Caller must ensure finishMutations() is called before calling
+    // Does not update cardinality cache. Caller must ensure finishMutations() is called before calling
     // any operation depending on the cardinality cache being up to date.
     public RspBitmap addUnsafe(final long val) {
         final RspBitmap rb = writeCheck();
@@ -376,7 +375,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     // end is inclusive.
-    // Does not update cardinality cache.  Caller must ensure finishMutations() is called before calling
+    // Does not update cardinality cache. Caller must ensure finishMutations() is called before calling
     // any operation depending on the cardinality cache being up to date.
     public RspBitmap appendRangeUnsafe(final long start, final long end) {
         if (start > end) {
@@ -420,7 +419,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         return rb;
     }
 
-    // Does not update cardinality cache.  Caller must ensure finishMutations() is called before
+    // Does not update cardinality cache. Caller must ensure finishMutations() is called before
     // any operation depending on the cardinality cache being up to date are called.
     public RspBitmap appendUnsafe(final long v) {
         final RspBitmap rb = writeCheck();
@@ -476,12 +475,12 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
      * @param startPos the initial index from which to start the search for k
      * @param startHighBits the high bits of the start position for the range provided.
      * @param start the start position for the range provided.
-     * @param startLowBits the low bits of the start of the range to add.  0 <= start < BLOCK_SIZE
-     * @param endLowBits the low bits of the end (inclusive) of the range to add.  0 <= end < BLOCK_SIZE
+     * @param startLowBits the low bits of the start of the range to add. 0 <= start < BLOCK_SIZE
+     * @param endLowBits the low bits of the end (inclusive) of the range to add. 0 <= end < BLOCK_SIZE
      * @return the index of the span where the interval was added.
      */
-    private int
-    singleBlockAddRange(final int startPos, final long startHighBits, final long start, final int startLowBits, final int endLowBits) {
+    private int singleBlockAddRange(final int startPos, final long startHighBits, final long start,
+            final int startLowBits, final int endLowBits) {
         final int endExclusive = endLowBits + 1;
         final int i = getSpanIndex(startPos, start);
         if (endExclusive - startLowBits == BLOCK_SIZE) {
@@ -543,16 +542,15 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
 
 
     /**
-     * Appends the provided (start, end) range, relative to the given key, to this array.
-     * Prerequisite: keyForLastBlock() <= k
+     * Appends the provided (start, end) range, relative to the given key, to this array. Prerequisite:
+     * keyForLastBlock() <= k
      *
      * @param k the key to use for the range provided.
-     * @param start the start of the range to add.  0 <= start < BLOCK_SIZE
-     * @param end the end (inclusive) of the range to add.  0 <= end < BLOCK_SIZE
+     * @param start the start of the range to add. 0 <= start < BLOCK_SIZE
+     * @param end the end (inclusive) of the range to add. 0 <= end < BLOCK_SIZE
      * @return the index of the span where the interval was added.
      */
-    private int
-    singleBlockAppendRange(final long kHigh, final long k, final int start, final int end) {
+    private int singleBlockAppendRange(final long kHigh, final long k, final int start, final int end) {
         final int endExclusive = end + 1;
         long keyForLastBlock = 0;
         if (isEmpty() || (keyForLastBlock = keyForLastBlock()) < kHigh) {
@@ -571,7 +569,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         if (keyForLastBlock == kHigh) {
             final int pos = size() - 1;
             final Object span = spans[pos];
-            if (!RspArray.isFullBlockSpan(span)) {  // if it is a full block span, we already have the range.
+            if (!RspArray.isFullBlockSpan(span)) { // if it is a full block span, we already have the range.
                 final Container result;
                 Container container = null;
                 try (SpanView view = workDataPerThread.get().borrowSpanView(this, pos, spanInfos[pos], span)) {
@@ -641,7 +639,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     // end is inclusive
-    // Does not update cardinality cache.  Caller must ensure finishMutations() is called before
+    // Does not update cardinality cache. Caller must ensure finishMutations() is called before
     // any operation depending on the cardinality cache being up to date are called.
     public RspBitmap addRangeUnsafe(final long start, final long end) {
         if (start > end) {
@@ -668,7 +666,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         }
         final long sHigh = highBits(start);
         final boolean kvsIsEmpty = isEmpty();
-        if (kvsIsEmpty || sHigh >= keyForLastBlock()) {  // append case.
+        if (kvsIsEmpty || sHigh >= keyForLastBlock()) { // append case.
             appendRangeUnsafeNoWriteCheck(sHigh, start, end);
             return size - 1;
         }
@@ -786,7 +784,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         }
         // flen > 0.
         final long spanStartKey = spanInfoToKey(spanInfo);
-        final long spanEndKey = spanStartKey + BLOCK_SIZE *flen;  // exclusive
+        final long spanEndKey = spanStartKey + BLOCK_SIZE * flen; // exclusive
         final int low = lowBitsAsInt(val);
         final Container c;
         long singletonValue = 0;
@@ -796,9 +794,9 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
             c = Container.rangeOfOnes(0, BLOCK_LAST);
         } else {
             final int preStart = 0;
-            final int preEnd = low;  // exclusive
+            final int preEnd = low; // exclusive
             final int posStart = low + 1;
-            final int posEnd = BLOCK_SIZE;  // exclusive
+            final int posEnd = BLOCK_SIZE; // exclusive
             // Do the bigger subrange first, to avoid changing the container type unnecessarily.
             Container c2;
             if (posEnd - posStart > preEnd - preStart) {
@@ -876,8 +874,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     /**
-     * Return the logical or of two RspArrays as a new RspArray.
-     * The arguments won't be modified.
+     * Return the logical or of two RspArrays as a new RspArray. The arguments won't be modified.
      *
      * @param r1 an RspArray
      * @param r2 an RspArray
@@ -896,8 +893,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     /**
-     * Return the logical or of two bitmaps as a new bitmap.
-     * This is equivalent to the union of the two bitmaps as sets.
+     * Return the logical or of two bitmaps as a new bitmap. This is equivalent to the union of the two bitmaps as sets.
      * The arguments won't be modified.
      *
      * @param b1 a bitmap
@@ -914,9 +910,9 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
      * Add every element on other to this bitmap.
      */
     public RspBitmap orEquals(final RspBitmap other) {
-       final RspBitmap rb = orEqualsUnsafe(other);
-       rb.finishMutations();
-       return rb;
+        final RspBitmap rb = orEqualsUnsafe(other);
+        rb.finishMutations();
+        return rb;
     }
 
     /**
@@ -929,19 +925,17 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     /**
-     * Add every element on other to this bitmap.
-     * Does not update cardinality cache.  Caller must ensure finishMutations() is called before
-     * any operation depending on the cardinality cache being up to date are called.
+     * Add every element on other to this bitmap. Does not update cardinality cache. Caller must ensure
+     * finishMutations() is called before any operation depending on the cardinality cache being up to date are called.
      */
     public RspBitmap orEqualsUnsafe(final RspBitmap other) {
         return orEqualsShiftedUnsafe(0, other);
     }
 
     /**
-     * For every key on other, add (key + shiftAmount) to this bitmap.
-     * Note shiftAmount is assumed to be a multiple of BLOCK_SIZE.
-     * Does not update cardinality cache.  Caller must ensure finishMutations() is called before
-     * any operation depending on the cardinality cache being up to date are called.
+     * For every key on other, add (key + shiftAmount) to this bitmap. Note shiftAmount is assumed to be a multiple of
+     * BLOCK_SIZE. Does not update cardinality cache. Caller must ensure finishMutations() is called before any
+     * operation depending on the cardinality cache being up to date are called.
      */
     public RspBitmap orEqualsShiftedUnsafe(final long shiftAmount, final RspBitmap other) {
         if (other.isEmpty()) {
@@ -992,8 +986,8 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     /**
-     * Return the logical and of two bitmaps as a new bitmap.
-     * This is equivalent to the intersection of the two bitmaps as sets.
+     * Return the logical and of two bitmaps as a new bitmap. This is equivalent to the intersection of the two bitmaps
+     * as sets.
      *
      * @param b1 a bitmap
      * @param b2 a bitmap
@@ -1021,8 +1015,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     /**
-     * Return the logical result of r1 and not r2 as a new RspArray.
-     * The arguments won't be modified.
+     * Return the logical result of r1 and not r2 as a new RspArray. The arguments won't be modified.
      *
      * @param r1 an RspArray
      * @param r2 an RspArray
@@ -1035,9 +1028,8 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     /**
-     * Return the logical result of r1 and not r2 as a new bitmap.
-     * This is equivalent to removing every element in b2 from b1.
-     * The arguments won't be modified.
+     * Return the logical result of r1 and not r2 as a new bitmap. This is equivalent to removing every element in b2
+     * from b1. The arguments won't be modified.
      *
      * @param b1 a bitmap
      * @param b2 a bitmap
@@ -1052,8 +1044,8 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     /**
      * Updates the bitmap by adding and removing the bitmaps given as parameter.
      *
-     * @param added    Elements to add. Assumed disjoint with removed.
-     * @param removed  Elements to remove. Assumed disjoint with added.
+     * @param added Elements to add. Assumed disjoint with removed.
+     * @param removed Elements to remove. Assumed disjoint with added.
      */
     public RspBitmap update(final RspBitmap added, final RspBitmap removed) {
         final RspBitmap rb = updateUnsafe(added, removed);
@@ -1136,7 +1128,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
             it.next();
             final long s = it.start();
             final long e = it.end();
-            i = rb.addRangeUnsafeNoWriteCheck(i,s + offset, e + offset);
+            i = rb.addRangeUnsafeNoWriteCheck(i, s + offset, e + offset);
         }
         rb.finishMutations();
         return rb;
@@ -1191,8 +1183,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         int knownIdx = 0;
         long knownBeforeCard = 0;
         try (SpanView view = workDataPerThread.get().borrowSpanView()) {
-            SPANS_LOOP:
-            while (true) {
+            SPANS_LOOP: while (true) {
                 final long startHiBits = highBits(it.currentRangeStart());
                 final int i = getSpanIndex(startIndex, startHiBits);
                 if (i < 0) {
@@ -1280,20 +1271,22 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     }
 
     private static int long2hash(final long v) {
-        return (int)(v ^ (v >>> 32));
+        return (int) (v ^ (v >>> 32));
     }
 
     // Simple minded hashCode and equals implementations, intended for testing.
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
         int r = 17;
         if (!isEmpty()) {
-            r = 31*r + long2hash(getCardinality());
-            r = 31*r + long2hash(last());
+            r = 31 * r + long2hash(getCardinality());
+            r = 31 * r + long2hash(last());
         }
         return r;
     }
 
-    @Override public boolean equals(final Object o) {
+    @Override
+    public boolean equals(final Object o) {
         if (o == this) {
             return true;
         }
@@ -1333,9 +1326,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
 
     /*
      *
-     * =============
-     * TreeIndexImpl
-     * =============
+     * ============= TreeIndexImpl =============
      *
      */
 
@@ -1354,7 +1345,8 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         release();
     }
 
-    @VisibleForTesting @Override
+    @VisibleForTesting
+    @Override
     public int ixRefCount() {
         return refCount();
     }
@@ -1366,7 +1358,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
 
     @Override
     public final TreeIndexImpl ixInsertSecondHalf(final LongChunk<OrderedKeyIndices> values,
-                                                  final int offset,  final int length) {
+            final int offset, final int length) {
         final RspBitmap ans = addValuesUnsafe(values, offset, length);
         ans.finishMutations();
         return ans;
@@ -1374,7 +1366,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
 
     @Override
     public final TreeIndexImpl ixRemoveSecondHalf(final LongChunk<OrderedKeyIndices> values,
-                                                  final int offset, final int length) {
+            final int offset, final int length) {
         return ixRemove(TreeIndexImpl.fromChunk(values, offset, length, true));
     }
 
@@ -1461,7 +1453,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     // the range [startPos, endPosExclusive) is closed on the left and open on the right.
     @Override
     public TreeIndexImpl ixSubindexByPosOnNew(final long startPos, final long endPosExclusive) {
-        final long endPos = endPosExclusive - 1;  // make inclusive.
+        final long endPos = endPosExclusive - 1; // make inclusive.
         if (endPos < startPos || endPos < 0) {
             return TreeIndexImpl.EMPTY;
         }
@@ -1507,7 +1499,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         if (added instanceof SingleRange) {
             addRangeUnsafeNoWriteCheck(added.ixFirstKey(), added.ixLastKey());
             if (removed instanceof SingleRange) {
-                removeRangeUnsafeNoWriteCheck(removed.ixFirstKey(),removed.ixLastKey());
+                removeRangeUnsafeNoWriteCheck(removed.ixFirstKey(), removed.ixLastKey());
             } else if (removed instanceof SortedRanges) {
                 removeRangesUnsafeNoWriteCheck(removed.ixRangeIterator());
             } else {
@@ -1520,7 +1512,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
             } else {
                 orEqualsUnsafeNoWriteCheck((RspBitmap) added);
             }
-        } else if (added instanceof  RspBitmap && removed instanceof RspBitmap) {
+        } else if (added instanceof RspBitmap && removed instanceof RspBitmap) {
             updateUnsafeNoWriteCheck((RspBitmap) added, (RspBitmap) removed);
         } else {
             final TreeIndexImpl ans = ixRemoveNoWriteCheck(removed);
@@ -1863,7 +1855,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         if (isEmpty()) {
             return other.ixShiftOnNew(shiftAmount);
         }
-        if (other instanceof  SingleRange) {
+        if (other instanceof SingleRange) {
             return addRange(other.ixFirstKey() + shiftAmount, other.ixLastKey() + shiftAmount);
         }
         if (other instanceof SortedRanges) {
@@ -1894,6 +1886,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
         public void close() {
             it.close();
         }
+
         @Override
         public boolean hasNext() {
             if (next <= currRangeEnd) {
@@ -1901,10 +1894,12 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
             }
             return it.hasNext();
         }
+
         @Override
         public long currentValue() {
             return curr;
         }
+
         @Override
         public long nextLong() {
             if (next <= currRangeEnd) {
@@ -1917,9 +1912,10 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
             }
             return curr;
         }
+
         @Override
         public boolean advance(final long v) {
-            if (currRangeEnd == -1) {  // not-started-yet iterator
+            if (currRangeEnd == -1) { // not-started-yet iterator
                 if (!it.hasNext()) {
                     return false;
                 }
@@ -1950,9 +1946,10 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
             currRangeEnd = -1;
             return false;
         }
+
         @Override
-        public long binarySearchValue(final Index.TargetComparator tc, final int dir){
-            if (currRangeEnd == -1) {  // not-started-yet iterator
+        public long binarySearchValue(final Index.TargetComparator tc, final int dir) {
+            if (currRangeEnd == -1) { // not-started-yet iterator
                 if (!it.hasNext()) {
                     return -1;
                 }
@@ -1980,19 +1977,28 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
 
     private static class IteratorImpl implements Index.Iterator {
         private final RspIterator it;
+
         public IteratorImpl(final RspBitmap rb) {
             it = rb.getIterator();
         }
-        @Override public void close() {
+
+        @Override
+        public void close() {
             it.release();
         }
-        @Override public boolean forEachLong(final LongAbortableConsumer lc) {
+
+        @Override
+        public boolean forEachLong(final LongAbortableConsumer lc) {
             return it.forEachLong(lc);
         }
-        @Override public boolean hasNext() {
+
+        @Override
+        public boolean hasNext() {
             return it.hasNext();
         }
-        @Override public long nextLong() {
+
+        @Override
+        public long nextLong() {
             return it.nextLong();
         }
     }
@@ -2006,27 +2012,33 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     public Index.SearchIterator ixReverseIterator() {
         return new Index.SearchIterator() {
             final RspReverseIterator it = getReverseIterator();
+
             @Override
             public void close() {
                 it.release();
             }
+
             @Override
             public boolean hasNext() {
                 return it.hasNext();
             }
+
             @Override
             public long currentValue() {
                 return it.current();
             }
+
             @Override
             public long nextLong() {
                 it.next();
                 return it.current();
             }
+
             @Override
             public boolean advance(long v) {
                 return it.advance(v);
             }
+
             @Override
             public long binarySearchValue(Index.TargetComparator targetComparator, int direction) {
                 throw new UnsupportedOperationException("Reverse iterator does not support binary search.");
@@ -2038,30 +2050,37 @@ public class RspBitmap extends RspArray<RspBitmap> implements TreeIndexImpl {
     public Index.RangeIterator ixRangeIterator() {
         return new Index.RangeIterator() {
             final RspRangeIterator it = getRangeIterator();
+
             @Override
             public void close() {
                 it.close();
             }
+
             @Override
             public boolean hasNext() {
                 return it.hasNext();
             }
+
             @Override
             public boolean advance(final long v) {
                 return it.advance(v);
             }
+
             @Override
             public void postpone(final long v) {
                 it.postpone(v);
             }
+
             @Override
             public long currentRangeStart() {
                 return it.start();
             }
+
             @Override
             public long currentRangeEnd() {
                 return it.end();
             }
+
             @Override
             public long next() {
                 it.next();

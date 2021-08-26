@@ -18,7 +18,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class KeyedTableListener {
 
-    public enum KeyEvent { ADDED, REMOVED, MODIFIED };
+    public enum KeyEvent {
+        ADDED, REMOVED, MODIFIED
+    };
 
     public interface KeyUpdateListener {
         void update(KeyedTableListener keyedTableListener, SmartKey key, long index, KeyEvent event);
@@ -68,7 +70,7 @@ public class KeyedTableListener {
 
     private void handleUpdateFromTable(final Index added, final Index removed, final Index modified) {
         // Add all the new rows to the hashmap
-        for (Index.Iterator iterator = added.iterator(); iterator.hasNext(); ) {
+        for (Index.Iterator iterator = added.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             SmartKey key = constructSmartKey(next);
             keyToIndexHashMap.put(key, next);
@@ -77,7 +79,7 @@ public class KeyedTableListener {
         }
 
         // Remove all the removed rows from the hashmap
-        for (Index.Iterator iterator = removed.iterator(); iterator.hasNext(); ) {
+        for (Index.Iterator iterator = removed.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             SmartKey oldKey = indexToKeyHashMap.remove(next);
             Assert.assertion(oldKey != null, "oldKey != null");
@@ -87,7 +89,7 @@ public class KeyedTableListener {
         }
 
         // Modifies are a special case -- need to look for keys being removed / added
-        for (Index.Iterator iterator = modified.iterator(); iterator.hasNext(); ) {
+        for (Index.Iterator iterator = modified.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             SmartKey currentKey = constructSmartKey(next);
             SmartKey prevKey = indexToKeyHashMap.get(next);
@@ -112,8 +114,7 @@ public class KeyedTableListener {
                 keyToIndexHashMap.put(currentKey, next);
                 indexToKeyHashMap.put(next, currentKey);
                 handleListeners(currentKey, next, KeyEvent.ADDED);
-            }
-            else {
+            } else {
                 handleListeners(currentKey, next, KeyEvent.MODIFIED);
             }
         }

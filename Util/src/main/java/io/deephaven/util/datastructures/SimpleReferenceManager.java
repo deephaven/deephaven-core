@@ -14,8 +14,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
- * A helper for manging a list of References. It hides the internal management
- * of expired references and provides for iteration over the valid ones
+ * A helper for manging a list of References. It hides the internal management of expired references and provides for
+ * iteration over the valid ones
  */
 public final class SimpleReferenceManager<T, R extends SimpleReference<T>> {
 
@@ -36,7 +36,7 @@ public final class SimpleReferenceManager<T, R extends SimpleReference<T>> {
      * structure.
      *
      * @param referenceFactory Factory to create references for added referents; should always make a unique reference
-     * @param concurrent       Use CopyOnWriteArrayList for internal storage if true, else ArrayList
+     * @param concurrent Use CopyOnWriteArrayList for internal storage if true, else ArrayList
      */
     public SimpleReferenceManager(@NotNull final Function<T, R> referenceFactory, final boolean concurrent) {
         this.referenceFactory = referenceFactory;

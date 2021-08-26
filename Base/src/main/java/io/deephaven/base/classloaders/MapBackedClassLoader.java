@@ -40,7 +40,7 @@ public class MapBackedClassLoader extends ClassLoader {
     protected synchronized Class<?> findClass(final String name) throws ClassNotFoundException {
         final byte[] clazzData = classData.get(name);
         if (clazzData != null) {
-            return defineClass(name, clazzData, 0 , clazzData.length);
+            return defineClass(name, clazzData, 0, clazzData.length);
         }
         throw new ClassNotFoundException();
     }

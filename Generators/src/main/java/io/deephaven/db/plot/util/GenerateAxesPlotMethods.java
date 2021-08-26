@@ -276,7 +276,8 @@ public class GenerateAxesPlotMethods {
 
             @Override
             public String getIndexableDataCode(String variableName) {
-                return "new IndexableDataArray<>(" + variableName + ".toArray(new Comparable[" + variableName + ".size()]), new PlotInfo(this, seriesName))";
+                return "new IndexableDataArray<>(" + variableName + ".toArray(new Comparable[" + variableName
+                        + ".size()]), new PlotInfo(this, seriesName))";
             }
 
             @Override
@@ -288,7 +289,8 @@ public class GenerateAxesPlotMethods {
         return types;
     }
 
-    private static String javadocGenerics(final String[] variableNames, final Type[] variableTypes, final String[] genericJavadocs) {
+    private static String javadocGenerics(final String[] variableNames, final Type[] variableTypes,
+            final String[] genericJavadocs) {
         StringBuilder result = new StringBuilder();
         int genericIndex = 0;
 
@@ -329,14 +331,14 @@ public class GenerateAxesPlotMethods {
 
     private static String codeTimeAxis(final Type[] variableTypes, final int split) {
         final Type[] varTypes;
-        if(split < 0) {
+        if (split < 0) {
             varTypes = variableTypes;
         } else {
-            if(variableTypes.length <= split) {
+            if (variableTypes.length <= split) {
                 throw new IllegalArgumentException("Split is larger than the number of variables!");
             }
 
-            varTypes = new Type[]{variableTypes[0], variableTypes[split]};
+            varTypes = new Type[] {variableTypes[0], variableTypes[split]};
         }
 
         return Arrays.stream(varTypes)
@@ -346,14 +348,14 @@ public class GenerateAxesPlotMethods {
 
     private static String codeTimeAxis(final Type[] variableTypes, final int split, final int def) {
         final Type[] varTypes;
-        if(split < 0) {
-            varTypes = new Type[]{variableTypes[def]};
+        if (split < 0) {
+            varTypes = new Type[] {variableTypes[def]};
         } else {
-            if(variableTypes.length <= split) {
+            if (variableTypes.length <= split) {
                 throw new IllegalArgumentException("Split is larger than the number of variables!");
             }
 
-            varTypes = new Type[]{variableTypes[split]};
+            varTypes = new Type[] {variableTypes[split]};
         }
 
         return Arrays.stream(varTypes)
@@ -361,11 +363,16 @@ public class GenerateAxesPlotMethods {
                 .reduce(null, (a, b) -> a == null ? b : b == null ? a : a + ", " + b);
     }
 
-    private static String codeFunction(final boolean isInterface, final String[] variableNames, final Type[] variableTypes, final String prototype, final String[] genericJavadocs, final String returnTypeInterface, final String returnTypeImpl) {
-        return codeFunction(isInterface, variableNames, variableTypes, prototype, genericJavadocs, returnTypeInterface, returnTypeImpl, -1);
+    private static String codeFunction(final boolean isInterface, final String[] variableNames,
+            final Type[] variableTypes, final String prototype, final String[] genericJavadocs,
+            final String returnTypeInterface, final String returnTypeImpl) {
+        return codeFunction(isInterface, variableNames, variableTypes, prototype, genericJavadocs, returnTypeInterface,
+                returnTypeImpl, -1);
     }
 
-    private static String codeFunction(final boolean isInterface, final String[] variableNames, final Type[] variableTypes, final String prototype, final String[] genericJavadocs, final String returnTypeInterface, final String returnTypeImpl, final int split) {
+    private static String codeFunction(final boolean isInterface, final String[] variableNames,
+            final Type[] variableTypes, final String prototype, final String[] genericJavadocs,
+            final String returnTypeInterface, final String returnTypeImpl, final int split) {
         final String generic = codeGenericSignature(variableTypes);
         final String args = codeArguments(variableNames, variableTypes);
         final String indexable = codeIndexable(variableNames, variableTypes);
@@ -396,7 +403,8 @@ public class GenerateAxesPlotMethods {
         return rst;
     }
 
-    private static ArrayList<ArrayList<Type>> constructTypePossibilities(final String[][] variableTypes, final int depth, final ArrayList<Type> types) {
+    private static ArrayList<ArrayList<Type>> constructTypePossibilities(final String[][] variableTypes,
+            final int depth, final ArrayList<Type> types) {
         final ArrayList<ArrayList<Type>> result = new ArrayList<>();
 
         if (depth >= variableTypes.length) {
@@ -415,44 +423,54 @@ public class GenerateAxesPlotMethods {
         return result;
     }
 
-    private static String codeFunction(final boolean isInterface, final String[] variableNames, final String[][] variableTypes, final String prototype, final String[] genericJavadocs,
-                                       final String returnTypeInterface, final String returnTypeImpl) {
+    private static String codeFunction(final boolean isInterface, final String[] variableNames,
+            final String[][] variableTypes, final String prototype, final String[] genericJavadocs,
+            final String returnTypeInterface, final String returnTypeImpl) {
         Require.eq(variableNames.length, "variableNames.length", variableTypes.length, "variableTypes.length");
 
-        final ArrayList<ArrayList<Type>> typePossibilities = constructTypePossibilities(variableTypes, 0, new ArrayList<>());
+        final ArrayList<ArrayList<Type>> typePossibilities =
+                constructTypePossibilities(variableTypes, 0, new ArrayList<>());
 
         return typePossibilities.stream()
-                .map(tp -> codeFunction(isInterface, variableNames, tp.toArray(new Type[variableNames.length]), prototype, genericJavadocs, returnTypeInterface, returnTypeImpl))
+                .map(tp -> codeFunction(isInterface, variableNames, tp.toArray(new Type[variableNames.length]),
+                        prototype, genericJavadocs, returnTypeInterface, returnTypeImpl))
                 .reduce("", (a, b) -> a + "\n" + b);
     }
 
-    private static String codeFunctionRestrictedNumericalVariableTypes(final boolean isInterface, final String[] variableNames, final int split, final String prototype, final String[] genericJavadocs,
-                                                                       final String returnTypeInterface, final String returnTypeImpl) {
+    private static String codeFunctionRestrictedNumericalVariableTypes(final boolean isInterface,
+            final String[] variableNames, final int split, final String prototype, final String[] genericJavadocs,
+            final String returnTypeInterface, final String returnTypeImpl) {
 
         final ArrayList<ArrayList<Type>> typePossibilities = constructRestrictedNumericalTypes(variableNames, split);
 
         return typePossibilities.stream()
-                .map(tp -> codeFunction(isInterface, variableNames, tp.toArray(new Type[variableNames.length]), prototype, genericJavadocs, returnTypeInterface, returnTypeImpl, split))
+                .map(tp -> codeFunction(isInterface, variableNames, tp.toArray(new Type[variableNames.length]),
+                        prototype, genericJavadocs, returnTypeInterface, returnTypeImpl, split))
                 .reduce("", (a, b) -> a + "\n" + b);
     }
 
-    private static String codeFunctionRestrictedNumericalVariableTypes(final boolean isInterface, final String[] variableNames, final String[] variableTypes, final int split, final String prototype, final String[] genericJavadocs,
-                                                                       final String returnTypeInterface, final String returnTypeImpl) {
+    private static String codeFunctionRestrictedNumericalVariableTypes(final boolean isInterface,
+            final String[] variableNames, final String[] variableTypes, final int split, final String prototype,
+            final String[] genericJavadocs,
+            final String returnTypeInterface, final String returnTypeImpl) {
 
 
-        final ArrayList<ArrayList<Type>> typePossibilities = constructRestrictedNumericalTypes(variableNames, variableTypes, split);
+        final ArrayList<ArrayList<Type>> typePossibilities =
+                constructRestrictedNumericalTypes(variableNames, variableTypes, split);
 
         return typePossibilities.stream()
-                .map(tp -> codeFunction(isInterface, variableNames, tp.toArray(new Type[variableNames.length]), prototype, genericJavadocs, returnTypeInterface, returnTypeImpl, split))
+                .map(tp -> codeFunction(isInterface, variableNames, tp.toArray(new Type[variableNames.length]),
+                        prototype, genericJavadocs, returnTypeInterface, returnTypeImpl, split))
                 .reduce("", (a, b) -> a + "\n" + b);
     }
 
-    private static ArrayList<ArrayList<Type>> constructRestrictedNumericalTypes(final String[] variableNames, final int split) {
+    private static ArrayList<ArrayList<Type>> constructRestrictedNumericalTypes(final String[] variableNames,
+            final int split) {
         final ArrayList<ArrayList<Type>> result = new ArrayList<>();
 
         final Map<String, Type> typeMap = getTypes();
 
-        //all variables are same numerical type
+        // all variables are same numerical type
         for (final String s : numberTypes) {
             final Type type = typeMap.get(s);
             final ArrayList<Type> types = new ArrayList<>();
@@ -463,7 +481,7 @@ public class GenerateAxesPlotMethods {
             result.add(types);
         }
 
-        //all variables are same time type
+        // all variables are same time type
         for (final String s : timeTypes) {
             final Type type = typeMap.get(s);
             final ArrayList<Type> types = new ArrayList<>();
@@ -474,42 +492,43 @@ public class GenerateAxesPlotMethods {
             result.add(types);
         }
 
-        //all variables on either side of the split are homogenous
-            for (final String s : timeTypes) {
-                final Type timeType = typeMap.get(s);
-                for (final String s2 : numberTypes) {
-                    final Type numberType = typeMap.get(s2);
+        // all variables on either side of the split are homogenous
+        for (final String s : timeTypes) {
+            final Type timeType = typeMap.get(s);
+            for (final String s2 : numberTypes) {
+                final Type numberType = typeMap.get(s2);
 
-                    final ArrayList<Type> types = new ArrayList<>();
-                    final ArrayList<Type> types1 = new ArrayList<>();
-                    for (int j = 0; j < variableNames.length; j++) {
-                        if (j < split) {
-                            types.add(timeType);
-                            types1.add(numberType);
-                        } else {
-                            types.add(numberType);
-                            types1.add(timeType);
-                        }
+                final ArrayList<Type> types = new ArrayList<>();
+                final ArrayList<Type> types1 = new ArrayList<>();
+                for (int j = 0; j < variableNames.length; j++) {
+                    if (j < split) {
+                        types.add(timeType);
+                        types1.add(numberType);
+                    } else {
+                        types.add(numberType);
+                        types1.add(timeType);
                     }
-
-                    result.add(types);
-                    result.add(types1);
                 }
 
+                result.add(types);
+                result.add(types1);
             }
+
+        }
 
 
 
         return result;
     }
 
-    private static ArrayList<ArrayList<Type>> constructRestrictedNumericalTypes(final String[] variableNames, final String[] variableTypes, final int split) {
+    private static ArrayList<ArrayList<Type>> constructRestrictedNumericalTypes(final String[] variableNames,
+            final String[] variableTypes, final int split) {
         final ArrayList<ArrayList<Type>> result = new ArrayList<>();
 
         final Map<String, Type> typeMap = getTypes();
 
-        //all variables are same numerical type
-        for(final String variableType : variableTypes) {
+        // all variables are same numerical type
+        for (final String variableType : variableTypes) {
             final Type type1 = typeMap.get(variableType);
             for (final String s : numberTypes) {
                 final Type numericType = typeMap.get(s);
@@ -526,8 +545,8 @@ public class GenerateAxesPlotMethods {
             }
         }
 
-        //all variables are same time type
-        for(final String variableType : variableTypes) {
+        // all variables are same time type
+        for (final String variableType : variableTypes) {
             final Type type1 = typeMap.get(variableType);
             for (final String s : timeTypes) {
                 final Type timeType = typeMap.get(s);
@@ -572,41 +591,45 @@ public class GenerateAxesPlotMethods {
         System.arraycopy(numberTypes, 0, numberTimeTypes, timeTypes.length, numberTypes.length);
     }
 
-    private static void generate(final boolean assertNoChange, final String file, final boolean isInterface) throws IOException {
+    private static void generate(final boolean assertNoChange, final String file, final boolean isInterface)
+            throws IOException {
 
 
         final String headerMessage = "CODE BELOW HERE IS GENERATED -- DO NOT EDIT BY HAND";
         final String headerComment = "//////////////////////////////";
         final String headerSpace = "    ";
         final String header = headerSpace + headerComment + " " + headerMessage + " " + headerComment;
-        final String header2 = headerSpace + headerComment + " TO REGENERATE RUN GenerateAxesPlotMethods " + headerComment;
-        final String header3 = headerSpace + headerComment + " AND THEN RUN GeneratePlottingConvenience " + headerComment;
+        final String header2 =
+                headerSpace + headerComment + " TO REGENERATE RUN GenerateAxesPlotMethods " + headerComment;
+        final String header3 =
+                headerSpace + headerComment + " AND THEN RUN GeneratePlottingConvenience " + headerComment;
 
         StringBuilder code = new StringBuilder(header + "\n" + header2 + "\n" + header3 + "\n\n\n");
 
-        code.append(codeFunction(isInterface, new String[]{"x", "y"}, new String[][]{numberTimeTypes, numberTimeTypes},
-                "    /**\n" +
-                        "     * Creates an XY plot.\n" +
-                        "     *\n" +
-                        "     * @param seriesName name of the created dataset\n" +
-                        "     * @param x x-values\n" +
-                        "     * @param y y-values\n" +
-                        "$JAVADOCS$" +
-                        "     * @return dataset created for plot\n" +
-                        "     */\n" +
-                        "    public $GENERIC$ $RETURNTYPE$ plot(final Comparable seriesName, $ARGS$) {\n" +
-                        "        return plot(seriesName, $INDEXABLE$, $TIMEAXIS$);\n" +
-                        "    }\n",
-                new String[]{
-                        "     * @param $GENERIC$ data type\n",
-                        "     * @param $GENERIC$ data type\n"
-                }, "XYDataSeries", "XYDataSeriesArray"
-        ));
+        code.append(
+                codeFunction(isInterface, new String[] {"x", "y"}, new String[][] {numberTimeTypes, numberTimeTypes},
+                        "    /**\n" +
+                                "     * Creates an XY plot.\n" +
+                                "     *\n" +
+                                "     * @param seriesName name of the created dataset\n" +
+                                "     * @param x x-values\n" +
+                                "     * @param y y-values\n" +
+                                "$JAVADOCS$" +
+                                "     * @return dataset created for plot\n" +
+                                "     */\n" +
+                                "    public $GENERIC$ $RETURNTYPE$ plot(final Comparable seriesName, $ARGS$) {\n" +
+                                "        return plot(seriesName, $INDEXABLE$, $TIMEAXIS$);\n" +
+                                "    }\n",
+                        new String[] {
+                                "     * @param $GENERIC$ data type\n",
+                                "     * @param $GENERIC$ data type\n"
+                        }, "XYDataSeries", "XYDataSeriesArray"));
 
 
         for (String c : numberTypes) {
             final String[] cs = {c};
-            code.append(codeFunction(isInterface, new String[]{"time", "open", "high", "low", "close"}, new String[][]{timeTypes, cs, cs, cs, cs},
+            code.append(codeFunction(isInterface, new String[] {"time", "open", "high", "low", "close"},
+                    new String[][] {timeTypes, cs, cs, cs, cs},
                     "    /**\n" +
                             "     * Creates an open-high-low-close plot.\n" +
                             "     *\n" +
@@ -622,17 +645,16 @@ public class GenerateAxesPlotMethods {
                             "    public $GENERIC$ $RETURNTYPE$ ohlcPlot(final Comparable seriesName, $ARGS$) {\n" +
                             "        return ohlcPlot(seriesName, $INDEXABLE$);\n" +
                             "    }\n",
-                    new String[]{
+                    new String[] {
                             "     * @param $GENERIC$ open data type\n",
                             "     * @param $GENERIC$ high data type\n",
                             "     * @param $GENERIC$ low data type\n",
                             "     * @param $GENERIC$ close data type\n",
-                    }, "OHLCDataSeries", "OHLCDataSeriesArray"
-            ));
+                    }, "OHLCDataSeries", "OHLCDataSeriesArray"));
         }
 
 
-        code.append(codeFunction(isInterface, new String[]{"x"}, new String[][]{numberTypes},
+        code.append(codeFunction(isInterface, new String[] {"x"}, new String[][] {numberTypes},
                 "    /**\n" +
                         "     * Creates a histogram.\n" +
                         "     *\n" +
@@ -642,16 +664,16 @@ public class GenerateAxesPlotMethods {
                         "$JAVADOCS$" +
                         "     * @return dataset created by the plot\n" +
                         "     */\n" +
-                        "    public $GENERIC$ $RETURNTYPE$ histPlot(final Comparable seriesName, $ARGS$, final int nbins) {\n" +
+                        "    public $GENERIC$ $RETURNTYPE$ histPlot(final Comparable seriesName, $ARGS$, final int nbins) {\n"
+                        +
                         "        return histPlot(seriesName, PlotUtils.doubleTable(x, \"Y\"), \"Y\", nbins);\n" +
                         "    }\n",
-                new String[]{
+                new String[] {
                         "     * @param $GENERIC$ data type\n",
-                }, "IntervalXYDataSeries", "IntervalXYDataSeriesArray"
-        ));
+                }, "IntervalXYDataSeries", "IntervalXYDataSeriesArray"));
 
 
-        code.append(codeFunction(isInterface, new String[]{"x"}, new String[][]{numberTypes},
+        code.append(codeFunction(isInterface, new String[] {"x"}, new String[][] {numberTypes},
                 "    /**\n" +
                         "     * Creates a histogram.\n" +
                         "     *\n" +
@@ -663,16 +685,18 @@ public class GenerateAxesPlotMethods {
                         "$JAVADOCS$" +
                         "     * @return dataset created by the plot\n" +
                         "     */\n" +
-                        "    public $GENERIC$ $RETURNTYPE$ histPlot(final Comparable seriesName, $ARGS$, final double rangeMin, final double rangeMax, final int nbins) {\n" +
-                        "        return histPlot(seriesName, PlotUtils.doubleTable(x, \"Y\"), \"Y\", rangeMin, rangeMax, nbins);\n" +
+                        "    public $GENERIC$ $RETURNTYPE$ histPlot(final Comparable seriesName, $ARGS$, final double rangeMin, final double rangeMax, final int nbins) {\n"
+                        +
+                        "        return histPlot(seriesName, PlotUtils.doubleTable(x, \"Y\"), \"Y\", rangeMin, rangeMax, nbins);\n"
+                        +
                         "    }\n",
-                new String[]{
+                new String[] {
                         "     * @param $GENERIC$ data type\n",
-                }, "IntervalXYDataSeries", "IntervalXYDataSeriesArray"
-        ));
+                }, "IntervalXYDataSeries", "IntervalXYDataSeriesArray"));
 
 
-        code.append(codeFunctionRestrictedNumericalVariableTypes(isInterface, new String[]{"x", "xLow", "xHigh", "y", "yLow", "yHigh"}, 3,
+        code.append(codeFunctionRestrictedNumericalVariableTypes(isInterface,
+                new String[] {"x", "xLow", "xHigh", "y", "yLow", "yHigh"}, 3,
                 "    /**\n" +
                         "     * Creates an XY plot with error bars in both the x and y directions.\n" +
                         "     *\n" +
@@ -689,70 +713,71 @@ public class GenerateAxesPlotMethods {
                         "    public $GENERIC$ $RETURNTYPE$ errorBarXY(final Comparable seriesName, $ARGS$) {\n" +
                         "        return errorBarXY(seriesName, $INDEXABLE$, true, true, $TIMEAXIS$);\n" +
                         "    }\n",
-                new String[]{
+                new String[] {
                         "     * @param $GENERIC$ data type\n",
                         "     * @param $GENERIC$ data type\n",
                         "     * @param $GENERIC$ data type\n",
                         "     * @param $GENERIC$ data type\n",
                         "     * @param $GENERIC$ data type\n",
                         "     * @param $GENERIC$ data type\n"
-                }, "XYErrorBarDataSeries", "XYErrorBarDataSeriesArray"
-        ));
+                }, "XYErrorBarDataSeries", "XYErrorBarDataSeriesArray"));
 
 
-        code.append(codeFunctionRestrictedNumericalVariableTypes(isInterface, new String[]{"x", "xLow", "xHigh", "y"},3,
-                "    /**\n" +
-                        "     * Creates an XY plot with error bars in the x direction.\n" +
-                        "     *\n" +
-                        "     * @param seriesName name of the created dataset\n" +
-                        "     * @param x x-values\n" +
-                        "     * @param xLow low value in x dimension\n" +
-                        "     * @param xHigh high value in x dimension\n" +
-                        "     * @param y y-values\n" +
-                        "$JAVADOCS$" +
-                        "     * @return dataset created by the plot\n" +
-                        "     */\n" +
-                        "    public $GENERIC$ $RETURNTYPE$ errorBarX(final Comparable seriesName, $ARGS$) {\n" +
-                        "        return errorBarX(seriesName, $INDEXABLE$, true, false, $TIMEAXIS$);\n" +
-                        "    }\n",
-                new String[]{
-                        "     * @param $GENERIC$ data type\n",
-                        "     * @param $GENERIC$ data type\n",
-                        "     * @param $GENERIC$ data type\n",
-                        "     * @param $GENERIC$ data type\n",
-                        "     * @param $GENERIC$ data type\n",
-                        "     * @param $GENERIC$ data type\n"
-                }, "XYErrorBarDataSeries", "XYErrorBarDataSeriesArray"
-        ));
+        code.append(
+                codeFunctionRestrictedNumericalVariableTypes(isInterface, new String[] {"x", "xLow", "xHigh", "y"}, 3,
+                        "    /**\n" +
+                                "     * Creates an XY plot with error bars in the x direction.\n" +
+                                "     *\n" +
+                                "     * @param seriesName name of the created dataset\n" +
+                                "     * @param x x-values\n" +
+                                "     * @param xLow low value in x dimension\n" +
+                                "     * @param xHigh high value in x dimension\n" +
+                                "     * @param y y-values\n" +
+                                "$JAVADOCS$" +
+                                "     * @return dataset created by the plot\n" +
+                                "     */\n" +
+                                "    public $GENERIC$ $RETURNTYPE$ errorBarX(final Comparable seriesName, $ARGS$) {\n" +
+                                "        return errorBarX(seriesName, $INDEXABLE$, true, false, $TIMEAXIS$);\n" +
+                                "    }\n",
+                        new String[] {
+                                "     * @param $GENERIC$ data type\n",
+                                "     * @param $GENERIC$ data type\n",
+                                "     * @param $GENERIC$ data type\n",
+                                "     * @param $GENERIC$ data type\n",
+                                "     * @param $GENERIC$ data type\n",
+                                "     * @param $GENERIC$ data type\n"
+                        }, "XYErrorBarDataSeries", "XYErrorBarDataSeriesArray"));
 
 
-        code.append(codeFunctionRestrictedNumericalVariableTypes(isInterface, new String[]{"x", "y", "yLow", "yHigh"},1,
-                "    /**\n" +
-                        "     * Creates an XY plot with error bars in the y direction.\n" +
-                        "     *\n" +
-                        "     * @param seriesName name of the created dataset\n" +
-                        "     * @param x x-values\n" +
-                        "     * @param y y-values\n" +
-                        "     * @param yLow low value in y dimension\n" +
-                        "     * @param yHigh high value in y dimension\n" +
-                        "$JAVADOCS$" +
-                        "     * @return dataset created by the plot\n" +
-                        "     */\n" +
-                        "    public $GENERIC$ $RETURNTYPE$ errorBarY(final Comparable seriesName, $ARGS$) {\n" +
-                        "        return errorBarY(seriesName, $INDEXABLE$, false, true, $TIMEAXIS$);\n" +
-                        "    }\n",
-                new String[]{
-                        "     * @param $GENERIC$ data type\n",
-                        "     * @param $GENERIC$ data type\n",
-                        "     * @param $GENERIC$ data type\n",
-                        "     * @param $GENERIC$ data type\n",
-                        "     * @param $GENERIC$ data type\n",
-                        "     * @param $GENERIC$ data type\n"
-                }, "XYErrorBarDataSeries", "XYErrorBarDataSeriesArray"
-        ));
+        code.append(
+                codeFunctionRestrictedNumericalVariableTypes(isInterface, new String[] {"x", "y", "yLow", "yHigh"}, 1,
+                        "    /**\n" +
+                                "     * Creates an XY plot with error bars in the y direction.\n" +
+                                "     *\n" +
+                                "     * @param seriesName name of the created dataset\n" +
+                                "     * @param x x-values\n" +
+                                "     * @param y y-values\n" +
+                                "     * @param yLow low value in y dimension\n" +
+                                "     * @param yHigh high value in y dimension\n" +
+                                "$JAVADOCS$" +
+                                "     * @return dataset created by the plot\n" +
+                                "     */\n" +
+                                "    public $GENERIC$ $RETURNTYPE$ errorBarY(final Comparable seriesName, $ARGS$) {\n" +
+                                "        return errorBarY(seriesName, $INDEXABLE$, false, true, $TIMEAXIS$);\n" +
+                                "    }\n",
+                        new String[] {
+                                "     * @param $GENERIC$ data type\n",
+                                "     * @param $GENERIC$ data type\n",
+                                "     * @param $GENERIC$ data type\n",
+                                "     * @param $GENERIC$ data type\n",
+                                "     * @param $GENERIC$ data type\n",
+                                "     * @param $GENERIC$ data type\n"
+                        }, "XYErrorBarDataSeries", "XYErrorBarDataSeriesArray"));
 
 
-        code.append(codeFunctionRestrictedNumericalVariableTypes(isInterface, new String[]{"categories", "values", "yLow", "yHigh"}, new String[]{"Comparable", "List<Comparable>"}, 1,
+        code.append(codeFunctionRestrictedNumericalVariableTypes(isInterface,
+                new String[] {"categories", "values", "yLow", "yHigh"}, new String[] {"Comparable", "List<Comparable>"},
+                1,
                 "    /**\n" +
                         "     * Creates a category error bar plot with whiskers in the y direction.\n" +
                         "     *\n" +
@@ -765,18 +790,19 @@ public class GenerateAxesPlotMethods {
                         "     * @return dataset created by the plot\n" +
                         "     */\n" +
                         "    public $GENERIC$ $RETURNTYPE$ catErrorBar(final Comparable seriesName, $ARGS$) {\n" +
-                        "        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, $INDEXABLE$), null, null, $YTIMEAXIS$);\n" +
+                        "        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, $INDEXABLE$), null, null, $YTIMEAXIS$);\n"
+                        +
                         "    }\n",
-                new String[]{
+                new String[] {
                         "     * @param $GENERIC$ type of the categorical data\n",
                         "     * @param $GENERIC$ type of the numeric data\n",
                         "     * @param $GENERIC$ type of the numeric data\n",
                         "     * @param $GENERIC$ type of the numeric data\n",
                         "     * @param $GENERIC$ type of the numeric data\n"
-                }, "CategoryDataSeries", "CategoryDataSeriesInternal"
-        ));
+                }, "CategoryDataSeries", "CategoryDataSeriesInternal"));
 
-        code.append(codeFunction(isInterface, new String[]{"categories", "values"}, new String[][]{{"Comparable", "List<Comparable>"}, numberTimeTypes},
+        code.append(codeFunction(isInterface, new String[] {"categories", "values"},
+                new String[][] {{"Comparable", "List<Comparable>"}, numberTimeTypes},
                 "    /**\n" +
                         "     * Creates a plot with discrete axis.\n" +
                         "     * Discrete data must not have duplicates.\n" +
@@ -790,14 +816,14 @@ public class GenerateAxesPlotMethods {
                         "    public $GENERIC$ $RETURNTYPE$ catPlot(final Comparable seriesName, $ARGS$) {\n" +
                         "        return catPlot(seriesName, $INDEXABLE$, $YTIMEAXIS$);\n" +
                         "    }\n",
-                new String[]{
+                new String[] {
                         "     * @param $GENERIC$ type of the categorical data\n",
                         "     * @param $GENERIC$ type of the numeric data\n"
-                }, "CategoryDataSeries", "CategoryDataSeriesInternal"
-        ));
+                }, "CategoryDataSeries", "CategoryDataSeriesInternal"));
 
 
-        code.append(codeFunction(isInterface, new String[]{"categories", "values"}, new String[][]{{"Comparable", "List<Comparable>"}, numberTypes},
+        code.append(codeFunction(isInterface, new String[] {"categories", "values"},
+                new String[][] {{"Comparable", "List<Comparable>"}, numberTypes},
                 "    /**\n" +
                         "     * Creates a pie plot.\n" +
                         "     * Categorical data must not have duplicates.\n" +
@@ -811,13 +837,12 @@ public class GenerateAxesPlotMethods {
                         "    public $GENERIC$ $RETURNTYPE$ piePlot(final Comparable seriesName, $ARGS$) {\n" +
                         "        return piePlot(seriesName, $INDEXABLE$);\n" +
                         "    }\n",
-                new String[]{
+                new String[] {
                         "     * @param $GENERIC$ type of the categorical data\n",
                         "     * @param $GENERIC$ type of the numeric data\n"
-                }, "CategoryDataSeries", "CategoryDataSeriesInternal"
-        ));
+                }, "CategoryDataSeries", "CategoryDataSeriesInternal"));
 
-//        System.out.println(code);
+        // System.out.println(code);
 
         final String axes = Files.lines(Paths.get(file)).reduce("\n", (a, b) -> a + "\n" + b);
 
@@ -836,12 +861,13 @@ public class GenerateAxesPlotMethods {
         String newaxes = axes.substring(0, cutPoint) + "\n" + code + "\n" + "}\n";
         final String newcode = newaxes.trim();
 
-//        System.out.println(newcode);
+        // System.out.println(newcode);
 
         if (assertNoChange) {
             String oldCode = new String(Files.readAllBytes(Paths.get(file)));
             if (!newcode.equals(oldCode)) {
-                throw new RuntimeException("Change in generated code.  Run GenerateAxesPlotMethods or \"./gradlew :Generators:generateAxesPlotMethods\" to regenerate\n");
+                throw new RuntimeException(
+                        "Change in generated code.  Run GenerateAxesPlotMethods or \"./gradlew :Generators:generateAxesPlotMethods\" to regenerate\n");
             }
         } else {
 

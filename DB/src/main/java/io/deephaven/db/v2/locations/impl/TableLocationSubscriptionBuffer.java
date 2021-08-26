@@ -33,11 +33,9 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
 
     /**
      * Subscribe if needed, and return any pending location keys (or throw a pending exception) from the table location
-     * provider.
-     * A given location key will only be returned by a single call to processPending() (unless state is reset).
-     * No order is maintained internally.
-     * If a pending exception is thrown, this signals that the subscription is no longer valid and no
-     * subsequent location keys will be returned.
+     * provider. A given location key will only be returned by a single call to processPending() (unless state is
+     * reset). No order is maintained internally. If a pending exception is thrown, this signals that the subscription
+     * is no longer valid and no subsequent location keys will be returned.
      *
      * @return The collection of pending location keys
      */
@@ -47,7 +45,8 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
             if (tableLocationProvider.supportsSubscriptions()) {
                 tableLocationProvider.subscribe(this);
             } else {
-                // NB: Providers that don't support subscriptions don't tick - this single call to refresh is sufficient.
+                // NB: Providers that don't support subscriptions don't tick - this single call to refresh is
+                // sufficient.
                 tableLocationProvider.refresh();
                 tableLocationProvider.getTableLocationKeys().forEach(this::handleTableLocationKey);
             }
@@ -83,9 +82,9 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
         }
     }
 
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // TableLocationProvider.Listener implementation
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
     @Override
     public void handleTableLocationKey(@NotNull final ImmutableTableLocationKey tableLocationKey) {

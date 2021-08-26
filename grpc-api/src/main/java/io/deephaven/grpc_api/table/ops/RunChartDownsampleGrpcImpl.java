@@ -14,7 +14,8 @@ import java.util.List;
 public class RunChartDownsampleGrpcImpl extends GrpcTableOperation<RunChartDownsampleRequest> {
     @Inject
     protected RunChartDownsampleGrpcImpl() {
-        super(BatchTableRequest.Operation::getRunChartDownsample, RunChartDownsampleRequest::getResultId, RunChartDownsampleRequest::getSourceId);
+        super(BatchTableRequest.Operation::getRunChartDownsample, RunChartDownsampleRequest::getResultId,
+                RunChartDownsampleRequest::getSourceId);
     }
 
     @Override
@@ -35,7 +36,6 @@ public class RunChartDownsampleGrpcImpl extends GrpcTableOperation<RunChartDowns
                 request.getPixelCount(),
                 zoomRange,
                 request.getXColumnName(),
-                request.getYColumnNamesList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)
-        ));
+                request.getYColumnNamesList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
     }
 }

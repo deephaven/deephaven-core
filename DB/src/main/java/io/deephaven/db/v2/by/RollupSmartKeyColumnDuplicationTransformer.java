@@ -9,9 +9,9 @@ import java.util.Arrays;
 import java.util.Map;
 
 class RollupSmartKeyColumnDuplicationTransformer implements AggregationContextTransformer {
-    private final String [] names;
+    private final String[] names;
 
-    RollupSmartKeyColumnDuplicationTransformer(String [] names) {
+    RollupSmartKeyColumnDuplicationTransformer(String[] names) {
         this.names = names;
     }
 

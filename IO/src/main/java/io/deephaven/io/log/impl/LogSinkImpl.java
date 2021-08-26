@@ -33,18 +33,22 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
 
     private static final int EXIT_STATUS = 1;
 
-    private static Factory _FACTORY=new Factory() {
-        @Override public LogSink create(String basePath, int rollInterval, DateFormat rollFormat, Pool elementPool, boolean append, LogOutput outputBuffer, String header, LogSinkWriter maybeWriter) {
-            //noinspection unchecked
-            return new LogSinkImpl(basePath, rollInterval, rollFormat, elementPool, append, outputBuffer, header, maybeWriter);
+    private static Factory _FACTORY = new Factory() {
+        @Override
+        public LogSink create(String basePath, int rollInterval, DateFormat rollFormat, Pool elementPool,
+                boolean append, LogOutput outputBuffer, String header, LogSinkWriter maybeWriter) {
+            // noinspection unchecked
+            return new LogSinkImpl(basePath, rollInterval, rollFormat, elementPool, append, outputBuffer, header,
+                    maybeWriter);
         }
     };
+
     public static <T extends LogSink.Element> Factory<T> FACTORY() {
-        //noinspection unchecked
+        // noinspection unchecked
         return _FACTORY;
     }
 
-    //################################################################
+    // ################################################################
 
     // complete path to log file; rolling files will have date/time appended
     private final String basePath;
@@ -65,7 +69,7 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
     private final LockFreeArrayQueue<T> outputQueue;
 
     // Log output passed to Element.writing(); elements can format themselves here or
-    // return some other LogOutput object.  This may also be null, in which case the elements
+    // return some other LogOutput object. This may also be null, in which case the elements
     // must create their own output.
     private final LogOutput outputBuffer;
 
@@ -95,7 +99,7 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
     private boolean supportsLinks;
 
     // the writer thread
-//    private final WriterThread writerThread;
+    // private final WriterThread writerThread;
 
     // shutdown flag
     private volatile boolean shutdown;
@@ -107,12 +111,13 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
     private static final int ENQUEUE_SPIN_COUNT = 10000;
 
     // the default roll interval
-    public static final int ROLL_INTERVAL = 3600*1000;
+    public static final int ROLL_INTERVAL = 3600 * 1000;
 
     // the default date format
     public static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd-HHmmss.SSSZ");
 
-    public static final BigWriterThread globalWriterThread = new BigWriterThread("LogSinkImpl.GlobalWriterThread", 1000000); // park for 1 milli
+    public static final BigWriterThread globalWriterThread =
+            new BigWriterThread("LogSinkImpl.GlobalWriterThread", 1000000); // park for 1 milli
 
     /**
      * Constructor
@@ -138,41 +143,48 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
     /**
      * Constructor
      */
-    public LogSinkImpl(String basePath, long rollIntervalMillis, Pool<T> elementPool, boolean append, LogOutput outputBuffer) {
+    public LogSinkImpl(String basePath, long rollIntervalMillis, Pool<T> elementPool, boolean append,
+            LogOutput outputBuffer) {
         this(basePath, rollIntervalMillis, DATE_FORMAT, elementPool, append, outputBuffer, null);
     }
 
     /**
      * Constructor
      */
-    public LogSinkImpl(String basePath, long rollIntervalMillis, DateFormat rollFormat, Pool<T> elementPool, boolean append) {
+    public LogSinkImpl(String basePath, long rollIntervalMillis, DateFormat rollFormat, Pool<T> elementPool,
+            boolean append) {
         this(basePath, rollIntervalMillis, rollFormat, elementPool, append, null, null);
     }
 
     /**
      * Constructor
      */
-    public LogSinkImpl(String basePath, long rollIntervalMillis, DateFormat rollFormat, Pool<T> elementPool, boolean append,
-                       LogOutput outputBuffer, String header) {
+    public LogSinkImpl(String basePath, long rollIntervalMillis, DateFormat rollFormat, Pool<T> elementPool,
+            boolean append,
+            LogOutput outputBuffer, String header) {
         this(basePath, rollIntervalMillis, rollFormat, elementPool, append, outputBuffer, header, null);
     }
 
     /**
      * Constructor
      */
-    public LogSinkImpl(String basePath, long rollIntervalMillis, DateFormat rollFormat, Pool<T> elementPool, boolean append,
-                       LogOutput outputBuffer, String header, LogSinkWriter<LogSinkImpl<T>> maybeWriter) {
+    public LogSinkImpl(String basePath, long rollIntervalMillis, DateFormat rollFormat, Pool<T> elementPool,
+            boolean append,
+            LogOutput outputBuffer, String header, LogSinkWriter<LogSinkImpl<T>> maybeWriter) {
         this.basePath = basePath;
         this.rollIntervalMicros = rollIntervalMillis * 1000L;
-        this.rollFormat = null == rollFormat ? null : (DateFormat) rollFormat.clone();   // make sure we have one instance per sink
+        this.rollFormat = null == rollFormat ? null : (DateFormat) rollFormat.clone(); // make sure we have one instance
+                                                                                       // per sink
         this.elementPool = elementPool;
         this.append = append;
-        this.outputQueue = new LockFreeArrayQueue<>(20);   // 2^20 = 1m entries
+        this.outputQueue = new LockFreeArrayQueue<>(20); // 2^20 = 1m entries
         this.outputBuffer = outputBuffer;
         this.header = header;
 
         this.linkPath = new File(basePath + ".current").toPath();
-        this.supportsLinks = !System.getProperty("os.name").toLowerCase().contains("win");   // enabled until we find out otherwise, except on windows
+        this.supportsLinks = !System.getProperty("os.name").toLowerCase().contains("win"); // enabled until we find out
+                                                                                           // otherwise, except on
+                                                                                           // windows
 
         // don't create the output file until we actually write to it
         this.currentIntervalMicros = 0;
@@ -194,7 +206,7 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
             writer.addLogSink(this); // will start it
         }
 
-        writerThread = (Thread)writer;
+        writerThread = (Thread) writer;
         Shutdown.addSink(this);
     }
 
@@ -202,7 +214,7 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
      * Return a string representation
      */
     public String toString() {
-        return "LogSinkImpl("+basePath+")";
+        return "LogSinkImpl(" + basePath + ")";
     }
 
     /**
@@ -210,21 +222,25 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
      */
     @Override
     public void write(T e) {
-        if (shutdown) return; // don't want to add anything new to the queue, b/c we can cause isOpenAfterWrite() to never return (if we keep the queue full)
+        if (shutdown)
+            return; // don't want to add anything new to the queue, b/c we can cause isOpenAfterWrite() to never return
+                    // (if we keep the queue full)
 
         int spins = 0;
-        while ( !outputQueue.enqueue(e) ) {
+        while (!outputQueue.enqueue(e)) {
 
-            if (shutdown) return; // don't want to spin forever if nothing is trying to drain the queue
+            if (shutdown)
+                return; // don't want to spin forever if nothing is trying to drain the queue
 
-            if ( ++spins > ENQUEUE_SPIN_COUNT ) {
+            if (++spins > ENQUEUE_SPIN_COUNT) {
                 LockSupport.unpark(writerThread);
                 Thread.yield();
                 spins = 0;
             }
         }
 
-        if (!passedInWriter) LockSupport.unpark(writerThread);
+        if (!passedInWriter)
+            LockSupport.unpark(writerThread);
     }
 
     private void notifyShutdownWritten() {
@@ -259,19 +275,21 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
      */
     @Override
     public void addInterceptor(Interceptor<T> interceptor) {
-        interceptors = ArrayUtil.pushArray(interceptor, interceptors, ClassUtil.<Interceptor<T>>generify(Interceptor.class));
+        interceptors =
+                ArrayUtil.pushArray(interceptor, interceptors, ClassUtil.<Interceptor<T>>generify(Interceptor.class));
     }
 
-    //-------------------------------------------------------------------------------------------
+    // -------------------------------------------------------------------------------------------
 
     private boolean isOpenAfterWrite() throws IOException {
-        while (didWrite()) {}
+        while (didWrite()) {
+        }
         return isOpen();
     }
 
     private boolean isOpen() throws IOException {
-        if ( shutdown ) {
-            if ( outputFile != null ) {
+        if (shutdown) {
+            if (outputFile != null) {
                 outputFile.close();
             }
             return false;
@@ -281,7 +299,8 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
 
     private boolean didWrite() throws IOException {
         final T e = outputQueue.dequeue();
-        if (e == null) return false;
+        if (e == null)
+            return false;
         writeOut(e);
         return true;
     }
@@ -314,7 +333,8 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
         @Override
         public void addLogSink(final LogSinkImpl<T> sink) {
             Assert.eq(sink, "sink", LogSinkImpl.this);
-            if (started.compareAndSet(false, true)) start();
+            if (started.compareAndSet(false, true))
+                start();
         }
 
         @Override
@@ -332,7 +352,7 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
                     t.addSuppressed(t2);
                 } finally {
                     AsyncSystem.exitCaught(this, t, EXIT_STATUS, err,
-                        "LogSinkImpl: unable to write log entry");
+                            "LogSinkImpl: unable to write log entry");
                 }
             }
         }
@@ -362,7 +382,8 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
         public void addLogSink(final LogSinkImpl<?> impl) {
             Assert.eqTrue(toWriteOut.enqueue(impl), "toWriteOut.add(impl)");
             semaphoreEntries.release(1);
-            if (started.compareAndSet(false, true)) start();
+            if (started.compareAndSet(false, true))
+                start();
         }
 
         @Override
@@ -375,7 +396,8 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
             int spinsSinceLastChange = 0;
             while (true) {
                 impl = toWriteOut.dequeue();
-                Assert.neqNull(impl, "impl"); // b/c we are using a semaphore to wait, there should always be something here
+                Assert.neqNull(impl, "impl"); // b/c we are using a semaphore to wait, there should always be something
+                                              // here
                 try {
                     if (impl.didWrite()) {
                         spinsSinceLastChange = 0;
@@ -403,7 +425,7 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
                         t.addSuppressed(t2);
                     } finally {
                         AsyncSystem.exitCaught(this, t, EXIT_STATUS, err,
-                            "LogSinkImpl: unable to write log entry");
+                                "LogSinkImpl: unable to write log entry");
                     }
                     return;
                 }
@@ -425,15 +447,14 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
 
     private void checkOutputFile(long nowMicros) throws IOException {
         boolean updateLink = false;
-        if ( outputFile == null ) {
+        if (outputFile == null) {
             currentIntervalMicros = nowMicros - (rollIntervalMicros == 0 ? 0 : (nowMicros % rollIntervalMicros));
             // note: first file has complete timestamp
             currentPath = stampedOutputFilePath(nowMicros);
             outputFile = new FileOutputStream(currentPath, append).getChannel();
             writeHeader();
             updateLink = true;
-        }
-        else if ( rollIntervalMicros > 0 && nowMicros > currentIntervalMicros + rollIntervalMicros) {
+        } else if (rollIntervalMicros > 0 && nowMicros > currentIntervalMicros + rollIntervalMicros) {
             outputFile.close();
             currentIntervalMicros = nowMicros - (nowMicros % rollIntervalMicros);
             currentPath = stampedOutputFilePath(currentIntervalMicros);
@@ -442,12 +463,11 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
             updateLink = true;
         }
 
-        if ( updateLink && supportsLinks ) {
+        if (updateLink && supportsLinks) {
             try {
                 Files.deleteIfExists(linkPath);
                 Files.createLink(linkPath, new File(currentPath).toPath());
-            }
-            catch ( UnsupportedOperationException x ) {
+            } catch (UnsupportedOperationException x) {
                 supportsLinks = false;
             }
         }
@@ -458,7 +478,7 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
     }
 
     private void writeHeader() throws IOException {
-        if ( header != null ) {
+        if (header != null) {
             outputBuffer.start().append(this.header).nl().close();
             flushOutput(null, outputBuffer);
             outputBuffer.clear();
@@ -467,25 +487,26 @@ public class LogSinkImpl<T extends LogSink.Element> implements LogSink<T> {
 
     private void flushOutput(T e, LogOutput data) throws IOException {
         int n = data.getBufferCount();
-        for ( int i = 0; i < n; ++i ) {
+        for (int i = 0; i < n; ++i) {
             ByteBuffer b = data.getBuffer(i);
             b.flip();
         }
 
-        if ( e != null ) {
+        if (e != null) {
             Interceptor<T>[] localInterceptors = interceptors;
-            if ( localInterceptors != null ) {
-                for ( int i = 0; i < localInterceptors.length; ++i ) {
+            if (localInterceptors != null) {
+                for (int i = 0; i < localInterceptors.length; ++i) {
                     localInterceptors[i].element(e, data);
                 }
             }
         }
 
-        for ( int i = 0; i < n; ++i ) {
+        for (int i = 0; i < n; ++i) {
             ByteBuffer b = data.getBuffer(i);
-            while ( b.remaining() > 0 ) {
-                if ( outputFile.write(b) == 0 ) {
-                    // this is a file channel, so if we write zero bytes the disk is full - don't bang our heads against the wall
+            while (b.remaining() > 0) {
+                if (outputFile.write(b) == 0) {
+                    // this is a file channel, so if we write zero bytes the disk is full - don't bang our heads against
+                    // the wall
                     break;
                 }
             }

@@ -53,10 +53,10 @@ public class TestFormulaColumnGeneration {
     private static FormulaColumn getFormulaColumn() {
         QueryScope.addParam("q", 7);
         final Table table = TableTools.emptyTable(10).updateView("I=i", "II=ii");
-        //final DhFormulaColumn fc = new DhFormulaColumn("Value", "i + 3");
-        //final DhFormulaColumn fc = new DhFormulaColumn("Value", "12345");
-        //final DhFormulaColumn fc = new DhFormulaColumn("Value", "k * i * ii");
-        //final DhFormulaColumn fc = new DhFormulaColumn("Value", "'2019-04-11T09:30 NY'");
+        // final DhFormulaColumn fc = new DhFormulaColumn("Value", "i + 3");
+        // final DhFormulaColumn fc = new DhFormulaColumn("Value", "12345");
+        // final DhFormulaColumn fc = new DhFormulaColumn("Value", "k * i * ii");
+        // final DhFormulaColumn fc = new DhFormulaColumn("Value", "'2019-04-11T09:30 NY'");
         final FormulaColumn fc = FormulaColumn.createFormulaColumn("Value", "I * II + q * ii + II_[i - 1]");
         fc.initInputs(table);
         return fc;

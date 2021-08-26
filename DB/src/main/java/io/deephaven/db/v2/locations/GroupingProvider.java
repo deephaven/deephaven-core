@@ -25,7 +25,8 @@ public interface GroupingProvider<DATA_TYPE> {
      * @return A new {@link GroupingProvider}
      */
     @NotNull
-    static <DATA_TYPE> GroupingProvider<DATA_TYPE> makeGroupingProvider(@NotNull final ColumnDefinition<DATA_TYPE> columnDefinition) {
+    static <DATA_TYPE> GroupingProvider<DATA_TYPE> makeGroupingProvider(
+            @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition) {
         return new ParallelDeferredGroupingProvider<>(columnDefinition);
     }
 
@@ -38,15 +39,15 @@ public interface GroupingProvider<DATA_TYPE> {
 
     /**
      * Returns a grouping structure, possibly constructed on-demand; the grouping is only required to include groupings
-     * for values that exist within the hint Index; but it may include more.  The hint allows the underlying
+     * for values that exist within the hint Index; but it may include more. The hint allows the underlying
      * implementation to optionally optimize out groupings that do not overlap hint.
      * <p>
-     * The return value is a pair, containing a "complete" indicator.  If the complete indicator is true, then the
-     * caller may safely cache the resultant Map.
+     * The return value is a pair, containing a "complete" indicator. If the complete indicator is true, then the caller
+     * may safely cache the resultant Map.
      *
      * @param hint required indices within the resultant Map
-     * @return a Pair containing a Map from grouping keys to Indices, which includes at least the hint indices;
-     * and a Boolean which indicates that the grouping is complete
+     * @return a Pair containing a Map from grouping keys to Indices, which includes at least the hint indices; and a
+     *         Boolean which indicates that the grouping is complete
      */
     Pair<Map<DATA_TYPE, Index>, Boolean> getGroupToRange(Index hint);
 }

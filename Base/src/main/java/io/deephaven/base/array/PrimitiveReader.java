@@ -6,12 +6,20 @@ package io.deephaven.base.array;
 
 public interface PrimitiveReader {
     int remaining();
+
     boolean nextBoolean();
+
     byte nextByte();
+
     char nextChar();
+
     short nextShort();
+
     int nextInt();
+
     long nextLong();
+
     float nextFloat();
+
     double nextDouble();
 }

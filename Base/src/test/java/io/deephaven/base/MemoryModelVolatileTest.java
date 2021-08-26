@@ -9,8 +9,14 @@ import junit.framework.TestCase;
 public class MemoryModelVolatileTest extends TestCase {
     private static class OddEven {
         private volatile boolean failed = false;
-        public boolean failed() { return failed; }
-        public void fail() { failed = true; }
+
+        public boolean failed() {
+            return failed;
+        }
+
+        public void fail() {
+            failed = true;
+        }
 
         private volatile int wguard = 0;
         private int b = 0;
@@ -27,9 +33,11 @@ public class MemoryModelVolatileTest extends TestCase {
             // hiccup every so often in the middle of a write.
             if ((b & rfmask) == 0) {
                 if ((b & rumask) == 0) {
-                    try { Thread.sleep(10); } catch(InterruptedException e) {}
-                }
-                else {
+                    try {
+                        Thread.sleep(10);
+                    } catch (InterruptedException e) {
+                    }
+                } else {
                     Thread.yield();
                 }
             }
@@ -38,12 +46,13 @@ public class MemoryModelVolatileTest extends TestCase {
         }
 
         volatile int rguard = 0;
+
         boolean readConsistentlyAndCheck() {
             int localb, localc;
             do {
                 do {
                     rguard = wguard;
-                } while((rguard & 1) == 1);
+                } while ((rguard & 1) == 1);
                 localb = b;
                 localc = c;
             } while (rguard != wguard);
@@ -58,7 +67,8 @@ public class MemoryModelVolatileTest extends TestCase {
         final long testLengthMillis = 10000L;
 
         final Thread writer = new Thread(new Runnable() {
-            @Override public void run() {
+            @Override
+            public void run() {
                 long pass = 0;
                 final long start = System.currentTimeMillis();
                 while (true) {
@@ -74,7 +84,8 @@ public class MemoryModelVolatileTest extends TestCase {
         });
 
         final Thread reader = new Thread(new Runnable() {
-            @Override public void run() {
+            @Override
+            public void run() {
                 long pass = 0;
                 final long start = System.currentTimeMillis();
                 while (true) {
@@ -94,8 +105,18 @@ public class MemoryModelVolatileTest extends TestCase {
 
         writer.start();
         reader.start();
-        while (reader.isAlive()) { try { reader.join(); } catch(InterruptedException e) {}}
-        while (writer.isAlive()) { try { writer.join(); } catch(InterruptedException e) {}}
+        while (reader.isAlive()) {
+            try {
+                reader.join();
+            } catch (InterruptedException e) {
+            }
+        }
+        while (writer.isAlive()) {
+            try {
+                writer.join();
+            } catch (InterruptedException e) {
+            }
+        }
         assertFalse(oe.failed());
     }
 }

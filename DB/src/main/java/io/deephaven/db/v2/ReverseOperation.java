@@ -89,12 +89,13 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             return new Result(resultTable);
         }
 
-        final ShiftAwareListener listener = new BaseTable.ShiftAwareListenerImpl(getDescription(), parent, resultTable) {
-            @Override
-            public void onUpdate(final Update upstream) {
-                ReverseOperation.this.onUpdate(upstream);
-            }
-        };
+        final ShiftAwareListener listener =
+                new BaseTable.ShiftAwareListenerImpl(getDescription(), parent, resultTable) {
+                    @Override
+                    public void onUpdate(final Update upstream) {
+                        ReverseOperation.this.onUpdate(upstream);
+                    }
+                };
 
         return new Result(resultTable, listener);
     }
@@ -123,7 +124,8 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
         index.remove(downstream.removed);
 
         // transform shifted and apply to our index
-        final long newShift = (parentIndex.lastKey() > pivotPoint) ? computePivot(parentIndex.lastKey()) - pivotPoint : 0;
+        final long newShift =
+                (parentIndex.lastKey() > pivotPoint) ? computePivot(parentIndex.lastKey()) - pivotPoint : 0;
         if (upstream.shifted.nonempty() || newShift > 0) {
             long watermarkKey = 0;
             final IndexShiftData.Builder oShiftedBuilder = new IndexShiftData.Builder();
@@ -177,8 +179,10 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
         downstream.modified = transform(upstream.modified);
 
         Assert.eq(downstream.added.size(), "update.added.size()", upstream.added.size(), "upstream.added.size()");
-        Assert.eq(downstream.removed.size(), "update.removed.size()", upstream.removed.size(), "upstream.removed.size()");
-        Assert.eq(downstream.modified.size(), "update.modified.size()", upstream.modified.size(), "upstream.modified.size()");
+        Assert.eq(downstream.removed.size(), "update.removed.size()", upstream.removed.size(),
+                "upstream.removed.size()");
+        Assert.eq(downstream.modified.size(), "update.modified.size()", upstream.modified.size(),
+                "upstream.modified.size()");
 
         downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
         downstream.modifiedColumnSet.clear();
@@ -219,6 +223,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     /**
      * Transform an outer (reversed) index to the inner (unreversed) index, or vice versa.
+     * 
      * @param indexToTransform the outer index
      * @return the corresponding inner index
      */
@@ -228,6 +233,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     /**
      * Transform an outer (reversed) index to the inner (unreversed) index as of the previous cycle, or vice versa.
+     * 
      * @param outerIndex the outer index
      * @return the corresponding inner index
      */
@@ -256,6 +262,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     /**
      * Transform an outer (reversed) index to the inner (unreversed) index, or vice versa.
+     * 
      * @param outerIndex the outer index
      * @return the corresponding inner index
      */
@@ -265,6 +272,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     /**
      * Transform an outer (reversed) index to the inner (unreversed) index as of the previous cycle, or vice versa.
+     * 
      * @param outerIndex the outer index
      * @return the corresponding inner index
      */

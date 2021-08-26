@@ -21,7 +21,8 @@ public class ReverseOffsetLookupCache<VALUE_TYPE, EXTRA_INPUT_TYPE> implements T
 
     private final OffsetLookup<VALUE_TYPE, EXTRA_INPUT_TYPE> lookupFunction;
 
-    private final Map<VALUE_TYPE, CachedMapping<VALUE_TYPE>> reverseLookup = new KeyedObjectHashMap<>(getKeyDefinition());
+    private final Map<VALUE_TYPE, CachedMapping<VALUE_TYPE>> reverseLookup =
+            new KeyedObjectHashMap<>(getKeyDefinition());
 
     private volatile int highestKeyChecked = -1;
 
@@ -34,9 +35,11 @@ public class ReverseOffsetLookupCache<VALUE_TYPE, EXTRA_INPUT_TYPE> implements T
      *
      * @param highestIndexNeeded The highest index needed for this operation
      */
-    public void ensurePopulated(final int highestIndexNeeded, @NotNull final Supplier<EXTRA_INPUT_TYPE> extraFactory, @Nullable Consumer<EXTRA_INPUT_TYPE> extraCleanup) {
+    public void ensurePopulated(final int highestIndexNeeded, @NotNull final Supplier<EXTRA_INPUT_TYPE> extraFactory,
+            @Nullable Consumer<EXTRA_INPUT_TYPE> extraCleanup) {
         if (highestIndexNeeded > highestKeyChecked) {
-            synchronized (reverseLookup) { // Only let one thread through here at a time, to avoid contention and redundant work.
+            synchronized (reverseLookup) { // Only let one thread through here at a time, to avoid contention and
+                                           // redundant work.
                 if (highestIndexNeeded > highestKeyChecked) {
                     final EXTRA_INPUT_TYPE extra = extraFactory.get();
                     try {
@@ -58,8 +61,8 @@ public class ReverseOffsetLookupCache<VALUE_TYPE, EXTRA_INPUT_TYPE> implements T
     }
 
     /**
-     * Get the index of value in reverse lookup cache.
-     * Be sure to call {@link #ensurePopulated(int, Supplier, Consumer)} for the appropriate index bound, first.
+     * Get the index of value in reverse lookup cache. Be sure to call {@link #ensurePopulated(int, Supplier, Consumer)}
+     * for the appropriate index bound, first.
      *
      * @param value The value to look up
      * @return The index of value in the cache, or {@link #NULL_INDEX} (-1) if not found
@@ -101,12 +104,12 @@ public class ReverseOffsetLookupCache<VALUE_TYPE, EXTRA_INPUT_TYPE> implements T
      *
      * @param <VALUE_TYPE>
      */
-    private static class CachedMappingKeyDef<VALUE_TYPE> extends KeyedObjectKey.Basic<VALUE_TYPE, CachedMapping<VALUE_TYPE>> {
+    private static class CachedMappingKeyDef<VALUE_TYPE>
+            extends KeyedObjectKey.Basic<VALUE_TYPE, CachedMapping<VALUE_TYPE>> {
 
         private static final KeyedObjectKey.Basic INSTANCE = new CachedMappingKeyDef();
 
-        private CachedMappingKeyDef() {
-        }
+        private CachedMappingKeyDef() {}
 
         @Override
         public final VALUE_TYPE getKey(CachedMapping<VALUE_TYPE> pair) {
@@ -118,7 +121,7 @@ public class ReverseOffsetLookupCache<VALUE_TYPE, EXTRA_INPUT_TYPE> implements T
      * Generic key definition instance accessor.
      */
     private static <VALUE_TYPE> KeyedObjectKey.Basic<VALUE_TYPE, CachedMapping<VALUE_TYPE>> getKeyDefinition() {
-        //noinspection unchecked
+        // noinspection unchecked
         return CachedMappingKeyDef.INSTANCE;
     }
 }

@@ -7,16 +7,13 @@ import io.deephaven.db.v2.utils.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * This class wraps an inner ChunkSource holding a DbArray. The purpose of doing so is to apply DbArray#getDirect
- * to the underlying DbArray values returned by the underlying ChunkSource. This is the strategy for implementing
- * this class:
+ * This class wraps an inner ChunkSource holding a DbArray. The purpose of doing so is to apply DbArray#getDirect to the
+ * underlying DbArray values returned by the underlying ChunkSource. This is the strategy for implementing this class:
  * makeGetContext() - doesn't need to change. The default implementation in our parent, namely
- * DefaultChunkSource#makeGetContext, already does the right thing.
- * getChunk() - likewise.
- * makeFillContext() - We don't need to add anything to the "inner" context, so we just delegate to inner and return
- *   its context
- * fillContext() - We first let the inner fill the chunk, then we overwrite each value (where non-null) with the
- *   result of DbArrayBase#getDirect() invoked on that value.
+ * DefaultChunkSource#makeGetContext, already does the right thing. getChunk() - likewise. makeFillContext() - We don't
+ * need to add anything to the "inner" context, so we just delegate to inner and return its context fillContext() - We
+ * first let the inner fill the chunk, then we overwrite each value (where non-null) with the result of
+ * DbArrayBase#getDirect() invoked on that value.
  */
 public class DbArrayChunkAdapter<ATTR extends Attributes.Any> implements DefaultChunkSource<ATTR> {
     private final ChunkSource<ATTR> underlying;

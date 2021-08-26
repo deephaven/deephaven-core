@@ -25,7 +25,8 @@ public class GrpcServiceOverrideBuilder {
         private final MethodDescriptor<ReqT, RespT> method;
         private final ServerCallHandler<ReqT, RespT> handler;
 
-        private GrpcOverrride(@NotNull MethodDescriptor<ReqT, RespT> method, @NotNull ServerCallHandler<ReqT, RespT> handler) {
+        private GrpcOverrride(@NotNull MethodDescriptor<ReqT, RespT> method,
+                @NotNull ServerCallHandler<ReqT, RespT> handler) {
             this.method = method;
             this.handler = handler;
         }
@@ -48,25 +49,29 @@ public class GrpcServiceOverrideBuilder {
         return new GrpcServiceOverrideBuilder(baseDefinition, serviceName);
     }
 
-    public <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.BidiStreamingMethod<ReqT, RespT> handler) {
+    public <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method,
+            ServerCalls.BidiStreamingMethod<ReqT, RespT> handler) {
         validateMethodType(method.getType(), MethodDescriptor.MethodType.BIDI_STREAMING);
         overrides.add(new GrpcOverrride<>(method, ServerCalls.asyncBidiStreamingCall(handler)));
         return this;
     }
 
-    public <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.ServerStreamingMethod<ReqT, RespT> handler) {
+    public <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method,
+            ServerCalls.ServerStreamingMethod<ReqT, RespT> handler) {
         validateMethodType(method.getType(), MethodDescriptor.MethodType.SERVER_STREAMING);
         overrides.add(new GrpcOverrride<>(method, ServerCalls.asyncServerStreamingCall(handler)));
         return this;
     }
 
-    public <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.ClientStreamingMethod<ReqT, RespT> handler) {
+    public <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method,
+            ServerCalls.ClientStreamingMethod<ReqT, RespT> handler) {
         validateMethodType(method.getType(), MethodDescriptor.MethodType.CLIENT_STREAMING);
         overrides.add(new GrpcOverrride<>(method, ServerCalls.asyncClientStreamingCall(handler)));
         return this;
     }
 
-    public <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.UnaryMethod<ReqT, RespT> handler) {
+    public <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method,
+            ServerCalls.UnaryMethod<ReqT, RespT> handler) {
         validateMethodType(method.getType(), MethodDescriptor.MethodType.UNARY);
         overrides.add(new GrpcOverrride<>(method, ServerCalls.asyncUnaryCall(handler)));
         return this;
@@ -227,9 +232,11 @@ public class GrpcServiceOverrideBuilder {
         }
     }
 
-    private static void validateMethodType(MethodDescriptor.MethodType methodType, MethodDescriptor.MethodType handlerType) {
+    private static void validateMethodType(MethodDescriptor.MethodType methodType,
+            MethodDescriptor.MethodType handlerType) {
         if (methodType != handlerType) {
-            throw new IllegalArgumentException("Provided method's type (" + methodType.name() + ") does not match handler's type of " + handlerType.name());
+            throw new IllegalArgumentException("Provided method's type (" + methodType.name()
+                    + ") does not match handler's type of " + handlerType.name());
         }
     }
 }

@@ -27,7 +27,8 @@ public class TestCategoryDataSeriesTableMap extends BaseArrayTestCase {
                 TableTools.doubleCol("y", dataY));
 
         final TableHandle h = PlotUtils.createCategoryTableHandle(t, "x", "y");
-        final CategoryDataSeriesTableMap series = new CategoryDataSeriesTableMap(chart.newAxes(), 1, "Test", h, "x", "y");
+        final CategoryDataSeriesTableMap series =
+                new CategoryDataSeriesTableMap(chart.newAxes(), 1, "Test", h, "x", "y");
         final CategoryDataSeriesTableMap copy = series.copy(new BaseFigureImpl().newChart().newAxes());
 
         series.size();

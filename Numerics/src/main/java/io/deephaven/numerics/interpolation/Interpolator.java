@@ -15,27 +15,29 @@ import io.deephaven.util.QueryConstants;
  */
 public class Interpolator {
 
-    private Interpolator(){        
-    }
+    private Interpolator() {}
 
     public enum InterpolationAlgorithm {
         NEAREST, // nearest neighbor interpolation
-        LINEAR,  // linear interpolation
-        PCHIP,  // shape-preserving piecewise cubic interpolation
+        LINEAR, // linear interpolation
+        PCHIP, // shape-preserving piecewise cubic interpolation
         SPLINE, // piecewise cubic spline interpolation
     }
 
     /**
      * Interpolates input data and evaluates the interpolation at a set of desired points.
      *
-     * @param x           input x data.
-     * @param y           input y data.
-     * @param xi          x points to evaluate the interpolation at.
-     * @param method      interpolation method to use.
-     * @param extrapolate true if extrapolation is to be used for values outside of the x range; false if values outside the x range should return NaN.
-     * @return y values interpolated at points xi if xi is in range(x), and y values extrapolated based on the extrapolate flag if xi is not in range(x).
+     * @param x input x data.
+     * @param y input y data.
+     * @param xi x points to evaluate the interpolation at.
+     * @param method interpolation method to use.
+     * @param extrapolate true if extrapolation is to be used for values outside of the x range; false if values outside
+     *        the x range should return NaN.
+     * @return y values interpolated at points xi if xi is in range(x), and y values extrapolated based on the
+     *         extrapolate flag if xi is not in range(x).
      */
-    public static double[] interpolate(double[] x, double[] y, double[] xi, InterpolationAlgorithm method, boolean extrapolate) {
+    public static double[] interpolate(double[] x, double[] y, double[] xi, InterpolationAlgorithm method,
+            boolean extrapolate) {
         if (xi.length == 0) {
             return new double[0];
         }
@@ -47,11 +49,11 @@ public class Interpolator {
         }
 
         if (containsInfinityOrNanOrNull(x)) {
-            throw new IllegalArgumentException("X contains Inf or NaNs or Nulls! "+Arrays.toString(x));
+            throw new IllegalArgumentException("X contains Inf or NaNs or Nulls! " + Arrays.toString(x));
         }
 
         if (containsInfinityOrNanOrNull(y)) {
-            throw new IllegalArgumentException("Y contains Inf or NaNs or Nulls! "+Arrays.toString(y));
+            throw new IllegalArgumentException("Y contains Inf or NaNs or Nulls! " + Arrays.toString(y));
         }
 
         if (n < 2) {
@@ -161,8 +163,8 @@ public class Interpolator {
         }
 
         // Handle null xi
-        for(int i=0; i<xi.length; i++){
-            if(xi[i] == QueryConstants.NULL_DOUBLE){
+        for (int i = 0; i < xi.length; i++) {
+            if (xi[i] == QueryConstants.NULL_DOUBLE) {
                 yi[i] = QueryConstants.NULL_DOUBLE;
             }
         }
@@ -218,46 +220,46 @@ public class Interpolator {
         return false;
     }
 
-    private static double[] piecewiseCubicHermiteInterpolation(double[] x, double[] y, double[] xi, InterpolationDerivativeCalculator derivativeCalculator) {
+    private static double[] piecewiseCubicHermiteInterpolation(double[] x, double[] y, double[] xi,
+            InterpolationDerivativeCalculator derivativeCalculator) {
         if (x.length != y.length) {
             throw new IllegalArgumentException("X and Y are different lengths: " + x.length + "," + y.length);
         }
 
-        if(x.length == 0){
+        if (x.length == 0) {
             throw new IllegalArgumentException("Inputs data is of zero length.");
-        }
-        else if(x.length == 1){
+        } else if (x.length == 1) {
             double[] result = new double[xi.length];
 
-            for(int i=0; i<result.length; i++){
+            for (int i = 0; i < result.length; i++) {
                 result[i] = y[0];
             }
 
             return result;
-        }
-        else if(x.length == 2){
-            double m = (y[0]-y[1])/(x[0]-x[1]);
+        } else if (x.length == 2) {
+            double m = (y[0] - y[1]) / (x[0] - x[1]);
 
             double[] result = new double[xi.length];
 
-            for(int i=-0; i<result.length; i++){
-                result[i] = m*(xi[i]-x[0]) + y[0];
+            for (int i = -0; i < result.length; i++) {
+                result[i] = m * (xi[i] - x[0]) + y[0];
             }
 
-            return result;            
+            return result;
         }
 
         double[] h = diff(x);
         double[] delta = diff(y);
 
-        for(int i=0; i<delta.length; i++){
+        for (int i = 0; i < delta.length; i++) {
             delta[i] = delta[i] / h[i];
         }
 
         double[] d = derivativeCalculator.computeDerivatives(x, y, h, delta);
 
         if (d.length != x.length) {
-            throw new IllegalStateException("Hermite derivative vector is the wrong length: " + d.length + " != " + x.length + " " + derivativeCalculator.getClass());
+            throw new IllegalStateException("Hermite derivative vector is the wrong length: " + d.length + " != "
+                    + x.length + " " + derivativeCalculator.getClass());
         }
 
         int[] k = getBin(xi, x);
@@ -301,7 +303,8 @@ public class Interpolator {
             }
 
             d[0] = computeDeriviativeBoundaryValue(h[0], h[1], delta[0], delta[1]);
-            d[d.length - 1] = computeDeriviativeBoundaryValue(h[h.length - 1], h[h.length - 2], delta[delta.length - 1], delta[delta.length - 2]);
+            d[d.length - 1] = computeDeriviativeBoundaryValue(h[h.length - 1], h[h.length - 2], delta[delta.length - 1],
+                    delta[delta.length - 2]);
 
             return d;
         }
@@ -340,7 +343,10 @@ public class Interpolator {
             double[][] r = new double[delta.length + 1][1];
 
             r[0][0] = ((h[0] + 2 * (h[0] + h[1])) * h[1] * delta[0] + h[0] * h[0] * delta[1]) / (h[0] + h[1]);
-            r[delta.length][0] = (h[h.length - 1] * h[h.length - 1] * delta[h.length - 2] + (2 * (h[h.length - 2] + h[h.length - 1]) + h[h.length - 1]) * h[h.length - 2] * delta[h.length - 1]) / (h[h.length - 2] + h[h.length - 1]);
+            r[delta.length][0] = (h[h.length - 1] * h[h.length - 1] * delta[h.length - 2]
+                    + (2 * (h[h.length - 2] + h[h.length - 1]) + h[h.length - 1]) * h[h.length - 2]
+                            * delta[h.length - 1])
+                    / (h[h.length - 2] + h[h.length - 1]);
 
             for (int i = 1; i < delta.length; i++) {
                 r[i][0] = 3 * (h[i] * delta[i - 1] + h[i - 1] * delta[i]);
@@ -361,12 +367,12 @@ public class Interpolator {
     }
 
     /**
-     * Returns the bin, determined by the nodes of x, that each element of xi belongs in.  If the sample is less than
-     * x[0] or greater than x[end], the sample is assigned to the first or last bin.  x is assumed to be sorted.
+     * Returns the bin, determined by the nodes of x, that each element of xi belongs in. If the sample is less than
+     * x[0] or greater than x[end], the sample is assigned to the first or last bin. x is assumed to be sorted.
      *
      * @param xi elements being binned.
-     * @param x  nodes partitioning the space.
-     * @return the bin, determined by the nodes of x, that each element of xi belongs in.  If the sample is less than
+     * @param x nodes partitioning the space.
+     * @return the bin, determined by the nodes of x, that each element of xi belongs in. If the sample is less than
      *         x[0] or greater than x[end], the sample is assigned to the first or last bin.
      */
     private static int[] getBin(double[] xi, double[] x) {
@@ -393,10 +399,11 @@ public class Interpolator {
 
     /**
      * Returns true if any element is infinite or NaN or null.
+     * 
      * @param v value
      * @return true if any element is infinite or NaN or null
      */
-    private static boolean containsInfinityOrNanOrNull(final double [] v) {
+    private static boolean containsInfinityOrNanOrNull(final double[] v) {
         for (int i = 0; i < v.length; i++) {
             final double w = v[i];
             if (Double.isInfinite(w) || Double.isNaN(w) || isNull(w)) {

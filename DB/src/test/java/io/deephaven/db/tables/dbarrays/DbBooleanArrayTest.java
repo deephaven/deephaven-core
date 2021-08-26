@@ -98,6 +98,10 @@ public class DbBooleanArrayTest extends TestCase {
         }
     }
 
+    public void testType() {
+        assertEquals(DbBooleanArray.type().clazz(), DbBooleanArray.class);
+    }
+
     private void checkSubArray(DbBooleanArray dbArray, int start, int end, Boolean result[]){
         DbBooleanArray subArray = dbArray.subArray(start, end);
         Boolean array[] = subArray.toArray();

@@ -83,7 +83,8 @@ public class ShiftAwareBench {
 
     private <R> R incrementalBenchmark(Function<Table, R> function) {
         final long sizePerStep = Math.max(inputTable.size() / 10, 1);
-        final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(sizePerStep, sizePerStep);
+        final IncrementalReleaseFilter incrementalReleaseFilter =
+                new IncrementalReleaseFilter(sizePerStep, sizePerStep);
         final Table filtered = inputTable.where(incrementalReleaseFilter);
 
         final R result = function.apply(filtered);
@@ -111,7 +112,8 @@ public class ShiftAwareBench {
 
     @Benchmark
     public Table b02_mergeFlattenWhere() {
-        final Table result = incrementalBenchmark((Table t) -> TableTools.merge(t, t).flatten().where("intCol % 3 == 0"));
+        final Table result =
+                incrementalBenchmark((Table t) -> TableTools.merge(t, t).flatten().where("intCol % 3 == 0"));
         return state.setResult(result);
     }
 

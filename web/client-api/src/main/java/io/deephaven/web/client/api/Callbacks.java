@@ -16,9 +16,8 @@ public interface Callbacks {
 
     static <S, T> Promise<S> promise(@Nullable HasEventHandling failHandler, Consumer<Callback<S, T>> t) {
         return new Promise<>((
-            Promise.PromiseExecutorCallbackFn.ResolveCallbackFn<S> resolve,
-            Promise.PromiseExecutorCallbackFn.RejectCallbackFn reject) ->
-                t.accept(new Callback<S, T>() {
+                Promise.PromiseExecutorCallbackFn.ResolveCallbackFn<S> resolve,
+                Promise.PromiseExecutorCallbackFn.RejectCallbackFn reject) -> t.accept(new Callback<S, T>() {
                     @Override
                     public void onFailure(T reason) {
                         notNull(failHandler, t, reject).onInvoke(reason);
@@ -28,19 +27,18 @@ public interface Callbacks {
                     public void onSuccess(S result) {
                         resolve.onInvoke(result);
                     }
-                })
-        );
+                }));
     }
 
     static <S> RejectCallbackFn notNull(
-        @Nullable HasEventHandling failHandler, // system provided failHandler
-        Consumer<S> realCallback, // success handler
-        RejectCallbackFn reject // promise-supplied failHandler
+            @Nullable HasEventHandling failHandler, // system provided failHandler
+            Consumer<S> realCallback, // success handler
+            RejectCallbackFn reject // promise-supplied failHandler
     ) {
         if (reject == null) {
-            return f->failLog(failHandler, realCallback, f);
+            return f -> failLog(failHandler, realCallback, f);
         }
-        return f-> {
+        return f -> {
             failLog(failHandler, realCallback, f);
             reject.onInvoke(f);
         };
@@ -66,8 +64,8 @@ public interface Callbacks {
     }
 
     /**
-     * Transform a bi-consumer into a callback.
-     * It is the caller's responsibility to fire "requestfailed" events as appropriate.
+     * Transform a bi-consumer into a callback. It is the caller's responsibility to fire "requestfailed" events as
+     * appropriate.
      */
     static <S, F> Callback<S, F> of(BiConsumer<S, F> from) {
         return new Callback<S, F>() {
@@ -97,6 +95,7 @@ public interface Callbacks {
             });
         });
     }
+
     static <S, F> void translateCallback(Callback<S, String> callback, Consumer<JsBiConsumer<F, S>> t) {
         try {
             t.accept((fail, success) -> {

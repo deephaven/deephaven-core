@@ -6,8 +6,7 @@ import javax.inject.Inject;
 public class PerformanceScript implements InitScript {
 
     @Inject
-    public PerformanceScript() {
-    }
+    public PerformanceScript() {}
 
     @Override
     public String getScriptPath() {

@@ -25,8 +25,7 @@ public class SimpleCategoryPlot2 {
 
                 .catPlot("Test1", x1, y1)
                 .pointShape("circle")
-                .pointSize(2)
-                ;
+                .pointSize(2);
 
         Figure axs2 = axs1.twin().plotStyle("SCATTER")
                 .catPlot("Test2", x2, y2)

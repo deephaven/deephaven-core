@@ -77,14 +77,14 @@ public class QueryTable extends BaseTable {
             }
 
             /**
-             * Construct the result of an operation.  The listener may be null if the parent is non-ticking
-             * and the table does not need to respond to ticks from other sources.
+             * Construct the result of an operation. The listener may be null if the parent is non-ticking and the table
+             * does not need to respond to ticks from other sources.
              *
              * @param resultNode the result of the operation
              * @param resultListener the listener that should be attached to the parent (or null)
              */
             public Result(final @NotNull T resultNode,
-                          final @Nullable ShiftAwareListener resultListener) {
+                    final @Nullable ShiftAwareListener resultListener) {
                 this.resultNode = resultNode;
                 this.resultListener = resultListener;
             }
@@ -108,14 +108,14 @@ public class QueryTable extends BaseTable {
          * Initialize this operation.
          *
          * @param usePrev data from the previous cycle should be used (otherwise use this cycle)
-         * @param beforeClock the clock value that we captured before the function began; the function can use
-         *                    this value to bail out early if it notices something has gone wrong.
+         * @param beforeClock the clock value that we captured before the function began; the function can use this
+         *        value to bail out early if it notices something has gone wrong.
          * @return the result table / listener if successful, null if it should be retried.
          */
         Result<T> initialize(boolean usePrev, long beforeClock);
     }
 
-    public interface MemoizableOperation <T extends DynamicNode & NotificationStepReceiver> extends Operation<T> {
+    public interface MemoizableOperation<T extends DynamicNode & NotificationStepReceiver> extends Operation<T> {
         /**
          * @return the key that should be used to memoize off of
          */
@@ -139,39 +139,46 @@ public class QueryTable extends BaseTable {
     private transient boolean flat;
 
     // Should we save results of potentially expensive operations (can be disabled for unit tests)
-    private static boolean memoizeResults = Configuration.getInstance().getBooleanWithDefault("QueryTable.memoizeResults", true);
+    private static boolean memoizeResults =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.memoizeResults", true);
 
     /**
      * If set to true, then use a RedirectedColumnSource wrapping an ArrayBackedColumnSource for update() calls.
      * Otherwise, the default of a SparseArraySource is used.
      */
-    static boolean USE_REDIRECTED_COLUMNS_FOR_UPDATE = Configuration.getInstance().getBooleanWithDefault("QueryTable.redirectUpdate", false);
+    static boolean USE_REDIRECTED_COLUMNS_FOR_UPDATE =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.redirectUpdate", false);
     /**
      * If set to true, then use a RedirectedColumnSource wrapping an ArrayBackedColumnSource for select() calls.
      * Otherwise, the default of a SparseArraySource is used.
      */
-    static boolean USE_REDIRECTED_COLUMNS_FOR_SELECT = Configuration.getInstance().getBooleanWithDefault("QueryTable.redirectSelect", false);
+    static boolean USE_REDIRECTED_COLUMNS_FOR_SELECT =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.redirectSelect", false);
     /**
-     *  For a static select(), we would prefer to flatten the table to avoid using memory unnecessarily (because the
-     *  data may be spread out across many blocks depending on the input Index).  However, the select() can become slower
-     *  because it must look things up in a redirection index.
+     * For a static select(), we would prefer to flatten the table to avoid using memory unnecessarily (because the data
+     * may be spread out across many blocks depending on the input Index). However, the select() can become slower
+     * because it must look things up in a redirection index.
      *
-     *  Values less than zero disable overhead checking, and result in never flattening the input.
+     * Values less than zero disable overhead checking, and result in never flattening the input.
      *
-     *  A value of zero results in always flattening the input.
+     * A value of zero results in always flattening the input.
      */
-    private static final double MAXIMUM_STATIC_SELECT_MEMORY_OVERHEAD = Configuration.getInstance().getDoubleWithDefault("QueryTable.maximumStaticSelectMemoryOverhead", 1.1);
+    private static final double MAXIMUM_STATIC_SELECT_MEMORY_OVERHEAD =
+            Configuration.getInstance().getDoubleWithDefault("QueryTable.maximumStaticSelectMemoryOverhead", 1.1);
 
     // Should we track the entire index of firstBy and lastBy operations.
     @VisibleForTesting
-    public static boolean TRACKED_LAST_BY = Configuration.getInstance().getBooleanWithDefault("QueryTable.trackLastBy", false);
+    public static boolean TRACKED_LAST_BY =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.trackLastBy", false);
     @VisibleForTesting
-    public static boolean TRACKED_FIRST_BY = Configuration.getInstance().getBooleanWithDefault("QueryTable.trackFirstBy", false);
+    public static boolean TRACKED_FIRST_BY =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.trackFirstBy", false);
 
     @VisibleForTesting
     public static boolean USE_OLDER_CHUNKED_BY = false;
     @VisibleForTesting
-    public static boolean USE_CHUNKED_CROSS_JOIN = Configuration.getInstance().getBooleanWithDefault("QueryTable.chunkedJoin", true);
+    public static boolean USE_CHUNKED_CROSS_JOIN =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.chunkedJoin", true);
 
     // Cached results
     transient Map<MemoizedOperationKey, MemoizedResult<?>> cachedOperations;
@@ -199,7 +206,8 @@ public class QueryTable extends BaseTable {
      * @param columns the column source map for the table, which is not copied.
      * @param modifiedColumnSet optional {@link ModifiedColumnSet} that should be re-used if supplied
      */
-    private QueryTable(TableDefinition definition, Index index, LinkedHashMap<String, ColumnSource> columns, @Nullable ModifiedColumnSet modifiedColumnSet) {
+    private QueryTable(TableDefinition definition, Index index, LinkedHashMap<String, ColumnSource> columns,
+            @Nullable ModifiedColumnSet modifiedColumnSet) {
         super(definition, "QueryTable"); // TODO: Better descriptions composed from query chain
         this.index = index;
         this.columns = columns;
@@ -211,20 +219,19 @@ public class QueryTable extends BaseTable {
     }
 
     /**
-     * Create a new query table with the {@link ColumnDefinition ColumnDefinitions} of
-     * {@code template}, but in the order of {@code this}. The tables must be mutually compatible,
-     * as defined via {@link TableDefinition#checkCompatibility(TableDefinition)}.
+     * Create a new query table with the {@link ColumnDefinition ColumnDefinitions} of {@code template}, but in the
+     * order of {@code this}. The tables must be mutually compatible, as defined via
+     * {@link TableDefinition#checkCompatibility(TableDefinition)}.
      *
      * @param template the new definition template to use
      * @return the new query table
-     * @deprecated this is being used a workaround for testing purposes where previously mutations
-     * were being used at the {@link ColumnDefinition} level. Do not use this method without good
-     * reason.
+     * @deprecated this is being used a workaround for testing purposes where previously mutations were being used at
+     *             the {@link ColumnDefinition} level. Do not use this method without good reason.
      */
     @Deprecated
     public QueryTable withDefinitionUnsafe(TableDefinition template) {
         TableDefinition inOrder = template.checkMutualCompatibility(definition);
-        return (QueryTable)copy(inOrder, true);
+        return (QueryTable) copy(inOrder, true);
     }
 
     private void initializeTransientFields() {
@@ -292,8 +299,8 @@ public class QueryTable extends BaseTable {
     /**
      * Producers of tables should use the modified column set embedded within the table for their result.
      *
-     * You must not mutate the result of this method if you are not generating the updates for this table.
-     * Callers should not rely on the dirty state of this modified column set.
+     * You must not mutate the result of this method if you are not generating the updates for this table. Callers
+     * should not rely on the dirty state of this modified column set.
      *
      * @return the modified column set for this table
      */
@@ -303,12 +310,13 @@ public class QueryTable extends BaseTable {
 
     @Override
     public ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(final String[] columnNames,
-                                                                         final ModifiedColumnSet[] columnSets) {
+            final ModifiedColumnSet[] columnSets) {
         return modifiedColumnSet.newTransformer(columnNames, columnSets);
     }
 
     @Override
-    public ModifiedColumnSet.Transformer newModifiedColumnSetIdentityTransformer(final Map<String, ColumnSource> newColumns) {
+    public ModifiedColumnSet.Transformer newModifiedColumnSetIdentityTransformer(
+            final Map<String, ColumnSource> newColumns) {
         return modifiedColumnSet.newIdentityTransformer(newColumns);
     }
 
@@ -323,25 +331,32 @@ public class QueryTable extends BaseTable {
     @Override
     public Object[] getRecord(long rowNo, String... columnNames) {
         final long key = index.get(rowNo);
-        return (columnNames.length > 0 ? Arrays.stream(columnNames).map(this::getColumnSource) : columns.values().stream()).map(cs -> cs.get(key)).toArray(Object[]::new);
+        return (columnNames.length > 0 ? Arrays.stream(columnNames).map(this::getColumnSource)
+                : columns.values().stream()).map(cs -> cs.get(key)).toArray(Object[]::new);
     }
 
     @Override
     public LocalTableMap byExternal(final boolean dropKeys, final String... keyColumnNames) {
-        final SelectColumn[] groupByColumns = Arrays.stream(keyColumnNames).map(SourceColumn::new).toArray(SelectColumn[]::new);
+        if (isStream()) {
+            throw streamUnsupported("byExternal");
+        }
+        final SelectColumn[] groupByColumns =
+                Arrays.stream(keyColumnNames).map(SourceColumn::new).toArray(SelectColumn[]::new);
 
         return memoizeResult(MemoizedOperationKey.byExternal(dropKeys, groupByColumns),
                 () -> QueryPerformanceRecorder.withNugget(
                         "byExternal(" + dropKeys + ", " + Arrays.toString(keyColumnNames) + ')',
                         sizeForInstrumentation(),
-                                () -> ByExternalAggregationFactory.byExternal(this, dropKeys, (pt, st) -> pt.copyAttributes(st, CopyAttributeOperation.ByExternal), Collections.emptyList(), groupByColumns)
-                ));
+                        () -> ByExternalAggregationFactory.byExternal(this, dropKeys,
+                                (pt, st) -> pt.copyAttributes(st, CopyAttributeOperation.ByExternal),
+                                Collections.emptyList(), groupByColumns)));
     }
 
     @Override
-    public Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents, SelectColumn... columns) {
+    public Table rollup(ComboAggregateFactory comboAggregateFactory, boolean includeConstituents,
+            SelectColumn... columns) {
         if (isStream() && includeConstituents) {
-            throw new UnsupportedOperationException("Stream tables do not support rollup with included constituents");
+            throw streamUnsupported("rollup with included constituents");
         }
         return memoizeResult(MemoizedOperationKey.rollup(comboAggregateFactory, columns, includeConstituents), () -> {
             final ComboAggregateFactory withRollup = comboAggregateFactory.forRollup(includeConstituents);
@@ -363,18 +378,23 @@ public class QueryTable extends BaseTable {
 
                 final Map<String, Class> nullColumnsMap = new LinkedHashMap<>(nullColumns.size());
                 final Table fLastLevel = lastLevel;
-                nullColumns.forEach(nc -> nullColumnsMap.put(nc, fLastLevel.getDefinition().getColumn(nc).getDataType()));
+                nullColumns
+                        .forEach(nc -> nullColumnsMap.put(nc, fLastLevel.getDefinition().getColumn(nc).getDataType()));
 
                 aggregationStateFactory = rollupFactory.withNulls(nullColumnsMap);
-                lastLevel = lastLevel.byNoMemo(aggregationStateFactory, reaggregateColumns.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
+                lastLevel = lastLevel.byNoMemo(aggregationStateFactory,
+                        reaggregateColumns.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
             }
 
-            final String [] rollupsToDrop = lastLevel.getColumnSourceMap().keySet().stream().filter(cn -> cn.endsWith(ComboAggregateFactory.ROLLUP_COLUMN_SUFFIX)).toArray(String[]::new);
-            final QueryTable finalTable = (QueryTable)lastLevel.dropColumns(rollupsToDrop);
-            final Object reverseLookup = Require.neqNull(lastLevel.getAttribute(REVERSE_LOOKUP_ATTRIBUTE), "REVERSE_LOOKUP_ATTRIBUTE");
+            final String[] rollupsToDrop = lastLevel.getColumnSourceMap().keySet().stream()
+                    .filter(cn -> cn.endsWith(ComboAggregateFactory.ROLLUP_COLUMN_SUFFIX)).toArray(String[]::new);
+            final QueryTable finalTable = (QueryTable) lastLevel.dropColumns(rollupsToDrop);
+            final Object reverseLookup =
+                    Require.neqNull(lastLevel.getAttribute(REVERSE_LOOKUP_ATTRIBUTE), "REVERSE_LOOKUP_ATTRIBUTE");
             finalTable.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
 
-            final Table result = HierarchicalTable.createFrom(finalTable, new RollupInfo(comboAggregateFactory, columns, includeConstituents ? RollupInfo.LeafType.Constituent : RollupInfo.LeafType.Normal));
+            final Table result = HierarchicalTable.createFrom(finalTable, new RollupInfo(comboAggregateFactory, columns,
+                    includeConstituents ? RollupInfo.LeafType.Constituent : RollupInfo.LeafType.Normal));
             result.setAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
             copyAttributes(result, CopyAttributeOperation.Rollup);
             maybeUpdateSortableColumns(result);
@@ -386,22 +406,28 @@ public class QueryTable extends BaseTable {
     @Override
     public Table treeTable(String idColumn, String parentColumn) {
         if (isStream()) {
-            throw new UnsupportedOperationException("Stream tables do not support treeTable");
+            throw streamUnsupported("treeTable");
         }
         return memoizeResult(MemoizedOperationKey.treeTable(idColumn, parentColumn), () -> {
-            final LocalTableMap byExternalResult = ByExternalAggregationFactory.byExternal(this, false, (pt, st) -> pt.copyAttributes(st, CopyAttributeOperation.ByExternal), Collections.singletonList(null), parentColumn);
-            final QueryTable rootTable = (QueryTable)byExternalResult.get(null);
-            final Table result = HierarchicalTable.createFrom((QueryTable)rootTable.copy(), new TreeTableInfo(idColumn, parentColumn));
+            final LocalTableMap byExternalResult = ByExternalAggregationFactory.byExternal(this, false,
+                    (pt, st) -> pt.copyAttributes(st, CopyAttributeOperation.ByExternal),
+                    Collections.singletonList(null), parentColumn);
+            final QueryTable rootTable = (QueryTable) byExternalResult.get(null);
+            final Table result = HierarchicalTable.createFrom((QueryTable) rootTable.copy(),
+                    new TreeTableInfo(idColumn, parentColumn));
 
             // If the parent table has an RLL attached to it, we can re-use it.
             final ReverseLookup reverseLookup;
-            if(hasAttribute(PREPARED_RLL_ATTRIBUTE)) {
-                reverseLookup = (ReverseLookup)getAttribute(PREPARED_RLL_ATTRIBUTE);
+            if (hasAttribute(PREPARED_RLL_ATTRIBUTE)) {
+                reverseLookup = (ReverseLookup) getAttribute(PREPARED_RLL_ATTRIBUTE);
                 final String[] listenerCols = reverseLookup.getKeyColumns();
 
-                if(listenerCols.length != 1 || !listenerCols[0].equals(idColumn)) {
-                    final String listenerColError = StringUtils.joinStrings(Arrays.stream(listenerCols).map(col -> "'"+col+"'"), ", ");
-                    throw new IllegalStateException("Table was prepared for Tree table with a different Id column. Expected `"+idColumn+"`, Actual "+listenerColError);
+                if (listenerCols.length != 1 || !listenerCols[0].equals(idColumn)) {
+                    final String listenerColError =
+                            StringUtils.joinStrings(Arrays.stream(listenerCols).map(col -> "'" + col + "'"), ", ");
+                    throw new IllegalStateException(
+                            "Table was prepared for Tree table with a different Id column. Expected `" + idColumn
+                                    + "`, Actual " + listenerColError);
                 }
             } else {
                 reverseLookup = ReverseLookupListener.makeReverseLookupListenerWithSnapshot(QueryTable.this, idColumn);
@@ -447,29 +473,37 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table leftJoin(Table table, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd) {
-        return QueryPerformanceRecorder.withNugget("leftJoin(" + table + "," + matchString(columnsToMatch) + "," + matchString(columnsToAdd) + ")", sizeForInstrumentation(), () -> {
-            String rightColumnKeys[] = new String[columnsToMatch.length];
-            for (int i = 0; i < columnsToMatch.length; i++) {
-                MatchPair match = columnsToMatch[i];
-                rightColumnKeys[i] = match.rightColumn;
-            }
+        return QueryPerformanceRecorder.withNugget(
+                "leftJoin(" + table + "," + matchString(columnsToMatch) + "," + matchString(columnsToAdd) + ")",
+                sizeForInstrumentation(), () -> {
+                    String rightColumnKeys[] = new String[columnsToMatch.length];
+                    for (int i = 0; i < columnsToMatch.length; i++) {
+                        MatchPair match = columnsToMatch[i];
+                        rightColumnKeys[i] = match.rightColumn;
+                    }
 
-            Table groupedRight = table.by(rightColumnKeys);
-            return naturalJoin(groupedRight, columnsToMatch, columnsToAdd);
-        });
+                    Table groupedRight = table.by(rightColumnKeys);
+                    return naturalJoin(groupedRight, columnsToMatch, columnsToAdd);
+                });
     }
 
     @Override
-    public Table exactJoin(Table table, MatchPair columnsToMatch[], MatchPair[] columnsToAdd){
-        return QueryPerformanceRecorder.withNugget("exactJoin(" +  table + "," + Arrays.toString(columnsToMatch) + "," + Arrays.toString(columnsToMatch) + ")", sizeForInstrumentation(),
+    public Table exactJoin(Table table, MatchPair columnsToMatch[], MatchPair[] columnsToAdd) {
+        return QueryPerformanceRecorder.withNugget(
+                "exactJoin(" + table + "," + Arrays.toString(columnsToMatch) + "," + Arrays.toString(columnsToMatch)
+                        + ")",
+                sizeForInstrumentation(),
                 () -> naturalJoinInternal(table, columnsToMatch, columnsToAdd, true));
     }
 
     @Override
     public Table lastBy(SelectColumn... selectColumns) {
-        return QueryPerformanceRecorder.withNugget("lastBy(" + Arrays.toString(selectColumns) + ")", sizeForInstrumentation(),
+        return QueryPerformanceRecorder.withNugget("lastBy(" + Arrays.toString(selectColumns) + ")",
+                sizeForInstrumentation(),
                 () -> {
-                    final Table result = by(TRACKED_LAST_BY ? new TrackingLastByStateFactoryImpl() : new LastByStateFactoryImpl(), selectColumns);
+                    final Table result =
+                            by(TRACKED_LAST_BY ? new TrackingLastByStateFactoryImpl() : new LastByStateFactoryImpl(),
+                                    selectColumns);
                     copyAttributes(result, CopyAttributeOperation.LastBy);
                     return result;
                 });
@@ -477,9 +511,12 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table firstBy(SelectColumn... selectColumns) {
-        return QueryPerformanceRecorder.withNugget("firstBy(" + Arrays.toString(selectColumns) + ")", sizeForInstrumentation(),
+        return QueryPerformanceRecorder.withNugget("firstBy(" + Arrays.toString(selectColumns) + ")",
+                sizeForInstrumentation(),
                 () -> {
-                    final Table result = by(TRACKED_FIRST_BY ? new TrackingFirstByStateFactoryImpl() :  new FirstByStateFactoryImpl(), selectColumns);
+                    final Table result =
+                            by(TRACKED_FIRST_BY ? new TrackingFirstByStateFactoryImpl() : new FirstByStateFactoryImpl(),
+                                    selectColumns);
                     copyAttributes(result, CopyAttributeOperation.FirstBy);
                     return result;
                 });
@@ -487,140 +524,170 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table minBy(SelectColumn... selectColumns) {
-        return QueryPerformanceRecorder.withNugget("minBy(" + Arrays.toString(selectColumns) + ")", sizeForInstrumentation(), () -> {
-            if (isRefreshing()) {
-                return by(new MinMaxByStateFactoryImpl(true), selectColumns);
-            } else {
-                return by(new AppendMinMaxByStateFactoryImpl(true), selectColumns);
-            }
-        });
+        return QueryPerformanceRecorder.withNugget("minBy(" + Arrays.toString(selectColumns) + ")",
+                sizeForInstrumentation(), () -> {
+                    if (isRefreshing()) {
+                        return by(new MinMaxByStateFactoryImpl(true), selectColumns);
+                    } else {
+                        return by(new AddOnlyMinMaxByStateFactoryImpl(true), selectColumns);
+                    }
+                });
     }
 
     @Override
     public Table maxBy(SelectColumn... selectColumns) {
-        return QueryPerformanceRecorder.withNugget("maxBy(" + Arrays.toString(selectColumns) + ")", sizeForInstrumentation(), () -> {
-            if (isRefreshing()) {
-                return by(new MinMaxByStateFactoryImpl(false), selectColumns);
-            } else {
-                return by(new AppendMinMaxByStateFactoryImpl(false), selectColumns);
-            }
-        });
+        return QueryPerformanceRecorder.withNugget("maxBy(" + Arrays.toString(selectColumns) + ")",
+                sizeForInstrumentation(), () -> {
+                    if (isRefreshing()) {
+                        return by(new MinMaxByStateFactoryImpl(false), selectColumns);
+                    } else {
+                        return by(new AddOnlyMinMaxByStateFactoryImpl(false), selectColumns);
+                    }
+                });
     }
 
     @Override
     public Table medianBy(SelectColumn... selectColumns) {
-        return QueryPerformanceRecorder.withNugget("medianBy(" + Arrays.toString(selectColumns) + ")", sizeForInstrumentation(),
+        return QueryPerformanceRecorder.withNugget("medianBy(" + Arrays.toString(selectColumns) + ")",
+                sizeForInstrumentation(),
                 () -> by(new PercentileByStateFactoryImpl(0.50, true), selectColumns));
     }
 
     @Override
     public Table countBy(String countColumnName, SelectColumn... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("countBy(" + countColumnName + "," + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(), () -> {
-            if (!COLUMN_NAME.matcher(countColumnName).matches()) { //TODO: Test more columns this way
-                throw new RuntimeException(countColumnName + " is not a valid column name");
-            }
-            return by(new CountByStateFactoryImpl(countColumnName), groupByColumns);
-        });
+        return QueryPerformanceRecorder.withNugget(
+                "countBy(" + countColumnName + "," + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
+                () -> {
+                    if (!COLUMN_NAME.matcher(countColumnName).matches()) { // TODO: Test more columns this way
+                        throw new RuntimeException(countColumnName + " is not a valid column name");
+                    }
+                    return by(new CountByStateFactoryImpl(countColumnName), groupByColumns);
+                });
     }
 
     public Table by(final AggregationStateFactory inputAggregationStateFactory, final SelectColumn... groupByColumns) {
-        return memoizeResult(MemoizedOperationKey.by(inputAggregationStateFactory, groupByColumns), () -> byNoMemo(inputAggregationStateFactory, groupByColumns));
+        return memoizeResult(MemoizedOperationKey.by(inputAggregationStateFactory, groupByColumns),
+                () -> byNoMemo(inputAggregationStateFactory, groupByColumns));
     }
 
-    private QueryTable byNoMemo(AggregationStateFactory inputAggregationStateFactory, final SelectColumn... groupByColumns) {
+    private QueryTable byNoMemo(AggregationStateFactory inputAggregationStateFactory,
+            final SelectColumn... groupByColumns) {
         final String description = "by(" + inputAggregationStateFactory + ", " + Arrays.toString(groupByColumns) + ")";
 
         return QueryPerformanceRecorder.withNugget(description, sizeForInstrumentation(), () -> {
 
             final boolean isBy = inputAggregationStateFactory.getClass() == AggregationIndexStateFactory.class;
-            final boolean isApplyToAllBy = inputAggregationStateFactory.getClass() == AggregationFormulaStateFactory.class;
+            final boolean isApplyToAllBy =
+                    inputAggregationStateFactory.getClass() == AggregationFormulaStateFactory.class;
             final boolean isNumeric = inputAggregationStateFactory.getClass() == SumStateFactory.class ||
                     inputAggregationStateFactory.getClass() == AbsSumStateFactory.class ||
                     inputAggregationStateFactory.getClass() == AvgStateFactory.class ||
                     inputAggregationStateFactory.getClass() == VarStateFactory.class ||
                     inputAggregationStateFactory.getClass() == StdStateFactory.class;
-            final boolean isSelectDistinct = inputAggregationStateFactory.getClass() == SelectDistinctStateFactoryImpl.class;
+            final boolean isSelectDistinct =
+                    inputAggregationStateFactory.getClass() == SelectDistinctStateFactoryImpl.class;
             final boolean isCount = inputAggregationStateFactory.getClass() == CountByStateFactoryImpl.class;
             final boolean isMinMax = inputAggregationStateFactory instanceof MinMaxByStateFactoryImpl;
             final boolean isPercentile = inputAggregationStateFactory.getClass() == PercentileByStateFactoryImpl.class;
-            final boolean isWeightedAvg = inputAggregationStateFactory.getClass() == WeightedAverageStateFactoryImpl.class;
+            final boolean isWeightedAvg =
+                    inputAggregationStateFactory.getClass() == WeightedAverageStateFactoryImpl.class;
             final boolean isWeightedSum = inputAggregationStateFactory.getClass() == WeightedSumStateFactoryImpl.class;
             final boolean isSortedFirstOrLast = inputAggregationStateFactory instanceof SortedFirstOrLastByFactoryImpl;
-            final boolean isFirst = inputAggregationStateFactory.getClass() == FirstByStateFactoryImpl.class || inputAggregationStateFactory.getClass() == TrackingFirstByStateFactoryImpl.class;
-            final boolean isLast = inputAggregationStateFactory.getClass() == LastByStateFactoryImpl.class || inputAggregationStateFactory.getClass() == TrackingLastByStateFactoryImpl.class;
+            final boolean isFirst = inputAggregationStateFactory.getClass() == FirstByStateFactoryImpl.class
+                    || inputAggregationStateFactory.getClass() == TrackingFirstByStateFactoryImpl.class;
+            final boolean isLast = inputAggregationStateFactory.getClass() == LastByStateFactoryImpl.class
+                    || inputAggregationStateFactory.getClass() == TrackingLastByStateFactoryImpl.class;
             final boolean isCombo = inputAggregationStateFactory instanceof ComboAggregateFactory;
 
             if (isBy) {
                 if (isStream()) {
-                    throw new UnsupportedOperationException("Stream tables do not support by");
+                    throw streamUnsupported("by");
                 }
                 if (USE_OLDER_CHUNKED_BY) {
                     return AggregationHelper.by(this, groupByColumns);
                 }
                 return ByAggregationFactory.by(this, groupByColumns);
-            }
-            else if (isApplyToAllBy) {
+            } else if (isApplyToAllBy) {
                 if (isStream()) {
-                    throw new UnsupportedOperationException("Stream tables do not support applyToAllBy");
+                    throw streamUnsupported("applyToAllBy");
                 }
                 final String formula = ((AggregationFormulaStateFactory) inputAggregationStateFactory).getFormula();
-                final String columnParamName = ((AggregationFormulaStateFactory) inputAggregationStateFactory).getColumnParamName();
+                final String columnParamName =
+                        ((AggregationFormulaStateFactory) inputAggregationStateFactory).getColumnParamName();
                 return FormulaAggregationFactory.applyToAllBy(this, formula, columnParamName, groupByColumns);
-            }
-            else if (isNumeric) {
-                return ChunkedOperatorAggregationHelper.aggregation(new NonKeyColumnAggregationFactory((IterativeChunkedOperatorFactory) inputAggregationStateFactory), this, groupByColumns);
-            }
-            else if (isSortedFirstOrLast) {
-                final boolean isSortedFirst = ((SortedFirstOrLastByFactoryImpl)inputAggregationStateFactory).isSortedFirst();
-                return ChunkedOperatorAggregationHelper.aggregation(new SortedFirstOrLastByAggregationFactory(isSortedFirst, ((SortedFirstOrLastByFactoryImpl) inputAggregationStateFactory).getSortColumnNames()), this, groupByColumns);
-            }
-            else if (isFirst || isLast) {
-                return ChunkedOperatorAggregationHelper.aggregation(new FirstOrLastByAggregationFactory(isFirst), this, groupByColumns);
-            }
-            else if (isMinMax) {
-                final boolean isMin = ((MinMaxByStateFactoryImpl)inputAggregationStateFactory).isMinimum();
-                return ChunkedOperatorAggregationHelper.aggregation(new NonKeyColumnAggregationFactory(new MinMaxIterativeOperatorFactory(isMin, isStream() || isAddOnly())), this, groupByColumns);
-            }
-            else if (isPercentile) {
-                final double percentile = ((PercentileByStateFactoryImpl)inputAggregationStateFactory).getPercentile();
-                final boolean averageMedian = ((PercentileByStateFactoryImpl)inputAggregationStateFactory).getAverageMedian();
-                return ChunkedOperatorAggregationHelper.aggregation(new NonKeyColumnAggregationFactory(new PercentileIterativeOperatorFactory(percentile, averageMedian)), this, groupByColumns);
-            }
-            else if (isWeightedAvg || isWeightedSum) {
+            } else if (isNumeric) {
+                return ChunkedOperatorAggregationHelper.aggregation(new NonKeyColumnAggregationFactory(
+                        (IterativeChunkedOperatorFactory) inputAggregationStateFactory), this, groupByColumns);
+            } else if (isSortedFirstOrLast) {
+                final boolean isSortedFirst =
+                        ((SortedFirstOrLastByFactoryImpl) inputAggregationStateFactory).isSortedFirst();
+                return ChunkedOperatorAggregationHelper.aggregation(
+                        new SortedFirstOrLastByAggregationFactory(isSortedFirst, false,
+                                ((SortedFirstOrLastByFactoryImpl) inputAggregationStateFactory).getSortColumnNames()),
+                        this, groupByColumns);
+            } else if (isFirst || isLast) {
+                return ChunkedOperatorAggregationHelper.aggregation(new FirstOrLastByAggregationFactory(isFirst), this,
+                        groupByColumns);
+            } else if (isMinMax) {
+                final boolean isMin = ((MinMaxByStateFactoryImpl) inputAggregationStateFactory).isMinimum();
+                return ChunkedOperatorAggregationHelper.aggregation(
+                        new NonKeyColumnAggregationFactory(
+                                new MinMaxIterativeOperatorFactory(isMin, isStream() || isAddOnly())),
+                        this, groupByColumns);
+            } else if (isPercentile) {
+                final double percentile = ((PercentileByStateFactoryImpl) inputAggregationStateFactory).getPercentile();
+                final boolean averageMedian =
+                        ((PercentileByStateFactoryImpl) inputAggregationStateFactory).getAverageMedian();
+                return ChunkedOperatorAggregationHelper.aggregation(
+                        new NonKeyColumnAggregationFactory(
+                                new PercentileIterativeOperatorFactory(percentile, averageMedian)),
+                        this, groupByColumns);
+            } else if (isWeightedAvg || isWeightedSum) {
                 final String weightName;
                 if (isWeightedAvg) {
                     weightName = ((WeightedAverageStateFactoryImpl) inputAggregationStateFactory).getWeightName();
                 } else {
                     weightName = ((WeightedSumStateFactoryImpl) inputAggregationStateFactory).getWeightName();
                 }
-                return ChunkedOperatorAggregationHelper.aggregation(new WeightedAverageSumAggregationFactory(weightName, isWeightedSum), this, groupByColumns);
-            }
-            else if (isCount) {
-                return ChunkedOperatorAggregationHelper.aggregation(new CountAggregationFactory(((CountByStateFactoryImpl)inputAggregationStateFactory).getCountName()), this, groupByColumns);
-            }
-            else if (isSelectDistinct) {
+                return ChunkedOperatorAggregationHelper.aggregation(
+                        new WeightedAverageSumAggregationFactory(weightName, isWeightedSum), this, groupByColumns);
+            } else if (isCount) {
+                return ChunkedOperatorAggregationHelper.aggregation(
+                        new CountAggregationFactory(
+                                ((CountByStateFactoryImpl) inputAggregationStateFactory).getCountName()),
+                        this, groupByColumns);
+            } else if (isSelectDistinct) {
                 if (getColumnSourceMap().isEmpty()) {
                     // if we have no input columns, then the only thing we can do is have an empty result
                     return new QueryTable(Index.FACTORY.getEmptyIndex(), Collections.emptyMap());
                 }
-                return ChunkedOperatorAggregationHelper.aggregation(new KeyOnlyAggregationFactory(), this, groupByColumns);
-            }
-            else if (isCombo) {
-                return ChunkedOperatorAggregationHelper.aggregation(((ComboAggregateFactory)inputAggregationStateFactory).makeAggregationContextFactory(), this, groupByColumns);
+                return ChunkedOperatorAggregationHelper.aggregation(new KeyOnlyAggregationFactory(), this,
+                        groupByColumns);
+            } else if (isCombo) {
+                return ChunkedOperatorAggregationHelper.aggregation(
+                        ((ComboAggregateFactory) inputAggregationStateFactory).makeAggregationContextFactory(), this,
+                        groupByColumns);
             }
 
             throw new RuntimeException("Unknown aggregation factory: " + inputAggregationStateFactory);
         });
     }
 
+    private static UnsupportedOperationException streamUnsupported(@NotNull final String operationName) {
+        return new UnsupportedOperationException("Stream tables do not support " + operationName
+                + "; use StreamTableTools.streamToAppendOnlyTable to accumulate full history");
+    }
+
     @Override
     public Table headBy(long nRows, String... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("headBy(" + nRows + ", " + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(), () -> headOrTailBy(nRows, true, groupByColumns));
+        return QueryPerformanceRecorder.withNugget("headBy(" + nRows + ", " + Arrays.toString(groupByColumns) + ")",
+                sizeForInstrumentation(), () -> headOrTailBy(nRows, true, groupByColumns));
     }
 
     @Override
     public Table tailBy(long nRows, String... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("tailBy(" + nRows + ", " + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(), () -> headOrTailBy(nRows, false, groupByColumns));
+        return QueryPerformanceRecorder.withNugget("tailBy(" + nRows + ", " + Arrays.toString(groupByColumns) + ")",
+                sizeForInstrumentation(), () -> headOrTailBy(nRows, false, groupByColumns));
     }
 
     private Table headOrTailBy(long nRows, boolean head, String... groupByColumns) {
@@ -640,20 +707,22 @@ public class QueryTable extends BaseTable {
                 if (head)
                     updates[j++] =
                             // Get the first nRows rows:
-                            // colName  = isNull(colName)        ? null
-                            //          : colName.size() > nRows ? colName.subArray(0, nRows)
-                            //          :                          colName
+                            // colName = isNull(colName) ? null
+                            // : colName.size() > nRows ? colName.subArray(0, nRows)
+                            // : colName
                             colName + '=' + "isNull(" + colName + ") ? null" +
-                                    ':' + colName + ".size() > " + nRows + " ? " + colName + ".subArray(0, " + nRows + ')' +
+                                    ':' + colName + ".size() > " + nRows + " ? " + colName + ".subArray(0, " + nRows
+                                    + ')' +
                                     ':' + colName;
                 else
                     updates[j++] =
                             // Get the last nRows rows:
-                            // colName  = isNull(colName)        ? null
-                            //          : colName.size() > nRows ? colName.subArray(colName.size() - nRows, colName.size())
-                            //          :                          colName
+                            // colName = isNull(colName) ? null
+                            // : colName.size() > nRows ? colName.subArray(colName.size() - nRows, colName.size())
+                            // : colName
                             colName + '=' + "isNull(" + colName + ") ? null" +
-                                    ':' + colName + ".size() > " + nRows + " ? " + colName + ".subArray(" + colName + ".size() - " + nRows + ", " + colName + ".size())" +
+                                    ':' + colName + ".size() > " + nRows + " ? " + colName + ".subArray(" + colName
+                                    + ".size() - " + nRows + ", " + colName + ".size())" +
                                     ':' + colName;
             }
         }
@@ -671,26 +740,19 @@ public class QueryTable extends BaseTable {
         if (dataType.isPrimitive()) {
             if (dataType == int.class) {
                 return "int";
-            }
-            else if (dataType == short.class) {
+            } else if (dataType == short.class) {
                 return "short";
-            }
-            else if (dataType == long.class) {
+            } else if (dataType == long.class) {
                 return "long";
-            }
-            else if (dataType == char.class) {
+            } else if (dataType == char.class) {
                 return "char";
-            }
-            else if (dataType == byte.class) {
+            } else if (dataType == byte.class) {
                 return "byte";
-            }
-            else if (dataType == float.class) {
+            } else if (dataType == float.class) {
                 return "float";
-            }
-            else if (dataType == double.class) {
+            } else if (dataType == double.class) {
                 return "double";
-            }
-            else if (dataType == boolean.class) {
+            } else if (dataType == boolean.class) {
                 return "Boolean";
             }
             throw Assert.statementNeverExecuted("Unknown primitive: " + dataType);
@@ -703,54 +765,62 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table applyToAllBy(String formulaColumn, String columnParamName, SelectColumn... groupByColumns) {
-        final String[] formattingColumnNames = definition.getColumnNames().stream().filter(name -> name.endsWith("__WTABLE_FORMAT")).toArray(String[]::new);
+        final String[] formattingColumnNames = definition.getColumnNames().stream()
+                .filter(name -> name.endsWith("__WTABLE_FORMAT")).toArray(String[]::new);
         final QueryTable noFormattingColumnsTable = (QueryTable) dropColumns(formattingColumnNames);
         return QueryPerformanceRecorder.withNugget(
                 "applyToAllBy(" + formulaColumn + ',' + columnParamName + ',' + Arrays.toString(groupByColumns) + ")",
                 sizeForInstrumentation(),
-                () -> noFormattingColumnsTable.by(new AggregationFormulaStateFactory(formulaColumn, columnParamName), groupByColumns)
-        );
+                () -> noFormattingColumnsTable.by(new AggregationFormulaStateFactory(formulaColumn, columnParamName),
+                        groupByColumns));
     }
 
     @Override
     public Table sumBy(SelectColumn... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("sumBy(" + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
+        return QueryPerformanceRecorder.withNugget("sumBy(" + Arrays.toString(groupByColumns) + ")",
+                sizeForInstrumentation(),
                 () -> by(new SumStateFactory(), groupByColumns));
     }
 
     @Override
     public Table absSumBy(SelectColumn... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("absSumBy(" + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
+        return QueryPerformanceRecorder.withNugget("absSumBy(" + Arrays.toString(groupByColumns) + ")",
+                sizeForInstrumentation(),
                 () -> by(new AbsSumStateFactory(), groupByColumns));
     }
 
     @Override
     public Table avgBy(SelectColumn... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("avgBy(" + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
+        return QueryPerformanceRecorder.withNugget("avgBy(" + Arrays.toString(groupByColumns) + ")",
+                sizeForInstrumentation(),
                 () -> by(new AvgStateFactory(), groupByColumns));
     }
 
     @Override
     public Table wavgBy(String weightColumn, SelectColumn... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("wavgBy(" + weightColumn + ", " +  Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
+        return QueryPerformanceRecorder.withNugget(
+                "wavgBy(" + weightColumn + ", " + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
                 () -> by(new WeightedAverageStateFactoryImpl(weightColumn), groupByColumns));
     }
 
     @Override
     public Table wsumBy(String weightColumn, SelectColumn... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("wsumBy(" + weightColumn + ", " +  Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
+        return QueryPerformanceRecorder.withNugget(
+                "wsumBy(" + weightColumn + ", " + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
                 () -> by(new WeightedSumStateFactoryImpl(weightColumn), groupByColumns));
     }
 
     @Override
     public Table stdBy(SelectColumn... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("stdBy(" + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
+        return QueryPerformanceRecorder.withNugget("stdBy(" + Arrays.toString(groupByColumns) + ")",
+                sizeForInstrumentation(),
                 () -> by(new StdStateFactory(), groupByColumns));
     }
 
     @Override
     public Table varBy(SelectColumn... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("varBy(" + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
+        return QueryPerformanceRecorder.withNugget("varBy(" + Arrays.toString(groupByColumns) + ")",
+                sizeForInstrumentation(),
                 () -> by(new VarStateFactory(), groupByColumns));
     }
 
@@ -768,7 +838,7 @@ public class QueryTable extends BaseTable {
             for (int ii = 0; ii < filters.length; ++ii) {
                 final SelectFilter f = filters[ii];
                 if (f instanceof LivenessReferent) {
-                    manage((LivenessReferent)f);
+                    manage((LivenessReferent) f);
                 }
             }
         }
@@ -786,7 +856,8 @@ public class QueryTable extends BaseTable {
         }
 
         /**
-         * Called if something about the filters has changed such that all matched rows of the source table should be re-evaluated.
+         * Called if something about the filters has changed such that all matched rows of the source table should be
+         * re-evaluated.
          */
         @Override
         public void requestRecomputeMatched() {
@@ -819,7 +890,7 @@ public class QueryTable extends BaseTable {
          * @param modifiedColumnSet the set of columns that have any changes to indices in {@code modified}
          */
         private void doRefilter(final Index upstreamAdded, final Index upstreamRemoved, final Index upstreamModified,
-                                final IndexShiftData shiftData, final ModifiedColumnSet modifiedColumnSet) {
+                final IndexShiftData shiftData, final ModifiedColumnSet modifiedColumnSet) {
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
             update.modifiedColumnSet = modifiedColumnSet;
 
@@ -869,7 +940,8 @@ public class QueryTable extends BaseTable {
 
                 refilterUnmatchedRequested = false;
             } else if (refilterMatchedRequested) {
-                // we need to take removed rows out of our index so we do not read them; and also examine added or modified rows
+                // we need to take removed rows out of our index so we do not read them; and also examine added or
+                // modified rows
                 final Index matchedRows = getIndex().clone();
                 if (upstreamAdded != null) {
                     matchedRows.insert(upstreamAdded);
@@ -916,88 +988,101 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table where(final SelectFilter... filters) {
-        return QueryPerformanceRecorder.withNugget("where(" + Arrays.toString(filters) + ")", sizeForInstrumentation(), () -> {
-            for (int fi = 0; fi < filters.length; ++fi) {
-                if (!(filters[fi] instanceof ReindexingFilter)) {
-                    continue;
-                }
-                final ReindexingFilter reindexingFilter = (ReindexingFilter) filters[fi];
-                final boolean first = fi == 0;
-                final boolean last = fi == filters.length - 1;
-                if (last && !reindexingFilter.requiresSorting()) {
-                    // If this is the last (or only) filter, we can just run it as normal unless it requires sorting.
-                    break;
-                }
-                Table result = this;
-                if (!first) {
-                    result = result.where(Arrays.copyOf(filters, fi));
-                }
-                if (reindexingFilter.requiresSorting()) {
-                    result = result.sort(reindexingFilter.getSortColumns());
-                    reindexingFilter.sortingDone();
-                }
-                result = result.where(reindexingFilter);
-                if (!last) {
-                    result = result.where(Arrays.copyOfRange(filters, fi + 1, filters.length));
-                }
-                return result;
-            }
+        return QueryPerformanceRecorder.withNugget("where(" + Arrays.toString(filters) + ")", sizeForInstrumentation(),
+                () -> {
+                    for (int fi = 0; fi < filters.length; ++fi) {
+                        if (!(filters[fi] instanceof ReindexingFilter)) {
+                            continue;
+                        }
+                        final ReindexingFilter reindexingFilter = (ReindexingFilter) filters[fi];
+                        final boolean first = fi == 0;
+                        final boolean last = fi == filters.length - 1;
+                        if (last && !reindexingFilter.requiresSorting()) {
+                            // If this is the last (or only) filter, we can just run it as normal unless it requires
+                            // sorting.
+                            break;
+                        }
+                        Table result = this;
+                        if (!first) {
+                            result = result.where(Arrays.copyOf(filters, fi));
+                        }
+                        if (reindexingFilter.requiresSorting()) {
+                            result = result.sort(reindexingFilter.getSortColumns());
+                            reindexingFilter.sortingDone();
+                        }
+                        result = result.where(reindexingFilter);
+                        if (!last) {
+                            result = result.where(Arrays.copyOfRange(filters, fi + 1, filters.length));
+                        }
+                        return result;
+                    }
 
-            for (SelectFilter filter : filters) {
-                filter.init(getDefinition());
-            }
+                    for (SelectFilter filter : filters) {
+                        filter.init(getDefinition());
+                    }
 
-            return memoizeResult(MemoizedOperationKey.filter(filters), () -> {
-                final ShiftAwareSwapListener swapListener = createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
+                    return memoizeResult(MemoizedOperationKey.filter(filters), () -> {
+                        final ShiftAwareSwapListener swapListener =
+                                createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
 
-                final Mutable<QueryTable> result = new MutableObject<>();
-                initializeWithSnapshot("where", swapListener,
-                        (prevRequested, beforeClock) -> {
-                            final boolean usePrev = prevRequested && isRefreshing();
-                            final Index indexToUse = usePrev ? index.getPrevIndex() : index;
-                            final Index currentMapping;
+                        final Mutable<QueryTable> result = new MutableObject<>();
+                        initializeWithSnapshot("where", swapListener,
+                                (prevRequested, beforeClock) -> {
+                                    final boolean usePrev = prevRequested && isRefreshing();
+                                    final Index indexToUse = usePrev ? index.getPrevIndex() : index;
+                                    final Index currentMapping;
 
-                            currentMapping = whereInternal(indexToUse.clone(), indexToUse, usePrev, filters);
-                            Assert.eq(currentMapping.getPrevIndex().size(), "currentMapping.getPrevIndex.size()", currentMapping.size(), "currentMapping.size()");
+                                    currentMapping = whereInternal(indexToUse.clone(), indexToUse, usePrev, filters);
+                                    Assert.eq(currentMapping.getPrevIndex().size(),
+                                            "currentMapping.getPrevIndex.size()", currentMapping.size(),
+                                            "currentMapping.size()");
 
-                            final FilteredTable filteredTable = new FilteredTable(currentMapping, this, filters);
+                                    final FilteredTable filteredTable =
+                                            new FilteredTable(currentMapping, this, filters);
 
-                            for (final SelectFilter filter : filters) {
-                                filter.setRecomputeListener(filteredTable);
-                            }
+                                    for (final SelectFilter filter : filters) {
+                                        filter.setRecomputeListener(filteredTable);
+                                    }
 
-                            final boolean refreshingFilters = Arrays.stream(filters).anyMatch(SelectFilter::isRefreshing);
-                            copyAttributes(filteredTable, CopyAttributeOperation.Filter);
-                            if (!refreshingFilters && isAddOnly()) {
-                                filteredTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
-                            }
+                                    final boolean refreshingFilters =
+                                            Arrays.stream(filters).anyMatch(SelectFilter::isRefreshing);
+                                    copyAttributes(filteredTable, CopyAttributeOperation.Filter);
+                                    if (!refreshingFilters && isAddOnly()) {
+                                        filteredTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+                                    }
 
-                            final List<NotificationQueue.Dependency> dependencies = Stream.concat(
-                                    Stream.of(filters).filter(f -> f instanceof NotificationQueue.Dependency).map(f -> (NotificationQueue.Dependency) f),
-                                    Stream.of(filters).filter(f -> f instanceof DependencyStreamProvider).flatMap(f -> ((DependencyStreamProvider)f).getDependencyStream()))
-                                    .collect(Collectors.toList());
-                            if (swapListener != null) {
-                                final ListenerRecorder recorder = new ListenerRecorder("where(" + Arrays.toString(filters) + ")", QueryTable.this, filteredTable);
-                                final WhereListener whereListener = new WhereListener(recorder, dependencies, filteredTable);
-                                filteredTable.setWhereListener(whereListener);
-                                recorder.setMergedListener(whereListener);
-                                swapListener.setListenerAndResult(recorder, filteredTable);
-                                filteredTable.addParentReference(swapListener);
-                                filteredTable.addParentReference(whereListener);
-                            } else if (refreshingFilters) {
-                                final StaticWhereListener whereListener = new StaticWhereListener(dependencies, filteredTable);
-                                filteredTable.setWhereListener(whereListener);
-                                filteredTable.addParentReference(whereListener);
-                            }
+                                    final List<NotificationQueue.Dependency> dependencies = Stream.concat(
+                                            Stream.of(filters).filter(f -> f instanceof NotificationQueue.Dependency)
+                                                    .map(f -> (NotificationQueue.Dependency) f),
+                                            Stream.of(filters).filter(f -> f instanceof DependencyStreamProvider)
+                                                    .flatMap(f -> ((DependencyStreamProvider) f).getDependencyStream()))
+                                            .collect(Collectors.toList());
+                                    if (swapListener != null) {
+                                        final ListenerRecorder recorder =
+                                                new ListenerRecorder("where(" + Arrays.toString(filters) + ")",
+                                                        QueryTable.this, filteredTable);
+                                        final WhereListener whereListener =
+                                                new WhereListener(recorder, dependencies, filteredTable);
+                                        filteredTable.setWhereListener(whereListener);
+                                        recorder.setMergedListener(whereListener);
+                                        swapListener.setListenerAndResult(recorder, filteredTable);
+                                        filteredTable.addParentReference(swapListener);
+                                        filteredTable.addParentReference(whereListener);
+                                    } else if (refreshingFilters) {
+                                        final StaticWhereListener whereListener =
+                                                new StaticWhereListener(dependencies, filteredTable);
+                                        filteredTable.setWhereListener(whereListener);
+                                        filteredTable.addParentReference(whereListener);
+                                    }
 
-                            result.setValue(filteredTable);
+                                    result.setValue(filteredTable);
 
-                            return true;
-                        });
+                                    return true;
+                                });
 
-                return result.getValue();
-            });
-        });
+                        return result.getValue();
+                    });
+                });
     }
 
     @SuppressWarnings("WeakerAccess")
@@ -1012,23 +1097,27 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table whereIn(final GroupStrategy groupStrategy, final Table rightTable, final boolean inclusion, final MatchPair... columnsToMatch) {
-        return QueryPerformanceRecorder.withNugget("whereIn(" + groupStrategy + " , rightTable, " + inclusion + ", " + matchString(columnsToMatch) + ")", sizeForInstrumentation(), () -> {
-            checkInitiateOperation(rightTable);
+    public Table whereIn(final GroupStrategy groupStrategy, final Table rightTable, final boolean inclusion,
+            final MatchPair... columnsToMatch) {
+        return QueryPerformanceRecorder.withNugget(
+                "whereIn(" + groupStrategy + " , rightTable, " + inclusion + ", " + matchString(columnsToMatch) + ")",
+                sizeForInstrumentation(), () -> {
+                    checkInitiateOperation(rightTable);
 
-            final Table distinctValues = rightTable.selectDistinct(MatchPair.getRightColumns(columnsToMatch));
-            final DynamicWhereFilter dynamicWhereFilter = new DynamicWhereFilter(groupStrategy, distinctValues, inclusion, columnsToMatch);
-            final Table where = where(dynamicWhereFilter);
-            if (where instanceof DynamicTable) {
-                if (distinctValues.isLive()) {
-                    ((DynamicTable) where).addParentReference(distinctValues);
-                }
-                if (dynamicWhereFilter.isRefreshing()) {
-                    ((DynamicTable) where).addParentReference(dynamicWhereFilter);
-                }
-            }
-            return where;
-        });
+                    final Table distinctValues = rightTable.selectDistinct(MatchPair.getRightColumns(columnsToMatch));
+                    final DynamicWhereFilter dynamicWhereFilter =
+                            new DynamicWhereFilter(groupStrategy, distinctValues, inclusion, columnsToMatch);
+                    final Table where = where(dynamicWhereFilter);
+                    if (where instanceof DynamicTable) {
+                        if (distinctValues.isLive()) {
+                            ((DynamicTable) where).addParentReference(distinctValues);
+                        }
+                        if (dynamicWhereFilter.isRefreshing()) {
+                            ((DynamicTable) where).addParentReference(dynamicWhereFilter);
+                        }
+                    }
+                    return where;
+                });
     }
 
     @Override
@@ -1055,7 +1144,8 @@ public class QueryTable extends BaseTable {
     @Override
     public boolean isFlat() {
         if (flat) {
-            Assert.assertion(index.lastKey() == index.size() - 1, "index.lastKey() == index.size() - 1", index, "index");
+            Assert.assertion(index.lastKey() == index.size() - 1, "index.lastKey() == index.size() - 1", index,
+                    "index");
         }
         return flat;
     }
@@ -1084,8 +1174,8 @@ public class QueryTable extends BaseTable {
             return true;
         }
 
-        final long requiredBlocks = (size() + SparseConstants.BLOCK_SIZE - 1 ) / SparseConstants.BLOCK_SIZE;
-        final long acceptableBlocks = (long)(MAXIMUM_STATIC_SELECT_MEMORY_OVERHEAD * (double)requiredBlocks);
+        final long requiredBlocks = (size() + SparseConstants.BLOCK_SIZE - 1) / SparseConstants.BLOCK_SIZE;
+        final long acceptableBlocks = (long) (MAXIMUM_STATIC_SELECT_MEMORY_OVERHEAD * (double) requiredBlocks);
         final MutableLong lastBlock = new MutableLong(-1L);
         final MutableLong usedBlocks = new MutableLong(0);
         return !getIndex().forEachLongRange((s, e) -> {
@@ -1112,10 +1202,9 @@ public class QueryTable extends BaseTable {
     }
 
     /**
-     * This does a certain amount of validation and can be used to get confidence that the formulas are valid.
-     * If it is not valid, you will get an exception.
-     * Positive test (should pass validation): "X = 12", "Y = X + 1")
-     * Negative test (should fail validation): "X = 12", "Y = Z + 1")
+     * This does a certain amount of validation and can be used to get confidence that the formulas are valid. If it is
+     * not valid, you will get an exception. Positive test (should pass validation): "X = 12", "Y = X + 1") Negative
+     * test (should fail validation): "X = 12", "Y = Z + 1")
      */
     @Override
     public SelectValidationResult validateSelect(final SelectColumn... selectColumns) {
@@ -1128,12 +1217,13 @@ public class QueryTable extends BaseTable {
     private Table selectOrUpdate(Flavor flavor, final SelectColumn... selectColumns) {
         final String humanReadablePrefix = flavor.toString();
         final String updateDescription = humanReadablePrefix + '(' + selectColumnString(selectColumns) + ')';
-        return memoizeResult(MemoizedOperationKey.selectUpdateViewOrUpdateView(selectColumns, flavor), () ->
-                QueryPerformanceRecorder.withNugget(updateDescription, sizeForInstrumentation(), () -> {
+        return memoizeResult(MemoizedOperationKey.selectUpdateViewOrUpdateView(selectColumns, flavor),
+                () -> QueryPerformanceRecorder.withNugget(updateDescription, sizeForInstrumentation(), () -> {
                     checkInitiateOperation();
                     final SelectAndViewAnalyzer.Mode mode;
                     if (isRefreshing()) {
-                        if ((flavor == Flavor.Update && USE_REDIRECTED_COLUMNS_FOR_UPDATE) || (flavor == Flavor.Select && USE_REDIRECTED_COLUMNS_FOR_SELECT)) {
+                        if ((flavor == Flavor.Update && USE_REDIRECTED_COLUMNS_FOR_UPDATE)
+                                || (flavor == Flavor.Select && USE_REDIRECTED_COLUMNS_FOR_SELECT)) {
                             mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_REFRESHING;
                         } else {
                             mode = SelectAndViewAnalyzer.Mode.SELECT_REFRESHING;
@@ -1142,14 +1232,17 @@ public class QueryTable extends BaseTable {
                         mode = SelectAndViewAnalyzer.Mode.SELECT_STATIC;
                     }
                     final boolean publishTheseSources = flavor == Flavor.Update;
-                    final SelectAndViewAnalyzer analyzer = SelectAndViewAnalyzer.create(mode, columns, index, modifiedColumnSet,
-                            publishTheseSources, selectColumns);
+                    final SelectAndViewAnalyzer analyzer =
+                            SelectAndViewAnalyzer.create(mode, columns, index, modifiedColumnSet,
+                                    publishTheseSources, selectColumns);
 
                     // Init all the rows by cooking up a fake Update
                     final Index emptyIndex = Index.FACTORY.getEmptyIndex();
-                    final ShiftAwareListener.Update fakeUpdate = new ShiftAwareListener.Update(index, emptyIndex, emptyIndex,
-                            IndexShiftData.EMPTY, ModifiedColumnSet.ALL);
-                    try (final SelectAndViewAnalyzer.UpdateHelper updateHelper = new SelectAndViewAnalyzer.UpdateHelper(emptyIndex, fakeUpdate)) {
+                    final ShiftAwareListener.Update fakeUpdate =
+                            new ShiftAwareListener.Update(index, emptyIndex, emptyIndex,
+                                    IndexShiftData.EMPTY, ModifiedColumnSet.ALL);
+                    try (final SelectAndViewAnalyzer.UpdateHelper updateHelper =
+                            new SelectAndViewAnalyzer.UpdateHelper(emptyIndex, fakeUpdate)) {
                         analyzer.applyUpdate(fakeUpdate, emptyIndex, updateHelper);
                     }
 
@@ -1157,13 +1250,14 @@ public class QueryTable extends BaseTable {
                     if (isRefreshing()) {
                         analyzer.startTrackingPrev();
                         final Map<String, String[]> effects = analyzer.calcEffects();
-                        final SelectOrUpdateListener soul = new SelectOrUpdateListener(updateDescription, this, resultTable,
-                                effects, analyzer);
+                        final SelectOrUpdateListener soul =
+                                new SelectOrUpdateListener(updateDescription, this, resultTable,
+                                        effects, analyzer);
                         listenForUpdates(soul);
                     } else {
                         propagateGrouping(selectColumns, resultTable);
                         for (final ColumnSource columnSource : analyzer.getNewColumnSources().values()) {
-                            ((SparseArrayColumnSource)columnSource).setImmutable();
+                            ((SparseArrayColumnSource) columnSource).setImmutable();
                         }
                     }
                     propagateFlatness(resultTable);
@@ -1181,7 +1275,7 @@ public class QueryTable extends BaseTable {
         final Set<String> usedOutputColumns = new HashSet<>();
         for (SelectColumn selectColumn : selectColumns) {
             if (selectColumn instanceof SwitchColumn) {
-                selectColumn = ((SwitchColumn)selectColumn).getRealColumn();
+                selectColumn = ((SwitchColumn) selectColumn).getRealColumn();
             }
 
             SourceColumn sourceColumn = null;
@@ -1193,18 +1287,21 @@ public class QueryTable extends BaseTable {
                 final ColumnSource selectedColumnSource = resultTable.getColumnSource(sourceColumn.getName());
                 if (originalColumnSource != selectedColumnSource) {
                     if (originalColumnSource instanceof DeferredGroupingColumnSource) {
-                        final DeferredGroupingColumnSource deferredGroupingSelectedSource = (DeferredGroupingColumnSource) selectedColumnSource;
-                        final GroupingProvider groupingProvider = ((DeferredGroupingColumnSource) originalColumnSource).getGroupingProvider();
+                        final DeferredGroupingColumnSource deferredGroupingSelectedSource =
+                                (DeferredGroupingColumnSource) selectedColumnSource;
+                        final GroupingProvider groupingProvider =
+                                ((DeferredGroupingColumnSource) originalColumnSource).getGroupingProvider();
                         if (groupingProvider != null) {
-                            //noinspection unchecked
+                            // noinspection unchecked
                             deferredGroupingSelectedSource.setGroupingProvider(groupingProvider);
                         } else if (originalColumnSource.getGroupToRange() != null) {
-                            //noinspection unchecked
+                            // noinspection unchecked
                             deferredGroupingSelectedSource.setGroupToRange(originalColumnSource.getGroupToRange());
                         }
                     } else if (originalColumnSource.getGroupToRange() != null) {
-                        final DeferredGroupingColumnSource deferredGroupingSelectedSource = (DeferredGroupingColumnSource) selectedColumnSource;
-                        //noinspection unchecked
+                        final DeferredGroupingColumnSource deferredGroupingSelectedSource =
+                                (DeferredGroupingColumnSource) selectedColumnSource;
+                        // noinspection unchecked
                         deferredGroupingSelectedSource.setGroupToRange(originalColumnSource.getGroupToRange());
                     } else if (index.hasGrouping(originalColumnSource)) {
                         index.copyImmutableGroupings(originalColumnSource, selectedColumnSource);
@@ -1246,39 +1343,45 @@ public class QueryTable extends BaseTable {
 
         return memoizeResult(MemoizedOperationKey.selectUpdateViewOrUpdateView(viewColumns, flavor),
                 () -> QueryPerformanceRecorder.withNugget(
-                updateDescription, sizeForInstrumentation(), () -> {
-            final Mutable<Table> result = new MutableObject<>();
+                        updateDescription, sizeForInstrumentation(), () -> {
+                            final Mutable<Table> result = new MutableObject<>();
 
-            final ShiftAwareSwapListener swapListener = createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
-            initializeWithSnapshot(humanReadablePrefix, swapListener, (usePrev, beforeClockValue) -> {
-                final boolean publishTheseSources = flavor == Flavor.UpdateView;
-                final SelectAndViewAnalyzer analyzer = SelectAndViewAnalyzer.create(SelectAndViewAnalyzer.Mode.VIEW_EAGER,
-                        columns, index, modifiedColumnSet, publishTheseSources, viewColumns);
-                final QueryTable queryTable = new QueryTable(index, analyzer.getPublishedColumnSources());
-                if (swapListener != null) {
-                    final Map<String, String[]> effects = analyzer.calcEffects();
-                    final ShiftAwareListener listener = new ViewOrUpdateViewListener(updateDescription, this, queryTable, effects);
-                    swapListener.setListenerAndResult(listener, queryTable);
-                    queryTable.addParentReference(swapListener);
-                }
+                            final ShiftAwareSwapListener swapListener =
+                                    createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
+                            initializeWithSnapshot(humanReadablePrefix, swapListener, (usePrev, beforeClockValue) -> {
+                                final boolean publishTheseSources = flavor == Flavor.UpdateView;
+                                final SelectAndViewAnalyzer analyzer =
+                                        SelectAndViewAnalyzer.create(SelectAndViewAnalyzer.Mode.VIEW_EAGER,
+                                                columns, index, modifiedColumnSet, publishTheseSources, viewColumns);
+                                final QueryTable queryTable =
+                                        new QueryTable(index, analyzer.getPublishedColumnSources());
+                                if (swapListener != null) {
+                                    final Map<String, String[]> effects = analyzer.calcEffects();
+                                    final ShiftAwareListener listener =
+                                            new ViewOrUpdateViewListener(updateDescription, this, queryTable, effects);
+                                    swapListener.setListenerAndResult(listener, queryTable);
+                                    queryTable.addParentReference(swapListener);
+                                }
 
-                propagateFlatness(queryTable);
+                                propagateFlatness(queryTable);
 
-                copyAttributes(queryTable, flavor == Flavor.UpdateView ? CopyAttributeOperation.UpdateView : CopyAttributeOperation.View);
-                maybeUpdateSortableColumns(queryTable, viewColumns);
-                if (publishTheseSources) {
-                    maybeCopyColumnDescriptions(queryTable, viewColumns);
-                } else {
-                    maybeCopyColumnDescriptions(queryTable);
-                }
+                                copyAttributes(queryTable,
+                                        flavor == Flavor.UpdateView ? CopyAttributeOperation.UpdateView
+                                                : CopyAttributeOperation.View);
+                                maybeUpdateSortableColumns(queryTable, viewColumns);
+                                if (publishTheseSources) {
+                                    maybeCopyColumnDescriptions(queryTable, viewColumns);
+                                } else {
+                                    maybeCopyColumnDescriptions(queryTable);
+                                }
 
-                result.setValue(queryTable);
+                                result.setValue(queryTable);
 
-                return true;
-            });
+                                return true;
+                            });
 
-            return result.getValue();
-        }));
+                            return result.getValue();
+                        }));
     }
 
     /**
@@ -1295,7 +1398,8 @@ public class QueryTable extends BaseTable {
          * @param dependent The dependent table
          * @param effects A map from a column name to the column names that it affects
          */
-        ViewOrUpdateViewListener(String description, QueryTable parent, QueryTable dependent, Map<String, String[]> effects) {
+        ViewOrUpdateViewListener(String description, QueryTable parent, QueryTable dependent,
+                Map<String, String[]> effects) {
             super(description, parent, dependent);
             this.dependent = dependent;
 
@@ -1321,8 +1425,8 @@ public class QueryTable extends BaseTable {
     }
 
     /**
-     * A Shift-Aware listener for Select or Update. It uses the SelectAndViewAnalyzer to calculate how columns
-     * affect other columns, then creates a column set transformer which will be used by onUpdate to transform updates.
+     * A Shift-Aware listener for Select or Update. It uses the SelectAndViewAnalyzer to calculate how columns affect
+     * other columns, then creates a column set transformer which will be used by onUpdate to transform updates.
      */
     private static class SelectOrUpdateListener extends ShiftAwareListenerImpl {
         private final QueryTable dependent;
@@ -1335,7 +1439,8 @@ public class QueryTable extends BaseTable {
          * @param dependent The dependent table
          * @param effects A map from a column name to the column names that it affects
          */
-        SelectOrUpdateListener(String description, QueryTable parent, QueryTable dependent, Map<String, String[]> effects,
+        SelectOrUpdateListener(String description, QueryTable parent, QueryTable dependent,
+                Map<String, String[]> effects,
                 SelectAndViewAnalyzer analyzer) {
             super(description, parent, dependent);
             this.dependent = dependent;
@@ -1360,7 +1465,8 @@ public class QueryTable extends BaseTable {
             // - create parallel arrays of pre-shift-keys and post-shift-keys so we can move them in chunks
 
             try (final Index toClear = dependent.index.getPrevIndex();
-                 final SelectAndViewAnalyzer.UpdateHelper updateHelper = new SelectAndViewAnalyzer.UpdateHelper(dependent.index, upstream)) {
+                    final SelectAndViewAnalyzer.UpdateHelper updateHelper =
+                            new SelectAndViewAnalyzer.UpdateHelper(dependent.index, upstream)) {
                 toClear.remove(dependent.index);
                 analyzer.applyUpdate(upstream, toClear, updateHelper);
 
@@ -1374,166 +1480,190 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table lazyUpdate(SelectColumn... selectColumns) {
-        return QueryPerformanceRecorder.withNugget("lazyUpdate(" + selectColumnString(selectColumns) + ")", sizeForInstrumentation(), () -> {
-            checkInitiateOperation();
+        return QueryPerformanceRecorder.withNugget("lazyUpdate(" + selectColumnString(selectColumns) + ")",
+                sizeForInstrumentation(), () -> {
+                    checkInitiateOperation();
 
-            final SelectAndViewAnalyzer analyzer = SelectAndViewAnalyzer.create(SelectAndViewAnalyzer.Mode.VIEW_LAZY,
-                    columns, index, modifiedColumnSet, true, selectColumns);
-            final QueryTable result = new QueryTable(index, analyzer.getPublishedColumnSources());
-            if (isRefreshing()) {
-                listenForUpdates(new ShiftAwareListenerImpl("lazyUpdate(" + Arrays.deepToString(selectColumns) + ')', this, result));
-            }
-            propagateFlatness(result);
-            copyAttributes(result, CopyAttributeOperation.UpdateView);
-            maybeUpdateSortableColumns(result, selectColumns);
-            maybeCopyColumnDescriptions(result, selectColumns);
+                    final SelectAndViewAnalyzer analyzer =
+                            SelectAndViewAnalyzer.create(SelectAndViewAnalyzer.Mode.VIEW_LAZY,
+                                    columns, index, modifiedColumnSet, true, selectColumns);
+                    final QueryTable result = new QueryTable(index, analyzer.getPublishedColumnSources());
+                    if (isRefreshing()) {
+                        listenForUpdates(new ShiftAwareListenerImpl(
+                                "lazyUpdate(" + Arrays.deepToString(selectColumns) + ')', this, result));
+                    }
+                    propagateFlatness(result);
+                    copyAttributes(result, CopyAttributeOperation.UpdateView);
+                    maybeUpdateSortableColumns(result, selectColumns);
+                    maybeCopyColumnDescriptions(result, selectColumns);
 
-            return result;
-        });
+                    return result;
+                });
     }
 
     @Override
     public Table dropColumns(String... columnNames) {
-        return memoizeResult(MemoizedOperationKey.dropColumns(columnNames), () -> QueryPerformanceRecorder.withNugget("dropColumns(" + Arrays.toString(columnNames) + ")", sizeForInstrumentation(), () -> {
-            final Mutable<Table> result = new MutableObject<>();
+        return memoizeResult(MemoizedOperationKey.dropColumns(columnNames), () -> QueryPerformanceRecorder
+                .withNugget("dropColumns(" + Arrays.toString(columnNames) + ")", sizeForInstrumentation(), () -> {
+                    final Mutable<Table> result = new MutableObject<>();
 
-            final Set<String> existingColumns = new HashSet<>(definition.getColumnNames());
-            final Set<String> columnNamesToDrop = new HashSet<>(Arrays.asList(columnNames));
-            if (!existingColumns.containsAll(columnNamesToDrop)) {
-                columnNamesToDrop.removeAll(existingColumns);
-                throw new RuntimeException("Unknown columns: " + columnNamesToDrop.toString() + ", available columns = " + getColumnSourceMap().keySet());
-            }
-            final Map<String, ColumnSource> newColumns = new LinkedHashMap<>(columns);
-            for (String columnName : columnNames) {
-                newColumns.remove(columnName);
-            }
+                    final Set<String> existingColumns = new HashSet<>(definition.getColumnNames());
+                    final Set<String> columnNamesToDrop = new HashSet<>(Arrays.asList(columnNames));
+                    if (!existingColumns.containsAll(columnNamesToDrop)) {
+                        columnNamesToDrop.removeAll(existingColumns);
+                        throw new RuntimeException("Unknown columns: " + columnNamesToDrop.toString()
+                                + ", available columns = " + getColumnSourceMap().keySet());
+                    }
+                    final Map<String, ColumnSource> newColumns = new LinkedHashMap<>(columns);
+                    for (String columnName : columnNames) {
+                        newColumns.remove(columnName);
+                    }
 
-            final ShiftAwareSwapListener swapListener = createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
+                    final ShiftAwareSwapListener swapListener =
+                            createSwapListenerIfRefreshing(ShiftAwareSwapListener::new);
 
-            initializeWithSnapshot("dropColumns", swapListener, (usePrev, beforeClockValue) -> {
-                final QueryTable resultTable = new QueryTable(index, newColumns);
-                propagateFlatness(resultTable);
+                    initializeWithSnapshot("dropColumns", swapListener, (usePrev, beforeClockValue) -> {
+                        final QueryTable resultTable = new QueryTable(index, newColumns);
+                        propagateFlatness(resultTable);
 
-                copyAttributes(resultTable, CopyAttributeOperation.DropColumns);
-                maybeUpdateSortableColumns(resultTable);
-                maybeCopyColumnDescriptions(resultTable);
+                        copyAttributes(resultTable, CopyAttributeOperation.DropColumns);
+                        maybeUpdateSortableColumns(resultTable);
+                        maybeCopyColumnDescriptions(resultTable);
 
-                if (swapListener != null) {
-                    final ModifiedColumnSet.Transformer mcsTransformer = newModifiedColumnSetTransformer(resultTable,
-                            resultTable.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-                    final ShiftAwareListenerImpl listener = new ShiftAwareListenerImpl("dropColumns(" + Arrays.deepToString(columnNames) + ')', this, resultTable) {
-                        @Override
-                        public void onUpdate(final Update upstream) {
-                            final Update downstream = upstream.copy();
-                            mcsTransformer.clearAndTransform(upstream.modifiedColumnSet, resultTable.modifiedColumnSet);
-                            if (upstream.modified.empty() || resultTable.modifiedColumnSet.empty()) {
-                                downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-                                if (downstream.modified.nonempty()) {
-                                    downstream.modified.close();
-                                    downstream.modified = Index.FACTORY.getEmptyIndex();
+                        if (swapListener != null) {
+                            final ModifiedColumnSet.Transformer mcsTransformer =
+                                    newModifiedColumnSetTransformer(resultTable,
+                                            resultTable.getColumnSourceMap().keySet()
+                                                    .toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                            final ShiftAwareListenerImpl listener = new ShiftAwareListenerImpl(
+                                    "dropColumns(" + Arrays.deepToString(columnNames) + ')', this, resultTable) {
+                                @Override
+                                public void onUpdate(final Update upstream) {
+                                    final Update downstream = upstream.copy();
+                                    mcsTransformer.clearAndTransform(upstream.modifiedColumnSet,
+                                            resultTable.modifiedColumnSet);
+                                    if (upstream.modified.empty() || resultTable.modifiedColumnSet.empty()) {
+                                        downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+                                        if (downstream.modified.nonempty()) {
+                                            downstream.modified.close();
+                                            downstream.modified = Index.FACTORY.getEmptyIndex();
+                                        }
+                                    } else {
+                                        downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
+                                    }
+                                    resultTable.notifyListeners(downstream);
                                 }
-                            } else {
-                                downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
-                            }
-                            resultTable.notifyListeners(downstream);
+                            };
+                            swapListener.setListenerAndResult(listener, resultTable);
+                            resultTable.addParentReference(swapListener);
                         }
-                    };
-                    swapListener.setListenerAndResult(listener, resultTable);
-                    resultTable.addParentReference(swapListener);
-                }
 
-                result.setValue(resultTable);
+                        result.setValue(resultTable);
 
-                return true;
-            });
+                        return true;
+                    });
 
-            return result.getValue();
-        }));
+                    return result.getValue();
+                }));
     }
 
     @Override
     public Table renameColumns(MatchPair... pairs) {
-        return QueryPerformanceRecorder.withNugget("renameColumns(" + matchString(pairs) + ")", sizeForInstrumentation(), () -> {
-            if (pairs == null || pairs.length == 0) {
-                if (isRefreshing()) {
-                    manageWithCurrentScope();
-                }
-                return this;
-            }
-
-            checkInitiateOperation();
-
-            Map<String, String> pairLookup = new HashMap<>();
-            for (MatchPair pair : pairs) {
-                if (pair.leftColumn == null || pair.leftColumn.equals("")) {
-                    throw new IllegalArgumentException("Bad left column in rename pair \"" + pair.toString() + "\"");
-                }
-                if (null == columns.get(pair.rightColumn)) {
-                    throw new IllegalArgumentException("Column \"" + pair.rightColumn + "\" not found");
-                }
-                pairLookup.put(pair.rightColumn, pair.leftColumn);
-            }
-
-            int mcsPairIdx = 0;
-            final MatchPair[] modifiedColumnSetPairs = new MatchPair[columns.size()];
-
-            Map<String, ColumnSource> newColumns = new LinkedHashMap<>();
-            for (Map.Entry<String, ? extends ColumnSource> entry : columns.entrySet()) {
-                String oldName = entry.getKey();
-                ColumnSource columnSource = entry.getValue();
-                String newName = pairLookup.get(oldName);
-                if (newName == null) {
-                    newName = oldName;
-                }
-                modifiedColumnSetPairs[mcsPairIdx++] = new MatchPair(newName, oldName);
-                newColumns.put(newName, columnSource);
-            }
-
-            final QueryTable queryTable = new QueryTable(index, newColumns);
-            if (isRefreshing()) {
-                final ModifiedColumnSet.Transformer mcsTransformer = newModifiedColumnSetTransformer(queryTable, modifiedColumnSetPairs);
-                listenForUpdates(new ShiftAwareListenerImpl("renameColumns(" + Arrays.deepToString(pairs) + ')', this, queryTable) {
-                    @Override
-                    public void onUpdate(final Update upstream) {
-                        final Update downstream = upstream.copy();
-                        downstream.modifiedColumnSet = queryTable.modifiedColumnSet;
-                        if (upstream.modified.nonempty()) {
-                            mcsTransformer.clearAndTransform(upstream.modifiedColumnSet, downstream.modifiedColumnSet);
-                        } else {
-                            downstream.modifiedColumnSet.clear();
+        return QueryPerformanceRecorder.withNugget("renameColumns(" + matchString(pairs) + ")",
+                sizeForInstrumentation(), () -> {
+                    if (pairs == null || pairs.length == 0) {
+                        if (isRefreshing()) {
+                            manageWithCurrentScope();
                         }
-                        queryTable.notifyListeners(downstream);
+                        return this;
                     }
+
+                    checkInitiateOperation();
+
+                    Map<String, String> pairLookup = new HashMap<>();
+                    for (MatchPair pair : pairs) {
+                        if (pair.leftColumn == null || pair.leftColumn.equals("")) {
+                            throw new IllegalArgumentException(
+                                    "Bad left column in rename pair \"" + pair.toString() + "\"");
+                        }
+                        if (null == columns.get(pair.rightColumn)) {
+                            throw new IllegalArgumentException("Column \"" + pair.rightColumn + "\" not found");
+                        }
+                        pairLookup.put(pair.rightColumn, pair.leftColumn);
+                    }
+
+                    int mcsPairIdx = 0;
+                    final MatchPair[] modifiedColumnSetPairs = new MatchPair[columns.size()];
+
+                    Map<String, ColumnSource> newColumns = new LinkedHashMap<>();
+                    for (Map.Entry<String, ? extends ColumnSource> entry : columns.entrySet()) {
+                        String oldName = entry.getKey();
+                        ColumnSource columnSource = entry.getValue();
+                        String newName = pairLookup.get(oldName);
+                        if (newName == null) {
+                            newName = oldName;
+                        }
+                        modifiedColumnSetPairs[mcsPairIdx++] = new MatchPair(newName, oldName);
+                        newColumns.put(newName, columnSource);
+                    }
+
+                    final QueryTable queryTable = new QueryTable(index, newColumns);
+                    if (isRefreshing()) {
+                        final ModifiedColumnSet.Transformer mcsTransformer =
+                                newModifiedColumnSetTransformer(queryTable, modifiedColumnSetPairs);
+                        listenForUpdates(new ShiftAwareListenerImpl("renameColumns(" + Arrays.deepToString(pairs) + ')',
+                                this, queryTable) {
+                            @Override
+                            public void onUpdate(final Update upstream) {
+                                final Update downstream = upstream.copy();
+                                downstream.modifiedColumnSet = queryTable.modifiedColumnSet;
+                                if (upstream.modified.nonempty()) {
+                                    mcsTransformer.clearAndTransform(upstream.modifiedColumnSet,
+                                            downstream.modifiedColumnSet);
+                                } else {
+                                    downstream.modifiedColumnSet.clear();
+                                }
+                                queryTable.notifyListeners(downstream);
+                            }
+                        });
+                    }
+                    propagateFlatness(queryTable);
+
+                    maybeUpdateSortableColumns(queryTable, pairs);
+                    maybeCopyColumnDescriptions(queryTable, pairs);
+
+                    return queryTable;
                 });
-            }
-            propagateFlatness(queryTable);
-
-            maybeUpdateSortableColumns(queryTable, pairs);
-            maybeCopyColumnDescriptions(queryTable, pairs);
-
-            return queryTable;
-        });
     }
 
     @Override
-    public Table aj(final Table rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd, AsOfMatchRule asOfMatchRule) {
+    public Table aj(final Table rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
+            AsOfMatchRule asOfMatchRule) {
         if (rightTable == null) {
             throw new IllegalArgumentException("aj() requires a non-null right hand side table.");
         }
         final Table rightTableCoalesced = rightTable.coalesce();
-        return QueryPerformanceRecorder.withNugget("aj(" + "rightTable, " + matchString(columnsToMatch) + ", " + matchString(columnsToAdd) + ")", () -> ajInternal(rightTableCoalesced, columnsToMatch, columnsToAdd, SortingOrder.Ascending, asOfMatchRule));
+        return QueryPerformanceRecorder.withNugget(
+                "aj(" + "rightTable, " + matchString(columnsToMatch) + ", " + matchString(columnsToAdd) + ")",
+                () -> ajInternal(rightTableCoalesced, columnsToMatch, columnsToAdd, SortingOrder.Ascending,
+                        asOfMatchRule));
     }
 
     @Override
-    public Table raj(final Table rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd, AsOfMatchRule asOfMatchRule) {
+    public Table raj(final Table rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
+            AsOfMatchRule asOfMatchRule) {
         if (rightTable == null) {
             throw new IllegalArgumentException("raj() requires a non-null right hand side table.");
         }
         final Table rightTableCoalesced = rightTable.coalesce();
-        return QueryPerformanceRecorder.withNugget("raj(" + "rightTable, " + matchString(columnsToMatch) + ", " + matchString(columnsToAdd) + ")", () -> ajInternal(rightTableCoalesced.reverse(), columnsToMatch, columnsToAdd, SortingOrder.Descending, asOfMatchRule));
+        return QueryPerformanceRecorder.withNugget(
+                "raj(" + "rightTable, " + matchString(columnsToMatch) + ", " + matchString(columnsToAdd) + ")",
+                () -> ajInternal(rightTableCoalesced.reverse(), columnsToMatch, columnsToAdd, SortingOrder.Descending,
+                        asOfMatchRule));
     }
 
-    private Table ajInternal(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, final SortingOrder order, AsOfMatchRule asOfMatchRule) {
+    private Table ajInternal(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+            final SortingOrder order, AsOfMatchRule asOfMatchRule) {
         if (rightTable == null) {
             throw new IllegalArgumentException("aj() requires a non-null right hand side table.");
         }
@@ -1591,27 +1721,34 @@ public class QueryTable extends BaseTable {
                 throw new UnsupportedOperationException();
         }
 
-        return AsOfJoinHelper.asOfJoin(this, (QueryTable)rightTable, columnsToMatch, columnsToAdd, order, disallowExactMatch);
+        return AsOfJoinHelper.asOfJoin(this, (QueryTable) rightTable, columnsToMatch, columnsToAdd, order,
+                disallowExactMatch);
     }
 
     @Override
     public Table naturalJoin(final Table rightTable, final MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
-        return QueryPerformanceRecorder.withNugget("naturalJoin(" + matchString(columnsToMatch) + ", " + matchString(columnsToAdd) + ")", () -> naturalJoinInternal(rightTable, columnsToMatch, columnsToAdd, false));
+        return QueryPerformanceRecorder.withNugget(
+                "naturalJoin(" + matchString(columnsToMatch) + ", " + matchString(columnsToAdd) + ")",
+                () -> naturalJoinInternal(rightTable, columnsToMatch, columnsToAdd, false));
     }
 
-    private Table naturalJoinInternal(final Table rightTable, final MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, boolean exactMatch) {
+    private Table naturalJoinInternal(final Table rightTable, final MatchPair[] columnsToMatch,
+            MatchPair[] columnsToAdd, boolean exactMatch) {
         columnsToAdd = createColumnsToAddIfMissing(rightTable, columnsToMatch, columnsToAdd);
 
-        final QueryTable rightTableCoalesced = (QueryTable)rightTable.coalesce();
+        final QueryTable rightTableCoalesced = (QueryTable) rightTable.coalesce();
 
         return NaturalJoinHelper.naturalJoin(this, rightTableCoalesced, columnsToMatch, columnsToAdd, exactMatch);
     }
 
-    private MatchPair[] createColumnsToAddIfMissing(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    private MatchPair[] createColumnsToAddIfMissing(Table rightTable, MatchPair[] columnsToMatch,
+            MatchPair[] columnsToAdd) {
         if (columnsToAdd.length == 0) {
-            final Set<String> matchColumns = Arrays.stream(columnsToMatch).map(matchPair -> matchPair.leftColumn).collect(Collectors.toCollection(HashSet::new));
+            final Set<String> matchColumns = Arrays.stream(columnsToMatch).map(matchPair -> matchPair.leftColumn)
+                    .collect(Collectors.toCollection(HashSet::new));
             final List<String> columnNames = rightTable.getDefinition().getColumnNames();
-            return columnNames.stream().filter((name) -> !matchColumns.contains(name)).map(name -> new MatchPair(name, name)).toArray(MatchPair[]::new);
+            return columnNames.stream().filter((name) -> !matchColumns.contains(name))
+                    .map(name -> new MatchPair(name, name)).toArray(MatchPair[]::new);
         }
         return columnsToAdd;
     }
@@ -1619,7 +1756,8 @@ public class QueryTable extends BaseTable {
     private static String selectColumnString(final SelectColumn[] selectColumns) {
         final StringBuilder result = new StringBuilder();
         result.append('[');
-        final Iterable<String> scs = Arrays.stream(selectColumns).map(SelectColumn::getName).filter(name -> name.length() > 0)::iterator;
+        final Iterable<String> scs =
+                Arrays.stream(selectColumns).map(SelectColumn::getName).filter(name -> name.length() > 0)::iterator;
         IterableUtils.appendCommaSeparatedList(result, scs);
         result.append("]");
         return result.toString();
@@ -1630,35 +1768,47 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table join(final Table rightTableCandidate, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, int numRightBitsToReserve) {
-        return memoizeResult(MemoizedOperationKey.crossJoin(rightTableCandidate, columnsToMatch, columnsToAdd, numRightBitsToReserve),
+    public Table join(final Table rightTableCandidate, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+            int numRightBitsToReserve) {
+        return memoizeResult(
+                MemoizedOperationKey.crossJoin(rightTableCandidate, columnsToMatch, columnsToAdd,
+                        numRightBitsToReserve),
                 () -> joinNoMemo(rightTableCandidate, columnsToMatch, columnsToAdd, numRightBitsToReserve));
     }
 
-    private Table joinNoMemo(final Table rightTableCandidate, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, int numRightBitsToReserve) {
+    private Table joinNoMemo(final Table rightTableCandidate, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+            int numRightBitsToReserve) {
         final MatchPair[] realColumnsToAdd;
         if (columnsToAdd.length == 0) {
-            Set<String> columnsForMatching = Arrays.stream(columnsToMatch).filter(mp -> mp.rightColumn.equals(mp.leftColumn)).map(x -> x.rightColumn).collect(Collectors.toCollection(HashSet::new));
+            Set<String> columnsForMatching =
+                    Arrays.stream(columnsToMatch).filter(mp -> mp.rightColumn.equals(mp.leftColumn))
+                            .map(x -> x.rightColumn).collect(Collectors.toCollection(HashSet::new));
 
             Set<String> rightColumnNames;
             try {
                 rightColumnNames = rightTableCandidate.getColumnSourceMap().keySet();
             } catch (UnsupportedOperationException uoe) {
-                throw new UnsupportedOperationException("Can not join a V2 table to a V1 table on the right side.", uoe);
+                throw new UnsupportedOperationException("Can not join a V2 table to a V1 table on the right side.",
+                        uoe);
             }
 
-            realColumnsToAdd = rightColumnNames.stream().filter(x -> !columnsForMatching.contains(x)).map(x -> new MatchPair(x, x)).toArray(MatchPair[]::new);
+            realColumnsToAdd = rightColumnNames.stream().filter(x -> !columnsForMatching.contains(x))
+                    .map(x -> new MatchPair(x, x)).toArray(MatchPair[]::new);
         } else {
             realColumnsToAdd = columnsToAdd;
         }
 
         if (USE_CHUNKED_CROSS_JOIN) {
-            final QueryTable coalescedRightTable = (QueryTable)rightTableCandidate.coalesce();
-            return QueryPerformanceRecorder.withNugget("join(" + matchString(columnsToMatch) + ", " + matchString(realColumnsToAdd) + ", " + numRightBitsToReserve + ")", () ->
-                    CrossJoinHelper.join(this, coalescedRightTable, columnsToMatch, realColumnsToAdd, numRightBitsToReserve));
+            final QueryTable coalescedRightTable = (QueryTable) rightTableCandidate.coalesce();
+            return QueryPerformanceRecorder.withNugget(
+                    "join(" + matchString(columnsToMatch) + ", " + matchString(realColumnsToAdd) + ", "
+                            + numRightBitsToReserve + ")",
+                    () -> CrossJoinHelper.join(this, coalescedRightTable, columnsToMatch, realColumnsToAdd,
+                            numRightBitsToReserve));
         }
 
-        final Set<String> columnsToMatchSet = Arrays.stream(columnsToMatch).map(MatchPair::right).collect(Collectors.toCollection(HashSet::new));
+        final Set<String> columnsToMatchSet =
+                Arrays.stream(columnsToMatch).map(MatchPair::right).collect(Collectors.toCollection(HashSet::new));
 
         final LinkedHashSet<SelectColumn> columnsToAddSelectColumns = new LinkedHashSet<>();
         final List<String> columnsToUngroupBy = new ArrayList<>();
@@ -1676,41 +1826,45 @@ public class QueryTable extends BaseTable {
             columnsToAddSelectColumns.add(new SourceColumn(matchPair.rightColumn, matchPair.leftColumn));
         }
 
-        return QueryPerformanceRecorder.withNugget("join(" + matchString(columnsToMatch) + ", " + matchString(realColumnsToAdd) + ")", () -> {
-            boolean sentinelAdded = false;
-            final Table rightTable;
-            if (columnsToUngroupBy.isEmpty()) {
-                rightTable = rightTableCandidate.updateView("__sentinel__=null");
-                columnsToUngroupBy.add("__sentinel__");
-                columnsToAddSelectColumns.add(new SourceColumn("__sentinel__"));
-                columnsToAddAfterRename.add(new MatchPair("__sentinel__", "__sentinel__"));
-                sentinelAdded = true;
-            } else {
-                rightTable = rightTableCandidate;
-            }
+        return QueryPerformanceRecorder
+                .withNugget("join(" + matchString(columnsToMatch) + ", " + matchString(realColumnsToAdd) + ")", () -> {
+                    boolean sentinelAdded = false;
+                    final Table rightTable;
+                    if (columnsToUngroupBy.isEmpty()) {
+                        rightTable = rightTableCandidate.updateView("__sentinel__=null");
+                        columnsToUngroupBy.add("__sentinel__");
+                        columnsToAddSelectColumns.add(new SourceColumn("__sentinel__"));
+                        columnsToAddAfterRename.add(new MatchPair("__sentinel__", "__sentinel__"));
+                        sentinelAdded = true;
+                    } else {
+                        rightTable = rightTableCandidate;
+                    }
 
-            final Table rightGrouped = rightTable.by(rightColumnsToMatch).view(columnsToAddSelectColumns.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
-            final Table naturalJoinResult = naturalJoin(rightGrouped, columnsToMatch, columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY));
-            final Table ungroupedResult = naturalJoinResult.ungroup(columnsToUngroupBy.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                    final Table rightGrouped = rightTable.by(rightColumnsToMatch)
+                            .view(columnsToAddSelectColumns.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
+                    final Table naturalJoinResult = naturalJoin(rightGrouped, columnsToMatch,
+                            columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY));
+                    final Table ungroupedResult = naturalJoinResult
+                            .ungroup(columnsToUngroupBy.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
 
-            maybeCopyColumnDescriptions(ungroupedResult, rightTable, columnsToMatch, realColumnsToAdd);
+                    maybeCopyColumnDescriptions(ungroupedResult, rightTable, columnsToMatch, realColumnsToAdd);
 
-            return sentinelAdded ? ungroupedResult.dropColumns("__sentinel__") : ungroupedResult;
-        });
+                    return sentinelAdded ? ungroupedResult.dropColumns("__sentinel__") : ungroupedResult;
+                });
     }
 
     /**
      * The leftColumns are the column sources for the snapshot-triggering table. The rightColumns are the column sources
-     * for the table being snapshotted. The leftIndex refers to snapshots that we want to take. Typically this index
-     * is expected to have size 1, but in some cases it could be larger. The rightIndex refers to the index of the
-     * current table. Therefore we want to take leftIndex.size() snapshots, each of which being rightIndex.size() in
-     * size.
+     * for the table being snapshotted. The leftIndex refers to snapshots that we want to take. Typically this index is
+     * expected to have size 1, but in some cases it could be larger. The rightIndex refers to the index of the current
+     * table. Therefore we want to take leftIndex.size() snapshots, each of which being rightIndex.size() in size.
+     * 
      * @param leftColumns Columns making up the triggering data
      * @param leftIndex The currently triggering rows
      * @param rightColumns Columns making up the data being snapshotted
      * @param rightIndex The data to snapshot
      * @param dest The ColumnSources in which to store the data. The keys are drawn from leftColumns.keys() and\
-     *             rightColumns.keys()
+     *        rightColumns.keys()
      * @param destOffset The offset in the 'dest' ColumnSources at which to write data
      * @return The new dest ColumnSource size, calculated as {@code destOffset + leftIndex.size() * rightIndex.size()}
      */
@@ -1731,7 +1885,7 @@ public class QueryTable extends BaseTable {
         }
 
         final int rightSize = rightIndex.intSize();
-        long[] destOffsetHolder = new long[] { destOffset };
+        long[] destOffsetHolder = new long[] {destOffset};
         // For each key on the snapshotting side
         leftIndex.forAllLongs(snapshotKey -> {
             final long doff = destOffsetHolder[0];
@@ -1758,7 +1912,7 @@ public class QueryTable extends BaseTable {
             resultColumns.putAll(rightColumns);
 
             // BTW, we don't track prev because these items are never modified or removed.
-            final Table leftTable = this;  // For readability.
+            final Table leftTable = this; // For readability.
             final long initialSize = snapshotHistoryInternal(leftTable.getColumnSourceMap(), leftTable.getIndex(),
                     rightTable.getColumnSourceMap(), rightTable.getIndex(),
                     resultColumns, 0);
@@ -1786,7 +1940,8 @@ public class QueryTable extends BaseTable {
                         final Index addedSnapshots = Index.FACTORY.getIndexByRange(oldSize, newSize - 1);
                         resultIndex.insert(addedSnapshots);
                         lastKey = index.lastKey();
-                        result.notifyListeners(addedSnapshots, Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());
+                        result.notifyListeners(addedSnapshots, Index.FACTORY.getEmptyIndex(),
+                                Index.FACTORY.getEmptyIndex());
                     }
 
                     @Override
@@ -1813,15 +1968,19 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table snapshot(Table baseTable, boolean doInitialSnapshot, String... stampColumns) {
-        return QueryPerformanceRecorder.withNugget("snapshot(baseTable, " + doInitialSnapshot + ", " + Arrays.toString(stampColumns) + ")", baseTable.sizeForInstrumentation(), () -> {
+        return QueryPerformanceRecorder.withNugget(
+                "snapshot(baseTable, " + doInitialSnapshot + ", " + Arrays.toString(stampColumns) + ")",
+                baseTable.sizeForInstrumentation(), () -> {
 
-            // 'stampColumns' specifies a subset of this table's columns to use, but if stampColumns is empty, we get
-            // a view containing all of the columns (in that case, basically we get this table back).
-            QueryTable viewTable = (QueryTable) view(stampColumns);
-            // Due to the above logic, we need to pull the actual set of column names back from the viewTable.
-            // Whatever viewTable came back from the above, we do the snapshot
-            return viewTable.snapshotInternal(baseTable, doInitialSnapshot, viewTable.getDefinition().getColumnNamesArray());
-        });
+                    // 'stampColumns' specifies a subset of this table's columns to use, but if stampColumns is empty,
+                    // we get
+                    // a view containing all of the columns (in that case, basically we get this table back).
+                    QueryTable viewTable = (QueryTable) view(stampColumns);
+                    // Due to the above logic, we need to pull the actual set of column names back from the viewTable.
+                    // Whatever viewTable came back from the above, we do the snapshot
+                    return viewTable.snapshotInternal(baseTable, doInitialSnapshot,
+                            viewTable.getDefinition().getColumnNamesArray());
+                });
     }
 
     private Table snapshotInternal(Table tableToSnapshot, boolean doInitialSnapshot, String... stampColumns) {
@@ -1833,11 +1992,12 @@ public class QueryTable extends BaseTable {
         // distribution systems and similar integrations.
 
         // If this table provides a lazy snapshot version, we should use that instead for the snapshot, this allows us
-        // to refresh the table only immediately before the snapshot occurs.  Because we know that we are uninterested
-        // in things like previous values, it can save a significant amount of CPU to only refresh the table when needed.
+        // to refresh the table only immediately before the snapshot occurs. Because we know that we are uninterested
+        // in things like previous values, it can save a significant amount of CPU to only refresh the table when
+        // needed.
         final boolean lazySnapshot = tableToSnapshot instanceof LazySnapshotTableProvider;
         if (lazySnapshot) {
-            tableToSnapshot = ((LazySnapshotTableProvider)tableToSnapshot).getLazySnapshotTable();
+            tableToSnapshot = ((LazySnapshotTableProvider) tableToSnapshot).getLazySnapshotTable();
         } else if (tableToSnapshot instanceof UncoalescedTable) {
             // something that needs coalescing I guess
             tableToSnapshot = tableToSnapshot.coalesce();
@@ -1848,8 +2008,9 @@ public class QueryTable extends BaseTable {
         }
 
         // Establish the "right" columns using the same names and types as the table being snapshotted
-        final Map<String, ArrayBackedColumnSource> resultRightColumns = SnapshotUtils.<ArrayBackedColumnSource>createColumnSourceMap(
-                tableToSnapshot.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
+        final Map<String, ArrayBackedColumnSource> resultRightColumns =
+                SnapshotUtils.<ArrayBackedColumnSource>createColumnSourceMap(
+                        tableToSnapshot.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
 
         // Now make the "left" columns (namely, the "snapshot key" columns). Because this flavor of "snapshot" only
         // keeps a single snapshot, each snapshot key column will have the same value in every row. So for efficiency we
@@ -1899,96 +2060,115 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table snapshotIncremental(final Table tableToSnapshot, final boolean doInitialSnapshot, final String... stampColumns) {
-        return QueryPerformanceRecorder.withNugget("snapshotIncremental(tableToSnapshot, " + doInitialSnapshot + ", " + Arrays.toString(stampColumns) + ")", tableToSnapshot.sizeForInstrumentation(), () -> {
-            checkInitiateOperation();
+    public Table snapshotIncremental(final Table tableToSnapshot, final boolean doInitialSnapshot,
+            final String... stampColumns) {
+        return QueryPerformanceRecorder.withNugget("snapshotIncremental(tableToSnapshot, " + doInitialSnapshot + ", "
+                + Arrays.toString(stampColumns) + ")", tableToSnapshot.sizeForInstrumentation(), () -> {
+                    checkInitiateOperation();
 
-            final QueryTable rightTable = (QueryTable) (tableToSnapshot instanceof UncoalescedTable ? tableToSnapshot.coalesce() : tableToSnapshot);
-            rightTable.checkInitiateOperation();
+                    final QueryTable rightTable =
+                            (QueryTable) (tableToSnapshot instanceof UncoalescedTable ? tableToSnapshot.coalesce()
+                                    : tableToSnapshot);
+                    rightTable.checkInitiateOperation();
 
-            // Use the given columns (if specified); otherwise an empty array means all of my columns
-            final String[] useStampColumns = stampColumns.length == 0 ? getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY) : stampColumns;
+                    // Use the given columns (if specified); otherwise an empty array means all of my columns
+                    final String[] useStampColumns = stampColumns.length == 0
+                            ? getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)
+                            : stampColumns;
 
-            final Map<String, ColumnSource> leftColumns = new LinkedHashMap<>();
-            for (String stampColumn : useStampColumns) {
-                final ColumnSource cs = getColumnSource(stampColumn);
-                leftColumns.put(stampColumn, cs);
-            }
-
-            final Map<String, SparseArrayColumnSource> resultLeftColumns = new LinkedHashMap<>();
-            for (Map.Entry<String, ColumnSource> entry : leftColumns.entrySet()) {
-                final String name = entry.getKey();
-                final ColumnSource cs = entry.getValue();
-                final Class type = cs.getType();
-                final SparseArrayColumnSource stampDest = DbArrayBase.class.isAssignableFrom(type) ?
-                        SparseArrayColumnSource.getSparseMemoryColumnSource(type, cs.getComponentType()) :
-                        SparseArrayColumnSource.getSparseMemoryColumnSource(type);
-
-                resultLeftColumns.put(name, stampDest);
-            }
-
-            final Map<String, SparseArrayColumnSource> resultRightColumns = SnapshotUtils.<SparseArrayColumnSource>createColumnSourceMap(
-                    rightTable.getColumnSourceMap(),
-                    SparseArrayColumnSource::getSparseMemoryColumnSource);
-
-            final Map<String, SparseArrayColumnSource> resultColumns = new LinkedHashMap<>(resultRightColumns);
-            resultColumns.putAll(resultLeftColumns);
-            if (resultColumns.size() != resultLeftColumns.size() + resultRightColumns.size()) {
-                throwColumnConflictMessage(resultLeftColumns.keySet(), resultRightColumns.keySet());
-            }
-
-            final Index resultIndex = Index.FACTORY.getEmptyIndex();
-
-            final QueryTable resultTable = new QueryTable(resultIndex, resultColumns);
-
-            if (isRefreshing() && rightTable.isRefreshing()) {
-
-                // What's happening here: the left table gets "listener" (some complicated logic that has access to the
-                // coalescer) whereas the right table (above) gets the one-liner above (but which also has access to the
-                // same coalescer). So when the right table sees updates they are simply fed to the coalescer. The
-                // coalescer's job is just to remember what rows have changed. When the *left* table gets updates, then
-                // the SnapshotIncrementalListener gets called, which does all the snapshotting work.
-
-                final ListenerRecorder rightListenerRecorder = new ListenerRecorder("snapshotIncremental (rightTable)", rightTable, resultTable);
-                rightTable.listenForUpdates(rightListenerRecorder);
-
-                final ListenerRecorder leftListenerRecorder = new ListenerRecorder("snapshotIncremental (leftTable)", this, resultTable);
-                listenForUpdates(leftListenerRecorder);
-
-                final SnapshotIncrementalListener listener = new SnapshotIncrementalListener(this, resultTable, resultColumns,
-                        rightListenerRecorder, leftListenerRecorder, rightTable, leftColumns);
-
-
-                rightListenerRecorder.setMergedListener(listener);
-                leftListenerRecorder.setMergedListener(listener);
-                resultTable.addParentReference(listener);
-
-                if (doInitialSnapshot) {
-                    listener.doFirstSnapshot(true);
-                }
-
-                startTrackingPrev(resultColumns.values());
-                resultTable.getIndex().initializePreviousValue();
-            } else if (doInitialSnapshot) {
-                SnapshotIncrementalListener.copyRowsToResult(rightTable.getIndex(), this, rightTable, leftColumns, resultColumns);
-                resultTable.getIndex().insert(rightTable.getIndex());
-                resultTable.getIndex().initializePreviousValue();
-            } else if (isRefreshing()) {
-                // we are not doing an initial snapshot, but are refreshing so need to take a snapshot of our (static)
-                // right table on the very first tick of the leftTable
-                listenForUpdates(new ShiftAwareListenerImpl("snapshotIncremental (leftTable)", this, resultTable) {
-                    @Override
-                    public void onUpdate(Update upstream) {
-                        SnapshotIncrementalListener.copyRowsToResult(rightTable.getIndex(), QueryTable.this, rightTable, leftColumns, resultColumns);
-                        resultTable.getIndex().insert(rightTable.getIndex());
-                        resultTable.notifyListeners(resultTable.getIndex(), Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());
-                        removeUpdateListener(this);
+                    final Map<String, ColumnSource> leftColumns = new LinkedHashMap<>();
+                    for (String stampColumn : useStampColumns) {
+                        final ColumnSource cs = getColumnSource(stampColumn);
+                        leftColumns.put(stampColumn, cs);
                     }
-                });
-            }
 
-            return resultTable;
-        });
+                    final Map<String, SparseArrayColumnSource> resultLeftColumns = new LinkedHashMap<>();
+                    for (Map.Entry<String, ColumnSource> entry : leftColumns.entrySet()) {
+                        final String name = entry.getKey();
+                        final ColumnSource cs = entry.getValue();
+                        final Class type = cs.getType();
+                        final SparseArrayColumnSource stampDest = DbArrayBase.class.isAssignableFrom(type)
+                                ? SparseArrayColumnSource.getSparseMemoryColumnSource(type, cs.getComponentType())
+                                : SparseArrayColumnSource.getSparseMemoryColumnSource(type);
+
+                        resultLeftColumns.put(name, stampDest);
+                    }
+
+                    final Map<String, SparseArrayColumnSource> resultRightColumns =
+                            SnapshotUtils.<SparseArrayColumnSource>createColumnSourceMap(
+                                    rightTable.getColumnSourceMap(),
+                                    SparseArrayColumnSource::getSparseMemoryColumnSource);
+
+                    final Map<String, SparseArrayColumnSource> resultColumns = new LinkedHashMap<>(resultRightColumns);
+                    resultColumns.putAll(resultLeftColumns);
+                    if (resultColumns.size() != resultLeftColumns.size() + resultRightColumns.size()) {
+                        throwColumnConflictMessage(resultLeftColumns.keySet(), resultRightColumns.keySet());
+                    }
+
+                    final Index resultIndex = Index.FACTORY.getEmptyIndex();
+
+                    final QueryTable resultTable = new QueryTable(resultIndex, resultColumns);
+
+                    if (isRefreshing() && rightTable.isRefreshing()) {
+
+                        // What's happening here: the left table gets "listener" (some complicated logic that has access
+                        // to the
+                        // coalescer) whereas the right table (above) gets the one-liner above (but which also has
+                        // access to the
+                        // same coalescer). So when the right table sees updates they are simply fed to the coalescer.
+                        // The
+                        // coalescer's job is just to remember what rows have changed. When the *left* table gets
+                        // updates, then
+                        // the SnapshotIncrementalListener gets called, which does all the snapshotting work.
+
+                        final ListenerRecorder rightListenerRecorder =
+                                new ListenerRecorder("snapshotIncremental (rightTable)", rightTable, resultTable);
+                        rightTable.listenForUpdates(rightListenerRecorder);
+
+                        final ListenerRecorder leftListenerRecorder =
+                                new ListenerRecorder("snapshotIncremental (leftTable)", this, resultTable);
+                        listenForUpdates(leftListenerRecorder);
+
+                        final SnapshotIncrementalListener listener =
+                                new SnapshotIncrementalListener(this, resultTable, resultColumns,
+                                        rightListenerRecorder, leftListenerRecorder, rightTable, leftColumns);
+
+
+                        rightListenerRecorder.setMergedListener(listener);
+                        leftListenerRecorder.setMergedListener(listener);
+                        resultTable.addParentReference(listener);
+
+                        if (doInitialSnapshot) {
+                            listener.doFirstSnapshot(true);
+                        }
+
+                        startTrackingPrev(resultColumns.values());
+                        resultTable.getIndex().initializePreviousValue();
+                    } else if (doInitialSnapshot) {
+                        SnapshotIncrementalListener.copyRowsToResult(rightTable.getIndex(), this, rightTable,
+                                leftColumns, resultColumns);
+                        resultTable.getIndex().insert(rightTable.getIndex());
+                        resultTable.getIndex().initializePreviousValue();
+                    } else if (isRefreshing()) {
+                        // we are not doing an initial snapshot, but are refreshing so need to take a snapshot of our
+                        // (static)
+                        // right table on the very first tick of the leftTable
+                        listenForUpdates(
+                                new ShiftAwareListenerImpl("snapshotIncremental (leftTable)", this, resultTable) {
+                                    @Override
+                                    public void onUpdate(Update upstream) {
+                                        SnapshotIncrementalListener.copyRowsToResult(rightTable.getIndex(),
+                                                QueryTable.this, rightTable, leftColumns, resultColumns);
+                                        resultTable.getIndex().insert(rightTable.getIndex());
+                                        resultTable.notifyListeners(resultTable.getIndex(),
+                                                Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());
+                                        removeUpdateListener(this);
+                                    }
+                                });
+                    }
+
+                    return resultTable;
+                });
     }
 
     private static void throwColumnConflictMessage(Set<String> left, Set<String> right) {
@@ -2008,8 +2188,8 @@ public class QueryTable extends BaseTable {
             if (columnSource.allowsReinterpret(long.class)) {
                 return columnSource.reinterpret(long.class);
             } else {
-                //noinspection unchecked
-                final ColumnSource<DBDateTime> columnSourceAsDateTime = (ColumnSource<DBDateTime>)columnSource;
+                // noinspection unchecked
+                final ColumnSource<DBDateTime> columnSourceAsDateTime = (ColumnSource<DBDateTime>) columnSource;
                 return new DatetimeAsLongColumnSource(columnSourceAsDateTime);
             }
         }
@@ -2018,8 +2198,8 @@ public class QueryTable extends BaseTable {
             if (columnSource.allowsReinterpret(byte.class)) {
                 return columnSource.reinterpret(byte.class);
             } else {
-                //noinspection unchecked
-                final ColumnSource<Boolean> columnSourceAsBoolean = (ColumnSource<Boolean>)columnSource;
+                // noinspection unchecked
+                final ColumnSource<Boolean> columnSourceAsBoolean = (ColumnSource<Boolean>) columnSource;
                 return new BooleanAsByteColumnSource(columnSourceAsBoolean);
             }
         }
@@ -2034,8 +2214,7 @@ public class QueryTable extends BaseTable {
                 manageWithCurrentScope();
             }
             return this;
-        }
-        else if (sortPairs.length == 1) {
+        } else if (sortPairs.length == 1) {
             final String columnName = sortPairs[0].getColumn();
             final SortingOrder order = sortPairs[0].getOrder();
             if (SortedColumnsAttribute.isSortedBy(this, columnName, order)) {
@@ -2050,19 +2229,19 @@ public class QueryTable extends BaseTable {
     }
 
     /**
-     * This is the smallest "base" that is used by the ungroup function.  Each row from the input table is allocated
-     * 2^minimumUngroupBase rows in the output table at startup.  If rows are added to the table, this base may need
-     * to grow.  If a single row in the input has more than 2^base rows, then the base must change for all of the rows.
+     * This is the smallest "base" that is used by the ungroup function. Each row from the input table is allocated
+     * 2^minimumUngroupBase rows in the output table at startup. If rows are added to the table, this base may need to
+     * grow. If a single row in the input has more than 2^base rows, then the base must change for all of the rows.
      */
     private static int minimumUngroupBase = 10;
 
     /**
      * For unit testing, it can be useful to reduce the minimum ungroup base.
+     * 
      * @param minimumUngroupBase the minimum ungroup base for newly created ungrouped tables.
      * @return The old value of minimumUngroupBase
      */
-    static int setMinimumUngroupBase(int minimumUngroupBase)
-    {
+    static int setMinimumUngroupBase(int minimumUngroupBase) {
         final int oldValue = QueryTable.minimumUngroupBase;
         QueryTable.minimumUngroupBase = minimumUngroupBase;
         return oldValue;
@@ -2070,7 +2249,7 @@ public class QueryTable extends BaseTable {
 
     /**
      * The reverse operation returns a new table that is the same as the original table, but the first row is last, and
-     * the last row is first.  This is an internal API to be used by .raj(), but is accessible for unit tests.
+     * the last row is first. This is an internal API to be used by .raj(), but is accessible for unit tests.
      *
      * @return the reversed table
      */
@@ -2081,187 +2260,212 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table ungroup(boolean nullFill, String... columnsToUngroupBy) {
-        return QueryPerformanceRecorder.withNugget("ungroup(" + Arrays.toString(columnsToUngroupBy) + ")", sizeForInstrumentation(), () -> {
-            if (columnsToUngroupBy.length == 0) {
-                if (isRefreshing()) {
-                    manageWithCurrentScope();
-                }
-                return this;
-            }
+        return QueryPerformanceRecorder.withNugget("ungroup(" + Arrays.toString(columnsToUngroupBy) + ")",
+                sizeForInstrumentation(), () -> {
+                    if (columnsToUngroupBy.length == 0) {
+                        if (isRefreshing()) {
+                            manageWithCurrentScope();
+                        }
+                        return this;
+                    }
 
-            checkInitiateOperation();
+                    checkInitiateOperation();
 
-            final Map<String, ColumnSource> arrayColumns = new HashMap<>();
-            final Map<String, ColumnSource> dbArrayColumns = new HashMap<>();
-            for (String name : columnsToUngroupBy) {
-                ColumnSource column = getColumnSource(name);
-                if (column.getType().isArray()) {
-                    arrayColumns.put(name, column);
-                } else if (DbArrayBase.class.isAssignableFrom(column.getType())) {
-                    dbArrayColumns.put(name, column);
-                } else {
-                    throw new RuntimeException("Column " + name + " is not an array");
-                }
-            }
-            final long[] sizes = new long[intSize("ungroup")];
-            long maxSize = computeMaxSize(index, arrayColumns, dbArrayColumns, null, sizes, nullFill);
-            final int initialBase = Math.max(64 - Long.numberOfLeadingZeros(maxSize), minimumUngroupBase);
-            final CrossJoinShiftState shiftState = new CrossJoinShiftState(initialBase);
-
-            final Map<String, ColumnSource> resultMap = new LinkedHashMap<>();
-            for (Map.Entry<String, ColumnSource> es : getColumnSourceMap().entrySet()) {
-                final ColumnSource column = es.getValue();
-                final String name = es.getKey();
-                final ColumnSource result;
-                if (dbArrayColumns.containsKey(name) || arrayColumns.containsKey(name)) {
-                    final UngroupedColumnSource ungroupedSource = UngroupedColumnSource.getColumnSource(column);
-                    ungroupedSource.initializeBase(initialBase);
-                    result = ungroupedSource;
-                } else {
-                    //noinspection unchecked
-                    result = new BitShiftingColumnSource(shiftState, column);
-                }
-                resultMap.put(name, result);
-            }
-            final QueryTable result = new QueryTable(getUngroupIndex(sizes, Index.FACTORY.getRandomBuilder(), initialBase, index).getIndex(), resultMap);
-            if (isRefreshing()) {
-                startTrackingPrev(resultMap.values());
-
-                listenForUpdates(new ListenerImpl("ungroup(" + Arrays.deepToString(columnsToUngroupBy) + ')', this, result) {
-
-                    @Override
-                    public void onUpdate(final Index added, final Index removed, final Index modified) {
-                        intSize("ungroup");
-
-                        int newBase = shiftState.getNumShiftBits();
-                        Index.RandomBuilder ungroupAdded = Index.FACTORY.getRandomBuilder();
-                        Index.RandomBuilder ungroupModified = Index.FACTORY.getRandomBuilder();
-                        Index.RandomBuilder ungroupRemoved = Index.FACTORY.getRandomBuilder();
-                        newBase = evaluateIndex(added, ungroupAdded, newBase);
-                        newBase = evaluateModified(modified, ungroupModified, ungroupAdded, ungroupRemoved, newBase);
-                        if (newBase > shiftState.getNumShiftBits()) {
-                            rebase(newBase + 1);
+                    final Map<String, ColumnSource> arrayColumns = new HashMap<>();
+                    final Map<String, ColumnSource> dbArrayColumns = new HashMap<>();
+                    for (String name : columnsToUngroupBy) {
+                        ColumnSource column = getColumnSource(name);
+                        if (column.getType().isArray()) {
+                            arrayColumns.put(name, column);
+                        } else if (DbArrayBase.class.isAssignableFrom(column.getType())) {
+                            dbArrayColumns.put(name, column);
                         } else {
-                            evaluateRemovedIndex(removed, ungroupRemoved);
-                            final Index removedIndex = ungroupRemoved.getIndex();
-                            final Index addedIndex = ungroupAdded.getIndex();
-                            result.getIndex().update(addedIndex, removedIndex);
-                            final Index modifiedIndex = ungroupModified.getIndex();
+                            throw new RuntimeException("Column " + name + " is not an array");
+                        }
+                    }
+                    final long[] sizes = new long[intSize("ungroup")];
+                    long maxSize = computeMaxSize(index, arrayColumns, dbArrayColumns, null, sizes, nullFill);
+                    final int initialBase = Math.max(64 - Long.numberOfLeadingZeros(maxSize), minimumUngroupBase);
+                    final CrossJoinShiftState shiftState = new CrossJoinShiftState(initialBase);
 
-                            if (!modifiedIndex.subsetOf(result.getIndex())) {
-                                final Index missingModifications = modifiedIndex.minus(result.getIndex());
-                                log.error().append("Result Index: ").append(result.getIndex().toString()).endl();
-                                log.error().append("Missing modifications: ").append(missingModifications.toString()).endl();
-                                log.error().append("Added: ").append(addedIndex.toString()).endl();
-                                log.error().append("Modified: ").append(modifiedIndex.toString()).endl();
-                                log.error().append("Removed: ").append(removedIndex.toString()).endl();
+                    final Map<String, ColumnSource> resultMap = new LinkedHashMap<>();
+                    for (Map.Entry<String, ColumnSource> es : getColumnSourceMap().entrySet()) {
+                        final ColumnSource column = es.getValue();
+                        final String name = es.getKey();
+                        final ColumnSource result;
+                        if (dbArrayColumns.containsKey(name) || arrayColumns.containsKey(name)) {
+                            final UngroupedColumnSource ungroupedSource = UngroupedColumnSource.getColumnSource(column);
+                            ungroupedSource.initializeBase(initialBase);
+                            result = ungroupedSource;
+                        } else {
+                            // noinspection unchecked
+                            result = new BitShiftingColumnSource(shiftState, column);
+                        }
+                        resultMap.put(name, result);
+                    }
+                    final QueryTable result = new QueryTable(
+                            getUngroupIndex(sizes, Index.FACTORY.getRandomBuilder(), initialBase, index).getIndex(),
+                            resultMap);
+                    if (isRefreshing()) {
+                        startTrackingPrev(resultMap.values());
 
-                                for (Map.Entry<String, ColumnSource> es : arrayColumns.entrySet()) {
-                                    ColumnSource arrayColumn = es.getValue();
-                                    String name = es.getKey();
+                        listenForUpdates(new ListenerImpl("ungroup(" + Arrays.deepToString(columnsToUngroupBy) + ')',
+                                this, result) {
 
-                                    Index.Iterator iterator = index.iterator();
-                                    for (int i = 0; i < index.size(); i++) {
-                                        final long next = iterator.nextLong();
-                                        int size = (arrayColumn.get(next) == null ? 0 : Array.getLength(arrayColumn.get(next)));
-                                        int prevSize = (arrayColumn.getPrev(next) == null ? 0 : Array.getLength(arrayColumn.getPrev(next)));
-                                        log.error().append(name).append("[").append(i).append("] ").append(size).append(" -> ").append(prevSize).endl();
+                            @Override
+                            public void onUpdate(final Index added, final Index removed, final Index modified) {
+                                intSize("ungroup");
+
+                                int newBase = shiftState.getNumShiftBits();
+                                Index.RandomBuilder ungroupAdded = Index.FACTORY.getRandomBuilder();
+                                Index.RandomBuilder ungroupModified = Index.FACTORY.getRandomBuilder();
+                                Index.RandomBuilder ungroupRemoved = Index.FACTORY.getRandomBuilder();
+                                newBase = evaluateIndex(added, ungroupAdded, newBase);
+                                newBase = evaluateModified(modified, ungroupModified, ungroupAdded, ungroupRemoved,
+                                        newBase);
+                                if (newBase > shiftState.getNumShiftBits()) {
+                                    rebase(newBase + 1);
+                                } else {
+                                    evaluateRemovedIndex(removed, ungroupRemoved);
+                                    final Index removedIndex = ungroupRemoved.getIndex();
+                                    final Index addedIndex = ungroupAdded.getIndex();
+                                    result.getIndex().update(addedIndex, removedIndex);
+                                    final Index modifiedIndex = ungroupModified.getIndex();
+
+                                    if (!modifiedIndex.subsetOf(result.getIndex())) {
+                                        final Index missingModifications = modifiedIndex.minus(result.getIndex());
+                                        log.error().append("Result Index: ").append(result.getIndex().toString())
+                                                .endl();
+                                        log.error().append("Missing modifications: ")
+                                                .append(missingModifications.toString()).endl();
+                                        log.error().append("Added: ").append(addedIndex.toString()).endl();
+                                        log.error().append("Modified: ").append(modifiedIndex.toString()).endl();
+                                        log.error().append("Removed: ").append(removedIndex.toString()).endl();
+
+                                        for (Map.Entry<String, ColumnSource> es : arrayColumns.entrySet()) {
+                                            ColumnSource arrayColumn = es.getValue();
+                                            String name = es.getKey();
+
+                                            Index.Iterator iterator = index.iterator();
+                                            for (int i = 0; i < index.size(); i++) {
+                                                final long next = iterator.nextLong();
+                                                int size = (arrayColumn.get(next) == null ? 0
+                                                        : Array.getLength(arrayColumn.get(next)));
+                                                int prevSize = (arrayColumn.getPrev(next) == null ? 0
+                                                        : Array.getLength(arrayColumn.getPrev(next)));
+                                                log.error().append(name).append("[").append(i).append("] ").append(size)
+                                                        .append(" -> ").append(prevSize).endl();
+                                            }
+                                        }
+
+                                        for (Map.Entry<String, ColumnSource> es : dbArrayColumns.entrySet()) {
+                                            ColumnSource arrayColumn = es.getValue();
+                                            String name = es.getKey();
+                                            Index.Iterator iterator = index.iterator();
+
+                                            for (int i = 0; i < index.size(); i++) {
+                                                final long next = iterator.nextLong();
+                                                long size = (arrayColumn.get(next) == null ? 0
+                                                        : ((DbArrayBase) arrayColumn.get(next)).size());
+                                                long prevSize = (arrayColumn.getPrev(next) == null ? 0
+                                                        : ((DbArrayBase) arrayColumn.getPrev(next)).size());
+                                                log.error().append(name).append("[").append(i).append("] ").append(size)
+                                                        .append(" -> ").append(prevSize).endl();
+                                            }
+                                        }
+
+                                        Assert.assertion(false, "modifiedIndex.subsetOf(result.getIndex())",
+                                                modifiedIndex, "modifiedIndex", result.getIndex(), "result.getIndex()",
+                                                shiftState.getNumShiftBits(), "shiftState.getNumShiftBits()", newBase,
+                                                "newBase");
+                                    }
+
+                                    for (ColumnSource source : resultMap.values()) {
+                                        if (source instanceof UngroupedColumnSource) {
+                                            ((UngroupedColumnSource) source).setBase(newBase);
+                                        }
+                                    }
+
+                                    result.notifyListeners(addedIndex, removedIndex, modifiedIndex);
+                                }
+                            }
+
+                            private void rebase(final int newBase) {
+                                final Index newIndex = getUngroupIndex(
+                                        computeSize(getIndex(), arrayColumns, dbArrayColumns, nullFill),
+                                        Index.FACTORY.getRandomBuilder(), newBase, getIndex())
+                                                .getIndex();
+                                final Index index = result.getIndex();
+                                final Index added = newIndex.minus(index);
+                                final Index removed = index.minus(newIndex);
+                                final Index modified = newIndex;
+                                modified.retain(index);
+                                index.update(added, removed);
+                                for (ColumnSource source : resultMap.values()) {
+                                    if (source instanceof UngroupedColumnSource) {
+                                        ((UngroupedColumnSource) source).setBase(newBase);
                                     }
                                 }
+                                shiftState.setNumShiftBitsAndUpdatePrev(newBase);
+                                result.notifyListeners(added, removed, modified);
+                            }
 
-                                for (Map.Entry<String, ColumnSource> es : dbArrayColumns.entrySet()) {
-                                    ColumnSource arrayColumn = es.getValue();
-                                    String name = es.getKey();
-                                    Index.Iterator iterator = index.iterator();
-
-                                    for (int i = 0; i < index.size(); i++) {
-                                        final long next = iterator.nextLong();
-                                        long size = (arrayColumn.get(next) == null ? 0 : ((DbArrayBase) arrayColumn.get(next)).size());
-                                        long prevSize = (arrayColumn.getPrev(next) == null ? 0 : ((DbArrayBase) arrayColumn.getPrev(next)).size());
-                                        log.error().append(name).append("[").append(i).append("] ").append(size).append(" -> ").append(prevSize).endl();
-                                    }
+                            private int evaluateIndex(final Index index, final Index.RandomBuilder ungroupBuilder,
+                                    final int newBase) {
+                                if (index.size() > 0) {
+                                    final long[] modifiedSizes = new long[index.intSize("ungroup")];
+                                    final long maxSize = computeMaxSize(index, arrayColumns, dbArrayColumns, null,
+                                            modifiedSizes, nullFill);
+                                    final int minBase = 64 - Long.numberOfLeadingZeros(maxSize);
+                                    getUngroupIndex(modifiedSizes, ungroupBuilder, shiftState.getNumShiftBits(), index);
+                                    return Math.max(newBase, minBase);
                                 }
-
-                                Assert.assertion(false, "modifiedIndex.subsetOf(result.getIndex())",
-                                        modifiedIndex, "modifiedIndex", result.getIndex(), "result.getIndex()",
-                                        shiftState.getNumShiftBits(), "shiftState.getNumShiftBits()", newBase, "newBase");
+                                return newBase;
                             }
 
-                            for (ColumnSource source : resultMap.values()) {
-                                if (source instanceof UngroupedColumnSource) {
-                                    ((UngroupedColumnSource)source).setBase(newBase);
+                            private void evaluateRemovedIndex(final Index index,
+                                    final Index.RandomBuilder ungroupBuilder) {
+                                if (index.size() > 0) {
+                                    final long[] modifiedSizes = new long[index.intSize("ungroup")];
+                                    computePrevSize(index, arrayColumns, dbArrayColumns, modifiedSizes, nullFill);
+                                    getUngroupIndex(modifiedSizes, ungroupBuilder, shiftState.getNumShiftBits(), index);
                                 }
                             }
 
-                            result.notifyListeners(addedIndex, removedIndex, modifiedIndex);
-                        }
-                    }
-
-                    private void rebase(final int newBase) {
-                        final Index newIndex = getUngroupIndex(
-                                computeSize(getIndex(), arrayColumns, dbArrayColumns, nullFill),
-                                Index.FACTORY.getRandomBuilder(), newBase, getIndex())
-                                .getIndex();
-                        final Index index = result.getIndex();
-                        final Index added = newIndex.minus(index);
-                        final Index removed = index.minus(newIndex);
-                        final Index modified = newIndex;
-                        modified.retain(index);
-                        index.update(added, removed);
-                        for (ColumnSource source : resultMap.values()) {
-                            if (source instanceof UngroupedColumnSource) {
-                                ((UngroupedColumnSource)source).setBase(newBase);
+                            private int evaluateModified(final Index index,
+                                    final Index.RandomBuilder modifyBuilder,
+                                    final Index.RandomBuilder addedBuilded,
+                                    final Index.RandomBuilder removedBuilder,
+                                    final int newBase) {
+                                if (index.size() > 0) {
+                                    final long maxSize = computeModifiedIndicesAndMaxSize(index, arrayColumns,
+                                            dbArrayColumns, null, modifyBuilder, addedBuilded, removedBuilder,
+                                            shiftState.getNumShiftBits(), nullFill);
+                                    final int minBase = 64 - Long.numberOfLeadingZeros(maxSize);
+                                    return Math.max(newBase, minBase);
+                                }
+                                return newBase;
                             }
-                        }
-                        shiftState.setNumShiftBitsAndUpdatePrev(newBase);
-                        result.notifyListeners(added, removed, modified);
+                        });
                     }
-
-                    private int evaluateIndex(final Index index, final Index.RandomBuilder ungroupBuilder, final int newBase) {
-                        if (index.size() > 0) {
-                            final long[] modifiedSizes = new long[index.intSize("ungroup")];
-                            final long maxSize = computeMaxSize(index, arrayColumns, dbArrayColumns, null, modifiedSizes, nullFill);
-                            final int minBase = 64 - Long.numberOfLeadingZeros(maxSize);
-                            getUngroupIndex(modifiedSizes, ungroupBuilder, shiftState.getNumShiftBits(), index);
-                            return Math.max(newBase, minBase);
-                        }
-                        return newBase;
-                    }
-
-                    private void evaluateRemovedIndex(final Index index, final Index.RandomBuilder ungroupBuilder) {
-                        if (index.size() > 0) {
-                            final long[] modifiedSizes = new long[index.intSize("ungroup")];
-                            computePrevSize(index, arrayColumns, dbArrayColumns, modifiedSizes, nullFill);
-                            getUngroupIndex(modifiedSizes, ungroupBuilder, shiftState.getNumShiftBits(), index);
-                        }
-                    }
-
-                    private int evaluateModified(final Index index,
-                                                  final Index.RandomBuilder modifyBuilder,
-                                                  final Index.RandomBuilder addedBuilded,
-                                                  final Index.RandomBuilder removedBuilder,
-                                                  final int newBase) {
-                        if (index.size() > 0) {
-                            final long maxSize = computeModifiedIndicesAndMaxSize(index, arrayColumns, dbArrayColumns, null, modifyBuilder, addedBuilded, removedBuilder, shiftState.getNumShiftBits(), nullFill);
-                            final int minBase = 64 - Long.numberOfLeadingZeros(maxSize);
-                            return Math.max(newBase, minBase);
-                        }
-                        return newBase;
-                    }
+                    return result;
                 });
-            }
-            return result;
-        });
     }
 
-    private long computeModifiedIndicesAndMaxSize(Index index, Map<String, ColumnSource> arrayColumns, Map<String, ColumnSource> dbArrayColumns, String referenceColumn, Index.RandomBuilder modifyBuilder, Index.RandomBuilder addedBuilded, Index.RandomBuilder removedBuilder, long base, boolean nullFill) {
-        if(nullFill) {
-            return computeModifiedIndicesAndMaxSizeNullFill(index, arrayColumns, dbArrayColumns, referenceColumn, modifyBuilder, addedBuilded, removedBuilder, base);
+    private long computeModifiedIndicesAndMaxSize(Index index, Map<String, ColumnSource> arrayColumns,
+            Map<String, ColumnSource> dbArrayColumns, String referenceColumn, Index.RandomBuilder modifyBuilder,
+            Index.RandomBuilder addedBuilded, Index.RandomBuilder removedBuilder, long base, boolean nullFill) {
+        if (nullFill) {
+            return computeModifiedIndicesAndMaxSizeNullFill(index, arrayColumns, dbArrayColumns, referenceColumn,
+                    modifyBuilder, addedBuilded, removedBuilder, base);
         }
-        return computeModifiedIndicesAndMaxSizeNormal(index, arrayColumns, dbArrayColumns, referenceColumn, modifyBuilder, addedBuilded, removedBuilder, base);
+        return computeModifiedIndicesAndMaxSizeNormal(index, arrayColumns, dbArrayColumns, referenceColumn,
+                modifyBuilder, addedBuilded, removedBuilder, base);
     }
 
-    private long computeModifiedIndicesAndMaxSizeNullFill(Index index, Map<String, ColumnSource> arrayColumns, Map<String, ColumnSource> dbArrayColumns, String referenceColumn, Index.RandomBuilder modifyBuilder, Index.RandomBuilder addedBuilded, Index.RandomBuilder removedBuilder, long base) {
+    private long computeModifiedIndicesAndMaxSizeNullFill(Index index, Map<String, ColumnSource> arrayColumns,
+            Map<String, ColumnSource> dbArrayColumns, String referenceColumn, Index.RandomBuilder modifyBuilder,
+            Index.RandomBuilder addedBuilded, Index.RandomBuilder removedBuilder, long base) {
         long maxSize = 0;
         final Index.Iterator iterator = index.iterator();
         for (int i = 0; i < index.size(); i++) {
@@ -2286,12 +2490,15 @@ public class QueryTable extends BaseTable {
                 final long prevSize = (prevArray == null ? 0 : prevArray.size());
                 maxPrev = Math.max(maxPrev, prevSize);
             }
-            maxSize = maxAndIndexUpdateForRow(modifyBuilder, addedBuilded, removedBuilder, maxSize, maxCur, next, maxPrev, base);
+            maxSize = maxAndIndexUpdateForRow(modifyBuilder, addedBuilded, removedBuilder, maxSize, maxCur, next,
+                    maxPrev, base);
         }
         return maxSize;
     }
 
-    private long computeModifiedIndicesAndMaxSizeNormal(Index index, Map<String, ColumnSource> arrayColumns, Map<String, ColumnSource> dbArrayColumns, String referenceColumn, Index.RandomBuilder modifyBuilder, Index.RandomBuilder addedBuilded, Index.RandomBuilder removedBuilder, long base) {
+    private long computeModifiedIndicesAndMaxSizeNormal(Index index, Map<String, ColumnSource> arrayColumns,
+            Map<String, ColumnSource> dbArrayColumns, String referenceColumn, Index.RandomBuilder modifyBuilder,
+            Index.RandomBuilder addedBuilded, Index.RandomBuilder removedBuilder, long base) {
         long maxSize = 0;
         boolean sizeIsInitialized = false;
         long sizes[] = new long[index.intSize("ungroup")];
@@ -2308,13 +2515,15 @@ public class QueryTable extends BaseTable {
                     sizes[i] = (array == null ? 0 : Array.getLength(array));
                     Object prevArray = arrayColumn.getPrev(next);
                     int prevSize = (prevArray == null ? 0 : Array.getLength(prevArray));
-                    maxSize = maxAndIndexUpdateForRow(modifyBuilder, addedBuilded, removedBuilder, maxSize, sizes[i], next, prevSize, base);
+                    maxSize = maxAndIndexUpdateForRow(modifyBuilder, addedBuilded, removedBuilder, maxSize, sizes[i],
+                            next, prevSize, base);
                 }
             } else {
                 Index.Iterator iterator = index.iterator();
                 for (int i = 0; i < index.size(); i++) {
                     long k = iterator.nextLong();
-                    Assert.assertion(sizes[i] == Array.getLength(arrayColumn.get(k)), "sizes[i] == Array.getLength(arrayColumn.get(k))",
+                    Assert.assertion(sizes[i] == Array.getLength(arrayColumn.get(k)),
+                            "sizes[i] == Array.getLength(arrayColumn.get(k))",
                             referenceColumn, "referenceColumn", name, "name", k, "row");
                 }
 
@@ -2333,14 +2542,16 @@ public class QueryTable extends BaseTable {
                     sizes[i] = (array == null ? 0 : array.size());
                     DbArrayBase prevArray = (DbArrayBase) arrayColumn.getPrev(next);
                     long prevSize = (prevArray == null ? 0 : prevArray.size());
-                    maxSize = maxAndIndexUpdateForRow(modifyBuilder, addedBuilded, removedBuilder, maxSize, sizes[i], next, prevSize, base);
+                    maxSize = maxAndIndexUpdateForRow(modifyBuilder, addedBuilded, removedBuilder, maxSize, sizes[i],
+                            next, prevSize, base);
                 }
             } else {
                 Index.Iterator iterator = index.iterator();
                 for (int i = 0; i < index.size(); i++) {
                     final long next = iterator.nextLong();
                     Assert.assertion(sizes[i] == 0 && arrayColumn.get(next) == null ||
-                                    sizes[i] == ((DbArrayBase) arrayColumn.get(next)).size(), "sizes[i] == ((DbArrayBase)arrayColumn.get(i)).size()",
+                            sizes[i] == ((DbArrayBase) arrayColumn.get(next)).size(),
+                            "sizes[i] == ((DbArrayBase)arrayColumn.get(i)).size()",
                             referenceColumn, "referenceColumn", name, "arrayColumn.getName()", i, "row");
                 }
             }
@@ -2348,9 +2559,11 @@ public class QueryTable extends BaseTable {
         return maxSize;
     }
 
-    private long maxAndIndexUpdateForRow(Index.RandomBuilder modifyBuilder, Index.RandomBuilder addedBuilded, Index.RandomBuilder removedBuilder, long maxSize, long size, long rowKey, long prevSize, long base) {
+    private long maxAndIndexUpdateForRow(Index.RandomBuilder modifyBuilder, Index.RandomBuilder addedBuilded,
+            Index.RandomBuilder removedBuilder, long maxSize, long size, long rowKey, long prevSize, long base) {
         rowKey = rowKey << base;
-        Require.requirement(rowKey >= 0 && (size == 0 || (rowKey + size - 1 >= 0)), "rowKey >= 0 && (size == 0 || (rowKey + size - 1 >= 0))");
+        Require.requirement(rowKey >= 0 && (size == 0 || (rowKey + size - 1 >= 0)),
+                "rowKey >= 0 && (size == 0 || (rowKey + size - 1 >= 0))");
         if (size == prevSize) {
             if (size > 0) {
                 modifyBuilder.addRange(rowKey, rowKey + size - 1);
@@ -2370,15 +2583,17 @@ public class QueryTable extends BaseTable {
         return maxSize;
     }
 
-    private static long computeMaxSize(Index index, Map<String, ColumnSource> arrayColumns, Map<String, ColumnSource> dbArrayColumns, String referenceColumn, long[] sizes, boolean nullFill) {
-        if(nullFill) {
+    private static long computeMaxSize(Index index, Map<String, ColumnSource> arrayColumns,
+            Map<String, ColumnSource> dbArrayColumns, String referenceColumn, long[] sizes, boolean nullFill) {
+        if (nullFill) {
             return computeMaxSizeNullFill(index, arrayColumns, dbArrayColumns, sizes);
         }
 
         return computeMaxSizeNormal(index, arrayColumns, dbArrayColumns, referenceColumn, sizes);
     }
 
-    private static long computeMaxSizeNullFill(Index index, Map<String, ColumnSource> arrayColumns, Map<String, ColumnSource> dbArrayColumns, long[] sizes) {
+    private static long computeMaxSizeNullFill(Index index, Map<String, ColumnSource> arrayColumns,
+            Map<String, ColumnSource> dbArrayColumns, long[] sizes) {
         long maxSize = 0;
         final Index.Iterator iterator = index.iterator();
         for (int i = 0; i < index.size(); i++) {
@@ -2394,10 +2609,11 @@ public class QueryTable extends BaseTable {
             }
             for (Map.Entry<String, ColumnSource> es : dbArrayColumns.entrySet()) {
                 final ColumnSource arrayColumn = es.getValue();
-                final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource && ((UngroupableColumnSource) arrayColumn).isUngroupable();
+                final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
+                        && ((UngroupableColumnSource) arrayColumn).isUngroupable();
                 final long size;
                 if (isUngroupable) {
-                    size = ((UngroupableColumnSource)arrayColumn).getUngroupedSize(nextIndex);
+                    size = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(nextIndex);
                 } else {
                     final DbArrayBase dbArrayBase = (DbArrayBase) arrayColumn.get(nextIndex);
                     size = dbArrayBase != null ? dbArrayBase.size() : 0;
@@ -2411,7 +2627,8 @@ public class QueryTable extends BaseTable {
     }
 
 
-    private static long computeMaxSizeNormal(Index index, Map<String, ColumnSource> arrayColumns, Map<String, ColumnSource> dbArrayColumns, String referenceColumn, long[] sizes) {
+    private static long computeMaxSizeNormal(Index index, Map<String, ColumnSource> arrayColumns,
+            Map<String, ColumnSource> dbArrayColumns, String referenceColumn, long[] sizes) {
         long maxSize = 0;
         boolean sizeIsInitialized = false;
         for (Map.Entry<String, ColumnSource> es : arrayColumns.entrySet()) {
@@ -2429,7 +2646,8 @@ public class QueryTable extends BaseTable {
             } else {
                 Index.Iterator iterator = index.iterator();
                 for (int i = 0; i < index.size(); i++) {
-                    Assert.assertion(sizes[i] == Array.getLength(arrayColumn.get(iterator.nextLong())), "sizes[i] == Array.getLength(arrayColumn.get(i))",
+                    Assert.assertion(sizes[i] == Array.getLength(arrayColumn.get(iterator.nextLong())),
+                            "sizes[i] == Array.getLength(arrayColumn.get(i))",
                             referenceColumn, "referenceColumn", name, "name", i, "row");
                 }
 
@@ -2438,7 +2656,8 @@ public class QueryTable extends BaseTable {
         for (Map.Entry<String, ColumnSource> es : dbArrayColumns.entrySet()) {
             final ColumnSource arrayColumn = es.getValue();
             final String name = es.getKey();
-            final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource && ((UngroupableColumnSource) arrayColumn).isUngroupable();
+            final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
+                    && ((UngroupableColumnSource) arrayColumn).isUngroupable();
 
             if (!sizeIsInitialized) {
                 sizeIsInitialized = true;
@@ -2446,7 +2665,7 @@ public class QueryTable extends BaseTable {
                 Index.Iterator iterator = index.iterator();
                 for (int ii = 0; ii < index.size(); ii++) {
                     if (isUngroupable) {
-                        sizes[ii] = ((UngroupableColumnSource)arrayColumn).getUngroupedSize(iterator.nextLong());
+                        sizes[ii] = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
                     } else {
                         final DbArrayBase dbArrayBase = (DbArrayBase) arrayColumn.get(iterator.nextLong());
                         sizes[ii] = dbArrayBase != null ? dbArrayBase.size() : 0;
@@ -2458,7 +2677,7 @@ public class QueryTable extends BaseTable {
                 for (int i = 0; i < index.size(); i++) {
                     final long expectedSize;
                     if (isUngroupable) {
-                        expectedSize = ((UngroupableColumnSource)arrayColumn).getUngroupedSize(iterator.nextLong());
+                        expectedSize = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
                     } else {
                         final DbArrayBase dbArrayBase = (DbArrayBase) arrayColumn.get(iterator.nextLong());
                         expectedSize = dbArrayBase != null ? dbArrayBase.size() : 0;
@@ -2471,15 +2690,17 @@ public class QueryTable extends BaseTable {
         return maxSize;
     }
 
-    private static void computePrevSize(Index index, Map<String, ColumnSource> arrayColumns, Map<String, ColumnSource> dbArrayColumns, long[] sizes, boolean nullFill) {
-        if(nullFill) {
+    private static void computePrevSize(Index index, Map<String, ColumnSource> arrayColumns,
+            Map<String, ColumnSource> dbArrayColumns, long[] sizes, boolean nullFill) {
+        if (nullFill) {
             computePrevSizeNullFill(index, arrayColumns, dbArrayColumns, sizes);
         } else {
             computePrevSizeNormal(index, arrayColumns, dbArrayColumns, sizes);
         }
     }
 
-    private static void computePrevSizeNullFill(Index index, Map<String, ColumnSource> arrayColumns, Map<String, ColumnSource> dbArrayColumns, long[] sizes) {
+    private static void computePrevSizeNullFill(Index index, Map<String, ColumnSource> arrayColumns,
+            Map<String, ColumnSource> dbArrayColumns, long[] sizes) {
         final Index.Iterator iterator = index.iterator();
         for (int i = 0; i < index.size(); i++) {
             long localMax = 0;
@@ -2493,10 +2714,11 @@ public class QueryTable extends BaseTable {
             }
             for (Map.Entry<String, ColumnSource> es : dbArrayColumns.entrySet()) {
                 final ColumnSource arrayColumn = es.getValue();
-                final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource && ((UngroupableColumnSource) arrayColumn).isUngroupable();
+                final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
+                        && ((UngroupableColumnSource) arrayColumn).isUngroupable();
                 final long size;
                 if (isUngroupable) {
-                    size = ((UngroupableColumnSource)arrayColumn).getUngroupedPrevSize(nextIndex);
+                    size = ((UngroupableColumnSource) arrayColumn).getUngroupedPrevSize(nextIndex);
                 } else {
                     final DbArrayBase dbArrayBase = (DbArrayBase) arrayColumn.getPrev(nextIndex);
                     size = dbArrayBase != null ? dbArrayBase.size() : 0;
@@ -2507,7 +2729,8 @@ public class QueryTable extends BaseTable {
         }
     }
 
-    private static void computePrevSizeNormal(Index index, Map<String, ColumnSource> arrayColumns, Map<String, ColumnSource> dbArrayColumns, long[] sizes) {
+    private static void computePrevSizeNormal(Index index, Map<String, ColumnSource> arrayColumns,
+            Map<String, ColumnSource> dbArrayColumns, long[] sizes) {
         for (ColumnSource arrayColumn : arrayColumns.values()) {
             Index.Iterator iterator = index.iterator();
             for (int i = 0; i < index.size(); i++) {
@@ -2517,12 +2740,13 @@ public class QueryTable extends BaseTable {
             return; // TODO: WTF??
         }
         for (ColumnSource arrayColumn : dbArrayColumns.values()) {
-            final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource && ((UngroupableColumnSource) arrayColumn).isUngroupable();
+            final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
+                    && ((UngroupableColumnSource) arrayColumn).isUngroupable();
 
             Index.Iterator iterator = index.iterator();
             for (int i = 0; i < index.size(); i++) {
                 if (isUngroupable) {
-                    sizes[i] = ((UngroupableColumnSource)arrayColumn).getUngroupedPrevSize(iterator.nextLong());
+                    sizes[i] = ((UngroupableColumnSource) arrayColumn).getUngroupedPrevSize(iterator.nextLong());
                 } else {
                     DbArrayBase array = (DbArrayBase) arrayColumn.getPrev(iterator.nextLong());
                     sizes[i] = array == null ? 0 : array.size();
@@ -2532,15 +2756,17 @@ public class QueryTable extends BaseTable {
         }
     }
 
-    private static long[] computeSize(Index index, Map<String, ColumnSource> arrayColumns, Map<String, ColumnSource> dbArrayColumns, boolean nullFill) {
-        if(nullFill) {
+    private static long[] computeSize(Index index, Map<String, ColumnSource> arrayColumns,
+            Map<String, ColumnSource> dbArrayColumns, boolean nullFill) {
+        if (nullFill) {
             return computeSizeNullFill(index, arrayColumns, dbArrayColumns);
         }
 
         return computeSizeNormal(index, arrayColumns, dbArrayColumns);
     }
 
-    private static long[] computeSizeNullFill(Index index, Map<String, ColumnSource> arrayColumns, Map<String, ColumnSource> dbArrayColumns) {
+    private static long[] computeSizeNullFill(Index index, Map<String, ColumnSource> arrayColumns,
+            Map<String, ColumnSource> dbArrayColumns) {
         final long[] sizes = new long[index.intSize("ungroup")];
         final Index.Iterator iterator = index.iterator();
         for (int i = 0; i < index.size(); i++) {
@@ -2555,10 +2781,11 @@ public class QueryTable extends BaseTable {
             }
             for (Map.Entry<String, ColumnSource> es : dbArrayColumns.entrySet()) {
                 final ColumnSource arrayColumn = es.getValue();
-                final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource && ((UngroupableColumnSource) arrayColumn).isUngroupable();
+                final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
+                        && ((UngroupableColumnSource) arrayColumn).isUngroupable();
                 final long size;
                 if (isUngroupable) {
-                    size = ((UngroupableColumnSource)arrayColumn).getUngroupedSize(nextIndex);
+                    size = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(nextIndex);
                 } else {
                     final DbArrayBase dbArrayBase = (DbArrayBase) arrayColumn.get(nextIndex);
                     size = dbArrayBase != null ? dbArrayBase.size() : 0;
@@ -2570,7 +2797,8 @@ public class QueryTable extends BaseTable {
         return sizes;
     }
 
-    private static long[] computeSizeNormal(Index index, Map<String, ColumnSource> arrayColumns, Map<String, ColumnSource> dbArrayColumns) {
+    private static long[] computeSizeNormal(Index index, Map<String, ColumnSource> arrayColumns,
+            Map<String, ColumnSource> dbArrayColumns) {
         final long[] sizes = new long[index.intSize("ungroup")];
         for (ColumnSource arrayColumn : arrayColumns.values()) {
             Index.Iterator iterator = index.iterator();
@@ -2581,12 +2809,13 @@ public class QueryTable extends BaseTable {
             return sizes; // TODO: WTF??
         }
         for (ColumnSource arrayColumn : dbArrayColumns.values()) {
-            final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource && ((UngroupableColumnSource) arrayColumn).isUngroupable();
+            final boolean isUngroupable = arrayColumn instanceof UngroupableColumnSource
+                    && ((UngroupableColumnSource) arrayColumn).isUngroupable();
 
             Index.Iterator iterator = index.iterator();
             for (int i = 0; i < index.size(); i++) {
                 if (isUngroupable) {
-                    sizes[i] = ((UngroupableColumnSource)arrayColumn).getUngroupedSize(iterator.nextLong());
+                    sizes[i] = ((UngroupableColumnSource) arrayColumn).getUngroupedSize(iterator.nextLong());
                 } else {
                     DbArrayBase array = (DbArrayBase) arrayColumn.get(iterator.nextLong());
                     sizes[i] = array == null ? 0 : array.size();
@@ -2600,14 +2829,16 @@ public class QueryTable extends BaseTable {
     private IndexBuilder getUngroupIndex(
             final long[] sizes, final Index.RandomBuilder indexBuilder, final long base, final Index index) {
         Assert.assertion(base >= 0 && base <= 63, "base >= 0 && base <= 63", base, "base");
-        long mask = ((1L<<base)-1) << (64 -base);
+        long mask = ((1L << base) - 1) << (64 - base);
         long lastKey = index.lastKey();
         if ((lastKey > 0) && ((lastKey & mask) != 0)) {
-            throw new IllegalStateException("Key overflow detected, perhaps you should flatten your table before calling ungroup.  " + ",lastKey=" + lastKey + ", base=" + base);
+            throw new IllegalStateException(
+                    "Key overflow detected, perhaps you should flatten your table before calling ungroup.  "
+                            + ",lastKey=" + lastKey + ", base=" + base);
         }
 
         int pos = 0;
-        for (Index.Iterator iterator = index.iterator(); iterator.hasNext(); ) {
+        for (Index.Iterator iterator = index.iterator(); iterator.hasNext();) {
             long next = iterator.nextLong();
             long nextShift = next << base;
             if (sizes[pos] != 0) {
@@ -2622,7 +2853,8 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table selectDistinct(SelectColumn... columns) {
-        return QueryPerformanceRecorder.withNugget("selectDistinct(" + Arrays.toString(columns) + ")", sizeForInstrumentation(),
+        return QueryPerformanceRecorder.withNugget("selectDistinct(" + Arrays.toString(columns) + ")",
+                sizeForInstrumentation(),
                 () -> by(new SelectDistinctStateFactoryImpl(), columns));
     }
 
@@ -2631,7 +2863,8 @@ public class QueryTable extends BaseTable {
         return getSubTable(index, null, CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
     }
 
-    public QueryTable getSubTable(@NotNull final Index index, @Nullable final ModifiedColumnSet resultModifiedColumnSet, @NotNull final Object... parents) {
+    public QueryTable getSubTable(@NotNull final Index index, @Nullable final ModifiedColumnSet resultModifiedColumnSet,
+            @NotNull final Object... parents) {
         return QueryPerformanceRecorder.withNugget("getSubTable", sizeForInstrumentation(), () -> {
             // there is no operation check here, because byExternal calls it internally; and the Index results are
             // not updated internally, but rather externally.
@@ -2708,19 +2941,17 @@ public class QueryTable extends BaseTable {
             }
 
             final boolean attributesCompatible = memoKey.attributesCompatible(parent.attributes, attributes);
-            final Supplier<R> computeCachedOperation = attributesCompatible ?
-                    () -> {
-                        final R parentResult = parent.memoizeResult(memoKey, operation);
-                        if (parentResult instanceof QueryTable) {
-                            final Table myResult = ((QueryTable) parentResult).copy(false);
-                            copyAttributes((QueryTable)parentResult, myResult, memoKey.getParentCopyType());
-                            copyAttributes(myResult, memoKey.copyType());
-                            //noinspection unchecked
-                            return (R) myResult;
-                        }
-                        return operation.get();
-                    } :
-                    operation;
+            final Supplier<R> computeCachedOperation = attributesCompatible ? () -> {
+                final R parentResult = parent.memoizeResult(memoKey, operation);
+                if (parentResult instanceof QueryTable) {
+                    final Table myResult = ((QueryTable) parentResult).copy(false);
+                    copyAttributes((QueryTable) parentResult, myResult, memoKey.getParentCopyType());
+                    copyAttributes(myResult, memoKey.copyType());
+                    // noinspection unchecked
+                    return (R) myResult;
+                }
+                return operation.get();
+            } : operation;
 
             return super.memoizeResult(memoKey, computeCachedOperation);
         }
@@ -2749,6 +2980,7 @@ public class QueryTable extends BaseTable {
 
     /**
      * Saves a weak reference to the result of the given operation.
+     * 
      * @param memoKey a complete description of the operation, if null no memoization is performed
      * @param operation a supplier for the result
      * @return either the cached or newly generated result
@@ -2763,9 +2995,10 @@ public class QueryTable extends BaseTable {
     }
 
     @NotNull
-    private static <R> MemoizedResult<R> getMemoizedResult(MemoizedOperationKey memoKey, Map<MemoizedOperationKey, MemoizedResult<?>> cachedOperations) {
-        //noinspection unchecked
-        return (MemoizedResult<R>)cachedOperations.computeIfAbsent(memoKey, k -> new MemoizedResult<>());
+    private static <R> MemoizedResult<R> getMemoizedResult(MemoizedOperationKey memoKey,
+            Map<MemoizedOperationKey, MemoizedResult<?>> cachedOperations) {
+        // noinspection unchecked
+        return (MemoizedResult<R>) cachedOperations.computeIfAbsent(memoKey, k -> new MemoizedResult<>());
     }
 
     private static class MemoizedResult<R> {
@@ -2796,7 +3029,7 @@ public class QueryTable extends BaseTable {
 
         private void maybeMarkSystemic(R cachedResult) {
             if (cachedResult instanceof SystemicObject && SystemicObjectTracker.isSystemicThread()) {
-                ((SystemicObject)cachedResult).markSystemic();
+                ((SystemicObject) cachedResult).markSystemic();
             }
         }
 
@@ -2817,7 +3050,8 @@ public class QueryTable extends BaseTable {
 
     public <T extends DynamicNode & NotificationStepReceiver> T getResult(final Operation<T> operation) {
         if (operation instanceof MemoizableOperation) {
-            return memoizeResult(((MemoizableOperation) operation).getMemoizedOperationKey(), () -> getResultNoMemo(operation));
+            return memoizeResult(((MemoizableOperation) operation).getMemoizedOperationKey(),
+                    () -> getResultNoMemo(operation));
         }
         return getResultNoMemo(operation);
     }
@@ -2842,7 +3076,8 @@ public class QueryTable extends BaseTable {
 
                 resultTable.setValue(result.resultNode);
                 if (swapListener != null) {
-                    swapListener.setListenerAndResult(Require.neqNull(result.resultListener, "resultListener"), result.resultNode);
+                    swapListener.setListenerAndResult(Require.neqNull(result.resultListener, "resultListener"),
+                            result.resultNode);
                     result.resultNode.addParentReference(swapListener);
                 }
 
@@ -2860,8 +3095,10 @@ public class QueryTable extends BaseTable {
         private final ModifiedColumnSet filterColumns;
         private final ListenerRecorder recorder;
 
-        private WhereListener(ListenerRecorder recorder, Collection<NotificationQueue.Dependency> dependencies, FilteredTable result) {
-            super(Collections.singleton(recorder), dependencies,"where(" + Arrays.toString(result.filters) + ")", result);
+        private WhereListener(ListenerRecorder recorder, Collection<NotificationQueue.Dependency> dependencies,
+                FilteredTable result) {
+            super(Collections.singleton(recorder), dependencies, "where(" + Arrays.toString(result.filters) + ")",
+                    result);
             this.recorder = recorder;
             this.result = result;
             this.currentMapping = result.getIndex();
@@ -2873,7 +3110,8 @@ public class QueryTable extends BaseTable {
                 hasColumnArray |= !filter.getColumnArrays().isEmpty();
                 filterColumnNames.addAll(filter.getColumns());
             }
-            this.filterColumns = hasColumnArray ? null : newModifiedColumnSet(filterColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+            this.filterColumns = hasColumnArray ? null
+                    : newModifiedColumnSet(filterColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
         }
 
         @Override
@@ -2885,7 +3123,8 @@ public class QueryTable extends BaseTable {
             }
 
             if (result.refilterRequested()) {
-                result.doRefilter(recorder.getAdded(), recorder.getRemoved(), recorder.getModified(), recorder.getShifted(),
+                result.doRefilter(recorder.getAdded(), recorder.getRemoved(), recorder.getModified(),
+                        recorder.getShifted(),
                         sourceModColumns);
                 return;
             }
@@ -2944,7 +3183,7 @@ public class QueryTable extends BaseTable {
         private final FilteredTable result;
 
         private StaticWhereListener(Collection<NotificationQueue.Dependency> dependencies, FilteredTable result) {
-            super(Collections.emptyList(), dependencies,"where(" + Arrays.toString(result.filters) + ")", result);
+            super(Collections.emptyList(), dependencies, "where(" + Arrays.toString(result.filters) + ")", result);
             this.result = result;
         }
 
@@ -2970,8 +3209,8 @@ public class QueryTable extends BaseTable {
 
     @Override
     public <R> R apply(Function.Unary<R, Table> function) {
-        if(function instanceof MemoizedOperationKey.Provider) {
-            return memoizeResult(((MemoizedOperationKey.Provider)function).getMemoKey(), () -> super.apply(function));
+        if (function instanceof MemoizedOperationKey.Provider) {
+            return memoizeResult(((MemoizedOperationKey.Provider) function).getMemoKey(), () -> super.apply(function));
         }
 
         return super.apply(function);

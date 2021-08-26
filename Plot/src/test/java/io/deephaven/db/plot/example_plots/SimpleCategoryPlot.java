@@ -19,7 +19,7 @@ public class SimpleCategoryPlot {
         Figure axs = cht.newAxes()
                 .xLabel("X")
                 .yLabel("Y")
-                .piePlot("Test1", x1, new int[]{2,2,3,2}).piePercentLabelFormat("0.00")
+                .piePlot("Test1", x1, new int[] {2, 2, 3, 2}).piePercentLabelFormat("0.00")
                 .axis(0).axisLabelFont("Courier", "BOLD_ITALIC", 25);
 
         ExamplePlotUtils.display(axs);

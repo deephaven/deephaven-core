@@ -12,8 +12,7 @@ import java.util.Comparator;
  * Enum value for ascending vs. descending sorts.
  */
 public enum SortingOrder {
-    Ascending(1, getAscendingComparable()),
-    Descending(-1, getDescendingComparator());
+    Ascending(1, getAscendingComparable()), Descending(-1, getDescendingComparator());
 
     public final int direction;
     private final Comparator<Comparable> comparator;
@@ -49,7 +48,7 @@ public enum SortingOrder {
             } else if (o2 == null) {
                 return 1;
             }
-            //noinspection unchecked
+            // noinspection unchecked
             return o1.compareTo(o2);
         };
     }
@@ -64,7 +63,7 @@ public enum SortingOrder {
             } else if (o2 == null) {
                 return -1;
             }
-            //noinspection unchecked
+            // noinspection unchecked
             return -o1.compareTo(o2);
         };
     }

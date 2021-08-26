@@ -32,14 +32,14 @@ public interface Selectable extends Serializable {
         final int ix = x.indexOf('=');
         if (ix < 0 || ix + 1 == x.length()) {
             throw new IllegalArgumentException(String.format(
-                "Unable to parse formula '%s', expected form '<newColumn>=<expression>'", x));
+                    "Unable to parse formula '%s', expected form '<newColumn>=<expression>'", x));
         }
         if (x.charAt(ix + 1) == '=') {
             throw new IllegalArgumentException(String.format(
-                "Unable to parse formula '%s', expected form '<newColumn>=<expression>'", x));
+                    "Unable to parse formula '%s', expected form '<newColumn>=<expression>'", x));
         }
         return SelectableImpl.of(ColumnName.parse(x.substring(0, ix)),
-            RawString.of(x.substring(ix + 1)));
+                RawString.of(x.substring(ix + 1)));
     }
 
     static List<Selectable> from(String... values) {

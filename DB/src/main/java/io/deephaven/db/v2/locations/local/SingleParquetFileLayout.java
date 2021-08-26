@@ -27,6 +27,7 @@ public final class SingleParquetFileLayout implements TableLocationKeyFinder<Par
 
     @Override
     public void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
-        PrivilegedFileAccessUtil.doFilesystemAction(() -> locationKeyObserver.accept(new ParquetTableLocationKey(parquetFile, 0, null)));
+        PrivilegedFileAccessUtil.doFilesystemAction(
+                () -> locationKeyObserver.accept(new ParquetTableLocationKey(parquetFile, 0, null)));
     }
 }

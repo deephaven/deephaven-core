@@ -17,14 +17,15 @@ import static io.deephaven.util.QueryConstants.*;
 /**
  * Base {@link ColumnSource} implementation for aggregation result columns.
  */
-abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMPONENT_TYPE> extends AbstractColumnSource<DB_ARRAY_TYPE> implements AggregateColumnSource<DB_ARRAY_TYPE, COMPONENT_TYPE> {
+abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMPONENT_TYPE>
+        extends AbstractColumnSource<DB_ARRAY_TYPE> implements AggregateColumnSource<DB_ARRAY_TYPE, COMPONENT_TYPE> {
 
     final ColumnSource<COMPONENT_TYPE> aggregatedSource;
     final ColumnSource<Index> indexSource;
 
     BaseAggregateColumnSource(@NotNull final Class<DB_ARRAY_TYPE> dbArrayType,
-                              @NotNull final ColumnSource<COMPONENT_TYPE> aggregatedSource,
-                              @NotNull final ColumnSource<Index> indexSource) {
+            @NotNull final ColumnSource<COMPONENT_TYPE> aggregatedSource,
+            @NotNull final ColumnSource<Index> indexSource) {
         super(dbArrayType, aggregatedSource.getType());
         this.aggregatedSource = aggregatedSource;
         this.indexSource = indexSource;
@@ -36,17 +37,17 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
     }
 
     @Override
-    public final void startTrackingPrevValues() {
-    }
+    public final void startTrackingPrevValues() {}
 
     static final class AggregateFillContext implements FillContext {
 
         final GetContext indexGetContext;
 
-        private AggregateFillContext(@NotNull final ColumnSource<Index> indexSource, final int chunkCapacity, final SharedContext sharedContext) {
+        private AggregateFillContext(@NotNull final ColumnSource<Index> indexSource, final int chunkCapacity,
+                final SharedContext sharedContext) {
             // TODO: Implement a proper shareable context to use with other instances that share an index source.
-            //       Current usage is "safe" because index sources are only exposed through this wrapper, and all
-            //       sources at a given level will pass through their ordered keys to the index source unchanged.
+            // Current usage is "safe" because index sources are only exposed through this wrapper, and all
+            // sources at a given level will pass through their ordered keys to the index source unchanged.
             indexGetContext = indexSource.makeGetContext(chunkCapacity, sharedContext);
         }
 

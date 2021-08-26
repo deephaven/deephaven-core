@@ -45,19 +45,19 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
     @Override
     public void setPattern(String pattern) {
         // check for validity
-        if(pattern != null){
+        if (pattern != null) {
             DateTimeFormatter.ofPattern(pattern);
         }
 
         this.pattern = pattern;
-        if(instance != null) {
+        if (instance != null) {
             instance.updateFormatter(pattern);
         }
     }
 
     @Override
     public NumberFormat getNumberFormatter() {
-        if(instance == null) {
+        if (instance == null) {
             instance = new NanosFormat();
         }
         return instance;
@@ -77,7 +77,7 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
         public void updateTimeZone(final DBTimeZone tz) {
             NanosAxisFormat.this.tz = tz;
 
-            if(formatter != null) {
+            if (formatter != null) {
                 formatter = formatter.withZone(tz.getTimeZone().toTimeZone().toZoneId());
             }
         }

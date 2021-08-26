@@ -36,7 +36,7 @@ public class InMemoryBlockTableWriter {
     }
 
     private void initialize() throws IOException {
-        currentTable = new InMemoryBlockTable(definition, baseBlockSize); //, initialCapacity);
+        currentTable = new InMemoryBlockTable(definition, baseBlockSize); // , initialCapacity);
     }
 
     public void cycleBlock(boolean end) throws IOException {
@@ -51,7 +51,7 @@ public class InMemoryBlockTableWriter {
         if (currentTable.size() >= baseBlockSize) {
             logger.info().append("Cycle Block: ").append(info).append(tableBlocks.size()).endl();
             tableBlocks.add(currentTable.getTable());
-            currentTable = new InMemoryBlockTable(definition, baseBlockSize); //, initialCapacity);
+            currentTable = new InMemoryBlockTable(definition, baseBlockSize); // , initialCapacity);
         }
         if (end) {
             logger.info().append("complete block").endl();
@@ -72,8 +72,8 @@ public class InMemoryBlockTableWriter {
 
         public void setValue(String columname, Object value) {
             try {
-                //noinspection unchecked
-                ((WritableSource)_imt.getColumnSource(columname)).set(index, value);
+                // noinspection unchecked
+                ((WritableSource) _imt.getColumnSource(columname)).set(index, value);
             } catch (ClassCastException e) {
                 logger.error().append("Working on column: ").append(columname).endl();
                 throw e;

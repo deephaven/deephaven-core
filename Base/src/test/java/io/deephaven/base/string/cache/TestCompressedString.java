@@ -141,7 +141,8 @@ public class TestCompressedString extends TestCase {
         try {
             cs().charAt(0);
             fail("Expected exception");
-        } catch (IndexOutOfBoundsException ignored) {}
+        } catch (IndexOutOfBoundsException ignored) {
+        }
 
         assertEquals(cs("a").charAt(0), 'a');
         assertEquals(cs("abc").charAt(0), 'a');
@@ -158,7 +159,7 @@ public class TestCompressedString extends TestCase {
         assertEquals(cs("abc").codePointBefore(2), "abc".codePointBefore(2));
         assertEquals(cs("abc").codePointBefore(3), "abc".codePointBefore(3));
 
-        assertEquals(cs("a").codePointCount(0, 1), "a".codePointCount(0 ,1));
+        assertEquals(cs("a").codePointCount(0, 1), "a".codePointCount(0, 1));
         assertEquals(cs("abc").codePointCount(0, 3), "abc".codePointCount(0, 3));
         assertEquals(cs("abc").codePointCount(0, 2), "abc".codePointCount(0, 2));
         assertEquals(cs("abc").codePointCount(1, 2), "abc".codePointCount(1, 2));

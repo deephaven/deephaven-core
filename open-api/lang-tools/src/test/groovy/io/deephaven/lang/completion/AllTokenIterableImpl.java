@@ -23,6 +23,7 @@ public class AllTokenIterableImpl implements MappedIterable<Token> {
         return new Iterator<Token>() {
             Token next, cur = next = start;
             Token mark;
+
             @Override
             public boolean hasNext() {
                 computeNext();
@@ -47,10 +48,13 @@ public class AllTokenIterableImpl implements MappedIterable<Token> {
                             // processing a chain of specialTokens...
                             if (next.specialToken != null) {
                                 // ok, now we process specialToken.
-                                // specialToken is weird.  When you see one, if you want to iterate them in lexical order,
-                                // you must follow the specialToken links until they dry up, then follow the `next` links
+                                // specialToken is weird. When you see one, if you want to iterate them in lexical
+                                // order,
+                                // you must follow the specialToken links until they dry up, then follow the `next`
+                                // links
                                 // until they are null.
-                                // We mark the node where we start, then skip next ahead to the end of specialToken chain.
+                                // We mark the node where we start, then skip next ahead to the end of specialToken
+                                // chain.
                                 mark = next;
                                 while (next.specialToken != null) {
                                     next = next.specialToken;

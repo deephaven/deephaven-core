@@ -6,9 +6,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 /**
- * Normalizes expressions, with the goal of removing as many as possible and simplifying the expression tree.
- * This classes passes through all operations to NormalizeUtil *except* the Not operation, which it rewrites by using
- * the NormalizeInvertedFilters visitor defined later in this file.
+ * Normalizes expressions, with the goal of removing as many as possible and simplifying the expression tree. This
+ * classes passes through all operations to NormalizeUtil *except* the Not operation, which it rewrites by using the
+ * NormalizeInvertedFilters visitor defined later in this file.
  */
 public class NormalizeNots extends AbstractNormalizeFilters {
     private static final NormalizeNots INSTANCE = new NormalizeNots();
@@ -17,8 +17,7 @@ public class NormalizeNots extends AbstractNormalizeFilters {
         return FilterVisitor.accept(filter, NormalizeNots.INSTANCE);
     }
 
-    private NormalizeNots() {
-    }
+    private NormalizeNots() {}
 
     @Override
     public Condition onNot(Condition filter) {
@@ -26,23 +25,21 @@ public class NormalizeNots extends AbstractNormalizeFilters {
     }
 
     /**
-     * Normalizes *and inverts* expressions, with the goal of removing as many as possible and simplifying the expression
-     * tree. This class rewrites and, or, comparisons, and matches, and nots:
+     * Normalizes *and inverts* expressions, with the goal of removing as many as possible and simplifying the
+     * expression tree. This class rewrites and, or, comparisons, and matches, and nots:
      * <ul>
-     *     <li>Distribute NOTs to children of AND/OR expressions, via DeMorgan's law.</li>
-     *     <li>{@code NOT(NOT(A))} is replaced with A.</li>
-     *     <li>Replace any operation with its opposite, if any. For example, {@code NOT(A >= B)} is replaced with
-     *     {@code A < B}, and likewise for all the other inequality operators, {@code EQ}, and {@code IN}.
-     *     </li>
-     *     <li>Other operations {@code IS_NULL}, {@code INVOKE}, {@code SEARCH}, {@code CONTAINS} are left as-is, wrapped
-     *     wrapped with a {@code NOT}.</li>
+     * <li>Distribute NOTs to children of AND/OR expressions, via DeMorgan's law.</li>
+     * <li>{@code NOT(NOT(A))} is replaced with A.</li>
+     * <li>Replace any operation with its opposite, if any. For example, {@code NOT(A >= B)} is replaced with
+     * {@code A < B}, and likewise for all the other inequality operators, {@code EQ}, and {@code IN}.</li>
+     * <li>Other operations {@code IS_NULL}, {@code INVOKE}, {@code SEARCH}, {@code CONTAINS} are left as-is, wrapped
+     * wrapped with a {@code NOT}.</li>
      * </ul>
      */
     static class NormalizeInvertedFilters implements FilterVisitor<Condition> {
         private static final NormalizeInvertedFilters INSTANCE = new NormalizeInvertedFilters();
 
-        private NormalizeInvertedFilters() {
-        }
+        private NormalizeInvertedFilters() {}
 
         @Override
         public Condition onAnd(List<Condition> filtersList) {
@@ -64,7 +61,8 @@ public class NormalizeNots extends AbstractNormalizeFilters {
         }
 
         @Override
-        public Condition onComparison(CompareCondition.CompareOperation operation, CaseSensitivity caseSensitivity, Value lhs, Value rhs) {
+        public Condition onComparison(CompareCondition.CompareOperation operation, CaseSensitivity caseSensitivity,
+                Value lhs, Value rhs) {
             // Invert the condition
             switch (operation) {
                 case LESS_THAN:
@@ -93,7 +91,8 @@ public class NormalizeNots extends AbstractNormalizeFilters {
         }
 
         @Override
-        public Condition onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity, MatchType matchType) {
+        public Condition onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity,
+                MatchType matchType) {
             return NormalizeFilterUtil.doIn(target, candidatesList, caseSensitivity, invertMatchType(matchType));
         }
 
@@ -114,12 +113,14 @@ public class NormalizeNots extends AbstractNormalizeFilters {
         }
 
         @Override
-        public Condition onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity, MatchType matchType) {
+        public Condition onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity,
+                MatchType matchType) {
             return NormalizeFilterUtil.doContains(reference, searchString, caseSensitivity, invertMatchType(matchType));
         }
 
         @Override
-        public Condition onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity, MatchType matchType) {
+        public Condition onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity,
+                MatchType matchType) {
             return NormalizeFilterUtil.doMatches(reference, regex, caseSensitivity, invertMatchType(matchType));
         }
 

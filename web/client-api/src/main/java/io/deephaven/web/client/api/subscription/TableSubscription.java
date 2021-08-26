@@ -12,12 +12,11 @@ import jsinterop.annotations.JsProperty;
 
 /**
  * Represents a non-viewport subscription to a table, and all data currently known to be present in the subscribed
- * columns. This class handles incoming snapshots and deltas, and fires events to consumers to notify of data
- * changes.
+ * columns. This class handles incoming snapshots and deltas, and fires events to consumers to notify of data changes.
  *
- * Unlike {@link TableViewportSubscription}, the "original" table does not have a reference to this instance, only
- * the "private" table instance does, since the original cannot modify the subscription, and the private instance
- * must forward data to it.
+ * Unlike {@link TableViewportSubscription}, the "original" table does not have a reference to this instance, only the
+ * "private" table instance does, since the original cannot modify the subscription, and the private instance must
+ * forward data to it.
  */
 public class TableSubscription extends HasEventHandling {
 
@@ -46,23 +45,25 @@ public class TableSubscription extends HasEventHandling {
         }));
 
         this.columns = columns;
-        Integer rowStyleColumn = existingTable.state().getRowFormatColumn() == null ? null : existingTable.state().getRowFormatColumn().getIndex();
+        Integer rowStyleColumn = existingTable.state().getRowFormatColumn() == null ? null
+                : existingTable.state().getRowFormatColumn().getIndex();
         this.data = new SubscriptionTableData(columns, rowStyleColumn, this);
 
     }
 
-//    public void changeSubscription(JsArray<Column> columns) {
-//        copy.then(t ->{
-//            t.internalSubscribe(columns, this);
-//            return Promise.resolve(t);
-//        });
-//        this.columns = columns;
-//    }
+    // public void changeSubscription(JsArray<Column> columns) {
+    // copy.then(t ->{
+    // t.internalSubscribe(columns, this);
+    // return Promise.resolve(t);
+    // });
+    // this.columns = columns;
+    // }
 
 
     public void handleSnapshot(TableSnapshot snapshot) {
         data.handleSnapshot(snapshot);
     }
+
     public void handleDelta(DeltaUpdates delta) {
         data.handleDelta(delta);
     }

@@ -22,7 +22,7 @@ public abstract class GenericArray<T> implements Array<T>, Iterable<T> {
     }
 
     public static <T> Builder<T> builder(GenericType<T> type) {
-        return ImmutableGenericArray.<T>builder().type(type);
+        return ImmutableGenericArray.<T>builder().componentType(type);
     }
 
     public static <T> GenericArray<T> empty(GenericType<T> type) {
@@ -37,7 +37,7 @@ public abstract class GenericArray<T> implements Array<T>, Iterable<T> {
         return builder(type).add(data).build();
     }
 
-    public abstract GenericType<T> type();
+    public abstract GenericType<T> componentType();
 
     @AllowNulls
     public abstract List<T> values();
@@ -58,16 +58,16 @@ public abstract class GenericArray<T> implements Array<T>, Iterable<T> {
     }
 
     public final <O> GenericArray<O> cast(GenericType<O> type) {
-        if (!type().equals(type)) {
+        if (!componentType().equals(type)) {
             throw new IllegalArgumentException(
-                String.format("Can't cast GenericArray with type %s to %s", type(), type));
+                    String.format("Can't cast GenericArray with type %s to %s", componentType(), type));
         }
         // noinspection unchecked
         return (GenericArray<O>) this;
     }
 
     public abstract static class Builder<T>
-        implements ArrayBuilder<T, GenericArray<T>, Builder<T>> {
+            implements ArrayBuilder<T, GenericArray<T>, Builder<T>> {
 
         public abstract Builder<T> addValues(T item);
 
@@ -75,7 +75,7 @@ public abstract class GenericArray<T> implements Array<T>, Iterable<T> {
 
         public abstract Builder<T> addAllValues(Iterable<? extends T> elements);
 
-        public abstract Builder<T> type(GenericType<T> type);
+        public abstract Builder<T> componentType(GenericType<T> componentType);
 
         @Override
         public abstract GenericArray<T> build();

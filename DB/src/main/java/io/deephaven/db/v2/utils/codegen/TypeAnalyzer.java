@@ -4,9 +4,9 @@ import io.deephaven.db.tables.lang.DBLanguageFunctionUtil;
 import io.deephaven.util.type.TypeUtils;
 
 /**
- * When {@code type} is either a primitive type or a boxed type, {@code dbPrimitiveType} is the type used by
- * the DB to represent it -- that is, Boolean for either boolean or Boolean results, but the primitive version of
- * all other primitive/boxed types. For all other types (e.g. misc Objects), {@code dbPrimitiveType} is null.
+ * When {@code type} is either a primitive type or a boxed type, {@code dbPrimitiveType} is the type used by the DB to
+ * represent it -- that is, Boolean for either boolean or Boolean results, but the primitive version of all other
+ * primitive/boxed types. For all other types (e.g. misc Objects), {@code dbPrimitiveType} is null.
  **/
 public class TypeAnalyzer {
     public static TypeAnalyzer create(Class type) {
@@ -61,9 +61,9 @@ public class TypeAnalyzer {
     public final String asWritableChunkMethodName;
 
     private TypeAnalyzer(final Class type, final Class dbPrimitiveType, final String typeString,
-                         final String chunkTypeString,
-                         final String readChunkVariableType, final String writableChunkVariableType,
-                         final String asReadChunkMethodName, final String asWritableChunkMethodName) {
+            final String chunkTypeString,
+            final String readChunkVariableType, final String writableChunkVariableType,
+            final String asReadChunkMethodName, final String asWritableChunkMethodName) {
         this.type = type;
         this.dbPrimitiveType = dbPrimitiveType;
         this.typeString = typeString;
@@ -81,14 +81,15 @@ public class TypeAnalyzer {
      * @param formulaString The formula to potentially wrap with a cast function
      */
     public String wrapWithCastIfNecessary(String formulaString) {
-        if (type.isPrimitive()                // Implies dbPrimitiveType.equals(type); no risk of NPE
+        if (type.isPrimitive() // Implies dbPrimitiveType.equals(type); no risk of NPE
                 || dbPrimitiveType == Boolean.class // No risk of NPE
-                || dbPrimitiveType == null)         // Return type is not a primitive or boxed type
+                || dbPrimitiveType == null) // Return type is not a primitive or boxed type
         {
-            return formulaString;   // No need to cast
+            return formulaString; // No need to cast
         }
 
         // Otherwise, perform perform a null-safe unboxing cast
-        return DBLanguageFunctionUtil.class.getCanonicalName() + '.' + dbPrimitiveType.getName() + "Cast(" + formulaString + ')';
+        return DBLanguageFunctionUtil.class.getCanonicalName() + '.' + dbPrimitiveType.getName() + "Cast("
+                + formulaString + ')';
     }
 }

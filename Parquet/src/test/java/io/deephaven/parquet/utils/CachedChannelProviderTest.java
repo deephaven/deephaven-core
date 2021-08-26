@@ -37,7 +37,7 @@ public class CachedChannelProviderTest {
         }
         Assert.assertEquals(closed.size(), 900);
         for (int ii = 0; ii < 900; ++ii) {
-            Assert.assertTrue(closed.get(ii).endsWith("r" + ii/10));
+            Assert.assertTrue(closed.get(ii).endsWith("r" + ii / 10));
         }
     }
 
@@ -46,7 +46,8 @@ public class CachedChannelProviderTest {
         SeekableChannelsProvider wrappedProvider = new TestChannelProvider();
         CachedChannelProvider cachedChannelProvider = new CachedChannelProvider(wrappedProvider, 100);
         for (int i = 0; i < 1000; i++) {
-            SeekableByteChannel rc = ((i / 100) % 2 == 0 ? cachedChannelProvider.getReadChannel("r" + i) : cachedChannelProvider.getWriteChannel("w" + i,false));
+            SeekableByteChannel rc = ((i / 100) % 2 == 0 ? cachedChannelProvider.getReadChannel("r" + i)
+                    : cachedChannelProvider.getWriteChannel("w" + i, false));
             rc.close();
         }
         Assert.assertEquals(closed.size(), 900);

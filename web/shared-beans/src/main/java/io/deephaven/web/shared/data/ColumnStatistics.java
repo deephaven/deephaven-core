@@ -8,10 +8,7 @@ import java.util.Arrays;
  */
 public class ColumnStatistics implements Serializable {
     public enum ColumnType {
-        NUMERIC,
-        COMPARABLE,
-        DATETIME,
-        NON_COMPARABLE,
+        NUMERIC, COMPARABLE, DATETIME, NON_COMPARABLE,
     }
 
     private ColumnType type;

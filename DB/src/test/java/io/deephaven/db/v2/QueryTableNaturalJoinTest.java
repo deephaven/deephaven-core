@@ -41,18 +41,20 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Random random = new Random(0);
 
-        final String [] leftJoinKey = new String[1024];
-        final int [] leftSentinel = new int[1024];
-        final String [] rightJoinKey = new String[1024];
-        final int [] rightSentinel = new int[1024];
+        final String[] leftJoinKey = new String[1024];
+        final int[] leftSentinel = new int[1024];
+        final String[] rightJoinKey = new String[1024];
+        final int[] rightSentinel = new int[1024];
 
         int offset = 0;
         fillRehashKeys(offset, leftJoinKey, leftSentinel, rightJoinKey, rightSentinel);
 
-        final QueryTable leftTable = TstUtils.testRefreshingTable(stringCol("JoinKey", leftJoinKey), intCol("LeftSentinel", leftSentinel));
-        final QueryTable rightTable = TstUtils.testRefreshingTable(stringCol("JoinKey", rightJoinKey), intCol("RightSentinel", rightSentinel));
+        final QueryTable leftTable =
+                TstUtils.testRefreshingTable(stringCol("JoinKey", leftJoinKey), intCol("LeftSentinel", leftSentinel));
+        final QueryTable rightTable = TstUtils.testRefreshingTable(stringCol("JoinKey", rightJoinKey),
+                intCol("RightSentinel", rightSentinel));
 
-        final EvalNugget[] en = new EvalNugget[]{
+        final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
                         return leftTable.naturalJoin(rightTable, "JoinKey", "RJK=JoinKey,RightSentinel");
@@ -68,7 +70,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
 
         for (int step = 0; step < 40; step++) {
-            System.out.println("Step = " + step + ", leftSize=" + leftTable.size() + ", rightSize=" + rightTable.size());
+            System.out
+                    .println("Step = " + step + ", leftSize=" + leftTable.size() + ", rightSize=" + rightTable.size());
 
             offset += leftJoinKey.length;
             fillRehashKeys(offset, leftJoinKey, leftSentinel, rightJoinKey, rightSentinel);
@@ -76,7 +79,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             final int foffset = offset;
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final Index addIndex = Index.FACTORY.getIndexByRange(foffset, foffset + leftJoinKey.length - 1);
-                addToTable(leftTable, addIndex, stringCol("JoinKey", leftJoinKey), intCol("LeftSentinel", leftSentinel));
+                addToTable(leftTable, addIndex, stringCol("JoinKey", leftJoinKey),
+                        intCol("LeftSentinel", leftSentinel));
                 leftTable.notifyListeners(addIndex, i(), i());
 
 
@@ -92,12 +96,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 }
 
                 final Index modIndex = modIndexBuilder.getIndex();
-                final String [] rightModifications = new String[modIndex.intSize()];
-                final int [] rightModifySentinel = new int[modIndex.intSize()];
+                final String[] rightModifications = new String[modIndex.intSize()];
+                final int[] rightModifySentinel = new int[modIndex.intSize()];
 
                 final MutableInt position = new MutableInt();
                 modIndex.forAllLongs((long ll) -> {
-                    final int ii = (int)ll;
+                    final int ii = (int) ll;
                     if (ii % 2 == 0) {
                         // make something that exists go away
                         rightModifications[position.intValue()] = Integer.toString(ii * 10 + 2);
@@ -109,15 +113,18 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                     position.increment();
                 });
 
-                addToTable(rightTable, addIndex, stringCol("JoinKey", rightJoinKey), intCol("RightSentinel", rightSentinel));
-                addToTable(rightTable, modIndex, stringCol("JoinKey", rightModifications), intCol("RightSentinel", rightModifySentinel));
+                addToTable(rightTable, addIndex, stringCol("JoinKey", rightJoinKey),
+                        intCol("RightSentinel", rightSentinel));
+                addToTable(rightTable, modIndex, stringCol("JoinKey", rightModifications),
+                        intCol("RightSentinel", rightModifySentinel));
                 rightTable.notifyListeners(addIndex, i(), modIndex);
             });
             TstUtils.validate(en);
         }
     }
 
-    private void fillRehashKeys(int offset, String[] leftJoinKey, int[] leftSentinel, String[] rightJoinKey, int[] rightSentinel) {
+    private void fillRehashKeys(int offset, String[] leftJoinKey, int[] leftSentinel, String[] rightJoinKey,
+            int[] rightSentinel) {
         for (int ii = 0; ii < leftJoinKey.length; ii++) {
             final int iio = ii + offset;
             leftJoinKey[ii] = Integer.toString(iio * 10);
@@ -126,7 +133,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             if (iio % 2 == 0) {
                 rightJoinKey[ii] = Integer.toString(iio * 10);
             } else {
-                rightJoinKey[ii] = Integer.toString((iio/4 * 10) + 1);
+                rightJoinKey[ii] = Integer.toString((iio / 4 * 10) + 1);
             }
             rightSentinel[ii] = iio * 100 + 25;
         }
@@ -141,8 +148,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             testNaturalJoinIncremental(false, false, sz, sz, joinIncrement, 0, maxSteps);
         }
 
-        final int[] leftSizes = new int[]{10, 50, 100};
-        final int[] rightSizes = new int[]{10, 50, 100};
+        final int[] leftSizes = new int[] {10, 50, 100};
+        final int[] rightSizes = new int[] {10, 50, 100};
         for (long seed = 0; seed < 5; seed++) {
             for (int leftSize : leftSizes) {
                 for (int rightSize : rightSizes) {
@@ -158,13 +165,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         setExpectError(false);
 
         final int maxSteps = 5;
-        final int[] leftSizes = new int[]{10000};
-        final int[] rightSizes = new int[]{10000};
+        final int[] leftSizes = new int[] {10000};
+        final int[] rightSizes = new int[] {10000};
         for (long seed = 0; seed < 5; seed++) {
             for (int leftSize : leftSizes) {
                 for (int rightSize : rightSizes) {
-                    for (JoinIncrement joinIncrement : new JoinIncrement[]{leftRightConcurrentStepShift}) {
-                        testNaturalJoinIncremental(false, false, leftSize, rightSize, joinIncrement, seed, maxSteps, QueryTableJoinTest.HIGH_LOAD_FACTOR_CONTROL);
+                    for (JoinIncrement joinIncrement : new JoinIncrement[] {leftRightConcurrentStepShift}) {
+                        testNaturalJoinIncremental(false, false, leftSize, rightSize, joinIncrement, seed, maxSteps,
+                                QueryTableJoinTest.HIGH_LOAD_FACTOR_CONTROL);
                     }
                 }
             }
@@ -172,13 +180,13 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     public void testNaturalJoinLeftIncrementalRightStatic() {
-        for (JoinIncrement joinIncrement : new JoinIncrement[]{leftStepShift, leftStep}) {
+        for (JoinIncrement joinIncrement : new JoinIncrement[] {leftStepShift, leftStep}) {
             final int sz = 5;
             final int maxSteps = 20;
             testNaturalJoinIncremental(false, true, sz, sz, joinIncrement, 0, maxSteps);
 
-            final int[] leftSizes = new int[]{50, 100};
-            final int[] rightSizes = new int[]{50, 100};
+            final int[] leftSizes = new int[] {50, 100};
+            final int[] rightSizes = new int[] {50, 100};
             for (long seed = 0; seed < 1; seed++) {
                 for (int leftSize : leftSizes) {
                     for (int rightSize : rightSizes) {
@@ -190,13 +198,13 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     public void testNaturalJoinLeftStaticRightIncremental() {
-        for (JoinIncrement joinIncrement : new JoinIncrement[]{rightStepShift, rightStep}) {
+        for (JoinIncrement joinIncrement : new JoinIncrement[] {rightStepShift, rightStep}) {
             final int sz = 5;
             final int maxSteps = 20;
             testNaturalJoinIncremental(true, false, sz, sz, joinIncrement, 0, maxSteps);
 
-            final int[] leftSizes = new int[]{50, 100};
-            final int[] rightSizes = new int[]{50, 100};
+            final int[] leftSizes = new int[] {50, 100};
+            final int[] rightSizes = new int[] {50, 100};
             for (long seed = 0; seed < 5; seed++) {
                 for (int leftSize : leftSizes) {
                     for (int rightSize : rightSizes) {
@@ -207,57 +215,76 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
-    private void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize, JoinIncrement joinIncrement, long seed, long maxSteps) {
-        testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, joinIncrement, seed, new MutableInt((int)maxSteps));
+    private void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize,
+            JoinIncrement joinIncrement, long seed, long maxSteps) {
+        testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, joinIncrement, seed,
+                new MutableInt((int) maxSteps));
     }
 
-    private void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize, JoinIncrement joinIncrement, long seed, MutableInt numSteps) {
-        testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, joinIncrement, seed, numSteps, new JoinControl());
+    private void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize,
+            JoinIncrement joinIncrement, long seed, MutableInt numSteps) {
+        testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, joinIncrement, seed, numSteps,
+                new JoinControl());
     }
 
-    private static void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize, JoinIncrement joinIncrement, long seed, long maxSteps, JoinControl control) {
-        testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, joinIncrement, seed, new MutableInt((int)maxSteps), control);
+    private static void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize,
+            JoinIncrement joinIncrement, long seed, long maxSteps, JoinControl control) {
+        testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, joinIncrement, seed,
+                new MutableInt((int) maxSteps), control);
     }
 
-    private static void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize, JoinIncrement joinIncrement, long seed, MutableInt numSteps, JoinControl control) {
+    private static void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize,
+            JoinIncrement joinIncrement, long seed, MutableInt numSteps, JoinControl control) {
         final Random random = new Random(seed);
         final int maxSteps = numSteps.intValue();
         final Logger log = new StreamLoggerImpl();
 
         final TstUtils.ColumnInfo[] rightColumnInfo;
-        final TstUtils.UniqueIntGenerator rightIntGenerator = new TstUtils.UniqueIntGenerator(1, rightSize * (rightStatic ? 2 : 4));
-        final TstUtils.UniqueIntGenerator rightInt2Generator = new TstUtils.UniqueIntGenerator(1, rightSize * (rightStatic ? 2 : 4));
+        final TstUtils.UniqueIntGenerator rightIntGenerator =
+                new TstUtils.UniqueIntGenerator(1, rightSize * (rightStatic ? 2 : 4));
+        final TstUtils.UniqueIntGenerator rightInt2Generator =
+                new TstUtils.UniqueIntGenerator(1, rightSize * (rightStatic ? 2 : 4));
 
         final TstUtils.IntGenerator duplicateGenerator = new TstUtils.IntGenerator(100000, 100010);
 
-        final List<TstUtils.Generator<Integer, Integer>> generatorList = Arrays.asList(rightIntGenerator, duplicateGenerator);
-        final TstUtils.Generator<Integer, Integer> compositeGenerator = new TstUtils.CompositeGenerator<>(generatorList, 0.9);
+        final List<TstUtils.Generator<Integer, Integer>> generatorList =
+                Arrays.asList(rightIntGenerator, duplicateGenerator);
+        final TstUtils.Generator<Integer, Integer> compositeGenerator =
+                new TstUtils.CompositeGenerator<>(generatorList, 0.9);
 
-        final QueryTable rightTable = getTable(!rightStatic, rightSize, random, rightColumnInfo = initColumnInfos(new String[]{"I1", "C1", "C2"},
-                compositeGenerator,
-                new SetGenerator<>("a", "b"),
-                rightInt2Generator));
+        final QueryTable rightTable = getTable(!rightStatic, rightSize, random,
+                rightColumnInfo = initColumnInfos(new String[] {"I1", "C1", "C2"},
+                        compositeGenerator,
+                        new SetGenerator<>("a", "b"),
+                        rightInt2Generator));
 
         final ColumnInfo[] leftColumnInfo;
-        final QueryTable leftTable = getTable(!leftStatic, leftSize, random, leftColumnInfo = initColumnInfos(new String[]{"I1", "C1", "C2"},
-                new FromUniqueIntGenerator(rightIntGenerator, new IntGenerator(20, 10000), 0.75),
-                new SetGenerator<>("a", "b", "c"),
-                new FromUniqueIntGenerator(rightInt2Generator, new IntGenerator(20, 10000), 0.75)));
+        final QueryTable leftTable = getTable(!leftStatic, leftSize, random,
+                leftColumnInfo = initColumnInfos(new String[] {"I1", "C1", "C2"},
+                        new FromUniqueIntGenerator(rightIntGenerator, new IntGenerator(20, 10000), 0.75),
+                        new SetGenerator<>("a", "b", "c"),
+                        new FromUniqueIntGenerator(rightInt2Generator, new IntGenerator(20, 10000), 0.75)));
 
-        final EvalNugget[] en = new EvalNugget[]{
+        final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
-                        return NaturalJoinHelper.naturalJoin(leftTable, rightTable, MatchPairFactory.getExpressions("I1"), MatchPairFactory.getExpressions("LI1=I1","LC1=C1","LC2=C2"), false, control);
+                        return NaturalJoinHelper.naturalJoin(leftTable, rightTable,
+                                MatchPairFactory.getExpressions("I1"),
+                                MatchPairFactory.getExpressions("LI1=I1", "LC1=C1", "LC2=C2"), false, control);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return NaturalJoinHelper.naturalJoin(leftTable, rightTable, MatchPairFactory.getExpressions("C1","I1"), MatchPairFactory.getExpressions("LC2=C2"), false, control);
+                        return NaturalJoinHelper.naturalJoin(leftTable, rightTable,
+                                MatchPairFactory.getExpressions("C1", "I1"), MatchPairFactory.getExpressions("LC2=C2"),
+                                false, control);
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return NaturalJoinHelper.naturalJoin(leftTable, (QueryTable)rightTable.update("Exists=true"), MatchPairFactory.getExpressions("C1","C2","I1"), MatchPairFactory.getExpressions("Exists"), false, control);
+                        return NaturalJoinHelper.naturalJoin(leftTable, (QueryTable) rightTable.update("Exists=true"),
+                                MatchPairFactory.getExpressions("C1", "C2", "I1"),
+                                MatchPairFactory.getExpressions("Exists"), false, control);
                     }
                 },
         };
@@ -268,18 +295,20 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             }
         }
 
-        final int leftStepSize = (int)Math.ceil(Math.sqrt(leftSize));
-        final int rightStepSize = (int)Math.ceil(Math.sqrt(rightSize));
+        final int leftStepSize = (int) Math.ceil(Math.sqrt(leftSize));
+        final int rightStepSize = (int) Math.ceil(Math.sqrt(rightSize));
 
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
             if (printTableUpdates) {
-                System.out.println("Step = " + numSteps.intValue() + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ", seed = " + seed + ", joinIncrement=" + joinIncrement);
+                System.out.println("Step = " + numSteps.intValue() + ", leftSize=" + leftSize + ", rightSize="
+                        + rightSize + ", seed = " + seed + ", joinIncrement=" + joinIncrement);
                 System.out.println("Left Table:" + leftTable.size());
                 showWithIndex(leftTable, 100);
                 System.out.println("Right Table:" + rightTable.size());
                 showWithIndex(rightTable, 100);
             }
-            joinIncrement.step(leftStepSize, rightStepSize, leftTable, rightTable, leftColumnInfo, rightColumnInfo, en, random);
+            joinIncrement.step(leftStepSize, rightStepSize, leftTable, rightTable, leftColumnInfo, rightColumnInfo, en,
+                    random);
         }
     }
 
@@ -292,13 +321,13 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     private void testNaturalJoinMixedGroupingLeftStatic(int leftSize, int rightSize, long seed, int steps) {
         final Random random = new Random(seed);
 
-        final QueryTable leftTable = getTable(false, leftSize, random, initColumnInfos(new String[]{"I1", "C1", "C2"},
-                new ColumnInfo.ColAttributes[]{ColumnInfo.ColAttributes.Grouped},
+        final QueryTable leftTable = getTable(false, leftSize, random, initColumnInfos(new String[] {"I1", "C1", "C2"},
+                new ColumnInfo.ColAttributes[] {ColumnInfo.ColAttributes.Grouped},
                 new IntGenerator(1, rightSize * 10),
                 new SetGenerator<>("a", "b", "c", "d", "e", "f"),
                 new IntGenerator(1, 10)));
-        final ColumnInfo[] rightColumnInfos = initColumnInfos(new String[]{"I1", "C1", "C2"},
-                new ColumnInfo.ColAttributes[]{},
+        final ColumnInfo[] rightColumnInfos = initColumnInfos(new String[] {"I1", "C1", "C2"},
+                new ColumnInfo.ColAttributes[] {},
                 new UniqueIntGenerator(1, rightSize * 10),
                 new SetGenerator<>("a", "b", "c", "d", "e"),
                 new IntGenerator(1, 10));
@@ -314,7 +343,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         System.out.println("Result:");
         TableTools.showWithIndex(result);
 
-        final Table ungroupedResult = leftTable.update("I1=I1*10").naturalJoin(rightTable.update("I1=I1*10"), "I1", "LC1=C1,LC2=C2").update("I1=(int)(I1/10)");
+        final Table ungroupedResult = leftTable.update("I1=I1*10")
+                .naturalJoin(rightTable.update("I1=I1*10"), "I1", "LC1=C1,LC2=C2").update("I1=(int)(I1/10)");
 
         System.out.println("Ungrouped Result:");
         TableTools.showWithIndex(ungroupedResult);
@@ -325,8 +355,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final ColumnSource flatGrouped = leftFlat.getColumnSource("I1");
         final Index flatIndex = leftFlat.getIndex();
         final Map<Object, Index> grouping = flatIndex.getGrouping(flatGrouped);
-        //noinspection unchecked
-        ((AbstractColumnSource)flatGrouped).setGroupToRange(grouping);
+        // noinspection unchecked
+        ((AbstractColumnSource) flatGrouped).setGroupToRange(grouping);
 
         final Table resultFlat = leftFlat.naturalJoin(rightTable, "I1", "LC1=C1,LC2=C2");
         assertTableEquals(ungroupedResult, resultFlat);
@@ -337,7 +367,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             }
 
             LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-                GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, rightSize, random, rightTable, rightColumnInfos);
+                GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, rightSize,
+                        random, rightTable, rightColumnInfos);
             });
 
             if (LiveTableTestCase.printTableUpdates) {
@@ -353,12 +384,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     public void testNaturalJoinSimpleStatic() {
-        //noinspection unchecked
+        // noinspection unchecked
         testNaturalJoinSimpleStatic(TstUtils::c);
     }
 
     public void testNaturalJoinGroupedStatic() {
-        //noinspection unchecked
+        // noinspection unchecked
         testNaturalJoinSimpleStatic(TstUtils::cG);
     }
 
@@ -369,14 +400,16 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     private void testNaturalJoinSimpleStatic(MakeLeftColumn lC) {
         final Table left = testTable(lC.make("Symbol", "A", "B", "C"), c("LeftSentinel", 1, 2, 3));
-        final Table right = newTable(c("Symbol", "A", "B", "D", "E", "F"), c("RightSentinel", 10, 11, 12, 13, 14), c("RightObjectSentinel", 10, 11L, "12", "13", "14"));
+        final Table right = newTable(c("Symbol", "A", "B", "D", "E", "F"), c("RightSentinel", 10, 11, 12, 13, 14),
+                c("RightObjectSentinel", 10, 11L, "12", "13", "14"));
 
         final Table cj = left.naturalJoin(right, "Symbol");
         TableTools.showWithIndex(cj);
-        assertEquals(new int[]{10, 11, NULL_INT}, intColumn(cj, "RightSentinel"));
+        assertEquals(new int[] {10, 11, NULL_INT}, intColumn(cj, "RightSentinel"));
         // the two wheres check for filling null keys
         final Table cjw = cj.where("RightObjectSentinel = null");
-        final Table cjw2 = left.naturalJoin(SparseSelect.sparseSelect(right), "Symbol").where("RightObjectSentinel = null");
+        final Table cjw2 =
+                left.naturalJoin(SparseSelect.sparseSelect(right), "Symbol").where("RightObjectSentinel = null");
         TableTools.showWithIndex(cjw);
         TableTools.showWithIndex(cjw2);
 
@@ -385,18 +418,19 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table cj2 = left2.naturalJoin(right2, "Symbol");
         TableTools.showWithIndex(cj2);
-        assertEquals(new int[]{10, 11, NULL_INT, 10}, intColumn(cj2, "RightSentinel"));
+        assertEquals(new int[] {10, 11, NULL_INT, 10}, intColumn(cj2, "RightSentinel"));
 
         final int collision = 16384;
-        final Table left3 = newTable(lC.make("Int", 10, collision +10, collision *2+10, collision *3+10), c("LeftSentinel", 1, 3, 3, 4));
-        final Table right3 = newTable(c("Int", 10, collision +10, collision *4+10), c("RightSentinel", 10, 11, 13));
+        final Table left3 = newTable(lC.make("Int", 10, collision + 10, collision * 2 + 10, collision * 3 + 10),
+                c("LeftSentinel", 1, 3, 3, 4));
+        final Table right3 = newTable(c("Int", 10, collision + 10, collision * 4 + 10), c("RightSentinel", 10, 11, 13));
 
         TableTools.show(left3);
         TableTools.show(right3);
 
         final Table cj3 = left3.naturalJoin(right3, "Int");
         TableTools.showWithIndex(cj3);
-        assertEquals(new int[]{10, 11, NULL_INT, NULL_INT}, intColumn(cj3, "RightSentinel"));
+        assertEquals(new int[] {10, 11, NULL_INT, NULL_INT}, intColumn(cj3, "RightSentinel"));
 
         final Table left4 = newTable(
                 lC.make("String", "c", "e", "g"),
@@ -404,7 +438,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table right4 = newTable(c("String", "c", "e"), c("RightSentinel", 10, 11));
         final Table cj4 = left4.naturalJoin(right4, "String");
         TableTools.showWithIndex(cj4);
-        assertEquals(new int[]{10, 11, NULL_INT}, intColumn(cj4, "RightSentinel"));
+        assertEquals(new int[] {10, 11, NULL_INT}, intColumn(cj4, "RightSentinel"));
 
 
         final Table left5 = newTable(
@@ -413,7 +447,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table right5 = newTable(c("RightSentinel", 10));
         final Table cj5 = left5.naturalJoin(right5, "");
         TableTools.showWithIndex(cj5);
-        assertEquals(new int[]{10, 10, 10}, intColumn(cj5, "RightSentinel"));
+        assertEquals(new int[] {10, 10, 10}, intColumn(cj5, "RightSentinel"));
 
         final Table left6 = newTable(
                 lC.make("String", "c", "e", "g"),
@@ -421,7 +455,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table right6 = newTable(intCol("RightSentinel"));
         final Table cj6 = left6.naturalJoin(right6, "");
         TableTools.showWithIndex(cj6);
-        assertEquals(new int[]{NULL_INT, NULL_INT, NULL_INT}, intColumn(cj6, "RightSentinel"));
+        assertEquals(new int[] {NULL_INT, NULL_INT, NULL_INT}, intColumn(cj6, "RightSentinel"));
 
         final Table left7 = newTable(
                 lC.make("String", CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
@@ -433,17 +467,19 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         // inactive right hand side state, build using the left
         final Table left8 = newTable(lC.make("Symbol", "A", "B", "C"), c("LeftSentinel", 1, 2, 3));
-        final Table right8 = newTable(c("Symbol", "A", "B", "D", "D", "E", "E", "D"), c("RightSentinel", 10, 11, 12, 13, 14, 15, 16));
+        final Table right8 = newTable(c("Symbol", "A", "B", "D", "D", "E", "E", "D"),
+                c("RightSentinel", 10, 11, 12, 13, 14, 15, 16));
         final Table cj8 = left8.naturalJoin(right8, "Symbol");
         TableTools.showWithIndex(cj8);
-        assertEquals(new int[]{10, 11, NULL_INT}, intColumn(cj8, "RightSentinel"));
+        assertEquals(new int[] {10, 11, NULL_INT}, intColumn(cj8, "RightSentinel"));
 
         // inactive right hand side state, build using the right
-        final Table left9 = newTable(lC.make("Symbol", "A", "B", "C", "A", "B", "C"), c("LeftSentinel", 1, 2, 3, 4, 5, 6));
+        final Table left9 =
+                newTable(lC.make("Symbol", "A", "B", "C", "A", "B", "C"), c("LeftSentinel", 1, 2, 3, 4, 5, 6));
         final Table right9 = newTable(c("Symbol", "A", "D", "D"), c("RightSentinel", 10, 11, 12));
         final Table cj9 = left9.naturalJoin(right9, "Symbol");
         TableTools.showWithIndex(cj9);
-        assertEquals(new int[]{10, NULL_INT, NULL_INT, 10, NULL_INT, NULL_INT}, intColumn(cj9, "RightSentinel"));
+        assertEquals(new int[] {10, NULL_INT, NULL_INT, 10, NULL_INT, NULL_INT}, intColumn(cj9, "RightSentinel"));
     }
 
     public void testNaturalJoinDuplicateRights() {
@@ -486,9 +522,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         // bad right key added
         final QueryTable right2 = testRefreshingTable(c("Symbol", "A"), c("RightSentinel", 10));
         final Table cj2 = left.naturalJoin(right2, "Symbol");
-        assertTableEquals(newTable(col("Symbol", "A", "B"), intCol("LeftSentinel", 1, 2), intCol("RightSentinel", 10, NULL_INT)), cj2);
+        assertTableEquals(
+                newTable(col("Symbol", "A", "B"), intCol("LeftSentinel", 1, 2), intCol("RightSentinel", 10, NULL_INT)),
+                cj2);
 
-        final ErrorListener listener = new ErrorListener((DynamicTable)cj2);
+        final ErrorListener listener = new ErrorListener((DynamicTable) cj2);
         ((DynamicTable) cj2).listenForUpdates(listener);
 
         try (final ErrorExpectation ignored = new ErrorExpectation()) {
@@ -518,9 +556,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         // bad right key added
         final QueryTable right2 = testRefreshingTable(c("Symbol", "A"), c("RightSentinel", 10));
         final Table cj2 = left.naturalJoin(right2, "Symbol");
-        assertTableEquals(newTable(col("Symbol", "A", "B"), intCol("LeftSentinel", 1, 2), intCol("RightSentinel", 10, NULL_INT)), cj2);
+        assertTableEquals(
+                newTable(col("Symbol", "A", "B"), intCol("LeftSentinel", 1, 2), intCol("RightSentinel", 10, NULL_INT)),
+                cj2);
 
-        final ErrorListener listener = new ErrorListener((DynamicTable)cj2);
+        final ErrorListener listener = new ErrorListener((DynamicTable) cj2);
         ((DynamicTable) cj2).listenForUpdates(listener);
 
         try (final ErrorExpectation ignored = new ErrorExpectation()) {
@@ -540,7 +580,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table right = newTable(c("JBool", true, false, null), c("RightSentinel", 10, 11, 12));
         final Table cj = left.naturalJoin(right, "JBool");
         TableTools.showWithIndex(cj);
-        assertEquals(new int[]{10, 11, 12, 10}, intColumn(cj, "RightSentinel"));
+        assertEquals(new int[] {10, 11, 12, 10}, intColumn(cj, "RightSentinel"));
 
         final DBDateTime time1 = DBTimeUtils.convertDateTime("2019-05-10T09:45:00 NY");
         final DBDateTime time2 = DBTimeUtils.convertDateTime("2019-05-10T21:45:00 NY");
@@ -549,7 +589,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table right2 = newTable(c("JDate", time2, time1, null), c("RightSentinel", 10, 11, 12));
         final Table cj2 = left2.naturalJoin(right2, "JDate");
         TableTools.showWithIndex(cj2);
-        assertEquals(new int[]{11, 10, 12, 10}, intColumn(cj2, "RightSentinel"));
+        assertEquals(new int[] {11, 10, 12, 10}, intColumn(cj2, "RightSentinel"));
     }
 
     public void testNaturalJoinFloats() {
@@ -557,25 +597,29 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table right = newTable(floatCol("JF", Float.NaN, 1.0f, 2.0f), c("RightSentinel", 10, 11, 12));
         final Table cj = left.naturalJoin(right, "JF");
         TableTools.showWithIndex(cj);
-        assertEquals(new int[]{11, 12, 10, NULL_INT}, intColumn(cj, "RightSentinel"));
+        assertEquals(new int[] {11, 12, 10, NULL_INT}, intColumn(cj, "RightSentinel"));
 
-        final Table left2 = testTable(doubleCol("JD", 10.0, 20.0, Double.NaN, io.deephaven.util.QueryConstants.NULL_DOUBLE), c("LeftSentinel", 1, 2, 3, 4));
-        final Table right2 = newTable(doubleCol("JD", QueryConstants.NULL_DOUBLE, Double.NaN, 10.0), c("RightSentinel", 10, 11, 12));
+        final Table left2 =
+                testTable(doubleCol("JD", 10.0, 20.0, Double.NaN, io.deephaven.util.QueryConstants.NULL_DOUBLE),
+                        c("LeftSentinel", 1, 2, 3, 4));
+        final Table right2 =
+                newTable(doubleCol("JD", QueryConstants.NULL_DOUBLE, Double.NaN, 10.0), c("RightSentinel", 10, 11, 12));
         final Table cj2 = left2.naturalJoin(right2, "JD");
         TableTools.showWithIndex(cj2);
-        assertEquals(new int[]{12, NULL_INT, 11, 10}, intColumn(cj2, "RightSentinel"));
+        assertEquals(new int[] {12, NULL_INT, 11, 10}, intColumn(cj2, "RightSentinel"));
     }
 
 
     public void testNaturalJoinZeroKeys() {
         setExpectError(false);
 
-        final QueryTable c0 = TstUtils.testRefreshingTable( intCol("Left", 1, 2, 3));
-        final QueryTable c1 = TstUtils.testRefreshingTable( intCol("Right"));
+        final QueryTable c0 = TstUtils.testRefreshingTable(intCol("Left", 1, 2, 3));
+        final QueryTable c1 = TstUtils.testRefreshingTable(intCol("Right"));
 
         final Table cj = c0.naturalJoin(c1, "");
 
-        final DynamicTable emptyRightResult = newTable(intCol("Left", 1, 2, 3), intCol("Right", NULL_INT, NULL_INT, NULL_INT));
+        final DynamicTable emptyRightResult =
+                newTable(intCol("Left", 1, 2, 3), intCol("Right", NULL_INT, NULL_INT, NULL_INT));
         assertTableEquals(emptyRightResult, cj);
 
         TableTools.showWithIndex(cj);
@@ -616,9 +660,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     public void testNaturalJoinZeroKeysStaticRight() {
         setExpectError(false);
 
-        final QueryTable c0 = TstUtils.testRefreshingTable( intCol("Left", 1, 2, 3));
-        final Table c1 = newTable( intCol("Right"));
-        final Table c2 = newTable( intCol("Right", 4));
+        final QueryTable c0 = TstUtils.testRefreshingTable(intCol("Left", 1, 2, 3));
+        final Table c1 = newTable(intCol("Right"));
+        final Table c2 = newTable(intCol("Right", 4));
 
         final Table cj1 = c0.naturalJoin(c1, "");
         assertTableEquals(newTable(intCol("Left", 1, 2, 3), intCol("Right", NULL_INT, NULL_INT, NULL_INT)), cj1);
@@ -628,7 +672,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
 
         TableTools.showWithIndex(cj1);
-        assertTableEquals(newTable(intCol("Left", 1, 2, 3, 6), intCol("Right", NULL_INT, NULL_INT, NULL_INT, NULL_INT)), cj1);
+        assertTableEquals(newTable(intCol("Left", 1, 2, 3, 6), intCol("Right", NULL_INT, NULL_INT, NULL_INT, NULL_INT)),
+                cj1);
 
         final Table cj2 = c0.naturalJoin(c2, "");
         assertTableEquals(newTable(intCol("Left", 1, 2, 3, 6), intCol("Right", 4, 4, 4, 4)), cj2);
@@ -645,12 +690,13 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     public void testNaturalJoinZeroKeysStaticLeft() {
         setExpectError(false);
 
-        final Table c0 = newTable( intCol("Left", 1, 2, 3));
-        final QueryTable c1 = TstUtils.testRefreshingTable( intCol("Right"));
+        final Table c0 = newTable(intCol("Left", 1, 2, 3));
+        final QueryTable c1 = TstUtils.testRefreshingTable(intCol("Right"));
 
         final Table cj = c0.naturalJoin(c1, "");
 
-        final DynamicTable emptyRightResult = newTable(intCol("Left", 1, 2, 3), intCol("Right", NULL_INT, NULL_INT, NULL_INT));
+        final DynamicTable emptyRightResult =
+                newTable(intCol("Left", 1, 2, 3), intCol("Right", NULL_INT, NULL_INT, NULL_INT));
         assertTableEquals(emptyRightResult, cj);
 
         TableTools.showWithIndex(cj);
@@ -878,7 +924,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 c("RSym", "aa", "bc"),
                 c("ByteCol", (byte) 10, (byte) 20),
                 c("RDoubleCol", 1.1, 2.2));
-        final EvalNugget[] en = new EvalNugget[]{
+        final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
                         return leftQueryTable.naturalJoin(rightQueryTable, "ByteCol", "RSym,RDoubleCol");
@@ -886,7 +932,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 }
         };
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(leftQueryTable, i(3, 9), c("Sym", "aa", "aa"), c("ByteCol", (byte) 20, (byte) 10), c("DoubleCol", 2.1, 2.2));
+            addToTable(leftQueryTable, i(3, 9), c("Sym", "aa", "aa"), c("ByteCol", (byte) 20, (byte) 10),
+                    c("DoubleCol", 2.1, 2.2));
             System.out.println("Left Table Updated:");
             showWithIndex(leftQueryTable);
             leftQueryTable.notifyListeners(i(3, 9), i(), i());
@@ -913,7 +960,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 c("yCol", 1.1, 2.2, 5.5));
 
 
-        final EvalNugget[] en = new EvalNugget[]{
+        final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
                         return leftQueryTable.naturalJoin(rightQueryTable1, "Sym", "xCol,yCol");
@@ -941,7 +988,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return leftQueryTable.naturalJoin(rightQueryTable2, "Sym,intCol=xCol", "xCol,yCol").update("q=xCol+yCol");
+                        return leftQueryTable.naturalJoin(rightQueryTable2, "Sym,intCol=xCol", "xCol,yCol")
+                                .update("q=xCol+yCol");
                     }
                 },
                 new EvalNugget() {
@@ -956,12 +1004,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return leftQueryTable.select().naturalJoin(rightQueryTable1, "Sym", "xCol,yCol").update("q=xCol+yCol");
+                        return leftQueryTable.select().naturalJoin(rightQueryTable1, "Sym", "xCol,yCol")
+                                .update("q=xCol+yCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return leftQueryTable.select().naturalJoin(rightQueryTable2, "Sym,intCol=xCol", "xCol,yCol").select();
+                        return leftQueryTable.select().naturalJoin(rightQueryTable2, "Sym,intCol=xCol", "xCol,yCol")
+                                .select();
                     }
                 },
                 new EvalNugget() {
@@ -971,7 +1021,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return leftQueryTable.select().naturalJoin(rightQueryTable2, "Sym,intCol=xCol", "xCol,yCol").select();
+                        return leftQueryTable.select().naturalJoin(rightQueryTable2, "Sym,intCol=xCol", "xCol,yCol")
+                                .select();
                     }
                 },
         };
@@ -1076,9 +1127,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         sb.append("Complete Table has ").append(index.size()).append(" rows:\n");
         sb.append("Index=").append(index).append("\n");
-        for (final Index.Iterator it = index.iterator(); it.hasNext(); ) {
+        for (final Index.Iterator it = index.iterator(); it.hasNext();) {
             final long value = it.nextLong();
-            final Object [] keyValues = new Object[columns.length];
+            final Object[] keyValues = new Object[columns.length];
             for (int ii = 0; ii < columns.length; ++ii) {
                 keyValues[ii] = columnSources[ii].get(value);
             }
@@ -1088,9 +1139,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Index prevIndex = index.getPrevIndex();
         sb.append("Complete Previous Table has ").append(prevIndex.size()).append(" rows:\n");
         sb.append("Index=").append(index).append("\n");
-        for (final Index.Iterator it = prevIndex.iterator(); it.hasNext(); ) {
+        for (final Index.Iterator it = prevIndex.iterator(); it.hasNext();) {
             final long value = it.nextLong();
-            final Object [] keyValues = new Object[columns.length];
+            final Object[] keyValues = new Object[columns.length];
             for (int ii = 0; ii < columns.length; ++ii) {
                 keyValues[ii] = columnSources[ii].getPrev(value);
             }
@@ -1112,7 +1163,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 c("yCol", 1.1, 2.2, 5.5));
 
 
-        final EvalNugget[] en = new EvalNugget[]{
+        final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
                         return leftQueryTable.naturalJoin(rightQueryTable2.lastBy("Sym"), "Sym", "xCol,yCol");
@@ -1178,7 +1229,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 c("Sym", "a", "b", "c"),
                 c("Qty", 10, 20, 30));
 
-        final EvalNugget[] en = new EvalNugget[]{
+        final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
                         return leftTable.naturalJoin(rightTable, "Sym", "Qty");
@@ -1191,7 +1242,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return leftTable.sortDescending("Size").naturalJoin(rightTable.sortDescending("Qty"), "Sym", "Qty");
+                        return leftTable.sortDescending("Size").naturalJoin(rightTable.sortDescending("Qty"), "Sym",
+                                "Qty");
                     }
                 },
                 new EvalNugget() {
@@ -1201,22 +1253,28 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return leftTable.sortDescending("Size").naturalJoin(rightTable.sortDescending("Qty"), "Sym", "Qty").update("x = Qty*Size");
+                        return leftTable.sortDescending("Size")
+                                .naturalJoin(rightTable.sortDescending("Qty"), "Sym", "Qty").update("x = Qty*Size");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return leftTable.sortDescending("Size").naturalJoin(rightTable.sortDescending("Qty"), "Sym", "Qty").updateView("x = Qty*Size");
+                        return leftTable.sortDescending("Size")
+                                .naturalJoin(rightTable.sortDescending("Qty"), "Sym", "Qty").updateView("x = Qty*Size");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return leftTable.sortDescending("Size").naturalJoin(rightTable.sortDescending("Qty"), "Sym", "Qty").view("Sym", "x = Qty*Size");
+                        return leftTable.sortDescending("Size")
+                                .naturalJoin(rightTable.sortDescending("Qty"), "Sym", "Qty")
+                                .view("Sym", "x = Qty*Size");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return leftTable.sortDescending("Size").naturalJoin(rightTable.sortDescending("Qty"), "Sym", "Qty").select("Sym", "x = Qty*Size");
+                        return leftTable.sortDescending("Size")
+                                .naturalJoin(rightTable.sortDescending("Qty"), "Sym", "Qty")
+                                .select("Sym", "x = Qty*Size");
                     }
                 },
         };
@@ -1363,8 +1421,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             final Table result = left.naturalJoin(right, "Symbol");
             TableTools.showWithIndex(result);
 
-            final int [] rightSide = intColumn(result, "RightSentinel");
-            assertEquals(new int[]{101, 102, 103, NULL_INT, 101, 103, 102, 102, 103}, rightSide);
+            final int[] rightSide = intColumn(result, "RightSentinel");
+            assertEquals(new int[] {101, 102, 103, NULL_INT, 101, 103, 102, 102, 103}, rightSide);
         });
     }
 
@@ -1391,7 +1449,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final TableDefinition leftDefinition = TableDefinition.of(
                 ColumnDefinition.ofString("Symbol"),
                 ColumnDefinition.ofInt("LeftSentinel"));
-        final String [] leftSyms = new String[]{"Apple", "Banana", "Cantaloupe", "DragonFruit",
+        final String[] leftSyms = new String[] {"Apple", "Banana", "Cantaloupe", "DragonFruit",
                 "Apple", "Cantaloupe", "Banana", "Banana", "Cantaloupe"};
         final Table leftTable = newTable(stringCol("Symbol", leftSyms)).update("LeftSentinel=i");
         ParquetTools.writeTable(leftTable, leftLocation, leftDefinition);
@@ -1403,7 +1461,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final TableDefinition rightDefinition = TableDefinition.of(
                 ColumnDefinition.ofString("Symbol"),
                 ColumnDefinition.ofInt("RightSentinel"));
-        final String [] rightSyms = new String[]{"Elderberry", "Apple", "Banana", "Cantaloupe"};
+        final String[] rightSyms = new String[] {"Elderberry", "Apple", "Banana", "Cantaloupe"};
         final Table rightTable = newTable(stringCol("Symbol", rightSyms)).update("RightSentinel=100+i");
         ParquetTools.writeTable(rightTable, rightLocation, rightDefinition);
         return ParquetTools.readTable(rightLocation);

@@ -16,7 +16,9 @@ public class DynamicDelayedLogEntryPoolImpl extends ThreadSafeLenientFixedSizePo
     public DynamicDelayedLogEntryPoolImpl(String name, int entryCount, final LoggerTimeSource timeSource) {
         super(name, entryCount,
                 new Function.Nullary<LogEntry>() {
-                    public LogEntry call() { return new DelayedLogEntryImpl(timeSource); }
+                    public LogEntry call() {
+                        return new DelayedLogEntryImpl(timeSource);
+                    }
                 }, null);
         this.timeSource = timeSource;
     }

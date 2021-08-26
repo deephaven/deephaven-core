@@ -13,7 +13,7 @@ public class IncrementalReleaseFilter extends BaseIncrementalReleaseFilter {
     /**
      * Create an incremental release filter with an initial size that will release sizeIncrement rows each cycle.
      *
-     * @param initialSize   how many rows should be in the table initially
+     * @param initialSize how many rows should be in the table initially
      * @param sizeIncrement how many rows to release at the beginning of each LTM cycle.
      */
     public IncrementalReleaseFilter(long initialSize, long sizeIncrement) {

@@ -21,9 +21,9 @@ import java.util.concurrent.locks.LockSupport;
 /**
  * Common parts of the generated TableLoggers.
  *
- * It is "2" so that we can change the implementation details from TableLoggerImpl; and existing client code will
- * still compile.  Otherwise, there is a chicken and egg problem, with clients not being able to run the
- * new TableLoggerFactory using modules that contain their logger classes.
+ * It is "2" so that we can change the implementation details from TableLoggerImpl; and existing client code will still
+ * compile. Otherwise, there is a chicken and egg problem, with clients not being able to run the new TableLoggerFactory
+ * using modules that contain their logger classes.
  */
 public abstract class TableLoggerImpl2<T extends WritableRowContainer> implements TableLogger {
     protected TableWriter writer;
@@ -74,8 +74,8 @@ public abstract class TableLoggerImpl2<T extends WritableRowContainer> implement
 
         @Override
         public void release() {
-            //noinspection unchecked
-            setterPool.give((T)this);
+            // noinspection unchecked
+            setterPool.give((T) this);
         }
     }
 
@@ -116,7 +116,7 @@ public abstract class TableLoggerImpl2<T extends WritableRowContainer> implement
     @Override
     public final void shutdown() {
         isShuttingDown = true;
-        while(outstandingSetters.getAndDecrement() > 0) {
+        while (outstandingSetters.getAndDecrement() > 0) {
             setterPool.take();
         }
     }
@@ -135,7 +135,7 @@ public abstract class TableLoggerImpl2<T extends WritableRowContainer> implement
             if (isClosed()) {
                 err.println(String.format(
                         "TableLogger.flush: caught exception in thread %s. Unable to write log entry. "
-                        + "Logger already closed, not invoking shutdown.",
+                                + "Logger already closed, not invoking shutdown.",
                         Thread.currentThread().getName()));
                 x.printStackTrace(err);
             } else {

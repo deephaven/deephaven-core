@@ -25,11 +25,13 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
 
     @Inject
     public ComboAggregateGrpcImpl() {
-        super(BatchTableRequest.Operation::getComboAggregate, ComboAggregateRequest::getResultId, ComboAggregateRequest::getSourceId);
+        super(BatchTableRequest.Operation::getComboAggregate, ComboAggregateRequest::getResultId,
+                ComboAggregateRequest::getSourceId);
     }
 
     @Override
-    public Table create(final ComboAggregateRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final ComboAggregateRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();
@@ -49,7 +51,8 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
         return result;
     }
 
-    private static Table singleAggregateHelper(final Table parent, final SelectColumn[] groupByColumns, final ComboAggregateRequest.Aggregate aggregate) {
+    private static Table singleAggregateHelper(final Table parent, final SelectColumn[] groupByColumns,
+            final ComboAggregateRequest.Aggregate aggregate) {
         switch (aggregate.getType()) {
             case SUM:
                 return parent.sumBy(groupByColumns);
@@ -82,8 +85,10 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
         }
     }
 
-    private static Table comboAggregateHelper(final Table parent, final SelectColumn[] groupByColumns, final List<ComboAggregateRequest.Aggregate> aggregates) {
-        final Set<String> groupByColumnSet = Arrays.stream(groupByColumns).map(SelectColumn::getName).collect(Collectors.toSet());
+    private static Table comboAggregateHelper(final Table parent, final SelectColumn[] groupByColumns,
+            final List<ComboAggregateRequest.Aggregate> aggregates) {
+        final Set<String> groupByColumnSet =
+                Arrays.stream(groupByColumns).map(SelectColumn::getName).collect(Collectors.toSet());
 
         final ComboAggregateFactory.ComboBy[] comboBy =
                 new ComboAggregateFactory.ComboBy[aggregates.size()];
@@ -96,7 +101,9 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
                 // if not specified, we apply the aggregate to all columns not "otherwise involved"
                 matchPairs = Arrays.stream(parent.getColumns())
                         .map(DataColumn::getName)
-                        .filter(n -> !(groupByColumnSet.contains(n) || (agg.getType() == ComboAggregateRequest.AggType.WEIGHTED_AVG && agg.getColumnName().equals(n))))
+                        .filter(n -> !(groupByColumnSet.contains(n)
+                                || (agg.getType() == ComboAggregateRequest.AggType.WEIGHTED_AVG
+                                        && agg.getColumnName().equals(n))))
                         .toArray(String[]::new);
             } else {
                 matchPairs = agg.getMatchPairsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);

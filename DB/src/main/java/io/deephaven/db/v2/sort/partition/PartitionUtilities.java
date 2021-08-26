@@ -10,7 +10,8 @@ import java.util.Random;
 
 class PartitionUtilities {
     /**
-     * Floyd's sampling algorithm described in http://www.nowherenearithaca.com/2013/05/robert-floyds-tiny-and-beautiful.html
+     * Floyd's sampling algorithm described in
+     * http://www.nowherenearithaca.com/2013/05/robert-floyds-tiny-and-beautiful.html
      */
     static void sampleIndexKeys(
             final long seed, final Index index, final int sampleSize,
@@ -37,8 +38,14 @@ class PartitionUtilities {
 
         // using the java array sort or our own timsort would be nice, though it is only suitable for parallel arrays
         final TLongArrayList array = new TLongArrayList(sampleSize);
-        sample.forEach(key -> { array.add(index.get(key - 1)); return true; });
+        sample.forEach(key -> {
+            array.add(index.get(key - 1));
+            return true;
+        });
         array.sort();
-        array.forEach(key -> { sampledKeys.add(key); return true; });
+        array.forEach(key -> {
+            sampledKeys.add(key);
+            return true;
+        });
     }
 }

@@ -30,9 +30,9 @@ public class TrialClassA implements Externalizable, Copyable<TrialClassA> {
         this.long1 = long1;
     }
 
-//    public static TrialClassA newInstance() {
-//        return new TrialClassA();
-//    }
+    // public static TrialClassA newInstance() {
+    // return new TrialClassA();
+    // }
 
     @Override
     public synchronized void writeExternal(ObjectOutput out) throws IOException {
@@ -81,14 +81,19 @@ public class TrialClassA implements Externalizable, Copyable<TrialClassA> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof TrialClassA)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof TrialClassA))
+            return false;
 
         TrialClassA that = (TrialClassA) o;
 
-        if (Double.compare(that.double1, double1) != 0) return false;
-        if (int1 != that.int1) return false;
-        if (long1 != that.long1) return false;
+        if (Double.compare(that.double1, double1) != 0)
+            return false;
+        if (int1 != that.int1)
+            return false;
+        if (long1 != that.long1)
+            return false;
 
         return true;
     }
@@ -126,8 +131,8 @@ public class TrialClassA implements Externalizable, Copyable<TrialClassA> {
         return "TrialClassA: " + double1 + " " + int1 + " " + long1;
     }
 
-    public static TrialClassA makeNull(){
-        return new TrialClassA(Double.NaN,Integer.MIN_VALUE,Long.MIN_VALUE);
+    public static TrialClassA makeNull() {
+        return new TrialClassA(Double.NaN, Integer.MIN_VALUE, Long.MIN_VALUE);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -157,51 +162,51 @@ public class TrialClassA implements Externalizable, Copyable<TrialClassA> {
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
-//
-//    public static FastArrayF.WriteExternalFunction<TrialClassA> getWriterF() {
-//        return new TestClassWriterF();
-//    }
-//
-//    public static FastArrayF.ReadExternalFunction<TrialClassA> getReaderF() {
-//        return new TestClassReaderF();
-//    }
-//
-//    private static class TestClassWriterF implements FastArrayF.WriteExternalFunction<TrialClassA> {
-//
-//        @Override
-//        public void writeExternal(ObjectOutput out, TrialClassA item) throws IOException {
-//            out.writeObject(item);
-//        }
-//    }
-//
-//    private static class TestClassReaderF implements FastArrayF.ReadExternalFunction<TrialClassA> {
-//        @Override
-//        public void readExternal(ObjectInput in, TrialClassA item) throws IOException, ClassNotFoundException {
-//            TrialClassA readObject = (TrialClassA) in.readObject();
-//            item.copyValues(readObject);
-//        }
-//    }
-//
-//    ////////////////////////////////////////////////////////////////////////////////////
-//
-//    public static FastArrayFactoryInterface<TrialClassA> getFactory() {
-//         return new TestClassFactory();
-//    }
-//
-//    private static class TestClassFactory implements FastArrayFactoryInterface<TrialClassA> {
-//
-//        @Override
-//        public TrialClassA newInstance() {
-//            return new TrialClassA(Double.NaN, Integer.MIN_VALUE, Long.MIN_VALUE);
-//        }
-//
-//        @Override
-//        public TrialClassA[] newInstanceArray(int length) {
-//            TrialClassA[] result = new TrialClassA[length];
-//            for (int i = 0; i < result.length; i++) {
-//                result[i] = newInstance();
-//            }
-//            return result;
-//        }
-//    }
+    //
+    // public static FastArrayF.WriteExternalFunction<TrialClassA> getWriterF() {
+    // return new TestClassWriterF();
+    // }
+    //
+    // public static FastArrayF.ReadExternalFunction<TrialClassA> getReaderF() {
+    // return new TestClassReaderF();
+    // }
+    //
+    // private static class TestClassWriterF implements FastArrayF.WriteExternalFunction<TrialClassA> {
+    //
+    // @Override
+    // public void writeExternal(ObjectOutput out, TrialClassA item) throws IOException {
+    // out.writeObject(item);
+    // }
+    // }
+    //
+    // private static class TestClassReaderF implements FastArrayF.ReadExternalFunction<TrialClassA> {
+    // @Override
+    // public void readExternal(ObjectInput in, TrialClassA item) throws IOException, ClassNotFoundException {
+    // TrialClassA readObject = (TrialClassA) in.readObject();
+    // item.copyValues(readObject);
+    // }
+    // }
+    //
+    // ////////////////////////////////////////////////////////////////////////////////////
+    //
+    // public static FastArrayFactoryInterface<TrialClassA> getFactory() {
+    // return new TestClassFactory();
+    // }
+    //
+    // private static class TestClassFactory implements FastArrayFactoryInterface<TrialClassA> {
+    //
+    // @Override
+    // public TrialClassA newInstance() {
+    // return new TrialClassA(Double.NaN, Integer.MIN_VALUE, Long.MIN_VALUE);
+    // }
+    //
+    // @Override
+    // public TrialClassA[] newInstanceArray(int length) {
+    // TrialClassA[] result = new TrialClassA[length];
+    // for (int i = 0; i < result.length; i++) {
+    // result[i] = newInstance();
+    // }
+    // return result;
+    // }
+    // }
 }

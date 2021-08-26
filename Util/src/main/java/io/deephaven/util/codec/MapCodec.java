@@ -20,14 +20,14 @@ import java.util.Map;
  */
 @SuppressWarnings("unused")
 public abstract class MapCodec<K, V> implements ObjectCodec<Map<K, V>> {
-    private static final byte [] nullBytes = CollectionUtil.ZERO_LENGTH_BYTE_ARRAY;
-    private static final byte [] zeroBytes = new byte[4];
+    private static final byte[] nullBytes = CollectionUtil.ZERO_LENGTH_BYTE_ARRAY;
+    private static final byte[] zeroBytes = new byte[4];
 
     private static final int MINIMUM_SCRATCH_CAPACITY = 4096;
-    private static final ThreadLocal<SoftReference<ByteBuffer>> scratchBufferThreadLocal = ThreadLocal.withInitial(() -> new SoftReference<>(ByteBuffer.allocate(MINIMUM_SCRATCH_CAPACITY)));
+    private static final ThreadLocal<SoftReference<ByteBuffer>> scratchBufferThreadLocal =
+            ThreadLocal.withInitial(() -> new SoftReference<>(ByteBuffer.allocate(MINIMUM_SCRATCH_CAPACITY)));
 
-    MapCodec(@Nullable final String arguments) {
-    }
+    MapCodec(@Nullable final String arguments) {}
 
     @Override
     public boolean isNullable() {
@@ -70,7 +70,7 @@ public abstract class MapCodec<K, V> implements ObjectCodec<Map<K, V>> {
         // on the third try, we'll allow for every character to be two bytes
         // on the fourth try, we'll allow for every character to be four bytes
         // if there is a fifth try, it means that we could not encode this properly, given that there is a limit of
-        //   4 bytes in a UTF-8 character.
+        // 4 bytes in a UTF-8 character.
         for (int tryCount = 0; tryCount < 4; ++tryCount) {
             try {
                 scratch = encodeIntoBuffer(holdScratch, input);
@@ -87,7 +87,7 @@ public abstract class MapCodec<K, V> implements ObjectCodec<Map<K, V>> {
             throw new BufferUnderflowException();
         }
 
-        final byte [] bytes = new byte[scratch.position()];
+        final byte[] bytes = new byte[scratch.position()];
         scratch.flip();
         scratch.get(bytes);
         return bytes;
@@ -136,9 +136,9 @@ public abstract class MapCodec<K, V> implements ObjectCodec<Map<K, V>> {
     /**
      * Estimate the size of the encoded map.
      *
-     * The estimated size is used to encode the map; and is doubled twice if there is a buffer underflow exception.
-     * Thus if you are wrong by more than a factor of 4x, the map can not be encoded and a BufferUnderflow exception
-     * is returned to the caller.
+     * The estimated size is used to encode the map; and is doubled twice if there is a buffer underflow exception. Thus
+     * if you are wrong by more than a factor of 4x, the map can not be encoded and a BufferUnderflow exception is
+     * returned to the caller.
      *
      * @param input the input map
      * @return the estimated size of the map

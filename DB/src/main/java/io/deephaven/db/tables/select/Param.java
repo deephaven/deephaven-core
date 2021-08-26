@@ -33,22 +33,23 @@ public class Param<T> {
         return value;
     }
 
-    public Param(String name, T value){
+    public Param(String name, T value) {
         this.name = name;
         this.value = value;
     }
 
     public Class<?> getDeclaredType() {
         final Class type = value == null ? Object.class
-                         : value instanceof Enum ? ((Enum)value).getDeclaringClass()
-                         // in newer versions of groovy, our closures will be subtypes that evade the logic in getDeclaredType
-                         // (they will return a null Class#getCanonicalName b/c they are dynamic classes).
-                         : value instanceof Closure ? Closure.class
-                         : value.getClass();
+                : value instanceof Enum ? ((Enum) value).getDeclaringClass()
+                        // in newer versions of groovy, our closures will be subtypes that evade the logic in
+                        // getDeclaredType
+                        // (they will return a null Class#getCanonicalName b/c they are dynamic classes).
+                        : value instanceof Closure ? Closure.class
+                                : value.getClass();
         return getDeclaredType(type);
     }
 
-    protected static Class getDeclaredType(Class type){
+    protected static Class getDeclaredType(Class type) {
         OUTER: while (type != Object.class) {
             if (Modifier.isPublic(type.getModifiers()) && !type.isAnonymousClass()) {
                 break;
@@ -66,7 +67,7 @@ public class Param<T> {
         return type;
     }
 
-    public String getDeclaredTypeName(){
+    public String getDeclaredTypeName() {
         return getDeclaredType().getCanonicalName();
     }
 
@@ -81,7 +82,7 @@ public class Param<T> {
         return getDeclaredTypeName();
     }
 
-    protected static String getDeclaredTypeName(Class type){
+    protected static String getDeclaredTypeName(Class type) {
         return getDeclaredType(type).getCanonicalName();
     }
 
@@ -110,8 +111,9 @@ public class Param<T> {
         final Class<?> seen = found.get(name);
         if (seen != null) {
             if (seen != cls) {
-                throw new UnsupportedOperationException("Parameter list may not include multiple versions of the same class: "
-                        + name + ". Was the class redefined in your shell?");
+                throw new UnsupportedOperationException(
+                        "Parameter list may not include multiple versions of the same class: "
+                                + name + ". Was the class redefined in your shell?");
             }
             // we don't need to revisit this class
             return;

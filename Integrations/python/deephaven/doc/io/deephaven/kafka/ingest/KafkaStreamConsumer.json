@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.kafka.ingest.KafkaStreamConsumer",
+ "methods": {},
+ "path": "io.deephaven.kafka.ingest.KafkaStreamConsumer",
+ "text": "Consumer for lists of ConsumerRecords coming from Kafka.  The StreamFailureConsumer is extended so that we can report\n errors emanating from our consumer thread.",
+ "typeName": "interface"
+}

@@ -75,7 +75,7 @@ public class IndexCreationRandomPerfTest {
 
     static final String me = IndexCreationRandomPerfTest.class.getSimpleName();
 
-    private static final IndexLike.Factory ilfs[] = { IndexLike.mixedf, IndexLike.pqf, IndexLike.rspf };
+    private static final IndexLike.Factory ilfs[] = {IndexLike.mixedf, IndexLike.pqf, IndexLike.rspf};
 
     static double codeWarmup() {
         final int steps = 500;
@@ -136,15 +136,27 @@ public class IndexCreationRandomPerfTest {
         private TIntArrayList samples;
         private double avg;
         private double stddev;
+
         public IntStats(final int nsamples) {
             samples = new TIntArrayList(nsamples);
         }
+
         public void sample(final int v) {
             samples.add(v);
         }
-        public int nsamples() { return samples.size(); }
-        public double avg() { return avg; }
-        public double stddev() { return stddev; }
+
+        public int nsamples() {
+            return samples.size();
+        }
+
+        public double avg() {
+            return avg;
+        }
+
+        public double stddev() {
+            return stddev;
+        }
+
         public void compute() {
             final int n = samples.size();
             long sumx = 0;
@@ -152,25 +164,29 @@ public class IndexCreationRandomPerfTest {
             for (int i = 0; i < n; ++i) {
                 final long v = samples.get(i);
                 sumx += v;
-                sumsqx += v*v;
+                sumsqx += v * v;
             }
             avg = sumx / (double) n;
-            final double stddev2 =  sumsqx / n + avg * avg;
+            final double stddev2 = sumsqx / n + avg * avg;
             stddev = Math.sqrt(stddev2);
             samples.sort();
         }
+
         // assumption: before calling percentile compute was called (and thus the array is sorted).
         public int percentile(final double p) {
-            if (p < 0.0 || p > 100.0) return 0;
+            if (p < 0.0 || p > 100.0)
+                return 0;
             final int n = samples.size();
-            final int i = (int) Math.ceil((n*p) / 100.0);
+            final int i = (int) Math.ceil((n * p) / 100.0);
             return samples.get(i > 0 ? i - 1 : 0);
         }
 
-        public static final int defaultPrintPs[] = { 0, 5, 10, 25, 40, 45, 50, 55, 60, 75, 90, 95, 99 };
+        public static final int defaultPrintPs[] = {0, 5, 10, 25, 40, 45, 50, 55, 60, 75, 90, 95, 99};
+
         public void print(final String pfx) {
             print(pfx, defaultPrintPs);
         }
+
         public void print(final String pfx, final int[] ps) {
             final double avg = avg();
             final double stddev = stddev();
@@ -181,6 +197,7 @@ public class IndexCreationRandomPerfTest {
             }
             System.out.println(sb.toString());
         }
+
         public static void comparePrint(
                 final PerfStats p1, final String n1,
                 final PerfStats p2, final String n2,
@@ -194,7 +211,7 @@ public class IndexCreationRandomPerfTest {
             for (int p : PerfStats.defaultPrintPs) {
                 final double pp1 = p1.percentile(p);
                 final double pp2 = p2.percentile(p);
-                final double ratio = (pp2 != 0.0) ? pp1/pp2 : 0.0;
+                final double ratio = (pp2 != 0.0) ? pp1 / pp2 : 0.0;
                 if (!first) {
                     sb.append(", ");
                 }
@@ -215,7 +232,7 @@ public class IndexCreationRandomPerfTest {
         System.out.println(me + ": Code warmup ran in " + dt / 1000.0 + " seconds, output = " + wo);
         final int warmupSz = 12 * 1000 * 1000;
         final int warmupRuns = 1;
-        final int fullSz =  12 * 1000 * 1000;
+        final int fullSz = 12 * 1000 * 1000;
         final int fullRuns = 10;
         run(warmupSz, warmupRuns, fullSz, fullRuns);
     }

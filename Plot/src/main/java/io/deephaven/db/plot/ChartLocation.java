@@ -9,18 +9,18 @@ import java.io.Serializable;
 /**
  * Location of Chart within a figure.
  */
-class ChartLocation implements Serializable{
+class ChartLocation implements Serializable {
     private static final long serialVersionUID = 1594957448496772360L;
 
     private final int row;
     private final int col;
 
-    ChartLocation(final ChartImpl chart){
+    ChartLocation(final ChartImpl chart) {
         this.row = chart.row();
         this.col = chart.column();
     }
 
-    ChartImpl get(final BaseFigureImpl figure){
+    ChartImpl get(final BaseFigureImpl figure) {
         final ChartArray charts = figure.getCharts();
 
         return charts.getChart(row, col);
@@ -28,12 +28,15 @@ class ChartLocation implements Serializable{
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         ChartLocation location = (ChartLocation) o;
 
-        if (row != location.row) return false;
+        if (row != location.row)
+            return false;
         return col == location.col;
     }
 

@@ -11,21 +11,17 @@ public class ConvertEqToInTest extends AbstractReplacingVisitorTest {
     public void testConvertEqToIn() {
         assertFilterEquals("simple EQ",
                 eq("ColumnA", 1),
-                in("ColumnA", 1)
-        );
+                in("ColumnA", 1));
 
         assertFilterEquals("reverse EQ",
                 node(FilterDescriptor.FilterOperation.EQ, literal((double) 1), reference("ColumnA")),
-                in("ColumnA", 1)
-        );
+                in("ColumnA", 1));
 
         assertUnchanged("two literals",
-                node(FilterDescriptor.FilterOperation.EQ, literals(1, 2))
-        );
+                node(FilterDescriptor.FilterOperation.EQ, literals(1, 2)));
 
         assertUnchanged("two references",
-                node(FilterDescriptor.FilterOperation.EQ, reference("ColumnA"), reference("ColumnB"))
-        );
+                node(FilterDescriptor.FilterOperation.EQ, reference("ColumnA"), reference("ColumnB")));
     }
 
     @Override

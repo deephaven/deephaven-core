@@ -5,8 +5,8 @@ package io.deephaven.base.testing;
  *
  * Override {@link #maxMillis()} to configure.
  *
- * If you are writing any new tests using junit 4+,
- * instead use @Test(timeout=15_000) to set timeouts directly on each method.
+ * If you are writing any new tests using junit 4+, instead use @Test(timeout=15_000) to set timeouts directly on each
+ * method.
  */
 public abstract class TimeLimitedTest extends BaseCachedJMockTestCase {
 
@@ -18,7 +18,7 @@ public abstract class TimeLimitedTest extends BaseCachedJMockTestCase {
         final Thread running = Thread.currentThread();
         final long ttl = maxMillis();
         final long deadline = System.currentTimeMillis() + ttl;
-        timeout = new Thread(()-> {
+        timeout = new Thread(() -> {
             while (System.currentTimeMillis() < deadline) {
                 try {
                     Thread.sleep(deadline - System.currentTimeMillis());
@@ -36,9 +36,9 @@ public abstract class TimeLimitedTest extends BaseCachedJMockTestCase {
                     // nope; we're stuck... force kill.
                     // stop() is deprecated and dangerous,
                     // but it's still better than a deadlocked VM staying alive for hours
-                    System.err.println("Force killing thread after exceeding " + ttl +" ms");
+                    System.err.println("Force killing thread after exceeding " + ttl + " ms");
                     new IllegalStateException()
-                        .printStackTrace();
+                            .printStackTrace();
                     running.stop();
                 }
             }

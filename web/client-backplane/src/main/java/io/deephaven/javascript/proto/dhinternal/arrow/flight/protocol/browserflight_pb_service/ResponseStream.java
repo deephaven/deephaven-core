@@ -5,11 +5,11 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.BrowserFlight_pb_service.ResponseStream",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.BrowserFlight_pb_service.ResponseStream",
+        namespace = JsPackage.GLOBAL)
 public interface ResponseStream<T> {
-  void cancel();
+    void cancel();
 
-  ResponseStream on(String type, Function handler);
+    ResponseStream on(String type, Function handler);
 }

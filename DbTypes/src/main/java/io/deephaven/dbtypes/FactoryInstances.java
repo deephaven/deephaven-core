@@ -5,8 +5,7 @@ import io.deephaven.configuration.Configuration;
 import java.lang.reflect.Constructor;
 
 class FactoryInstances {
-    private FactoryInstances() {
-    }
+    private FactoryInstances() {}
 
     private static final DbFileFactory FILE_FACTORY;
 

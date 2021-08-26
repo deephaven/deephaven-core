@@ -27,8 +27,10 @@ public class RowGroupWriterImpl implements RowGroupWriter {
     private final CompressionCodecFactory.BytesInputCompressor compressor;
 
     RowGroupWriterImpl(String path, boolean append, SeekableChannelsProvider channelsProvider, MessageType type,
-                       int pageSize, ByteBufferAllocator allocator, CompressionCodecFactory.BytesInputCompressor compressor) throws IOException {
-        this(channelsProvider.getWriteChannel(path, append), type, pageSize, allocator, blockWithPath(path), compressor);
+            int pageSize, ByteBufferAllocator allocator, CompressionCodecFactory.BytesInputCompressor compressor)
+            throws IOException {
+        this(channelsProvider.getWriteChannel(path, append), type, pageSize, allocator, blockWithPath(path),
+                compressor);
     }
 
     private static BlockMetaData blockWithPath(String path) {
@@ -37,13 +39,15 @@ public class RowGroupWriterImpl implements RowGroupWriter {
         return blockMetaData;
     }
 
-    RowGroupWriterImpl(SeekableByteChannel writeChannel, MessageType type, int pageSize, ByteBufferAllocator allocator, CompressionCodecFactory.BytesInputCompressor compressor) {
+    RowGroupWriterImpl(SeekableByteChannel writeChannel, MessageType type, int pageSize, ByteBufferAllocator allocator,
+            CompressionCodecFactory.BytesInputCompressor compressor) {
         this(writeChannel, type, pageSize, allocator, new BlockMetaData(), compressor);
     }
 
 
     private RowGroupWriterImpl(SeekableByteChannel writeChannel, MessageType type, int pageSize,
-                               ByteBufferAllocator allocator, BlockMetaData blockMetaData, CompressionCodecFactory.BytesInputCompressor compressor) {
+            ByteBufferAllocator allocator, BlockMetaData blockMetaData,
+            CompressionCodecFactory.BytesInputCompressor compressor) {
         this.writeChannel = writeChannel;
         this.type = type;
         this.pageSize = pageSize;
@@ -52,7 +56,7 @@ public class RowGroupWriterImpl implements RowGroupWriter {
         this.compressor = compressor;
     }
 
-    String[] getPrimitivePath(String columnName){
+    String[] getPrimitivePath(String columnName) {
         String[] result = {columnName};
 
         Type rollingType;
@@ -61,7 +65,7 @@ public class RowGroupWriterImpl implements RowGroupWriter {
             if (groupType.getFieldCount() != 1) {
                 throw new UnsupportedOperationException("Encountered struct at:" + Arrays.toString(result));
             }
-            result = Arrays.copyOf(result,result.length+1);
+            result = Arrays.copyOf(result, result.length + 1);
             result[result.length - 1] = groupType.getFieldName(0);
         }
         return result;
@@ -70,10 +74,12 @@ public class RowGroupWriterImpl implements RowGroupWriter {
     @Override
     public ColumnWriter addColumn(String columnName) {
         if (activeWriter != null) {
-            throw new RuntimeException("There is already an active column writer for " + activeWriter.getColumn().getPath()[0]
-                    + " need to close that before opening a writer for " + columnName);
+            throw new RuntimeException(
+                    "There is already an active column writer for " + activeWriter.getColumn().getPath()[0]
+                            + " need to close that before opening a writer for " + columnName);
         }
-        activeWriter = new ColumnWriterImpl(this, writeChannel, type.getColumnDescription(getPrimitivePath(columnName)), compressor, pageSize, allocator);
+        activeWriter = new ColumnWriterImpl(this, writeChannel, type.getColumnDescription(getPrimitivePath(columnName)),
+                compressor, pageSize, allocator);
         return activeWriter;
     }
 

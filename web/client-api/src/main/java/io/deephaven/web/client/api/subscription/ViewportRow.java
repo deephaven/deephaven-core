@@ -30,7 +30,8 @@ public class ViewportRow implements TableData.Row {
     public Any get(Column column) {
         JsArray<Any> uncheckedData = Js.uncheckedCast(dataColumns[column.getIndex()]);
         if (uncheckedData == null) {
-            throw new java.util.NoSuchElementException("Column " + column.getName() + " not found in row, was it specified in the viewport?");
+            throw new java.util.NoSuchElementException(
+                    "Column " + column.getName() + " not found in row, was it specified in the viewport?");
         }
         return uncheckedData.getAnyAt(offsetInSnapshot);
     }

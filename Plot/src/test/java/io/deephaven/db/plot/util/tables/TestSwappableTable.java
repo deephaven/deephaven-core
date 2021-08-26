@@ -9,6 +9,6 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 public class TestSwappableTable extends BaseArrayTestCase {
 
     public void testSwappableTableOneClickMap() {
-        //todo
+        // todo
     }
 }

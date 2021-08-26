@@ -23,7 +23,7 @@ public class ChunkUtilsTest {
     @Test
     public void testChunkMaxSizeDoesntOverflowLongAccumulator() {
         // Note we accumulate using longs and need to verify adding the next value to the accumulator will not overflow.
-        assertTrue((long)(Chunk.MAXIMUM_SIZE) * 2 <= Long.MAX_VALUE);
+        assertTrue((long) (Chunk.MAXIMUM_SIZE) * 2 <= Long.MAX_VALUE);
     }
 
     // 1) make sure test works with regular limit
@@ -140,7 +140,7 @@ public class ChunkUtilsTest {
         }
     }
 
-    private <ATTR extends Any> LongChunk<ATTR> createChunk(final long ...values) {
+    private <ATTR extends Any> LongChunk<ATTR> createChunk(final long... values) {
         final WritableLongChunk<ATTR> chunk = WritableLongChunk.makeWritableChunk(values.length);
         for (int idx = 0; idx < values.length; ++idx) {
             chunk.set(idx, values[idx]);
@@ -148,7 +148,7 @@ public class ChunkUtilsTest {
         return chunk;
     }
 
-    private <ATTR extends Any> void validateChunk(final LongChunk<ATTR> chunk, final long ...values) {
+    private <ATTR extends Any> void validateChunk(final LongChunk<ATTR> chunk, final long... values) {
         assertEquals(values.length, chunk.size());
         for (int idx = 0; idx < values.length; ++idx) {
             assertEquals(values[idx], chunk.get(idx));
@@ -163,8 +163,8 @@ public class ChunkUtilsTest {
     }
 
     private Pair<LongChunk<OrderedKeyRanges>, LongChunk<OrderedKeyIndices>> generateChunks(final int indexCount,
-                                                                                           final int avgElementsPerRange,
-                                                                                           final int sparsityFactor) {
+            final int avgElementsPerRange,
+            final int sparsityFactor) {
         final Random random = new Random(0);
         final long[] indexPoints = new long[indexCount];
         final int rangeCount = Math.max(1, (indexCount + avgElementsPerRange / 2) / avgElementsPerRange);
@@ -174,7 +174,7 @@ public class ChunkUtilsTest {
         int j = 0;
         for (int i = 0; i < rangeCount - 1; i++) {
             // This is +2 to ensure that there is a gap between two ranges.
-            indexRanges[2 * i] = lastPos + 2 + random.nextInt(2 * avgElementsPerRange - 1)*sparsityFactor;
+            indexRanges[2 * i] = lastPos + 2 + random.nextInt(2 * avgElementsPerRange - 1) * sparsityFactor;
             final int step = 1 + Math.max(0, Math.min(random.nextInt(2 * avgElementsPerRange - 1),
                     remainingCount - rangeCount));
             lastPos = indexRanges[2 * i + 1] = indexRanges[2 * i] + step - 1;

@@ -47,6 +47,7 @@ public class ChunkBoxer {
     }
 
     private static final ObjectBoxer OBJECT_BOXER = new ObjectBoxer();
+
     private static class ObjectBoxer implements BoxerKernel {
         @Override
         public ObjectChunk<?, ? extends Values> box(Chunk<? extends Values> primitives) {
@@ -77,7 +78,7 @@ public class ChunkBoxer {
         public ObjectChunk<?, ? extends Values> box(Chunk<? extends Values> primitives) {
             final BooleanChunk<? extends Values> booleanChunk = primitives.asBooleanChunk();
             for (int ii = 0; ii < primitives.size(); ++ii) {
-                //noinspection UnnecessaryBoxing
+                // noinspection UnnecessaryBoxing
                 objectChunk.set(ii, Boolean.valueOf(booleanChunk.get(ii)));
             }
             objectChunk.setSize(primitives.size());
@@ -116,7 +117,7 @@ public class ChunkBoxer {
             return objectChunk;
         }
     }
-    
+
     private static class ShortBoxer extends BoxerCommon {
         ShortBoxer(int capacity) {
             super(capacity);
@@ -132,7 +133,7 @@ public class ChunkBoxer {
             return objectChunk;
         }
     }
-    
+
     private static class IntBoxer extends BoxerCommon {
         IntBoxer(int capacity) {
             super(capacity);
@@ -148,7 +149,7 @@ public class ChunkBoxer {
             return objectChunk;
         }
     }
-    
+
     private static class LongBoxer extends BoxerCommon {
         LongBoxer(int capacity) {
             super(capacity);
@@ -164,7 +165,7 @@ public class ChunkBoxer {
             return objectChunk;
         }
     }
-    
+
     private static class FloatBoxer extends BoxerCommon {
         FloatBoxer(int capacity) {
             super(capacity);
@@ -180,7 +181,7 @@ public class ChunkBoxer {
             return objectChunk;
         }
     }
-    
+
     private static class DoubleBoxer extends BoxerCommon {
         DoubleBoxer(int capacity) {
             super(capacity);

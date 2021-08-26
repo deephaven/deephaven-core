@@ -15,15 +15,12 @@ import java.util.regex.Matcher;
 import static io.deephaven.db.tables.select.SelectFactoryConstants.*;
 
 /**
- * MatchPair Factory that accepts final value of either =, &lt;=, or &lt;, &gt; &gt;= and returns a Pair&lt;MatchPair, Table.AsOfMatchRule&gt;.
+ * MatchPair Factory that accepts final value of either =, &lt;=, or &lt;, &gt; &gt;= and returns a Pair&lt;MatchPair,
+ * Table.AsOfMatchRule&gt;.
  */
 public class AjMatchPairFactory {
     private enum AsOfMatchRule {
-        Equal,
-        Less_Than,
-        Less_Than_Equal,
-        Greater_Than,
-        Greater_Than_Equal;
+        Equal, Less_Than, Less_Than_Equal, Greater_Than, Greater_Than_Equal;
 
         Table.AsOfMatchRule toTableMatchRule(boolean reverse) {
             switch (this) {
@@ -44,41 +41,47 @@ public class AjMatchPairFactory {
 
     private static final ExpressionParser<Pair<MatchPair, AsOfMatchRule>> finalColumnParser = new ExpressionParser<>();
     static {
-        finalColumnParser.registerFactory(new AbstractExpressionFactory<Pair<MatchPair, AsOfMatchRule>>(START_PTRN + "("+ ID_PTRN + ")" + END_PTRN) {
+        finalColumnParser.registerFactory(new AbstractExpressionFactory<Pair<MatchPair, AsOfMatchRule>>(
+                START_PTRN + "(" + ID_PTRN + ")" + END_PTRN) {
             @Override
             public Pair<MatchPair, AsOfMatchRule> getExpression(String expression, Matcher matcher, Object... args) {
                 String columnName = matcher.group(1);
-                return new Pair<>(new MatchPair(columnName,columnName), AsOfMatchRule.Equal);
+                return new Pair<>(new MatchPair(columnName, columnName), AsOfMatchRule.Equal);
             }
         });
-        finalColumnParser.registerFactory(new AbstractExpressionFactory<Pair<MatchPair, AsOfMatchRule>>(START_PTRN + "("+ ID_PTRN + ")\\s*==?\\s*(" + ID_PTRN + ")" + END_PTRN) {
+        finalColumnParser.registerFactory(new AbstractExpressionFactory<Pair<MatchPair, AsOfMatchRule>>(
+                START_PTRN + "(" + ID_PTRN + ")\\s*==?\\s*(" + ID_PTRN + ")" + END_PTRN) {
             @Override
             public Pair<MatchPair, AsOfMatchRule> getExpression(String expression, Matcher matcher, Object... args) {
-                return new Pair<>(new MatchPair(matcher.group(1),matcher.group(2)), AsOfMatchRule.Equal);
+                return new Pair<>(new MatchPair(matcher.group(1), matcher.group(2)), AsOfMatchRule.Equal);
             }
         });
-        finalColumnParser.registerFactory(new AbstractExpressionFactory<Pair<MatchPair, AsOfMatchRule>>(START_PTRN + "(" + ID_PTRN + ")\\s*<=\\s*(" + ID_PTRN + ")" + END_PTRN) {
+        finalColumnParser.registerFactory(new AbstractExpressionFactory<Pair<MatchPair, AsOfMatchRule>>(
+                START_PTRN + "(" + ID_PTRN + ")\\s*<=\\s*(" + ID_PTRN + ")" + END_PTRN) {
             @Override
             public Pair<MatchPair, AsOfMatchRule> getExpression(String expression, Matcher matcher, Object... args) {
-                return new Pair<>(new MatchPair(matcher.group(1),matcher.group(2)), AsOfMatchRule.Less_Than_Equal);
+                return new Pair<>(new MatchPair(matcher.group(1), matcher.group(2)), AsOfMatchRule.Less_Than_Equal);
             }
         });
-        finalColumnParser.registerFactory(new AbstractExpressionFactory<Pair<MatchPair, AsOfMatchRule>>(START_PTRN + "(" + ID_PTRN + ")\\s*<\\s*(" + ID_PTRN + ")" + END_PTRN) {
+        finalColumnParser.registerFactory(new AbstractExpressionFactory<Pair<MatchPair, AsOfMatchRule>>(
+                START_PTRN + "(" + ID_PTRN + ")\\s*<\\s*(" + ID_PTRN + ")" + END_PTRN) {
             @Override
             public Pair<MatchPair, AsOfMatchRule> getExpression(String expression, Matcher matcher, Object... args) {
-                return new Pair<>(new MatchPair(matcher.group(1),matcher.group(2)), AsOfMatchRule.Less_Than);
+                return new Pair<>(new MatchPair(matcher.group(1), matcher.group(2)), AsOfMatchRule.Less_Than);
             }
         });
-        finalColumnParser.registerFactory(new AbstractExpressionFactory<Pair<MatchPair, AsOfMatchRule>>(START_PTRN + "(" + ID_PTRN + ")\\s*>=\\s*(" + ID_PTRN + ")" + END_PTRN) {
+        finalColumnParser.registerFactory(new AbstractExpressionFactory<Pair<MatchPair, AsOfMatchRule>>(
+                START_PTRN + "(" + ID_PTRN + ")\\s*>=\\s*(" + ID_PTRN + ")" + END_PTRN) {
             @Override
             public Pair<MatchPair, AsOfMatchRule> getExpression(String expression, Matcher matcher, Object... args) {
-                return new Pair<>(new MatchPair(matcher.group(1),matcher.group(2)), AsOfMatchRule.Greater_Than_Equal);
+                return new Pair<>(new MatchPair(matcher.group(1), matcher.group(2)), AsOfMatchRule.Greater_Than_Equal);
             }
         });
-        finalColumnParser.registerFactory(new AbstractExpressionFactory<Pair<MatchPair, AsOfMatchRule>>(START_PTRN + "(" + ID_PTRN + ")\\s*>\\s*(" + ID_PTRN + ")" + END_PTRN) {
+        finalColumnParser.registerFactory(new AbstractExpressionFactory<Pair<MatchPair, AsOfMatchRule>>(
+                START_PTRN + "(" + ID_PTRN + ")\\s*>\\s*(" + ID_PTRN + ")" + END_PTRN) {
             @Override
             public Pair<MatchPair, AsOfMatchRule> getExpression(String expression, Matcher matcher, Object... args) {
-                return new Pair<>(new MatchPair(matcher.group(1),matcher.group(2)), AsOfMatchRule.Greater_Than);
+                return new Pair<>(new MatchPair(matcher.group(1), matcher.group(2)), AsOfMatchRule.Greater_Than);
             }
         });
     }
@@ -90,7 +93,7 @@ public class AjMatchPairFactory {
 
     @SuppressWarnings("WeakerAccess")
     public static Pair<MatchPair[], Table.AsOfMatchRule> getExpressions(boolean reverse, String... matches) {
-        MatchPair [] result = new MatchPair[matches.length];
+        MatchPair[] result = new MatchPair[matches.length];
         for (int ii = 0; ii < matches.length - 1; ++ii) {
             result[ii] = MatchPairFactory.getExpression(matches[ii]);
         }

@@ -48,17 +48,20 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     /**
      * An unmodifiable view of columnSources.
      */
-    private final Map<String, ? extends DeferredGroupingColumnSource<?>> sharedColumnSources = Collections.unmodifiableMap(columnSources);
+    private final Map<String, ? extends DeferredGroupingColumnSource<?>> sharedColumnSources =
+            Collections.unmodifiableMap(columnSources);
 
     /**
      * State for table locations that have been added, but have never been found to exist with non-zero size.
      */
-    private final KeyedObjectHashMap<ImmutableTableLocationKey, EmptyTableLocationEntry> emptyTableLocations = new KeyedObjectHashMap<>(EMPTY_TABLE_LOCATION_ENTRY_KEY);
+    private final KeyedObjectHashMap<ImmutableTableLocationKey, EmptyTableLocationEntry> emptyTableLocations =
+            new KeyedObjectHashMap<>(EMPTY_TABLE_LOCATION_ENTRY_KEY);
 
     /**
      * State for table locations that provide the regions backing our column sources.
      */
-    private final KeyedObjectHashMap<ImmutableTableLocationKey, IncludedTableLocationEntry> includedTableLocations = new KeyedObjectHashMap<>(INCLUDED_TABLE_LOCATION_ENTRY_KEY);
+    private final KeyedObjectHashMap<ImmutableTableLocationKey, IncludedTableLocationEntry> includedTableLocations =
+            new KeyedObjectHashMap<>(INCLUDED_TABLE_LOCATION_ENTRY_KEY);
 
     /**
      * Table locations that provide the regions backing our column sources, in insertion order.
@@ -74,14 +77,14 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     /**
      * Construct a column manager with the specified component factory and definitions.
      *
-     * @param isRefreshing      Whether the table using this column source manager is refreshing
-     * @param componentFactory  The component factory
+     * @param isRefreshing Whether the table using this column source manager is refreshing
+     * @param componentFactory The component factory
      * @param columnDefinitions The column definitions
      */
     RegionedColumnSourceManager(final boolean isRefreshing,
-                                @NotNull final RegionedTableComponentFactory componentFactory,
-                                @NotNull final ColumnToCodecMappings codecMappings,
-                                @NotNull final ColumnDefinition... columnDefinitions) {
+            @NotNull final RegionedTableComponentFactory componentFactory,
+            @NotNull final ColumnToCodecMappings codecMappings,
+            @NotNull final ColumnDefinition... columnDefinitions) {
         this.isRefreshing = isRefreshing;
         this.columnDefinitions = columnDefinitions;
         for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
@@ -103,12 +106,14 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             emptyTableLocations.add(new EmptyTableLocationEntry(tableLocation));
         } else {
             // Duplicate location - not allowed
-            final TableLocation duplicateLocation = includedLocation != null ? includedLocation.location : emptyLocation.location;
+            final TableLocation duplicateLocation =
+                    includedLocation != null ? includedLocation.location : emptyLocation.location;
             if (tableLocation != duplicateLocation) {
                 // If it ever transpires that we need to compare the locations and not just detect a second add, then
                 // we need to add plumbing to include access to the location provider
-                throw new TableDataException("Data Routing Configuration error: TableDataService elements overlap at locations " +
-                        tableLocation.toStringDetailed() + " and " + duplicateLocation.toStringDetailed());
+                throw new TableDataException(
+                        "Data Routing Configuration error: TableDataService elements overlap at locations " +
+                                tableLocation.toStringDetailed() + " and " + duplicateLocation.toStringDetailed());
             } else {
                 // This is unexpected - we got the identical table location object twice
                 // If we ever get this, some thought needs to go into why.
@@ -121,11 +126,12 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     @Override
     public synchronized Index refresh() {
         final Index.SequentialBuilder addedIndexBuilder = Index.FACTORY.getSequentialBuilder();
-        for (final IncludedTableLocationEntry entry : orderedIncludedTableLocations) { // Ordering matters, since we're using a sequential builder.
+        for (final IncludedTableLocationEntry entry : orderedIncludedTableLocations) { // Ordering matters, since we're
+                                                                                       // using a sequential builder.
             entry.pollUpdates(addedIndexBuilder);
         }
         Collection<EmptyTableLocationEntry> entriesToInclude = null;
-        for (final Iterator<EmptyTableLocationEntry> iterator = emptyTableLocations.iterator(); iterator.hasNext(); ) {
+        for (final Iterator<EmptyTableLocationEntry> iterator = emptyTableLocations.iterator(); iterator.hasNext();) {
             final EmptyTableLocationEntry nonexistentEntry = iterator.next();
             nonexistentEntry.refresh();
             final ReadOnlyIndex locationIndex = nonexistentEntry.location.getIndex();
@@ -134,7 +140,8 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                     locationIndex.close();
                 } else {
                     nonexistentEntry.initialIndex = locationIndex;
-                    (entriesToInclude == null ? entriesToInclude = new TreeSet<>() : entriesToInclude).add(nonexistentEntry);
+                    (entriesToInclude == null ? entriesToInclude = new TreeSet<>() : entriesToInclude)
+                            .add(nonexistentEntry);
                     iterator.remove();
                 }
             }
@@ -157,13 +164,14 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     public final synchronized Collection<TableLocation> allLocations() {
         return Stream.concat(
                 orderedIncludedTableLocations.stream().map(e -> e.location),
-                emptyTableLocations.values().stream().sorted().map(e -> e.location)
-        ).collect(Collectors.toCollection(ArrayList::new));
+                emptyTableLocations.values().stream().sorted().map(e -> e.location))
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     @Override
     public final synchronized Collection<TableLocation> includedLocations() {
-        return orderedIncludedTableLocations.stream().map(e -> e.location).collect(Collectors.toCollection(ArrayList::new));
+        return orderedIncludedTableLocations.stream().map(e -> e.location)
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     @Override
@@ -192,7 +200,8 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     }
 
     /**
-     * State keeper for a table location and its subscription buffer if it hasn't been found to have a non-null, non-zero size yet.
+     * State keeper for a table location and its subscription buffer if it hasn't been found to have a non-null,
+     * non-zero size yet.
      */
     private class EmptyTableLocationEntry implements Comparable<EmptyTableLocationEntry> {
 
@@ -215,7 +224,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 subscriptionBuffer.processPending();
             } else {
                 // NB: This should be hit only once per entry - subscription buffers handle all "isRefreshing"
-                //     (i.e. "live") tables, regardless of whether the underlying locations support subscriptions.
+                // (i.e. "live") tables, regardless of whether the underlying locations support subscriptions.
                 location.refresh();
             }
         }
@@ -229,13 +238,15 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         }
     }
 
-    private static final KeyedObjectKey<ImmutableTableLocationKey, EmptyTableLocationEntry> EMPTY_TABLE_LOCATION_ENTRY_KEY = new KeyedObjectKey.Basic<ImmutableTableLocationKey, EmptyTableLocationEntry>() {
+    private static final KeyedObjectKey<ImmutableTableLocationKey, EmptyTableLocationEntry> EMPTY_TABLE_LOCATION_ENTRY_KEY =
+            new KeyedObjectKey.Basic<ImmutableTableLocationKey, EmptyTableLocationEntry>() {
 
-        @Override
-        public ImmutableTableLocationKey getKey(@NotNull final EmptyTableLocationEntry emptyTableLocationEntry) {
-            return emptyTableLocationEntry.location.getKey();
-        }
-    };
+                @Override
+                public ImmutableTableLocationKey getKey(
+                        @NotNull final EmptyTableLocationEntry emptyTableLocationEntry) {
+                    return emptyTableLocationEntry.location.getKey();
+                }
+            };
 
     /**
      * State-keeper for a table location and its column locations, once it's been found to have a positive size.
@@ -263,16 +274,19 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             Assert.eqTrue(initialIndex.nonempty(), "initialIndex.nonempty()");
             Assert.eqNull(indexAtLastUpdate, "indexAtLastUpdate");
             if (initialIndex.lastKey() > RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK) {
-                throw new TableDataException(String.format("Location %s has initial last key %#016X, larger than maximum supported key %#016X",
-                        location, initialIndex.lastKey(), RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK));
+                throw new TableDataException(String.format(
+                        "Location %s has initial last key %#016X, larger than maximum supported key %#016X",
+                        location, initialIndex.lastKey(),
+                        RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK));
             }
 
             final long regionFirstKey = RegionedColumnSource.getFirstElementIndex(regionIndex);
-            initialIndex.forAllLongRanges((subRegionFirstKey, subRegionLastKey) -> addedIndexBuilder.appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
+            initialIndex.forAllLongRanges((subRegionFirstKey, subRegionLastKey) -> addedIndexBuilder
+                    .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
             ReadOnlyIndex addIndexInTable = null;
             try {
                 for (final ColumnDefinition columnDefinition : columnDefinitions) {
-                    //noinspection unchecked
+                    // noinspection unchecked
                     final ColumnLocationState state = new ColumnLocationState(
                             columnDefinition,
                             columnSources.get(columnDefinition.getName()),
@@ -280,7 +294,9 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                     columnLocationStates.add(state);
                     state.regionAllocated(regionIndex);
                     if (state.needToUpdateGrouping()) {
-                        state.updateGrouping(addIndexInTable == null ? addIndexInTable = initialIndex.shift(regionFirstKey) : addIndexInTable);
+                        state.updateGrouping(
+                                addIndexInTable == null ? addIndexInTable = initialIndex.shift(regionFirstKey)
+                                        : addIndexInTable);
                     }
                 }
             } finally {
@@ -299,20 +315,25 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             final ReadOnlyIndex updateIndex = location.getIndex();
             try {
                 if (updateIndex == null) {
-                    // This should be impossible - the subscription buffer transforms a transition to null into a pending exception
-                    throw new TableDataException("Location " + location + " is no longer available, data has been removed");
+                    // This should be impossible - the subscription buffer transforms a transition to null into a
+                    // pending exception
+                    throw new TableDataException(
+                            "Location " + location + " is no longer available, data has been removed");
                 }
                 if (!indexAtLastUpdate.subsetOf(updateIndex)) { // Bad change
-                    //noinspection ThrowableNotThrown
-                    Assert.statementNeverExecuted("Index keys removed at location " + location + ": " + indexAtLastUpdate.minus(updateIndex));
+                    // noinspection ThrowableNotThrown
+                    Assert.statementNeverExecuted(
+                            "Index keys removed at location " + location + ": " + indexAtLastUpdate.minus(updateIndex));
                 }
                 if (indexAtLastUpdate.size() == updateIndex.size()) {
                     // Nothing to do
                     return;
                 }
                 if (updateIndex.lastKey() > RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK) {
-                    throw new TableDataException(String.format("Location %s has updated last key %#016X, larger than maximum supported key %#016X",
-                            location, updateIndex.lastKey(), RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK));
+                    throw new TableDataException(String.format(
+                            "Location %s has updated last key %#016X, larger than maximum supported key %#016X",
+                            location, updateIndex.lastKey(),
+                            RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK));
                 }
 
                 if (log.isDebugEnabled()) {
@@ -322,12 +343,15 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 }
                 try (final ReadOnlyIndex addedIndex = updateIndex.minus(indexAtLastUpdate)) {
                     final long regionFirstKey = RegionedColumnSource.getFirstElementIndex(regionIndex);
-                    addedIndex.forAllLongRanges((subRegionFirstKey, subRegionLastKey) -> addedIndexBuilder.appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
+                    addedIndex.forAllLongRanges((subRegionFirstKey, subRegionLastKey) -> addedIndexBuilder
+                            .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
                     ReadOnlyIndex addIndexInTable = null;
                     try {
                         for (final ColumnLocationState state : columnLocationStates) {
                             if (state.needToUpdateGrouping()) {
-                                state.updateGrouping(addIndexInTable == null ? addIndexInTable = updateIndex.shift(regionFirstKey) : addIndexInTable);
+                                state.updateGrouping(
+                                        addIndexInTable == null ? addIndexInTable = updateIndex.shift(regionFirstKey)
+                                                : addIndexInTable);
                             }
                         }
                     } finally {
@@ -344,7 +368,8 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
 
         @Override
         public int compareTo(@NotNull final IncludedTableLocationEntry other) {
-            // This Comparable implementation is currently unused, as we maintain ordering in orderedIncludedTableLocations by insertion
+            // This Comparable implementation is currently unused, as we maintain ordering in
+            // orderedIncludedTableLocations by insertion
             if (this == other) {
                 return 0;
             }
@@ -352,16 +377,18 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         }
     }
 
-    private static final KeyedObjectKey<ImmutableTableLocationKey, IncludedTableLocationEntry> INCLUDED_TABLE_LOCATION_ENTRY_KEY = new KeyedObjectKey.Basic<ImmutableTableLocationKey, IncludedTableLocationEntry>() {
+    private static final KeyedObjectKey<ImmutableTableLocationKey, IncludedTableLocationEntry> INCLUDED_TABLE_LOCATION_ENTRY_KEY =
+            new KeyedObjectKey.Basic<ImmutableTableLocationKey, IncludedTableLocationEntry>() {
 
-        @Override
-        public ImmutableTableLocationKey getKey(@NotNull final IncludedTableLocationEntry includedTableLocationEntry) {
-            return includedTableLocationEntry.location.getKey();
-        }
-    };
+                @Override
+                public ImmutableTableLocationKey getKey(
+                        @NotNull final IncludedTableLocationEntry includedTableLocationEntry) {
+                    return includedTableLocationEntry.location.getKey();
+                }
+            };
 
     /**
-     * Batches up a definition, source, and location for ease of use.  Implements grouping maintenance.
+     * Batches up a definition, source, and location for ease of use. Implements grouping maintenance.
      */
     private class ColumnLocationState<T> {
 
@@ -370,15 +397,16 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         protected final ColumnLocation location;
 
         private ColumnLocationState(ColumnDefinition<T> definition,
-                                    RegionedColumnSource<T> source,
-                                    ColumnLocation location) {
+                RegionedColumnSource<T> source,
+                ColumnLocation location) {
             this.definition = definition;
             this.source = source;
             this.location = location;
         }
 
         private void regionAllocated(final int regionIndex) {
-            Assert.eq(regionIndex, "regionIndex", source.addRegion(definition, location), "source.addRegion((definition, location)");
+            Assert.eq(regionIndex, "regionIndex", source.addRegion(definition, location),
+                    "source.addRegion((definition, location)");
         }
 
         private boolean needToUpdateGrouping() {
@@ -396,7 +424,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 GroupingProvider groupingProvider = source.getGroupingProvider();
                 if (groupingProvider == null) {
                     groupingProvider = GroupingProvider.makeGroupingProvider(definition);
-                    //noinspection unchecked
+                    // noinspection unchecked
                     source.setGroupingProvider(groupingProvider);
                 }
                 if (groupingProvider instanceof KeyRangeGroupingProvider) {
@@ -409,7 +437,8 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                     columnPartitionToIndex = new LinkedHashMap<>();
                     partitioningColumnSource.setGroupToRange(columnPartitionToIndex);
                 }
-                final T columnPartitionValue = location.getTableLocation().getKey().getPartitionValue(definition.getName());
+                final T columnPartitionValue =
+                        location.getTableLocation().getKey().getPartitionValue(definition.getName());
                 final Index current = columnPartitionToIndex.get(columnPartitionValue);
                 if (current == null) {
                     columnPartitionToIndex.put(columnPartitionValue, locationAddedIndexInTable.clone());

@@ -22,7 +22,8 @@ public class DeephavenJsApiLinker extends AbstractLinker {
     }
 
     @Override
-    public ArtifactSet link(TreeLogger logger, LinkerContext context, ArtifactSet artifacts, boolean onePermutation) throws UnableToCompleteException {
+    public ArtifactSet link(TreeLogger logger, LinkerContext context, ArtifactSet artifacts, boolean onePermutation)
+            throws UnableToCompleteException {
         return this.link(logger, context, artifacts);
     }
 

@@ -28,7 +28,9 @@ public class UngroupGrpcImpl extends GrpcTableOperation<UngroupRequest> {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();
-        final String[] columnsToUngroup = request.getColumnsToUngroupList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-        return liveTableMonitor.sharedLock().computeLocked(() -> parent.ungroup(request.getNullFill(), columnsToUngroup));
+        final String[] columnsToUngroup =
+                request.getColumnsToUngroupList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        return liveTableMonitor.sharedLock()
+                .computeLocked(() -> parent.ungroup(request.getNullFill(), columnsToUngroup));
     }
 }

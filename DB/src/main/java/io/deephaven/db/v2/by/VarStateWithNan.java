@@ -27,7 +27,7 @@ class VarStateWithNan extends VarState {
     @Override
     void savePrevious() {
         super.savePrevious();
-        ((VarStateWithNan)prev()).nanCount = nanCount;
+        ((VarStateWithNan) prev()).nanCount = nanCount;
     }
 
     @Override

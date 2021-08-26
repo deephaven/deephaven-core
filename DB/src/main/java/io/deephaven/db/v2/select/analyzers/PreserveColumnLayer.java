@@ -15,13 +15,14 @@ import java.util.Map;
  */
 final public class PreserveColumnLayer extends DependencyLayerBase {
     PreserveColumnLayer(SelectAndViewAnalyzer inner, String name, SelectColumn sc, ColumnSource cs, String[] deps,
-                        ModifiedColumnSet mcsBuilder) {
+            ModifiedColumnSet mcsBuilder) {
         super(inner, name, sc, cs, deps, mcsBuilder);
     }
 
     @Override
     public void applyUpdate(ShiftAwareListener.Update upstream, ReadOnlyIndex toClear, UpdateHelper helper) {
-        // Nothing to do at this level, but need to recurse because my inner layers might need to be called (e.g. because they are SelectColumnLayers)
+        // Nothing to do at this level, but need to recurse because my inner layers might need to be called (e.g.
+        // because they are SelectColumnLayers)
         inner.applyUpdate(upstream, toClear, helper);
     }
 

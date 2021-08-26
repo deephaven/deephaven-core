@@ -14,7 +14,9 @@ public class DynamicLogEntryPoolImpl extends ThreadSafeLenientFixedSizePool<LogE
     public DynamicLogEntryPoolImpl(String name, int entryCount, final LogBufferPool bufferPool) {
         super(name, entryCount,
                 new Function.Nullary<LogEntry>() {
-                    public LogEntry call() { return new LogEntryImpl(bufferPool); }
+                    public LogEntry call() {
+                        return new LogEntryImpl(bufferPool);
+                    }
                 }, null);
     }
 

@@ -24,16 +24,18 @@ public class ChunkUtils {
 
     /**
      * Generates a {@link LongChunk<OrderedKeyRanges>} from {@link LongChunk<OrderedKeyIndices>} chunk.
-     * @param chunk  the chunk to convert
+     * 
+     * @param chunk the chunk to convert
      * @return the generated chunk
      */
-    public static WritableLongChunk<OrderedKeyRanges> convertToOrderedKeyRanges(final LongChunk<OrderedKeyIndices> chunk) {
+    public static WritableLongChunk<OrderedKeyRanges> convertToOrderedKeyRanges(
+            final LongChunk<OrderedKeyIndices> chunk) {
         return convertToOrderedKeyRanges(chunk, Chunk.MAXIMUM_SIZE);
     }
 
     @VisibleForTesting
     static WritableLongChunk<OrderedKeyRanges> convertToOrderedKeyRanges(final LongChunk<OrderedKeyIndices> chunk,
-                                                                 final long maxChunkSize) {
+            final long maxChunkSize) {
         if (chunk.size() == 0) {
             return WritableLongChunk.makeWritableChunk(0);
         }
@@ -51,7 +53,7 @@ public class ChunkUtils {
             throw new SizeException("Cannot expand KeyIndices Chunk into KeyRanges Chunk.", newSize, maxChunkSize);
         }
 
-        final WritableLongChunk<OrderedKeyRanges> newChunk = WritableLongChunk.makeWritableChunk((int)newSize);
+        final WritableLongChunk<OrderedKeyRanges> newChunk = WritableLongChunk.makeWritableChunk((int) newSize);
 
         convertToOrderedKeyRanges(chunk, newChunk);
 
@@ -60,11 +62,12 @@ public class ChunkUtils {
 
     /**
      * Fills {@code OrderedKeyRanges} into {@code dest} from the provided {@code chunk} and specified source range.
-     * @param chunk  the chunk to convert
-     * @param dest  the chunk to fill with ranges
+     * 
+     * @param chunk the chunk to convert
+     * @param dest the chunk to fill with ranges
      */
     public static void convertToOrderedKeyRanges(final LongChunk<OrderedKeyIndices> chunk,
-                                                 final WritableLongChunk<OrderedKeyRanges> dest) {
+            final WritableLongChunk<OrderedKeyRanges> dest) {
         int destOffset = 0;
         if (chunk.size() == 0) {
             dest.setSize(destOffset);
@@ -87,7 +90,8 @@ public class ChunkUtils {
 
     /**
      * Generates a {@link LongChunk<OrderedKeyIndices>} from {@link LongChunk<OrderedKeyRanges>} chunk.
-     * @param chunk  the chunk to convert
+     * 
+     * @param chunk the chunk to convert
      * @return the generated chunk
      */
     public static LongChunk<OrderedKeyIndices> convertToOrderedKeyIndices(final LongChunk<OrderedKeyRanges> chunk) {
@@ -96,12 +100,13 @@ public class ChunkUtils {
 
     /**
      * Generates a {@link LongChunk<OrderedKeyIndices>} from {@link LongChunk<OrderedKeyRanges>} chunk.
-     * @param srcOffset  the offset into {@code chunk} to begin including in the generated chunk
-     * @param chunk  the chunk to convert
+     * 
+     * @param srcOffset the offset into {@code chunk} to begin including in the generated chunk
+     * @param chunk the chunk to convert
      * @return the generated chunk
      */
     public static LongChunk<OrderedKeyIndices> convertToOrderedKeyIndices(int srcOffset,
-                                                                          final LongChunk<OrderedKeyRanges> chunk) {
+            final LongChunk<OrderedKeyRanges> chunk) {
         srcOffset += srcOffset % 2; // ensure that we are using the correct range edges
 
         long numElements = 0;
@@ -116,19 +121,20 @@ public class ChunkUtils {
                     Chunk.MAXIMUM_SIZE);
         }
 
-        final WritableLongChunk<OrderedKeyIndices> newChunk = WritableLongChunk.makeWritableChunk((int)numElements);
+        final WritableLongChunk<OrderedKeyIndices> newChunk = WritableLongChunk.makeWritableChunk((int) numElements);
         convertToOrderedKeyIndices(srcOffset, chunk, newChunk, 0);
         return newChunk;
     }
 
     /**
      * Generates a {@link LongChunk<OrderedKeyIndices>} from {@link LongChunk<OrderedKeyRanges>} chunk.
-     * @param srcOffset  the offset into {@code chunk} to begin including in the generated chunk
-     * @param chunk  the chunk to convert
-     * @param dest  the chunk to fill with indices
+     * 
+     * @param srcOffset the offset into {@code chunk} to begin including in the generated chunk
+     * @param chunk the chunk to convert
+     * @param dest the chunk to fill with indices
      */
     public static void convertToOrderedKeyIndices(int srcOffset, final LongChunk<OrderedKeyRanges> chunk,
-                                                  final WritableLongChunk<OrderedKeyIndices> dest, int destOffset) {
+            final WritableLongChunk<OrderedKeyIndices> dest, int destOffset) {
         srcOffset += srcOffset & 1; // ensure that we are using the correct range edges
 
         for (int idx = srcOffset; idx + 1 < chunk.size() && destOffset < dest.size(); idx += 2) {
@@ -145,7 +151,8 @@ public class ChunkUtils {
     /**
      * Produce a pretty key for error messages from an element within parallel chunks.
      */
-    public static String extractKeyStringFromChunks(ChunkType[] keyChunkTypes, Chunk<Attributes.Values>[] chunks, int chunkPosition) {
+    public static String extractKeyStringFromChunks(ChunkType[] keyChunkTypes, Chunk<Attributes.Values>[] chunks,
+            int chunkPosition) {
         final StringBuilder builder = new StringBuilder();
         if (chunks.length != 1) {
             builder.append("[");
@@ -166,7 +173,8 @@ public class ChunkUtils {
     /**
      * Produce a pretty key for error messages from an element within parallel chunks.
      */
-    public static String extractKeyStringFromChunk(ChunkType keyChunkType, Chunk<? extends Attributes.Values> chunk, int chunkPosition) {
+    public static String extractKeyStringFromChunk(ChunkType keyChunkType, Chunk<? extends Attributes.Values> chunk,
+            int chunkPosition) {
         final StringBuilder builder = new StringBuilder();
         extractStringOne(chunkPosition, builder, keyChunkType, chunk);
         return builder.toString();
@@ -179,7 +187,8 @@ public class ChunkUtils {
         return extractKeyStringFromChunk(chunk.getChunkType(), chunk, chunkPosition);
     }
 
-    private static void extractStringOne(int chunkPosition, StringBuilder builder, ChunkType keyChunkType, Chunk<? extends Attributes.Values> chunk) {
+    private static void extractStringOne(int chunkPosition, StringBuilder builder, ChunkType keyChunkType,
+            Chunk<? extends Attributes.Values> chunk) {
         switch (keyChunkType) {
             case Boolean:
                 builder.append(chunk.asBooleanChunk().get(chunkPosition));
@@ -249,15 +258,17 @@ public class ChunkUtils {
 
     public static void checkSliceArgs(int size, int offset, int capacity) {
         if (offset < 0 || offset > size || capacity < 0 || capacity > size - offset) {
-            throw new IllegalArgumentException(String.format("New slice offset %d, capacity %d is incompatible with size %d",
-                    offset, capacity, size));
+            throw new IllegalArgumentException(
+                    String.format("New slice offset %d, capacity %d is incompatible with size %d",
+                            offset, capacity, size));
         }
     }
 
     public static void checkArrayArgs(int arrayLength, int offset, int capacity) {
         if (offset < 0 || capacity < 0 || offset + capacity > arrayLength) {
-            throw new IllegalArgumentException(String.format("offset %d, capacity %d is incompatible with array of length %d",
-                    offset, capacity, arrayLength));
+            throw new IllegalArgumentException(
+                    String.format("offset %d, capacity %d is incompatible with array of length %d",
+                            offset, capacity, arrayLength));
         }
     }
 
@@ -268,7 +279,9 @@ public class ChunkUtils {
      * direction will do; in those cases we will recommend copying in the forward direction for performance reasons.
      * When srcArray and destArray refer to the array, one of these five cases applies:
      *
-     * <p><pre>
+     * <p>
+     * 
+     * <pre>
      * Case 1: Source starts to the left of dest, and does not overlap. Recommend copying in forward direction.
      * SSSSS
      *      DDDDD
@@ -298,13 +311,13 @@ public class ChunkUtils {
      * @param destOffset The starting offset in the destination array
      * @param length The number of elements that will be copied
      * @return true if the copy should proceed in the forward direction; false if it should proceed in the reverse
-     * direction
+     *         direction
      */
     public static <TARRAY> boolean canCopyForward(TARRAY srcArray, int srcOffset, TARRAY destArray,
             int destOffset, int length) {
-        return srcArray != destArray ||  // arrays different
+        return srcArray != destArray || // arrays different
                 srcOffset + length <= destOffset || // case 1
-                srcOffset >= destOffset;  // cases 3, 4, 5
+                srcOffset >= destOffset; // cases 3, 4, 5
     }
 
     public static String dumpChunk(Chunk<? extends Any> chunk) {
@@ -339,12 +352,13 @@ public class ChunkUtils {
                 if (ii > 0) {
                     builder.append("\n");
                 }
-                //noinspection UnnecessaryBoxing
+                // noinspection UnnecessaryBoxing
                 builder.append(String.format("%04d", Integer.valueOf(ii)));
             }
             final char charValue = chunk.get(ii);
-            //noinspection UnnecessaryBoxing
-            builder.append(" '").append(charValue).append("' ").append(String.format("%6d", Integer.valueOf(charValue)));
+            // noinspection UnnecessaryBoxing
+            builder.append(" '").append(charValue).append("' ")
+                    .append(String.format("%6d", Integer.valueOf(charValue)));
         }
         return builder.append("\n").toString();
     }
@@ -356,11 +370,11 @@ public class ChunkUtils {
                 if (ii > 0) {
                     builder.append("\n");
                 }
-                //noinspection UnnecessaryBoxing
+                // noinspection UnnecessaryBoxing
                 builder.append(String.format("%04d", Integer.valueOf(ii)));
             }
             final byte byteValue = chunk.get(ii);
-            //noinspection UnnecessaryBoxing
+            // noinspection UnnecessaryBoxing
             builder.append(String.format(" %02x", Byte.valueOf(byteValue))).append(" ");
         }
         return builder.append("\n").toString();
@@ -373,11 +387,11 @@ public class ChunkUtils {
                 if (ii > 0) {
                     builder.append("\n");
                 }
-                //noinspection UnnecessaryBoxing
+                // noinspection UnnecessaryBoxing
                 builder.append(String.format("%04d", Integer.valueOf(ii)));
             }
             final short shortValue = chunk.get(ii);
-            //noinspection UnnecessaryBoxing
+            // noinspection UnnecessaryBoxing
             builder.append(String.format(" %5d", Short.valueOf(shortValue))).append(" ");
         }
         return builder.append("\n").toString();
@@ -390,11 +404,11 @@ public class ChunkUtils {
                 if (ii > 0) {
                     builder.append("\n");
                 }
-                //noinspection UnnecessaryBoxing
+                // noinspection UnnecessaryBoxing
                 builder.append(String.format("%04d", Integer.valueOf(ii)));
             }
             final int intValue = chunk.get(ii);
-            //noinspection UnnecessaryBoxing
+            // noinspection UnnecessaryBoxing
             builder.append(String.format(" %10d", Integer.valueOf(intValue))).append(" ");
         }
         return builder.append("\n").toString();
@@ -407,11 +421,11 @@ public class ChunkUtils {
                 if (ii > 0) {
                     builder.append("\n");
                 }
-                //noinspection UnnecessaryBoxing
+                // noinspection UnnecessaryBoxing
                 builder.append(String.format("%04d", Integer.valueOf(ii)));
             }
             final long longValue = chunk.get(ii);
-            //noinspection UnnecessaryBoxing
+            // noinspection UnnecessaryBoxing
             builder.append(String.format(" %10d", Long.valueOf(longValue))).append(" ");
         }
         return builder.append("\n").toString();
@@ -424,11 +438,11 @@ public class ChunkUtils {
                 if (ii > 0) {
                     builder.append("\n");
                 }
-                //noinspection UnnecessaryBoxing
+                // noinspection UnnecessaryBoxing
                 builder.append(String.format("%04d", Integer.valueOf(ii)));
             }
             final float floatValue = chunk.get(ii);
-            //noinspection UnnecessaryBoxing
+            // noinspection UnnecessaryBoxing
             builder.append(String.format(" %10f", Float.valueOf(floatValue))).append(" ");
         }
         return builder.append("\n").toString();
@@ -441,11 +455,11 @@ public class ChunkUtils {
                 if (ii > 0) {
                     builder.append("\n");
                 }
-                //noinspection UnnecessaryBoxing
+                // noinspection UnnecessaryBoxing
                 builder.append(String.format("%04d", Integer.valueOf(ii)));
             }
             final double doubleValue = chunk.get(ii);
-            //noinspection UnnecessaryBoxing
+            // noinspection UnnecessaryBoxing
             builder.append(String.format(" %10f", Double.valueOf(doubleValue))).append(" ");
         }
         return builder.append("\n").toString();
@@ -458,7 +472,7 @@ public class ChunkUtils {
                 if (ii > 0) {
                     builder.append("\n");
                 }
-                //noinspection UnnecessaryBoxing
+                // noinspection UnnecessaryBoxing
                 builder.append(String.format("%04d", Integer.valueOf(ii)));
             }
             final Object value = chunk.get(ii);
@@ -502,6 +516,7 @@ public class ChunkUtils {
         }
         return false;
     }
+
     public static boolean contains(LongChunk<? extends Any> chunk, long value) {
         for (int ii = 0; ii < chunk.size(); ++ii) {
             if (chunk.get(ii) == value) {
@@ -545,7 +560,8 @@ public class ChunkUtils {
      * @param destAllKeys The destination keys. It is ok for srcAllKeys == destAllKeys.
      * @param usePrev Should we read previous values from src
      */
-    public static void copyData(ChunkSource.WithPrev<? extends Attributes.Values> src, OrderedKeys srcAllKeys, WritableSource dest,
+    public static void copyData(ChunkSource.WithPrev<? extends Attributes.Values> src, OrderedKeys srcAllKeys,
+            WritableSource dest,
             OrderedKeys destAllKeys, boolean usePrev) {
         if (src == dest) {
             throw new UnsupportedOperationException("This method isn't safe when src == dest");
@@ -561,16 +577,17 @@ public class ChunkUtils {
         }
         dest.ensureCapacity(destAllKeys.lastKey() + 1);
         try (final ChunkSource.GetContext srcContext = src.makeGetContext(minSize);
-             final WritableChunkSink.FillFromContext destContext = dest.makeFillFromContext(minSize);
-             final OrderedKeys.Iterator srcIter = srcAllKeys.getOrderedKeysIterator();
-             final OrderedKeys.Iterator destIter = destAllKeys.getOrderedKeysIterator()) {
+                final WritableChunkSink.FillFromContext destContext = dest.makeFillFromContext(minSize);
+                final OrderedKeys.Iterator srcIter = srcAllKeys.getOrderedKeysIterator();
+                final OrderedKeys.Iterator destIter = destAllKeys.getOrderedKeysIterator()) {
             while (srcIter.hasMore()) {
                 Assert.assertion(destIter.hasMore(), "destIter.hasMore()");
                 final OrderedKeys srcNextKeys = srcIter.getNextOrderedKeysWithLength(minSize);
                 final OrderedKeys destNextKeys = destIter.getNextOrderedKeysWithLength(minSize);
                 Assert.eq(srcNextKeys.size(), "srcNextKeys.size()", destNextKeys.size(), "destNextKeys.size()");
 
-                final Chunk<? extends Attributes.Values> chunk = usePrev ? src.getPrevChunk(srcContext, srcNextKeys) : src.getChunk(srcContext, srcNextKeys);
+                final Chunk<? extends Attributes.Values> chunk =
+                        usePrev ? src.getPrevChunk(srcContext, srcNextKeys) : src.getChunk(srcContext, srcNextKeys);
                 dest.fillFromChunk(destContext, chunk, destNextKeys);
             }
         }
@@ -581,13 +598,14 @@ public class ChunkUtils {
      *
      * Sources and destinations must not overlap.
      *
-     * @param sources      The sources of the data, parallel with destinations
-     * @param srcAllKeys   The source keys.
+     * @param sources The sources of the data, parallel with destinations
+     * @param srcAllKeys The source keys.
      * @param destinations The destinations, parallel with sources, of the data (dest != src).
-     * @param destAllKeys  The destination keys. It is ok for srcAllKeys == destAllKeys.
-     * @param usePrev      Should we read previous values from src
+     * @param destAllKeys The destination keys. It is ok for srcAllKeys == destAllKeys.
+     * @param usePrev Should we read previous values from src
      */
-    public static void copyData(ChunkSource.WithPrev<? extends Attributes.Values> [] sources, OrderedKeys srcAllKeys, WritableSource [] destinations,
+    public static void copyData(ChunkSource.WithPrev<? extends Attributes.Values>[] sources, OrderedKeys srcAllKeys,
+            WritableSource[] destinations,
             OrderedKeys destAllKeys, boolean usePrev) {
         if (srcAllKeys.size() != destAllKeys.size()) {
             final String msg = String.format("Expected srcAllKeys.size() == destAllKeys.size(), but got %d and %d",
@@ -599,18 +617,20 @@ public class ChunkUtils {
             return;
         }
         if (sources.length != destinations.length) {
-            throw new IllegalArgumentException("Expected sources and destinations to be parallel arrays: sources length=" + sources.length + ", destinations length=" + destinations.length);
+            throw new IllegalArgumentException(
+                    "Expected sources and destinations to be parallel arrays: sources length=" + sources.length
+                            + ", destinations length=" + destinations.length);
         }
 
-        final ChunkSource.GetContext [] sourceContexts = new ChunkSource.GetContext[sources.length];
-        final WritableChunkSink.FillFromContext [] destContexts = new WritableChunkSink.FillFromContext[sources.length];
+        final ChunkSource.GetContext[] sourceContexts = new ChunkSource.GetContext[sources.length];
+        final WritableChunkSink.FillFromContext[] destContexts = new WritableChunkSink.FillFromContext[sources.length];
 
         try (final SharedContext sharedContext = SharedContext.makeSharedContext();
-             final OrderedKeys.Iterator srcIter = srcAllKeys.getOrderedKeysIterator();
-             final OrderedKeys.Iterator destIter = destAllKeys.getOrderedKeysIterator();
-             final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(sourceContexts);
-             final SafeCloseableArray<WritableChunkSink.FillFromContext> ignored2 = new SafeCloseableArray<>(destContexts)
-             ) {
+                final OrderedKeys.Iterator srcIter = srcAllKeys.getOrderedKeysIterator();
+                final OrderedKeys.Iterator destIter = destAllKeys.getOrderedKeysIterator();
+                final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(sourceContexts);
+                final SafeCloseableArray<WritableChunkSink.FillFromContext> ignored2 =
+                        new SafeCloseableArray<>(destContexts)) {
 
             for (int ss = 0; ss < sources.length; ++ss) {
                 for (int dd = 0; dd < destinations.length; ++dd) {
@@ -631,7 +651,9 @@ public class ChunkUtils {
 
                 sharedContext.reset();
                 for (int cc = 0; cc < sources.length; ++cc) {
-                    final Chunk<? extends Attributes.Values> chunk = usePrev ? sources[cc].getPrevChunk(sourceContexts[cc], srcNextKeys) : sources[cc].getChunk(sourceContexts[cc], srcNextKeys);
+                    final Chunk<? extends Attributes.Values> chunk =
+                            usePrev ? sources[cc].getPrevChunk(sourceContexts[cc], srcNextKeys)
+                                    : sources[cc].getChunk(sourceContexts[cc], srcNextKeys);
                     destinations[cc].fillFromChunk(destContexts[cc], chunk, destNextKeys);
                 }
             }
@@ -644,8 +666,8 @@ public class ChunkUtils {
             return;
         }
         try (final WritableChunkSink.FillFromContext destContext = dest.makeFillFromContext(minSize);
-             final WritableChunk<T> chunk = dest.getChunkType().makeWritableChunk(minSize);
-             final OrderedKeys.Iterator iter = allKeys.getOrderedKeysIterator()) {
+                final WritableChunk<T> chunk = dest.getChunkType().makeWritableChunk(minSize);
+                final OrderedKeys.Iterator iter = allKeys.getOrderedKeysIterator()) {
             chunk.fillWithNullValue(0, minSize);
             while (iter.hasMore()) {
                 try (final OrderedKeys nextKeys = iter.getNextOrderedKeysWithLength(COPY_DATA_CHUNK_SIZE)) {

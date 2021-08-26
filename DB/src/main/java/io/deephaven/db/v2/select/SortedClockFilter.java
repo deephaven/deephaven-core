@@ -12,10 +12,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * This will filter a table on a DBDateTime column for all rows greater than "now" according to a supplied clock.
- * It requires sorting of the input table according to the specified timestamp column, leveraging this for a very
- * efficient implementation (albeit one that requires sorting first) and an output sequence that is monotonically
- * nondecreasing in the specified column.
+ * This will filter a table on a DBDateTime column for all rows greater than "now" according to a supplied clock. It
+ * requires sorting of the input table according to the specified timestamp column, leveraging this for a very efficient
+ * implementation (albeit one that requires sorting first) and an output sequence that is monotonically nondecreasing in
+ * the specified column.
  */
 public class SortedClockFilter extends ClockFilter {
 
@@ -23,8 +23,8 @@ public class SortedClockFilter extends ClockFilter {
     private Range range;
 
     public SortedClockFilter(@NotNull final String columnName,
-                             @NotNull final Clock clock,
-                             final boolean live) {
+            @NotNull final Clock clock,
+            final boolean live) {
         super(columnName, clock, live);
     }
 
@@ -40,7 +40,7 @@ public class SortedClockFilter extends ClockFilter {
 
     @Override
     public String[] getSortColumns() {
-        return new String[] { columnName };
+        return new String[] {columnName};
     }
 
     @Override
@@ -49,7 +49,8 @@ public class SortedClockFilter extends ClockFilter {
     }
 
     @Override
-    protected @Nullable Index initializeAndGetInitialIndex(@NotNull final Index selection, @NotNull final Index fullSet, @NotNull final Table table) {
+    protected @Nullable Index initializeAndGetInitialIndex(@NotNull final Index selection, @NotNull final Index fullSet,
+            @NotNull final Table table) {
         // External code is required to have sorted according to column before calling this, so we expect the input to
         // be flat. This is not actually a guarantee of the sort() method, but is something that happens to be true
         // because the input table must be historical, and the historical sort implementation uses a
@@ -59,8 +60,8 @@ public class SortedClockFilter extends ClockFilter {
         // be equal to fullSet.
         // This test as implemented only works because the table is flat.
         Require.requirement(selection.size() == fullSet.size()
-                        && selection.size() == selection.lastKey() - selection.firstKey() + 1
-                        && fullSet.size() == fullSet.lastKey() - fullSet.firstKey() + 1,
+                && selection.size() == selection.lastKey() - selection.firstKey() + 1
+                && fullSet.size() == fullSet.lastKey() - fullSet.firstKey() + 1,
                 "selection.size() == fullSet.size() && selection.size() == selection.lastKey() - selection.firstKey() + 1 && fullSet.size() == fullSet.lastKey() - fullSet.firstKey() + 1");
 
         range = new Range(selection.firstKey(), selection.lastKey());
@@ -72,7 +73,8 @@ public class SortedClockFilter extends ClockFilter {
         if (range.isEmpty()) {
             return null;
         }
-        final Index.RandomBuilder addedBuilder = range.consumeKeysAndAppendAdded(nanosColumnSource, clock.currentTimeMicros() * 1000L, null);
+        final Index.RandomBuilder addedBuilder =
+                range.consumeKeysAndAppendAdded(nanosColumnSource, clock.currentTimeMicros() * 1000L, null);
         return addedBuilder == null ? null : addedBuilder.getIndex();
     }
 }

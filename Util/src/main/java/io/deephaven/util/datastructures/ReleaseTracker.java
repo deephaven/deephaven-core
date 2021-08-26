@@ -12,7 +12,8 @@ import java.util.*;
  * Instrumentation tool for detecting missing resource releases.
  */
 public interface ReleaseTracker<RESOURCE_TYPE> {
-    boolean CAPTURE_STACK_TRACES = Configuration.getInstance().getBooleanForClassWithDefault(ReleaseTracker.class, "captureStackTraces", false);
+    boolean CAPTURE_STACK_TRACES = Configuration.getInstance().getBooleanForClassWithDefault(ReleaseTracker.class,
+            "captureStackTraces", false);
 
     void reportAcquire(@NotNull final RESOURCE_TYPE resource);
 
@@ -60,7 +61,8 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
             private final StackTraceElement[] lastAcquire;
             private final StackTraceElement[] lastRelease;
 
-            private LastAcquireAndReleaseInfo(final StackTraceElement[] lastAcquire, final StackTraceElement[] lastRelease) {
+            private LastAcquireAndReleaseInfo(final StackTraceElement[] lastAcquire,
+                    final StackTraceElement[] lastRelease) {
                 this.lastAcquire = lastAcquire;
                 this.lastRelease = lastRelease;
             }
@@ -69,7 +71,8 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
         private final Map<RESOURCE_TYPE, LastAcquireAndReleaseInfo> lastAcquireAndReleaseMap = new WeakHashMap<>();
 
         public final void reportAcquire(@NotNull final RESOURCE_TYPE resource) {
-            final StackTraceElement[] stackTrace = CAPTURE_STACK_TRACES ? Thread.currentThread().getStackTrace() : ZERO_ELEMENT_STACK_TRACE_ARRAY;
+            final StackTraceElement[] stackTrace =
+                    CAPTURE_STACK_TRACES ? Thread.currentThread().getStackTrace() : ZERO_ELEMENT_STACK_TRACE_ARRAY;
             synchronized (this) {
                 final StackTraceElement[] prev = lastAcquireMap.put(resource, stackTrace);
                 if (prev != null) {
@@ -80,7 +83,8 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
         }
 
         public final void reportRelease(@NotNull final RESOURCE_TYPE resource) {
-            final StackTraceElement[] stackTrace = CAPTURE_STACK_TRACES ? Thread.currentThread().getStackTrace() : ZERO_ELEMENT_STACK_TRACE_ARRAY;
+            final StackTraceElement[] stackTrace =
+                    CAPTURE_STACK_TRACES ? Thread.currentThread().getStackTrace() : ZERO_ELEMENT_STACK_TRACE_ARRAY;
             synchronized (this) {
                 final StackTraceElement[] prev = lastAcquireMap.remove(resource);
                 if (prev != null) {
@@ -89,7 +93,8 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
                 }
                 final LastAcquireAndReleaseInfo lastAcquireAndRelease = lastAcquireAndReleaseMap.get(resource);
                 if (lastAcquireAndRelease != null) {
-                    throw new AlreadyReleasedException(stackTrace, lastAcquireAndRelease.lastAcquire, lastAcquireAndRelease.lastRelease);
+                    throw new AlreadyReleasedException(stackTrace, lastAcquireAndRelease.lastAcquire,
+                            lastAcquireAndRelease.lastRelease);
                 }
                 throw new UnmatchedAcquireException(stackTrace);
             }
@@ -119,7 +124,7 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
         public final void check() {
             System.gc();
             Cookie cookie;
-            //noinspection unchecked
+            // noinspection unchecked
             while ((cookie = (Cookie) collectedCookies.poll()) != null) {
                 cookie.collected();
             }
@@ -215,7 +220,8 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
                 dupDetector.put(stackTraceString, 1 + dupDetector.getOrDefault(stackTraceString, 0L));
             }
 
-            final StringBuilder sb = new StringBuilder("Leaked " + leaks.size() + " resources (" + dupDetector.size() + " unique traces):\n");
+            final StringBuilder sb = new StringBuilder(
+                    "Leaked " + leaks.size() + " resources (" + dupDetector.size() + " unique traces):\n");
             final MutableInt i = new MutableInt();
             dupDetector.entrySet().stream().limit(maxUniqueTraces).forEach(entry -> {
                 sb.append("    Leak #").append(i.intValue());
@@ -253,7 +259,8 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
                 return "Already acquired resource is being re-acquired without intervening release. Enable `ReleaseTracker.captureStackTraces` to further debug.";
             }
 
-            final StringBuilder sb = new StringBuilder("Already acquired resource is being re-acquired without intervening release:\n");
+            final StringBuilder sb =
+                    new StringBuilder("Already acquired resource is being re-acquired without intervening release:\n");
             sb.append("    New acquire:\n");
             append(sb, "        ", newAcquire);
             sb.append("    Existing acquire:\n");
@@ -271,8 +278,8 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
     class AlreadyReleasedException extends RuntimeException {
 
         private static String build(@NotNull final StackTraceElement[] newRelease,
-                                    @NotNull final StackTraceElement[] lastAcquire,
-                                    @NotNull final StackTraceElement[] lastRelease) {
+                @NotNull final StackTraceElement[] lastAcquire,
+                @NotNull final StackTraceElement[] lastRelease) {
             if (newRelease.length == 0) {
                 return "Already released resource is being re-released. Enable `ReleaseTracker.captureStackTraces` to further debug.";
             }

@@ -14,6 +14,7 @@ public class LastByStateFactoryImpl extends IterativeIndexStateFactory {
     }
 
     private static final AggregationMemoKey LAST_BY_INSTANCE = new AggregationMemoKey() {};
+
     @Override
     public AggregationMemoKey getMemoKey() {
         return LAST_BY_INSTANCE;
@@ -27,10 +28,11 @@ public class LastByStateFactoryImpl extends IterativeIndexStateFactory {
 
     /**
      * Sort the results by the original index when aggregating on state.
-     * */
+     */
     @Override
     ReaggregatableStatefactory rollupFactory() {
-        return new SortedFirstOrLastByFactoryImpl(false, false, true, rollupColumnIdentifier, REDIRECTION_INDEX_PREFIX + rollupColumnIdentifier + ComboAggregateFactory.ROLLUP_COLUMN_SUFFIX);
+        return new SortedFirstOrLastByFactoryImpl(false, false, true, rollupColumnIdentifier,
+                REDIRECTION_INDEX_PREFIX + rollupColumnIdentifier + ComboAggregateFactory.ROLLUP_COLUMN_SUFFIX);
     }
 
     @Override

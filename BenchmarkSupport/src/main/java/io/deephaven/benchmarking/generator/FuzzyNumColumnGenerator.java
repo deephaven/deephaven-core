@@ -11,7 +11,8 @@ public class FuzzyNumColumnGenerator<T extends Number> extends SequentialNumColu
         this.fuzz = fuzz;
     }
 
-    public FuzzyNumColumnGenerator(Class<T> type, String name, double start, double step, double max, double fuzz, Mode mode) {
+    public FuzzyNumColumnGenerator(Class<T> type, String name, double start, double step, double max, double fuzz,
+            Mode mode) {
         super(type, name, start, step, max, mode);
         this.fuzz = fuzz;
     }

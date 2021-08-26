@@ -23,7 +23,8 @@ public class MergeTablesGrpcImpl extends GrpcTableOperation<MergeTablesRequest> 
 
     @Inject
     public MergeTablesGrpcImpl(final LiveTableMonitor liveTableMonitor) {
-        super(BatchTableRequest.Operation::getMerge, MergeTablesRequest::getResultId, MergeTablesRequest::getSourceIdsList);
+        super(BatchTableRequest.Operation::getMerge, MergeTablesRequest::getResultId,
+                MergeTablesRequest::getSourceIdsList);
         this.liveTableMonitor = liveTableMonitor;
     }
 

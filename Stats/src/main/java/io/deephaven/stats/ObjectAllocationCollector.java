@@ -17,27 +17,27 @@ import io.deephaven.base.stats.Value;
  *
  * To use make sure you set
  *
- * -j -Dallocation.stats.enabled=true -j -Xbootclasspath/a:java_lib/allocation-2.0.jar -j -javaagent:java_lib/allocation-2.0.jar
- * (maybe even use -j -noverify)
+ * -j -Dallocation.stats.enabled=true -j -Xbootclasspath/a:java_lib/allocation-2.0.jar -j
+ * -javaagent:java_lib/allocation-2.0.jar (maybe even use -j -noverify)
  */
 public class ObjectAllocationCollector {
 
-    public static boolean DUMP_STACK=false;
+    public static boolean DUMP_STACK = false;
     public static String[] CLASS_NAMES;
     static {
-        String sClassNames=System.getProperty("ObjectAllocationCollector.dumpStackForClasses");
-        if (null!=sClassNames) {
-            CLASS_NAMES=sClassNames.split(",");
-            for (int nIndex=0, nLength=CLASS_NAMES.length; nIndex<nLength; nIndex++) {
-                CLASS_NAMES[nIndex]=CLASS_NAMES[nIndex].intern();
+        String sClassNames = System.getProperty("ObjectAllocationCollector.dumpStackForClasses");
+        if (null != sClassNames) {
+            CLASS_NAMES = sClassNames.split(",");
+            for (int nIndex = 0, nLength = CLASS_NAMES.length; nIndex < nLength; nIndex++) {
+                CLASS_NAMES[nIndex] = CLASS_NAMES[nIndex].intern();
             }
         } else {
-            CLASS_NAMES=new String[0];
+            CLASS_NAMES = new String[0];
         }
 
-        String sEnable=System.getProperty("ObjectAllocationCollector.dumpStack");
-        if (null!=sEnable && (sEnable.toLowerCase().contains("y") || sEnable.toLowerCase().contains("t"))) {
-            DUMP_STACK=true;
+        String sEnable = System.getProperty("ObjectAllocationCollector.dumpStack");
+        if (null != sEnable && (sEnable.toLowerCase().contains("y") || sEnable.toLowerCase().contains("t"))) {
+            DUMP_STACK = true;
         }
     }
 
@@ -51,14 +51,14 @@ public class ObjectAllocationCollector {
             this.clazz = clazz;
         }
 
-        //        public AllocationState(Class clazz) {
-//            this.clazz = clazz;
-//            if (!clazz.getName().startsWith("sun.")) {
-//                size = Stats.makeItem("GAllocation", clazz.getName(), State.FACTORY).getValue();
-//            } else {
-//                size = null;
-//            }
-//        }
+        // public AllocationState(Class clazz) {
+        // this.clazz = clazz;
+        // if (!clazz.getName().startsWith("sun.")) {
+        // size = Stats.makeItem("GAllocation", clazz.getName(), State.FACTORY).getValue();
+        // } else {
+        // size = null;
+        // }
+        // }
 
         public static KeyedObjectKey<Class, AllocationState> keyDef = new KeyedObjectKey<Class, AllocationState>() {
             @Override
@@ -83,15 +83,15 @@ public class ObjectAllocationCollector {
             if (size != null) {
                 size.sample(bytes);
             }
-            if (null==dumpStack) {
-                if (null!=CLASS_NAMES) {
+            if (null == dumpStack) {
+                if (null != CLASS_NAMES) {
                     for (String sClassName : CLASS_NAMES) {
-                        if (sClassName==clazz.getName()) {
-                            dumpStack=Boolean.TRUE;
+                        if (sClassName == clazz.getName()) {
+                            dumpStack = Boolean.TRUE;
                             return;
                         }
                     }
-                    dumpStack=Boolean.FALSE;
+                    dumpStack = Boolean.FALSE;
                 }
                 return;
             }
@@ -101,23 +101,27 @@ public class ObjectAllocationCollector {
         }
     }
 
-    private final KeyedObjectHash<Class, AllocationState> classAllocationStates = new KeyedObjectHash<Class, AllocationState>(AllocationState.keyDef);
-    private final KeyedObjectHash.ValueFactoryT<Class, AllocationState, Value> STATE_FACTORY = new KeyedObjectHash.ValueFactoryT<Class, AllocationState, Value>() {
-        public AllocationState newValue(Class key, Value value) {
-            return new AllocationState(value, key);
-        }
-    };
+    private final KeyedObjectHash<Class, AllocationState> classAllocationStates =
+            new KeyedObjectHash<Class, AllocationState>(AllocationState.keyDef);
+    private final KeyedObjectHash.ValueFactoryT<Class, AllocationState, Value> STATE_FACTORY =
+            new KeyedObjectHash.ValueFactoryT<Class, AllocationState, Value>() {
+                public AllocationState newValue(Class key, Value value) {
+                    return new AllocationState(value, key);
+                }
+            };
 
     public ObjectAllocationCollector() {
         // This hooks the JVM bytecode to call us back every time an object is allocated
         AllocationRecorder.addSampler(new Sampler() {
             public void sampleAllocation(int count, String desc,
-                                         Object newObj, long size) {
-                                // unfortunately, we can't use this b/c it syncs around the putIfAbsent AND the Stats.makeItem which causes deadlocks!
-//                classAllocationStates.putIfAbsent(newObj.getClass(), STATE_FACTORY).sample(size);
+                    Object newObj, long size) {
+                // unfortunately, we can't use this b/c it syncs around the putIfAbsent AND the Stats.makeItem which
+                // causes deadlocks!
+                // classAllocationStates.putIfAbsent(newObj.getClass(), STATE_FACTORY).sample(size);
 
                 final Class clazz = newObj.getClass();
-                if (clazz.getName().startsWith("sun.") || clazz.getName().endsWith("AllocationState")) return;
+                if (clazz.getName().startsWith("sun.") || clazz.getName().endsWith("AllocationState"))
+                    return;
 
                 final AllocationState allocationState = classAllocationStates.get(clazz);
                 if (allocationState == null) {

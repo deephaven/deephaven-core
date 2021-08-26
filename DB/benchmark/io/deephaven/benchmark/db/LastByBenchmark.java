@@ -29,7 +29,7 @@ import static io.deephaven.db.v2.by.ComboAggregateFactory.*;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 1, time = 1)
 @Measurement(iterations = 5, time = 1)
-@Timeout(time=3)
+@Timeout(time = 3)
 @Fork(1)
 public class LastByBenchmark {
     private TableBenchmarkState state;
@@ -58,7 +58,7 @@ public class LastByBenchmark {
     private Table table;
 
     private String keyName;
-    private String [] keyColumnNames;
+    private String[] keyColumnNames;
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
@@ -77,7 +77,7 @@ public class LastByBenchmark {
             }
         }
 
-        switch(tableType) {
+        switch (tableType) {
             case "Historical":
                 builder = BenchmarkTools.persistentTableBuilder("Karl", size)
                         .setPartitioningFormula("${autobalance_single}")
@@ -96,8 +96,10 @@ public class LastByBenchmark {
 
         builder.setSeed(0xDEADBEEF).addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
 
-        final EnumStringColumnGenerator stringKey = (EnumStringColumnGenerator) BenchmarkTools.stringCol("KeyString", keyCount, 6, 6, 0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
-        final ColumnGenerator intKey = BenchmarkTools.seqNumberCol("KeyInt", int.class, 0, 1, keyCount, SequentialNumColumnGenerator.Mode.RollAtLimit);
+        final EnumStringColumnGenerator stringKey = (EnumStringColumnGenerator) BenchmarkTools.stringCol("KeyString",
+                keyCount, 6, 6, 0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
+        final ColumnGenerator intKey = BenchmarkTools.seqNumberCol("KeyInt", int.class, 0, 1, keyCount,
+                SequentialNumColumnGenerator.Mode.RollAtLimit);
 
         System.out.println("Key type: " + keyType);
         switch (keyType) {
@@ -145,13 +147,13 @@ public class LastByBenchmark {
                 builder.addColumn(BenchmarkTools.numberCol("ValueToSum2", double.class));
             case 1:
                 builder.addColumn(BenchmarkTools.numberCol("ValueToSum1", int.class));
-            break;
+                break;
             default:
                 throw new IllegalArgumentException("Can not initialize with " + valueCount + " values.");
         }
 
         if (grouped) {
-            ((PersistentBenchmarkTableBuilder)builder).addGroupingColumns(keyName);
+            ((PersistentBenchmarkTableBuilder) builder).addGroupingColumns(keyName);
         }
 
         final BenchmarkTable bmt = builder
@@ -192,49 +194,63 @@ public class LastByBenchmark {
 
     @Benchmark
     public Table lastByIncremental(@NotNull final Blackhole bh) {
-        final Table result = IncrementalBenchmark.incrementalBenchmark((t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.lastBy(keyColumnNames)), table);
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.lastBy(keyColumnNames)), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table lastByRolling(@NotNull final Blackhole bh) {
-        final Table result = IncrementalBenchmark.rollingBenchmark((t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.lastBy(keyColumnNames)), table);
+        final Table result = IncrementalBenchmark.rollingBenchmark(
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.lastBy(keyColumnNames)), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table lastFirstByStatic(@NotNull final Blackhole bh) {
-        final ComboAggregateFactory.ComboBy lastCols = AggLast(IntStream.range(1, valueCount + 1).mapToObj(ii -> "Last" + ii + "=ValueToSum" + ii).toArray(String[]::new));
-        final ComboAggregateFactory.ComboBy firstCols = AggFirst(IntStream.range(1, valueCount + 1).mapToObj(ii -> "First" + ii + "=ValueToSum" + ii).toArray(String[]::new));
+        final ComboAggregateFactory.ComboBy lastCols = AggLast(IntStream.range(1, valueCount + 1)
+                .mapToObj(ii -> "Last" + ii + "=ValueToSum" + ii).toArray(String[]::new));
+        final ComboAggregateFactory.ComboBy firstCols = AggFirst(IntStream.range(1, valueCount + 1)
+                .mapToObj(ii -> "First" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
-        final Table result = IncrementalBenchmark.rollingBenchmark((t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(lastCols, firstCols))), table);
+        final Table result = IncrementalBenchmark.rollingBenchmark(
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(lastCols, firstCols))),
+                table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table lastFirstByIncremental(@NotNull final Blackhole bh) {
-        final ComboAggregateFactory.ComboBy lastCols = AggLast(IntStream.range(1, valueCount + 1).mapToObj(ii -> "Last" + ii + "=ValueToSum" + ii).toArray(String[]::new));
-        final ComboAggregateFactory.ComboBy firstCols = AggFirst(IntStream.range(1, valueCount + 1).mapToObj(ii -> "First" + ii + "=ValueToSum" + ii).toArray(String[]::new));
+        final ComboAggregateFactory.ComboBy lastCols = AggLast(IntStream.range(1, valueCount + 1)
+                .mapToObj(ii -> "Last" + ii + "=ValueToSum" + ii).toArray(String[]::new));
+        final ComboAggregateFactory.ComboBy firstCols = AggFirst(IntStream.range(1, valueCount + 1)
+                .mapToObj(ii -> "First" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
-        final Table result = IncrementalBenchmark.rollingBenchmark((t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(lastCols, firstCols))), table);
+        final Table result = IncrementalBenchmark.rollingBenchmark(
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(lastCols, firstCols))),
+                table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table lastFirstByRolling(@NotNull final Blackhole bh) {
-        final ComboAggregateFactory.ComboBy lastCols = AggLast(IntStream.range(1, valueCount + 1).mapToObj(ii -> "Last" + ii + "=ValueToSum" + ii).toArray(String[]::new));
-        final ComboAggregateFactory.ComboBy firstCols = AggFirst(IntStream.range(1, valueCount + 1).mapToObj(ii -> "First" + ii + "=ValueToSum" + ii).toArray(String[]::new));
+        final ComboAggregateFactory.ComboBy lastCols = AggLast(IntStream.range(1, valueCount + 1)
+                .mapToObj(ii -> "Last" + ii + "=ValueToSum" + ii).toArray(String[]::new));
+        final ComboAggregateFactory.ComboBy firstCols = AggFirst(IntStream.range(1, valueCount + 1)
+                .mapToObj(ii -> "First" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
-        final Table result = IncrementalBenchmark.rollingBenchmark((t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(lastCols, firstCols))), table);
+        final Table result = IncrementalBenchmark.rollingBenchmark(
+                (t) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(lastCols, firstCols))),
+                table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
-    public static void main(String [] args) {
+    public static void main(String[] args) {
         final int heapGb = 12;
         BenchUtil.run(heapGb, LastByBenchmark.class);
     }

@@ -112,7 +112,7 @@ public class ArrayGenerator {
         return result;
     }
 
-    public static Object[] randomObjects(Random random,int size) {
+    public static Object[] randomObjects(Random random, int size) {
         Object[] result = new Object[size];
         for (int i = 0; i < result.length; i++) {
             result[i] = "" + random.nextInt();
@@ -140,7 +140,8 @@ public class ArrayGenerator {
      * @param objectType The type of the elements buit into the array
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in
+     *        the result
      * @return An array with random values
      */
     public static Object randomValues(Class objectType, Random random, int size, int spaceSize) {
@@ -150,7 +151,8 @@ public class ArrayGenerator {
     /**
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in
+     *        the result
      * @return An array with random values
      */
     public static boolean[] randomBooleans(Random random, int size, int spaceSize) {
@@ -164,7 +166,8 @@ public class ArrayGenerator {
     /**
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in
+     *        the result
      * @return An array with random values
      */
     public static byte[] randomBytes(Random random, int size, int spaceSize) {
@@ -174,7 +177,8 @@ public class ArrayGenerator {
     /**
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in
+     *        the result
      * @return An array with random values
      */
     public static char[] randomChars(Random random, int size, int spaceSize) {
@@ -184,7 +188,8 @@ public class ArrayGenerator {
     /**
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in
+     *        the result
      * @return An array with random values
      */
     public static int[] randomInts(Random random, int size, int spaceSize) {
@@ -194,7 +199,8 @@ public class ArrayGenerator {
     /**
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in
+     *        the result
      * @return An array with random values
      */
     public static long[] randomLongs(Random random, int size, int spaceSize) {
@@ -204,7 +210,8 @@ public class ArrayGenerator {
     /**
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in
+     *        the result
      * @return An array with random values
      */
     public static short[] randomShorts(Random random, int size, int spaceSize) {
@@ -214,7 +221,8 @@ public class ArrayGenerator {
     /**
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in
+     *        the result
      * @return An array with random values
      */
     public static double[] randomDoubles(Random random, int size, int spaceSize) {
@@ -224,7 +232,8 @@ public class ArrayGenerator {
     /**
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in
+     *        the result
      * @return An array with random values
      */
     public static float[] randomFloats(Random random, int size, int spaceSize) {
@@ -239,7 +248,8 @@ public class ArrayGenerator {
     /**
      * @param random An instance of the random number generator to be used
      * @param size The number of elements in the result
-     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in the result
+     * @param spaceSize The size of the random values domain (the number of distinct possible values that may exist in
+     *        the result
      * @return An array with random values
      */
     public static String[] randomStrings(Random random, int size, int spaceSize) {
@@ -662,7 +672,7 @@ public class ArrayGenerator {
 
         @Override
         public void set(int i, Byte value) {
-            chunk.set(i,value);
+            chunk.set(i, value);
         }
     }
 
@@ -686,7 +696,7 @@ public class ArrayGenerator {
 
         @Override
         public void set(int i, Boolean value) {
-            chunk.set(i,value);
+            chunk.set(i, value);
         }
     }
 
@@ -710,7 +720,7 @@ public class ArrayGenerator {
 
         @Override
         public void set(int i, Character value) {
-            chunk.set(i,value);
+            chunk.set(i, value);
         }
     }
 
@@ -734,7 +744,7 @@ public class ArrayGenerator {
 
         @Override
         public void set(int i, Double value) {
-            chunk.set(i,value);
+            chunk.set(i, value);
         }
     }
 
@@ -758,7 +768,7 @@ public class ArrayGenerator {
 
         @Override
         public void set(int i, Float value) {
-            chunk.set(i,value);
+            chunk.set(i, value);
         }
     }
 
@@ -782,7 +792,7 @@ public class ArrayGenerator {
 
         @Override
         public void set(int i, Integer value) {
-            chunk.set(i,value);
+            chunk.set(i, value);
         }
     }
 
@@ -806,7 +816,7 @@ public class ArrayGenerator {
 
         @Override
         public void set(int i, Long value) {
-            chunk.set(i,value);
+            chunk.set(i, value);
         }
     }
 
@@ -830,7 +840,7 @@ public class ArrayGenerator {
 
         @Override
         public void set(int i, Short value) {
-            chunk.set(i,value);
+            chunk.set(i, value);
         }
     }
 

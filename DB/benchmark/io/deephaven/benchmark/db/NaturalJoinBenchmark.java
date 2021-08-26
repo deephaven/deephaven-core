@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Warmup(iterations = 1, time = 10)
 @Measurement(iterations = 3, time = 7)
-@Timeout(time=20)
+@Timeout(time = 20)
 @Fork(1)
 public class NaturalJoinBenchmark {
     private TableBenchmarkState state;
@@ -52,7 +52,7 @@ public class NaturalJoinBenchmark {
         final BenchmarkTableBuilder rightBuilder;
         final BenchmarkTableBuilder leftBuilder;
 
-        switch(tableType) {
+        switch (tableType) {
             case "Historical":
                 rightBuilder = BenchmarkTools.persistentTableBuilder("Carlos", rightSize)
                         .setPartitioningFormula("${autobalance_single}")
@@ -76,8 +76,10 @@ public class NaturalJoinBenchmark {
         rightBuilder.setSeed(0xDEADBEEF).addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
         leftBuilder.setSeed(0xDEADBEEF).addColumn(BenchmarkTools.stringCol("PartCol", 1, 5, 7, 0xFEEDBEEF));
 
-        final EnumStringColumnGenerator stringJoinKey = (EnumStringColumnGenerator) BenchmarkTools.stringCol("JString", rightSize, 6, 6, 0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
-        final ColumnGenerator intJoinKey = BenchmarkTools.seqNumberCol("JInt", int.class, 0, 1, rightSize, SequentialNumColumnGenerator.Mode.RollAtLimit);
+        final EnumStringColumnGenerator stringJoinKey = (EnumStringColumnGenerator) BenchmarkTools.stringCol("JString",
+                rightSize, 6, 6, 0xB00FB00F, EnumStringColumnGenerator.Mode.Rotate);
+        final ColumnGenerator intJoinKey = BenchmarkTools.seqNumberCol("JInt", int.class, 0, 1, rightSize,
+                SequentialNumColumnGenerator.Mode.RollAtLimit);
 
         System.out.println("Join key type: " + joinKeyType);
         switch (joinKeyType) {
@@ -106,7 +108,7 @@ public class NaturalJoinBenchmark {
         }
 
         if (leftGrouped) {
-            ((PersistentBenchmarkTableBuilder)leftBuilder).addGroupingColumns(joinKeyName);
+            ((PersistentBenchmarkTableBuilder) leftBuilder).addGroupingColumns(joinKeyName);
         }
 
         final BenchmarkTable bmRight = rightBuilder
@@ -154,16 +156,20 @@ public class NaturalJoinBenchmark {
 
     @Benchmark
     public Table naturalJoinStatic() {
-        final Table result = LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> leftTable.naturalJoin(rightTable, joinKeyName));
-        return state.setResult(result);
-    }
-    @Benchmark
-    public Table naturalJoinIncremental() {
-        final Table result = IncrementalBenchmark.incrementalBenchmark((lt, rt) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> lt.naturalJoin(rt, joinKeyName)), leftTable, rightTable);
+        final Table result = LiveTableMonitor.DEFAULT.sharedLock()
+                .computeLocked(() -> leftTable.naturalJoin(rightTable, joinKeyName));
         return state.setResult(result);
     }
 
-    public static void main(String [] args) {
+    @Benchmark
+    public Table naturalJoinIncremental() {
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (lt, rt) -> LiveTableMonitor.DEFAULT.sharedLock().computeLocked(() -> lt.naturalJoin(rt, joinKeyName)),
+                leftTable, rightTable);
+        return state.setResult(result);
+    }
+
+    public static void main(String[] args) {
         final int heapGb = 30;
         BenchUtil.run(heapGb, NaturalJoinBenchmark.class);
     }

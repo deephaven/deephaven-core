@@ -32,42 +32,61 @@ public class PrimitiveArrayTest extends PythonTest {
     // actually writing jpy / C code.
     interface ArrayProxy {
         boolean is_jpy_boolean_array(Object o);
+
         boolean is_jpy_char_array(Object o);
+
         boolean is_jpy_byte_array(Object o);
+
         boolean is_jpy_short_array(Object o);
+
         boolean is_jpy_int_array(Object o);
+
         boolean is_jpy_long_array(Object o);
+
         boolean is_jpy_float_array(Object o);
+
         boolean is_jpy_double_array(Object o);
 
         boolean is_jpy_boolean_array(PyObject o);
+
         boolean is_jpy_char_array(PyObject o);
+
         boolean is_jpy_byte_array(PyObject o);
+
         boolean is_jpy_short_array(PyObject o);
+
         boolean is_jpy_int_array(PyObject o);
+
         boolean is_jpy_long_array(PyObject o);
+
         boolean is_jpy_float_array(PyObject o);
+
         boolean is_jpy_double_array(PyObject o);
 
         boolean is_jpy_boolean_array(boolean[] o);
+
         boolean is_jpy_char_array(char[] o);
+
         boolean is_jpy_byte_array(byte[] o);
+
         boolean is_jpy_short_array(short[] o);
+
         boolean is_jpy_int_array(int[] o);
+
         boolean is_jpy_long_array(long[] o);
+
         boolean is_jpy_float_array(float[] o);
+
         boolean is_jpy_double_array(double[] o);
     }
 
     enum PrimitiveArrayType {
-        BOOLEAN(new boolean[] { true, false, true }, Booleans.INSTANCE),
-        CHAR(new char[] { 'a', 'b', 'c' }, Chars.INSTANCE),
-        BYTE(new byte[] { (byte)'d', (byte)'e', (byte)'a', (byte)'d' }, Bytes.INSTANCE),
-        SHORT(new short[] { 1, 42, 31, 15, -5 }, Shorts.INSTANCE),
-        INT(new int[] { 1, 42, 31, 15, -5 }, Ints.INSTANCE),
-        LONG(new long[] { 1, 42, 31, 15, -5 }, Longs.INSTANCE),
-        FLOAT(new float[] { 42.0f }, Floats.INSTANCE),
-        DOUBLE(new double[] { 42.0 }, Doubles.INSTANCE);
+        BOOLEAN(new boolean[] {true, false, true}, Booleans.INSTANCE), CHAR(new char[] {'a', 'b', 'c'},
+                Chars.INSTANCE), BYTE(new byte[] {(byte) 'd', (byte) 'e', (byte) 'a', (byte) 'd'},
+                        Bytes.INSTANCE), SHORT(new short[] {1, 42, 31, 15, -5}, Shorts.INSTANCE), INT(
+                                new int[] {1, 42, 31, 15, -5}, Ints.INSTANCE), LONG(new long[] {1, 42, 31, 15, -5},
+                                        Longs.INSTANCE), FLOAT(new float[] {42.0f},
+                                                Floats.INSTANCE), DOUBLE(new double[] {42.0}, Doubles.INSTANCE);
 
         private final Object o;
         private final io.deephaven.util.PrimitiveArrayType type;
@@ -80,28 +99,28 @@ public class PrimitiveArrayTest extends PythonTest {
         void checkDirect(ArrayProxy proxy) {
             switch (this) {
                 case BOOLEAN:
-                    Assert.assertTrue(proxy.is_jpy_boolean_array((boolean[])o));
+                    Assert.assertTrue(proxy.is_jpy_boolean_array((boolean[]) o));
                     break;
                 case CHAR:
-                    Assert.assertTrue(proxy.is_jpy_char_array((char[])o));
+                    Assert.assertTrue(proxy.is_jpy_char_array((char[]) o));
                     break;
                 case BYTE:
-                    Assert.assertTrue(proxy.is_jpy_byte_array((byte[])o));
+                    Assert.assertTrue(proxy.is_jpy_byte_array((byte[]) o));
                     break;
                 case SHORT:
-                    Assert.assertTrue(proxy.is_jpy_short_array((short[])o));
+                    Assert.assertTrue(proxy.is_jpy_short_array((short[]) o));
                     break;
                 case INT:
-                    Assert.assertTrue(proxy.is_jpy_int_array((int[])o));
+                    Assert.assertTrue(proxy.is_jpy_int_array((int[]) o));
                     break;
                 case LONG:
-                    Assert.assertTrue(proxy.is_jpy_long_array((long[])o));
+                    Assert.assertTrue(proxy.is_jpy_long_array((long[]) o));
                     break;
                 case FLOAT:
-                    Assert.assertTrue(proxy.is_jpy_float_array((float[])o));
+                    Assert.assertTrue(proxy.is_jpy_float_array((float[]) o));
                     break;
                 case DOUBLE:
-                    Assert.assertTrue(proxy.is_jpy_double_array((double[])o));
+                    Assert.assertTrue(proxy.is_jpy_double_array((double[]) o));
                     break;
                 default:
                     throw new IllegalStateException("Unexpected type " + this);
@@ -155,8 +174,8 @@ public class PrimitiveArrayTest extends PythonTest {
     public void setUp() {
         PyObject.executeCode(readResource("primitive_array_test.py"), PyInputMode.SCRIPT);
         SUT = PyObject
-            .executeCode("ArrayTest()", PyInputMode.EXPRESSION)
-            .createProxy(ArrayProxy.class);
+                .executeCode("ArrayTest()", PyInputMode.EXPRESSION)
+                .createProxy(ArrayProxy.class);
         builtins = BuiltinsModule.create();
         jpy = JpyModule.create();
     }
@@ -212,15 +231,15 @@ public class PrimitiveArrayTest extends PythonTest {
         type.check(SUT);
         try (final PyObject pyObject = supplier.get()) {
             type.check(SUT, pyObject);
-            type.check(SUT, (Object)pyObject);
+            type.check(SUT, (Object) pyObject);
         }
     }
 
     private static String readResource(String name) {
         try {
             return new String(
-                Files.readAllBytes(Paths.get(PrimitiveArrayTest.class.getResource(name).toURI())),
-                StandardCharsets.UTF_8);
+                    Files.readAllBytes(Paths.get(PrimitiveArrayTest.class.getResource(name).toURI())),
+                    StandardCharsets.UTF_8);
         } catch (IOException | URISyntaxException e) {
             throw new RuntimeException(e);
         }

@@ -39,7 +39,7 @@ public class ParquetTableReadWriteTest {
         if (rootFile.exists()) {
             FileUtils.deleteRecursively(rootFile);
         }
-        //noinspection ResultOfMethodCallIgnored
+        // noinspection ResultOfMethodCallIgnored
         rootFile.mkdirs();
     }
 
@@ -50,34 +50,33 @@ public class ParquetTableReadWriteTest {
 
     private static Table getTableFlat(int size, boolean includeSerializable) {
         QueryLibrary.importClass(ParquetTableWriter.SomeSillyTest.class);
-        ArrayList<String> columns = new ArrayList<>(Arrays.asList("someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
-                "nonNullString = `` + (i % 60)",
-                "nonNullPolyString = `` + (i % 600)",
-                "someIntColumn = i",
-                "someLongColumn = ii",
-                "someDoubleColumn = i*1.1",
-                "someFloatColumn = (float)(i*1.1)",
-                "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null",
-                "someShortColumn = (short)i",
-                "someByteColumn = (byte)i",
-                "someCharColumn = (char)i",
-                "someTime = DBDateTime.now() + i",
-                "someKey = `` + (int)(i /100)",
-                "nullKey = i < -1?`123`:null"));
+        ArrayList<String> columns =
+                new ArrayList<>(Arrays.asList("someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
+                        "nonNullString = `` + (i % 60)",
+                        "nonNullPolyString = `` + (i % 600)",
+                        "someIntColumn = i",
+                        "someLongColumn = ii",
+                        "someDoubleColumn = i*1.1",
+                        "someFloatColumn = (float)(i*1.1)",
+                        "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null",
+                        "someShortColumn = (short)i",
+                        "someByteColumn = (byte)i",
+                        "someCharColumn = (char)i",
+                        "someTime = DBDateTime.now() + i",
+                        "someKey = `` + (int)(i /100)",
+                        "nullKey = i < -1?`123`:null"));
         if (includeSerializable) {
             columns.add("someSerializable = new SomeSillyTest(i)");
         }
         return TableTools.emptyTable(size).select(
-                Selectable.from(columns)
-        );
+                Selectable.from(columns));
     }
 
     private static Table getOneColumnTableFlat(int size) {
         QueryLibrary.importClass(ParquetTableWriter.SomeSillyTest.class);
         return TableTools.emptyTable(size).select(
-                //   "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null"
-                "someIntColumn = i % 3 == 0 ? null:i"
-        );
+                // "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null"
+                "someIntColumn = i % 3 == 0 ? null:i");
     }
 
     private static Table getGroupedOneColumnTable(int size) {
@@ -85,8 +84,10 @@ public class ParquetTableReadWriteTest {
         QueryLibrary.importClass(StringSetArrayWrapper.class);
         QueryLibrary.importClass(StringSet.class);
         Table result = t.by("groupKey = i % 100 + (int)(i/10)");
-        result = result.select(result.getDefinition().getColumnNames().stream().map(name -> name.equals("groupKey") ?
-                name : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subArray(0,0):" + name + ")")).toArray(String[]::new));
+        result = result.select(result.getDefinition().getColumnNames().stream()
+                .map(name -> name.equals("groupKey") ? name
+                        : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subArray(0,0):" + name + ")"))
+                .toArray(String[]::new));
         return result;
     }
 
@@ -96,8 +97,7 @@ public class ParquetTableReadWriteTest {
                 "someEmptyString = new String[0]",
                 "someEmptyInt = new int[0]",
                 "someEmptyBool = new Boolean[0]",
-                "someEmptyObject = new SomeSillyTest[0]"
-        );
+                "someEmptyObject = new SomeSillyTest[0]");
     }
 
     private static Table getGroupedTable(int size, boolean includeSerializable) {
@@ -105,11 +105,16 @@ public class ParquetTableReadWriteTest {
         QueryLibrary.importClass(StringSetArrayWrapper.class);
         QueryLibrary.importClass(StringSet.class);
         Table result = t.by("groupKey = i % 100 + (int)(i/10)");
-        result = result.select(result.getDefinition().getColumnNames().stream().map(name -> name.equals("groupKey") ?
-                name : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subArray(0,0):" + name + ")")).toArray(String[]::new));
-        result = result.update("someStringSet = (StringSet)new StringSetArrayWrapper( ((Object)nonNullString) == null?new String[0]:(String[])nonNullString.toArray())");
-        result = result.update("largeStringSet = (StringSet)new StringSetArrayWrapper(((Object)nonNullPolyString) == null?new String[0]:(String[])nonNullPolyString.toArray())");
-        result = result.update("someStringColumn = (String[])(((Object)someStringColumn) == null?null:someStringColumn.toArray())",
+        result = result.select(result.getDefinition().getColumnNames().stream()
+                .map(name -> name.equals("groupKey") ? name
+                        : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subArray(0,0):" + name + ")"))
+                .toArray(String[]::new));
+        result = result.update(
+                "someStringSet = (StringSet)new StringSetArrayWrapper( ((Object)nonNullString) == null?new String[0]:(String[])nonNullString.toArray())");
+        result = result.update(
+                "largeStringSet = (StringSet)new StringSetArrayWrapper(((Object)nonNullPolyString) == null?new String[0]:(String[])nonNullPolyString.toArray())");
+        result = result.update(
+                "someStringColumn = (String[])(((Object)someStringColumn) == null?null:someStringColumn.toArray())",
                 "nonNullString = (String[])(((Object)nonNullString) == null?null:nonNullString.toArray())",
                 "nonNullPolyString = (String[])(((Object)nonNullPolyString) == null?null:nonNullPolyString.toArray())",
                 "someBoolColumn = (Boolean[])(((Object)someBoolColumn) == null?null:someBoolColumn.toArray())",
@@ -181,9 +186,10 @@ public class ParquetTableReadWriteTest {
     @Test
     public void groupingByLongKey() {
         final TableDefinition definition = TableDefinition.of(
-            ColumnDefinition.ofInt("someInt"),
-            ColumnDefinition.ofLong("someLong").withGrouping());
-        final Table testTable = ((QueryTable)TableTools.emptyTable(10).select("someInt = i", "someLong  = ii % 3").by("someLong").ungroup("someInt")).withDefinitionUnsafe(definition);
+                ColumnDefinition.ofInt("someInt"),
+                ColumnDefinition.ofLong("someLong").withGrouping());
+        final Table testTable = ((QueryTable) TableTools.emptyTable(10).select("someInt = i", "someLong  = ii % 3")
+                .by("someLong").ungroup("someInt")).withDefinitionUnsafe(definition);
         final File dest = new File(rootFile, "ParquetTest_groupByLong_test.parquet");
         ParquetTools.writeTable(testTable, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
@@ -194,9 +200,10 @@ public class ParquetTableReadWriteTest {
     @Test
     public void groupingByStringKey() {
         final TableDefinition definition = TableDefinition.of(
-            ColumnDefinition.ofInt("someInt"),
-            ColumnDefinition.ofString("someString").withGrouping());
-        final Table testTable = ((QueryTable)TableTools.emptyTable(10).select("someInt = i", "someString  = `foo`").where("i % 2 == 0").by("someString").ungroup("someInt")).withDefinitionUnsafe(definition);
+                ColumnDefinition.ofInt("someInt"),
+                ColumnDefinition.ofString("someString").withGrouping());
+        final Table testTable = ((QueryTable) TableTools.emptyTable(10).select("someInt = i", "someString  = `foo`")
+                .where("i % 2 == 0").by("someString").ungroup("someInt")).withDefinitionUnsafe(definition);
         final File dest = new File(rootFile, "ParquetTest_groupByString_test.parquet");
         ParquetTools.writeTable(testTable, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
@@ -208,9 +215,11 @@ public class ParquetTableReadWriteTest {
     public void groupingByBigInt() {
         QueryLibrary.importClass(BigInteger.class);
         final TableDefinition definition = TableDefinition.of(
-            ColumnDefinition.ofInt("someInt"),
-            ColumnDefinition.fromGenericType("someBigInt", BigInteger.class).withGrouping());
-        final Table testTable = ((QueryTable)TableTools.emptyTable(10).select("someInt = i", "someBigInt  =  BigInteger.valueOf(i % 3)").where("i % 2 == 0").by("someBigInt").ungroup("someInt")).withDefinitionUnsafe(definition);
+                ColumnDefinition.ofInt("someInt"),
+                ColumnDefinition.fromGenericType("someBigInt", BigInteger.class).withGrouping());
+        final Table testTable = ((QueryTable) TableTools.emptyTable(10)
+                .select("someInt = i", "someBigInt  =  BigInteger.valueOf(i % 3)").where("i % 2 == 0").by("someBigInt")
+                .ungroup("someInt")).withDefinitionUnsafe(definition);
         final File dest = new File(rootFile, "ParquetTest_groupByBigInt_test.parquet");
         ParquetTools.writeTable(testTable, dest);
         final Table fromDisk = ParquetTools.readTable(dest);

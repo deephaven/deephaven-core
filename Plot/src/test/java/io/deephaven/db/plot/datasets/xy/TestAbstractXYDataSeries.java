@@ -166,17 +166,17 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
         }
 
 
-//        dsizes[0] = 2;
-//        t = TableTools.newTable(TableTools.doubleCol("Dubs", dsizes), TableTools.col("Str", cats)).ungroup();
-//        Set<String> set = new HashSet<>();
-//        Collections.addAll(set, cats);
-//
-//        SwappableTableTestUtils.testSwappableTableMethod(t, "Str", set, data, XYDataSeries::pointSize, "Dubs");
-//        data.getPointSize(0);
-//        SwingTestUtils.emptySwingQueue();
-//        for (int i = 0; i < t.size(); i++) {
-//            assertEquals(dsizes[i], data.getPointSize(i));
-//        }
+        // dsizes[0] = 2;
+        // t = TableTools.newTable(TableTools.doubleCol("Dubs", dsizes), TableTools.col("Str", cats)).ungroup();
+        // Set<String> set = new HashSet<>();
+        // Collections.addAll(set, cats);
+        //
+        // SwappableTableTestUtils.testSwappableTableMethod(t, "Str", set, data, XYDataSeries::pointSize, "Dubs");
+        // data.getPointSize(0);
+        // SwingTestUtils.emptySwingQueue();
+        // for (int i = 0; i < t.size(); i++) {
+        // assertEquals(dsizes[i], data.getPointSize(i));
+        // }
     }
 
     public void testPointColor() {
@@ -232,32 +232,35 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
         }
 
         final String[] cats = {"A", "B", "C"};
-        Table t = TableTools.newTable(TableTools.intCol("ints", icolors), TableTools.col("Str", cats), TableTools.col("Paints", colors));
+        Table t = TableTools.newTable(TableTools.intCol("ints", icolors), TableTools.col("Str", cats),
+                TableTools.col("Paints", colors));
         data.pointColor(t, "ints");
         for (int i = 0; i < t.size(); i++) {
             assertEquals(data.getPointColor(i), PlotUtils.intToColor(icolors[i]));
         }
 
         colors[0] = c3;
-        t = TableTools.newTable(TableTools.intCol("ints", icolors), TableTools.col("Str", cats), TableTools.col("Paints", colors));
+        t = TableTools.newTable(TableTools.intCol("ints", icolors), TableTools.col("Str", cats),
+                TableTools.col("Paints", colors));
         data.pointColor(t, "Paints");
         for (int i = 0; i < t.size(); i++) {
             assertEquals(colors[i], data.getPointColor(i));
         }
 
-//        colors[0] = c1;
-//        t = TableTools.newTable(TableTools.intCol("ints", icolors), TableTools.col("Str", cats), TableTools.col("Paints", colors));
-//        Set<String> set = new HashSet<>();
-//        Collections.addAll(set, cats);
-//        SwappableTableTestUtils.testSwappableTableMethod(t, "Str", set, data, XYDataSeries::pointColor, "Paints");
-//        for (int i = 0; i < t.size(); i++) {
-//            assertEquals(colors[i], data.getPointColor(i));
-//        }
-//
-//        SwappableTableTestUtils.testSwappableTableMethod(t, "Str", set, data, XYDataSeries::pointColor, "ints");
-//        for (int i = 0; i < t.size(); i++) {
-//            assertEquals(theme.getSeriesColor(icolors[i]), data.getPointColor(i));
-//        }
+        // colors[0] = c1;
+        // t = TableTools.newTable(TableTools.intCol("ints", icolors), TableTools.col("Str", cats),
+        // TableTools.col("Paints", colors));
+        // Set<String> set = new HashSet<>();
+        // Collections.addAll(set, cats);
+        // SwappableTableTestUtils.testSwappableTableMethod(t, "Str", set, data, XYDataSeries::pointColor, "Paints");
+        // for (int i = 0; i < t.size(); i++) {
+        // assertEquals(colors[i], data.getPointColor(i));
+        // }
+        //
+        // SwappableTableTestUtils.testSwappableTableMethod(t, "Str", set, data, XYDataSeries::pointColor, "ints");
+        // for (int i = 0; i < t.size(); i++) {
+        // assertEquals(theme.getSeriesColor(icolors[i]), data.getPointColor(i));
+        // }
 
         try {
             data.pointColor(t, "Str");
@@ -352,8 +355,9 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
         assertEquals(data.getPointShape(1), NamedShape.valueOf("up_triangle".toUpperCase()));
         assertEquals(data.getPointShape(2), NamedShape.valueOf("square".toUpperCase()));
 
-        data.pointShape(new String[]{"up_triangle", "circle"});
-        assertEquals(JShapes.shape((NamedShape) data.getPointShape(0)), JShapes.shape(NamedShape.valueOf("up_triangle".toUpperCase())));
+        data.pointShape(new String[] {"up_triangle", "circle"});
+        assertEquals(JShapes.shape((NamedShape) data.getPointShape(0)),
+                JShapes.shape(NamedShape.valueOf("up_triangle".toUpperCase())));
         assertEquals(data.getPointShape(1), NamedShape.valueOf("circle".toUpperCase()));
         assertEquals(data.getPointShape(2), NamedShape.valueOf("square".toUpperCase()));
 
@@ -362,12 +366,12 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
         assertEquals(data.getPointShape(1), NamedShape.valueOf("circle".toUpperCase()));
         assertEquals(data.getPointShape(2), NamedShape.valueOf("square".toUpperCase()));
 
-        data.pointShape(new NamedShape[]{NamedShape.CIRCLE, NamedShape.UP_TRIANGLE});
+        data.pointShape(new NamedShape[] {NamedShape.CIRCLE, NamedShape.UP_TRIANGLE});
         assertEquals(data.getPointShape(0), NamedShape.valueOf("circle".toUpperCase()));
         assertEquals(data.getPointShape(1), NamedShape.valueOf("up_triangle".toUpperCase()));
         assertEquals(data.getPointShape(2), NamedShape.valueOf("square".toUpperCase()));
 
-        final String[] shapes = new String[]{"up_triangle", "down_triangle", "right_triangle"};
+        final String[] shapes = new String[] {"up_triangle", "down_triangle", "right_triangle"};
         IndexableData<String> indexableData = new IndexableDataArray<>(shapes, null);
         data.pointShape(indexableData);
         assertEquals(data.getPointShape(0), NamedShape.valueOf("up_triangle".toUpperCase()));
@@ -381,7 +385,8 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
         assertEquals(data.getPointShape(1), NamedShape.valueOf("circle".toUpperCase()));
         assertEquals(data.getPointShape(2), NamedShape.valueOf("ellipse".toUpperCase()));
 
-        final DynamicTable shapeObjectTable = TableTools.newTable(TableTools.col("shapes", NamedShape.DIAMOND, NamedShape.ELLIPSE, NamedShape.UP_TRIANGLE));
+        final DynamicTable shapeObjectTable = TableTools
+                .newTable(TableTools.col("shapes", NamedShape.DIAMOND, NamedShape.ELLIPSE, NamedShape.UP_TRIANGLE));
         data.pointShape(shapeObjectTable, "shapes");
         data.getPointShape(0);
         assertEquals(data.getPointShape(0), NamedShape.valueOf("diamond".toUpperCase()));
@@ -415,7 +420,7 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
             assertTrue(iae.getMessage().contains("1"));
         }
 
-        final String[] shapes = new String[]{"up_triangle", "down_triangl", "right_triangle"};
+        final String[] shapes = new String[] {"up_triangle", "down_triangl", "right_triangle"};
         new IndexableData<String>(null) {
 
             @Override
@@ -457,7 +462,8 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
         testCopy(original, copy, true);
     }
 
-    public static void testCopy(final AbstractXYDataSeries original, final AbstractXYDataSeries copy, final boolean testTables) {
+    public static void testCopy(final AbstractXYDataSeries original, final AbstractXYDataSeries copy,
+            final boolean testTables) {
         assertEquals(original.name(), copy.name());
         assertEquals(original.size(), copy.size());
         for (int i = 0; i < original.size(); i++) {

@@ -16,8 +16,8 @@ import jsinterop.base.Js;
  *
  * Additionally, this is automatically subscribed to its one and only row, across all columns.
  *
- * A new config is returned any time it is accessed, to prevent accidental mutation, and to allow it to be used as
- * a template when fetching a new totals table, or changing the totals table in use.
+ * A new config is returned any time it is accessed, to prevent accidental mutation, and to allow it to be used as a
+ * template when fetching a new totals table, or changing the totals table in use.
  */
 public class JsTotalsTable {
     private final JsTable wrappedTable;
@@ -33,8 +33,8 @@ public class JsTotalsTable {
     private Double updateIntervalMs;
 
     /**
-     * Table is wrapped to let us delegate calls to it, the directive is a serialized string, and the groupBy
-     * is copied when passed in, as well as when it is accessed, to prevent accidental mutation of the array.
+     * Table is wrapped to let us delegate calls to it, the directive is a serialized string, and the groupBy is copied
+     * when passed in, as well as when it is accessed, to prevent accidental mutation of the array.
      */
     public JsTotalsTable(JsTable wrappedTable, String directive, JsArray<JsString> groupBy) {
         this.wrappedTable = wrappedTable;
@@ -56,7 +56,8 @@ public class JsTotalsTable {
     }
 
     @JsMethod
-    public void setViewport(double firstRow, double lastRow, @JsOptional JsArray<Column> columns, @JsOptional Double updateIntervalMs) {
+    public void setViewport(double firstRow, double lastRow, @JsOptional JsArray<Column> columns,
+            @JsOptional Double updateIntervalMs) {
         this.firstRow = firstRow;
         this.lastRow = lastRow;
         this.columns = columns != null ? Js.uncheckedCast(columns.slice()) : null;

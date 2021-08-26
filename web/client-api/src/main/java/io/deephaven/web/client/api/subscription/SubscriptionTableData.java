@@ -25,6 +25,7 @@ public class SubscriptionTableData {
     private interface ArrayCopy {
         void copyTo(Object destArray, long destPos, Object srcArray, int srcPos);
     }
+
     private final JsArray<Column> columns;
     private final Integer rowStyleColumn;
     private final HasEventHandling evented;
@@ -47,9 +48,9 @@ public class SubscriptionTableData {
         this.evented = evented;
     }
 
-    //TODO support this being called multiple times so we can keep viewports going without clearing the data
+    // TODO support this being called multiple times so we can keep viewports going without clearing the data
     public TableData handleSnapshot(TableSnapshot snapshot) {
-        //when changing snapshots we should actually rewrite the columns, possibly emulate ViewportData more?
+        // when changing snapshots we should actually rewrite the columns, possibly emulate ViewportData more?
         ColumnData[] dataColumns = snapshot.getDataColumns();
         data = new Object[dataColumns.length];
         reusableDestinations = RangeSet.empty();
@@ -62,7 +63,7 @@ public class SubscriptionTableData {
         for (int index = 0; index < dataColumns.length; index++) {
             ColumnData dataColumn = dataColumns[index];
             if (dataColumn == null) {
-                //no data in this column, wasn't requested
+                // no data in this column, wasn't requested
                 continue;
             }
 
@@ -89,9 +90,9 @@ public class SubscriptionTableData {
     }
 
     /**
-     * Helper to avoid appending many times when modifying indexes. The append() method should be called
-     * for each key _in order_ to ensure that RangeSet.addRange isn't called excessively. When no more
-     * items will be added, flush() must be called.
+     * Helper to avoid appending many times when modifying indexes. The append() method should be called for each key
+     * _in order_ to ensure that RangeSet.addRange isn't called excessively. When no more items will be added, flush()
+     * must be called.
      */
     private static class RangeSetAppendHelper {
         private final RangeSet rangeSet;
@@ -107,7 +108,7 @@ public class SubscriptionTableData {
             assert key >= 0;
 
             if (currentFirst == -1) {
-                //first key to be added, move both first and last
+                // first key to be added, move both first and last
                 currentFirst = key;
                 currentLast = key;
 
@@ -142,7 +143,7 @@ public class SubscriptionTableData {
         delta.getRemoved().indexIterator().forEachRemaining((long index) -> {
             long dest = redirectedIndexes.remove(index);
             reusableHelper.append(dest);
-            //TODO consider trimming the columns down too, and truncating the reusable slots at the end
+            // TODO consider trimming the columns down too, and truncating the reusable slots at the end
         });
         reusableHelper.flush();
         // clean up index by ranges, not by row
@@ -237,14 +238,15 @@ public class SubscriptionTableData {
             int j = 0;
             while (modifiedIndexes.hasNext()) {
                 long origIndex = modifiedIndexes.nextLong();
-                arrayCopy.copyTo(data[modifiedColumn.getColumnIndex()], redirectedIndexes.get(origIndex), modifiedColumn.getValues().getData(), j++);
+                arrayCopy.copyTo(data[modifiedColumn.getColumnIndex()], redirectedIndexes.get(origIndex),
+                        modifiedColumn.getValues().getData(), j++);
             }
         }
 
         // Check that the index sizes make sense
         assert redirectedIndexes.size() == index.size();
         // Note that we can't do this assert, since we don't truncate arrays, we just leave nulls at the end
-//        assert Js.asArrayLike(data[0]).getLength() == redirectedIndexes.size();
+        // assert Js.asArrayLike(data[0]).getLength() == redirectedIndexes.size();
 
         return notifyUpdates(delta.getAdded(), delta.getRemoved(), allModified);
     }
@@ -400,7 +402,7 @@ public class SubscriptionTableData {
             RangeSet reused = RangeSet.empty();
             long taken = 0;
             RangeSet stillUnused = RangeSet.empty();
-            //TODO this could be more efficient, iterating entire ranges until we only need a partial range
+            // TODO this could be more efficient, iterating entire ranges until we only need a partial range
             PrimitiveIterator.OfLong iterator = reusableDestinations.indexIterator();
             while (taken < required) {
                 assert iterator.hasNext();
@@ -409,7 +411,7 @@ public class SubscriptionTableData {
                 taken++;
             }
             assert taken == required;
-            while(iterator.hasNext()) {
+            while (iterator.hasNext()) {
                 long value = iterator.nextLong();
                 stillUnused.addRange(new Range(value, value));
             }
@@ -495,8 +497,8 @@ public class SubscriptionTableData {
 
 
     /**
-     * Event data, describing the indexes that were added/removed/updated, and providing access to Rows
-     * (and thus data in columns) either by index, or scanning the complete present index.
+     * Event data, describing the indexes that were added/removed/updated, and providing access to Rows (and thus data
+     * in columns) either by index, or scanning the complete present index.
      */
     public class UpdateEventData implements TableData {
         private JsRangeSet added;

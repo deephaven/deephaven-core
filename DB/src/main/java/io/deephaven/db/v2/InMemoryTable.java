@@ -8,8 +8,9 @@ import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.column.Column;
+import io.deephaven.qst.table.NewTable;
+
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -31,9 +32,9 @@ public class InMemoryTable extends QueryTable {
             columns.put(column.name(), source);
         }
         return new InMemoryTable(
-            TableDefinition.from(table.header()),
-            Index.FACTORY.getFlatIndex(table.size()),
-            columns);
+                TableDefinition.from(table.header()),
+                Index.FACTORY.getFlatIndex(table.size()),
+                columns);
     }
 
     public InMemoryTable(String columnNames[], Object arrayValues[]) {
@@ -41,7 +42,7 @@ public class InMemoryTable extends QueryTable {
     }
 
     public InMemoryTable(TableDefinition definition, final int size) {
-        super(Index.FACTORY.getFlatIndex( size ),
+        super(Index.FACTORY.getFlatIndex(size),
                 createColumnsMap(
                         definition.getColumnNames().toArray(new String[definition.getColumnNames().size()]),
                         Arrays.stream(definition.getColumns()).map(

@@ -24,8 +24,10 @@ import java.util.function.Consumer;
 
 @Singleton
 public class TicketRouter {
-    private final KeyedIntObjectHashMap<TicketResolver> byteResolverMap = new KeyedIntObjectHashMap<>(RESOLVER_OBJECT_TICKET_ID);
-    private final KeyedObjectHashMap<String, TicketResolver> descriptorResolverMap = new KeyedObjectHashMap<>(RESOLVER_OBJECT_DESCRIPTOR_ID);
+    private final KeyedIntObjectHashMap<TicketResolver> byteResolverMap =
+            new KeyedIntObjectHashMap<>(RESOLVER_OBJECT_TICKET_ID);
+    private final KeyedObjectHashMap<String, TicketResolver> descriptorResolverMap =
+            new KeyedObjectHashMap<>(RESOLVER_OBJECT_DESCRIPTOR_ID);
 
     @Inject
     public TicketRouter(final Set<TicketResolver> resolvers) {
@@ -85,7 +87,7 @@ public class TicketRouter {
      * @param <T> the expected return type of the ticket; this is not validated
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
-    //TODO #412 use this or remove it?
+    // TODO #412 use this or remove it?
     public <T> SessionState.ExportObject<T> resolve(
             @Nullable final SessionState session,
             final Flight.FlightDescriptor descriptor) {
@@ -118,7 +120,7 @@ public class TicketRouter {
      * @param <T> the type of the result the export will publish
      * @return an export object; see {@link SessionState} for lifecycle propagation details
      */
-    //TODO #412 use this or remove it
+    // TODO #412 use this or remove it
     public <T> SessionState.ExportBuilder<T> publish(
             final SessionState session,
             final Flight.Ticket ticket) {
@@ -144,9 +146,11 @@ public class TicketRouter {
     /**
      * Resolve a flight descriptor and retrieve flight info for the flight.
      *
-     * @param session the user session context; ticket resolvers may expose flights that do not require a session (such as via DoGet)
+     * @param session the user session context; ticket resolvers may expose flights that do not require a session (such
+     *        as via DoGet)
      * @param descriptor the flight descriptor
-     * @return an export object that will resolve to the flight descriptor; see {@link SessionState} for lifecycle propagation details
+     * @return an export object that will resolve to the flight descriptor; see {@link SessionState} for lifecycle
+     *         propagation details
      */
     public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(
             @Nullable final SessionState session,
@@ -160,7 +164,7 @@ public class TicketRouter {
      * @param ticket the ticket to parse
      * @return a string that is good for log/error messages
      */
-    //TODO #412 use this or remove it
+    // TODO #412 use this or remove it
     public String getLogNameFor(final Flight.Ticket ticket) {
         return getLogNameFor(ticket.getTicket().asReadOnlyByteBuffer());
     }
@@ -182,14 +186,12 @@ public class TicketRouter {
      * @param visitor the callback to invoke per descriptor path
      */
     public void visitFlightInfo(final @Nullable SessionState session, final Consumer<Flight.FlightInfo> visitor) {
-        byteResolverMap.iterator().forEachRemaining(resolver ->
-                resolver.forAllFlightInfo(session, visitor)
-        );
+        byteResolverMap.iterator().forEachRemaining(resolver -> resolver.forAllFlightInfo(session, visitor));
     }
 
     public static Flight.FlightInfo getFlightInfo(final Table table,
-                                                   final Flight.FlightDescriptor descriptor,
-                                                   final Flight.Ticket ticket) {
+            final Flight.FlightDescriptor descriptor,
+            final Flight.Ticket ticket) {
         return Flight.FlightInfo.newBuilder()
                 .setSchema(BarrageSchemaUtil.schemaBytesFromTable(table))
                 .setFlightDescriptor(descriptor)
@@ -230,17 +232,19 @@ public class TicketRouter {
         return resolver;
     }
 
-    private static final KeyedIntObjectKey<TicketResolver> RESOLVER_OBJECT_TICKET_ID = new KeyedIntObjectKey.BasicStrict<TicketResolver>() {
-        @Override
-        public int getIntKey(final TicketResolver ticketResolver) {
-            return ticketResolver.ticketRoute();
-        }
-    };
+    private static final KeyedIntObjectKey<TicketResolver> RESOLVER_OBJECT_TICKET_ID =
+            new KeyedIntObjectKey.BasicStrict<TicketResolver>() {
+                @Override
+                public int getIntKey(final TicketResolver ticketResolver) {
+                    return ticketResolver.ticketRoute();
+                }
+            };
 
-    private static final KeyedObjectKey<String, TicketResolver> RESOLVER_OBJECT_DESCRIPTOR_ID = new KeyedObjectKey.Basic<String, TicketResolver>() {
-        @Override
-        public String getKey(TicketResolver ticketResolver) {
-            return ticketResolver.flightDescriptorRoute();
-        }
-    };
+    private static final KeyedObjectKey<String, TicketResolver> RESOLVER_OBJECT_DESCRIPTOR_ID =
+            new KeyedObjectKey.Basic<String, TicketResolver>() {
+                @Override
+                public String getKey(TicketResolver ticketResolver) {
+                    return ticketResolver.flightDescriptorRoute();
+                }
+            };
 }

@@ -15,13 +15,14 @@ import java.math.BigInteger;
 /**
  * Creates iterative operators for the supplied type.
  */
-public abstract class IterativeOperatorStateFactory extends ReaggregatableStatefactory implements IterativeChunkedOperatorFactory {
+public abstract class IterativeOperatorStateFactory extends ReaggregatableStatefactory
+        implements IterativeChunkedOperatorFactory {
 
-    IterativeOperatorStateFactory() {
-    }
+    IterativeOperatorStateFactory() {}
 
     @Override
-    public abstract IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name, boolean exposeInternalColumns);
+    public abstract IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name,
+            boolean exposeInternalColumns);
 
     static IterativeChunkedAggregationOperator getSumChunked(Class type, String name) {
         if (type == Boolean.class || type == boolean.class) {
@@ -48,46 +49,52 @@ public abstract class IterativeOperatorStateFactory extends ReaggregatableStatef
         throw new UnsupportedOperationException("Unsupported type " + type);
     }
 
-    static IterativeChunkedAggregationOperator getMinMaxChunked(Class type, boolean minimum, boolean isStreamOrAddOnly, String name) {
+    static IterativeChunkedAggregationOperator getMinMaxChunked(Class type, boolean minimum, boolean isStreamOrAddOnly,
+            String name) {
         if (!isStreamOrAddOnly) {
             return new SsmChunkedMinMaxOperator(type, minimum, name);
         } else {
             if (type == Byte.class || type == byte.class) {
-                return new ByteChunkedAppendOnlyMinMaxOperator(minimum, name);
+                return new ByteChunkedAddOnlyMinMaxOperator(minimum, name);
             } else if (type == Character.class || type == char.class) {
-                return new CharChunkedAppendOnlyMinMaxOperator(minimum, name);
+                return new CharChunkedAddOnlyMinMaxOperator(minimum, name);
             } else if (type == Double.class || type == double.class) {
-                return new DoubleChunkedAppendOnlyMinMaxOperator(minimum, name);
+                return new DoubleChunkedAddOnlyMinMaxOperator(minimum, name);
             } else if (type == Float.class || type == float.class) {
-                return new FloatChunkedAppendOnlyMinMaxOperator(minimum, name);
+                return new FloatChunkedAddOnlyMinMaxOperator(minimum, name);
             } else if (type == Integer.class || type == int.class) {
-                return new IntChunkedAppendOnlyMinMaxOperator(minimum, name);
+                return new IntChunkedAddOnlyMinMaxOperator(minimum, name);
             } else if (type == Long.class || type == long.class || type == DBDateTime.class) {
-                return new LongChunkedAppendOnlyMinMaxOperator(type, minimum, name);
+                return new LongChunkedAddOnlyMinMaxOperator(type, minimum, name);
             } else if (type == Short.class || type == short.class) {
-                return new ShortChunkedAppendOnlyMinMaxOperator(minimum, name);
+                return new ShortChunkedAddOnlyMinMaxOperator(minimum, name);
             } else if (type == Boolean.class || type == boolean.class) {
-                return new BooleanChunkedAppendOnlyMinMaxOperator(minimum, name);
+                return new BooleanChunkedAddOnlyMinMaxOperator(minimum, name);
             } else {
-                return new ObjectChunkedAppendOnlyMinMaxOperator(type, minimum, name);
+                return new ObjectChunkedAddOnlyMinMaxOperator(type, minimum, name);
             }
         }
     }
 
-    static IterativeChunkedAggregationOperator getPercentileChunked(Class type, double percentile, boolean averageMedian, String name) {
+    static IterativeChunkedAggregationOperator getPercentileChunked(Class type, double percentile,
+            boolean averageMedian, String name) {
         return new SsmChunkedPercentileOperator(type, percentile, averageMedian, name);
     }
 
-    static IterativeChunkedAggregationOperator getCountDistinctChunked(Class type, String name, boolean countNulls, boolean exposeInternal, boolean isRollup) {
+    static IterativeChunkedAggregationOperator getCountDistinctChunked(Class type, String name, boolean countNulls,
+            boolean exposeInternal, boolean isRollup) {
         return DistinctOperatorFactory.createCountDistinct(type, name, countNulls, exposeInternal, isRollup);
     }
 
-    static IterativeChunkedAggregationOperator getDistinctChunked(Class type, String name, boolean countNulls, boolean exposeInternal, boolean isRollup) {
+    static IterativeChunkedAggregationOperator getDistinctChunked(Class type, String name, boolean countNulls,
+            boolean exposeInternal, boolean isRollup) {
         return DistinctOperatorFactory.createDistinct(type, name, countNulls, exposeInternal, isRollup);
     }
 
-    static IterativeChunkedAggregationOperator getUniqueChunked(Class type, String name, boolean countNulls, boolean exposeInternal, Object noKeyValue, Object nonUniqueValue, boolean isRollup) {
-        return DistinctOperatorFactory.createUnique(type, name, countNulls, exposeInternal, noKeyValue, nonUniqueValue, isRollup);
+    static IterativeChunkedAggregationOperator getUniqueChunked(Class type, String name, boolean countNulls,
+            boolean exposeInternal, Object noKeyValue, Object nonUniqueValue, boolean isRollup) {
+        return DistinctOperatorFactory.createUnique(type, name, countNulls, exposeInternal, noKeyValue, nonUniqueValue,
+                isRollup);
     }
 
     static IterativeChunkedAggregationOperator getAbsSumChunked(Class type, String name) {
@@ -142,7 +149,8 @@ public abstract class IterativeOperatorStateFactory extends ReaggregatableStatef
         throw new UnsupportedOperationException("Unsupported type " + type);
     }
 
-    static IterativeChunkedAggregationOperator getVarChunked(Class type, boolean std, String name, boolean exposeInternalColumns) {
+    static IterativeChunkedAggregationOperator getVarChunked(Class type, boolean std, String name,
+            boolean exposeInternalColumns) {
         if (type == Byte.class || type == byte.class) {
             return new ByteChunkedVarOperator(std, name, exposeInternalColumns);
         } else if (type == Character.class || type == char.class) {

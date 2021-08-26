@@ -18,6 +18,7 @@ public class PlotIllegalStateException extends IllegalStateException {
     }
 
     public PlotIllegalStateException(final String exception, final PlotInfo plotInfo) {
-        super("" + (plotInfo == null || plotInfo.toString() == null ? "" : "Plot Information: " + plotInfo + " ") + exception);
+        super("" + (plotInfo == null || plotInfo.toString() == null ? "" : "Plot Information: " + plotInfo + " ")
+                + exception);
     }
 }

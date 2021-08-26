@@ -11,25 +11,27 @@ public class FilterTestUtils {
     public static FilterDescriptor and(FilterDescriptor... filterDescriptors) {
         return node(FilterDescriptor.FilterOperation.AND, filterDescriptors);
     }
+
     public static FilterDescriptor or(FilterDescriptor... filterDescriptors) {
         return node(FilterDescriptor.FilterOperation.OR, filterDescriptors);
     }
+
     public static FilterDescriptor not(FilterDescriptor filterDescriptor) {
         return node(FilterDescriptor.FilterOperation.NOT, filterDescriptor);
     }
 
-//    public static FilterDescriptor eq(String columnName, String value) {
-//        return node(FilterDescriptor.FilterOperation.EQ, reference(columnName), literal(value));
-//    }
-//    public static FilterDescriptor notEq(String columnName, String value) {
-//        return node(FilterDescriptor.FilterOperation.NEQ, reference(columnName), literal(value));
-//    }
-//    public static FilterDescriptor in(String columnName, String... values) {
-//        return node(FilterDescriptor.FilterOperation.NOT_IN, concat(reference(columnName), literals(values)));
-//    }
-//    public static FilterDescriptor notIn(String columnName, String... values) {
-//        return node(FilterDescriptor.FilterOperation.IN, concat(reference(columnName), literals(values)));
-//    }
+    // public static FilterDescriptor eq(String columnName, String value) {
+    // return node(FilterDescriptor.FilterOperation.EQ, reference(columnName), literal(value));
+    // }
+    // public static FilterDescriptor notEq(String columnName, String value) {
+    // return node(FilterDescriptor.FilterOperation.NEQ, reference(columnName), literal(value));
+    // }
+    // public static FilterDescriptor in(String columnName, String... values) {
+    // return node(FilterDescriptor.FilterOperation.NOT_IN, concat(reference(columnName), literals(values)));
+    // }
+    // public static FilterDescriptor notIn(String columnName, String... values) {
+    // return node(FilterDescriptor.FilterOperation.IN, concat(reference(columnName), literals(values)));
+    // }
 
     public static FilterDescriptor reference(String columnName) {
         FilterDescriptor reference = new FilterDescriptor();
@@ -55,12 +57,15 @@ public class FilterTestUtils {
     public static FilterDescriptor eq(String columnName, int value) {
         return node(FilterDescriptor.FilterOperation.EQ, reference(columnName), literal((double) value));
     }
+
     public static FilterDescriptor notEq(String columnName, int value) {
         return node(FilterDescriptor.FilterOperation.NEQ, reference(columnName), literal((double) value));
     }
+
     public static FilterDescriptor in(String columnName, int... values) {
         return node(FilterDescriptor.FilterOperation.IN, concat(reference(columnName), literals(values)));
     }
+
     public static FilterDescriptor notIn(String columnName, int... values) {
         return node(FilterDescriptor.FilterOperation.NOT_IN, concat(reference(columnName), literals(values)));
     }
@@ -76,9 +81,11 @@ public class FilterTestUtils {
     public static FilterDescriptor literal(int intValue) {
         return literal((double) intValue);
     }
+
     public static FilterDescriptor literal(double doubleValue) {
         return numericLiteral(String.valueOf(doubleValue));
     }
+
     private static FilterDescriptor numericLiteral(String numericAsString) {
         FilterDescriptor literal = new FilterDescriptor();
         literal.setValue(numericAsString);
@@ -86,9 +93,11 @@ public class FilterTestUtils {
         literal.setOperation(FilterDescriptor.FilterOperation.LITERAL);
         return literal;
     }
+
     public static FilterDescriptor[] literals(int... intValues) {
         return IntStream.of(intValues).mapToObj(i -> literal((double) i)).toArray(FilterDescriptor[]::new);
     }
+
     public static FilterDescriptor[] literals(double... doubleValues) {
         return DoubleStream.of(doubleValues).mapToObj(FilterTestUtils::literal).toArray(FilterDescriptor[]::new);
     }
@@ -96,8 +105,7 @@ public class FilterTestUtils {
     private static FilterDescriptor[] concat(FilterDescriptor first, FilterDescriptor... arr) {
         return Stream.concat(
                 Stream.of(first),
-                Arrays.stream(arr)
-        ).toArray(FilterDescriptor[]::new);
+                Arrays.stream(arr)).toArray(FilterDescriptor[]::new);
     }
 
 

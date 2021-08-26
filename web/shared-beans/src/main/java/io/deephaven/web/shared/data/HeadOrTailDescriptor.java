@@ -12,8 +12,7 @@ public class HeadOrTailDescriptor implements Serializable {
         this.rows = rows;
     }
 
-    public HeadOrTailDescriptor() {
-    }
+    public HeadOrTailDescriptor() {}
 
     public boolean isHead() {
         return head;

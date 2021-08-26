@@ -12,16 +12,16 @@ class ArgumentsSingular {
 
     static Class<?>[] buildParamTypes(Chunk<?>[] __sources) {
         return Stream.of(__sources)
-            .map(c -> c.walk(new ChunkToSingularType<>()))
-            .map(ChunkToSingularType::getOut)
-            .toArray(Class<?>[]::new);
+                .map(c -> c.walk(new ChunkToSingularType<>()))
+                .map(ChunkToSingularType::getOut)
+                .toArray(Class<?>[]::new);
     }
 
     static Object[] buildArguments(Chunk<?>[] __sources, int index) {
         return Stream.of(__sources)
-            .map(c -> c.walk(new ChunkIndexToObject<>(index)))
-            .map(ChunkIndexToObject::getOut)
-            .toArray();
+                .map(c -> c.walk(new ChunkIndexToObject<>(index)))
+                .map(ChunkIndexToObject::getOut)
+                .toArray();
     }
 
     private static class ChunkIndexToObject<ATTR extends Any> implements Visitor<ATTR> {

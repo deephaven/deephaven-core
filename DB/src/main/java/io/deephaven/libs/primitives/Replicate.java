@@ -14,11 +14,13 @@ import java.nio.charset.Charset;
 import java.util.List;
 
 /**
- * Autogenerates primitives from template java files (e.g. CharacterPrimitives, ShortNumericPrimitives, FloatNumericPrimitives, and FlotFpPrimitives).
+ * Autogenerates primitives from template java files (e.g. CharacterPrimitives, ShortNumericPrimitives,
+ * FloatNumericPrimitives, and FlotFpPrimitives).
  */
 public class Replicate {
     public static void main(String[] args) throws IOException {
-        List<String> files = ReplicatePrimitiveCode.charToAllButBoolean(CharacterPrimitives.class, ReplicatePrimitiveCode.MAIN_SRC);
+        List<String> files =
+                ReplicatePrimitiveCode.charToAllButBoolean(CharacterPrimitives.class, ReplicatePrimitiveCode.MAIN_SRC);
         fixup(files);
 
         ReplicatePrimitiveCode.shortToAllIntegralTypes(ShortNumericPrimitives.class, ReplicatePrimitiveCode.MAIN_SRC);
@@ -27,7 +29,7 @@ public class Replicate {
     }
 
     private static void fixup(List<String> files) throws IOException {
-        for (String file: files) {
+        for (String file : files) {
             final File fileyfile = new File(file);
             List<String> lines = FileUtils.readLines(fileyfile, Charset.defaultCharset());
             lines = ReplicateUtilities.removeRegion(lines, "SortFixup");

@@ -15,7 +15,8 @@ public class StreamToLogBuffer implements StandardStreamReceiver {
     private final int initialBufferSize;
     private final int maxBufferSize;
 
-    public StreamToLogBuffer(LogBuffer logBuffer, boolean receiveOut, boolean receiveErr, int initialBufferSize, int maxBufferSize) {
+    public StreamToLogBuffer(LogBuffer logBuffer, boolean receiveOut, boolean receiveErr, int initialBufferSize,
+            int maxBufferSize) {
         this.logBuffer = Objects.requireNonNull(logBuffer);
         this.receiveOut = receiveOut;
         this.receiveErr = receiveErr;

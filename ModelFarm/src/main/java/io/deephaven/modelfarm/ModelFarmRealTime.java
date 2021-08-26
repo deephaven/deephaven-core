@@ -15,24 +15,27 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * A multithreaded resource to execute data driven models.
- * Every time a row of the data table ticks, the unique identifier is queued for execution.
- * Once the security reaches the top of the execution queue, the most recent data for the unique identifier is used for execution.
+ * A multithreaded resource to execute data driven models. Every time a row of the data table ticks, the unique
+ * identifier is queued for execution. Once the security reaches the top of the execution queue, the most recent data
+ * for the unique identifier is used for execution.
  * <p>
  * This is useful for real-time processing, where executing unique identifiers as fast as possible is desired.
  * <p>
- * The execution priority is determined by how long it has been since the data changed.
- * The prioritizer can be used to bump a unique identifier to a higher execution priority.
+ * The execution priority is determined by how long it has been since the data changed. The prioritizer can be used to
+ * bump a unique identifier to a higher execution priority.
  *
- * @param <KEYTYPE>  unique ID key type
+ * @param <KEYTYPE> unique ID key type
  * @param <DATATYPE> data type
  */
-public class ModelFarmRealTime<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends RowDataManager<KEYTYPE, DATATYPE>> extends RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE> {
+public class ModelFarmRealTime<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends RowDataManager<KEYTYPE, DATATYPE>>
+        extends RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE> {
 
     private static final Logger log = LoggerFactory.getLogger(ModelFarmRealTime.class);
-    private static final boolean LOG_PERF = Configuration.getInstance().getBooleanWithDefault("ModelFarm.logModelFarmRealTimePerformance", false);
+    private static final boolean LOG_PERF =
+            Configuration.getInstance().getBooleanWithDefault("ModelFarm.logModelFarmRealTimePerformance", false);
 
-    private final ModelFarmBase.GetDataLockType GETDATA_LOCK_TYPE = ModelFarmBase.GetDataLockType.valueOf(Configuration.getInstance().getStringWithDefault("ModelFarm.ModelFarmRealTime.getDataLockType", "LTM_READ_LOCK"));
+    private final ModelFarmBase.GetDataLockType GETDATA_LOCK_TYPE = ModelFarmBase.GetDataLockType.valueOf(Configuration
+            .getInstance().getStringWithDefault("ModelFarm.ModelFarmRealTime.getDataLockType", "LTM_READ_LOCK"));
     private final KeyedPriorityBlockingQueue<KEYTYPE> execQueue = new KeyedPriorityBlockingQueue<>();
     private final ExecPrioritizer<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE> prioritizer;
     private final ModelFarmBase.MostRecentDataGetter<KEYTYPE, DATATYPE> mostRecentDataGetter;
@@ -43,12 +46,13 @@ public class ModelFarmRealTime<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
     /**
      * Create a multithreaded resource to execute data driven models.
      *
-     * @param nThreads    number of worker threads.
-     * @param model       model to execute.
+     * @param nThreads number of worker threads.
+     * @param model model to execute.
      * @param dataManager interface for accessing and querying data contained in rows of a dynamic table.
      * @param prioritizer utility for computing the execution priority.
      */
-    public ModelFarmRealTime(final int nThreads, final Model<DATATYPE> model, final ROWDATAMANAGERTYPE dataManager, final ExecPrioritizer<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE> prioritizer) {
+    public ModelFarmRealTime(final int nThreads, final Model<DATATYPE> model, final ROWDATAMANAGERTYPE dataManager,
+            final ExecPrioritizer<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE> prioritizer) {
         super(nThreads, model, dataManager);
         this.prioritizer = prioritizer;
         log.warn().append("ModelFarmRealTime lock type: ").append(GETDATA_LOCK_TYPE.toString()).endl();
@@ -62,7 +66,7 @@ public class ModelFarmRealTime<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
     }
 
     private void updateQueue(final Index index) {
-        for (Index.Iterator it = index.iterator(); it.hasNext(); ) {
+        for (Index.Iterator it = index.iterator(); it.hasNext();) {
             final long i = it.nextLong();
             final KEYTYPE key = dataManager.uniqueIdCurrent(i);
             final int priority = prioritizer == null ? 0 : prioritizer.priority(dataManager, i);
@@ -127,7 +131,8 @@ public class ModelFarmRealTime<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
             }
         } finally {
             if (!isEvaling.compareAndSet(true, false)) {
-                //noinspection ThrowFromFinallyBlock -- once a thread sets isEvaling to true for a key, no other thread should set it to false.
+                // noinspection ThrowFromFinallyBlock -- once a thread sets isEvaling to true for a key, no other thread
+                // should set it to false.
                 throw new IllegalStateException("isEvaling is false but should be true for key " + key);
             }
         }
@@ -138,7 +143,7 @@ public class ModelFarmRealTime<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
      *
      * @param key The key to update.
      * @return {@code true} if the {@code element} was newly inserted to the queue or reinserted with a higher priority,
-     * otherwise {@code false}.
+     *         otherwise {@code false}.
      */
     @SuppressWarnings("unused")
     public boolean requestUpdateMaxPriority(KEYTYPE key) {
@@ -148,10 +153,10 @@ public class ModelFarmRealTime<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
     /**
      * Request an update for the given {@code key} with the specified priority level.
      *
-     * @param key      The key to update.
+     * @param key The key to update.
      * @param priority The priority with which the key should be updated.
      * @return {@code true} if the {@code element} was newly inserted to the queue or reinserted with a higher priority,
-     * otherwise {@code false}.
+     *         otherwise {@code false}.
      */
     @SuppressWarnings("WeakerAccess")
     public boolean requestUpdate(KEYTYPE key, int priority) {

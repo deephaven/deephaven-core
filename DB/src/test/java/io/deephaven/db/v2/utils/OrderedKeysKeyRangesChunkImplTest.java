@@ -15,7 +15,8 @@ public class OrderedKeysKeyRangesChunkImplTest extends OrderedKeysTestBase {
 
     @Override
     protected OrderedKeys create(long... values) {
-        return OrderedKeys.takeKeyRangesChunkAndMakeOrderedKeys(ChunkUtils.convertToOrderedKeyRanges(LongChunk.chunkWrap(values)));
+        return OrderedKeys.takeKeyRangesChunkAndMakeOrderedKeys(
+                ChunkUtils.convertToOrderedKeyRanges(LongChunk.chunkWrap(values)));
     }
 
     @Test

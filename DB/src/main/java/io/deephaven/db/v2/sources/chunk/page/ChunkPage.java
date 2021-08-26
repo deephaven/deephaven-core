@@ -29,8 +29,8 @@ public interface ChunkPage<ATTR extends Attributes.Any> extends Page.WithDefault
 
     /**
      * @return The offset into the chunk for this row.
-     * @apiNote This function is for convenience over {@link #getRowOffset(long)}, so the caller doesn't have
-     * to cast to an int.
+     * @apiNote This function is for convenience over {@link #getRowOffset(long)}, so the caller doesn't have to cast to
+     *          an int.
      * @implNote This page is known to be a chunk, so {@link #size()} is an int, and so is the offset.
      */
     @FinalDefault

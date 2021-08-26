@@ -47,12 +47,11 @@ public class ParquetFileWriter {
             final ByteBufferAllocator allocator,
             final MessageType type,
             final CompressionCodecName codecName,
-            final Map<String, String> extraMetaData
-    ) throws IOException {
+            final Map<String, String> extraMetaData) throws IOException {
         this.pageSize = pageSize;
         this.allocator = allocator;
         this.extraMetaData = new HashMap<>(extraMetaData);
-        writeChannel = channelsProvider.getWriteChannel(filePath, false);  //TODO add support for appending
+        writeChannel = channelsProvider.getWriteChannel(filePath, false); // TODO add support for appending
         this.type = type;
         this.channelsProvider = channelsProvider;
         CodecFactory codecFactory = new CodecFactory(new Configuration(), pageSize);
@@ -60,7 +59,8 @@ public class ParquetFileWriter {
     }
 
     RowGroupWriter addRowGroup(final String path, final boolean append) throws IOException {
-        RowGroupWriterImpl rowGroupWriter = new RowGroupWriterImpl(path, append, channelsProvider, type, pageSize, allocator, compressor);
+        RowGroupWriterImpl rowGroupWriter =
+                new RowGroupWriterImpl(path, append, channelsProvider, type, pageSize, allocator, compressor);
         blocks.add(rowGroupWriter.getBlock());
         return rowGroupWriter;
     }
@@ -77,7 +77,8 @@ public class ParquetFileWriter {
         try (final OutputStream os = Channels.newOutputStream(writeChannel)) {
             os.write(ParquetFileReader.MAGIC);
             serializeOffsetIndexes(offsetIndexes, blocks, os);
-            ParquetMetadata footer = new ParquetMetadata(new FileMetaData(type, extraMetaData, Version.FULL_VERSION), blocks);
+            ParquetMetadata footer =
+                    new ParquetMetadata(new FileMetaData(type, extraMetaData, Version.FULL_VERSION), blocks);
             serializeFooter(footer, os);
         }
         // os (and thus writeChannel) are closed at this point.

@@ -75,7 +75,8 @@ public class QueryOperationPerformanceLogLogger
         }
 
         @Override
-        public void log(final Row.Flags flags, final int operationNumber, final QueryPerformanceNugget nugget) throws IOException {
+        public void log(final Row.Flags flags, final int operationNumber, final QueryPerformanceNugget nugget)
+                throws IOException {
             setRowFlags(flags);
             this.ProcessUniqueId.set(processUniqueId);
             this.EvaluationNumber.setInt(nugget.getEvaluationNumber());
@@ -90,8 +91,8 @@ public class QueryOperationPerformanceLogLogger
                     ? null
                     : DBTimeUtils.millisToTime(
                             nugget.getStartClockTime() + DBTimeUtils.nanosToMillis(nugget.getTotalTimeNanos())));
-            this.DurationNanos.setLong(nugget.getTotalTimeNanos() == null ?
-                    QueryConstants.NULL_LONG : nugget.getTotalTimeNanos());
+            this.DurationNanos.setLong(
+                    nugget.getTotalTimeNanos() == null ? QueryConstants.NULL_LONG : nugget.getTotalTimeNanos());
             this.CpuNanos.setLong(nugget.getCpuNanos());
             this.UserCpuNanos.setLong(nugget.getUserCpuNanos());
             this.FreeMemoryChange.setLong(nugget.getDiffFreeMemory());
@@ -118,21 +119,20 @@ public class QueryOperationPerformanceLogLogger
                 .add("OperationNumber", int.class)
                 .add("Depth", int.class)
                 .add("Description", String.class)
-	            .add("CallerLine", String.class)
-	            .add("IsTopLevel", Boolean.class)
-	            .add("IsCompilation", Boolean.class)
-	            .add("StartTime", DBDateTime.class)
-	            .add("EndTime", DBDateTime.class)
-	            .add("DurationNanos", long.class)
-	            .add("CpuNanos", long.class)
-	            .add("UserCpuNanos", long.class)
-	            .add("FreeMemoryChange", long.class)
-	            .add("TotalMemoryChange", long.class)
-	            .add("AllocatedBytes", long.class)
-	            .add("PoolAllocatedBytes", long.class)
-	            .add("InputSizeLong", long.class)
-	            .add("WasInterrupted", Boolean.class)
-                ;
+                .add("CallerLine", String.class)
+                .add("IsTopLevel", Boolean.class)
+                .add("IsCompilation", Boolean.class)
+                .add("StartTime", DBDateTime.class)
+                .add("EndTime", DBDateTime.class)
+                .add("DurationNanos", long.class)
+                .add("CpuNanos", long.class)
+                .add("UserCpuNanos", long.class)
+                .add("FreeMemoryChange", long.class)
+                .add("TotalMemoryChange", long.class)
+                .add("AllocatedBytes", long.class)
+                .add("PoolAllocatedBytes", long.class)
+                .add("InputSizeLong", long.class)
+                .add("WasInterrupted", Boolean.class);
         columnNames = cols.getColumnNames();
         columnDbTypes = cols.getDbTypes();
     }
@@ -146,9 +146,9 @@ public class QueryOperationPerformanceLogLogger
     public void log(final int operationNumber, final QueryPerformanceNugget nugget) throws IOException {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS, operationNumber, nugget);
     }
-    
-    public void log(final Row.Flags flags, final int operationNumber, final QueryPerformanceNugget nugget
-    ) throws IOException {
+
+    public void log(final Row.Flags flags, final int operationNumber, final QueryPerformanceNugget nugget)
+            throws IOException {
         verifyCondition(isInitialized(), "init() must be called before calling log()");
         verifyCondition(!isClosed, "cannot call log() after the logger is closed");
         verifyCondition(!isShuttingDown, "cannot call log() while the logger is shutting down");

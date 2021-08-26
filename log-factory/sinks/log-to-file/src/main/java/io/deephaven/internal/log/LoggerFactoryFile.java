@@ -22,29 +22,29 @@ public final class LoggerFactoryFile extends LoggerFactorySingleCache {
 
     private static boolean append() {
         return Boolean.parseBoolean(
-            System.getProperty("io.deephaven.internal.log.LoggerFactoryFile.append", "true"));
+                System.getProperty("io.deephaven.internal.log.LoggerFactoryFile.append", "true"));
     }
 
     private static boolean showLevel() {
         return Boolean.parseBoolean(
-            System.getProperty("io.deephaven.internal.log.LoggerFactoryFile.showLevel", "true"));
+                System.getProperty("io.deephaven.internal.log.LoggerFactoryFile.showLevel", "true"));
     }
 
     private static boolean showThreadName() {
         return Boolean.parseBoolean(System
-            .getProperty("io.deephaven.internal.log.LoggerFactoryFile.showThreadName", "true"));
+                .getProperty("io.deephaven.internal.log.LoggerFactoryFile.showThreadName", "true"));
     }
 
     private static TimeZone timeZone() {
         final String timeZone =
-            System.getProperty("io.deephaven.internal.log.LoggerFactoryFile.timeZone");
+                System.getProperty("io.deephaven.internal.log.LoggerFactoryFile.timeZone");
         return timeZone == null ? TimeZone.getDefault() : TimeZone.getTimeZone(timeZone);
     }
 
     private static LogLevel level() {
         return LogLevel
-            .valueOf(System.getProperty("io.deephaven.internal.log.LoggerFactoryFile.level", "INFO")
-                .toUpperCase());
+                .valueOf(System.getProperty("io.deephaven.internal.log.LoggerFactoryFile.level", "INFO")
+                        .toUpperCase());
     }
 
     @Override
@@ -52,14 +52,14 @@ public final class LoggerFactoryFile extends LoggerFactorySingleCache {
         // todo: parameterize based on config
         final LogBufferPool bufferPool = new DynamicLogBufferPoolImpl("LogBufferPool", 1024, 1024);
         final LogEntryPool logEntryPool =
-            new DynamicDelayedLogEntryUnsafePoolImpl("LogEntryPool", 32768);
+                new DynamicDelayedLogEntryUnsafePoolImpl("LogEntryPool", 32768);
         // note: this calls a thread per call; need to change dynamics
         final String header = null;
         final LogSink<?> logSink = new LogSinkImpl<>(getPath(), Integer.MAX_VALUE, null,
-            logEntryPool, append(), new LogOutputCsvImpl(bufferPool), header, null);
+                logEntryPool, append(), new LogOutputCsvImpl(bufferPool), header, null);
         final String prefix = null;
         final LoggerTimeSource timeSource = new NullLoggerTimeSource();
         return new LoggerImpl(logEntryPool, logSink, prefix, level(), timeSource, timeZone(),
-            showLevel(), showThreadName());
+                showLevel(), showThreadName());
     }
 }

@@ -18,3 +18,16 @@ dependencies {
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.30'
 }
+
+spotless {
+    java {
+        targetExclude(
+                'src/main/java/io/deephaven/db/plot/Axes.java',
+                'src/main/java/io/deephaven/db/plot/AxesImpl.java',
+                'src/main/java/io/deephaven/db/plot/Figure.java',
+                'src/main/java/io/deephaven/db/plot/FigureImpl.java',
+                'src/main/java/io/deephaven/db/plot/PlottingConvenience.java',
+                'src/main/java/io/deephaven/db/plot/datasets/multiseries/**'
+        )
+    }
+}

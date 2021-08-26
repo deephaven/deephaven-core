@@ -31,7 +31,7 @@ public class SimpleXYColor {
                 .yLabel("Y")
                 .plot("Test1", x1, y1).pointColor(c1).linesVisible(false)
                 .plot("Test2", x2, y2).pointColor(green)
-                .plot("TestF", x -> x * x / 5).pointColor("black"); //.npoints(5); //.range(-10,10);
+                .plot("TestF", x -> x * x / 5).pointColor("black"); // .npoints(5); //.range(-10,10);
 
         ExamplePlotUtils.display(axs);
     }

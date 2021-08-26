@@ -11,7 +11,8 @@ public final class ImmutableColumnSourceGetDefaults {
     /**
      * Default interface for immutable Object {@link ColumnSource} implementations.
      */
-    public interface ForObject<DATA_TYPE> extends ColumnSourceGetDefaults.ForObject<DATA_TYPE>, ImmutableColumnSource<DATA_TYPE> {
+    public interface ForObject<DATA_TYPE>
+            extends ColumnSourceGetDefaults.ForObject<DATA_TYPE>, ImmutableColumnSource<DATA_TYPE> {
     }
 
     /**
@@ -53,7 +54,8 @@ public final class ImmutableColumnSourceGetDefaults {
     /**
      * Default interface for immutable long-backed {@link ColumnSource} implementations.
      */
-    public interface LongBacked<DATA_TYPE> extends ColumnSourceGetDefaults.LongBacked<DATA_TYPE>, ImmutableColumnSource<DATA_TYPE> {
+    public interface LongBacked<DATA_TYPE>
+            extends ColumnSourceGetDefaults.LongBacked<DATA_TYPE>, ImmutableColumnSource<DATA_TYPE> {
     }
 
     /**
@@ -65,7 +67,8 @@ public final class ImmutableColumnSourceGetDefaults {
     /**
      * Default interface for immutable {@link DBDateTime} {@link ColumnSource} implementations.
      */
-    public interface ForLongAsDateTime extends ColumnSourceGetDefaults.ForLongAsDateTime, ImmutableColumnSource<DBDateTime> {
+    public interface ForLongAsDateTime
+            extends ColumnSourceGetDefaults.ForLongAsDateTime, ImmutableColumnSource<DBDateTime> {
     }
 
     /**

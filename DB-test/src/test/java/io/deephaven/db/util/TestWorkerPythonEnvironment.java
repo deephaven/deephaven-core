@@ -18,7 +18,7 @@ import org.junit.Ignore;
 /**
  * Test various Jpy related overloading methods.
  */
-@Ignore// TODO (deephaven-core#734)
+@Ignore // TODO (deephaven-core#734)
 public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
 
     @SuppressWarnings("MethodDoesntCallSuperMethod")
@@ -26,7 +26,9 @@ public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
     public void setUp() throws Exception {
         super.setUp();
         if (ProcessEnvironment.tryGet() == null) {
-            ProcessEnvironment.basicInteractiveProcessInitialization(Configuration.getInstance(), TestWorkerPythonEnvironment.class.getCanonicalName(), new StreamLoggerImpl(System.out, LogLevel.INFO));
+            ProcessEnvironment.basicInteractiveProcessInitialization(Configuration.getInstance(),
+                    TestWorkerPythonEnvironment.class.getCanonicalName(),
+                    new StreamLoggerImpl(System.out, LogLevel.INFO));
         }
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
         LiveTableMonitor.DEFAULT.resetForUnitTests(false);

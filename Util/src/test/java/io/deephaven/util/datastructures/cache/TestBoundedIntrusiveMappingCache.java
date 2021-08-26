@@ -26,10 +26,12 @@ public class TestBoundedIntrusiveMappingCache {
     @Test
     public void testLRU() {
         final int size = 10;
-        final BoundedIntrusiveMappingCache.IntegerImpl<String> cache = new BoundedIntrusiveMappingCache.IntegerImpl<>(size);
+        final BoundedIntrusiveMappingCache.IntegerImpl<String> cache =
+                new BoundedIntrusiveMappingCache.IntegerImpl<>(size);
         final String[] strings = IntStream.range(0, size).mapToObj(Integer::toString).toArray(String[]::new);
         final int addedSize = size / 2;
-        final String[] addedStrings = IntStream.range(size, size + addedSize).mapToObj(Integer::toString).toArray(String[]::new);
+        final String[] addedStrings =
+                IntStream.range(size, size + addedSize).mapToObj(Integer::toString).toArray(String[]::new);
 
         // Fill the cache initially, to its maximum size
         for (int si = 0; si < strings.length; si++) {
@@ -77,10 +79,12 @@ public class TestBoundedIntrusiveMappingCache {
     @Test
     public void testFIFO() {
         final int size = 10;
-        final BoundedIntrusiveMappingCache.FifoIntegerImpl<String> cache = new BoundedIntrusiveMappingCache.FifoIntegerImpl<>(size);
+        final BoundedIntrusiveMappingCache.FifoIntegerImpl<String> cache =
+                new BoundedIntrusiveMappingCache.FifoIntegerImpl<>(size);
         final String[] strings = IntStream.range(0, size).mapToObj(Integer::toString).toArray(String[]::new);
         final int addedSize = size / 2;
-        final String[] addedStrings = IntStream.range(size, size + addedSize).mapToObj(Integer::toString).toArray(String[]::new);
+        final String[] addedStrings =
+                IntStream.range(size, size + addedSize).mapToObj(Integer::toString).toArray(String[]::new);
 
         // Fill the cache initially, to its maximum size
         for (int si = 0; si < strings.length; si++) {

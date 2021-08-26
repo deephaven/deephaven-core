@@ -30,7 +30,7 @@ public class MultiFileInputStream extends InputStream {
     /*
      * Note that MultiFileInputStream assumes ownership for all streams and will close them when it is closed.
      */
-    public MultiFileInputStream(DecoratedInputStream inputStreams[]){
+    public MultiFileInputStream(DecoratedInputStream inputStreams[]) {
         this.inputStreams = inputStreams;
     }
 

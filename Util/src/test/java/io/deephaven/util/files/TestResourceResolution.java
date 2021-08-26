@@ -102,7 +102,8 @@ public class TestResourceResolution extends BaseArrayTestCase {
         final String dirName1 = dir1.getAbsolutePath();
         final String dirName2 = dir2.getAbsolutePath();
 
-        ResourceResolution resourceResolution = new ResourceResolution(Configuration.getInstance(), null, dirName1, dirName2);
+        ResourceResolution resourceResolution =
+                new ResourceResolution(Configuration.getInstance(), null, dirName1, dirName2);
         resourceResolution.findResources(SUFFIX, this::resourceFound);
         assertTrue(filenameToUrlMap.size() == 4);
         assertTrue(filenameToUrlMap.containsKey(TEST_FILE1_NAME));
@@ -113,7 +114,8 @@ public class TestResourceResolution extends BaseArrayTestCase {
     }
 
     public void testRelativeTopDirNoWildcard() throws IOException {
-        ResourceResolution resourceResolution = new ResourceResolution(Configuration.getInstance(), null, TEST_DIR_BASE);
+        ResourceResolution resourceResolution =
+                new ResourceResolution(Configuration.getInstance(), null, TEST_DIR_BASE);
         resourceResolution.findResources(SUFFIX, this::resourceFound);
         assertTrue(filenameToUrlMap.size() == 4);
         assertTrue(filenameToUrlMap.containsKey(TEST_FILE1_NAME));
@@ -137,7 +139,8 @@ public class TestResourceResolution extends BaseArrayTestCase {
     }
 
     public void testRelativeWildcardLinux() throws IOException {
-        ResourceResolution resourceResolution = new ResourceResolution(Configuration.getInstance(), null, TEST_WILDCARD_LINUX);
+        ResourceResolution resourceResolution =
+                new ResourceResolution(Configuration.getInstance(), null, TEST_WILDCARD_LINUX);
         resourceResolution.findResources(SUFFIX, this::resourceFound);
         assertTrue(filenameToUrlMap.size() == 4);
         assertTrue(filenameToUrlMap.containsKey(TEST_FILE1_NAME));
@@ -162,7 +165,8 @@ public class TestResourceResolution extends BaseArrayTestCase {
     }
 
     public void testRelativeWildcardWindows() throws IOException {
-        ResourceResolution resourceResolution = new ResourceResolution(Configuration.getInstance(), null, TEST_WILDCARD_WINDOWS);
+        ResourceResolution resourceResolution =
+                new ResourceResolution(Configuration.getInstance(), null, TEST_WILDCARD_WINDOWS);
         resourceResolution.findResources(SUFFIX, this::resourceFound);
         assertTrue(filenameToUrlMap.size() == 4);
         assertTrue(filenameToUrlMap.containsKey(TEST_FILE1_NAME));
@@ -187,7 +191,8 @@ public class TestResourceResolution extends BaseArrayTestCase {
     }
 
     public void testRelativeWildcardLinuxDups() throws IOException {
-        ResourceResolution resourceResolution = new ResourceResolution(Configuration.getInstance(), null, TEST_WILDCARD_LINUX_DUPS);
+        ResourceResolution resourceResolution =
+                new ResourceResolution(Configuration.getInstance(), null, TEST_WILDCARD_LINUX_DUPS);
         resourceResolution.findResources(SUFFIX, this::resourceFound);
         assertTrue(filenameToUrlMap.size() == 4);
         assertTrue(filenameToUrlMap.containsKey(TEST_FILE1_NAME));
@@ -222,8 +227,9 @@ public class TestResourceResolution extends BaseArrayTestCase {
         final Map<String, String> answers = new HashMap<>();
         final String answer1 = String.join(File.separator, "", "WindowsDC", "path", "to", "");
         final String answer2;
-        // separators are collapsed to singles (e.g. /WIndowsDC/path/to) unless it is a UNC path on Windows (\WindowsDC\path\to)
-        if(OSUtil.runningWindows()) {
+        // separators are collapsed to singles (e.g. /WIndowsDC/path/to) unless it is a UNC path on Windows
+        // (\WindowsDC\path\to)
+        if (OSUtil.runningWindows()) {
             // The normalize method checks for a Windows file separator type and adds an extra slash for UNC paths
             answer2 = File.separator + answer1;
         } else {
@@ -235,7 +241,7 @@ public class TestResourceResolution extends BaseArrayTestCase {
         answers.put("//WindowsDC/path/to///file3.txt", answer1 + "file3.txt");
         answers.put("///WindowsDC/path/to///file4.txt", answer1 + "file4.txt");
 
-        answers.forEach( (resourcePath, answer) -> {
+        answers.forEach((resourcePath, answer) -> {
 
             final String normalizedResourcePath = resourceResolution.normalize(resourcePath);
             assertEquals(answer, normalizedResourcePath);

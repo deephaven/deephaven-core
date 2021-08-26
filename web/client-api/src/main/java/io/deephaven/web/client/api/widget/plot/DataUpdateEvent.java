@@ -16,7 +16,8 @@ public class DataUpdateEvent {
     public static final DataUpdateEvent empty(JsSeries... series) {
         return new DataUpdateEvent(series, null, null) {
             @Override
-            public JsArray<Any> getArray(JsSeries series, int sourceType, @JsOptional JsFunction<Any, Any> mappingFunc) {
+            public JsArray<Any> getArray(JsSeries series, int sourceType,
+                    @JsOptional JsFunction<Any, Any> mappingFunc) {
                 return new JsArray<>();
             }
         };

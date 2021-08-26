@@ -14,8 +14,8 @@ import java.lang.management.*;
 import java.util.Objects;
 
 /**
- * A simple method for generating a Thread dump for this JVM; it doesn't do all the stuff that the kill -3 does; but
- * you can easily run it from inside the JVM without having to send yourself a signal.
+ * A simple method for generating a Thread dump for this JVM; it doesn't do all the stuff that the kill -3 does; but you
+ * can easily run it from inside the JVM without having to send yourself a signal.
  */
 public class ThreadDump {
     /**
@@ -66,17 +66,19 @@ public class ThreadDump {
     }
 
     private static final LogOutput.ObjFormatter<ThreadInfo> THREAD_INFO_OBJ_FORMATTER = (logOutput, threadInfo) -> {
-        if ( threadInfo == null ) {
+        if (threadInfo == null) {
             logOutput.append("null");
             return;
         }
-        logOutput.append("\"").append(threadInfo.getThreadName()).append("\" Id=").append(threadInfo.getThreadId()).append(" ").append(Objects.toString(threadInfo.getThreadState()));
+        logOutput.append("\"").append(threadInfo.getThreadName()).append("\" Id=").append(threadInfo.getThreadId())
+                .append(" ").append(Objects.toString(threadInfo.getThreadState()));
 
         if (threadInfo.getLockName() != null) {
             logOutput.append(" on ").append(threadInfo.getLockName());
         }
         if (threadInfo.getLockOwnerName() != null) {
-            logOutput.append(" owned by \"").append(threadInfo.getLockOwnerName()).append("\" Id=").append(threadInfo.getLockOwnerId());
+            logOutput.append(" owned by \"").append(threadInfo.getLockOwnerName()).append("\" Id=")
+                    .append(threadInfo.getLockOwnerId());
         }
         if (threadInfo.isSuspended()) {
             logOutput.append(" (suspended)");

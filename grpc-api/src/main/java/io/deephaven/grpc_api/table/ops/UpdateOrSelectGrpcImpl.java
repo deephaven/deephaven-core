@@ -31,7 +31,8 @@ public abstract class UpdateOrSelectGrpcImpl extends GrpcTableOperation<SelectOr
     }
 
     @Override
-    public Table create(final SelectOrUpdateRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final SelectOrUpdateRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();

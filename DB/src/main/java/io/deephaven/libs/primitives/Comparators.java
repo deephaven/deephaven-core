@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ * * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  *
  */
 
@@ -22,8 +22,7 @@ class Comparators {
         private static AscendingOrderComparator comparator = new AscendingOrderComparator<>();
         private static Comparator<Object> reverseComparator = new AscendingOrderComparator<>().reversed();
 
-        private AscendingOrderComparator() {
-        }
+        private AscendingOrderComparator() {}
 
         public static AscendingOrderComparator getInstance() {
             return comparator;
@@ -44,8 +43,7 @@ class Comparators {
         private static AscendingOrderComparatorNumber comparatorNumber = new AscendingOrderComparatorNumber<>();
         private static Comparator<Number> reverseComparatorNumber = new AscendingOrderComparatorNumber<>().reversed();
 
-        private AscendingOrderComparatorNumber() {
-        }
+        private AscendingOrderComparatorNumber() {}
 
         public static AscendingOrderComparatorNumber getInstance() {
             return comparatorNumber;
@@ -91,7 +89,7 @@ class Comparators {
             return 0;
         } else if (o1Prim == NULL_DOUBLE) {
             return -1;
-        } else if (o2Prim == NULL_LONG || Double.isNaN(o1Prim)) {//As Double.NaN is considered the greatest
+        } else if (o2Prim == NULL_LONG || Double.isNaN(o1Prim)) {// As Double.NaN is considered the greatest
             return 1;
         } else {
             if (o1PrimLong < o2Prim) {

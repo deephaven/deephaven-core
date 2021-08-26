@@ -63,7 +63,7 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
     }
 
     @Override
-    public final FloatType type() {
+    public final FloatType componentType() {
         return FloatType.instance();
     }
 
@@ -89,7 +89,7 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
     }
 
     public static class Builder extends PrimitiveArrayHelper<float[]>
-        implements ArrayBuilder<Float, FloatArray, Builder> {
+            implements ArrayBuilder<Float, FloatArray, Builder> {
 
         private Builder(int initialCapacity) {
             super(new float[initialCapacity]);

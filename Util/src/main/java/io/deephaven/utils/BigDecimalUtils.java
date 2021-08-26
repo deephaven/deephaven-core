@@ -12,7 +12,7 @@ public class BigDecimalUtils {
     /**
      * Uses Babylonian method to determine the square root of a BigDecimal
      *
-     * @param x     the number to find the square root of
+     * @param x the number to find the square root of
      * @param scale the desired scale for division and epsilon
      * @return the square root of x
      */
@@ -41,7 +41,8 @@ public class BigDecimalUtils {
         BigDecimal x0 = BigDecimal.valueOf(initial);
 
         while (true) {
-            final BigDecimal x1 = x0.add(x.divide(x0, scale, BigDecimal.ROUND_HALF_UP)).divide(TWO, scale, BigDecimal.ROUND_HALF_UP);
+            final BigDecimal x1 =
+                    x0.add(x.divide(x0, scale, BigDecimal.ROUND_HALF_UP)).divide(TWO, scale, BigDecimal.ROUND_HALF_UP);
 
             final BigDecimal difference = x1.subtract(x0).abs();
             x0 = x1;

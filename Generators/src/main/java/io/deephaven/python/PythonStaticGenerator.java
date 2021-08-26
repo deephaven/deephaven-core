@@ -16,9 +16,11 @@ import java.util.logging.Logger;
  * Generates Python file for the public, static method of class(es) determined by the input arguments
  */
 public class PythonStaticGenerator {
-    private static final List<String> customTableTools = Arrays.asList("col", "byteCol", "shortCol", "intCol", "longCol",
-            "floatCol", "doubleCol", "charCol", "newTable", "colSource", "objColSource");
-    private static final List<String> customParquetTools = Arrays.asList("deleteTable", "readTable", "writeParquetTables", "writeTable", "writeTables");
+    private static final List<String> customTableTools =
+            Arrays.asList("col", "byteCol", "shortCol", "intCol", "longCol",
+                    "floatCol", "doubleCol", "charCol", "newTable", "colSource", "objColSource");
+    private static final List<String> customParquetTools =
+            Arrays.asList("deleteTable", "readTable", "writeParquetTables", "writeTable", "writeTables");
     private static final List<String> customKafkaTools = Arrays.asList(); // "consumeToTable"
     // which methods should just be skipped
     private static final List<String> skipGeneration = Arrays.asList(
@@ -32,8 +34,10 @@ public class PythonStaticGenerator {
             "io.deephaven.db.tables.utils.DBTimeUtils,dayDiff",
             "io.deephaven.db.plot.colors.ColorMaps,closureMap",
             "io.deephaven.kafka.KafkaTools,consumeToTable",
-            "io.deephaven.kafka.KafkaTools,consumeJsonToTable"
-            );
+            "io.deephaven.kafka.KafkaTools,jsonSpec",
+            "io.deephaven.kafka.KafkaTools,avroSpec",
+            "io.deephaven.kafka.KafkaTools,simpleSpec",
+            "io.deephaven.kafka.KafkaTools,ignoreSpec");
     private static final List<String> skipClassDocs = Collections.emptyList();
     private static final Logger log = Logger.getLogger(PythonStaticGenerator.class.toString());
     private static final String gradleTask = ":Generators:generatePythonIntegrationStaticMethods";
@@ -48,7 +52,7 @@ public class PythonStaticGenerator {
         log.info("PythonStaticGenerator - using system file encoding: " + System.getProperty("file.encoding"));
 
         PythonGeneratorParser.GeneratorElement[] elements = PythonGeneratorParser.parse(args, devroot);
-        for(PythonGeneratorParser.GeneratorElement element: elements) {
+        for (PythonGeneratorParser.GeneratorElement element : elements) {
             final String javaClass = element.getClassString();
             final String preambleFilePath = element.getPreambleFile();
             final String destinationFilePath = element.getDestinationFile();
@@ -60,7 +64,7 @@ public class PythonStaticGenerator {
             final StringBuilder code = new StringBuilder();
 
             // fill in the class documentation
-            if(!skipClassDocs.contains(javaClass)) {
+            if (!skipClassDocs.contains(javaClass)) {
                 final String classDoc = PythonGeneratorParser.getClassDocstring(classDocContainer, 0);
                 code.append(classDoc).append("\n\n");
             }
@@ -75,8 +79,10 @@ public class PythonStaticGenerator {
             final List<String> generatedMethods = new ArrayList<>();
 
             // find all the methods
-            final PythonGeneratorParser.MethodContainer methodContainer = PythonGeneratorParser.getPublicStaticMethodsDetails(javaClass, skipGeneration);
-            for(final PythonGeneratorParser.MethodSignatureCollection method : methodContainer.getMethodSignatures().values()) {
+            final PythonGeneratorParser.MethodContainer methodContainer =
+                    PythonGeneratorParser.getPublicStaticMethodsDetails(javaClass, skipGeneration);
+            for (final PythonGeneratorParser.MethodSignatureCollection method : methodContainer.getMethodSignatures()
+                    .values()) {
                 final String methodName = method.getMethodName();
                 // get digested method signature
                 final PythonGeneratorParser.MethodSignature methodDigest = method.reduceSignature();
@@ -92,8 +98,8 @@ public class PythonStaticGenerator {
     }
 
     private static void createMethod(String javaClass, String methodName,
-                                       PythonGeneratorParser.MethodSignature methodSig,
-                                       final List<String> generatedMethods) {
+            PythonGeneratorParser.MethodSignature methodSig,
+            final List<String> generatedMethods) {
         final String paramString = methodSig.createPythonParams();
         final Class rClass = methodSig.getReturnClass();
 
@@ -103,13 +109,14 @@ public class PythonStaticGenerator {
         if ((javaClass.equals("io.deephaven.db.tables.utils.ParquetTools")
                 && customParquetTools.contains(methodName)) ||
                 (javaClass.equals("io.deephaven.db.tables.utils.TableTools")
-                        && customTableTools.contains(methodName)) ||
+                        && customTableTools.contains(methodName))
+                ||
                 (javaClass.equals("io.deephaven.kafka.KafkaTools")
                         && customKafkaTools.contains(methodName))) {
             endMethod = "    return _custom_" + methodName + "(" + paramString + ")\n";
-        }else if((rClass != null) && (rClass.isArray())) {
+        } else if ((rClass != null) && (rClass.isArray())) {
             endMethod = "    return list(_java_type_." + methodName + "(" + paramString + "))\n";
-        }else{
+        } else {
             endMethod = "    return _java_type_." + methodName + "(" + paramString + ")\n";
         }
         generatedMethods.add(beginMethod + endMethod);
@@ -121,7 +128,7 @@ public class PythonStaticGenerator {
      * @param code code container
      * @param javaClass fully qualified java path
      */
-    private static void makeGenericPreamble(final StringBuilder code, final String javaClass){
+    private static void makeGenericPreamble(final StringBuilder code, final String javaClass) {
         code.append("#\n" +
                 "# Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending\n" +
                 "#\n" +
@@ -141,12 +148,15 @@ public class PythonStaticGenerator {
                 "\n" +
                 "def _defineSymbols():\n" +
                 "    \"\"\"\n" +
-                "    Defines appropriate java symbol, which requires that the jvm has been initialized through the :class:`jpy` module,\n" +
-                "    for use throughout the module AT RUNTIME. This is versus static definition upon first import, which would lead to an\n" +
+                "    Defines appropriate java symbol, which requires that the jvm has been initialized through the :class:`jpy` module,\n"
+                +
+                "    for use throughout the module AT RUNTIME. This is versus static definition upon first import, which would lead to an\n"
+                +
                 "    exception if the jvm wasn't initialized BEFORE importing the module.\n" +
                 "    \"\"\"\n\n" +
                 "    if not jpy.has_jvm():\n" +
-                "        raise SystemError(\"No java functionality can be used until the JVM has been initialized through the jpy module\")\n" +
+                "        raise SystemError(\"No java functionality can be used until the JVM has been initialized through the jpy module\")\n"
+                +
                 "\n" +
                 "    global _java_type_\n" +
                 "    if _java_type_ is None:\n" +

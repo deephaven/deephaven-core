@@ -29,7 +29,8 @@ public class ByEmaTest extends TestCase {
         @Override
         protected void processDoubleLocal(long timestamp, double data) {
             nSamples++;
-            logger.recordActivity("MA.processDoubleLocal(" + key + "," + timestamp + "," + data + ") = " + nSamples + "\n");
+            logger.recordActivity(
+                    "MA.processDoubleLocal(" + key + "," + timestamp + "," + data + ") = " + nSamples + "\n");
         }
 
         @Override

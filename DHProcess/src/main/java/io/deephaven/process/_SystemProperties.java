@@ -6,7 +6,8 @@ import org.immutables.value.Value;
 /**
  * Represents the system properties as collected via {@link RuntimeMXBean#getSystemProperties()}.
  */
-@Value.Immutable @Wrapped
+@Value.Immutable
+@Wrapped
 abstract class _SystemProperties extends StringMapWrapper {
 
     static SystemProperties of(RuntimeMXBean bean) {

@@ -49,7 +49,8 @@ public class CompletionItem implements Serializable {
         textEdit = new TextEdit();
         textEdit.text = completion;
         textEdit.range = range;
-        insertTextFormat = 2; // snippet format is insertTextFormat=2 in lsp, and insertTextRules=4.  See MonacoCompletionProvider.jsx.
+        insertTextFormat = 2; // snippet format is insertTextFormat=2 in lsp, and insertTextRules=4. See
+                              // MonacoCompletionProvider.jsx.
         label = displayed == null ? completion : displayed;
         this.start = start;
         this.length = length;
@@ -67,7 +68,7 @@ public class CompletionItem implements Serializable {
 
     @JsProperty
     public void setCommitCharacters(Object args) {
-        setArray(args, a->this.commitCharacters=a);
+        setArray(args, a -> this.commitCharacters = a);
     }
 
     @JsProperty(name = "additionalTextEdits")
@@ -90,7 +91,7 @@ public class CompletionItem implements Serializable {
         return this;
     }
 
-    public void addAdditionalTextEdits(TextEdit ... edit) {
+    public void addAdditionalTextEdits(TextEdit... edit) {
         if (this.additionalTextEdits == null) {
             setAdditionalTextEdits(edit);
         } else {
@@ -103,9 +104,9 @@ public class CompletionItem implements Serializable {
     @JsProperty
     public void setAdditionalTextEdits(Object args) {
         if (args == null || args instanceof TextEdit[]) {
-            additionalTextEdits = (TextEdit[])args;
-        } else if (args instanceof JavaScriptObject){
-            // this is actually javascript.  We can do terrible things here and it's ok
+            additionalTextEdits = (TextEdit[]) args;
+        } else if (args instanceof JavaScriptObject) {
+            // this is actually javascript. We can do terrible things here and it's ok
             final int length = Array.getLength(args);
             final TextEdit[] typed = new TextEdit[length];
             System.arraycopy(args, 0, typed, 0, length);
@@ -122,6 +123,7 @@ public class CompletionItem implements Serializable {
     public int getStart() {
         return start;
     }
+
     @JsIgnore
     public void setStart(int start) {
         this.start = start;
@@ -134,6 +136,7 @@ public class CompletionItem implements Serializable {
     public int getLength() {
         return length;
     }
+
     @JsIgnore
     public void setLength(int length) {
         this.length = length;
@@ -143,10 +146,10 @@ public class CompletionItem implements Serializable {
     @JsIgnore
     public String toString() {
         return "CompletionItem{" +
-            "start=" + start +
-            ", length=" + length +
-            ", textEdit=" + textEdit +
-            "}\n";
+                "start=" + start +
+                ", length=" + length +
+                ", textEdit=" + textEdit +
+                "}\n";
     }
 
     @Override

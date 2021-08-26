@@ -13,15 +13,15 @@ import java.lang.ref.ReferenceQueue;
  */
 public enum CleanupReferenceProcessorInstance {
 
-    DEFAULT(new CleanupReferenceProcessor("default", 1000, (l, r, e) ->
-            l.warn().append(Thread.currentThread().getName()).append(": Exception thrown from cleanup of ")
-                    .append(Utils.REFERENT_FORMATTER, r).append(": ").append(e).endl())),
-    LIVENESS(new CleanupReferenceProcessor("liveness", 1000, (l, r, e) -> {
-        if (e instanceof RuntimeException) {
-            throw (RuntimeException) e;
-        }
-        throw new RuntimeException(e);
-    }));
+    DEFAULT(new CleanupReferenceProcessor("default", 1000,
+            (l, r, e) -> l.warn().append(Thread.currentThread().getName()).append(": Exception thrown from cleanup of ")
+                    .append(Utils.REFERENT_FORMATTER, r).append(": ").append(e).endl())), LIVENESS(
+                            new CleanupReferenceProcessor("liveness", 1000, (l, r, e) -> {
+                                if (e instanceof RuntimeException) {
+                                    throw (RuntimeException) e;
+                                }
+                                throw new RuntimeException(e);
+                            }));
 
     private final CleanupReferenceProcessor cleanupReferenceProcessor;
 
@@ -35,7 +35,8 @@ public enum CleanupReferenceProcessorInstance {
 
     @TestUseOnly
     public static void resetAllForUnitTests() {
-        for (@NotNull final CleanupReferenceProcessorInstance instance : values()) {
+        for (@NotNull
+        final CleanupReferenceProcessorInstance instance : values()) {
             instance.cleanupReferenceProcessor.resetForUnitTests();
         }
     }

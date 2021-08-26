@@ -49,7 +49,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     private static final String FORMULA_FACTORY_NAME = "__FORMULA_FACTORY";
     private static final String PARAM_CLASSNAME = Param.class.getCanonicalName();
     private static final String EVALUATION_EXCEPTION_CLASSNAME = FormulaEvaluationException.class.getCanonicalName();
-    public static boolean useKernelFormulasProperty = Configuration.getInstance().getBooleanWithDefault("FormulaColumn.useKernelFormulasProperty", false);
+    public static boolean useKernelFormulasProperty =
+            Configuration.getInstance().getBooleanWithDefault("FormulaColumn.useKernelFormulasProperty", false);
 
     private FormulaAnalyzer.Result analyzedFormula;
     private String timeInstanceVariables;
@@ -66,7 +67,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
      * <p>
      * The internal formula object is generated on-demand by calling out to the Java compiler.
      *
-     * @param columnName    the result column name
+     * @param columnName the result column name
      * @param formulaString the formula string to be parsed by the DBLanguageParser
      */
     DhFormulaColumn(String columnName, String formulaString) {
@@ -127,7 +128,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                     columnType = Boolean.class;
                 }
                 final Class componentType = cs.getComponentType();
-                if (componentType != null && !componentType.isPrimitive() && columnType.getTypeParameters().length == 1) {
+                if (componentType != null && !componentType.isPrimitive()
+                        && columnType.getTypeParameters().length == 1) {
                     richType = RichType.createGeneric(columnType, componentType);
                 } else {
                     richType = RichType.createNonGeneric(columnType);
@@ -149,12 +151,17 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     }
 
     public static Class getDbArrayType(Class declaredType) {
-        if (!io.deephaven.util.type.TypeUtils.isConvertibleToPrimitive(declaredType) || declaredType == boolean.class || declaredType == Boolean.class) {
+        if (!io.deephaven.util.type.TypeUtils.isConvertibleToPrimitive(declaredType) || declaredType == boolean.class
+                || declaredType == Boolean.class) {
             return DbArray.class;
         } else {
             try {
-                return Class.forName(DbArray.class.getPackage().getName() + ".Db" + Character.toUpperCase(io.deephaven.util.type.TypeUtils.getUnboxedType(declaredType).getSimpleName().charAt(0)) +
-                        io.deephaven.util.type.TypeUtils.getUnboxedType(declaredType).getSimpleName().substring(1) + "Array");
+                return Class.forName(DbArray.class.getPackage().getName() + ".Db"
+                        + Character.toUpperCase(
+                                io.deephaven.util.type.TypeUtils.getUnboxedType(declaredType).getSimpleName().charAt(0))
+                        +
+                        io.deephaven.util.type.TypeUtils.getUnboxedType(declaredType).getSimpleName().substring(1)
+                        + "Array");
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException("Unexpected exception for type " + declaredType, e);
             }
@@ -169,7 +176,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             final DBLanguageParser.Result result = FormulaAnalyzer.getCompiledFormula(columnDefinitionMap,
                     timeConversionResult, timeNewVariables);
 
-            log.debug().append("Expression (after language conversion) : ").append(result.getConvertedExpression()).endl();
+            log.debug().append("Expression (after language conversion) : ").append(result.getConvertedExpression())
+                    .endl();
 
             applyUsedVariables(columnDefinitionMap, result.getVariablesUsed());
             returnedType = result.getType();
@@ -232,10 +240,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                         generateApplyFormulaPerItem(ta), "",
                         generateMakeFillContext(), "",
                         generateNormalContextClass(), "",
-                        generateIntSize()
-                ),
-                ""
-        );
+                        generateIntSize()),
+                "");
         g.replace("FORMULA_CLASS_NAME", Formula.class.getCanonicalName());
         g.replace("LAZY_RESULT_CACHE_NAME", LAZY_RESULT_CACHE_NAME);
         visitFormulaParameters(null,
@@ -262,8 +268,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     private CodeGenerator generateFormulaFactoryLambda() {
         final CodeGenerator g = CodeGenerator.create(
-                "public static final [[FORMULA_FACTORY]] [[FORMULA_FACTORY_NAME]] = $CLASSNAME$::new;"
-        );
+                "public static final [[FORMULA_FACTORY]] [[FORMULA_FACTORY_NAME]] = $CLASSNAME$::new;");
         g.replace("FORMULA_FACTORY", FormulaFactory.class.getCanonicalName());
         g.replace("FORMULA_FACTORY_NAME", FORMULA_FACTORY_NAME);
         return g.freeze();
@@ -274,17 +279,16 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 "public $CLASSNAME$(final Index index,", CodeGenerator.indent(
                         "final boolean __lazy,",
                         "final java.util.Map<String, ? extends [[COLUMN_SOURCE_CLASSNAME]]> __columnsToData,",
-                        "final [[PARAM_CLASSNAME]]... __params)"), CodeGenerator.block(
+                        "final [[PARAM_CLASSNAME]]... __params)"),
+                CodeGenerator.block(
                         "super(index);",
-                        CodeGenerator.repeated("initColumn", "[[COLUMN_NAME]] = __columnsToData.get(\"[[COLUMN_NAME]]\");"),
+                        CodeGenerator.repeated("initColumn",
+                                "[[COLUMN_NAME]] = __columnsToData.get(\"[[COLUMN_NAME]]\");"),
                         CodeGenerator.repeated("initNormalColumnArray",
                                 "[[COLUMN_ARRAY_NAME]] = new [[DB_ARRAY_TYPE_PREFIX]]ColumnWrapper(__columnsToData.get(\"[[COLUMN_NAME]]\"), __index);"),
                         CodeGenerator.repeated("initParam",
-                                "[[PARAM_NAME]] = ([[PARAM_TYPE]]) __params[[[PARAM_INDEX]]].getValue();"
-                        ),
-                        "[[LAZY_RESULT_CACHE_NAME]] = __lazy ? new ConcurrentHashMap<>() : null;"
-                )
-        );
+                                "[[PARAM_NAME]] = ([[PARAM_TYPE]]) __params[[[PARAM_INDEX]]].getValue();"),
+                        "[[LAZY_RESULT_CACHE_NAME]] = __lazy ? new ConcurrentHashMap<>() : null;"));
 
         g.replace("LAZY_RESULT_CACHE_NAME", LAZY_RESULT_CACHE_NAME);
         g.replace("COLUMN_SOURCE_CLASSNAME", COLUMN_SOURCE_CLASSNAME);
@@ -321,12 +325,9 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         final CodeGenerator g = CodeGenerator.create(
                 "private [[RETURN_TYPE]] applyFormulaPerItem([[ARGS]])", CodeGenerator.block(
                         "try", CodeGenerator.block(
-                                "return [[FORMULA_STRING]];"
-                        ), CodeGenerator.samelineBlock("catch (java.lang.Exception __e)",
-                                "throw new [[EXCEPTION_TYPE]](\"In formula: [[COLUMN_NAME]] = \" + [[JOINED_FORMULA_STRING]], __e);"
-                        )
-                )
-        );
+                                "return [[FORMULA_STRING]];"),
+                        CodeGenerator.samelineBlock("catch (java.lang.Exception __e)",
+                                "throw new [[EXCEPTION_TYPE]](\"In formula: [[COLUMN_NAME]] = \" + [[JOINED_FORMULA_STRING]], __e);")));
         g.replace("RETURN_TYPE", ta.typeString);
         final List<String> args = visitFormulaParameters(n -> n.typeString + " " + n.name,
                 n -> n.typeString + " " + n.name,
@@ -347,13 +348,12 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 "@Override",
                 "public [[RETURN_TYPE]] [[GETTER_NAME]](final long k)", CodeGenerator.block(
                         (usePrev
-                            ? CodeGenerator.optional("maybeCreateIorII",
-                                  "final long findResult;",
-                                  "try (final Index prev = __index.getPrevIndex())", CodeGenerator.block(
-                                       "findResult = prev.find(k);"
-                                  ))
-                            : CodeGenerator.optional("maybeCreateIorII",
-                                "final long findResult = __index.find(k);")),
+                                ? CodeGenerator.optional("maybeCreateIorII",
+                                        "final long findResult;",
+                                        "try (final Index prev = __index.getPrevIndex())", CodeGenerator.block(
+                                                "findResult = prev.find(k);"))
+                                : CodeGenerator.optional("maybeCreateIorII",
+                                        "final long findResult = __index.find(k);")),
                         CodeGenerator.optional("maybeCreateI",
                                 "final int i = __intSize(findResult);"),
                         CodeGenerator.optional("maybeCreateII",
@@ -361,11 +361,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                         CodeGenerator.repeated("cacheColumnSourceGet", "final [[TYPE]] [[VAR]] = [[GET_EXPRESSION]];"),
                         "if ([[LAZY_RESULT_CACHE_NAME]] != null)", CodeGenerator.block(
                                 "final Object __lazyKey = [[C14NUTIL_CLASSNAME]].maybeMakeSmartKey([[FORMULA_ARGS]]);",
-                                "return ([[RESULT_TYPE]])[[LAZY_RESULT_CACHE_NAME]].computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem([[FORMULA_ARGS]]));"
-                        ),
-                        "return applyFormulaPerItem([[FORMULA_ARGS]]);"
-                )
-        );
+                                "return ([[RESULT_TYPE]])[[LAZY_RESULT_CACHE_NAME]].computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem([[FORMULA_ARGS]]));"),
+                        "return applyFormulaPerItem([[FORMULA_ARGS]]);"));
         final String returnTypeString;
         final String resultTypeString;
         if (ta.dbPrimitiveType != null) {
@@ -414,14 +411,13 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     @NotNull
     private CodeGenerator generateOptionalObjectGetMethod(TypeAnalyzer ta, boolean usePrev) {
         if (ta.dbPrimitiveType == null) {
-            return CodeGenerator.create();  // empty
+            return CodeGenerator.create(); // empty
         }
         final CodeGenerator g = CodeGenerator.create(
                 "@Override",
                 "public Object [[GETTER_NAME]](final long k)", CodeGenerator.block(
-                        "return TypeUtils.box([[DELEGATED_GETTER_NAME]](k));"
-                ),
-                ""  // Extra spacing to get spacing right for my caller (because I am optional)
+                        "return TypeUtils.box([[DELEGATED_GETTER_NAME]](k));"),
+                "" // Extra spacing to get spacing right for my caller (because I am optional)
         );
         final String getterName = usePrev ? "getPrev" : "get";
         final String delegatedGetterName = getGetterName(ta.dbPrimitiveType, usePrev);
@@ -435,26 +431,28 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         final CodeGenerator g = CodeGenerator.create(
                 "private class FormulaFillContext implements [[FILL_CONTEXT_CANONICAL]]", CodeGenerator.block(
                         // The optional i chunk
-                        CodeGenerator.optional("needsIChunk", "private final WritableIntChunk<Attributes.OrderedKeyIndices> __iChunk;"),
+                        CodeGenerator.optional("needsIChunk",
+                                "private final WritableIntChunk<Attributes.OrderedKeyIndices> __iChunk;"),
                         // The optional ii chunk
-                        CodeGenerator.optional("needsIIChunk", "private final WritableLongChunk<Attributes.OrderedKeyIndices> __iiChunk;"),
+                        CodeGenerator.optional("needsIIChunk",
+                                "private final WritableLongChunk<Attributes.OrderedKeyIndices> __iiChunk;"),
                         // fields
-                        CodeGenerator.repeated("defineField", "private final ColumnSource.GetContext __subContext[[COL_SOURCE_NAME]];"),
+                        CodeGenerator.repeated("defineField",
+                                "private final ColumnSource.GetContext __subContext[[COL_SOURCE_NAME]];"),
                         // constructor
                         "FormulaFillContext(int __chunkCapacity)", CodeGenerator.block(
-                                CodeGenerator.optional("needsIChunk", "__iChunk = WritableIntChunk.makeWritableChunk(__chunkCapacity);"),
-                                CodeGenerator.optional("needsIIChunk", "__iiChunk = WritableLongChunk.makeWritableChunk(__chunkCapacity);"),
-                                CodeGenerator.repeated("initField", "__subContext[[COL_SOURCE_NAME]] = [[COL_SOURCE_NAME]].makeGetContext(__chunkCapacity);")
-                        ),
+                                CodeGenerator.optional("needsIChunk",
+                                        "__iChunk = WritableIntChunk.makeWritableChunk(__chunkCapacity);"),
+                                CodeGenerator.optional("needsIIChunk",
+                                        "__iiChunk = WritableLongChunk.makeWritableChunk(__chunkCapacity);"),
+                                CodeGenerator.repeated("initField",
+                                        "__subContext[[COL_SOURCE_NAME]] = [[COL_SOURCE_NAME]].makeGetContext(__chunkCapacity);")),
                         "",
                         "@Override",
                         "public void close()", CodeGenerator.block(
                                 CodeGenerator.optional("needsIChunk", "__iChunk.close();"),
                                 CodeGenerator.optional("needsIIChunk", "__iiChunk.close();"),
-                                CodeGenerator.repeated("closeField", "__subContext[[COL_SOURCE_NAME]].close();")
-                        )
-                )
-        );
+                                CodeGenerator.repeated("closeField", "__subContext[[COL_SOURCE_NAME]].close();"))));
         g.replace("FILL_CONTEXT_CANONICAL", Formula.FillContext.class.getCanonicalName());
         if (usesI) {
             g.activateAllOptionals("needsIChunk");
@@ -480,9 +478,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         final CodeGenerator g = CodeGenerator.create(
                 "@Override",
                 "public FormulaFillContext makeFillContext(final int __chunkCapacity)", CodeGenerator.block(
-                        "return new FormulaFillContext(__chunkCapacity);"
-                )
-        );
+                        "return new FormulaFillContext(__chunkCapacity);"));
         return g.freeze();
     }
 
@@ -491,9 +487,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         final CodeGenerator g = CodeGenerator.create(
                 "@Override",
                 "protected [[CHUNK_TYPE_CLASSNAME]] getChunkType()", CodeGenerator.block(
-                        "return [[CHUNK_TYPE_CLASSNAME]].[[CHUNK_TYPE]];"
-                )
-        );
+                        "return [[CHUNK_TYPE_CLASSNAME]].[[CHUNK_TYPE]];"));
         g.replace("CHUNK_TYPE_CLASSNAME", ChunkType.class.getCanonicalName());
         g.replace("CHUNK_TYPE", ta.chunkTypeString);
         return g.freeze();
@@ -503,15 +497,15 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     private CodeGenerator generateFillChunk(boolean usePrev) {
         final CodeGenerator g = CodeGenerator.create(
                 "@Override",
-                "public void [[FILL_METHOD]](final FillContext __context, final WritableChunk<? super Attributes.Values> __destination, final OrderedKeys __orderedKeys)", CodeGenerator.block(
+                "public void [[FILL_METHOD]](final FillContext __context, final WritableChunk<? super Attributes.Values> __destination, final OrderedKeys __orderedKeys)",
+                CodeGenerator.block(
                         "final FormulaFillContext __typedContext = (FormulaFillContext)__context;",
                         CodeGenerator.repeated("getChunks",
-                                "final [[CHUNK_TYPE]] __chunk__col__[[COL_SOURCE_NAME]] = this.[[COL_SOURCE_NAME]].[[GET_CURR_OR_PREV_CHUNK]](" +
-                                        "__typedContext.__subContext[[COL_SOURCE_NAME]], __orderedKeys).[[AS_CHUNK_METHOD]]();"
-                        ),
-                        "fillChunkHelper(" + Boolean.toString(usePrev) + ", __typedContext, __destination, __orderedKeys[[ADDITIONAL_CHUNK_ARGS]]);"
-                )
-        );
+                                "final [[CHUNK_TYPE]] __chunk__col__[[COL_SOURCE_NAME]] = this.[[COL_SOURCE_NAME]].[[GET_CURR_OR_PREV_CHUNK]]("
+                                        +
+                                        "__typedContext.__subContext[[COL_SOURCE_NAME]], __orderedKeys).[[AS_CHUNK_METHOD]]();"),
+                        "fillChunkHelper(" + Boolean.toString(usePrev)
+                                + ", __typedContext, __destination, __orderedKeys[[ADDITIONAL_CHUNK_ARGS]]);"));
 
         final String fillMethodName = String.format("fill%sChunk", usePrev ? "Prev" : "");
         g.replace("FILL_METHOD", fillMethodName);
@@ -534,48 +528,48 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     @NotNull
     private CodeGenerator generateFillChunkHelper(TypeAnalyzer ta) {
         final CodeGenerator g = CodeGenerator.create(
-                "private void fillChunkHelper(final boolean __usePrev, final FormulaFillContext __context,", CodeGenerator.indent(
+                "private void fillChunkHelper(final boolean __usePrev, final FormulaFillContext __context,",
+                CodeGenerator.indent(
                         "final WritableChunk<? super Attributes.Values> __destination,",
-                        "final OrderedKeys __orderedKeys[[ADDITIONAL_CHUNK_ARGS]])"), CodeGenerator.block(
+                        "final OrderedKeys __orderedKeys[[ADDITIONAL_CHUNK_ARGS]])"),
+                CodeGenerator.block(
                         "final [[DEST_CHUNK_TYPE]] __typedDestination = __destination.[[DEST_AS_CHUNK_METHOD]]();",
                         CodeGenerator.optional("maybeCreateIOrII",
-                                "try (final Index prev = __usePrev ? __index.getPrevIndex() : null;", CodeGenerator.indent(
-                                     "final Index inverted = ((prev != null) ? prev : __index).invert(__orderedKeys.asIndex()))"), CodeGenerator.block(
-                                            CodeGenerator.optional("maybeCreateI",
-                                                    "__context.__iChunk.setSize(0);",
-                                                    "inverted.forAllLongs(l -> __context.__iChunk.add(__intSize(l)));"
-                                            ),
-                                            CodeGenerator.optional("maybeCreateII",
-                                                    "inverted.fillKeyIndicesChunk(__context.__iiChunk);"
-                                            )
-                                        )
-                                ),
+                                "try (final Index prev = __usePrev ? __index.getPrevIndex() : null;",
+                                CodeGenerator.indent(
+                                        "final Index inverted = ((prev != null) ? prev : __index).invert(__orderedKeys.asIndex()))"),
+                                CodeGenerator.block(
+                                        CodeGenerator.optional("maybeCreateI",
+                                                "__context.__iChunk.setSize(0);",
+                                                "inverted.forAllLongs(l -> __context.__iChunk.add(__intSize(l)));"),
+                                        CodeGenerator.optional("maybeCreateII",
+                                                "inverted.fillKeyIndicesChunk(__context.__iiChunk);"))),
                         CodeGenerator.repeated("getChunks",
-                                "final [[CHUNK_TYPE]] __chunk__col__[[COL_SOURCE_NAME]] = __sources[[[SOURCE_INDEX]]].[[AS_CHUNK_METHOD]]();"
-                        ),
+                                "final [[CHUNK_TYPE]] __chunk__col__[[COL_SOURCE_NAME]] = __sources[[[SOURCE_INDEX]]].[[AS_CHUNK_METHOD]]();"),
                         "final int[] __chunkPosHolder = new int[] {0};",
                         "if ([[LAZY_RESULT_CACHE_NAME]] != null)", CodeGenerator.block(
                                 "__orderedKeys.forAllLongs(k ->", CodeGenerator.block(
                                         "final int __chunkPos = __chunkPosHolder[0]++;",
-                                        CodeGenerator.optional("maybeCreateI", "final int i = __context.__iChunk.get(__chunkPos);"),
-                                        CodeGenerator.optional("maybeCreateII", "final long ii = __context.__iiChunk.get(__chunkPos);"),
+                                        CodeGenerator.optional("maybeCreateI",
+                                                "final int i = __context.__iChunk.get(__chunkPos);"),
+                                        CodeGenerator.optional("maybeCreateII",
+                                                "final long ii = __context.__iiChunk.get(__chunkPos);"),
                                         "final Object __lazyKey = [[C14NUTIL_CLASSNAME]].maybeMakeSmartKey([[APPLY_FORMULA_ARGS]]);",
-                                        "__typedDestination.set(__chunkPos, ([[RESULT_TYPE]])[[LAZY_RESULT_CACHE_NAME]].computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem([[APPLY_FORMULA_ARGS]])));"
-                                ),
-                                ");"  // close the lambda
+                                        "__typedDestination.set(__chunkPos, ([[RESULT_TYPE]])[[LAZY_RESULT_CACHE_NAME]].computeIfAbsent(__lazyKey, __unusedKey -> applyFormulaPerItem([[APPLY_FORMULA_ARGS]])));"),
+                                ");" // close the lambda
                         ), CodeGenerator.samelineBlock("else",
                                 "__orderedKeys.forAllLongs(k ->", CodeGenerator.block(
                                         "final int __chunkPos = __chunkPosHolder[0]++;",
-                                        CodeGenerator.optional("maybeCreateI", "final int i = __context.__iChunk.get(__chunkPos);"),
-                                        CodeGenerator.optional("maybeCreateII", "final long ii = __context.__iiChunk.get(__chunkPos);"),
-                                        "__typedDestination.set(__chunkPos, applyFormulaPerItem([[APPLY_FORMULA_ARGS]]));"
-                                ),
-                                ");"  // close the lambda
+                                        CodeGenerator.optional("maybeCreateI",
+                                                "final int i = __context.__iChunk.get(__chunkPos);"),
+                                        CodeGenerator.optional("maybeCreateII",
+                                                "final long ii = __context.__iiChunk.get(__chunkPos);"),
+                                        "__typedDestination.set(__chunkPos, applyFormulaPerItem([[APPLY_FORMULA_ARGS]]));"),
+                                ");" // close the lambda
                         ),
                         "__typedDestination.setSize(__chunkPosHolder[0]);"
 
-                )
-        );
+                ));
 
         g.replace("DEST_CHUNK_TYPE", ta.writableChunkVariableType);
         g.replace("DEST_AS_CHUNK_METHOD", ta.asWritableChunkMethodName);
@@ -614,9 +608,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     private CodeGenerator generateIntSize() {
         final CodeGenerator g = CodeGenerator.create(
                 "private int __intSize(final long l)", CodeGenerator.block(
-                        "return LongSizedDataStructure.intSize(\"FormulaColumn ii usage\", l);"
-                )
-        );
+                        "return LongSizedDataStructure.intSize(\"FormulaColumn ii usage\", l);"));
         return g.freeze();
     }
 
@@ -628,17 +620,17 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         final List<T> results = new ArrayList<>();
         if (indexLambda != null) {
             if (usesI) {
-                final IndexParameter ip = new IndexParameter("i", int.class,"int");
+                final IndexParameter ip = new IndexParameter("i", int.class, "int");
                 addIfNotNull(results, indexLambda.apply(ip));
             }
 
             if (usesII) {
-                final IndexParameter ip = new IndexParameter("ii", long.class,"long");
+                final IndexParameter ip = new IndexParameter("ii", long.class, "long");
                 addIfNotNull(results, indexLambda.apply(ip));
             }
 
             if (usesK) {
-                final IndexParameter ip = new IndexParameter("k", long.class,"long");
+                final IndexParameter ip = new IndexParameter("k", long.class, "long");
                 addIfNotNull(results, indexLambda.apply(ip));
             }
         }
@@ -648,7 +640,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 final ColumnSource cs = columnSources.get(usedColumn);
                 final String columnSourceGetType = columnSourceGetMethodReturnType(cs);
                 final Class csType = cs.getType();
-                final String csTypeString = COLUMN_SOURCE_CLASSNAME + '<' + io.deephaven.util.type.TypeUtils.getBoxedType(cs.getType()).getCanonicalName() + '>';
+                final String csTypeString = COLUMN_SOURCE_CLASSNAME + '<'
+                        + io.deephaven.util.type.TypeUtils.getBoxedType(cs.getType()).getCanonicalName() + '>';
                 final ColumnSourceParameter csp = new ColumnSourceParameter(usedColumn, csType, columnSourceGetType,
                         cs, csTypeString);
                 addIfNotNull(results, columnSourceLambda.apply(csp));
@@ -661,7 +654,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 final Class dataType = cs.getType();
                 final Class dbArrayType = getDbArrayType(dataType);
                 final String dbArrayTypeAsString = dbArrayType.getCanonicalName() +
-                        (TypeUtils.isConvertibleToPrimitive(dataType)?"":"<" + dataType.getCanonicalName() + ">");
+                        (TypeUtils.isConvertibleToPrimitive(dataType) ? "" : "<" + dataType.getCanonicalName() + ">");
                 final ColumnArrayParameter cap = new ColumnArrayParameter(uca + COLUMN_SUFFIX, uca,
                         dataType, dbArrayType, dbArrayTypeAsString, cs);
                 addIfNotNull(results, columnArrayLambda.apply(cap));
@@ -730,7 +723,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     private Class compileFormula(final String what, final String classBody, final String className) {
         // System.out.printf("compileFormula: what is %s. Code is...%n%s%n", what, classBody);
-        try (final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance().getNugget("Compile:" + what)) {
+        try (final QueryPerformanceNugget nugget =
+                QueryPerformanceRecorder.getInstance().getNugget("Compile:" + what)) {
             // Compilation needs to take place with elevated privileges, but the created object should not have them.
 
             final List<Class<?>> paramClasses = new ArrayList<>();
@@ -753,10 +747,10 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                     p -> {
                         addParamClass.accept(p.type);
                         return null;
-                    }
-            );
-            return AccessController.doPrivileged((PrivilegedExceptionAction<Class>) () ->
-                    CompilerTools.compile(className, classBody, CompilerTools.FORMULA_PREFIX,
+                    });
+            return AccessController
+                    .doPrivileged((PrivilegedExceptionAction<Class>) () -> CompilerTools.compile(className, classBody,
+                            CompilerTools.FORMULA_PREFIX,
                             Param.expandParameterClasses(paramClasses)));
         } catch (PrivilegedActionException pae) {
             throw new FormulaCompilationException("Formula compilation error for: " + what, pae.getException());
@@ -783,7 +777,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         final String columnSourceGetTypeString;
 
         public ColumnSourceParameter(String name, Class type, String typeString, ColumnSource columnSource,
-                                     String columnSourceGetTypeString) {
+                String columnSourceGetTypeString) {
             this.name = name;
             this.type = type;
             this.typeString = typeString;

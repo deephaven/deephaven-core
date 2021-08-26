@@ -40,16 +40,17 @@ public class TimeTable extends QueryTable implements LiveTable {
     private final UpdatePerformanceTracker.Entry entry;
 
     public TimeTable(TimeProvider timeProvider, long dbPeriod) {
-        this(timeProvider,null, dbPeriod);
+        this(timeProvider, null, dbPeriod);
     }
-    public TimeTable(TimeProvider timeProvider,DBDateTime firstTime,long dbPeriod) {
+
+    public TimeTable(TimeProvider timeProvider, DBDateTime firstTime, long dbPeriod) {
         super(Index.FACTORY.getIndexByValues(), initColumn());
         if (dbPeriod <= 0) {
-            throw new IllegalArgumentException("Invalid time period: " + dbPeriod  + " nanoseconds");
+            throw new IllegalArgumentException("Invalid time period: " + dbPeriod + " nanoseconds");
         }
-        this.entry = UpdatePerformanceTracker.getInstance().getEntry("TimeTable(" + firstTime + ","  + dbPeriod + ")");
-        this.lastTime = firstTime == null?null:new DBDateTime(firstTime.getNanos() - dbPeriod);
-        binOffset = firstTime == null? 0: lastTime.getNanos() % dbPeriod;
+        this.entry = UpdatePerformanceTracker.getInstance().getEntry("TimeTable(" + firstTime + "," + dbPeriod + ")");
+        this.lastTime = firstTime == null ? null : new DBDateTime(firstTime.getNanos() - dbPeriod);
+        binOffset = firstTime == null ? 0 : lastTime.getNanos() % dbPeriod;
         dateTimeArraySource = (DateTimeArraySource) getColumnSourceMap().get(TIMESTAMP);
         this.timeProvider = timeProvider;
         this.dbPeriod = dbPeriod;
@@ -63,6 +64,7 @@ public class TimeTable extends QueryTable implements LiveTable {
     private static Map<String, ColumnSource> initColumn() {
         return Collections.singletonMap(TIMESTAMP, new DateTimeArraySource());
     }
+
     @Override
     public void refresh() {
         refresh(true);
@@ -72,22 +74,24 @@ public class TimeTable extends QueryTable implements LiveTable {
         entry.onUpdateStart();
         try {
             final DBDateTime dateTime = timeProvider.currentTime();
-            DBDateTime currentBinnedTime = new DBDateTime(LongNumericPrimitives.lowerBin(dateTime.getNanos() - binOffset, dbPeriod) + binOffset);
+            DBDateTime currentBinnedTime = new DBDateTime(
+                    LongNumericPrimitives.lowerBin(dateTime.getNanos() - binOffset, dbPeriod) + binOffset);
             long rangeStart = lastIndex + 1;
             if (lastTime == null) {
                 lastIndex = 0;
-                dateTimeArraySource.ensureCapacity(lastIndex+1);
+                dateTimeArraySource.ensureCapacity(lastIndex + 1);
                 dateTimeArraySource.set(lastIndex, lastTime = currentBinnedTime);
                 getIndex().insert(lastIndex);
-            } else while (currentBinnedTime.compareTo(lastTime) > 0) {
-                lastTime = DBTimeUtils.plus(lastTime,dbPeriod);
-                lastIndex++;
-                dateTimeArraySource.ensureCapacity(lastIndex+1);
-                dateTimeArraySource.set(lastIndex, lastTime);
-            }
+            } else
+                while (currentBinnedTime.compareTo(lastTime) > 0) {
+                    lastTime = DBTimeUtils.plus(lastTime, dbPeriod);
+                    lastIndex++;
+                    dateTimeArraySource.ensureCapacity(lastIndex + 1);
+                    dateTimeArraySource.set(lastIndex, lastTime);
+                }
             if (rangeStart <= lastIndex) {
-                // If we have a period longer than 10s, print out that the timetable has been updated.  This can be
-                // useful when analyzing what's gone wrong in the logs.  It is capped at periods of 5s, so we don't
+                // If we have a period longer than 10s, print out that the timetable has been updated. This can be
+                // useful when analyzing what's gone wrong in the logs. It is capped at periods of 5s, so we don't
                 // end up with too much log spam for short interval time tables. 5s is not so coincidentally the period
                 // of the Jvm Heap: messages.
                 if (dbPeriod >= 5_000_000_000L) {

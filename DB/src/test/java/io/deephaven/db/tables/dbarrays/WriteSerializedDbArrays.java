@@ -7,8 +7,8 @@ package io.deephaven.db.tables.dbarrays;
 import java.io.ObjectStreamClass;
 
 public class WriteSerializedDbArrays {
-    public static void main(String [] args) throws ClassNotFoundException {
-        for (String className : new String[]{
+    public static void main(String[] args) throws ClassNotFoundException {
+        for (String className : new String[] {
                 "io.deephaven.db.tables.dbarrays.DbArrayBase",
                 "io.deephaven.db.tables.dbarrays.DbArrayDirect",
                 "io.deephaven.db.tables.dbarrays.DbBooleanArrayDirect",

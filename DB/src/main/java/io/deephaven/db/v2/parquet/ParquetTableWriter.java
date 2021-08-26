@@ -84,8 +84,9 @@ public class ParquetTableWriter {
     }
 
     /**
-     * <p>Information about a writing destination (e.g. a particular output partition). Couples destination path,
-     * input table data, and grouping information.
+     * <p>
+     * Information about a writing destination (e.g. a particular output partition). Couples destination path, input
+     * table data, and grouping information.
      */
     public static final class DestinationInfo {
 
@@ -94,8 +95,8 @@ public class ParquetTableWriter {
         private final Map<String, Map<?, long[]>> columnNameToGroupToRange;
 
         public DestinationInfo(@NotNull final String outputPath,
-                               @NotNull final Table inputTable,
-                               @NotNull final Map<String, Map<?, long[]>> columnNameToGroupToRange) {
+                @NotNull final Table inputTable,
+                @NotNull final Map<String, Map<?, long[]>> columnNameToGroupToRange) {
             this.outputPath = outputPath;
             this.inputTable = inputTable;
             this.columnNameToGroupToRange = columnNameToGroupToRange;
@@ -132,36 +133,42 @@ public class ParquetTableWriter {
     /**
      * Writes a table in parquet format under a given path
      *
-     * @param t                   The table to write
-     * @param path                The destination path
-     * @param incomingMeta        A map of metadata values to be stores in the file footer
+     * @param t The table to write
+     * @param path The destination path
+     * @param incomingMeta A map of metadata values to be stores in the file footer
      * @param groupingPathFactory
-     * @param groupingColumns     List of columns the tables are grouped by (the write operation will store the grouping info)
-     * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to unsupported types)
-     * @throws IOException            For file writing related errors
+     * @param groupingColumns List of columns the tables are grouped by (the write operation will store the grouping
+     *        info)
+     * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
+     *         unsupported types)
+     * @throws IOException For file writing related errors
      */
     public static void write(
-            Table t, String path, Map<String, String> incomingMeta, Function<String, String> groupingPathFactory, String... groupingColumns
-    ) throws SchemaMappingException, IOException {
-        write(t, t.getDefinition(), ParquetInstructions.EMPTY, path, incomingMeta, groupingPathFactory, groupingColumns);
+            Table t, String path, Map<String, String> incomingMeta, Function<String, String> groupingPathFactory,
+            String... groupingColumns) throws SchemaMappingException, IOException {
+        write(t, t.getDefinition(), ParquetInstructions.EMPTY, path, incomingMeta, groupingPathFactory,
+                groupingColumns);
     }
 
-    public static void write(Table t, String path, Map<String, String> incomingMeta, String... groupingColumns) throws SchemaMappingException, IOException {
+    public static void write(Table t, String path, Map<String, String> incomingMeta, String... groupingColumns)
+            throws SchemaMappingException, IOException {
         write(t, path, incomingMeta, defaultGroupingFileName(path), groupingColumns);
     }
 
     /**
      * Writes a table in parquet format under a given path
      *
-     * @param t                    The table to write
-     * @param definition           Table definition
-     * @param writeInstructions    Write instructions for customizations while writing
-     * @param destPathName                 The destination path
-     * @param incomingMeta         A map of metadata values to be stores in the file footer
+     * @param t The table to write
+     * @param definition Table definition
+     * @param writeInstructions Write instructions for customizations while writing
+     * @param destPathName The destination path
+     * @param incomingMeta A map of metadata values to be stores in the file footer
      * @param groupingPathFactory
-     * @param groupingColumns     List of columns the tables are grouped by (the write operation will store the grouping info)
-     * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to unsupported types)
-     * @throws IOException            For file writing related errors
+     * @param groupingColumns List of columns the tables are grouped by (the write operation will store the grouping
+     *        info)
+     * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
+     *         unsupported types)
+     * @throws IOException For file writing related errors
      */
     public static void write(
             final Table t,
@@ -170,31 +177,31 @@ public class ParquetTableWriter {
             final String destPathName,
             final Map<String, String> incomingMeta,
             final Function<String, String> groupingPathFactory,
-            final String... groupingColumns
-    ) throws SchemaMappingException, IOException {
+            final String... groupingColumns) throws SchemaMappingException, IOException {
         final TableInfo.Builder tableInfoBuilder = TableInfo.builder();
         ArrayList<String> cleanupPaths = null;
         try {
             if (groupingColumns.length > 0) {
                 cleanupPaths = new ArrayList<>(groupingColumns.length);
-                final Table[] auxiliaryTables = Arrays.stream(groupingColumns).map(columnName -> groupingAsTable(t, columnName)).toArray(Table[]::new);
+                final Table[] auxiliaryTables = Arrays.stream(groupingColumns)
+                        .map(columnName -> groupingAsTable(t, columnName)).toArray(Table[]::new);
                 final Path destDirPath = Paths.get(destPathName).getParent();
                 for (int gci = 0; gci < auxiliaryTables.length; ++gci) {
                     final String groupingPath = groupingPathFactory.apply(groupingColumns[gci]);
                     cleanupPaths.add(groupingPath);
-                    tableInfoBuilder.addGroupingColumns(GroupingColumnInfo.of(groupingColumns[gci], destDirPath.relativize(Paths.get(groupingPath)).toString()));
-                    write(auxiliaryTables[gci], auxiliaryTables[gci].getDefinition(), writeInstructions, groupingPath, Collections.emptyMap());
+                    tableInfoBuilder.addGroupingColumns(GroupingColumnInfo.of(groupingColumns[gci],
+                            destDirPath.relativize(Paths.get(groupingPath)).toString()));
+                    write(auxiliaryTables[gci], auxiliaryTables[gci].getDefinition(), writeInstructions, groupingPath,
+                            Collections.emptyMap());
                 }
             }
             write(t, definition, writeInstructions, destPathName, incomingMeta, tableInfoBuilder);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             if (cleanupPaths != null) {
                 for (String cleanupPath : cleanupPaths) {
                     try {
                         new File(cleanupPath).delete();
-                    }
-                    catch (Exception x) {
+                    } catch (Exception x) {
                         // ignore.
                     }
                 }
@@ -204,22 +211,25 @@ public class ParquetTableWriter {
     }
 
     public static void write(
-            final Table t, final TableDefinition definition, final ParquetInstructions writeInstructions, final String path,
-            final Map<String, String> incomingMeta, final String... groupingColumns) throws SchemaMappingException, IOException {
+            final Table t, final TableDefinition definition, final ParquetInstructions writeInstructions,
+            final String path,
+            final Map<String, String> incomingMeta, final String... groupingColumns)
+            throws SchemaMappingException, IOException {
         write(t, definition, writeInstructions, path, incomingMeta, defaultGroupingFileName(path), groupingColumns);
     }
 
     /**
      * Writes a table in parquet format under a given path
      *
-     * @param table              The table to write
-     * @param definition         The table definition
-     * @param writeInstructions  Write instructions for customizations while writing
-     * @param path               The destination path
-     * @param tableMeta          A map of metadata values to be stores in the file footer
-     * @param tableInfoBuilder   A partially-constructed builder for the metadata object
-     * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to unsupported types)
-     * @throws IOException            For file writing related errors
+     * @param table The table to write
+     * @param definition The table definition
+     * @param writeInstructions Write instructions for customizations while writing
+     * @param path The destination path
+     * @param tableMeta A map of metadata values to be stores in the file footer
+     * @param tableInfoBuilder A partially-constructed builder for the metadata object
+     * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
+     *         unsupported types)
+     * @throws IOException For file writing related errors
      */
     public static void write(
             final Table table,
@@ -227,11 +237,12 @@ public class ParquetTableWriter {
             final ParquetInstructions writeInstructions,
             final String path,
             final Map<String, String> tableMeta,
-            final TableInfo.Builder tableInfoBuilder
-    ) throws SchemaMappingException, IOException {
+            final TableInfo.Builder tableInfoBuilder) throws SchemaMappingException, IOException {
 
-        final CompressionCodecName compressionCodecName = CompressionCodecName.valueOf(writeInstructions.getCompressionCodecName());
-        ParquetFileWriter parquetFileWriter = getParquetFileWriter(definition, path, writeInstructions, tableMeta, tableInfoBuilder, compressionCodecName);
+        final CompressionCodecName compressionCodecName =
+                CompressionCodecName.valueOf(writeInstructions.getCompressionCodecName());
+        ParquetFileWriter parquetFileWriter = getParquetFileWriter(definition, path, writeInstructions, tableMeta,
+                tableInfoBuilder, compressionCodecName);
 
         final Table t = pretransformTable(table, definition);
         final long nrows = t.size();
@@ -242,7 +253,8 @@ public class ParquetTableWriter {
                 String name = nameToSource.getKey();
                 ColumnSource<?> columnSource = nameToSource.getValue();
                 try {
-                    writeColumnSource(t.getIndex(), rowGroupWriter, name, columnSource, definition.getColumn(name), writeInstructions);
+                    writeColumnSource(t.getIndex(), rowGroupWriter, name, columnSource, definition.getColumn(name),
+                            writeInstructions);
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException("Failed to write column " + name, e);
                 }
@@ -264,8 +276,9 @@ public class ParquetTableWriter {
                 }
                 viewColumnsTransform.add(new SourceColumn(colName));
             } else {
-                //noinspection unchecked
-                viewColumnsTransform.add(new NullSelectColumn(column.getDataType(), column.getComponentType(), colName));
+                // noinspection unchecked
+                viewColumnsTransform
+                        .add(new NullSelectColumn(column.getDataType(), column.getComponentType(), colName));
             }
         }
         if (viewColumnsTransform.size() > 0) {
@@ -284,8 +297,7 @@ public class ParquetTableWriter {
             final ParquetInstructions writeInstructions,
             final Map<String, String> tableMeta,
             final TableInfo.Builder tableInfoBuilder,
-            final CompressionCodecName codecName
-    ) throws IOException {
+            final CompressionCodecName codecName) throws IOException {
         final MappedSchema mappedSchema = MappedSchema.create(definition, writeInstructions);
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         for (final ColumnDefinition<?> column : definition.getColumns()) {
@@ -331,8 +343,7 @@ public class ParquetTableWriter {
             final String name,
             final ColumnSource columnSourceIn,
             final ColumnDefinition columnDefinition,
-            final ParquetInstructions writeInstructions
-    ) throws IllegalAccessException, IOException {
+            final ParquetInstructions writeInstructions) throws IllegalAccessException, IOException {
         Index index = tableIndex;
         ColumnSource columnSource = columnSourceIn;
         ColumnSource lengthSource = null;
@@ -348,14 +359,17 @@ public class ParquetTableWriter {
             HashMap<String, ColumnSource> columns = new HashMap<>();
             columns.put("array", columnSource);
             Table t = new QueryTable(index, columns);
-            lengthSource = t.view("len= ((Object)array) == null?null:(int)array." + (DbArrayBase.class.isAssignableFrom(columnSource.getType()) ? "size()" : "length")).getColumnSource("len");
+            lengthSource = t
+                    .view("len= ((Object)array) == null?null:(int)array."
+                            + (DbArrayBase.class.isAssignableFrom(columnSource.getType()) ? "size()" : "length"))
+                    .getColumnSource("len");
             lengthIndex = index;
             List<Integer> valueChunkSize = new ArrayList<>();
             List<Integer> originalChunkSize = new ArrayList<>();
             int runningSize = 0;
             int originalRowsCount = 0;
             try (final ChunkSource.GetContext context = lengthSource.makeGetContext(LOCAL_CHUNK_SIZE);
-                 final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
+                    final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
                 while (it.hasMore()) {
                     OrderedKeys ok = it.getNextOrderedKeysWithLength(LOCAL_CHUNK_SIZE);
                     IntChunk<Values> chunk = (IntChunk<Values>) lengthSource.getChunk(context, ok);
@@ -403,7 +417,7 @@ public class ParquetTableWriter {
         } else {
             int finalTargetSize = targetSize;
             rowStepGetter = valuesStepGetter = () -> finalTargetSize;
-            stepsCount = (int) (index.size()/finalTargetSize + ((index.size() % finalTargetSize) == 0?0:1));
+            stepsCount = (int) (index.size() / finalTargetSize + ((index.size() % finalTargetSize) == 0 ? 0 : 1));
         }
         Class columnType = columnSource.getType();
         if (columnType == DBDateTime.class) {
@@ -419,21 +433,24 @@ public class ParquetTableWriter {
         if (supportsDictionary(columnSource.getType())) {
             final boolean useDictionaryHint = writeInstructions.useDictionary(columnDefinition.getName());
             final int maxKeys = useDictionaryHint ? Integer.MAX_VALUE : writeInstructions.getMaximumDictionaryKeys();
-            final class DictionarySizeExceededException extends RuntimeException {}
+            final class DictionarySizeExceededException extends RuntimeException {
+            }
             try {
                 final List<IntBuffer> buffersPerPage = new ArrayList<>();
                 final Function<Integer, Object[]> keyArrayBuilder = getKeyArrayBuilder(columnSource.getType());
                 final Function<Object, Object> toParquetPrimitive = getToParquetConversion(columnSource.getType());
-                final MutableObject<Object[]> keys = new MutableObject<>(keyArrayBuilder.apply(Math.min(INITIAL_DICTIONARY_SIZE, maxKeys)));
+                final MutableObject<Object[]> keys =
+                        new MutableObject<>(keyArrayBuilder.apply(Math.min(INITIAL_DICTIONARY_SIZE, maxKeys)));
                 final Map<Object, Integer> keyToPos = new HashMap<>();
                 final MutableInt keyCount = new MutableInt(0);
                 final MutableBoolean hasNulls = new MutableBoolean(false);
                 try (final ChunkSource.GetContext context = columnSource.makeGetContext(targetSize);
-                     final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
+                        final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
                     for (int step = 0; step < stepsCount; step++) {
                         final OrderedKeys ok = it.getNextOrderedKeysWithLength(valuesStepGetter.get());
-                        //noinspection unchecked
-                        final ObjectChunk<?, Values> chunk = (ObjectChunk<?, Values>) columnSource.getChunk(context, ok);
+                        // noinspection unchecked
+                        final ObjectChunk<?, Values> chunk =
+                                (ObjectChunk<?, Values>) columnSource.getChunk(context, ok);
                         final IntBuffer posInDictionary = IntBuffer.allocate((int) ok.size());
                         for (int vi = 0; vi < chunk.size(); ++vi) {
                             posInDictionary.put(keyToPos.computeIfAbsent(chunk.get(vi), o -> {
@@ -445,7 +462,8 @@ public class ParquetTableWriter {
                                     if (keyCount.intValue() == maxKeys) {
                                         throw new DictionarySizeExceededException();
                                     }
-                                    keys.setValue(Arrays.copyOf(keys.getValue(), (int) Math.min(keyCount.intValue() * 2L, maxKeys)));
+                                    keys.setValue(Arrays.copyOf(keys.getValue(),
+                                            (int) Math.min(keyCount.intValue() * 2L, maxKeys)));
                                 }
                                 keys.getValue()[keyCount.intValue()] = toParquetPrimitive.apply(o);
                                 Integer result = keyCount.getValue();
@@ -461,7 +479,7 @@ public class ParquetTableWriter {
                 if (lengthSource != null) {
                     repeatCount = new ArrayList<>();
                     try (final ChunkSource.GetContext context = lengthSource.makeGetContext(targetSize);
-                         final OrderedKeys.Iterator it = lengthIndex.getOrderedKeysIterator()) {
+                            final OrderedKeys.Iterator it = lengthIndex.getOrderedKeysIterator()) {
                         while (it.hasMore()) {
                             final OrderedKeys ok = it.getNextOrderedKeysWithLength(rowStepGetter.get());
                             final IntChunk chunk = (IntChunk) lengthSource.getChunk(context, ok);
@@ -477,7 +495,8 @@ public class ParquetTableWriter {
                 for (final IntBuffer intBuffer : buffersPerPage) {
                     intBuffer.flip();
                     if (lengthSource != null) {
-                        columnWriter.addVectorPage(intBuffer, repeatCountIt.next(), intBuffer.remaining(), Integer.MIN_VALUE);
+                        columnWriter.addVectorPage(intBuffer, repeatCountIt.next(), intBuffer.remaining(),
+                                Integer.MIN_VALUE);
                     } else if (hasNulls.getValue()) {
                         columnWriter.addPage(intBuffer, Integer.MIN_VALUE, intBuffer.remaining());
                     } else {
@@ -489,24 +508,29 @@ public class ParquetTableWriter {
             }
         }
         if (!usedDictionary) {
-            //noinspection unchecked
-            try (final TransferObject<?> transferObject = getDestinationBuffer(columnSource, columnDefinition, targetSize, columnType, writeInstructions)) {
+            // noinspection unchecked
+            try (final TransferObject<?> transferObject =
+                    getDestinationBuffer(columnSource, columnDefinition, targetSize, columnType, writeInstructions)) {
                 final boolean supportNulls = supportNulls(columnType);
                 final Object bufferToWrite = transferObject.getBuffer();
                 final Object nullValue = getNullValue(columnType);
-                try (final OrderedKeys.Iterator lengthIndexIt = lengthIndex != null ? lengthIndex.getOrderedKeysIterator() : null;
-                     final ChunkSource.GetContext lengthSourceContext = lengthSource != null ? lengthSource.makeGetContext(targetSize) : null;
-                     final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
+                try (final OrderedKeys.Iterator lengthIndexIt =
+                        lengthIndex != null ? lengthIndex.getOrderedKeysIterator() : null;
+                        final ChunkSource.GetContext lengthSourceContext =
+                                lengthSource != null ? lengthSource.makeGetContext(targetSize) : null;
+                        final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
                     final IntBuffer repeatCount = lengthSource != null ? IntBuffer.allocate(targetSize) : null;
                     for (int step = 0; step < stepsCount; ++step) {
                         final OrderedKeys ok = it.getNextOrderedKeysWithLength(valuesStepGetter.get());
                         transferObject.fetchData(ok);
                         transferObject.propagateChunkData();
                         if (lengthIndexIt != null) {
-                            final IntChunk lenChunk = (IntChunk) lengthSource.getChunk(lengthSourceContext, lengthIndexIt.getNextOrderedKeysWithLength(rowStepGetter.get()));
+                            final IntChunk lenChunk = (IntChunk) lengthSource.getChunk(lengthSourceContext,
+                                    lengthIndexIt.getNextOrderedKeysWithLength(rowStepGetter.get()));
                             lenChunk.copyToTypedBuffer(0, repeatCount, 0, lenChunk.size());
                             repeatCount.limit(lenChunk.size());
-                            columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount(), nullValue);
+                            columnWriter.addVectorPage(bufferToWrite, repeatCount, transferObject.rowCount(),
+                                    nullValue);
                             repeatCount.clear();
                         } else if (supportNulls) {
                             columnWriter.addPage(bufferToWrite, nullValue, transferObject.rowCount());
@@ -522,7 +546,7 @@ public class ParquetTableWriter {
 
     private static Function<Object, Object> getToParquetConversion(Class type) {
         if (type == String.class) {
-            //noinspection unchecked
+            // noinspection unchecked
             return (Function) (Function<String, Binary>) Binary::fromString;
         }
         throw new UnsupportedOperationException("Dictionary storage not supported for " + type);
@@ -543,7 +567,7 @@ public class ParquetTableWriter {
         if (columnType == Boolean.class) {
             return (byte) -1;
         } else if (columnType == char.class) {
-            return (int)QueryConstants.NULL_CHAR;
+            return (int) QueryConstants.NULL_CHAR;
         } else if (columnType == byte.class) {
             return QueryConstants.NULL_BYTE;
         } else if (columnType == short.class) {
@@ -579,7 +603,7 @@ public class ParquetTableWriter {
             bytesCountField = TypeUtils.getBoxedType(columnType).getField("BYTES");
             return PAGE_SIZE / ((Integer) bytesCountField.get(null));
         } catch (NoSuchFieldException e) {
-            return PAGE_SIZE / 8;//We assume the baseline and go from there
+            return PAGE_SIZE / 8;// We assume the baseline and go from there
         }
     }
 
@@ -623,7 +647,7 @@ public class ParquetTableWriter {
         return new CodecTransfer(columnSource, codec, targetSize);
     }
 
-    interface TransferObject<B> extends Context{
+    interface TransferObject<B> extends Context {
 
         void propagateChunkData();
 
@@ -944,15 +968,18 @@ public class ParquetTableWriter {
         Map<?, Index> grouping = tableToSave.getIndex().getGrouping(tableToSave.getColumnSource(columnName));
         RangeCollector collector;
         QueryScope.getScope().putParam("__range_collector_" + columnName + "__", collector = new RangeCollector());
-        Table firstOfTheKey = tableToSave.view(columnName).where("__range_collector_" + columnName + "__.next(" + columnName + ")");
+        Table firstOfTheKey =
+                tableToSave.view(columnName).where("__range_collector_" + columnName + "__.next(" + columnName + ")");
 
         Table contiguousOccurrences = firstOfTheKey.countBy("c", columnName).where("c != 1");
         if (contiguousOccurrences.size() != 0) {
-            throw new RuntimeException("Disk grouping is not possible for column because some indices are not contiguous");
+            throw new RuntimeException(
+                    "Disk grouping is not possible for column because some indices are not contiguous");
         }
         Object columnValues = firstOfTheKey.getColumn(columnName).getDirect();
         collector.close();
-        return new InMemoryTable(new String[]{GROUPING_KEY, BEGIN_POS, END_POS}, new Object[]{columnValues, collector.beginPos(), collector.endPos()});
+        return new InMemoryTable(new String[] {GROUPING_KEY, BEGIN_POS, END_POS},
+                new Object[] {columnValues, collector.beginPos(), collector.endPos()});
     }
 
     public static class SomeSillyTest implements Serializable {
@@ -996,14 +1023,14 @@ public class ParquetTableWriter {
                 "someTime = DBDateTime.now() + i",
                 "someKey = `` + (int)(i /100)",
                 "nullKey = i < -1?`123`:null",
-                "someSerializable = new SomeSillyTest(i)"
-        );
+                "someSerializable = new SomeSillyTest(i)");
     }
 
     private static Table getGroupedTable() {
         Table t = getTableFlat();
         QueryLibrary.importClass(StringSetArrayWrapper.class);
-        Table result = t.by("groupKey = i % 100 + (int)(i/10)").update("someStringSet = new StringSetArrayWrapper(nonNullString)");
+        Table result = t.by("groupKey = i % 100 + (int)(i/10)")
+                .update("someStringSet = new StringSetArrayWrapper(nonNullString)");
         TableTools.show(result);
         return result;
     }

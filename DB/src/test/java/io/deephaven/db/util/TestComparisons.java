@@ -18,29 +18,29 @@ public class TestComparisons {
 
     @Test
     public void testByteByteComparisons() {
-        TestCase.assertTrue(DhByteComparisons.lt(QueryConstants.NULL_BYTE, (byte)2));
-        TestCase.assertTrue(DhByteComparisons.gt((byte)2, QueryConstants.NULL_BYTE));
+        TestCase.assertTrue(DhByteComparisons.lt(QueryConstants.NULL_BYTE, (byte) 2));
+        TestCase.assertTrue(DhByteComparisons.gt((byte) 2, QueryConstants.NULL_BYTE));
         TestCase.assertTrue(DhByteComparisons.eq(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE));
-        TestCase.assertTrue(DhByteComparisons.lt((byte)2, (byte)3));
-        TestCase.assertFalse(DhByteComparisons.gt((byte)2, (byte)3));
+        TestCase.assertTrue(DhByteComparisons.lt((byte) 2, (byte) 3));
+        TestCase.assertFalse(DhByteComparisons.gt((byte) 2, (byte) 3));
         TestCase.assertTrue(DhByteComparisons.eq(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE));
-        TestCase.assertFalse(DhByteComparisons.eq((byte)2, QueryConstants.NULL_BYTE));
+        TestCase.assertFalse(DhByteComparisons.eq((byte) 2, QueryConstants.NULL_BYTE));
     }
 
     @Test
     public void testShortShortComparisons() {
-        TestCase.assertTrue(DhShortComparisons.lt(QueryConstants.NULL_SHORT, (short)2));
-        TestCase.assertTrue(DhShortComparisons.gt((short)2, QueryConstants.NULL_SHORT));
+        TestCase.assertTrue(DhShortComparisons.lt(QueryConstants.NULL_SHORT, (short) 2));
+        TestCase.assertTrue(DhShortComparisons.gt((short) 2, QueryConstants.NULL_SHORT));
         TestCase.assertTrue(DhShortComparisons.eq(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT));
-        TestCase.assertTrue(DhShortComparisons.lt((short)2, (short)3));
-        TestCase.assertFalse(DhShortComparisons.gt((short)2, (short)3));
+        TestCase.assertTrue(DhShortComparisons.lt((short) 2, (short) 3));
+        TestCase.assertFalse(DhShortComparisons.gt((short) 2, (short) 3));
         TestCase.assertTrue(DhShortComparisons.eq(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT));
-        TestCase.assertFalse(DhShortComparisons.eq((short)2, QueryConstants.NULL_SHORT));
+        TestCase.assertFalse(DhShortComparisons.eq((short) 2, QueryConstants.NULL_SHORT));
     }
 
     @Test
     public void testIntIntComparisons() {
-        TestCase.assertTrue(DhIntComparisons.lt(QueryConstants.NULL_INT, (int)2));
+        TestCase.assertTrue(DhIntComparisons.lt(QueryConstants.NULL_INT, (int) 2));
         TestCase.assertTrue(DhIntComparisons.gt(2, QueryConstants.NULL_INT));
         TestCase.assertTrue(DhIntComparisons.eq(QueryConstants.NULL_INT, QueryConstants.NULL_INT));
         TestCase.assertTrue(DhIntComparisons.lt(2, 3));

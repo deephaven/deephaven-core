@@ -6,9 +6,10 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  *
- * <p>Codec for non-nullable byte arrays that does a no-op encode/decode.
- * <p>One particular instance where this is useful is reading parquet 1.0 data
- *    encoded as binary as "raw".
+ * <p>
+ * Codec for non-nullable byte arrays that does a no-op encode/decode.
+ * <p>
+ * One particular instance where this is useful is reading parquet 1.0 data encoded as binary as "raw".
  *
  */
 public class SimpleByteArrayCodec implements ObjectCodec<byte[]> {

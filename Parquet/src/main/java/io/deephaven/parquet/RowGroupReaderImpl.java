@@ -32,7 +32,8 @@ public class RowGroupReaderImpl implements RowGroupReader {
 
     private final Path rootPath;
 
-    RowGroupReaderImpl(RowGroup rowGroup, SeekableChannelsProvider channelsProvider, Path rootPath, ThreadLocal<CodecFactory> codecFactory, MessageType type, MessageType schema) {
+    RowGroupReaderImpl(RowGroup rowGroup, SeekableChannelsProvider channelsProvider, Path rootPath,
+            ThreadLocal<CodecFactory> codecFactory, MessageType type, MessageType schema) {
         this.channelsProvider = channelsProvider;
         this.codecFactory = codecFactory;
         this.rowGroup = rowGroup;
@@ -70,12 +71,14 @@ public class RowGroupReaderImpl implements RowGroupReader {
         if (columnChunk.isSetOffset_index_offset()) {
             try (SeekableByteChannel f = channelsProvider.getReadChannel(rootPath)) {
                 f.position(columnChunk.getOffset_index_offset());
-                offsetIndex = ParquetMetadataConverter.fromParquetOffsetIndex(Util.readOffsetIndex(new BufferedInputStream(Channels.newInputStream(f), BUFFER_SIZE)));
+                offsetIndex = ParquetMetadataConverter.fromParquetOffsetIndex(
+                        Util.readOffsetIndex(new BufferedInputStream(Channels.newInputStream(f), BUFFER_SIZE)));
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
-        return new ColumnChunkReaderImpl(columnChunk, channelsProvider, rootPath, codecFactory, type, offsetIndex, fieldTypes);
+        return new ColumnChunkReaderImpl(columnChunk, channelsProvider, rootPath, codecFactory, type, offsetIndex,
+                fieldTypes);
     }
 
     @Override

@@ -18,7 +18,7 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
     private static final long UPDATES_KEY_NOT_FOUND = -2L;
 
     // The current state of the world.
-    private long [] redirections;
+    private long[] redirections;
     // how many entries in redirections are actually valid
     int size;
     // How things looked on the last clock tick
@@ -26,7 +26,7 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
     private UpdateCommitter<ContiguousRedirectionIndexImpl> updateCommitter;
 
     @SuppressWarnings("unused")
-    public ContiguousRedirectionIndexImpl(int initialCapacity){
+    public ContiguousRedirectionIndexImpl(int initialCapacity) {
         redirections = new long[initialCapacity];
         Arrays.fill(redirections, Index.NULL_KEY);
         size = 0;
@@ -45,16 +45,16 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
     public long put(long key, long index) {
         Require.requirement(key <= Integer.MAX_VALUE && key >= 0, "key <= Integer.MAX_VALUE && key >= 0", key, "key");
         if (key >= redirections.length) {
-            final long [] newRedirections = new long[Math.max((int)key + 100, redirections.length * 2)];
+            final long[] newRedirections = new long[Math.max((int) key + 100, redirections.length * 2)];
             System.arraycopy(redirections, 0, newRedirections, 0, redirections.length);
             Arrays.fill(newRedirections, redirections.length, newRedirections.length, Index.NULL_KEY);
             redirections = newRedirections;
         }
-        final long previous = redirections[(int)key];
+        final long previous = redirections[(int) key];
         if (previous == Index.NULL_KEY) {
             size++;
         }
-        redirections[(int)key] = index;
+        redirections[(int) key] = index;
 
         if (previous != index) {
             onRemove(key, previous);
@@ -75,7 +75,7 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
         if (key < 0 || key >= redirections.length) {
             return Index.NULL_KEY;
         }
-        return redirections[(int)key];
+        return redirections[(int) key];
     }
 
     @Override
@@ -130,8 +130,8 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
 
     @Override
     public long remove(long leftIndex) {
-        final long removed = redirections[(int)leftIndex];
-        redirections[(int)leftIndex] = Index.NULL_KEY;
+        final long removed = redirections[(int) leftIndex];
+        redirections[(int) leftIndex] = Index.NULL_KEY;
         if (removed != Index.NULL_KEY) {
             size--;
             onRemove(leftIndex, removed);
@@ -141,7 +141,8 @@ public class ContiguousRedirectionIndexImpl implements RedirectionIndex {
 
     public synchronized void startTrackingPrevValues() {
         Assert.eqNull(updateCommitter, "updateCommitter");
-        checkpoint = new TLongLongHashMap(Math.min(size, 1024 * 1024),0.75f, UPDATES_KEY_NOT_FOUND, UPDATES_KEY_NOT_FOUND);
+        checkpoint =
+                new TLongLongHashMap(Math.min(size, 1024 * 1024), 0.75f, UPDATES_KEY_NOT_FOUND, UPDATES_KEY_NOT_FOUND);
         updateCommitter = new UpdateCommitter<>(this, ContiguousRedirectionIndexImpl::commitUpdates);
     }
 

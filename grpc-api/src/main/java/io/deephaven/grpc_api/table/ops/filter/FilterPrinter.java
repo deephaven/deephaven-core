@@ -15,6 +15,7 @@ public class FilterPrinter implements FilterVisitor<Void> {
 
         return visitor.sb.toString();
     }
+
     public static String printNoEscape(Literal literal) {
         FilterPrinter visitor = new FilterPrinter(false);
         visitor.onLiteral(literal);
@@ -90,7 +91,8 @@ public class FilterPrinter implements FilterVisitor<Void> {
     }
 
     @Override
-    public Void onComparison(CompareCondition.CompareOperation operation, CaseSensitivity caseSensitivity, Value lhs, Value rhs) {
+    public Void onComparison(CompareCondition.CompareOperation operation, CaseSensitivity caseSensitivity, Value lhs,
+            Value rhs) {
         accept(lhs);
         switch (operation) {
             case LESS_THAN:
@@ -173,7 +175,8 @@ public class FilterPrinter implements FilterVisitor<Void> {
     }
 
     @Override
-    public Void onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity, MatchType matchType) {
+    public Void onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity,
+            MatchType matchType) {
         if (matchType == MatchType.INVERTED) {
             sb.append("!");
         }

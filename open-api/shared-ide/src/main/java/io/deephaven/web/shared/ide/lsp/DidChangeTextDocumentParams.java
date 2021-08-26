@@ -12,7 +12,7 @@ public class DidChangeTextDocumentParams implements Serializable {
     public VersionedTextDocumentIdentifier textDocument;
     public TextDocumentContentChangeEvent[] contentChanges;
 
-    public DidChangeTextDocumentParams() { }
+    public DidChangeTextDocumentParams() {}
 
     @JsIgnore
     public DidChangeTextDocumentParams(JsPropertyMap<Object> source) {

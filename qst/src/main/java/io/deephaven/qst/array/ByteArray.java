@@ -63,7 +63,7 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
     }
 
     @Override
-    public final ByteType type() {
+    public final ByteType componentType() {
         return ByteType.instance();
     }
 
@@ -89,7 +89,7 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
     }
 
     public static class Builder extends PrimitiveArrayHelper<byte[]>
-        implements ArrayBuilder<Byte, ByteArray, Builder> {
+            implements ArrayBuilder<Byte, ByteArray, Builder> {
 
         private Builder(int initialCapacity) {
             super(new byte[initialCapacity]);

@@ -32,7 +32,7 @@ public class DateColumnGenerator implements ColumnGenerator<DBDateTime> {
 
     @Override
     public String getUpdateString(String varName) {
-        return def.getName()+"=(DBDateTime)"+varName+".get()";
+        return def.getName() + "=(DBDateTime)" + varName + ".get()";
     }
 
     @Override
