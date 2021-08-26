@@ -6,6 +6,6 @@
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.db.v2.locations.local.DeephavenNestedPartitionLayout",
- "text": "TableLocationKeyFinder that will traverse a directory hierarchy laid out in Deephaven's \"nested-partitioned\"\n format, e.g. tableRootDirectory/internalPartitionValue/columnPartitionValue/tableName/..., producing\n FileTableLocationKey's with two partitions, for keys \"__INTERNAL_PARTITION__\" and the specified\n columnPartitionKey.",
+ "text": "TableLocationKeyFinder that will traverse a directory hierarchy laid out in Deephaven's \"nested-partitioned\"\n format, e.g.\n \n \n tableRootDirectory/internalPartitionValue/columnPartitionValue/tableName/...\n \n \n , producing FileTableLocationKey's with two partitions, for keys \"__INTERNAL_PARTITION__\" and the\n specified columnPartitionKey.",
  "typeName": "class"
 }

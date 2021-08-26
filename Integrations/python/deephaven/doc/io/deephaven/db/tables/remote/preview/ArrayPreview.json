@@ -6,6 +6,6 @@
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.db.tables.remote.preview.ArrayPreview",
- "text": "A Preview Type for Arrays and DbArray.  Converts long arrays to a String \"[1, 2, 3, 4, 5...]\"",
+ "text": "A Preview Type for Arrays and DbArray. Converts long arrays to a String \"[1, 2, 3, 4, 5...]\"",
  "typeName": "class"
 }

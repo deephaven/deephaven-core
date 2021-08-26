@@ -8,6 +8,6 @@
   "size": ":return: long"
  },
  "path": "io.deephaven.util.datastructures.linked.IntrusiveSinglyLinkedQueue",
- "text": "Singly-linked queue. Supports basic queue operations, but not extended Collection methods that would be required\n by actually implementing java.lang.Queue.",
+ "text": "Singly-linked queue. Supports basic queue operations, but not extended Collection methods that would be required by\n actually implementing java.lang.Queue.",
  "typeName": "class"
 }

@@ -11,6 +11,6 @@
   "spliterator": ":return: java.util.Spliterator<io.deephaven.qst.column.header.ColumnHeader<?>>"
  },
  "path": "io.deephaven.qst.table.TableHeader",
- "text": "A table header is a list of column headers. Each column header will have a\n distinct name.",
+ "text": "A table header is a list of column headers. Each column header will have a distinct name.",
  "typeName": "class"
 }

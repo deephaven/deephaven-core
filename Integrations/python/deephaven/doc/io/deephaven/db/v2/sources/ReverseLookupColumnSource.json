@@ -2,10 +2,10 @@
  "className": "io.deephaven.db.v2.sources.ReverseLookupColumnSource",
  "methods": {
   "getExtra": "Get an implementation-defined \"extra value\" associated with this column source.\n\n:return: ReverseLookupColumnSource.EXTRA_VALUE_TYPE",
-  "getReverseLookup": "Get a reverse-lookup function for all non-null values stored in this column source at keys <= highestKeyNeeded.\n\n:param highestKeyNeeded: (int) - The highest key needed in the result map\n:return: (java.util.function.ToIntFunction<ReverseLookupColumnSource.DATA_TYPE>) A reverse-lookup function that has all values defined for keys in [0, highestKeyNeeded]",
-  "rget": "Perform a reverse lookup\n\n:param highestIndex: (int) - The highest key needed for the lookup\n:param value: (ReverseLookupColumnSource.DATA_TYPE) - The value we are looking up\n:return: (int) The key, between 0 and highestIndex, for the value.  A value outside this range if the value\n                      has no mapping in the range."
+  "getReverseLookup": "Get a reverse-lookup function for all non-null values stored in this column source at\n keys <= highestKeyNeeded.\n\n:param highestKeyNeeded: (int) - The highest key needed in the result map\n:return: (java.util.function.ToIntFunction<ReverseLookupColumnSource.DATA_TYPE>) A reverse-lookup function that has all values defined for keys in [0, highestKeyNeeded]",
+  "rget": "Perform a reverse lookup\n\n:param highestIndex: (int) - The highest key needed for the lookup\n:param value: (ReverseLookupColumnSource.DATA_TYPE) - The value we are looking up\n:return: (int) The key, between 0 and highestIndex, for the value. A value outside this range if the value has no\n         mapping in the range."
  },
  "path": "io.deephaven.db.v2.sources.ReverseLookupColumnSource",
- "text": "Common interface for column sources that provide a reverse-lookup function (value to int key). Note that int keys\n are used because this is intended for column sources with a small, contiguous key range starting from 0 and well\n shorter than Integer.MAX_VALUE.",
+ "text": "Common interface for column sources that provide a reverse-lookup function (value to int key). Note that int keys are\n used because this is intended for column sources with a small, contiguous key range starting from 0 and well shorter\n than Integer.MAX_VALUE.",
  "typeName": "interface"
 }

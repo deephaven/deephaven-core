@@ -66,19 +66,18 @@ def heatMap(*args):
     """
     Returns a heat map to map numerical values to colors.
      
-     Values less than or equal to min return the starting color.
-     Values greater than or equal to max return the ending color.
-     Values in between this range are a linear combination of
-     the RGB components of these two colors. Higher values
-     return colors that are closer to the ending color, and
-     lower values return colors that are closer to the starting color.
+     Values less than or equal to min return the starting color. Values greater than or equal to max
+     return the ending color. Values in between this range are a linear combination of the RGB components of these two
+     colors. Higher values return colors that are closer to the ending color, and lower values return colors that are
+     closer to the starting color.
      
      Inputs that are null or Double.NaN return a null color.
     
     *Overload 1*  
       :param min: (double) - minimum
       :param max: (double) - maximum
-      :return: (java.util.function.Function<java.lang.Double,io.deephaven.gui.color.Color>) function for mapping double values to colors.  The starting color is blue (#0000FF) and the ending color is yellow (#FFFF00).
+      :return: (java.util.function.Function<java.lang.Double,io.deephaven.gui.color.Color>) function for mapping double values to colors. The starting color is blue (#0000FF) and the ending color
+               is yellow (#FFFF00).
       
     *Overload 2*  
       :param min: (double) - minimum
@@ -102,31 +101,36 @@ def heatMap(*args):
 @_passThrough
 def predicateMap(*args):
     """
-    Returns a function which uses predicate functions to determine which colors is returned for an input value.
-     For each input value, a map is iterated through until the predicate function (map key) returns true.
-     When the predicate returns true, the associated color (map value) is returned.  If no such predicate is found,
-     an out of range color is returned.
+    Returns a function which uses predicate functions to determine which colors is returned for an input value. For
+     each input value, a map is iterated through until the predicate function (map key) returns true. When the
+     predicate returns true, the associated color (map value) is returned. If no such predicate is found, an out of
+     range color is returned.
     
     *Overload 1*  
       Note: Java generics information - <COLOR extends io.deephaven.gui.color.Paint>
       
       :param map: (java.util.Map<io.deephaven.db.plot.colors.ColorMaps.SerializablePredicate<java.lang.Double>,COLOR>) - map from ColorMaps.SerializablePredicate to color
-      :return: (java.util.function.Function<java.lang.Double,io.deephaven.gui.color.Paint>) function which returns the color mapped to the first ColorMaps.SerializablePredicate for which the input is true.  Out of range, null, and NaN values return null.
+      :return: (java.util.function.Function<java.lang.Double,io.deephaven.gui.color.Paint>) function which returns the color mapped to the first ColorMaps.SerializablePredicate for which the input is
+               true. Out of range, null, and NaN values return null.
       
     *Overload 2*  
       Note: Java generics information - <COLOR extends io.deephaven.gui.color.Paint>
       
       :param map: (java.util.Map<io.deephaven.db.plot.colors.ColorMaps.SerializablePredicate<java.lang.Double>,COLOR>) - map from ColorMaps.SerializablePredicate to color
-      :param outOfRangeColor: (io.deephaven.gui.color.Color) - color returned when the input satisfies no ColorMaps.SerializablePredicate in the map
-      :return: (java.util.function.Function<java.lang.Double,io.deephaven.gui.color.Paint>) function which returns the color mapped to the first ColorMaps.SerializablePredicate for which the input is true.  Null and NaN inputs return null.
+      :param outOfRangeColor: (io.deephaven.gui.color.Color) - color returned when the input satisfies no ColorMaps.SerializablePredicate in the
+              map
+      :return: (java.util.function.Function<java.lang.Double,io.deephaven.gui.color.Paint>) function which returns the color mapped to the first ColorMaps.SerializablePredicate for which the input is
+               true. Null and NaN inputs return null.
       
     *Overload 3*  
       Note: Java generics information - <COLOR extends io.deephaven.gui.color.Paint>
       
       :param map: (java.util.Map<io.deephaven.db.plot.colors.ColorMaps.SerializablePredicate<java.lang.Double>,COLOR>) - map from ColorMaps.SerializablePredicate to color
-      :param outOfRangeColor: (io.deephaven.gui.color.Paint) - color returned when the input satisfies no ColorMaps.SerializablePredicate in the map
+      :param outOfRangeColor: (io.deephaven.gui.color.Paint) - color returned when the input satisfies no ColorMaps.SerializablePredicate in the
+              map
       :param nullColor: (io.deephaven.gui.color.Paint) - color returned when the input is null or Double.NaN
-      :return: (java.util.function.Function<java.lang.Double,io.deephaven.gui.color.Paint>) function which returns the color mapped to the first ColorMaps.SerializablePredicate for which the input is true
+      :return: (java.util.function.Function<java.lang.Double,io.deephaven.gui.color.Paint>) function which returns the color mapped to the first ColorMaps.SerializablePredicate for which the input is
+               true
     """
     
     return _java_type_.predicateMap(*args)
@@ -135,24 +139,23 @@ def predicateMap(*args):
 @_passThrough
 def rangeMap(*args):
     """
-    Maps Ranges of values to specific colors.
-     Values inside a given Range return the corresponding Paint.
+    Maps Ranges of values to specific colors. Values inside a given Range return the corresponding
+     Paint.
      
-     Values not in any of the specified Range return an out of range color.
-     Null inputs return a null color.
+     Values not in any of the specified Range return an out of range color. Null inputs return a null color.
     
     *Overload 1*  
       Note: Java generics information - <COLOR extends io.deephaven.gui.color.Paint>
       
       :param map: (java.util.Map<io.deephaven.numerics.util.Range,COLOR>) - map of Ranges to Paints.
-      :return: (java.util.function.Function<java.lang.Double,io.deephaven.gui.color.Paint>) function for mapping double values to colors.  Null and out of range values return null.
+      :return: (java.util.function.Function<java.lang.Double,io.deephaven.gui.color.Paint>) function for mapping double values to colors. Null and out of range values return null.
       
     *Overload 2*  
       Note: Java generics information - <COLOR extends io.deephaven.gui.color.Paint>
       
       :param map: (java.util.Map<io.deephaven.numerics.util.Range,COLOR>) - map of Ranges to Paints.
       :param outOfRangeColor: (io.deephaven.gui.color.Color) - color for values not within any of the defined ranges
-      :return: (java.util.function.Function<java.lang.Double,io.deephaven.gui.color.Paint>) function for mapping double values to colors.  Null values return null.
+      :return: (java.util.function.Function<java.lang.Double,io.deephaven.gui.color.Paint>) function for mapping double values to colors. Null values return null.
       
     *Overload 3*  
       Note: Java generics information - <COLOR extends io.deephaven.gui.color.Paint>

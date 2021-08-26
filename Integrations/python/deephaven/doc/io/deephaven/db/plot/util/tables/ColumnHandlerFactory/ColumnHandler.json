@@ -10,6 +10,6 @@
   "typeClassification": "Gets the column's ColumnHandlerFactory.TypeClassification.\n\n:return: (io.deephaven.db.plot.util.tables.ColumnHandlerFactory.TypeClassification) column's ColumnHandlerFactory.TypeClassification"
  },
  "path": "io.deephaven.db.plot.util.tables.ColumnHandlerFactory.ColumnHandler",
- "text": "Holds a table column. Allows access to the column's data\n and the underlying table.",
+ "text": "Holds a table column. Allows access to the column's data and the underlying table.",
  "typeName": "interface"
 }

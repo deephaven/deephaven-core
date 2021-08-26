@@ -9,6 +9,6 @@
   "remove": ":param leftIndex: long\n:return: long"
  },
  "path": "io.deephaven.db.v2.utils.GroupedRedirectionIndex",
- "text": "The GroupedRedirectionIndex is intended for situations where you have several Indices that represent contiguous rows\n of your output table and a flat output index.\n\n When sorting a table by it's grouping column, instead of using a large contiguous RedirectionIndex, we simply store\n the indices for each group and the accumulated cardinality.  We then binary search in the accumulated cardinality\n for a given key; and fetch the corresponding offset from that group's Index.\n\n This RedirectionIndex does not support mutation.",
+ "text": "The GroupedRedirectionIndex is intended for situations where you have several Indices that represent contiguous rows\n of your output table and a flat output index.\n\n When sorting a table by it's grouping column, instead of using a large contiguous RedirectionIndex, we simply store\n the indices for each group and the accumulated cardinality. We then binary search in the accumulated cardinality for\n a given key; and fetch the corresponding offset from that group's Index.\n\n This RedirectionIndex does not support mutation.",
  "typeName": "class"
 }

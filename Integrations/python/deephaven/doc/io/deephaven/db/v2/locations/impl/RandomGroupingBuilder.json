@@ -5,6 +5,6 @@
   "getGroupToIndex": "Get the groupings under construction in a form usable by AbstractColumnSource implementations.\n\n:return: (java.util.Map<RandomGroupingBuilder.DATA_TYPE,io.deephaven.db.v2.utils.Index>) A mapping from grouping value to its matching Index"
  },
  "path": "io.deephaven.db.v2.locations.impl.RandomGroupingBuilder",
- "text": "Builder for constructing groupings from one or more <value, key range> pairs, with no requirement that\n key ranges be sequential.",
+ "text": "Builder for constructing groupings from one or more <value, key range> pairs, with no requirement that key\n ranges be sequential.",
  "typeName": "class"
 }

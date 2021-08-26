@@ -5,6 +5,6 @@
   "values": "Returns an array containing the constants of this enum type, in\nthe order they are declared.\n\n:return: (io.deephaven.gui.table.filters.Condition[]) an array containing the constants of this enum type, in the order they are declared"
  },
  "path": "io.deephaven.gui.table.filters.Condition",
- "text": "The set of Conditions that can be used with various FilterData types.  Note that not all\n FilterData classes support all types.",
+ "text": "The set of Conditions that can be used with various FilterData types. Note that not all FilterData\n classes support all types.",
  "typeName": "enum"
 }

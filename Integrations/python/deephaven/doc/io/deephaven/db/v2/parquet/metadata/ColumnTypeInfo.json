@@ -7,6 +7,6 @@
   "specialType": ":return: (java.util.Optional<io.deephaven.db.v2.parquet.metadata.ColumnTypeInfo.SpecialType>) Optional type hint for complex types"
  },
  "path": "io.deephaven.db.v2.parquet.metadata.ColumnTypeInfo",
- "text": "Representation class for per-column type information stored in key-value metadata for Deephaven-written Parquet\n files.\n Currently only used for columns requiring non-default deserialization or type selection",
+ "text": "Representation class for per-column type information stored in key-value metadata for Deephaven-written Parquet\n files.\n \n Currently only used for columns requiring non-default deserialization or type selection",
  "typeName": "class"
 }

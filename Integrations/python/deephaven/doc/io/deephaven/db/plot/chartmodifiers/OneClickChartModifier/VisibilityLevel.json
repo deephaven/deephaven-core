@@ -5,6 +5,6 @@
   "values": "Returns an array containing the constants of this enum type, in\nthe order they are declared.\n\n:return: (io.deephaven.db.plot.chartmodifiers.OneClickChartModifier.VisibilityLevel[]) an array containing the constants of this enum type, in the order they are declared"
  },
  "path": "io.deephaven.db.plot.chartmodifiers.OneClickChartModifier.VisibilityLevel",
- "text": "At what level in the Figure hierarchy the series of a plot will be restricted, e.g. AXIS\n will hide all series for the given Axis",
+ "text": "At what level in the Figure hierarchy the series of a plot will be restricted, e.g. AXIS will hide all series for\n the given Axis",
  "typeName": "enum"
 }

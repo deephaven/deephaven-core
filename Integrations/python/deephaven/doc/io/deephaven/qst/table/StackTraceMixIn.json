@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.qst.table.StackTraceMixIn",
+ "methods": {
+  "elements": ":return: java.lang.StackTraceElement[]",
+  "ops": ":return: StackTraceMixIn.TOPS"
+ },
+ "path": "io.deephaven.qst.table.StackTraceMixIn",
+ "text": "A table operations adapter that mixes-in stack trace elements.",
+ "typeName": "class"
+}

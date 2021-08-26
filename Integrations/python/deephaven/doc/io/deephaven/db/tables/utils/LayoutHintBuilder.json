@@ -1,13 +1,13 @@
 {
  "className": "io.deephaven.db.tables.utils.LayoutHintBuilder",
  "methods": {
-  "alwaysSubscribed": "Indicate that the UI should maintain a subscription to the specified columns within viewports,\n even if they are out of view.\n\n:param columns: (java.lang.String...) - the columns to keep subscribed\n:return: (io.deephaven.db.tables.utils.LayoutHintBuilder) this LayoutHintBuilder",
+  "alwaysSubscribed": "Indicate that the UI should maintain a subscription to the specified columns within viewports, even if they are\n out of view.\n\n:param columns: (java.lang.String...) - the columns to keep subscribed\n:return: (io.deephaven.db.tables.utils.LayoutHintBuilder) this LayoutHintBuilder",
   "areSavedLayoutsAllowed": "Check if saved layouts should be allowed.\n\n:return: (boolean) if saved layouts are allowed",
   "atEnd": "Indicate the specified columns should appear as the last N columns of the table when displayed.\n\n*Overload 1*  \n  :param cols: java.lang.String...\n  :return: io.deephaven.db.tables.utils.LayoutHintBuilder\n  \n*Overload 2*  \n  :param cols: (java.util.Collection<java.lang.String>) - the columns to show at the back\n  :return: (io.deephaven.db.tables.utils.LayoutHintBuilder) this LayoutHintBuilder",
   "atFront": "Indicate the specified columns should appear as the first N columns of the table when displayed.\n\n*Overload 1*  \n  :param cols: java.lang.String...\n  :return: io.deephaven.db.tables.utils.LayoutHintBuilder\n  \n*Overload 2*  \n  :param cols: (java.util.Collection<java.lang.String>) - the columns to show at front\n  :return: (io.deephaven.db.tables.utils.LayoutHintBuilder) this LayoutHintBuilder",
   "autoFilter": "Indicate the specified columns should be configured as AutoFilter columns\n\n*Overload 1*  \n  :param cols: java.lang.String...\n  :return: io.deephaven.db.tables.utils.LayoutHintBuilder\n  \n*Overload 2*  \n  :param cols: (java.util.Collection<java.lang.String>) - the columns to enable as AutoFilter columns\n  :return: (io.deephaven.db.tables.utils.LayoutHintBuilder) this LayoutHintBuilder",
-  "autoFilterFetchSize": "Set the default initial number of rows to fetch for columns that have been marked as AutoFilter\n columns.\n\n:param col: (java.lang.String) - the column to set the fetch size for\n:param size: (int) - the number of rows to fetch initially\n:return: (io.deephaven.db.tables.utils.LayoutHintBuilder) this LayoutHintBuilder",
-  "build": "Create an appropriate parameter string suitable for use with Table.layoutHints(String).\n\n:return: (java.lang.String) this LayoutHintBuilder as a string",
+  "autoFilterFetchSize": "Set the default initial number of rows to fetch for columns that have been marked as\n AutoFilter columns.\n\n:param col: (java.lang.String) - the column to set the fetch size for\n:param size: (int) - the number of rows to fetch initially\n:return: (io.deephaven.db.tables.utils.LayoutHintBuilder) this LayoutHintBuilder",
+  "build": "Create an appropriate parameter string suitable for use with\n Table.layoutHints(String).\n\n:return: (java.lang.String) this LayoutHintBuilder as a string",
   "freeze": "Indicate the specified columns should be frozen (displayed as the first N, unmovable columns) upon display.\n\n*Overload 1*  \n  :param cols: java.lang.String...\n  :return: io.deephaven.db.tables.utils.LayoutHintBuilder\n  \n*Overload 2*  \n  :param cols: (java.util.Collection<java.lang.String>) - the columns to freeze\n  :return: (io.deephaven.db.tables.utils.LayoutHintBuilder) this LayoutHintBuilder",
   "fromString": "Create a LayoutHintBuilder from the specified parameter string.\n\n:param attrs: (java.lang.String) - the parameter string\n:return: (io.deephaven.db.tables.utils.LayoutHintBuilder) a LayoutHintBuilder for the input parameter string",
   "get": "Create a new LayoutHintBuilder.\n\n:return: (io.deephaven.db.tables.utils.LayoutHintBuilder) a new LayoutHintBuilder",
@@ -24,6 +24,6 @@
   "savedLayouts": "Enable or disable saved layouts for the specified table.\n\n:param allowed: (boolean) - if layout saving is enabled\n:return: (io.deephaven.db.tables.utils.LayoutHintBuilder) this LayoutHintBuilder"
  },
  "path": "io.deephaven.db.tables.utils.LayoutHintBuilder",
- "text": "The builder class for use in assembling layout hints suitable for use with Table.layoutHints(LayoutHintBuilder) or\n Table.layoutHints(String).",
+ "text": "The builder class for use in assembling layout hints suitable for use with\n Table.layoutHints(LayoutHintBuilder) or\n Table.layoutHints(String).",
  "typeName": "class"
 }

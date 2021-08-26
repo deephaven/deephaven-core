@@ -15,6 +15,6 @@
   "with": ":param column: io.deephaven.qst.column.Column<?>\n:return: io.deephaven.qst.table.NewTable"
  },
  "path": "io.deephaven.qst.table.NewTable",
- "text": "A new table is a list of columns of equal size. Each column will have a distinct\n name.",
+ "text": "A new table is a list of columns of equal size. Each column will have a distinct name.",
  "typeName": "class"
 }

@@ -2,6 +2,6 @@
  "className": "io.deephaven.util.SafeCloseableArray",
  "methods": {},
  "path": "io.deephaven.util.SafeCloseableArray",
- "text": "SafeCloseable that will close non-null values inside of an array.\n\n The common use case is to create an array; use the SafeCloseableArray in an ignored try-with-resources variable,\n and then populate the array within the loop.  If you fail before populating the array nothing is closed, if you\n fail during or after populating the array the created values are closed.",
+ "text": "SafeCloseable that will close non-null values inside of an array.\n\n The common use case is to create an array; use the SafeCloseableArray in an ignored try-with-resources variable, and\n then populate the array within the loop. If you fail before populating the array nothing is closed, if you fail\n during or after populating the array the created values are closed.",
  "typeName": "class"
 }

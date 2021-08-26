@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.db.plot.datasets.data.IndexableNumericDataSwappableTable",
+ "methods": {
+  "get": "Gets the value at the specified index as a double.\n\n:param i: (int) - index\n:return: (double) value at index as a double",
+  "getColumn": ":return: java.lang.String",
+  "getSwappableTable": ":return: io.deephaven.db.plot.util.tables.SwappableTable",
+  "size": "Gets the size of this dataset.\n\n:return: (int) size of this dataset"
+ },
+ "path": "io.deephaven.db.plot.datasets.data.IndexableNumericDataSwappableTable",
+ "text": "IndexableData dataset whose data is a column in a SwappableTable and whose indices are the row\n numbers of the column.\n\n The column must be numeric.",
+ "typeName": "class"
+}

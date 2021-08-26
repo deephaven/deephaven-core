@@ -2,6 +2,6 @@
  "className": "io.deephaven.util.referencecounting.ProceduralReferenceCounted",
  "methods": {},
  "path": "io.deephaven.util.referencecounting.ProceduralReferenceCounted",
- "text": "A ReferenceCounted implementation that takes a Runnable onReferenceCountAtZero procedure, in order\n to avoid relying on inheritance where necessary or desirable.",
+ "text": "A ReferenceCounted implementation that takes a Runnable onReferenceCountAtZero procedure, in order to\n avoid relying on inheritance where necessary or desirable.",
  "typeName": "class"
 }

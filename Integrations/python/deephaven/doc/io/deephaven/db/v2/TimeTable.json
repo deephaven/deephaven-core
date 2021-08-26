@@ -6,7 +6,7 @@
   "initializeTransientFieldsForLiveness": "Package-private for Serializable sub-classes to use in readObject only.\n Public to allow unit tests in another package to work around mock issues where the constructor is never invoked.",
   "refresh": "Refresh this LiveTable.",
   "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: (io.deephaven.db.util.liveness.LivenessReferent) - The referent to add\n:return: (boolean) Whether the referent was in fact added",
-  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true.\n Otherwise, returns false rather than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
+  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true. Otherwise, returns false rather\n than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
  },
  "path": "io.deephaven.db.v2.TimeTable",
  "text": "A TimeTable adds rows at a fixed interval with a single column named \"Timestamp\".\n\n To create a TimeTable, you should use the TableTools.timeTable(java.lang.String) family of\n methods.",

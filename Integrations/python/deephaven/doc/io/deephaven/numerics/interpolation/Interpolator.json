@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.numerics.interpolation.Interpolator",
  "methods": {
-  "interpolate": "Interpolates input data and evaluates the interpolation at a set of desired points.\n\n:param x: (double[]) - input x data.\n:param y: (double[]) - input y data.\n:param xi: (double[]) - x points to evaluate the interpolation at.\n:param method: (io.deephaven.numerics.interpolation.Interpolator.InterpolationAlgorithm) - interpolation method to use.\n:param extrapolate: (boolean) - true if extrapolation is to be used for values outside of the x range; false if values outside the x range should return NaN.\n:return: (double[]) y values interpolated at points xi if xi is in range(x), and y values extrapolated based on the extrapolate flag if xi is not in range(x)."
+  "interpolate": "Interpolates input data and evaluates the interpolation at a set of desired points.\n\n:param x: (double[]) - input x data.\n:param y: (double[]) - input y data.\n:param xi: (double[]) - x points to evaluate the interpolation at.\n:param method: (io.deephaven.numerics.interpolation.Interpolator.InterpolationAlgorithm) - interpolation method to use.\n:param extrapolate: (boolean) - true if extrapolation is to be used for values outside of the x range; false if values outside\n        the x range should return NaN.\n:return: (double[]) y values interpolated at points xi if xi is in range(x), and y values extrapolated based on the\n         extrapolate flag if xi is not in range(x)."
  },
  "path": "io.deephaven.numerics.interpolation.Interpolator",
  "text": "A clean interface for performing interpolations.",

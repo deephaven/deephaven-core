@@ -8,6 +8,6 @@
   "size": "Gets the size of this data set.\n\n:return: (int) size of this data set"
  },
  "path": "io.deephaven.db.plot.datasets.category.CategoryDataSeriesMap",
- "text": "A dataset for categorical data which maps a category to it's numerical value.\n \n The number of categories and the number of values must be the same.\n Does not support repeat categories.",
+ "text": "A dataset for categorical data which maps a category to it's numerical value.\n \n The number of categories and the number of values must be the same. Does not support repeat categories.",
  "typeName": "class"
 }

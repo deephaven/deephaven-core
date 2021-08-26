@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.db.plot.datasets.data.AssociativeData",
+ "methods": {
+  "get": "Gets the value associated with the key\n\n:param key: (AssociativeData.KEY) - key\n:return: (AssociativeData.VALUE) value associated with the key",
+  "getPlotInfo": ":return: io.deephaven.db.plot.errors.PlotInfo",
+  "isModifiable": "Whether the dataset is modifiable.\n\n:return: (boolean) true if the dataset is modifiable, false if not",
+  "put": "Adds the key-value pair to the dataset.\n\n:param key: (AssociativeData.KEY) - key\n:param value: (AssociativeData.VALUE) - value",
+  "putAll": "Adds all key-value pairs in the map to the dataset.\n\nNote: Java generics information - <K extends AssociativeData.KEY,\nV extends AssociativeData.VALUE>\n\n:param values: (java.util.Map<K,V>) - keypair map"
+ },
+ "path": "io.deephaven.db.plot.datasets.data.AssociativeData",
+ "text": "Dataset which has values associated with keys.",
+ "typeName": "class"
+}

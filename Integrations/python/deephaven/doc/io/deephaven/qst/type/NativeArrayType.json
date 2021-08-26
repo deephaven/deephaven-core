@@ -3,7 +3,7 @@
  "methods": {
   "clazz": "The class representing this type.\n\n:return: (java.lang.Class<NativeArrayType.T>) the class",
   "componentType": "The component type.\n\n:return: (io.deephaven.qst.type.Type<NativeArrayType.ComponentType>) the component type",
-  "find": "Finds the known type, or else creates the relevant\n native array type or custom type.\n\nNote: Java generics information - <T>\n\n:param arrayType: (java.lang.Class<T>) - the class\n:return: (io.deephaven.qst.type.NativeArrayType<T,?>) the type",
+  "find": "Finds the known type, or else creates the relevant native array\n type or custom type.\n\nNote: Java generics information - <T>\n\n:param arrayType: (java.lang.Class<T>) - the class\n:return: (io.deephaven.qst.type.NativeArrayType<T,?>) the type",
   "of": "Note: Java generics information - <T,\nComponentType>\n\n:param arrayType: java.lang.Class<T>\n:param componentType: io.deephaven.qst.type.Type<ComponentType>\n:return: io.deephaven.qst.type.NativeArrayType<T,ComponentType>",
   "toArrayType": "Note: Java generics information - <ComponentType>\n\n:param type: io.deephaven.qst.type.GenericType<ComponentType>\n:return: io.deephaven.qst.type.NativeArrayType<?,ComponentType>",
   "walk": "Note: Java generics information - <V extends io.deephaven.qst.type.ArrayType.Visitor>\n\n:param visitor: V\n:return: V"

@@ -1,6 +1,6 @@
 
 """
-Tools to obtain internal, Deephaven logs as tables.  These tables include query logs and performance logs.
+Tools to obtain internal, Deephaven logs as tables. These tables include query logs and performance logs.
 """
 
 
@@ -97,8 +97,8 @@ def queryOperationPerformanceLog():
 @_passThrough
 def queryPerformanceLog():
     """
-    Return a table with query performance data.  Individual sub-operations in the query
-     are referenced in QueryOperationPerformanceLog.
+    Return a table with query performance data. Individual sub-operations in the query are referenced in
+     QueryOperationPerformanceLog.
     
     :return: (io.deephaven.db.v2.QueryTable) A table with query performance data.
     """

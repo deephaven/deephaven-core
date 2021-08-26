@@ -2,11 +2,11 @@
  "className": "io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationKey",
  "methods": {
   "getFileReader": "Get a previously-set or on-demand created ParquetFileReader for\n this location key's file.\n\n:return: (io.deephaven.parquet.ParquetFileReader) A ParquetFileReader for this location key's file.",
-  "getImplementationName": "Get a name for the implementing class.  Useful for abstract classes that implement\n LogOutputAppendable or override\n toString.\n The default implementation is correct, but not suitable for high-frequency usage.\n\n:return: (java.lang.String) A name for the implementing class",
-  "getMetadata": "Get a previously-set or on-demand created ParquetMetadata for\n this location key's file.\n\n:return: (org.apache.parquet.hadoop.metadata.ParquetMetadata) A ParquetMetadata for this location key's file.",
-  "getRowGroupIndices": "Get previously-set or on-demand created\n RowGroup indices for this location key's current ParquetFileReader.\n\n:return: (int[]) RowGroup indices for this location key's current ParquetFileReader.",
-  "setFileReader": "Set the ParquetFileReader that will be returned by getFileReader().\n Pass null to force on-demand construction at the next invocation.\n Always clears cached ParquetMetadata and RowGroup indices.\n\n:param fileReader: (io.deephaven.parquet.ParquetFileReader) - The new ParquetFileReader",
-  "setMetadata": "Set the ParquetMetadata that will be returned by getMetadata() ()}.\n Pass null to force on-demand construction at the next invocation.\n\n:param metadata: (org.apache.parquet.hadoop.metadata.ParquetMetadata) - The new ParquetMetadata",
+  "getImplementationName": "Get a name for the implementing class. Useful for abstract classes that implement\n LogOutputAppendable or override toString.\n \n The default implementation is correct, but not suitable for high-frequency usage.\n\n:return: (java.lang.String) A name for the implementing class",
+  "getMetadata": "Get a previously-set or on-demand created ParquetMetadata for this\n location key's file.\n\n:return: (org.apache.parquet.hadoop.metadata.ParquetMetadata) A ParquetMetadata for this location key's file.",
+  "getRowGroupIndices": "Get previously-set or on-demand created RowGroup indices for this\n location key's current ParquetFileReader.\n\n:return: (int[]) RowGroup indices for this location key's current ParquetFileReader.",
+  "setFileReader": "Set the ParquetFileReader that will be returned by getFileReader(). Pass null to force\n on-demand construction at the next invocation. Always clears cached ParquetMetadata and RowGroup\n indices.\n\n:param fileReader: (io.deephaven.parquet.ParquetFileReader) - The new ParquetFileReader",
+  "setMetadata": "Set the ParquetMetadata that will be returned by getMetadata() ()}. Pass null to force\n on-demand construction at the next invocation.\n\n:param metadata: (org.apache.parquet.hadoop.metadata.ParquetMetadata) - The new ParquetMetadata",
   "setRowGroupIndices": "Set the RowGroup indices that will be returned by getRowGroupIndices()\n\n:param rowGroupIndices: (int[]) - The new RowGroup indices"
  },
  "path": "io.deephaven.db.v2.locations.parquet.local.ParquetTableLocationKey",

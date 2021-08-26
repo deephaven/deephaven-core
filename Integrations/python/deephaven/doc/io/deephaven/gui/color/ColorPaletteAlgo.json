@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.gui.color.ColorPaletteAlgo",
  "methods": {
-  "get": "Gets the Color at the\n index in the palette.\n\n:param index: (int) - index\n:return: (io.deephaven.gui.color.Color) indexth Color in the palette.",
+  "get": "Gets the Color at the index in the palette.\n\n:param index: (int) - index\n:return: (io.deephaven.gui.color.Color) indexth Color in the palette.",
   "nextColor": "Gets the next Color in the palette.\n\n:return: (io.deephaven.gui.color.Color) next Color in the palette."
  },
  "path": "io.deephaven.gui.color.ColorPaletteAlgo",

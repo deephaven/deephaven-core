@@ -6,6 +6,6 @@
   "onOr": ":param filtersList: java.util.List<io.deephaven.proto.backplane.grpc.Condition>\n:return: io.deephaven.proto.backplane.grpc.Condition"
  },
  "path": "io.deephaven.grpc_api.table.ops.filter.MergeNestedBinaryOperations",
- "text": "Any AND nested within another AND or OR nested within another OR should be flattened\n into just a single level.\n\n This should be run after NOTs are distributed (so that (A AND B AND !(C OR D)) is first\n normalized to (A AND B AND (!C AND !D))).",
+ "text": "Any AND nested within another AND or OR nested within another OR should be flattened into just a single level.\n\n This should be run after NOTs are distributed (so that (A AND B AND !(C OR D)) is first normalized to (A AND B AND\n (!C AND !D))).",
  "typeName": "class"
 }

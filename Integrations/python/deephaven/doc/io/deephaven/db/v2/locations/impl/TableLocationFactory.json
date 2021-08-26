@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.locations.impl.TableLocationFactory",
  "methods": {
-  "makeLocation": "Manufacture a TableLocation from the supplied key\n\n:param tableKey: (TableLocationFactory.TK) - The TableKey for the provider using this factory\n:param locationKey: (TableLocationFactory.TLK) - The TableLocationKey (or an immutable equivalent) returned by a paired\n                       TableLocationKeyFinder\n:param refreshService: (io.deephaven.db.v2.locations.util.TableDataRefreshService) - An optional TableDataRefreshService, non-null if the enclosing provider\n                       supports subscriptions\n:return: (io.deephaven.db.v2.locations.TableLocation) A new or cached TableLocation identified by the supplied TableKey and TableLocationKey"
+  "makeLocation": "Manufacture a TableLocation from the supplied key\n\n:param tableKey: (TableLocationFactory.TK) - The TableKey for the provider using this factory\n:param locationKey: (TableLocationFactory.TLK) - The TableLocationKey (or an immutable equivalent) returned by a paired\n        TableLocationKeyFinder\n:param refreshService: (io.deephaven.db.v2.locations.util.TableDataRefreshService) - An optional TableDataRefreshService, non-null if the enclosing provider\n        supports subscriptions\n:return: (io.deephaven.db.v2.locations.TableLocation) A new or cached TableLocation identified by the supplied TableKey and\n         TableLocationKey"
  },
  "path": "io.deephaven.db.v2.locations.impl.TableLocationFactory",
  "text": "Interface for TableLocation creation.",

@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.db.plot.datasets.data.IndexableDataWithDefault",
+ "methods": {
+  "get": "Gets the value at the given index.\n\n:param index: (int) - index\n:return: (IndexableDataWithDefault.T) value of this dataset at index",
+  "getDefaultValue": "Gets the default value for this dataset.\n\n:return: (IndexableDataWithDefault.T) default value for this dataset",
+  "set": "Sets this datasets values equal to the values in another dataset.\n\n:param data: (io.deephaven.db.plot.datasets.data.IndexableDataWithDefault<IndexableDataWithDefault.T>) - dataset to get values from.",
+  "setDefault": "Defines the default value for this dataset.\n\n:param v: (IndexableDataWithDefault.T) - value",
+  "setSpecific": "Sets this datasets indexed values.\n\n If infinite is true, null values are returned for out-of-bounds indices. If not, an exception will be thrown.\n\nNote: Java generics information - <TT extends IndexableDataWithDefault.T>\n\n:param specificValues: (io.deephaven.db.plot.datasets.data.IndexableData<TT>) - data\n:param infinite: (boolean) - if this dataset should return nulls for out-of-bounds indices.",
+  "size": "Gets the size of this dataset.\n\n:return: (int) the size of this dataset"
+ },
+ "path": "io.deephaven.db.plot.datasets.data.IndexableDataWithDefault",
+ "text": "IndexableData with a default value for missing indices and nulls.",
+ "typeName": "class"
+}

@@ -5,6 +5,6 @@
   "values": "Returns an array containing the constants of this enum type, in\nthe order they are declared.\n\n:return: (io.deephaven.db.v2.select.DownsampledWhereFilter.SampleOrder[]) an array containing the constants of this enum type, in the order they are declared"
  },
  "path": "io.deephaven.db.v2.select.DownsampledWhereFilter.SampleOrder",
- "text": "Enum to use when selecting downsampling behavior:\nLOWERFIRST is the constant for lowerBin/firstBy.\nUPPERLAST is the constant for upperBin/lastBy. (Default)",
+ "text": "Enum to use when selecting downsampling behavior:\n \n LOWERFIRST is the constant for lowerBin/firstBy.\n \n\n UPPERLAST is the constant for upperBin/lastBy. (Default)",
  "typeName": "enum"
 }

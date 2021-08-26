@@ -10,7 +10,7 @@
   "getMinCount": ":return: (long) the number of times the minimum value exists in this SSM.",
   "getNodeSize": ":return: int",
   "getRemovedSize": ":return: int",
-  "insert": "Insert new valuesToInsert into this SSMS.  The valuesToInsert to insert must be sorted, without duplicates.\n\n The valuesToInsert and counts chunks will be modified during this call, and the resulting chunks are\n undefined.\n\n:param valuesToInsert: (io.deephaven.db.v2.sources.chunk.WritableChunk<? extendsio.deephaven.db.v2.sources.chunk.Attributes.Values>) - the valuesToInsert to insert\n:param counts: (io.deephaven.db.v2.sources.chunk.WritableIntChunk<io.deephaven.db.v2.sources.chunk.Attributes.ChunkLengths>) - the number of times each value occurs\n:return: (boolean) true if any new values were inserted",
+  "insert": "Insert new valuesToInsert into this SSMS. The valuesToInsert to insert must be sorted, without duplicates.\n\n The valuesToInsert and counts chunks will be modified during this call, and the resulting chunks are undefined.\n\n:param valuesToInsert: (io.deephaven.db.v2.sources.chunk.WritableChunk<? extendsio.deephaven.db.v2.sources.chunk.Attributes.Values>) - the valuesToInsert to insert\n:param counts: (io.deephaven.db.v2.sources.chunk.WritableIntChunk<io.deephaven.db.v2.sources.chunk.Attributes.ChunkLengths>) - the number of times each value occurs\n:return: (boolean) true if any new values were inserted",
   "keyChunk": ":return: io.deephaven.db.v2.sources.chunk.Chunk<?>",
   "make": ":param chunkType: io.deephaven.db.v2.sources.chunk.ChunkType\n:param nodeSize: int\n:param objectType: java.lang.Class<?>\n:return: io.deephaven.db.v2.ssms.SegmentedSortedMultiSet",
   "makeFactory": ":param chunkType: io.deephaven.db.v2.sources.chunk.ChunkType\n:param nodeSize: int\n:param objectType: java.lang.Class<?>\n:return: java.util.function.Supplier<io.deephaven.db.v2.ssms.SegmentedSortedMultiSet>",
@@ -18,12 +18,12 @@
   "makeRemoveContextFactory": ":param nodeSize: int\n:return: java.util.function.Supplier<io.deephaven.db.v2.ssms.SegmentedSortedMultiSet.RemoveContext>",
   "moveBackToFront": "Remove count elements from the back of this SSM and add them to the front of the destination SSM.\n \n The minimum element of this SSM must be less than or equal to the maximum of destination.\n\n:param destination: (io.deephaven.db.v2.ssms.SegmentedSortedMultiSet) - the SegmentedSortedMultiSet to prepend count elements to\n:param count: (long) - how many elements to move to the destination",
   "moveFrontToBack": "Remove count elements from the front of this SSM and add them to the back of the destination SSM.\n \n The minimum element of this SSM must be greater than or equal to the maximum of destination.\n\n:param destination: (io.deephaven.db.v2.ssms.SegmentedSortedMultiSet) - the SegmentedSortedMultiSet to append count elements to\n:param count: (long) - how many elements to move to the destination",
-  "remove": "Remove valuesToRemove from this SSMS.  The valuesToRemove to remove must be sorted.\n\n:param removeContext: (io.deephaven.db.v2.ssms.SegmentedSortedMultiSet.RemoveContext) - removalContext\n:param valuesToRemove: (io.deephaven.db.v2.sources.chunk.WritableChunk<? extendsio.deephaven.db.v2.sources.chunk.Attributes.Values>) - the valuesToRemove to remove\n:param lengths: io.deephaven.db.v2.sources.chunk.WritableIntChunk<io.deephaven.db.v2.sources.chunk.Attributes.ChunkLengths>\n:return: (boolean) true if any values were removed.",
+  "remove": "Remove valuesToRemove from this SSMS. The valuesToRemove to remove must be sorted.\n\n:param removeContext: (io.deephaven.db.v2.ssms.SegmentedSortedMultiSet.RemoveContext) - removalContext\n:param valuesToRemove: (io.deephaven.db.v2.sources.chunk.WritableChunk<? extendsio.deephaven.db.v2.sources.chunk.Attributes.Values>) - the valuesToRemove to remove\n:param lengths: io.deephaven.db.v2.sources.chunk.WritableIntChunk<io.deephaven.db.v2.sources.chunk.Attributes.ChunkLengths>\n:return: (boolean) true if any values were removed.",
   "setTrackDeltas": ":param shouldTrackDeltas: boolean",
   "size": "The size of this data structure.\n\n:return: (long) the size of the set (i.e. the number of unique elements).",
   "totalSize": ":return: (long) the total size of the set in elements (i.e. if A exists twice, 2 is returned not one)"
  },
  "path": "io.deephaven.db.v2.ssms.SegmentedSortedMultiSet",
- "text": "MultiSet of primitive or object values stored as parallel arrays of counts and values.  Nulls disallowed.",
+ "text": "MultiSet of primitive or object values stored as parallel arrays of counts and values. Nulls disallowed.",
  "typeName": "interface"
 }
