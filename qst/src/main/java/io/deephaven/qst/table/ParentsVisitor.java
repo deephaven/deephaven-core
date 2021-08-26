@@ -1,21 +1,25 @@
 package io.deephaven.qst.table;
 
+import io.deephaven.qst.table.TableSpec.Visitor;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
  * A visitor that returns the parent tables (if any) of the given table.
  */
-public class ParentsVisitor implements TableSpec.Visitor {
+public class ParentsVisitor implements Visitor {
 
     /**
      * A traversal of the table's parents. Does not perform de-duplication.
@@ -55,24 +59,63 @@ public class ParentsVisitor implements TableSpec.Visitor {
      * @return the de-duplicated, post-order list
      */
     public static List<TableSpec> postOrderList(Iterable<TableSpec> tables) {
-        List<TableSpec> postOrder = new ArrayList<>(anyOrder(tables));
+        List<TableSpec> postOrder = new ArrayList<>(reachable(tables));
         postOrder.sort(Comparator.comparingInt(TableSpec::depth));
         return postOrder;
     }
 
-    private static Set<TableSpec> anyOrder(Iterable<TableSpec> initialInputs) {
-        Set<TableSpec> output = new HashSet<>();
-        Queue<TableSpec> toProcess = new ArrayDeque<>();
-        for (TableSpec initialInput : initialInputs) {
-            toProcess.add(initialInput);
-            do {
-                final TableSpec table = toProcess.remove();
-                if (output.add(table)) {
-                    ParentsVisitor.getParents(table).forEachOrdered(toProcess::add);
-                }
-            } while (!toProcess.isEmpty());
-        }
-        return output;
+    /**
+     * Invoke the {@code consumer} for each table in the de-duplicated, post-order walk from {@code tables}.
+     *
+     * <p>
+     * Post-order means that for any given table, the table's dependencies will come before the table itself. There may
+     * be multiple valid post-orderings; callers should not rely on a specific post-ordering.
+     *
+     * @param tables the tables
+     * @param consumer the consumer
+     */
+    public static void postOrderWalk(Iterable<TableSpec> tables, Consumer<TableSpec> consumer) {
+        postOrderList(tables).forEach(consumer);
+    }
+
+    /**
+     * Walk the {@code visitor} for each table in the de-duplicated, post-order walk from {@code tables}.
+     *
+     * <p>
+     * Post-order means that for any given table, the table's dependencies will come before the table itself. There may
+     * be multiple valid post-orderings; callers should not rely on a specific post-ordering.
+     *
+     * @param tables the tables
+     * @param visitor the visitor
+     */
+    public static void postOrderWalk(Iterable<TableSpec> tables, Visitor visitor) {
+        postOrderList(tables).forEach(t -> t.walk(visitor));
+    }
+
+    /**
+     * Create a reachable set from {@code tables}, including {@code tables}. May be in any order.
+     *
+     * @param tables the tables
+     * @return the reachable set
+     */
+    public static Set<TableSpec> reachable(Iterable<TableSpec> tables) {
+        final Search search = new Search(null, null);
+        return search.reachable(tables);
+    }
+
+    /**
+     * Performs a search for a table that satisfies {@code searchPredicate}. Will follow the dependencies of
+     * {@code initialInputs}. Tables that match {@code excludePaths} will not be returned, and will not have its
+     * dependencies added to the search.
+     *
+     * <p>
+     * Note: a dependency of a table that matches {@code excludePaths} will be returned if there is any path to that
+     * dependency that doesn't go through {@code excludePaths}.
+     */
+    public static Optional<TableSpec> search(Iterable<TableSpec> initialInputs,
+            Predicate<TableSpec> excludePaths, Predicate<TableSpec> searchPredicate) {
+        final Search search = new Search(excludePaths, searchPredicate);
+        return search.search(initialInputs);
     }
 
     private Stream<TableSpec> out;
@@ -209,5 +252,39 @@ public class ParentsVisitor implements TableSpec.Visitor {
     @Override
     public void visit(AggregationTable aggregationTable) {
         out = single(aggregationTable);
+    }
+
+    private static class Search {
+
+        private final Predicate<TableSpec> excludePaths;
+        private final Predicate<TableSpec> searchPredicate;
+        private final Queue<TableSpec> toSearch = new ArrayDeque<>();
+        private final Set<TableSpec> visited = new HashSet<>();
+
+        private Search(Predicate<TableSpec> excludePaths, Predicate<TableSpec> searchPredicate) {
+            this.excludePaths = excludePaths;
+            this.searchPredicate = searchPredicate;
+        }
+
+        public Set<TableSpec> reachable(Iterable<TableSpec> initialInputs) {
+            search(initialInputs);
+            return visited;
+        }
+
+        public Optional<TableSpec> search(Iterable<TableSpec> initialInputs) {
+            for (TableSpec initialInput : initialInputs) {
+                toSearch.add(initialInput);
+                do {
+                    final TableSpec table = toSearch.remove();
+                    if ((excludePaths == null || !excludePaths.test(table)) && visited.add(table)) {
+                        if (searchPredicate != null && searchPredicate.test(table)) {
+                            return Optional.of(table);
+                        }
+                        ParentsVisitor.getParents(table).forEachOrdered(toSearch::add);
+                    }
+                } while (!toSearch.isEmpty());
+            }
+            return Optional.empty();
+        }
     }
 }

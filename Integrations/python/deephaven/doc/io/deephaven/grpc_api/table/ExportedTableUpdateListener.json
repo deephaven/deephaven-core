@@ -5,6 +5,6 @@
   "onNext": "Process the lifecycle update of an export from the session.\n\n:param notification: (io.deephaven.proto.backplane.grpc.ExportNotification) - the export state change notification"
  },
  "path": "io.deephaven.grpc_api.table.ExportedTableUpdateListener",
- "text": "Manage the lifecycle of exports that are Tables.\n\n Initially we receive a refresh of exports from the session state. This allows us to timely notify the observer\n of existing table sizes for both static tables and tables that won't tick frequently. When the refresh is\n complete we are sent a notification for exportId == 0 (which is otherwise an invalid export id).",
+ "text": "Manage the lifecycle of exports that are Tables.\n\n Initially we receive a refresh of exports from the session state. This allows us to timely notify the observer of\n existing table sizes for both static tables and tables that won't tick frequently. When the refresh is complete we\n are sent a notification for exportId == 0 (which is otherwise an invalid export id).",
  "typeName": "class"
 }

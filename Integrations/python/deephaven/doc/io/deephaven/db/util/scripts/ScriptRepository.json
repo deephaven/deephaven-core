@@ -8,12 +8,12 @@
   "getScriptBodyByDisplayPath": "**Incompatible overloads text - text from the first overload:**\n\nGet the body of a script file via the display path.\n\n*Overload 1*  \n  :param displayPath: (java.lang.String) - The display path to load a script for.\n  :return: (java.lang.String) A String representing the body of the script.\n  \n*Overload 2*  \n  :param displayPath: (java.lang.String) - The display path to the script.\n  :param state: (io.deephaven.db.util.scripts.ScriptPathLoaderState) - The state of the loader.\n  :return: (java.lang.String) The script at displayPath at the specified state.",
   "getScriptBodyByRelativePath": "**Incompatible overloads text - text from the first overload:**\n\nGet the body of a script file via the relative path.\n\n*Overload 1*  \n  :param relativePath: (java.lang.String) - The relative path to load a script for.\n  :return: (java.lang.String) A String representing the body of the script\n  \n*Overload 2*  \n  :param relativePath: (java.lang.String) - The relative path to the script.\n  :param state: (io.deephaven.db.util.scripts.ScriptPathLoaderState) - The state of the loader.\n  :return: (java.lang.String) The script at relativePath at the specified state.",
   "getState": "Get a state object that represents the current branch HEAD commit.\n\n:return: (io.deephaven.db.util.scripts.ScriptPathLoaderState) The current branch HEAD or null if updates were disabled.",
-  "lock": "Acquire a read lock.  Use before invoking any of the get* methods, and hold for as long as consistency is\n required for this loader.",
+  "lock": "Acquire a read lock. Use before invoking any of the get* methods, and hold for as long as consistency is required\n for this loader.",
   "readRepoConfigs": ":param config: io.deephaven.configuration.Configuration\n:param propertyPrefix: java.lang.String\n:param log: io.deephaven.io.logger.Logger\n:param globalUpdateEnabled: boolean\n:param globalGcEnabled: boolean\n:param defaultBranch: java.lang.String\n:param resetGitLockFiles: boolean\n:return: java.util.List<io.deephaven.db.util.scripts.ScriptRepository>",
-  "refresh": "Refresh the loader internally.  Will respect existing read locks.",
+  "refresh": "Refresh the loader internally. Will respect existing read locks.",
   "unlock": "Release a previously acquired read lock."
  },
  "path": "io.deephaven.db.util.scripts.ScriptRepository",
- "text": "A ScriptPathLoader that loads scripts from a git repository.\nIf this class is created with updateEnabled = false it loads scripts as if no git repository was present.",
+ "text": "A ScriptPathLoader that loads scripts from a git repository.\n \n\n If this class is created with updateEnabled = false it loads scripts as if no git repository was present.",
  "typeName": "class"
 }

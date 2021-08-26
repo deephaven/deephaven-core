@@ -6,6 +6,6 @@
   "getOutputPath": "Get the output path name for this destination.\n\n:return: (java.lang.String) The output path"
  },
  "path": "io.deephaven.db.v2.parquet.ParquetTableWriter.DestinationInfo",
- "text": "Information about a writing destination (e.g. a particular output partition). Couples destination path,\n input table data, and grouping information.",
+ "text": "Information about a writing destination (e.g. a particular output partition). Couples destination path, input\n table data, and grouping information.",
  "typeName": "class"
 }

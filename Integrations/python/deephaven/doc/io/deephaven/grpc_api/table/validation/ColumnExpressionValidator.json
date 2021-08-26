@@ -6,6 +6,6 @@
   "visit": "*Overload 1*  \n  :param n: com.github.javaparser.ast.expr.MethodCallExpr\n  :param arg: java.lang.Void\n  :return: java.lang.Void\n  \n*Overload 2*  \n  :param n: com.github.javaparser.ast.expr.ObjectCreationExpr\n  :param arg: java.lang.Void\n  :return: java.lang.Void"
  },
  "path": "io.deephaven.grpc_api.table.validation.ColumnExpressionValidator",
- "text": "Validates a column expression coming from the web api, to ensure that the included code will use the limited\n supported API, and no use of `new`.\n\n This must be an early pass at the AST on the server, as the server's stricter validation will not function\n without it.",
+ "text": "Validates a column expression coming from the web api, to ensure that the included code will use the limited\n supported API, and no use of `new`.\n\n This must be an early pass at the AST on the server, as the server's stricter validation will not function without\n it.",
  "typeName": "class"
 }

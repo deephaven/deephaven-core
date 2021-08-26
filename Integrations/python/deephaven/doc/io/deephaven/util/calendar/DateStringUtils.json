@@ -2,9 +2,9 @@
  "className": "io.deephaven.util.calendar.DateStringUtils",
  "methods": {
   "isAfter": "Is one date after another?\n\n:param date1: (java.lang.String) - if null return false\n:param date2: (java.lang.String) - if null return false\n:return: (boolean) true if date1 is chronologically after date2; false otherwise.",
-  "isAfterQuiet": "Is one date after another?\n\n This does not check that dates are formatted correctly.\n Could be disastrous if date1 and date2 are not\n ISO-8601 compliant!\n\n:param date1: (java.lang.String) - if null return false\n:param date2: (java.lang.String) - if null return false\n:return: (boolean) true if date1 is chronologically after date2; false otherwise.",
+  "isAfterQuiet": "Is one date after another?\n\n This does not check that dates are formatted correctly. Could be disastrous if date1 and date2\n are not ISO-8601 compliant!\n\n:param date1: (java.lang.String) - if null return false\n:param date2: (java.lang.String) - if null return false\n:return: (boolean) true if date1 is chronologically after date2; false otherwise.",
   "isBefore": "Is one date before another?\n\n:param date1: (java.lang.String) - if null return false\n:param date2: (java.lang.String) - if null return false\n:return: (boolean) true if date1 is chronologically before date2; false otherwise.",
-  "isBeforeQuiet": "Is one date before another?\n\n This does not check that dates are formatted correctly.\n Could be disastrous if date1 and date2 are not\n ISO-8601 compliant!\n\n:param date1: (java.lang.String) - if null return false\n:param date2: (java.lang.String) - if null return false\n:return: (boolean) true if date1 is chronologically before date2; false otherwise.",
+  "isBeforeQuiet": "Is one date before another?\n\n This does not check that dates are formatted correctly. Could be disastrous if date1 and date2\n are not ISO-8601 compliant!\n\n:param date1: (java.lang.String) - if null return false\n:param date2: (java.lang.String) - if null return false\n:return: (boolean) true if date1 is chronologically before date2; false otherwise.",
   "minusDays": "Subtract a number of days from a given date.\n\n:param date: (java.lang.String) - date\n:param days: (int) - days to subtract\n:return: (java.lang.String) the day days before date",
   "minusDaysQuiet": "Subtract a number of days from a given date.\n\n This does not check that dates are formatted correctly.\n\n:param date: (java.lang.String) - date\n:param days: (int) - days to subtract\n:return: (java.lang.String) the day days before date",
   "monthOfYear": "Gets the month of the year for the date.\n\n:param date: (java.lang.String) - date; if null return NULL_INT\n:return: (int) month of the year for the date. Jan = 1, Dec = 12",
@@ -12,6 +12,6 @@
   "plusDaysQuiet": "Add a number of days from a given date.\n\n This does not check that dates are formatted correctly.\n\n:param date: (java.lang.String) - date\n:param days: (int) - days to add\n:return: (java.lang.String) the day days after date"
  },
  "path": "io.deephaven.util.calendar.DateStringUtils",
- "text": "Basic utilities for Date Strings.\n\n To comply with the ISO-8601 standard for dates, Strings should\n be of the form \"yyyy-MM-dd\"\n\n Quiet methods are functionally equivalent to their counterparts,\n but assume Date String validity to remove the overhead of checking.",
+ "text": "Basic utilities for Date Strings.\n\n To comply with the ISO-8601 standard for dates, Strings should be of the form \"yyyy-MM-dd\"\n\n Quiet methods are functionally equivalent to their counterparts, but assume Date String validity to remove the\n overhead of checking.",
  "typeName": "class"
 }

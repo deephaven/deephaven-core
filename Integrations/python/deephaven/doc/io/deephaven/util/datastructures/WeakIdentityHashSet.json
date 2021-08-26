@@ -6,6 +6,6 @@
   "forEach": "Invoke an action on each member of the set.\n\n:param action: (java.util.function.Consumer<? superWeakIdentityHashSet.TYPE>) - The action to invoke"
  },
  "path": "io.deephaven.util.datastructures.WeakIdentityHashSet",
- "text": "An open-addressed identity hash set that only maintains weak references to its members.\n Only supports add(TYPE) and clear(). See WeakIdentityHashSet.Synchronized variant for concurrent usage.",
+ "text": "An open-addressed identity hash set that only maintains weak references to its members. Only supports add(TYPE)\n and clear(). See WeakIdentityHashSet.Synchronized variant for concurrent usage.",
  "typeName": "class"
 }

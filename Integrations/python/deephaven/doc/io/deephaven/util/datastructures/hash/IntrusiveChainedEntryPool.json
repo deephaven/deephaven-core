@@ -5,6 +5,6 @@
   "take": "Take an entry from the pool.\n\n:return: (IntrusiveChainedEntryPool.VALUE_TYPE) The entry taken, or null if the pool was empty"
  },
  "path": "io.deephaven.util.datastructures.hash.IntrusiveChainedEntryPool",
- "text": "A pool for \"free\" entries to be use with IntrusiveChainedHash structures, implemented as a stack using the same\n adapter and intrusive fields.\n Requires external synchronization of all methods for concurrent use.",
+ "text": "A pool for \"free\" entries to be use with IntrusiveChainedHash structures, implemented as a stack using the same\n adapter and intrusive fields. Requires external synchronization of all methods for concurrent use.",
  "typeName": "class"
 }

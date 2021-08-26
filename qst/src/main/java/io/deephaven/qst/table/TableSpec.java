@@ -4,6 +4,7 @@ import io.deephaven.api.TableOperations;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.TableCreator.OperationsToTable;
 import io.deephaven.qst.TableCreator.TableToOperations;
+import io.deephaven.qst.TableCreationLogic;
 import org.immutables.value.Value.Derived;
 
 import java.io.BufferedInputStream;
@@ -13,7 +14,6 @@ import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -36,8 +36,8 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, Serial
         return EmptyTable.of(size);
     }
 
-    static TableSpec merge(TableSpec... tables) {
-        return merge(Arrays.asList(tables));
+    static MergeTable merge(TableSpec first, TableSpec second, TableSpec... rest) {
+        return MergeTable.builder().addTables(first, second).addTables(rest).build();
     }
 
     static TableSpec merge(Collection<? extends TableSpec> tables) {
@@ -48,6 +48,10 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, Serial
             return tables.iterator().next();
         }
         return MergeTable.of(tables);
+    }
+
+    static TableSpec of(TableCreationLogic logic) {
+        return logic.create(TableCreatorImpl.INSTANCE);
     }
 
     /**
@@ -68,6 +72,8 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, Serial
             return (TableSpec) oIn.readObject();
         }
     }
+
+    TableCreationLogic logic();
 
     /**
      * The depth of the table is the maximum depth of its dependencies plus one. A table with no dependencies has a

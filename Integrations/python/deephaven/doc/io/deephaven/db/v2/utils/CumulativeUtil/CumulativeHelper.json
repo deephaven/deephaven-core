@@ -5,6 +5,6 @@
   "put": ":param key: java.lang.Object\n:param val: double\n:return: double"
  },
  "path": "io.deephaven.db.v2.utils.CumulativeUtil.CumulativeHelper",
- "text": "Provides a helper class with a map to cache previous row values when performing rolling or\n cumulative aggregations.",
+ "text": "Provides a helper class with a map to cache previous row values when performing rolling or cumulative\n aggregations.",
  "typeName": "class"
 }

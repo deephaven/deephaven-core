@@ -7,6 +7,6 @@
   "walk": "Note: Java generics information - <V extends io.deephaven.api.agg.Aggregation.Visitor>\n\n:param visitor: V\n:return: V"
  },
  "path": "io.deephaven.api.agg.SortedFirst",
- "text": "Note: the sorted-first aggregation only supports SortColumn.Order.ASCENDING columns at\n the moment.",
+ "text": "Note: the sorted-first aggregation only supports SortColumn.Order.ASCENDING columns at the moment.",
  "typeName": "class"
 }

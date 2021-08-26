@@ -7,6 +7,6 @@
   "transform": "Produces a derivative SelectableDataSet with the specified transformation applied to all internal tables.\n\n:param memoKey: (java.lang.Object) - An Object that uniquely identifies the actions taken by the transformation so it can be cached.\n:param transformation: java.util.function.Function<io.deephaven.db.tables.Table,io.deephaven.db.tables.Table>\n:return: (io.deephaven.db.plot.filters.SelectableDataSet<java.lang.String,java.util.Set<java.lang.Object>>) a new SelectableDataSet with the transformation applied"
  },
  "path": "io.deephaven.db.plot.filters.SelectableDataSetOneClick",
- "text": "A OneClick filtered table.\n\n If requireAllFiltersToDisplay is true, data is only displayed once the user has OneClick filtered all byColumns.\n If requireAllFiltersToDisplay is false, data is displayed when not all oneclicks are selected",
+ "text": "A OneClick filtered table.\n\n If requireAllFiltersToDisplay is true, data is only displayed once the user has OneClick filtered all byColumns. If\n requireAllFiltersToDisplay is false, data is displayed when not all oneclicks are selected",
  "typeName": "class"
 }

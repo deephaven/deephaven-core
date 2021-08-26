@@ -3,7 +3,7 @@
  "methods": {
   "asKeyIndicesChunk": "Get a LongChunk representation of the individual keys in this OrderedKeys.\n\n:return: (io.deephaven.db.v2.sources.chunk.LongChunk<io.deephaven.db.v2.sources.chunk.Attributes.OrderedKeyIndices>) A LongChunk containing the keys in this OrderedKeys",
   "asKeyRangesChunk": "Get a LongChunk representation of key ranges in this OrderedKeys.\n\n:return: (io.deephaven.db.v2.sources.chunk.LongChunk<io.deephaven.db.v2.sources.chunk.Attributes.OrderedKeyRanges>) A LongChunk containing the key ranges in this OrderedKeys",
-  "close": "Free any resources associated with this object.\n Using any OrderedKeys methods after close() is an error and may produce exceptions or\n undefined results.",
+  "close": "Free any resources associated with this object.\n \n Using any OrderedKeys methods after close() is an error and may produce exceptions or undefined\n results.",
   "lastKey": "Get the last key in this OrderedKeys.\n\n:return: (long) The last key, or ReadOnlyIndex.NULL_KEY if there is none.",
   "rangesCountUpperBound": ":return: long"
  },

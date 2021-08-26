@@ -17,9 +17,9 @@
   "setUseOriginalScriptLoaderState": "Informs the session whether or not we should be using the original ScriptLoaderState for source commands.\n\n:param useOriginal: (boolean) - whether to use the script loader state at persistent query initialization\n:return: boolean",
   "setVariable": "Inserts a value into the script's scope.\n\n:param name: (java.lang.String) - the variable name to set\n:param value: (java.lang.Object) - the new value of the variable",
   "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: (io.deephaven.db.util.liveness.LivenessReferent) - The referent to add\n:return: (boolean) Whether the referent was in fact added",
-  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true.\n Otherwise, returns false rather than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
+  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true. Otherwise, returns false rather\n than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
  },
  "path": "io.deephaven.db.util.NoLanguageDeephavenSession",
- "text": "ScriptSession implementation that simply allows variables to be exported. This is not intended for use in user scripts.",
+ "text": "ScriptSession implementation that simply allows variables to be exported. This is not intended for use in user\n scripts.",
  "typeName": "class"
 }

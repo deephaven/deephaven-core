@@ -2,8 +2,8 @@
  "className": "io.deephaven.db.v2.utils.rsp.RspReverseIterator",
  "methods": {
   "advance": ":param v: long\n:return: boolean",
-  "current": ":return: (long) current iterator value, without advancing it. A valid call to next() should have happened before calling\n this method.",
-  "hasNext": "This method should be called:\n * After the iterator is created and before calling any other methods;\n   if it returns false, calling any other methods results in undefined behavior.\n * Right after a call to next, similar to above.\n\n:return: (boolean) true if a call to next leads to a valid next iterator value."
+  "current": ":return: (long) current iterator value, without advancing it. A valid call to next() should have happened before calling\n         this method.",
+  "hasNext": "This method should be called: * After the iterator is created and before calling any other methods; if it returns\n false, calling any other methods results in undefined behavior. * Right after a call to next, similar to above.\n\n:return: (boolean) true if a call to next leads to a valid next iterator value."
  },
  "path": "io.deephaven.db.v2.utils.rsp.RspReverseIterator",
  "typeName": "class"

@@ -12,6 +12,6 @@
   "size": "Gets the size of this data set.\n\n:return: (int) size of this data set"
  },
  "path": "io.deephaven.db.plot.datasets.xy.XYDataSeriesFunctionImpl",
- "text": "XYDataSeriesInternal based on a function.\n\n By default, this calculates at least 200 data points inside the plots existing range.\n The number of points can be increased for a finer grained plot, or decreased if less resolution is needed.\n The points are recomputed as the Chart's x-range changes.",
+ "text": "XYDataSeriesInternal based on a function.\n\n By default, this calculates at least 200 data points inside the plots existing range. The number of points can be\n increased for a finer grained plot, or decreased if less resolution is needed. The points are recomputed as the\n Chart's x-range changes.",
  "typeName": "class"
 }

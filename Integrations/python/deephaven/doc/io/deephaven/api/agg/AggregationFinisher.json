@@ -22,6 +22,6 @@
   "wSum": ":param weightColumn: io.deephaven.api.ColumnName\n:return: io.deephaven.api.agg.AggregationFinisher<io.deephaven.api.agg.WSum>"
  },
  "path": "io.deephaven.api.agg.AggregationFinisher",
- "text": "The aggregation finisher is a helper to aid in building aggregations whose construction can be\n finished by a Pair. A vararg overload is provided to build a Multi,\n of(Pair...), which can be useful to reduce the syntax required to build multiple\n aggregations of the same basic type. Helpers are provided that translate the string-equivalents\n via Pair.parse(String).\n\n \n Not all aggregations may be suitable for construction in this style.",
+ "text": "The aggregation finisher is a helper to aid in building aggregations whose construction can be finished by a\n Pair. A vararg overload is provided to build a Multi, of(Pair...), which can be useful to\n reduce the syntax required to build multiple aggregations of the same basic type. Helpers are provided that translate\n the string-equivalents via Pair.parse(String).\n\n \n Not all aggregations may be suitable for construction in this style.",
  "typeName": "class"
 }

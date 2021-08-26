@@ -2,6 +2,6 @@
  "className": "io.deephaven.util.annotations.ArrayType",
  "methods": {},
  "path": "io.deephaven.util.annotations.ArrayType",
- "text": "This annotation indicates that the annotated class in some way represents an array\n of the specified type.",
+ "text": "This annotation indicates that the annotated class in some way represents an array of the specified type.",
  "typeName": "class"
 }

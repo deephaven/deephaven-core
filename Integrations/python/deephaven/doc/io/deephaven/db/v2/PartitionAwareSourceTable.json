@@ -6,10 +6,10 @@
   "initializeTransientFieldsForLiveness": "Package-private for Serializable sub-classes to use in readObject only.\n Public to allow unit tests in another package to work around mock issues where the constructor is never invoked.",
   "selectDistinct": ":param columns: io.deephaven.db.v2.select.SelectColumn...\n:return: io.deephaven.db.tables.Table",
   "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: (io.deephaven.db.util.liveness.LivenessReferent) - The referent to add\n:return: (boolean) Whether the referent was in fact added",
-  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true.\n Otherwise, returns false rather than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise",
+  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true. Otherwise, returns false rather\n than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise",
   "where": ":param filters: io.deephaven.db.v2.select.SelectFilter...\n:return: io.deephaven.db.tables.Table"
  },
  "path": "io.deephaven.db.v2.PartitionAwareSourceTable",
- "text": "A source table that can filter partitions before coalescing.\n Refer to TableLocationKey for an explanation of partitioning.",
+ "text": "A source table that can filter partitions before coalescing. Refer to TableLocationKey for an explanation of\n partitioning.",
  "typeName": "class"
 }

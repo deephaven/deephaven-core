@@ -8,6 +8,6 @@
   "shouldProbeShift": ":param shiftSize: long\n:param numStates: int\n:return: boolean"
  },
  "path": "io.deephaven.db.v2.by.AggregationControl",
- "text": "Stateless \"control\" class for giving external code (e.g. unit tests) knobs to turn w.r.t. to how aggregations\n should be processed.",
+ "text": "Stateless \"control\" class for giving external code (e.g. unit tests) knobs to turn w.r.t. to how aggregations should\n be processed.",
  "typeName": "class"
 }

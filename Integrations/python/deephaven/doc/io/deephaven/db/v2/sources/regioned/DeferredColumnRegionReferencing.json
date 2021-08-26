@@ -4,6 +4,6 @@
   "getReferencedRegion": ":return: DeferredColumnRegionReferencing.REFERENCED_COLUMN_REGION"
  },
  "path": "io.deephaven.db.v2.sources.regioned.DeferredColumnRegionReferencing",
- "text": "ColumnRegionReferencing implementation for deferred regions, i.e. regions that will be properly constructed on\n first access.",
+ "text": "ColumnRegionReferencing implementation for deferred regions, i.e. regions that will be properly constructed\n on first access.",
  "typeName": "class"
 }

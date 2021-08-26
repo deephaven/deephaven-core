@@ -12,6 +12,6 @@
   "removeIf": "Retrieve all encountered items that satisfy a filter, while also removing any cleared references.\n\n:param filter: (java.util.function.Predicate<SimpleReferenceManager.T>) - The filter to decide if a valid item should be removed\n:return: (boolean) Whether we succeeded in removing anything"
  },
  "path": "io.deephaven.util.datastructures.SimpleReferenceManager",
- "text": "A helper for manging a list of References. It hides the internal management\n of expired references and provides for iteration over the valid ones",
+ "text": "A helper for manging a list of References. It hides the internal management of expired references and provides for\n iteration over the valid ones",
  "typeName": "class"
 }

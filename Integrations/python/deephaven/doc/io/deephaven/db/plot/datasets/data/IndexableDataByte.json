@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.db.plot.datasets.data.IndexableDataByte",
+ "methods": {
+  "get": "Gets the value at the given index.\n\n:param index: (int) - index\n:return: (java.lang.Byte) value of this dataset at index",
+  "size": "Gets the size of this dataset.\n\n:return: (int) the size of this dataset"
+ },
+ "path": "io.deephaven.db.plot.datasets.data.IndexableDataByte",
+ "text": "IndexableData dataset with Byte values.\n\n Dataset values equal to QueryConstants.NULL_BYTE are treated as null.",
+ "typeName": "class"
+}

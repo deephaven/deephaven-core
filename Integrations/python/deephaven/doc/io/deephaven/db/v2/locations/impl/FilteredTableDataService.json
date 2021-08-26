@@ -2,7 +2,7 @@
  "className": "io.deephaven.db.v2.locations.impl.FilteredTableDataService",
  "methods": {
   "describe": "Get a detailed description string.\n\n:return: (java.lang.String) A description string",
-  "getImplementationName": "Get a name for the implementing class.  Useful for abstract classes that implement\n LogOutputAppendable or override\n toString.\n The default implementation is correct, but not suitable for high-frequency usage.\n\n:return: (java.lang.String) A name for the implementing class",
+  "getImplementationName": "Get a name for the implementing class. Useful for abstract classes that implement\n LogOutputAppendable or override toString.\n \n The default implementation is correct, but not suitable for high-frequency usage.\n\n:return: (java.lang.String) A name for the implementing class",
   "reset": "**Incompatible overloads text - text from the first overload:**\n\nForget all state for subsequent requests for a single table.\n\n*Overload 1*  \n  \n  \n*Overload 2*  \n  :param key: (io.deephaven.db.v2.locations.TableKey) - TableKey to forget state for",
   "toString": ":return: java.lang.String"
  },

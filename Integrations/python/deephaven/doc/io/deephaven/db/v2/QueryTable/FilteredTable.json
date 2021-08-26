@@ -6,11 +6,11 @@
   "getWeakReference": "Get a WeakReference to this referent. This may be cached, or newly created.\n\n:return: (java.lang.ref.WeakReference<? extends io.deephaven.db.util.liveness.LivenessReferent>) A new or cached reference to this referent",
   "initializeTransientFieldsForLiveness": "Package-private for Serializable sub-classes to use in readObject only.\n Public to allow unit tests in another package to work around mock issues where the constructor is never invoked.",
   "requestRecompute": "Notify the listener that its result must be recomputed.",
-  "requestRecomputeMatched": "Called if something about the filters has changed such that all matched rows of the source table should be re-evaluated.",
-  "requestRecomputeUnmatched": "Notify the something about the filters has changed such that all unmatched rows of the source table should be re-evaluated.",
+  "requestRecomputeMatched": "Called if something about the filters has changed such that all matched rows of the source table should be\n re-evaluated.",
+  "requestRecomputeUnmatched": "Notify the something about the filters has changed such that all unmatched rows of the source table should be\n re-evaluated.",
   "setIsRefreshing": "Set the filter and the table refreshing or not.\n\n:param refreshing: boolean",
   "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: (io.deephaven.db.util.liveness.LivenessReferent) - The referent to add\n:return: (boolean) Whether the referent was in fact added",
-  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true.\n Otherwise, returns false rather than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
+  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true. Otherwise, returns false rather\n than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
  },
  "path": "io.deephaven.db.v2.QueryTable.FilteredTable",
  "typeName": "class"

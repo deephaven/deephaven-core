@@ -3,7 +3,7 @@
  "methods": {
   "getSeries": "Gets the data series.\n\n:return: (io.deephaven.db.plot.SeriesInternal) data series.",
   "getType": "Gets the type of data series.\n\n:return: (io.deephaven.db.plot.SeriesCollection.SeriesType) type of data series.",
-  "isMultiSeries": "True if the series is a multiseries.  False otherwise.\n\n:return: (boolean) true if the series is a multiseries.  False otherwise."
+  "isMultiSeries": "True if the series is a multiseries. False otherwise.\n\n:return: (boolean) true if the series is a multiseries. False otherwise."
  },
  "path": "io.deephaven.db.plot.SeriesCollection.SeriesDescription",
  "text": "Description of a data series.",

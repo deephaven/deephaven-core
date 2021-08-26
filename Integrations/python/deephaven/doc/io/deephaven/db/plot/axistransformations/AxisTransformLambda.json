@@ -6,6 +6,6 @@
   "transform": "Transforms a data point to Axis space.\n\n:param dataValue: (double) - data point\n:return: (double) corresponding value in Axis space"
  },
  "path": "io.deephaven.db.plot.axistransformations.AxisTransformLambda",
- "text": "Transformations from dataset space to axis space and back.\n\n Axis space refers to how data is displayed in the chart.\n For example, if the transform from dataset space to axis space\n was defined as x^0.5, the dataset values 1, 4, and 9 would\n be plotted as 1, 2, and 3,] creating a square root axis scale.",
+ "text": "Transformations from dataset space to axis space and back.\n\n Axis space refers to how data is displayed in the chart. For example, if the transform from dataset space to axis\n space was defined as x^0.5, the dataset values 1, 4, and 9 would be plotted as 1, 2, and 3,] creating a square root\n axis scale.",
  "typeName": "class"
 }

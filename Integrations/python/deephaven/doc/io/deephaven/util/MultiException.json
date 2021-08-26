@@ -8,6 +8,6 @@
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.util.MultiException",
- "text": "An exception to use when a series of operations must all be executed, but may all throw exceptions themselves.\n This allows for retention of all exception data.",
+ "text": "An exception to use when a series of operations must all be executed, but may all throw exceptions themselves. This\n allows for retention of all exception data.",
  "typeName": "class"
 }

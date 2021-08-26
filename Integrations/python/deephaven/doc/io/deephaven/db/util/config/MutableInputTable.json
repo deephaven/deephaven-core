@@ -2,8 +2,8 @@
  "className": "io.deephaven.db.util.config.MutableInputTable",
  "methods": {
   "add": "Write newData to this table.\n\n:param newData: (io.deephaven.db.tables.Table) - the data to write to this table",
-  "canEdit": "Queries whether this MutableInputTable is editable in the current context.\n\n:return: (boolean) true if this MutableInputTable may be edited, false otherwise\n TODO (deephaven/deephaven-core/issues/255): Add AuthContext and whatever else is appropriate",
-  "delete": "Delete the keys contained in the parameter table from this input table. This method will block until\n rows are deleted.\n\n*Overload 1*  \n  :param table: (io.deephaven.db.tables.Table) - The rows to delete.\n  \n*Overload 2*  \n  :param table: (io.deephaven.db.tables.Table) - The rows to delete.\n  :param index: io.deephaven.db.v2.utils.Index",
+  "canEdit": "Queries whether this MutableInputTable is editable in the current context.\n\n:return: (boolean) true if this MutableInputTable may be edited, false otherwise TODO (deephaven/deephaven-core/issues/255):\n         Add AuthContext and whatever else is appropriate",
+  "delete": "Delete the keys contained in the parameter table from this input table. This method will block until rows are\n deleted.\n\n*Overload 1*  \n  :param table: (io.deephaven.db.tables.Table) - The rows to delete.\n  \n*Overload 2*  \n  :param table: (io.deephaven.db.tables.Table) - The rows to delete.\n  :param index: io.deephaven.db.v2.utils.Index",
   "getDefinition": "Get the key and value columns names for this table.\n\n:return: (io.deephaven.web.shared.data.InputTableDefinition) the InputTableDefinition.",
   "getDescription": "Return a user-readable description of this MutableInputTable.\n\n:return: (java.lang.String) a description of this input table",
   "getKeyNames": "Get the names of the key columns\n\n:return: (java.lang.String[]) an array with the names of our key columns",

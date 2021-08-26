@@ -12,7 +12,7 @@
   "optional": "Same \"tail wagging the dog\" comment applies.\n\n:param args: java.lang.Object...\n:return: io.deephaven.db.v2.utils.codegen.CodeGenerator",
   "repeated": "Same \"tail wagging the dog\" comment applies.\n\n:param args: java.lang.Object...\n:return: io.deephaven.db.v2.utils.codegen.CodeGenerator",
   "replace": ":param metaVariable: java.lang.String\n:param replacement: java.lang.String",
-  "samelineBlock": "The tail wagging the dog: the proper method signature for this method is\n CodeGenerator samelineBlock(String prefix, Object... args)\n But when I do that, IntelliJ by default litters up the code with parameter hints, which (if the programmer\n doesn't turn them off), makes the templated code much more unreadable. So instead we just pull out the parameter\n from here.\n\n:param args: (java.lang.Object...) - A prefix (of type String) like \"else\", followed by an arbitrary number of template lines.\n:return: (io.deephaven.db.v2.utils.codegen.CodeGenerator) The new component."
+  "samelineBlock": "The tail wagging the dog: the proper method signature for this method is\n CodeGenerator samelineBlock(String prefix, Object... args) But when I do that, IntelliJ by default\n litters up the code with parameter hints, which (if the programmer doesn't turn them off), makes the templated\n code much more unreadable. So instead we just pull out the parameter from here.\n\n:param args: (java.lang.Object...) - A prefix (of type String) like \"else\", followed by an arbitrary number of template lines.\n:return: (io.deephaven.db.v2.utils.codegen.CodeGenerator) The new component."
  },
  "path": "io.deephaven.db.v2.utils.codegen.CodeGenerator",
  "typeName": "class"
