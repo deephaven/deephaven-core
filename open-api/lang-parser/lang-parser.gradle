@@ -74,3 +74,10 @@ sourceSets {
     }
 }
 
+spotless {
+    java {
+        targetExclude(
+                '**/io/deephaven/lang/generated/**'
+        )
+    }
+}

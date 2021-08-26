@@ -1,6 +1,5 @@
 plugins {
   id 'java-library'
-  id 'com.diffplug.spotless'
 }
 
 configurations {
@@ -9,10 +8,4 @@ configurations {
 
 dependencies {
   compileOnly project(':log-factory')
-}
-
-spotless {
-  java {
-    eclipse().configFile("${rootDir}/style/eclipse-java-google-style.xml")
-  }
 }
