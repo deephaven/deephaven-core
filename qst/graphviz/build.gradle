@@ -1,0 +1,28 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+description = "Converts a list of QSTs into other formats."
+
+dependencies {
+    implementation project(':qst')
+
+    implementation 'guru.nidi:graphviz-java:0.18.1'
+
+    implementation 'info.picocli:picocli:4.6.1'
+
+    testImplementation(platform('org.junit:junit-bom:5.7.2'))
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.assertj:assertj-core:3.19.0'
+
+    implementation 'ch.qos.logback:logback-classic:1.2.3'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+application {
+    mainClass = 'io.deephaven.graphviz.GraphVizMain'
+}

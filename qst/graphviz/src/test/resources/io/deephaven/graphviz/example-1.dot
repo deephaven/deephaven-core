@@ -1,0 +1,15 @@
+digraph {
+"op_0" ["label"="time(PT1S)"]
+"op_1" ["label"="view(I=i)"]
+"op_2" ["label"="tail(10)"]
+"op_3" ["label"="head(1)"]
+"op_4" ["label"="MergeTable"]
+"op_5" ["label"="MergeTable"]
+"op_1" -> "op_0"
+"op_2" -> "op_1"
+"op_3" -> "op_2"
+"op_4" -> "op_2" ["label"="0"]
+"op_4" -> "op_3" ["label"="1"]
+"op_5" -> "op_4" ["label"="0"]
+"op_5" -> "op_4" ["label"="1"]
+}

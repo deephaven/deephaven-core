@@ -160,6 +160,8 @@ project(':java-client-session-examples').projectDir = file('java-client/session-
 include(':java-client-flight-examples')
 project(':java-client-flight-examples').projectDir = file('java-client/flight-examples')
 
+include(':qst:graphviz')
+
 // Apply "vanity naming" (look for .gradle files matching ProjectName/ProjectName.gradle)
 File root = settings.rootDir
 mods.each {
