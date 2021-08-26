@@ -282,8 +282,7 @@ public class DynamicTableWriter implements TableWriter {
     private static Map<String, ColumnSource<?>> getSources(
             final TableHeader header,
             final Map<String, Object> constantValues,
-            final int allocatedSize
-    ) {
+            final int allocatedSize) {
         final Map<String, ColumnSource<?>> sources = new LinkedHashMap<>();
         final Iterator<ColumnHeader<?>> it = header.iterator();
         while (it.hasNext()) {
@@ -309,8 +308,7 @@ public class DynamicTableWriter implements TableWriter {
             final String[] columnNames,
             final IntFunction<Class<?>> columnTypes,
             final Map<String, Object> constantValues,
-            final int allocatedSize
-    ) {
+            final int allocatedSize) {
         final Map<String, ColumnSource<?>> sources = new LinkedHashMap<>();
         for (int i = 0; i < columnNames.length; i++) {
             if (constantValues.containsKey(columnNames[i])) {
@@ -337,7 +335,8 @@ public class DynamicTableWriter implements TableWriter {
         this(getSources(columnNames, columnTypes, constantValues, 256), constantValues, 256);
     }
 
-    private DynamicTableWriter(final Map<String, ColumnSource<?>> sources, final Map<String, Object> constantValues, final int allocatedSize) {
+    private DynamicTableWriter(final Map<String, ColumnSource<?>> sources, final Map<String, Object> constantValues,
+            final int allocatedSize) {
         this.allocatedSize = 256;
         this.table = new LiveQueryTable(Index.FACTORY.getIndexByValues(), sources);
         final int nCols = sources.size();;
