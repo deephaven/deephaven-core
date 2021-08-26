@@ -10,35 +10,38 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * Interceptor to notice x-deephaven-stream headers in a request and provide them to
- * later parts of BrowserStream tooling so that unary and server-streaming calls can
- * be combined into an emulated bidirectional stream.
+ * Interceptor to notice x-deephaven-stream headers in a request and provide them to later parts of BrowserStream
+ * tooling so that unary and server-streaming calls can be combined into an emulated bidirectional stream.
  */
 public class BrowserStreamInterceptor implements ServerInterceptor {
     private static final String TICKET_HEADER_NAME = "x-deephaven-stream-ticket";
     private static final String SEQUENCE_HEADER_NAME = "x-deephaven-stream-sequence";
 
     /** Export ticket int value. */
-    private static final Metadata.Key<String> RPC_TICKET = Metadata.Key.of(TICKET_HEADER_NAME, Metadata.ASCII_STRING_MARSHALLER);
+    private static final Metadata.Key<String> RPC_TICKET =
+            Metadata.Key.of(TICKET_HEADER_NAME, Metadata.ASCII_STRING_MARSHALLER);
     /** Payload sequence in the stream, starting with zero. */
-    private static final Metadata.Key<String> SEQ_HEADER = Metadata.Key.of(SEQUENCE_HEADER_NAME, Metadata.ASCII_STRING_MARSHALLER);
+    private static final Metadata.Key<String> SEQ_HEADER =
+            Metadata.Key.of(SEQUENCE_HEADER_NAME, Metadata.ASCII_STRING_MARSHALLER);
     /**
-     * Present to indicate that this is a half-close operation. If this is the first payload,
-     * ticket and sequence are not required, and the payload will be considered. Otherwise,
-     * payload and sequence are required. The payload will be ignored to enable a client to
-     * open a stream, never send a message, and then close it.
+     * Present to indicate that this is a half-close operation. If this is the first payload, ticket and sequence are
+     * not required, and the payload will be considered. Otherwise, payload and sequence are required. The payload will
+     * be ignored to enable a client to open a stream, never send a message, and then close it.
      */
-    private static final Metadata.Key<String> HALF_CLOSE_HEADER = Metadata.Key.of("x-deephaven-stream-halfclose", Metadata.ASCII_STRING_MARSHALLER);
+    private static final Metadata.Key<String> HALF_CLOSE_HEADER =
+            Metadata.Key.of("x-deephaven-stream-halfclose", Metadata.ASCII_STRING_MARSHALLER);
 
     @Override
-    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers,
+            ServerCallHandler<ReqT, RespT> next) {
 
         String ticketInt = headers.get(RPC_TICKET);
         String sequenceString = headers.get(SEQ_HEADER);
         boolean hasTicket = ticketInt != null;
         boolean hasSeqString = sequenceString != null;
         if (hasTicket != hasSeqString) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Either both " + TICKET_HEADER_NAME + " and " + SEQUENCE_HEADER_NAME + " must be provided, or neither");
+            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Either both " + TICKET_HEADER_NAME + " and "
+                    + SEQUENCE_HEADER_NAME + " must be provided, or neither");
         }
 
         boolean hasHalfClose = headers.containsKey(HALF_CLOSE_HEADER);

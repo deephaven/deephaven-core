@@ -27,7 +27,8 @@ public class GrpcServiceOverrideBuilder {
         private final MethodDescriptor<ReqT, RespT> method;
         private final ServerCallHandler<ReqT, RespT> handler;
 
-        private GrpcOverride(@NotNull MethodDescriptor<ReqT, RespT> method, @NotNull ServerCallHandler<ReqT, RespT> handler) {
+        private GrpcOverride(@NotNull MethodDescriptor<ReqT, RespT> method,
+                @NotNull ServerCallHandler<ReqT, RespT> handler) {
             this.method = method;
             this.handler = handler;
         }
@@ -50,19 +51,22 @@ public class GrpcServiceOverrideBuilder {
         return new GrpcServiceOverrideBuilder(baseDefinition);
     }
 
-    private <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.BidiStreamingMethod<ReqT, RespT> handler) {
+    private <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method,
+            ServerCalls.BidiStreamingMethod<ReqT, RespT> handler) {
         validateMethodType(method.getType(), MethodDescriptor.MethodType.BIDI_STREAMING);
         overrides.add(new GrpcOverride<>(method, ServerCalls.asyncBidiStreamingCall(handler)));
         return this;
     }
 
-    private <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.ServerStreamingMethod<ReqT, RespT> handler) {
+    private <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method,
+            ServerCalls.ServerStreamingMethod<ReqT, RespT> handler) {
         validateMethodType(method.getType(), MethodDescriptor.MethodType.SERVER_STREAMING);
         overrides.add(new GrpcOverride<>(method, ServerCalls.asyncServerStreamingCall(handler)));
         return this;
     }
 
-    private <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method, ServerCalls.UnaryMethod<ReqT, RespT> handler) {
+    private <ReqT, RespT> GrpcServiceOverrideBuilder override(MethodDescriptor<ReqT, RespT> method,
+            ServerCalls.UnaryMethod<ReqT, RespT> handler) {
         validateMethodType(method.getType(), MethodDescriptor.MethodType.UNARY);
         overrides.add(new GrpcOverride<>(method, ServerCalls.asyncUnaryCall(handler)));
         return this;
@@ -113,8 +117,7 @@ public class GrpcServiceOverrideBuilder {
                         delegate,
                         bidiDescriptor,
                         requestMarshaller,
-                        responseMarshaller
-                )
+                        responseMarshaller)
                 .onBidiBrowserSupport(delegate,
                         openDescriptor,
                         nextDescriptor,
@@ -123,8 +126,7 @@ public class GrpcServiceOverrideBuilder {
                         nextResponseMarshaller,
                         mode,
                         log,
-                        sessionService
-                );
+                        sessionService);
     }
 
     public <ReqT, RespT, NextRespT> GrpcServiceOverrideBuilder onBidiBrowserSupport(
@@ -136,7 +138,8 @@ public class GrpcServiceOverrideBuilder {
             final MethodDescriptor.Marshaller<NextRespT> nextResponseMarshaller,
             BrowserStream.Mode mode,
             Logger log, SessionService sessionService) {
-        BrowserStreamMethod<ReqT, RespT, NextRespT> method = new BrowserStreamMethod<>(log, mode, delegate, sessionService);
+        BrowserStreamMethod<ReqT, RespT, NextRespT> method =
+                new BrowserStreamMethod<>(log, mode, delegate, sessionService);
         needsBrowserInterceptor = true;
         return this
                 .override(MethodDescriptor.<ReqT, RespT>newBuilder()
@@ -222,14 +225,17 @@ public class GrpcServiceOverrideBuilder {
         private final SessionService sessionService;
         private final Logger log;
 
-        public BrowserStreamMethod(Logger log, BrowserStream.Mode mode, BidiDelegate<ReqT, RespT> delegate, SessionService sessionService) {
+        public BrowserStreamMethod(Logger log, BrowserStream.Mode mode, BidiDelegate<ReqT, RespT> delegate,
+                SessionService sessionService) {
             this.log = log;
             this.factory = BrowserStream.factory(mode, delegate);
             this.sessionService = sessionService;
         }
+
         public ServerCalls.ServerStreamingMethod<ReqT, RespT> open() {
             return this::invokeOpen;
         }
+
         public ServerCalls.UnaryMethod<ReqT, NextRespT> next() {
             return this::invokeNext;
         }
@@ -239,14 +245,16 @@ public class GrpcServiceOverrideBuilder {
                 StreamData streamData = StreamData.STREAM_DATA_KEY.get();
                 SessionState session = sessionService.getCurrentSession();
                 if (streamData == null) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "no x-deephaven-stream headers, cannot handle open request");
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                            "no x-deephaven-stream headers, cannot handle open request");
                 }
 
                 BrowserStream<ReqT> browserStream = factory.create(session, responseObserver);
                 browserStream.onMessageReceived(request, streamData);
 
                 if (!streamData.isHalfClose()) {
-                    // if this isn't a half-close, we should export it for later calls - if it is, the client won't send more messages
+                    // if this isn't a half-close, we should export it for later calls - if it is, the client won't send
+                    // more messages
                     session.newExport(streamData.getRpcTicket())
                             // not setting an onError here, failure can only happen if the session ends
                             .submit(() -> browserStream);
@@ -258,7 +266,8 @@ public class GrpcServiceOverrideBuilder {
         public void invokeNext(ReqT request, StreamObserver<NextRespT> responseObserver) {
             StreamData streamData = StreamData.STREAM_DATA_KEY.get();
             if (streamData == null || streamData.getRpcTicket() == null) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "no x-deephaven-stream headers, cannot handle next request");
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "no x-deephaven-stream headers, cannot handle next request");
             }
             GrpcUtil.rpcWrapper(log, responseObserver, () -> {
                 final SessionState session = sessionService.getCurrentSession();
@@ -271,7 +280,7 @@ public class GrpcServiceOverrideBuilder {
                         .onError(responseObserver)
                         .submit(() -> {
                             browserStream.get().onMessageReceived(request, streamData);
-                            responseObserver.onNext(null);//TODO simple response payload
+                            responseObserver.onNext(null);// TODO simple response payload
                             responseObserver.onCompleted();
                         });
             });
@@ -316,9 +325,11 @@ public class GrpcServiceOverrideBuilder {
         }
     }
 
-    private static void validateMethodType(MethodDescriptor.MethodType methodType, MethodDescriptor.MethodType handlerType) {
+    private static void validateMethodType(MethodDescriptor.MethodType methodType,
+            MethodDescriptor.MethodType handlerType) {
         if (methodType != handlerType) {
-            throw new IllegalArgumentException("Provided method's type (" + methodType.name() + ") does not match handler's type of " + handlerType.name());
+            throw new IllegalArgumentException("Provided method's type (" + methodType.name()
+                    + ") does not match handler's type of " + handlerType.name());
         }
     }
 }

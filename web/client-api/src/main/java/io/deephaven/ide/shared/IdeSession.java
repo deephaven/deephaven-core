@@ -55,7 +55,8 @@ public class IdeSession extends HasEventHandling {
     private final WorkerConnection connection;
     private final JsRunnable closer;
     private int nextAutocompleteRequestId = 0;
-    private Map<Integer, LazyPromise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>>> pendingAutocompleteCalls = new HashMap<>();
+    private Map<Integer, LazyPromise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>>> pendingAutocompleteCalls =
+            new HashMap<>();
 
     private final Supplier<BiDiStream<AutoCompleteRequest, AutoCompleteResponse>> streamFactory;
     private BiDiStream<AutoCompleteRequest, AutoCompleteResponse> currentStream;
@@ -76,10 +77,9 @@ public class IdeSession extends HasEventHandling {
 
     @JsIgnore
     public IdeSession(
-        WorkerConnection connection,
-        Ticket connectionResult,
-        JsRunnable closer
-    ) {
+            WorkerConnection connection,
+            Ticket connectionResult,
+            JsRunnable closer) {
         this.result = connectionResult;
         cancelled = new JsSet<>();
         this.connection = connection;
@@ -89,9 +89,10 @@ public class IdeSession extends HasEventHandling {
         streamFactory = () -> {
             return factory.create(
                     connection.consoleServiceClient()::autoCompleteStream,
-                    (firstPayload, headers) -> connection.consoleServiceClient().openAutoCompleteStream(firstPayload, headers),
-                    (nextPayload, headers, c) -> connection.consoleServiceClient().nextAutoCompleteStream(nextPayload, headers, c::apply)
-            );
+                    (firstPayload, headers) -> connection.consoleServiceClient().openAutoCompleteStream(firstPayload,
+                            headers),
+                    (nextPayload, headers, c) -> connection.consoleServiceClient().nextAutoCompleteStream(nextPayload,
+                            headers, c::apply));
         };
     }
 
@@ -142,14 +143,14 @@ public class IdeSession extends HasEventHandling {
         BindTableToVariableRequest bindRequest = new BindTableToVariableRequest();
         bindRequest.setTableId(table.getHandle().makeTicket());
         bindRequest.setVariableName(name);
-        return Callbacks.grpcUnaryPromise(c ->
-                connection.consoleServiceClient().bindTableToVariable(bindRequest, connection.metadata(), c::apply))
-                .then(ignore -> Promise.resolve((Void)null)
-        );
+        return Callbacks
+                .grpcUnaryPromise(c -> connection.consoleServiceClient().bindTableToVariable(bindRequest,
+                        connection.metadata(), c::apply))
+                .then(ignore -> Promise.resolve((Void) null));
     }
 
     public void close() {
-        pendingAutocompleteCalls.clear();//let the timer clean up the rest for now
+        pendingAutocompleteCalls.clear();// let the timer clean up the rest for now
         closer.run();
     }
 
@@ -179,13 +180,12 @@ public class IdeSession extends HasEventHandling {
         CancellablePromise<JsCommandResult> result = promise.asPromise(
                 res -> new JsCommandResult(res),
                 () -> {
-//                    cancelled.add(handle);
-//                    CancelCommandRequest cancelRequest = new CancelCommandRequest();
-//                    cancelRequest.setCommandid();
-//                    connection.consoleServiceClient().cancelCommand(cancelRequest, connection.metadata());
+                    // cancelled.add(handle);
+                    // CancelCommandRequest cancelRequest = new CancelCommandRequest();
+                    // cancelRequest.setCommandid();
+                    // connection.consoleServiceClient().cancelCommand(cancelRequest, connection.metadata());
                     throw new UnsupportedOperationException("cancelCommand");
-                }
-        );
+                });
 
         CommandInfo commandInfo = new CommandInfo(code, result);
         final CustomEventInit event = CustomEventInit.create();
@@ -195,9 +195,10 @@ public class IdeSession extends HasEventHandling {
         return result;
     }
 
-    private VariableDefinition[] copyVariables(JsArray<io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.VariableDefinition> list) {
+    private VariableDefinition[] copyVariables(
+            JsArray<io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.VariableDefinition> list) {
         VariableDefinition[] array = new VariableDefinition[0];
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         list.forEach((item, p1, p2) -> array[array.length] = new VariableDefinition(item.getName(), item.getType()));
         return array;
     }
@@ -214,14 +215,16 @@ public class IdeSession extends HasEventHandling {
         }
         currentStream = streamFactory.get();
         currentStream.onData(res -> {
-            LazyPromise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>> pendingPromise = pendingAutocompleteCalls.remove(res.getCompletionItems().getRequestId());
+            LazyPromise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>> pendingPromise =
+                    pendingAutocompleteCalls.remove(res.getCompletionItems().getRequestId());
             if (pendingPromise == null) {
                 return;
             }
             if (res.getCompletionItems().getSuccess()) {
                 pendingPromise.succeed(cleanupItems(res.getCompletionItems().getItemsList()));
             } else {
-                pendingPromise.fail("Error occurred handling autocomplete on the server, probably request is out of date");
+                pendingPromise
+                        .fail("Error occurred handling autocomplete on the server, probably request is out of date");
             }
         });
         currentStream.onStatus(status -> {
@@ -275,7 +278,7 @@ public class IdeSession extends HasEventHandling {
 
         final JsArrayLike<Object> changes = jsMap.getAny("contentChanges").asArrayLike();
         final JsArray<TextDocumentContentChangeEvent> changeList = new JsArray<>();
-        for (int i = 0; i < changes.getLength(); i ++ ) {
+        for (int i = 0; i < changes.getLength(); i++) {
             final JsPropertyMap<Object> change = changes.getAnyAt(i).asPropertyMap();
             final TextDocumentContentChangeEvent changeItem = new TextDocumentContentChangeEvent();
             changeItem.setText(change.getAny("text").asString());
@@ -333,15 +336,17 @@ public class IdeSession extends HasEventHandling {
                 .asPromise()
                 .then(Promise::resolve, fail -> {
                     pendingAutocompleteCalls.remove(request.getRequestId());
-                    //noinspection unchecked, rawtypes
-                    return (Promise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>>) (Promise) Promise.reject(fail);
+                    // noinspection unchecked, rawtypes
+                    return (Promise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>>) (Promise) Promise
+                            .reject(fail);
                 });
     }
 
-    private JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem> cleanupItems(final JsArray<CompletionItem> itemsList) {
+    private JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem> cleanupItems(
+            final JsArray<CompletionItem> itemsList) {
         JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem> cleaned = new JsArray<>();
         if (itemsList != null) {
-            for (int i = 0; i < itemsList.getLength(); i++ ) {
+            for (int i = 0; i < itemsList.getLength(); i++) {
                 final CompletionItem item = itemsList.getAt(i);
                 final io.deephaven.web.shared.ide.lsp.CompletionItem copy = LspTranslate.toJs(item);
                 cleaned.push(copy);

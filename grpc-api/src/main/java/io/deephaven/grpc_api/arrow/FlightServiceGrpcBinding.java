@@ -50,12 +50,12 @@ public class FlightServiceGrpcBinding implements BindableService {
     /**
      * Fetch the client side descriptor for a specific table schema.
      *
-     * @param options           the set of options that last across the entire life of the subscription
-     * @param columnChunkTypes  the chunk types per column
-     * @param columnTypes       the class type per column
-     * @param componentTypes    the component class type per column
-     * @param streamReader      the stream reader - intended to be thread safe and re-usable
-     * @param <Options>         the options related to deserialization
+     * @param options the set of options that last across the entire life of the subscription
+     * @param columnChunkTypes the chunk types per column
+     * @param columnTypes the class type per column
+     * @param componentTypes the component class type per column
+     * @param streamReader the stream reader - intended to be thread safe and re-usable
+     * @param <Options> the options related to deserialization
      * @return the client side method descriptor
      */
     public static <Options> MethodDescriptor<Flight.FlightData, BarrageMessage> getClientDoExchangeDescriptor(
@@ -93,7 +93,8 @@ public class FlightServiceGrpcBinding implements BindableService {
 
         @Override
         public InputStream stream(final BarrageMessage value) {
-            throw new UnsupportedOperationException("BarrageDataMarshaller unexpectedly used to directly convert BarrageMessage to InputStream");
+            throw new UnsupportedOperationException(
+                    "BarrageDataMarshaller unexpectedly used to directly convert BarrageMessage to InputStream");
         }
 
         @Override

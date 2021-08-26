@@ -4,20 +4,19 @@ import elemental2.core.Uint8Array;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 
 /**
- * A place to assemble various "services" we want to make
- * ubiquitously available in the client by passing around a single object.
+ * A place to assemble various "services" we want to make ubiquitously available in the client by passing around a
+ * single object.
  */
 public class ClientConfiguration {
     private static final byte EXPORT_PREFIX = 'e';
 
     /**
-     * The next number to use when making a ticket. These values must always be positive, as zero
-     * is an invalid value, and negative values represent server-created tickets.
+     * The next number to use when making a ticket. These values must always be positive, as zero is an invalid value,
+     * and negative values represent server-created tickets.
      */
     private int next = 1;
 
-    public ClientConfiguration() {
-    }
+    public ClientConfiguration() {}
 
     public Ticket newTicket() {
         Ticket ticket = new Ticket();

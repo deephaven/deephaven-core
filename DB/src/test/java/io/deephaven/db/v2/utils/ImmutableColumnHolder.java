@@ -9,7 +9,8 @@ import org.jetbrains.annotations.Nullable;
 
 public class ImmutableColumnHolder<T> extends ColumnHolder<T> {
     @SuppressWarnings("unchecked")
-    public ImmutableColumnHolder(@NotNull final String name, @NotNull final Class<T> dataType, @Nullable final Class<?> componentType, final boolean grouped, final T... data) {
+    public ImmutableColumnHolder(@NotNull final String name, @NotNull final Class<T> dataType,
+            @Nullable final Class<?> componentType, final boolean grouped, final T... data) {
         super(name, dataType, componentType, grouped, data);
     }
 }

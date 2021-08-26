@@ -25,7 +25,8 @@ import java.util.UUID;
 public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImplBase {
     // TODO (#997): use flight AuthConstants
     public static final String DEEPHAVEN_SESSION_ID = "deephaven_session_id";
-    public static final Metadata.Key<String> SESSION_HEADER_KEY = Metadata.Key.of(DEEPHAVEN_SESSION_ID, Metadata.ASCII_STRING_MARSHALLER);
+    public static final Metadata.Key<String> SESSION_HEADER_KEY =
+            Metadata.Key.of(DEEPHAVEN_SESSION_ID, Metadata.ASCII_STRING_MARSHALLER);
     public static final Context.Key<SessionState> SESSION_CONTEXT_KEY = Context.key(DEEPHAVEN_SESSION_ID);
 
     private static final Logger log = LoggerFactory.getLogger(SessionServiceGrpcImpl.class);
@@ -35,7 +36,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
 
     @Inject()
     public SessionServiceGrpcImpl(final SessionService service,
-                                  final AuthContextProvider authProvider) {
+            final AuthContextProvider authProvider) {
         this.service = service;
         this.authProvider = authProvider;
     }
@@ -44,13 +45,15 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     public void newSession(final HandshakeRequest request, final StreamObserver<HandshakeResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             if (!authProvider.supportsProtocol(request.getAuthProtocol())) {
-                responseObserver.onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Protocol version not allowed."));
+                responseObserver.onError(
+                        GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Protocol version not allowed."));
                 return;
             }
 
             final AuthContext authContext = authProvider.authenticate(request.getAuthProtocol(), request.getPayload());
             if (authContext == null) {
-                responseObserver.onError(GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "Authentication failed."));
+                responseObserver
+                        .onError(GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "Authentication failed."));
                 return;
             }
 
@@ -67,16 +70,19 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     }
 
     @Override
-    public void refreshSessionToken(final HandshakeRequest request, final StreamObserver<HandshakeResponse> responseObserver) {
+    public void refreshSessionToken(final HandshakeRequest request,
+            final StreamObserver<HandshakeResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             if (request.getAuthProtocol() != 0) {
-                responseObserver.onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Protocol version not allowed."));
+                responseObserver.onError(
+                        GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Protocol version not allowed."));
                 return;
             }
 
             final SessionState session = service.getCurrentSession();
             if (session != service.getSessionForToken(UUID.fromString(request.getPayload().toStringUtf8()))) {
-                responseObserver.onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Refresh request's session ID does not match metadata header provided ID."));
+                responseObserver.onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Refresh request's session ID does not match metadata header provided ID."));
                 return;
             }
 
@@ -97,13 +103,15 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     public void closeSession(final HandshakeRequest request, final StreamObserver<ReleaseResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             if (request.getAuthProtocol() != 0) {
-                responseObserver.onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Protocol version not allowed."));
+                responseObserver.onError(
+                        GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Protocol version not allowed."));
                 return;
             }
 
             final SessionState session = service.getCurrentSession();
             if (session != service.getSessionForToken(UUID.fromString(request.getPayload().toStringUtf8()))) {
-                responseObserver.onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Refresh request's session ID does not match metadata header provided ID."));
+                responseObserver.onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Refresh request's session ID does not match metadata header provided ID."));
                 return;
             }
 
@@ -117,17 +125,20 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     public void release(final Ticket request, final StreamObserver<ReleaseResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState.ExportObject<?> export = service.getCurrentSession().getExportIfExists(request);
-            final ExportNotification.State currState = export != null ? export.getState() : ExportNotification.State.UNKNOWN;
+            final ExportNotification.State currState =
+                    export != null ? export.getState() : ExportNotification.State.UNKNOWN;
             if (export != null) {
                 export.release();
             }
-            responseObserver.onNext(ReleaseResponse.newBuilder().setSuccess(currState != ExportNotification.State.UNKNOWN).build());
+            responseObserver.onNext(
+                    ReleaseResponse.newBuilder().setSuccess(currState != ExportNotification.State.UNKNOWN).build());
             responseObserver.onCompleted();
         });
     }
 
     @Override
-    public void exportNotifications(final ExportNotificationRequest request, final StreamObserver<ExportNotification> responseObserver) {
+    public void exportNotifications(final ExportNotificationRequest request,
+            final StreamObserver<ExportNotification> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = service.getCurrentSession();
 
@@ -149,8 +160,8 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
 
         @Override
         public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(final ServerCall<ReqT, RespT> serverCall,
-                                                                     final Metadata metadata,
-                                                                     final ServerCallHandler<ReqT, RespT> serverCallHandler) {
+                final Metadata metadata,
+                final ServerCallHandler<ReqT, RespT> serverCallHandler) {
             SessionState session = null;
             final Optional<String> tokenBytes = Optional.ofNullable(metadata.get(SESSION_HEADER_KEY));
             if (tokenBytes.isPresent()) {

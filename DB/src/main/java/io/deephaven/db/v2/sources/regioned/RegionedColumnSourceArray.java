@@ -30,26 +30,28 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Attributes.Valu
     private volatile REGION_TYPE[] regions;
 
     @SuppressWarnings("rawtypes")
-    private static final ColumnRegion [] EMPTY = new ColumnRegion[0];
-    private static <ATTR extends Attributes.Values, REGION_TYPE extends ColumnRegion<ATTR>> REGION_TYPE[] allocateRegionArray(int length) {
-        //noinspection unchecked
+    private static final ColumnRegion[] EMPTY = new ColumnRegion[0];
+
+    private static <ATTR extends Attributes.Values, REGION_TYPE extends ColumnRegion<ATTR>> REGION_TYPE[] allocateRegionArray(
+            int length) {
+        // noinspection unchecked
         return (REGION_TYPE[]) (length == 0 ? EMPTY : new ColumnRegion[length]);
     }
 
     /**
      * Construct a {@code RegionedColumnSource} which is an array of references to {@code ColumnRegion}s.
      *
-     * @param nullRegion    A ColumnRegion to be used when the actual region doesn't exist, which returns the correct
-     *                      null values for that region.
-     * @param type          The type of the column.
+     * @param nullRegion A ColumnRegion to be used when the actual region doesn't exist, which returns the correct null
+     *        values for that region.
+     * @param type The type of the column.
      * @param componentType The component type in case the main type is a DbArray
-     * @param makeDeferred  A function which creates the correct deferred region for this ColumnSource.  If you don't
-     *                      want any deferred regions then use Supplier::get.
+     * @param makeDeferred A function which creates the correct deferred region for this ColumnSource. If you don't want
+     *        any deferred regions then use Supplier::get.
      */
     RegionedColumnSourceArray(@NotNull final REGION_TYPE nullRegion,
-                              @NotNull final Class<DATA_TYPE> type,
-                              @Nullable final Class componentType,
-                              @NotNull final MakeDeferred<ATTR, REGION_TYPE> makeDeferred) {
+            @NotNull final Class<DATA_TYPE> type,
+            @Nullable final Class componentType,
+            @NotNull final MakeDeferred<ATTR, REGION_TYPE> makeDeferred) {
         super(type, componentType);
         this.nullRegion = nullRegion;
         this.makeDeferred = makeDeferred;
@@ -57,34 +59,38 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Attributes.Valu
     }
 
     /**
-     * Delegate to {@link #RegionedColumnSourceArray(ColumnRegion, Class, Class, MakeDeferred)} with null component type.
+     * Delegate to {@link #RegionedColumnSourceArray(ColumnRegion, Class, Class, MakeDeferred)} with null component
+     * type.
      *
-     * @param nullRegion    A ColumnRegion to be used when the actual region doesn't exist, which returns the correct
-     *                      null values for that region.
-     * @param type          The type of the column.
-     * @param makeDeferred  A function which creates the correct deferred region for this ColumnSource.  If you don't
-     *                      want any deferred regions then use Supplier::get.
+     * @param nullRegion A ColumnRegion to be used when the actual region doesn't exist, which returns the correct null
+     *        values for that region.
+     * @param type The type of the column.
+     * @param makeDeferred A function which creates the correct deferred region for this ColumnSource. If you don't want
+     *        any deferred regions then use Supplier::get.
      */
     RegionedColumnSourceArray(@NotNull final REGION_TYPE nullRegion,
-                              @NotNull final Class<DATA_TYPE> type,
-                              @NotNull final MakeDeferred<ATTR, REGION_TYPE> makeDeferred) {
+            @NotNull final Class<DATA_TYPE> type,
+            @NotNull final MakeDeferred<ATTR, REGION_TYPE> makeDeferred) {
         this(nullRegion, type, null, makeDeferred);
     }
 
-    @Override @OverridingMethodsMustInvokeSuper
+    @Override
+    @OverridingMethodsMustInvokeSuper
     public synchronized int addRegion(@NotNull final ColumnDefinition<?> columnDefinition,
-                                      @NotNull final ColumnLocation columnLocation) {
+            @NotNull final ColumnLocation columnLocation) {
         maybeExtendRegions();
         final int regionIndex = regionCount;
-        regions[regionIndex] = makeDeferred.make(PARAMETERS.regionMask, () ->
-                updateRegion(regionIndex, makeRegion(columnDefinition, columnLocation, regionIndex)));
+        regions[regionIndex] = makeDeferred.make(PARAMETERS.regionMask,
+                () -> updateRegion(regionIndex, makeRegion(columnDefinition, columnLocation, regionIndex)));
         return regionCount++;
     }
 
     /**
-     * <p>Add a pre-constructed region without going through the abstract factory method
+     * <p>
+     * Add a pre-constructed region without going through the abstract factory method
      * {@link #makeRegion(ColumnDefinition, ColumnLocation, int)}.
-     * <p><em>This method is for unit testing purposes only!</em>
+     * <p>
+     * <em>This method is for unit testing purposes only!</em>
      *
      * @param region The region to add
      * @return The index assigned to the added region
@@ -94,7 +100,7 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Attributes.Valu
     synchronized <OTHER_REGION_TYPE> int addRegionForUnitTests(final OTHER_REGION_TYPE region) {
         Require.neqNull(region, "region");
         maybeExtendRegions();
-        //noinspection unchecked
+        // noinspection unchecked
         regions[regionCount] = region == null ? nullRegion : (REGION_TYPE) region;
         return regionCount++;
     }
@@ -107,7 +113,8 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Attributes.Valu
             return;
         }
         if (regionCount == MAXIMUM_REGION_COUNT) {
-            throw new IllegalStateException("Cannot add another region to " + this + ", maximum region count " + MAXIMUM_REGION_COUNT + " reached");
+            throw new IllegalStateException("Cannot add another region to " + this + ", maximum region count "
+                    + MAXIMUM_REGION_COUNT + " reached");
         }
         final int newLength = Math.min(Math.max(regions.length * 2, regionCount + 1), MAXIMUM_REGION_COUNT);
         final REGION_TYPE[] newRegions = allocateRegionArray(newLength);
@@ -120,7 +127,7 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Attributes.Valu
      * suppliers in DeferredColumnRegion implementations.
      *
      * @param regionIndex The region index
-     * @param region      The new column region
+     * @param region The new column region
      * @return The new column region, for method-chaining purposes
      */
     @NotNull
@@ -138,11 +145,12 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Attributes.Valu
         return regions[regionIndex];
     }
 
-    @Override @OverridingMethodsMustInvokeSuper
+    @Override
+    @OverridingMethodsMustInvokeSuper
     public void releaseCachedResources() {
         super.releaseCachedResources();
         for (int ri = 0; ri < getRegionCount(); ++ri) {
-                getRegion(ri).releaseCachedResources();
+            getRegion(ri).releaseCachedResources();
         }
     }
 

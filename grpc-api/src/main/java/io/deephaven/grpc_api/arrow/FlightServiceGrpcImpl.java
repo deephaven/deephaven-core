@@ -33,8 +33,10 @@ import java.nio.ByteBuffer;
 
 @Singleton
 public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBase {
-    // TODO NATE: pull app_metadata off of DoGet -- what about doPut? (core#412): use app_metadata to communicate serialization options
-    private static final ChunkInputStreamGenerator.Options DEFAULT_DESER_OPTIONS = new ChunkInputStreamGenerator.Options.Builder().build();
+    // TODO NATE: pull app_metadata off of DoGet -- what about doPut? (core#412): use app_metadata to communicate
+    // serialization options
+    private static final ChunkInputStreamGenerator.Options DEFAULT_DESER_OPTIONS =
+            new ChunkInputStreamGenerator.Options.Builder().build();
 
     private static final Logger log = LoggerFactory.getLogger(FlightServiceGrpcImpl.class);
 
@@ -44,15 +46,16 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
     @Inject
     public FlightServiceGrpcImpl(final SessionService sessionService,
-                                 final TicketRouter ticketRouter,
-                                 final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory) {
+            final TicketRouter ticketRouter,
+            final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory) {
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.doExchangeFactory = doExchangeFactory;
     }
 
     @Override
-    public StreamObserver<Flight.HandshakeRequest> handshake(StreamObserver<Flight.HandshakeResponse> responseObserver) {
+    public StreamObserver<Flight.HandshakeRequest> handshake(
+            StreamObserver<Flight.HandshakeResponse> responseObserver) {
         return GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             throw GrpcUtil.statusRuntimeException(Code.UNIMPLEMENTED, "See deephaven-core#997; support flight auth.");
         });
@@ -67,7 +70,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     }
 
     @Override
-    public void getFlightInfo(final Flight.FlightDescriptor request, final StreamObserver<Flight.FlightInfo> responseObserver) {
+    public void getFlightInfo(final Flight.FlightDescriptor request,
+            final StreamObserver<Flight.FlightInfo> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getOptionalSession();
 
@@ -92,14 +96,16 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                         export.dropReference();
                     }
                 } else {
-                    responseObserver.onError(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find flight info"));
+                    responseObserver.onError(
+                            GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find flight info"));
                 }
             }
         });
     }
 
     @Override
-    public void getSchema(final Flight.FlightDescriptor request, final StreamObserver<Flight.SchemaResult> responseObserver) {
+    public void getSchema(final Flight.FlightDescriptor request,
+            final StreamObserver<Flight.SchemaResult> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getOptionalSession();
 
@@ -128,7 +134,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                         export.dropReference();
                     }
                 } else {
-                    responseObserver.onError(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find flight info"));
+                    responseObserver.onError(
+                            GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Could not find flight info"));
                 }
             }
         });
@@ -146,22 +153,27 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
                         // Send Schema wrapped in Message
                         final FlatBufferBuilder builder = new FlatBufferBuilder();
-                        final int schemaOffset = BarrageSchemaUtil.makeSchemaPayload(builder, table.getDefinition(), table.getAttributes());
-                        builder.finish(BarrageStreamGenerator.wrapInMessage(builder, schemaOffset,  org.apache.arrow.flatbuf.MessageHeader.Schema));
+                        final int schemaOffset = BarrageSchemaUtil.makeSchemaPayload(builder, table.getDefinition(),
+                                table.getAttributes());
+                        builder.finish(BarrageStreamGenerator.wrapInMessage(builder, schemaOffset,
+                                org.apache.arrow.flatbuf.MessageHeader.Schema));
                         final ByteBuffer serializedMessage = builder.dataBuffer();
 
                         final byte[] msgBytes = Flight.FlightData.newBuilder()
                                 .setDataHeader(ByteStringAccess.wrap(serializedMessage))
                                 .build()
                                 .toByteArray();
-                        responseObserver.onNext(new BarrageStreamGenerator.DrainableByteArrayInputStream(msgBytes, 0, msgBytes.length));
+                        responseObserver.onNext(
+                                new BarrageStreamGenerator.DrainableByteArrayInputStream(msgBytes, 0, msgBytes.length));
 
                         // get ourselves some data!
                         final BarrageMessage msg = ConstructSnapshot.constructBackplaneSnapshot(this, table);
-                        msg.modColumnData = new BarrageMessage.ModColumnData[0]; // actually no mod column data for DoGet
+                        msg.modColumnData = new BarrageMessage.ModColumnData[0]; // actually no mod column data for
+                                                                                 // DoGet
 
                         try (final BarrageStreamGenerator bsg = new BarrageStreamGenerator(msg)) {
-                            bsg.forEachDoGetStream(bsg.getSubView(DEFAULT_DESER_OPTIONS, false), responseObserver::onNext);
+                            bsg.forEachDoGetStream(bsg.getSubView(DEFAULT_DESER_OPTIONS, false),
+                                    responseObserver::onNext);
                         } catch (final IOException e) {
                             throw new UncheckedDeephavenException(e); // unexpected
                         }
@@ -179,7 +191,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
      */
     public StreamObserver<InputStream> doPutCustom(final StreamObserver<Flight.PutResult> responseObserver) {
         return GrpcUtil.rpcWrapper(log, responseObserver,
-                () -> new ArrowFlightUtil.DoPutObserver(sessionService.getCurrentSession(), ticketRouter, responseObserver));
+                () -> new ArrowFlightUtil.DoPutObserver(sessionService.getCurrentSession(), ticketRouter,
+                        responseObserver));
     }
 
     /**

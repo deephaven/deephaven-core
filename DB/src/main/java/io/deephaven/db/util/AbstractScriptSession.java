@@ -18,11 +18,12 @@ import java.io.File;
 import java.util.*;
 
 /**
- * This class exists to make all script sessions to be liveness artifacts, and provide a default implementation
- * for evaluateScript which handles liveness and diffs in a consistent way.
+ * This class exists to make all script sessions to be liveness artifacts, and provide a default implementation for
+ * evaluateScript which handles liveness and diffs in a consistent way.
  */
 public abstract class AbstractScriptSession extends LivenessScope implements ScriptSession, VariableProvider {
-    public static final String CLASS_CACHE_LOCATION = Configuration.getInstance().getStringWithDefault("ScriptSession.classCacheDirectory", "/tmp/dh_class_cache");
+    public static final String CLASS_CACHE_LOCATION = Configuration.getInstance()
+            .getStringWithDefault("ScriptSession.classCacheDirectory", "/tmp/dh_class_cache");
 
     public static void createScriptCache() {
         final File classCacheDirectory = new File(CLASS_CACHE_LOCATION);
@@ -34,7 +35,8 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
             FileUtils.deleteRecursively(directory);
         }
         if (!directory.mkdirs()) {
-            throw new UncheckedDeephavenException("Failed to create class cache directory " + directory.getAbsolutePath());
+            throw new UncheckedDeephavenException(
+                    "Failed to create class cache directory " + directory.getAbsolutePath());
         }
     }
 
@@ -57,11 +59,13 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
                 addClassSource(getFakeClassDestination());
             }
 
-            @Override public File getFakeClassDestination() {
+            @Override
+            public File getFakeClassDestination() {
                 return classCacheDirectory;
             }
 
-            @Override public String getClassPath() {
+            @Override
+            public String getClassPath() {
                 return classCacheDirectory.getAbsolutePath() + File.pathSeparatorChar + super.getClassPath();
             }
         };
@@ -147,9 +151,10 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
 
     /**
      * Evaluates command in the context of the current ScriptSession.
+     * 
      * @param command the command to evaluate
      * @param scriptName an optional script name, which may be ignored by the implementation, or used improve error
-     *                   messages or for other internal purposes
+     *        messages or for other internal purposes
      */
     protected abstract void evaluate(String command, @Nullable String scriptName);
 

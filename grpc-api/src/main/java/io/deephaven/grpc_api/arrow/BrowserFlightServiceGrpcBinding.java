@@ -42,8 +42,7 @@ public class BrowserFlightServiceGrpcBinding implements BindableService {
         // we use the bindings for the "BrowserFlightService", but actually direct all calls to the real "FlightService"
         return GrpcServiceOverrideBuilder.newBuilder(
                 new BrowserFlightServiceGrpc.BrowserFlightServiceImplBase() {}.bindService(),
-                BrowserFlightServiceGrpc.SERVICE_NAME
-        )
+                BrowserFlightServiceGrpc.SERVICE_NAME)
                 .onBidiBrowserSupport(delegate::handshake,
                         BrowserFlightServiceGrpc.getOpenHandshakeMethod(),
                         BrowserFlightServiceGrpc.getNextHandshakeMethod(),

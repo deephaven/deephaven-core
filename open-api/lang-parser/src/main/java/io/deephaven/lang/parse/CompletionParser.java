@@ -14,8 +14,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * A specialized parser for autocompletion;
- * maybe better to call it a chunker than a parser...
+ * A specialized parser for autocompletion; maybe better to call it a chunker than a parser...
  */
 public class CompletionParser implements Closeable {
 
@@ -47,7 +46,8 @@ public class CompletionParser implements Closeable {
         return docs.computeIfAbsent(uri, k -> new PendingParse(uri));
     }
 
-    public void update(final String uri, final String version, final List<ChangeDocumentRequest.TextDocumentContentChangeEvent> changes) {
+    public void update(final String uri, final String version,
+            final List<ChangeDocumentRequest.TextDocumentContentChangeEvent> changes) {
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace()
                     .append("Updating document ")
@@ -120,7 +120,8 @@ public class CompletionParser implements Closeable {
         if (doc == null) {
             throw new IllegalStateException("Unable to find parsed document " + uri);
         }
-        return doc.finishParse().orElseThrow(() -> new IllegalStateException("Unable to complete document parsing for " + uri));
+        return doc.finishParse()
+                .orElseThrow(() -> new IllegalStateException("Unable to complete document parsing for " + uri));
     }
 
     @Override

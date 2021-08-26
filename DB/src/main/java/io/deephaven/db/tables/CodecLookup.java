@@ -32,21 +32,25 @@ public class CodecLookup {
     /**
      * Test whether a codec is required to write or read the supplied types.
      *
-     * @param dataType      The data type to check
-     * @param componentType The component type to check, for array and {@link io.deephaven.db.tables.dbarrays.DbArrayBase} types
+     * @param dataType The data type to check
+     * @param componentType The component type to check, for array and
+     *        {@link io.deephaven.db.tables.dbarrays.DbArrayBase} types
      * @return Whether a codec is required
      */
     public static boolean codecRequired(@NotNull final Class<?> dataType, @Nullable final Class<?> componentType) {
-        if (dataType.isPrimitive() || dataType == Boolean.class || dataType == DBDateTime.class || dataType == String.class || StringSet.class.isAssignableFrom(dataType)) {
+        if (dataType.isPrimitive() || dataType == Boolean.class || dataType == DBDateTime.class
+                || dataType == String.class || StringSet.class.isAssignableFrom(dataType)) {
             // Primitive, basic, and special types do not require codecs
             return false;
         }
         if (dataType.isArray()) {
             if (componentType == null || !dataType.getComponentType().isAssignableFrom(componentType)) {
-                throw new IllegalArgumentException("Array type " + dataType + " does not match component type " + componentType);
+                throw new IllegalArgumentException(
+                        "Array type " + dataType + " does not match component type " + componentType);
             }
             // Arrays of primitives or basic types do not require codecs
-            return !(componentType.isPrimitive() || componentType == Boolean.class || componentType == DBDateTime.class || componentType == String.class);
+            return !(componentType.isPrimitive() || componentType == Boolean.class || componentType == DBDateTime.class
+                    || componentType == String.class);
         }
         if (DbArrayBase.class.isAssignableFrom(dataType)) {
             if (componentType == null) {
@@ -54,7 +58,8 @@ public class CodecLookup {
             }
             if (DbArray.class.isAssignableFrom(dataType)) {
                 // DbArrays of basic types do not require codecs
-                return !(componentType == Boolean.class || componentType == DBDateTime.class || componentType == String.class);
+                return !(componentType == Boolean.class || componentType == DBDateTime.class
+                        || componentType == String.class);
             }
             // DbArrayBases of primitive types do not require codecs
             return false;
@@ -82,8 +87,7 @@ public class CodecLookup {
      */
     public static <TYPE> ObjectCodec<TYPE> lookup(
             @NotNull final ColumnDefinition<TYPE> columnDefinition,
-            @NotNull final ColumnToCodecMappings codecMappings
-    ) {
+            @NotNull final ColumnToCodecMappings codecMappings) {
         final String colName = columnDefinition.getName();
         final ObjectCodec<TYPE> codec = lookup(
                 columnDefinition.getDataType(),
@@ -96,16 +100,16 @@ public class CodecLookup {
     }
 
     /**
-     * Lookup an {@link ObjectCodec} for the supplied data type, codec class name, and arguments.
-     * Assumes that the data type is appropriate for use with a codec, i.e. that {@link #codecRequired(Class, Class)}
-     * will return false.
+     * Lookup an {@link ObjectCodec} for the supplied data type, codec class name, and arguments. Assumes that the data
+     * type is appropriate for use with a codec, i.e. that {@link #codecRequired(Class, Class)} will return false.
      *
-     * @param dataType       The data type
+     * @param dataType The data type
      * @param codecClassName The codec class name
      * @param codecArguments The codec arguments in string form
      * @return The {@link ObjectCodec}
      */
-    public static <TYPE> ObjectCodec<TYPE> lookup(@NotNull final Class<TYPE> dataType, final String codecClassName, final String codecArguments) {
+    public static <TYPE> ObjectCodec<TYPE> lookup(@NotNull final Class<TYPE> dataType, final String codecClassName,
+            final String codecArguments) {
         if (explicitCodecPresent(codecClassName)) {
             return CodecCache.DEFAULT.getCodec(codecClassName, codecArguments);
         }

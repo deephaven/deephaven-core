@@ -12,11 +12,11 @@ import java.util.Collections;
 /**
  * Partial {@link TableLocationProvider} implementation for standalone use or as part of a {@link TableDataService}.
  * <p>
- * Presents an interface similar to {@link TableLocationProvider.Listener} for subclasses to use when
- * communicating with the parent; see {@link #handleTableLocationKey(TableLocationKey)}.
+ * Presents an interface similar to {@link TableLocationProvider.Listener} for subclasses to use when communicating with
+ * the parent; see {@link #handleTableLocationKey(TableLocationKey)}.
  * <p>
- * Note that subclasses are responsible for determining when it's appropriate to call {@link #setInitialized()}
- * and/or override {@link #doInitialization()}.
+ * Note that subclasses are responsible for determining when it's appropriate to call {@link #setInitialized()} and/or
+ * override {@link #doInitialization()}.
  */
 public abstract class AbstractTableLocationProvider
         extends SubscriptionAggregator<TableLocationProvider.Listener>
@@ -28,15 +28,17 @@ public abstract class AbstractTableLocationProvider
      * Map from {@link TableLocationKey} to itself, or to a {@link TableLocation}. The values are {@link TableLocation}s
      * if:
      * <ol>
-     *     <li>The location has been requested via {@link #getTableLocation(TableLocationKey)} or
-     *     {@link #getTableLocationIfPresent(TableLocationKey)}</li>
-     *     <li>The {@link TableLocationKey} <em>is</em> a {@link TableLocation}</li>
+     * <li>The location has been requested via {@link #getTableLocation(TableLocationKey)} or
+     * {@link #getTableLocationIfPresent(TableLocationKey)}</li>
+     * <li>The {@link TableLocationKey} <em>is</em> a {@link TableLocation}</li>
      * </ol>
      */
-    private final KeyedObjectHashMap<TableLocationKey, Object> tableLocations = new KeyedObjectHashMap<>(LocationKeyDefinition.INSTANCE);
+    private final KeyedObjectHashMap<TableLocationKey, Object> tableLocations =
+            new KeyedObjectHashMap<>(LocationKeyDefinition.INSTANCE);
     @SuppressWarnings("unchecked")
     private final Collection<ImmutableTableLocationKey> unmodifiableTableLocationKeys =
-            (Collection<ImmutableTableLocationKey>) (Collection<? extends TableLocationKey>) Collections.unmodifiableCollection(tableLocations.keySet());
+            (Collection<ImmutableTableLocationKey>) (Collection<? extends TableLocationKey>) Collections
+                    .unmodifiableCollection(tableLocations.keySet());
 
     private volatile boolean initialized;
 
@@ -45,7 +47,7 @@ public abstract class AbstractTableLocationProvider
     /**
      * Construct a provider as part of a service.
      *
-     * @param tableKey              A key that will be used by this provider
+     * @param tableKey A key that will be used by this provider
      * @param supportsSubscriptions Whether this provider should support subscriptions
      */
     protected AbstractTableLocationProvider(@NotNull final TableKey tableKey, final boolean supportsSubscriptions) {
@@ -71,9 +73,9 @@ public abstract class AbstractTableLocationProvider
         return tableKey;
     }
 
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // TableLocationProvider/SubscriptionAggregator implementation
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
     @Override
     protected final void deliverInitialSnapshot(@NotNull final TableLocationProvider.Listener listener) {
@@ -98,7 +100,8 @@ public abstract class AbstractTableLocationProvider
             // observeInsert out of the business of subscription processing.
             locationCreatedRecorder = false;
             final Object result = tableLocations.putIfAbsent(locationKey, this::observeInsert);
-            if (locationCreatedRecorder && subscriptions.deliverNotification(Listener::handleTableLocationKey, toKeyImmutable(result), true)) {
+            if (locationCreatedRecorder && subscriptions.deliverNotification(Listener::handleTableLocationKey,
+                    toKeyImmutable(result), true)) {
                 onEmpty();
             }
         }
@@ -197,8 +200,7 @@ public abstract class AbstractTableLocationProvider
 
         private static final KeyedObjectKey<TableLocationKey, Object> INSTANCE = new LocationKeyDefinition();
 
-        private LocationKeyDefinition() {
-        }
+        private LocationKeyDefinition() {}
 
         @Override
         public TableLocationKey getKey(@NotNull final Object keyOrLocation) {
@@ -213,7 +215,8 @@ public abstract class AbstractTableLocationProvider
         if (keyOrLocation instanceof TableLocationKey) {
             return ((TableLocationKey) keyOrLocation);
         }
-        throw new IllegalArgumentException("toKey expects a TableLocation or a TableLocationKey, instead received a " + keyOrLocation.getClass());
+        throw new IllegalArgumentException(
+                "toKey expects a TableLocation or a TableLocationKey, instead received a " + keyOrLocation.getClass());
     }
 
     private static ImmutableTableLocationKey toKeyImmutable(@NotNull final Object keyOrLocation) {

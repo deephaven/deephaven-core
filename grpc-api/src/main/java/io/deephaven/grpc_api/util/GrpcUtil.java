@@ -19,14 +19,16 @@ public class GrpcUtil {
     private static final Logger log = LoggerFactory.getLogger(GrpcUtil.class);
 
     /**
-     * Utility to avoid errors escaping to the stream, to make sure the server log and client both see the
-     * message if there is an error, and if the error was not meant to propagate to a gRPC client, obfuscates it.
+     * Utility to avoid errors escaping to the stream, to make sure the server log and client both see the message if
+     * there is an error, and if the error was not meant to propagate to a gRPC client, obfuscates it.
+     * 
      * @param log the current class's logger
      * @param response the responseStream used to send messages to the client
      * @param lambda the code to safely execute
      * @param <T> some IOException type, so that we can handle IO errors as well as runtime exceptions.
      */
-    public static <T extends IOException> void rpcWrapper(final Logger log, final StreamObserver<?> response, final FunctionalInterfaces.ThrowingRunnable<T> lambda) {
+    public static <T extends IOException> void rpcWrapper(final Logger log, final StreamObserver<?> response,
+            final FunctionalInterfaces.ThrowingRunnable<T> lambda) {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             lambda.run();
         } catch (final StatusRuntimeException err) {
@@ -42,8 +44,9 @@ public class GrpcUtil {
     }
 
     /**
-     * Utility to avoid errors escaping to the stream, to make sure the server log and client both see the
-     * message if there is an error, and if the error was not meant to propagate to a gRPC client, obfuscates it.
+     * Utility to avoid errors escaping to the stream, to make sure the server log and client both see the message if
+     * there is an error, and if the error was not meant to propagate to a gRPC client, obfuscates it.
+     * 
      * @param log the current class's logger
      * @param response the responseStream used to send messages to the client
      * @param lambda the code to safely execute
@@ -69,7 +72,8 @@ public class GrpcUtil {
         return securelyWrapError(log, err, Code.INVALID_ARGUMENT);
     }
 
-    public static StatusRuntimeException securelyWrapError(final Logger log, final Throwable err, final Code statusCode) {
+    public static StatusRuntimeException securelyWrapError(final Logger log, final Throwable err,
+            final Code statusCode) {
         if (err instanceof StatusRuntimeException) {
             return (StatusRuntimeException) err;
         }
@@ -85,14 +89,14 @@ public class GrpcUtil {
 
     /**
      * This helper allows one to propagate the onError/onComplete calls through to the delegate, while applying the
-     * provided mapping function to the original input objects. The mapper may return null to skip sending a message
-     * to the delegated stream observer.
+     * provided mapping function to the original input objects. The mapper may return null to skip sending a message to
+     * the delegated stream observer.
      *
-     * @param delegate  the stream observer to ultimately receive this message
-     * @param mapper    the function that maps from input objects to the objects the stream observer expects
-     * @param <T>       input type
-     * @param <V>       output type
-     * @return          a new stream observer that maps from T to V before delivering to {@code delegate::onNext}
+     * @param delegate the stream observer to ultimately receive this message
+     * @param mapper the function that maps from input objects to the objects the stream observer expects
+     * @param <T> input type
+     * @param <V> output type
+     * @return a new stream observer that maps from T to V before delivering to {@code delegate::onNext}
      */
     public static <T, V> StreamObserver<T> mapOnNext(final StreamObserver<V> delegate, final Function<T, V> mapper) {
         return new StreamObserver<T>() {
@@ -134,9 +138,10 @@ public class GrpcUtil {
      *
      * @param runner the runnable to execute safely
      */
-    public static void safelyExecuteLocked(final Object lockedObject, final FunctionalInterfaces.ThrowingRunnable<Exception> runner) {
+    public static void safelyExecuteLocked(final Object lockedObject,
+            final FunctionalInterfaces.ThrowingRunnable<Exception> runner) {
         try {
-            //noinspection SynchronizationOnLocalVariableOrMethodParameter
+            // noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized (lockedObject) {
                 runner.run();
             }
@@ -147,19 +152,23 @@ public class GrpcUtil {
 
     /**
      * Writes an error to the observer in a try/catch block to minimize damage caused by failing observer call.
-     * <p></p>
-     * This will always synchronize on the observer to ensure thread safety when interacting with the grpc response stream.
+     * <p>
+     * </p>
+     * This will always synchronize on the observer to ensure thread safety when interacting with the grpc response
+     * stream.
      */
-     public static void safelyError(final StreamObserver<?> observer, final Code statusCode, final String msg) {
+    public static void safelyError(final StreamObserver<?> observer, final Code statusCode, final String msg) {
         safelyError(observer, statusRuntimeException(statusCode, msg));
-     }
+    }
 
     /**
      * Writes an error to the observer in a try/catch block to minimize damage caused by failing observer call.
-     * <p></p>
-     * This will always synchronize on the observer to ensure thread safety when interacting with the grpc response stream.
+     * <p>
+     * </p>
+     * This will always synchronize on the observer to ensure thread safety when interacting with the grpc response
+     * stream.
      */
-     public static void safelyError(final StreamObserver<?> observer, StatusRuntimeException exception) {
-         safelyExecuteLocked(observer, () -> observer.onError(exception));
+    public static void safelyError(final StreamObserver<?> observer, StatusRuntimeException exception) {
+        safelyExecuteLocked(observer, () -> observer.onError(exception));
     }
 }

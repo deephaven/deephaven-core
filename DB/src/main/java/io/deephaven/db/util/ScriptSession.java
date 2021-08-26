@@ -30,7 +30,7 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     Object getVariable(String name) throws QueryScope.MissingVariableException;
 
     /**
-     * Retrieve a variable from the script session's bindings.  If the variable is not present, return defaultValue.
+     * Retrieve a variable from the script session's bindings. If the variable is not present, return defaultValue.
      *
      * If the variable is present, but is not of type (T), a ClassCastException may result.
      *
@@ -44,6 +44,7 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     /**
      * A {@link VariableProvider} instance, for services like autocomplete which may want a limited "just the variables"
      * view of our session state.
+     * 
      * @return a VariableProvider instance backed by the global/binding context of this script session.
      */
     VariableProvider getVariableProvider();
@@ -71,7 +72,7 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
      *
      * @param script the code to execute
      * @param scriptName an optional script name, which may be ignored by the implementation, or used improve error
-     *                   messages or for other internal purposes
+     *        messages or for other internal purposes
      * @return the changes made to the exportable objects
      */
     Changes evaluateScript(String script, @Nullable String scriptName);
@@ -92,6 +93,7 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
 
     /**
      * Check if the scope has the given variable name
+     * 
      * @param name the variable name
      * @return True iff the scope has the given variable name
      */
@@ -124,7 +126,8 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     /**
      * Called before Application initialization, should setup sourcing from the controller (as required).
      */
-    void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader, ScriptPathLoaderState scriptLoaderState);
+    void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader,
+            ScriptPathLoaderState scriptLoaderState);
 
     /**
      * Called after Application initialization.
@@ -133,6 +136,7 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
 
     /**
      * Sets the scriptPathLoader that is in use for this session.
+     * 
      * @param scriptPathLoader a supplier of a script path loader
      * @param caching whether the source operation should cache results
      */
@@ -151,8 +155,8 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     boolean setUseOriginalScriptLoaderState(boolean useOriginal);
 
     /**
-     * Asks the session to remove any wrapping that exists on scoped objects so that clients can fetch
-     * them. Defaults to returning the object itself.
+     * Asks the session to remove any wrapping that exists on scoped objects so that clients can fetch them. Defaults to
+     * returning the object itself.
      *
      * @param object the scoped object
      * @return an obj which can be consumed by a client

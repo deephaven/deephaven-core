@@ -15,7 +15,10 @@ import java.io.Closeable;
 
 public class BrowserStream<T> implements Closeable {
     public enum Mode {
-        /** Messages must be processed in order, if a gap is observed in sequences wait until the missing message arrives. */
+        /**
+         * Messages must be processed in order, if a gap is observed in sequences wait until the missing message
+         * arrives.
+         */
         IN_ORDER,
         /** Always process the current message if it has the highest sequence, if an old message arrives, ignore it. */
         MOST_RECENT
@@ -49,8 +52,11 @@ public class BrowserStream<T> implements Closeable {
 
     private interface Marshaller<T> {
         void onMessageReceived(T message);
+
         void onCancel();
+
         void onError(Throwable err);
+
         void onCompleted();
     }
 
@@ -59,9 +65,11 @@ public class BrowserStream<T> implements Closeable {
     /**
      * Builds a BrowserStream factory based on the given mode and bidirectional stream method.
      */
-    public static <ReqT, RespT> Factory<ReqT, RespT> factory(Mode mode, GrpcServiceOverrideBuilder.BidiDelegate<ReqT, RespT> bidiDelegate) {
+    public static <ReqT, RespT> Factory<ReqT, RespT> factory(Mode mode,
+            GrpcServiceOverrideBuilder.BidiDelegate<ReqT, RespT> bidiDelegate) {
         return (session, responseObserver) -> new BrowserStream<>(mode, session, new Marshaller<ReqT>() {
             private final StreamObserver<ReqT> requestObserver = bidiDelegate.doInvoke(responseObserver);
+
             @Override
             public void onMessageReceived(ReqT message) {
                 requestObserver.onNext(message);
@@ -69,7 +77,8 @@ public class BrowserStream<T> implements Closeable {
 
             @Override
             public void onCancel() {
-                StatusRuntimeException canceled = GrpcUtil.statusRuntimeException(Code.CANCELLED, "Stream canceled on the server");
+                StatusRuntimeException canceled =
+                        GrpcUtil.statusRuntimeException(Code.CANCELLED, "Stream canceled on the server");
                 GrpcUtil.safelyExecute(() -> {
                     responseObserver.onError(canceled);
                 });
@@ -122,19 +131,22 @@ public class BrowserStream<T> implements Closeable {
     public void onMessageReceived(T message, StreamData streamData) {
         synchronized (this) {
             if (halfClosedSeq != -1 && streamData.getSequence() > halfClosedSeq) {
-                throw GrpcUtil.statusRuntimeException(Code.ABORTED, "Sequence sent after half close: closed seq=" + halfClosedSeq + " recv seq=" + streamData.getSequence());
+                throw GrpcUtil.statusRuntimeException(Code.ABORTED, "Sequence sent after half close: closed seq="
+                        + halfClosedSeq + " recv seq=" + streamData.getSequence());
             }
 
             if (streamData.isHalfClose()) {
                 if (halfClosedSeq != -1) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Already half closed: closed seq=" + halfClosedSeq + " recv seq=" + streamData.getSequence());
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Already half closed: closed seq="
+                            + halfClosedSeq + " recv seq=" + streamData.getSequence());
                 }
                 halfClosedSeq = streamData.getSequence();
             }
 
             if (mode == Mode.IN_ORDER) {
                 if (streamData.getSequence() < nextSeq) {
-                    throw GrpcUtil.statusRuntimeException(Code.OUT_OF_RANGE, "Duplicate sequence sent: next seq=" + nextSeq + " recv seq=" + streamData.getSequence());
+                    throw GrpcUtil.statusRuntimeException(Code.OUT_OF_RANGE,
+                            "Duplicate sequence sent: next seq=" + nextSeq + " recv seq=" + streamData.getSequence());
                 }
                 boolean queueMsg = false;
                 if (processingMessage) {
@@ -159,7 +171,8 @@ public class BrowserStream<T> implements Closeable {
                         || (queuedStreamData != null && streamData.getSequence() < queuedStreamData.getSequence())) {
                     // this message is too old
                     log.debug().append(logIdentity).append("dropping; next seq=").append(nextSeq)
-                            .append(" queued seq=").append(queuedStreamData != null ? queuedStreamData.getSequence() : -1)
+                            .append(" queued seq=")
+                            .append(queuedStreamData != null ? queuedStreamData.getSequence() : -1)
                             .append(" recv seq=").append(streamData.getSequence()).endl();
                     return;
                 }
@@ -217,7 +230,8 @@ public class BrowserStream<T> implements Closeable {
                     queuedStreamData = null;
                 }
 
-                log.debug().append(logIdentity).append("processing queued seq=").append(streamData.getSequence()).endl();
+                log.debug().append(logIdentity).append("processing queued seq=").append(streamData.getSequence())
+                        .endl();
                 nextSeq = streamData.getSequence() + 1;
             }
         } while (true);
@@ -246,7 +260,7 @@ public class BrowserStream<T> implements Closeable {
         private static final MessageInfoQueueAdapter INSTANCE = new MessageInfoQueueAdapter();
 
         private static <T extends Message<?>> RAPriQueue.Adapter<T> getInstance() {
-            //noinspection unchecked
+            // noinspection unchecked
             return (RAPriQueue.Adapter<T>) INSTANCE;
         }
 

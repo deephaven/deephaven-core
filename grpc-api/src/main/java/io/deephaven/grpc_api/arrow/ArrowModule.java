@@ -18,13 +18,18 @@ import java.io.InputStream;
 
 @Module
 public abstract class ArrowModule {
-    @Binds @IntoSet
+    @Binds
+    @IntoSet
     abstract BindableService bindFlightServiceBinding(FlightServiceGrpcBinding service);
-    @Binds @IntoSet
+
+    @Binds
+    @IntoSet
     abstract BindableService bindBrowserFlightServiceBinding(BrowserFlightServiceGrpcBinding service);
 
-    @Binds @Singleton
-    abstract BarrageMessageProducer.StreamGenerator.Factory<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> bindStreamGenerator(BarrageStreamGenerator.Factory factory);
+    @Binds
+    @Singleton
+    abstract BarrageMessageProducer.StreamGenerator.Factory<ChunkInputStreamGenerator.Options, BarrageStreamGenerator.View> bindStreamGenerator(
+            BarrageStreamGenerator.Factory factory);
 
     @Provides
     static BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGenerator.View>> provideListenerAdapter() {

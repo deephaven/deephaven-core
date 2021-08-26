@@ -56,16 +56,22 @@ import java.util.Iterator;
 import java.util.Queue;
 
 public class ArrowFlightUtil {
-    public static final ChunkInputStreamGenerator.Options DEFAULT_SER_OPTIONS = new ChunkInputStreamGenerator.Options.Builder().build();
-    public static final int DEFAULT_UPDATE_INTERVAL_MS = Configuration.getInstance().getIntegerWithDefault("barrage.updateInterval", 1000);
+    public static final ChunkInputStreamGenerator.Options DEFAULT_SER_OPTIONS =
+            new ChunkInputStreamGenerator.Options.Builder().build();
+    public static final int DEFAULT_UPDATE_INTERVAL_MS =
+            Configuration.getInstance().getIntegerWithDefault("barrage.updateInterval", 1000);
 
     private static final int TAG_TYPE_BITS = 3;
     private static final BarrageMessage.ModColumnData[] ZERO_MOD_COLUMNS = new BarrageMessage.ModColumnData[0];
 
-    public static final int BODY_TAG = (Flight.FlightData.DATA_BODY_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
-    public static final int DATA_HEADER_TAG = (Flight.FlightData.DATA_HEADER_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
-    public static final int APP_METADATA_TAG = (Flight.FlightData.APP_METADATA_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
-    public static final int FLIGHT_DESCRIPTOR_TAG = (Flight.FlightData.FLIGHT_DESCRIPTOR_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
+    public static final int BODY_TAG =
+            (Flight.FlightData.DATA_BODY_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
+    public static final int DATA_HEADER_TAG =
+            (Flight.FlightData.DATA_HEADER_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
+    public static final int APP_METADATA_TAG =
+            (Flight.FlightData.APP_METADATA_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
+    public static final int FLIGHT_DESCRIPTOR_TAG =
+            (Flight.FlightData.FLIGHT_DESCRIPTOR_FIELD_NUMBER << TAG_TYPE_BITS) | WireFormat.WIRETYPE_LENGTH_DELIMITED;
 
     private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);
 
@@ -88,8 +94,7 @@ public class ArrowFlightUtil {
 
         // if we find a body tag we stop iterating through the loop as there should be no more tags after the body
         // and we lazily drain the payload from the decoder (so the next bytes are payload and not a tag)
-        decodeLoop:
-        for (int tag = decoder.readTag(); tag != 0; tag = decoder.readTag()) {
+        decodeLoop: for (int tag = decoder.readTag(); tag != 0; tag = decoder.readTag()) {
             final int size;
             switch (tag) {
                 case DATA_HEADER_TAG:
@@ -98,7 +103,8 @@ public class ArrowFlightUtil {
                     break;
                 case APP_METADATA_TAG:
                     size = decoder.readRawVarint32();
-                    mi.app_metadata = BarrageMessageWrapper.getRootAsBarrageMessageWrapper(ByteBuffer.wrap(decoder.readRawBytes(size)));
+                    mi.app_metadata = BarrageMessageWrapper
+                            .getRootAsBarrageMessageWrapper(ByteBuffer.wrap(decoder.readRawBytes(size)));
                     if (mi.app_metadata.magic() != BarrageStreamGenerator.FLATBUFFER_MAGIC) {
                         log.error().append("received invalid magic").endl();
                         mi.app_metadata = null;
@@ -110,11 +116,14 @@ public class ArrowFlightUtil {
                     mi.descriptor = Flight.FlightDescriptor.parseFrom(bytes);
                     break;
                 case BODY_TAG:
-                    // at this point, we're in the body, we will read it and then break, the rest of the payload should be the body
+                    // at this point, we're in the body, we will read it and then break, the rest of the payload should
+                    // be the body
                     size = decoder.readRawVarint32();
-                    //noinspection UnstableApiUsage
-                    mi.inputStream = new LittleEndianDataInputStream(new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size));
-                    // we do not actually remove the content from our stream; prevent reading the next tag via a labeled break
+                    // noinspection UnstableApiUsage
+                    mi.inputStream = new LittleEndianDataInputStream(
+                            new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size));
+                    // we do not actually remove the content from our stream; prevent reading the next tag via a labeled
+                    // break
                     break decodeLoop;
 
                 default:
@@ -124,8 +133,9 @@ public class ArrowFlightUtil {
         }
 
         if (mi.header != null && mi.header.headerType() == MessageHeader.RecordBatch && mi.inputStream == null) {
-            //noinspection UnstableApiUsage
-            mi.inputStream = new LittleEndianDataInputStream(new ByteArrayInputStream(CollectionUtil.ZERO_LENGTH_BYTE_ARRAY));
+            // noinspection UnstableApiUsage
+            mi.inputStream =
+                    new LittleEndianDataInputStream(new ByteArrayInputStream(CollectionUtil.ZERO_LENGTH_BYTE_ARRAY));
         }
 
         return mi;
@@ -134,7 +144,8 @@ public class ArrowFlightUtil {
     /**
      * This is a stateful observer; a DoPut stream begins with its schema.
      */
-    public static class DoPutObserver extends SingletonLivenessManager implements StreamObserver<InputStream>, Closeable {
+    public static class DoPutObserver extends SingletonLivenessManager
+            implements StreamObserver<InputStream>, Closeable {
 
         private final SessionState session;
         private final TicketRouter ticketRouter;
@@ -170,7 +181,8 @@ public class ArrowFlightUtil {
                 final MessageInfo mi = parseProtoMessage(request);
                 if (mi.descriptor != null) {
                     if (resultExportBuilder != null) {
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Only one descriptor definition allowed");
+                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                "Only one descriptor definition allowed");
                     }
                     resultExportBuilder = ticketRouter
                             .<Table>publish(session, mi.descriptor)
@@ -178,8 +190,10 @@ public class ArrowFlightUtil {
                     manage(resultExportBuilder.getExport());
                 }
 
-                if (mi.app_metadata != null && mi.app_metadata.msgType() == BarrageMessageType.BarrageSerializationOptions) {
-                    options = ChunkInputStreamGenerator.Options.of(BarrageSerializationOptions.getRootAsBarrageSerializationOptions(mi.app_metadata.msgPayloadAsByteBuffer()));
+                if (mi.app_metadata != null
+                        && mi.app_metadata.msgType() == BarrageMessageType.BarrageSerializationOptions) {
+                    options = ChunkInputStreamGenerator.Options.of(BarrageSerializationOptions
+                            .getRootAsBarrageSerializationOptions(mi.app_metadata.msgPayloadAsByteBuffer()));
                 }
 
                 if (mi.header == null) {
@@ -192,7 +206,8 @@ public class ArrowFlightUtil {
                 }
 
                 if (mi.header.headerType() != MessageHeader.RecordBatch) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Only schema/record-batch messages supported");
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                            "Only schema/record-batch messages supported");
                 }
 
                 final int numColumns = resultTable.getColumnSources().size();
@@ -200,7 +215,8 @@ public class ArrowFlightUtil {
                 final RecordBatch batch = (RecordBatch) mi.header.header(new RecordBatch());
 
                 final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
-                        new FlatBufferIteratorAdapter<>(batch.nodesLength(), i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
+                        new FlatBufferIteratorAdapter<>(batch.nodesLength(),
+                                i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
 
                 final TLongArrayList bufferInfo = new TLongArrayList(batch.buffersLength());
                 for (int bi = 0; bi < batch.buffersLength(); ++bi) {
@@ -208,7 +224,8 @@ public class ArrowFlightUtil {
                     int length = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi).length());
 
                     if (bi < batch.buffersLength() - 1) {
-                        final int nextOffset = LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi + 1).offset());
+                        final int nextOffset =
+                                LongSizedDataStructure.intSize("BufferInfo", batch.buffers(bi + 1).offset());
                         // our parsers handle overhanging buffers
                         length += Math.max(0, nextOffset - offset - length);
                     }
@@ -227,19 +244,22 @@ public class ArrowFlightUtil {
                     msg.addColumnData[ci] = acd;
 
                     try {
-                        acd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(options, columnChunkTypes[ci], columnTypes[ci], fieldNodeIter, bufferInfoIter, mi.inputStream);
+                        acd.data = ChunkInputStreamGenerator.extractChunkFromInputStream(options, columnChunkTypes[ci],
+                                columnTypes[ci], fieldNodeIter, bufferInfoIter, mi.inputStream);
                     } catch (final IOException unexpected) {
                         throw new UncheckedDeephavenException(unexpected);
                     }
 
                     if (acd.data.size() != numRowsAdded) {
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Inconsistent num records per column: " + numRowsAdded + " != " + acd.data.size());
+                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                "Inconsistent num records per column: " + numRowsAdded + " != " + acd.data.size());
                     }
                     acd.type = columnTypes[ci];
                     acd.componentType = componentTypes[ci];
                 }
 
-                msg.rowsAdded = Index.FACTORY.getIndexByRange(resultTable.size(), resultTable.size() + numRowsAdded - 1);
+                msg.rowsAdded =
+                        Index.FACTORY.getIndexByRange(resultTable.size(), resultTable.size() + numRowsAdded - 1);
                 msg.rowsIncluded = msg.rowsAdded.clone();
                 msg.modColumnData = ZERO_MOD_COLUMNS;
 
@@ -281,7 +301,8 @@ public class ArrowFlightUtil {
         public void onCompleted() {
             GrpcUtil.rpcWrapper(log, observer, () -> {
                 if (resultExportBuilder == null) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Result flight descriptor never provided");
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                            "Result flight descriptor never provided");
                 }
                 if (resultTable == null) {
                     throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Result flight schema never provided");
@@ -325,7 +346,8 @@ public class ArrowFlightUtil {
      * and will not send out-of-order requests (due to out-of-band requests). The client should already anticipate
      * subscription changes may be coalesced by the BarrageMessageProducer.
      */
-    public static class DoExchangeMarshaller extends SingletonLivenessManager implements StreamObserver<InputStream>, Closeable {
+    public static class DoExchangeMarshaller extends SingletonLivenessManager
+            implements StreamObserver<InputStream>, Closeable {
         @AssistedFactory
         public interface Factory {
             DoExchangeMarshaller openExchange(SessionState session, StreamObserver<InputStream> observer);
@@ -380,7 +402,8 @@ public class ArrowFlightUtil {
                         return;
                     }
                     final BarrageSubscriptionRequest subscriptionRequest =
-                            BarrageSubscriptionRequest.getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
+                            BarrageSubscriptionRequest
+                                    .getRootAsBarrageSubscriptionRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
                     if (bmp != null) {
                         apply(subscriptionRequest);
@@ -404,7 +427,8 @@ public class ArrowFlightUtil {
 
                     preExportSubscriptions = new ArrayDeque<>();
                     preExportSubscriptions.add(subscriptionRequest);
-                    final SessionState.ExportObject<Object> parent = ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer());
+                    final SessionState.ExportObject<Object> parent =
+                            ticketRouter.resolve(session, subscriptionRequest.ticketAsByteBuffer());
 
                     onExportResolvedContinuation = session.nonExport()
                             .require(parent)
@@ -446,10 +470,12 @@ public class ArrowFlightUtil {
             log.info().append(myPrefix).append("processing initial subscription").endl();
 
             final boolean hasColumns = subscriptionRequest.columnsVector() != null;
-            final BitSet columns = hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : new BitSet();
+            final BitSet columns =
+                    hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : new BitSet();
 
             isViewport = subscriptionRequest.viewportVector() != null;
-            final Index viewport = isViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer()) : null;
+            final Index viewport =
+                    isViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer()) : null;
 
             if (!bmp.addSubscription(listener, optionsAdapter.adapt(subscriptionRequest), columns, viewport)) {
                 throw new IllegalStateException("listener is already a subscriber!");
@@ -465,14 +491,17 @@ public class ArrowFlightUtil {
 
         /**
          * Update the existing subscription to match the new request.
+         * 
          * @param subscriptionRequest the requested view change
          */
         private void apply(final BarrageSubscriptionRequest subscriptionRequest) {
             final boolean hasColumns = subscriptionRequest.columnsVector() != null;
-            final BitSet columns = hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : new BitSet();
+            final BitSet columns =
+                    hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : new BitSet();
 
             final boolean hasViewport = subscriptionRequest.viewportVector() != null;
-            final Index viewport = isViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer()) : null;
+            final Index viewport =
+                    isViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer()) : null;
 
             final boolean subscriptionFound;
             if (isViewport && hasColumns && hasViewport) {
@@ -497,7 +526,8 @@ public class ArrowFlightUtil {
 
         @Override
         public void onError(final Throwable t) {
-            log.error().append(myPrefix).append("unexpected error; force closing subscription: caused by ").append(t).endl();
+            log.error().append(myPrefix).append("unexpected error; force closing subscription: caused by ").append(t)
+                    .endl();
             tryClose();
         }
 

@@ -20,12 +20,14 @@ import java.util.Map;
 /**
  * A "source" for column data - allows cell values to be looked up by (long) keys.
  *
- * <p>Note for implementors: All {@link ColumnSource} implementations must map {@link Index#NULL_KEY} to a null value
- * for all {@code get} and {@code getPrev} methods.
+ * <p>
+ * Note for implementors: All {@link ColumnSource} implementations must map {@link Index#NULL_KEY} to a null value for
+ * all {@code get} and {@code getPrev} methods.
  */
-public interface ColumnSource<T> extends DefaultChunkSource.WithPrev<Values>, ElementSource<T>, TupleSource<T>, Releasable {
+public interface ColumnSource<T>
+        extends DefaultChunkSource.WithPrev<Values>, ElementSource<T>, TupleSource<T>, Releasable {
 
-    ColumnSource [] ZERO_LENGTH_COLUMN_SOURCE_ARRAY = new ColumnSource[0];
+    ColumnSource[] ZERO_LENGTH_COLUMN_SOURCE_ARRAY = new ColumnSource[0];
 
     Class<T> getType();
 
@@ -84,7 +86,8 @@ public interface ColumnSource<T> extends DefaultChunkSource.WithPrev<Values>, El
      * Release any resources held for caching purposes. Implementations need not guarantee that concurrent accesses are
      * correct, as the purpose of this method is to ensure cleanup for column sources that will no longer be used.
      */
-    @Override @OverridingMethodsMustInvokeSuper
+    @Override
+    @OverridingMethodsMustInvokeSuper
     default void releaseCachedResources() {
         Releasable.super.releaseCachedResources();
     }
@@ -104,7 +107,8 @@ public interface ColumnSource<T> extends DefaultChunkSource.WithPrev<Values>, El
      * @return A column source of the alternate data type, backed by the same underlying data.
      * @throws IllegalArgumentException If the alternativeDataType supplied is not supported
      */
-    <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> reinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) throws IllegalArgumentException;
+    <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> reinterpret(
+            @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) throws IllegalArgumentException;
 
     @Override
     default List<ColumnSource> getColumnSources() {
@@ -123,13 +127,14 @@ public interface ColumnSource<T> extends DefaultChunkSource.WithPrev<Values>, El
 
     @Override
     default T createTupleFromValues(@NotNull final Object... values) {
-        //noinspection unchecked
+        // noinspection unchecked
         return (T) values[0];
     }
 
     @Override
-    default <ELEMENT_TYPE> void exportElement(final T tuple, final int elementIndex, @NotNull final WritableSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
-        //noinspection unchecked
+    default <ELEMENT_TYPE> void exportElement(final T tuple, final int elementIndex,
+            @NotNull final WritableSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
+        // noinspection unchecked
         writableSource.set(destinationIndexKey, (ELEMENT_TYPE) tuple);
     }
 
@@ -150,9 +155,9 @@ public interface ColumnSource<T> extends DefaultChunkSource.WithPrev<Values>, El
     }
 
     /**
-     * Returns this {@code ColumnSource}, parameterized by {@code <TYPE>}, if the data type of this column (as given
-     * by {@link #getType()}) can be cast to {@code clazz}. This is analogous to casting the objects provided
-     * by this column source to {@code clazz}.
+     * Returns this {@code ColumnSource}, parameterized by {@code <TYPE>}, if the data type of this column (as given by
+     * {@link #getType()}) can be cast to {@code clazz}. This is analogous to casting the objects provided by this
+     * column source to {@code clazz}.
      * <p>
      * For example, the following code will throw an exception if the "MyString" column does not actually contain
      * {@code String} data:
@@ -161,10 +166,10 @@ public interface ColumnSource<T> extends DefaultChunkSource.WithPrev<Values>, El
      *     ColumnSource&lt;String&gt; colSource = table.getColumnSource("MyString").getParameterized(String.class)
      * </pre>
      * <p>
-     * Due to the nature of type erasure, the JVM will still insert an additional cast to {@code TYPE} when elements
-     * are retrieved from the column source, such as with {@code String myStr = colSource.get(0)}.
+     * Due to the nature of type erasure, the JVM will still insert an additional cast to {@code TYPE} when elements are
+     * retrieved from the column source, such as with {@code String myStr = colSource.get(0)}.
      *
-     * @param clazz  The target type.
+     * @param clazz The target type.
      * @param <TYPE> The target type, as a type parameter. Intended to be inferred from {@code clazz}.
      * @return A {@code ColumnSource} parameterized by {@code TYPE}.
      */
@@ -172,10 +177,11 @@ public interface ColumnSource<T> extends DefaultChunkSource.WithPrev<Values>, El
         Require.neqNull(clazz, "clazz");
         final Class<?> columnSourceType = getType();
         if (!clazz.isAssignableFrom(columnSourceType)) {
-            throw new ClassCastException("Cannot convert column source for type " + columnSourceType.getName() + " to " +
-                    "type " + clazz.getName());
+            throw new ClassCastException(
+                    "Cannot convert column source for type " + columnSourceType.getName() + " to " +
+                            "type " + clazz.getName());
         }
-        //noinspection unchecked
+        // noinspection unchecked
         return (ColumnSource<TYPE>) this;
     }
 }

@@ -38,8 +38,7 @@ public class ConsoleServiceGrpcBinding implements BindableService {
                         ProtoUtils.marshaller(BrowserNextResponse.getDefaultInstance()),
                         BrowserStream.Mode.IN_ORDER,
                         log,
-                        sessionService
-                )
+                        sessionService)
                 .build();
     }
 }
