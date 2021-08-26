@@ -11,10 +11,10 @@
 # See https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
 /.github/workflows/ @devinrsmith @jcferretti @JamesXNelson
 
-CODE_OF_CONDUCT.md @chipkent
-CONTRIBUTING.md @chipkent
-LICENSE.md @chipkent
-NOTICE.md @chipkent
-README.md @chipkent @rcaudy @margaretkennedy
-TRIAGE.md @chipkent
+/CODE_OF_CONDUCT.md @chipkent
+/CONTRIBUTING.md @chipkent
+/LICENSE.md @chipkent
+/NOTICE.md @chipkent
+/README.md @chipkent @rcaudy @margaretkennedy
+/TRIAGE.md @chipkent
 /licenses @chipkent
