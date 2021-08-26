@@ -26,8 +26,7 @@ public class AsyncErrorLogger {
                     ColumnHeader.ofString("SourceQueryDescription"),
                     ColumnHeader.of("Cause", Exception.class),
                     ColumnHeader.ofString("WorkerName"),
-                    ColumnHeader.ofString("HostName")
-            ));
+                    ColumnHeader.ofString("HostName")));
     private static final RowSetter<DBDateTime> timeSetter = tableWriter.getSetter("Time");
     private static final RowSetter<Integer> evaluationNumberSetter = tableWriter.getSetter("EvaluationNumber");
     private static final RowSetter<Integer> operationNumberSetter = tableWriter.getSetter("OperationNumber");

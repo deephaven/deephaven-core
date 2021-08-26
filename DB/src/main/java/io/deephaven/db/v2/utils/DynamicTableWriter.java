@@ -65,7 +65,7 @@ public class DynamicTableWriter implements TableWriter {
 
     // This constructor is no longer public to simplify access from python: jpy cannot resolve
     // calls with arguments of list type when there is more than one alternative with array element type
-    // on the java side.  Prefer the constructor taking qst.table.TableHeader or an array of qst.type.Type
+    // on the java side. Prefer the constructor taking qst.table.TableHeader or an array of qst.type.Type
     // objects.
     @SuppressWarnings("WeakerAccess")
     DynamicTableWriter(
@@ -92,7 +92,7 @@ public class DynamicTableWriter implements TableWriter {
 
     // This constructor is no longer public to simplify access from python: jpy cannot resolve
     // calls with arguments of list type when there is more than one alternative with array element type
-    // on the java side.  Prefer the constructor taking qst.table.TableHeader or an array of qst.type.Type
+    // on the java side. Prefer the constructor taking qst.table.TableHeader or an array of qst.type.Type
     // objects.
     DynamicTableWriter(final String[] columnNames, final Class<?>[] columnTypes) {
         this(columnNames, columnTypes, Collections.emptyMap());
