@@ -25,31 +25,35 @@ import java.util.function.ToIntFunction;
 public class StringSetImpl implements StringSet, Serializable {
 
 
-    public final static KeyedLongObjectKey<StringSetImpl> CACHE_KEY = new KeyedLongObjectKey.Strict<StringSetImpl>() {
+    public final static KeyedLongObjectKey<StringSetImpl> CACHE_KEY =
+        new KeyedLongObjectKey.Strict<StringSetImpl>() {
 
-        @Override
-        public long getLongKey(@NotNull final StringSetImpl stringSet) {
-            return stringSet.valueBitSet;
-        }
+            @Override
+            public long getLongKey(@NotNull final StringSetImpl stringSet) {
+                return stringSet.valueBitSet;
+            }
 
-        @Override
-        public int hashLongKey(final long valueBitSet) {
-            return HashCodeUtil.toHashCode(valueBitSet);
-        }
+            @Override
+            public int hashLongKey(final long valueBitSet) {
+                return HashCodeUtil.toHashCode(valueBitSet);
+            }
 
-        @Override
-        public boolean equalLongKey(final long valueBitSet, @NotNull final StringSetImpl stringSet) {
-            return valueBitSet == stringSet.valueBitSet;
-        }
-    };
+            @Override
+            public boolean equalLongKey(final long valueBitSet,
+                @NotNull final StringSetImpl stringSet) {
+                return valueBitSet == stringSet.valueBitSet;
+            }
+        };
 
-    public final static KeyedLongObjectHash.ValueFactoryT<StringSetImpl, ReverseLookupColumnSource<String, ?>> VALUE_FACTORY = new KeyedLongObjectHash.ValueFactoryT.Strict<StringSetImpl, ReverseLookupColumnSource<String, ?>>() {
+    public final static KeyedLongObjectHash.ValueFactoryT<StringSetImpl, ReverseLookupColumnSource<String, ?>> VALUE_FACTORY =
+        new KeyedLongObjectHash.ValueFactoryT.Strict<StringSetImpl, ReverseLookupColumnSource<String, ?>>() {
 
-        @Override
-        public StringSetImpl newValue(final long valueBitSet, @NotNull final ReverseLookupColumnSource<String, ?> columnSource) {
-            return new StringSetImpl(columnSource, valueBitSet);
-        }
-    };
+            @Override
+            public StringSetImpl newValue(final long valueBitSet,
+                @NotNull final ReverseLookupColumnSource<String, ?> columnSource) {
+                return new StringSetImpl(columnSource, valueBitSet);
+            }
+        };
 
     private final ReversibleLookup<String> reversibleLookup;
     private final long valueBitSet;
@@ -59,17 +63,20 @@ public class StringSetImpl implements StringSet, Serializable {
 
     private transient StringSetWrapper replacement;
 
-    //TODO: Consider caching values and sorted values.
-    //TODO: If we start caching values, consider changing getEncoding to use values().
-    //TODO: On this note, look at LongBitmapIndexedImmutableSetFactory.
+    // TODO: Consider caching values and sorted values.
+    // TODO: If we start caching values, consider changing getEncoding to use values().
+    // TODO: On this note, look at LongBitmapIndexedImmutableSetFactory.
 
-    public StringSetImpl(@NotNull final ReversibleLookup<String> reversibleLookup, final long valueBitSet) {
+    public StringSetImpl(@NotNull final ReversibleLookup<String> reversibleLookup,
+        final long valueBitSet) {
         this.reversibleLookup = reversibleLookup;
         this.valueBitSet = valueBitSet;
     }
 
     private int getHighestOneBitIndex() {
-        return highestOneBitIndex == Integer.MIN_VALUE ? (highestOneBitIndex = MathUtil.floorLog2(valueBitSet)) : highestOneBitIndex;
+        return highestOneBitIndex == Integer.MIN_VALUE
+            ? (highestOneBitIndex = MathUtil.floorLog2(valueBitSet))
+            : highestOneBitIndex;
     }
 
     private int getBitCount() {
@@ -88,7 +95,8 @@ public class StringSetImpl implements StringSet, Serializable {
     }
 
     private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
-        throw new UnsupportedOperationException("StringSetImpl should never be deserialized - it uses writeReplace() to serialize itself as different class entirely.");
+        throw new UnsupportedOperationException(
+            "StringSetImpl should never be deserialized - it uses writeReplace() to serialize itself as different class entirely.");
     }
 
     @Override
@@ -157,7 +165,8 @@ public class StringSetImpl implements StringSet, Serializable {
                 final String value = reversibleLookup.get(bi);
                 final int keyBitIndex = toOffset.applyAsInt(value);
                 if (keyBitIndex >= Long.SIZE) {
-                    throw new RuntimeException("Symbol manager returned an index " + keyBitIndex + " greater than the maximum, for symbol " + value);
+                    throw new RuntimeException("Symbol manager returned an index " + keyBitIndex
+                        + " greater than the maximum, for symbol " + value);
                 }
                 encoding |= (1L << keyBitIndex);
             }
@@ -191,14 +200,16 @@ public class StringSetImpl implements StringSet, Serializable {
 
         /**
          * Forward lookup from the integral index.
+         * 
          * @return the DATA_TYPE associated with the index.
          */
 
         DATA_TYPE get(long index);
 
         /**
-         *  Reverse lookup of the DATA_TYPE.
-         *  @return the integral index associated with the DATA_TYPE.
+         * Reverse lookup of the DATA_TYPE.
+         * 
+         * @return the integral index associated with the DATA_TYPE.
          */
 
         int rget(int highestIndex, DATA_TYPE value);

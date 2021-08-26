@@ -9,7 +9,8 @@ import org.immutables.value.Value;
 import java.util.Optional;
 
 /**
- * Representation class for codec information stored in key-value metadata for Deephaven-written Parquet files.
+ * Representation class for codec information stored in key-value metadata for Deephaven-written
+ * Parquet files.
  */
 @Value.Immutable
 @BuildableStyle

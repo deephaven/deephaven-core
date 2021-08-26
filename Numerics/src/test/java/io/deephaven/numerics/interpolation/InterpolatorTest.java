@@ -12,47 +12,52 @@ import java.util.Collections;
  */
 public class InterpolatorTest extends TestCase {
 
-    public void testNearest(){
+    public void testNearest() {
         double tol = 5e-2;
         final double extrapolateDistance = 0.01;
         final int nSteps = 95;
         final int nStepsInterp = 100;
-        final Interpolator.InterpolationAlgorithm method = Interpolator.InterpolationAlgorithm.SPLINE;
+        final Interpolator.InterpolationAlgorithm method =
+            Interpolator.InterpolationAlgorithm.SPLINE;
 
         t1(tol, nSteps, nStepsInterp, extrapolateDistance, method);
     }
 
-    public void testLinear(){
+    public void testLinear() {
         double tol = 1e-2;
         final double extrapolateDistance = 0.1;
         final int nSteps = 40;
         final int nStepsInterp = 100;
-        final Interpolator.InterpolationAlgorithm method = Interpolator.InterpolationAlgorithm.LINEAR;
+        final Interpolator.InterpolationAlgorithm method =
+            Interpolator.InterpolationAlgorithm.LINEAR;
 
         t1(tol, nSteps, nStepsInterp, extrapolateDistance, method);
     }
 
-    public void testPchip(){
+    public void testPchip() {
         double tol = 1e-2;
         final double extrapolateDistance = 0.1;
         final int nSteps = 35;
         final int nStepsInterp = 100;
-        final Interpolator.InterpolationAlgorithm method = Interpolator.InterpolationAlgorithm.PCHIP;
+        final Interpolator.InterpolationAlgorithm method =
+            Interpolator.InterpolationAlgorithm.PCHIP;
 
         t1(tol, nSteps, nStepsInterp, extrapolateDistance, method);
     }
 
-    public void testSpline(){
+    public void testSpline() {
         double tol = 1e-2;
         final double extrapolateDistance = 0.1;
         final int nSteps = 20;
         final int nStepsInterp = 100;
-        final Interpolator.InterpolationAlgorithm method = Interpolator.InterpolationAlgorithm.SPLINE;
+        final Interpolator.InterpolationAlgorithm method =
+            Interpolator.InterpolationAlgorithm.SPLINE;
 
         t1(tol, nSteps, nStepsInterp, extrapolateDistance, method);
     }
 
-    private void t1(double tol, int nSteps, int nStepsInterp, double extrapolateDistance, Interpolator.InterpolationAlgorithm method){
+    private void t1(double tol, int nSteps, int nStepsInterp, double extrapolateDistance,
+        Interpolator.InterpolationAlgorithm method) {
         final boolean extrapolate = true;
 
         final double xMin = extrapolateDistance;
@@ -68,7 +73,7 @@ public class InterpolatorTest extends TestCase {
 
         for (int i = 0; i < nSteps; i++) {
             x[i] = xMin + i * dx;
-            y[i] = Math.sin(x[i]) + 0.5*Math.sin(2*x[i]);
+            y[i] = Math.sin(x[i]) + 0.5 * Math.sin(2 * x[i]);
             indices.add(i);
         }
 
@@ -87,30 +92,32 @@ public class InterpolatorTest extends TestCase {
 
         for (int i = 0; i < nStepsInterp; i++) {
             xi[i] = xMaxInterp - i * dxInterp;
-            yActual[i] = Math.sin(xi[i]) + 0.5*Math.sin(2*xi[i]);
+            yActual[i] = Math.sin(xi[i]) + 0.5 * Math.sin(2 * xi[i]);
         }
 
         double[] yi = Interpolator.interpolate(xshuffle, yshuffle, xi, method, extrapolate);
 
-        for(int i=0; i<xi.length; i++){
+        for (int i = 0; i < xi.length; i++) {
             assertEquals("Element: " + i, yActual[i], yi[i], tol);
         }
     }
 
     public void testNonExtrapolation() {
-        double[] x = new double[]{1,2,3,4,5};
-        double[] y = new double[]{2,3,2,1,1};
-        double[] xi = new double[]{0,2,4,6};
-        double[] yi = Interpolator.interpolate(x, y, xi, Interpolator.InterpolationAlgorithm.PCHIP, false);
+        double[] x = new double[] {1, 2, 3, 4, 5};
+        double[] y = new double[] {2, 3, 2, 1, 1};
+        double[] xi = new double[] {0, 2, 4, 6};
+        double[] yi =
+            Interpolator.interpolate(x, y, xi, Interpolator.InterpolationAlgorithm.PCHIP, false);
         assertTrue(Double.isNaN(yi[0]));
         assertTrue(Double.isNaN(yi[3]));
     }
 
     public void testNulls() {
-        double[] x = new double[]{1,2,3,4,5};
-        double[] y = new double[]{2,3,2,1,1};
-        double[] xi = new double[]{1,2, QueryConstants.NULL_DOUBLE,5};
-        double[] yi = Interpolator.interpolate(x, y, xi, Interpolator.InterpolationAlgorithm.PCHIP, false);
+        double[] x = new double[] {1, 2, 3, 4, 5};
+        double[] y = new double[] {2, 3, 2, 1, 1};
+        double[] xi = new double[] {1, 2, QueryConstants.NULL_DOUBLE, 5};
+        double[] yi =
+            Interpolator.interpolate(x, y, xi, Interpolator.InterpolationAlgorithm.PCHIP, false);
         assertFalse(yi[0] == QueryConstants.NULL_DOUBLE);
         assertFalse(yi[1] == QueryConstants.NULL_DOUBLE);
         assertTrue(yi[2] == QueryConstants.NULL_DOUBLE);

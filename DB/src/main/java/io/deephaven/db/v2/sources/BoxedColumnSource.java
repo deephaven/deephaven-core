@@ -13,11 +13,13 @@ import org.jetbrains.annotations.NotNull;
  * {@link ColumnSource} implementation for explicitly boxing a primitive into a more complex type,
  * e.g. {@code byte} as {@link Boolean} or {@code long} as {@link DBDateTime}.
  */
-public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<DATA_TYPE> implements MutableColumnSourceGetDefaults.ForObject<DATA_TYPE> {
+public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<DATA_TYPE>
+    implements MutableColumnSourceGetDefaults.ForObject<DATA_TYPE> {
 
     final ColumnSource<?> originalSource;
 
-    BoxedColumnSource(@NotNull final Class<DATA_TYPE> dataType, @NotNull final ColumnSource<?> originalSource) {
+    BoxedColumnSource(@NotNull final Class<DATA_TYPE> dataType,
+        @NotNull final ColumnSource<?> originalSource) {
         super(dataType);
         this.originalSource = originalSource;
     }
@@ -28,13 +30,15 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
     @Override
     public abstract DATA_TYPE getPrev(long index);
 
-    abstract void transformChunk(@NotNull final Chunk<? extends Values> source, @NotNull final WritableChunk<? super Values> destination);
+    abstract void transformChunk(@NotNull final Chunk<? extends Values> source,
+        @NotNull final WritableChunk<? super Values> destination);
 
     private static final class BoxedFillContext implements FillContext {
 
         private final GetContext originalGetContext;
 
-        private BoxedFillContext(@NotNull final ColumnSource<?> originalSource, final int chunkCapacity, final SharedContext sharedContext) {
+        private BoxedFillContext(@NotNull final ColumnSource<?> originalSource,
+            final int chunkCapacity, final SharedContext sharedContext) {
             originalGetContext = originalSource.makeGetContext(chunkCapacity, sharedContext);
         }
 
@@ -45,19 +49,26 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
     }
 
     @Override
-    public final FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
+    public final FillContext makeFillContext(final int chunkCapacity,
+        final SharedContext sharedContext) {
         return new BoxedFillContext(originalSource, chunkCapacity, sharedContext);
     }
 
     @Override
-    public final void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
-        final Chunk<? extends Values> originalChunk = originalSource.getChunk(((BoxedFillContext) context).originalGetContext, orderedKeys);
+    public final void fillChunk(@NotNull final FillContext context,
+        @NotNull final WritableChunk<? super Values> destination,
+        @NotNull final OrderedKeys orderedKeys) {
+        final Chunk<? extends Values> originalChunk =
+            originalSource.getChunk(((BoxedFillContext) context).originalGetContext, orderedKeys);
         transformChunk(originalChunk, destination);
     }
 
     @Override
-    public final void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
-        final Chunk<? extends Values> originalChunk = originalSource.getPrevChunk(((BoxedFillContext) context).originalGetContext, orderedKeys);
+    public final void fillPrevChunk(@NotNull final FillContext context,
+        @NotNull final WritableChunk<? super Values> destination,
+        @NotNull final OrderedKeys orderedKeys) {
+        final Chunk<? extends Values> originalChunk = originalSource
+            .getPrevChunk(((BoxedFillContext) context).originalGetContext, orderedKeys);
         transformChunk(originalChunk, destination);
     }
 
@@ -67,13 +78,15 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
     }
 
     @Override
-    public final <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+    public final <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
+        @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         return originalSource.getType() == alternateDataType;
     }
 
     @Override
-    protected final <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        //noinspection unchecked
+    protected final <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
+        @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        // noinspection unchecked
         return (ColumnSource<ALTERNATE_DATA_TYPE>) originalSource;
     }
 
@@ -94,9 +107,11 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
         }
 
         @Override
-        final void transformChunk(@NotNull final Chunk<? extends Values> source, @NotNull final WritableChunk<? super Values> destination) {
+        final void transformChunk(@NotNull final Chunk<? extends Values> source,
+            @NotNull final WritableChunk<? super Values> destination) {
             final ByteChunk<? extends Values> typedSource = source.asByteChunk();
-            final WritableObjectChunk<Boolean, ? super Values> typedDestination = destination.asWritableObjectChunk();
+            final WritableObjectChunk<Boolean, ? super Values> typedDestination =
+                destination.asWritableObjectChunk();
 
             final int sourceSize = typedSource.size();
             for (int pi = 0; pi < sourceSize; ++pi) {
@@ -124,9 +139,11 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
         }
 
         @Override
-        final void transformChunk(@NotNull final Chunk<? extends Values> source, @NotNull final WritableChunk<? super Values> destination) {
+        final void transformChunk(@NotNull final Chunk<? extends Values> source,
+            @NotNull final WritableChunk<? super Values> destination) {
             final LongChunk<? extends Values> typedSource = source.asLongChunk();
-            final WritableObjectChunk<DBDateTime, ? super Values> typedDestination = destination.asWritableObjectChunk();
+            final WritableObjectChunk<DBDateTime, ? super Values> typedDestination =
+                destination.asWritableObjectChunk();
 
             final int sourceSize = typedSource.size();
             for (int pi = 0; pi < sourceSize; ++pi) {

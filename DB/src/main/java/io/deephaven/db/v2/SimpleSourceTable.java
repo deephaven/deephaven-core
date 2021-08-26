@@ -19,26 +19,29 @@ import java.util.Set;
 public class SimpleSourceTable extends SourceTable {
 
     /**
-     * @param tableDefinition     A TableDefinition
-     * @param description        A human-readable description for this table
-     * @param componentFactory   A component factory for creating column source managers
-     * @param locationProvider   A TableLocationProvider, for use in discovering the locations that compose this table
-     * @param liveTableRegistrar Callback for registering live tables for refreshes, null if this table is not live
+     * @param tableDefinition A TableDefinition
+     * @param description A human-readable description for this table
+     * @param componentFactory A component factory for creating column source managers
+     * @param locationProvider A TableLocationProvider, for use in discovering the locations that
+     *        compose this table
+     * @param liveTableRegistrar Callback for registering live tables for refreshes, null if this
+     *        table is not live
      */
     public SimpleSourceTable(TableDefinition tableDefinition,
-                             String description,
-                             SourceTableComponentFactory componentFactory,
-                             TableLocationProvider locationProvider,
-                             LiveTableRegistrar liveTableRegistrar) {
+        String description,
+        SourceTableComponentFactory componentFactory,
+        TableLocationProvider locationProvider,
+        LiveTableRegistrar liveTableRegistrar) {
         super(tableDefinition, description, componentFactory, locationProvider, liveTableRegistrar);
     }
 
     protected SimpleSourceTable newInstance(TableDefinition tableDefinition,
-                                            String description,
-                                            SourceTableComponentFactory componentFactory,
-                                            TableLocationProvider locationProvider,
-                                            LiveTableRegistrar liveTableRegistrar) {
-        return new SimpleSourceTable(tableDefinition, description, componentFactory, locationProvider, liveTableRegistrar);
+        String description,
+        SourceTableComponentFactory componentFactory,
+        TableLocationProvider locationProvider,
+        LiveTableRegistrar liveTableRegistrar) {
+        return new SimpleSourceTable(tableDefinition, description, componentFactory,
+            locationProvider, liveTableRegistrar);
     }
 
     @Override
@@ -47,12 +50,17 @@ public class SimpleSourceTable extends SourceTable {
             // Nothing changed - we have the same columns in the same order.
             return this;
         }
-        return newInstance(newDefinition, description + "-retainColumns", componentFactory, locationProvider, liveTableRegistrar);
+        return newInstance(newDefinition, description + "-retainColumns", componentFactory,
+            locationProvider, liveTableRegistrar);
     }
 
     @Override
-    protected final Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal, SelectColumn[] viewColumns, Map<String, Set<String>> columnDependency) {
-        DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinitionExternal, description + "-redefined", new QueryTableReference(redefine(newDefinitionInternal)), new String[0], viewColumns, null);
+    protected final Table redefine(TableDefinition newDefinitionExternal,
+        TableDefinition newDefinitionInternal, SelectColumn[] viewColumns,
+        Map<String, Set<String>> columnDependency) {
+        DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinitionExternal,
+            description + "-redefined", new QueryTableReference(redefine(newDefinitionInternal)),
+            new String[0], viewColumns, null);
         deferredViewTable.setRefreshing(isRefreshing());
         return deferredViewTable;
     }

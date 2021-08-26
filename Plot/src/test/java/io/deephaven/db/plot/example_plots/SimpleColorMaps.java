@@ -37,15 +37,15 @@ public class SimpleColorMaps {
 
         Figure fig = FigureFactory.figure();
         Figure cht = fig.newChart(0)
-                .chartTitle("Chart Title");
+            .chartTitle("Chart Title");
         Figure axs1 = cht.newAxes()
-                .xLabel("X")
-                .yLabel("Y")
-                .plotStyle("LINE")
-                .plot("Test1", x, y)
-                .pointColorByY(val -> heatMap(0, 50, green, red).apply(val));
+            .xLabel("X")
+            .yLabel("Y")
+            .plotStyle("LINE")
+            .plot("Test1", x, y)
+            .pointColorByY(val -> heatMap(0, 50, green, red).apply(val));
 
-        Range[] ranges = new Range[]{
+        Range[] ranges = new Range[] {
                 new Range(Double.NEGATIVE_INFINITY, 10, true, false),
                 new Range(10, 30, true, false),
                 new Range(30, Double.POSITIVE_INFINITY, true, true)};
@@ -57,7 +57,7 @@ public class SimpleColorMaps {
         m.put(ranges[1], colors[1]);
         m.put(ranges[2], colors[2]);
         axs1 = axs1.plot("Test2", x, y2)
-                .pointColorByY(val -> rangeMap(m).apply(val));
+            .pointColorByY(val -> rangeMap(m).apply(val));
 
         ExamplePlotUtils.display(axs1);
     }

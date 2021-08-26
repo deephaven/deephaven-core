@@ -115,7 +115,8 @@ public class ParsedDocument {
                 @Override
                 public Object visitChunkerStatement(ChunkerStatement node, Object data) {
                     stmts.add(node);
-                    // only want to add top level statements; we don't have a good solution for nested ranges yet.
+                    // only want to add top level statements; we don't have a good solution for
+                    // nested ranges yet.
                     return null;
                 }
             }, null);
@@ -125,7 +126,8 @@ public class ParsedDocument {
 
     public Node findNode(int p) {
 
-        if (doc.jjtGetFirstToken() == doc.jjtGetLastToken() && doc.jjtGetFirstToken().kind == ChunkerConstants.EOF) {
+        if (doc.jjtGetFirstToken() == doc.jjtGetLastToken()
+            && doc.jjtGetFirstToken().kind == ChunkerConstants.EOF) {
             return doc;
         }
 
@@ -254,7 +256,8 @@ public class ParsedDocument {
             assert startsBefore(startNode, replaceRange.getStart());
             // Note, we're intentionally sending the first token of both the start and end node,
             // as we need to search forward-only when examining tokens.
-            return findFromTokens(replaceRange, startNode.jjtGetFirstToken(), endNode.jjtGetFirstToken());
+            return findFromTokens(replaceRange, startNode.jjtGetFirstToken(),
+                endNode.jjtGetFirstToken());
         } else {
             // we are going to look through children backwards,
             // as the user is most likely to be editing the end of the document.
@@ -274,7 +277,8 @@ public class ParsedDocument {
             if (endNode != startNode) {
                 endNode = refineEndNode(replaceRange, endNode == null ? startNode : endNode);
             }
-            return findFromTokens(replaceRange, startNode.jjtGetFirstToken(), endNode.jjtGetFirstToken());
+            return findFromTokens(replaceRange, startNode.jjtGetFirstToken(),
+                endNode.jjtGetFirstToken());
         }
     }
 
@@ -301,7 +305,8 @@ public class ParsedDocument {
         // to setup backlinks.
         final Position.Builder startPos = start.positionStart();
         final Position.Builder endPos = end.positionStart();
-        // both asserts are >= because both start and end are the earliest token-containing-our-range we could find.
+        // both asserts are >= because both start and end are the earliest
+        // token-containing-our-range we could find.
         assert LspTools.greaterOrEqual(replaceRange.getStart(), startPos);
         assert LspTools.greaterOrEqual(replaceRange.getEnd(), endPos);
 
@@ -343,7 +348,8 @@ public class ParsedDocument {
                 tok = tok.next;
             }
         }
-        throw new IllegalArgumentException("Token " + startTok + " does not contain position " + pos);
+        throw new IllegalArgumentException(
+            "Token " + startTok + " does not contain position " + pos);
     }
 
     public void extendEnd(CompletionItem.Builder item, Position requested, Node node) {
@@ -362,7 +368,8 @@ public class ParsedDocument {
         if (tok.beginLine == tok.endLine) {
             // most common case (almost everything)
             final TextEdit.Builder textEdit = edit.getTextEditBuilder();
-            int moved = LspTools.extend(textEdit.getRangeBuilder().getEndBuilder(), tok.positionEnd());
+            int moved =
+                LspTools.extend(textEdit.getRangeBuilder().getEndBuilder(), tok.positionEnd());
             String txt = tok.image;
             textEdit.setText(textEdit.getText() +
                     txt.substring(txt.length() - moved));

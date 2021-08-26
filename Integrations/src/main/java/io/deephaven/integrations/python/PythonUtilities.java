@@ -12,10 +12,11 @@ import org.jpy.PyObject;
 class PythonUtilities {
 
     /**
-     * Gets the python function that should be called by a listener.  The input can be either (1) a callable or
-     * (2) an object which provides an "onUpdate" method.
+     * Gets the python function that should be called by a listener. The input can be either (1) a
+     * callable or (2) an object which provides an "onUpdate" method.
      *
-     * @param pyObject python listener object.  This should either be a callable or an object which provides an "onUpdate" method.
+     * @param pyObject python listener object. This should either be a callable or an object which
+     *        provides an "onUpdate" method.
      * @return python function that should be called by a listener.
      * @throws IllegalArgumentException python listener object is not a valid listener.
      */
@@ -24,7 +25,8 @@ class PythonUtilities {
             PyObject pyCallable = pyObject.getAttribute("onUpdate");
 
             if (!pyCallable.hasAttribute("__call__")) {
-                throw new IllegalArgumentException("The Python object provided has an onUpdate attribute " +
+                throw new IllegalArgumentException(
+                    "The Python object provided has an onUpdate attribute " +
                         "which is not callable");
             }
 
@@ -32,7 +34,8 @@ class PythonUtilities {
         } else if (pyObject.hasAttribute("__call__")) {
             return pyObject;
         } else {
-            throw new IllegalArgumentException("The Python object specified should either be callable, or a " +
+            throw new IllegalArgumentException(
+                "The Python object specified should either be callable, or a " +
                     "class instance with an onUpdate method");
         }
     }

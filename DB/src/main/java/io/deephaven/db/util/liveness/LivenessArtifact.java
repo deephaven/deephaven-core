@@ -8,8 +8,8 @@ import java.io.Serializable;
 import java.util.Collection;
 
 /**
- * A query engine artifact that is also a {@link LivenessNode}. These referents are added to the current top of the
- * {@link LivenessScopeStack} on construction or deserialization.
+ * A query engine artifact that is also a {@link LivenessNode}. These referents are added to the
+ * current top of the {@link LivenessScopeStack} on construction or deserialization.
  */
 public class LivenessArtifact extends ReferenceCountedLivenessNode implements Serializable {
 
@@ -25,7 +25,8 @@ public class LivenessArtifact extends ReferenceCountedLivenessNode implements Se
      *
      * @param objectInputStream The object input stream
      */
-    private void readObject(@NotNull final ObjectInputStream objectInputStream) throws IOException, ClassNotFoundException {
+    private void readObject(@NotNull final ObjectInputStream objectInputStream)
+        throws IOException, ClassNotFoundException {
         objectInputStream.defaultReadObject();
         initializeTransientFieldsForLiveness();
         manageWithCurrentScope();
@@ -42,7 +43,8 @@ public class LivenessArtifact extends ReferenceCountedLivenessNode implements Se
     }
 
     /**
-     * <p>If this manages referent one or more times, drop one such reference.
+     * <p>
+     * If this manages referent one or more times, drop one such reference.
      *
      * @param referent The referent to drop
      */
@@ -54,7 +56,9 @@ public class LivenessArtifact extends ReferenceCountedLivenessNode implements Se
     }
 
     /**
-     * <p>If this artifact is still live and it manages referent one or more times, drop one such reference.
+     * <p>
+     * If this artifact is still live and it manages referent one or more times, drop one such
+     * reference.
      *
      * @param referent The referent to drop
      */
@@ -72,7 +76,9 @@ public class LivenessArtifact extends ReferenceCountedLivenessNode implements Se
     }
 
     /**
-     * <p>For each referent in referents, if this manages referent one or more times, drop one such reference.
+     * <p>
+     * For each referent in referents, if this manages referent one or more times, drop one such
+     * reference.
      *
      * @param referents The referents to drop
      */
@@ -85,13 +91,15 @@ public class LivenessArtifact extends ReferenceCountedLivenessNode implements Se
     }
 
     /**
-     * <p>For each referent in referents, if this artifact is still live and it manages referent one or more times,
-     * drop one such reference.
+     * <p>
+     * For each referent in referents, if this artifact is still live and it manages referent one or
+     * more times, drop one such reference.
      *
      * @param referents The referents to drop
      */
     @SuppressWarnings("unused")
-    protected final void tryUnmanage(@NotNull final Collection<? extends LivenessReferent> referents) {
+    protected final void tryUnmanage(
+        @NotNull final Collection<? extends LivenessReferent> referents) {
         if (Liveness.REFERENCE_TRACKING_DISABLED) {
             return;
         }

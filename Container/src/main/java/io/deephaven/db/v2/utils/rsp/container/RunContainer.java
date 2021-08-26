@@ -1,8 +1,8 @@
 /*
  * (c) the authors Licensed under the Apache License, Version 2.0.
  *
- * The code in this file is a heavily modified version of the
- * original in the RoaringBitmap library; please see https://roaringbitmap.org/
+ * The code in this file is a heavily modified version of the original in the RoaringBitmap library;
+ * please see https://roaringbitmap.org/
  *
  */
 package io.deephaven.db.v2.utils.rsp.container;
@@ -33,7 +33,7 @@ public final class RunContainer extends Container {
     private static final boolean ENABLE_GALLOPING_AND = false;
 
     private static int branchyUnsignedInterleavedBinarySearch(final short[] array, final int begin,
-                                                              final int end, final short k) {
+        final int end, final short k) {
         int ikey = toIntUnsigned(k);
         int low = begin;
         int high = end - 1;
@@ -53,7 +53,7 @@ public final class RunContainer extends Container {
 
     // starts with binary search and finishes with a sequential search
     private static int hybridUnsignedInterleavedBinarySearch(final short[] array, final int begin,
-                                                             final int end, final short k) {
+        final int end, final short k) {
         int ikey = toIntUnsigned(k);
         // next line accelerates the possibly common case where the value would
         // be inserted at the end
@@ -93,7 +93,7 @@ public final class RunContainer extends Container {
     }
 
     private static int unsignedInterleavedBinarySearch(final short[] array, final int begin,
-                                                       final int end, final short k) {
+        final int end, final short k) {
         if (ContainerUtil.USE_HYBRID_BINSEARCH) {
             return hybridUnsignedInterleavedBinarySearch(array, begin, end, k);
         } else {
@@ -103,10 +103,12 @@ public final class RunContainer extends Container {
     }
 
     private short[] valueslength;// we interleave values and lengths, so
-    // that if you have the values 11,12,13,14,15, you store that as 11,4 where 4 means that beyond 11
+    // that if you have the values 11,12,13,14,15, you store that as 11,4 where 4 means that beyond
+    // 11
     // itself, there are
     // 4 contiguous values that follows.
-    // Other example: e.g., 1, 10, 20,0, 31,2 would be a concise representation of 1, 2, ..., 11, 20,
+    // Other example: e.g., 1, 10, 20,0, 31,2 would be a concise representation of 1, 2, ..., 11,
+    // 20,
     // 31, 32, 33
 
     int nbrruns = 0;// how many runs, this number should fit in 16 bits.
@@ -165,13 +167,13 @@ public final class RunContainer extends Container {
      * Create an run container with a run of ones from start to end.
      *
      * @param start first index
-     * @param end  last index (range is exclusive)
+     * @param end last index (range is exclusive)
      */
     public RunContainer(final int start, final int end) {
         nbrruns = 1;
         valueslength = new short[2 * DEFAULT_INIT_SIZE_IN_RUNS];
         valueslength[0] = (short) start;
-        final int d =  end - start;
+        final int d = end - start;
         valueslength[1] = (short) (d - 1);
         cardinality = d;
     }
@@ -188,14 +190,15 @@ public final class RunContainer extends Container {
         cardinality = d1 + d2;
     }
 
-    public static RunContainer select(final RunContainer src, final int startRank, final int endRank) {
+    public static RunContainer select(final RunContainer src, final int startRank,
+        final int endRank) {
         final RunContainer ans = new RunContainer(src.valueslength.length);
         int k = 0;
         int kStart = toIntUnsigned(src.getValue(0));
         int kLen = toIntUnsigned(src.getLength(0));
         int kEndPos = kLen;
         int ostart = -1;
-        int oend = -1;  // inclusive
+        int oend = -1; // inclusive
         int run = 0;
         for (int pos = startRank; pos < endRank; ++pos) {
             while (kEndPos < pos) {
@@ -299,10 +302,10 @@ public final class RunContainer extends Container {
      * Construct a new RunContainer backed by the provided array. Note that if you modify the
      * RunContainer a new array may be produced.
      *
-     * @param array   array where the data is stored
+     * @param array array where the data is stored
      * @param numRuns number of runs (each using 2 shorts in the buffer)
      */
-    //@VisibleForTesting
+    // @VisibleForTesting
     RunContainer(final short[] array, final int numRuns) {
         if (array.length < 2 * numRuns) {
             throw new RuntimeException("Mismatch between buffer and numRuns");
@@ -315,14 +318,16 @@ public final class RunContainer extends Container {
     }
 
     /**
-     * Construct a new RunContainer using the provided array.  The container takes ownership of the array.
+     * Construct a new RunContainer using the provided array. The container takes ownership of the
+     * array.
      *
-     * @param valueslength array with valid runs, in increasing unsigned short order.  The container
-     *                     takes ownership of this array.
-     * @param nbrruns      number of runs (the array should contain 2*n elements).
-     * @param cardinality  total cardinality in the runs.
+     * @param valueslength array with valid runs, in increasing unsigned short order. The container
+     *        takes ownership of this array.
+     * @param nbrruns number of runs (the array should contain 2*n elements).
+     * @param cardinality total cardinality in the runs.
      */
-    public static RunContainer makeByWrapping(final short[] valueslength, final int nbrruns, final int cardinality) {
+    public static RunContainer makeByWrapping(final short[] valueslength, final int nbrruns,
+        final int cardinality) {
         return new RunContainer(valueslength, nbrruns, cardinality);
     }
 
@@ -337,7 +342,8 @@ public final class RunContainer extends Container {
     }
 
     private Container iaddImpl(
-            final int begin, final int end, final Supplier<RunContainer> self, final Supplier<RunContainer> copy) {
+        final int begin, final int end, final Supplier<RunContainer> self,
+        final Supplier<RunContainer> copy) {
         if (end == begin) {
             return self.get();
         }
@@ -407,10 +413,10 @@ public final class RunContainer extends Container {
     }
 
     private Container isetImpl(final short k,
-                               int index,
-                               final PositionHint positionHint,
-                               final Supplier<RunContainer> self,
-                               final Supplier<RunContainer> copy) {
+        int index,
+        final PositionHint positionHint,
+        final Supplier<RunContainer> self,
+        final Supplier<RunContainer> copy) {
         index = -index - 2;// points to preceding value, possibly -1
         final int kAsInt = toIntUnsigned(k);
         if (index >= 0) {// possible match
@@ -508,7 +514,8 @@ public final class RunContainer extends Container {
                 rlelength = getLengthAsInt(rlepos);
             }
             if (rleval > arrayval) {
-                arraypos = ContainerUtil.advanceUntil(x.content, arraypos, x.getCardinality(), (short) rleval);
+                arraypos = ContainerUtil.advanceUntil(x.content, arraypos, x.getCardinality(),
+                    (short) rleval);
             } else {
                 ac.content[ac.cardinality] = (short) arrayval;
                 ++ac.cardinality;
@@ -530,8 +537,7 @@ public final class RunContainer extends Container {
         if (resultCardUpperBound <= ArrayContainer.SWITCH_CONTAINER_CARDINALITY_THRESHOLD) {
             final ArrayContainer answer = new ArrayContainer(resultCardUpperBound);
             final SearchRangeIterator xit = x.getShortRangeIterator(0);
-            RUNS:
-            for (int run = 0; run < nbrruns; ++run) {
+            RUNS: for (int run = 0; run < nbrruns; ++run) {
                 final int runStart = getValueAsInt(run);
                 final int runLast = runStart + getLengthAsInt(run);
                 final boolean valid = xit.advance(runStart);
@@ -593,7 +599,8 @@ public final class RunContainer extends Container {
         while ((rlepos < nbrruns) && (xrlepos < x.nbrruns)) {
             if (end <= xstart) {
                 if (ENABLE_GALLOPING_AND) {
-                    rlepos = skipAhead(this, rlepos, xstart); // skip over runs until we have end > xstart (or
+                    rlepos = skipAhead(this, rlepos, xstart); // skip over runs until we have end >
+                                                              // xstart (or
                     // rlepos is advanced beyond end)
                 } else {
                     ++rlepos;
@@ -701,7 +708,8 @@ public final class RunContainer extends Container {
         final RunContainer ans;
         if (inPlace) {
             ans = this;
-            ans.cardinality = 0;  // we are going to building ourselves over on top of the same array.
+            ans.cardinality = 0; // we are going to building ourselves over on top of the same
+                                 // array.
         } else {
             ans = new RunContainer(erun - srun + 1);
         }
@@ -753,7 +761,8 @@ public final class RunContainer extends Container {
             // if the cardinality is small, we construct the solution in place
             final ArrayContainer ac = new ArrayContainer(card);
             ac.cardinality =
-                    ContainerUtil.unsignedDifference(getShortIterator(), x.getShortIterator(), ac.content);
+                ContainerUtil.unsignedDifference(getShortIterator(), x.getShortIterator(),
+                    ac.content);
             return ac;
         }
         // otherwise, we generate a bitmap
@@ -775,7 +784,8 @@ public final class RunContainer extends Container {
                 int runStart = getValueAsInt(rlepos);
                 int runEnd = runStart + getLengthAsInt(rlepos);
                 for (int runValue = runStart; runValue <= runEnd; ++runValue) {
-                    if (!x.contains((short) runValue)) {// it looks like contains() should be cheap enough if
+                    if (!x.contains((short) runValue)) {// it looks like contains() should be cheap
+                                                        // enough if
                         // accessed sequentially
                         answer.content[answer.cardinality++] = (short) runValue;
                     }
@@ -862,7 +872,7 @@ public final class RunContainer extends Container {
             ++rlepos;
             if (rlepos < nbrruns) {
                 System.arraycopy(valueslength, 2 * rlepos, ans.valueslength, 2 * ans.nbrruns,
-                        2 * (nbrruns - rlepos));
+                    2 * (nbrruns - rlepos));
                 for (int run = rlepos; run < nbrruns; ++run) {
                     ans.cardinality += getLengthAsInt(run) + 1;
                 }
@@ -943,12 +953,12 @@ public final class RunContainer extends Container {
     /**
      * @param x a value to check for membership to this container
      * @param i a position in runs space where to begin a binary search
-     * @return the index of the run that contains x, if x is contained in some existing run; if
-     * x is not part of an existing run, -(index+1) where index is the position where x
-     * would be "inserted".  Note "inserting" x may mean either (a) adding x as the new ending
-     * for the run in the <em><previous/em> position, (b) inserting a new run with only x pushing
-     * the run in the position returned right, or (c) inserting x as the new start of
-     * the existing run in that position.
+     * @return the index of the run that contains x, if x is contained in some existing run; if x is
+     *         not part of an existing run, -(index+1) where index is the position where x would be
+     *         "inserted". Note "inserting" x may mean either (a) adding x as the new ending for the
+     *         run in the <em><previous/em> position, (b) inserting a new run with only x pushing
+     *         the run in the position returned right, or (c) inserting x as the new start of the
+     *         existing run in that position.
      */
     int searchFrom(final short x, final int i) {
         int index = unsignedInterleavedBinarySearch(valueslength, i, nbrruns, x);
@@ -1036,7 +1046,8 @@ public final class RunContainer extends Container {
     @Override
     protected boolean contains(final BitmapContainer bitmapContainer) {
         final int cardinality = getCardinality();
-        if (bitmapContainer.getCardinality() != -1 && bitmapContainer.getCardinality() > cardinality) {
+        if (bitmapContainer.getCardinality() != -1
+            && bitmapContainer.getCardinality() > cardinality) {
             return false;
         }
         final int runCount = numberOfRuns();
@@ -1089,7 +1100,8 @@ public final class RunContainer extends Container {
     }
 
     private void copyValuesLength(
-            final short[] src, final int srcIndex, final short[] dst, final int dstIndex, final int length) {
+        final short[] src, final int srcIndex, final short[] dst, final int dstIndex,
+        final int length) {
         System.arraycopy(src, 2 * srcIndex, dst, 2 * dstIndex, 2 * length);
     }
 
@@ -1105,9 +1117,9 @@ public final class RunContainer extends Container {
 
     private static int nextRunsCapacity(final int oldRuns) {
         return (oldRuns == 0) ? DEFAULT_INIT_SIZE_IN_RUNS
-                : oldRuns < 32 ? runsSizeRounding(oldRuns * 2)
+            : oldRuns < 32 ? runsSizeRounding(oldRuns * 2)
                 : oldRuns < 512 ? runsSizeRounding(oldRuns * 3 / 2)
-                : runsSizeRounding(oldRuns * 5 / 4);
+                    : runsSizeRounding(oldRuns * 5 / 4);
 
     }
 
@@ -1152,7 +1164,7 @@ public final class RunContainer extends Container {
      * @param index the index of the run.
      * @return the length of the run at the index.
      * @throws ArrayIndexOutOfBoundsException if index is negative or larger than the index of the
-     *                                        last run.
+     *         last run.
      */
     public short getLength(final int index) {
         return valueslength[2 * index + 1];
@@ -1259,7 +1271,8 @@ public final class RunContainer extends Container {
             // We know v is to the left of the run at position right.
 
             // Binary search over start elements.
-            // At this point neither left nor right contain v, and there is at least one other range between them
+            // At this point neither left nor right contain v, and there is at least one other range
+            // between them
             // thus we're guaranteed to advance.
             // Note as this loop iterates, it is always true neither left nor right contain v.
             while (true) {
@@ -1371,7 +1384,7 @@ public final class RunContainer extends Container {
      * @param index the index of the run.
      * @return the value of the first element of the run at the index.
      * @throws ArrayIndexOutOfBoundsException if index is negative or larger than the index of the
-     *                                        last run.
+     *         last run.
      */
     public short getValue(final int index) {
         return valueslength[2 * index];
@@ -1382,16 +1395,19 @@ public final class RunContainer extends Container {
     }
 
     public RunContainer iaddUnsafe(final int begin, final int end, final int searchBeginRunIndex) {
-        int bIndex = unsignedInterleavedBinarySearch(valueslength, searchBeginRunIndex, nbrruns, (short) begin);
+        int bIndex = unsignedInterleavedBinarySearch(valueslength, searchBeginRunIndex, nbrruns,
+            (short) begin);
         int eIndex;
         if (bIndex >= 0) {
-            eIndex = unsignedInterleavedBinarySearch(valueslength, bIndex, nbrruns, (short) (end - 1));
+            eIndex =
+                unsignedInterleavedBinarySearch(valueslength, bIndex, nbrruns, (short) (end - 1));
         } else {
             final int effectiveBeginIndex = ~bIndex;
             if (effectiveBeginIndex >= nbrruns) {
                 eIndex = bIndex;
             } else {
-                eIndex = unsignedInterleavedBinarySearch(valueslength, effectiveBeginIndex, nbrruns, (short) (end - 1));
+                eIndex = unsignedInterleavedBinarySearch(valueslength, effectiveBeginIndex, nbrruns,
+                    (short) (end - 1));
             }
         }
 
@@ -1518,7 +1534,8 @@ public final class RunContainer extends Container {
         }
         final RunContainer ans;
         if (shared) {
-            final short[] newValuesLength = getValuesLengthInBiggerArray(runsShortArraySizeRounding(capacityForAns / 2));
+            final short[] newValuesLength =
+                getValuesLengthInBiggerArray(runsShortArraySizeRounding(capacityForAns / 2));
             ans = makeByWrapping(newValuesLength, nbrruns, cardinality);
         } else {
             ans = this;
@@ -1576,9 +1593,9 @@ public final class RunContainer extends Container {
 
     private int nextCapacity() {
         int newCapacity = (valueslength.length == 0) ? DEFAULT_INIT_SIZE_IN_RUNS
-                : valueslength.length < 64 ? valueslength.length * 2
+            : valueslength.length < 64 ? valueslength.length * 2
                 : valueslength.length < 1024 ? valueslength.length * 3 / 2
-                : valueslength.length * 5 / 4;
+                    : valueslength.length * 5 / 4;
         return newCapacity;
     }
 
@@ -1663,19 +1680,21 @@ public final class RunContainer extends Container {
         // remaining code is just a minor variation on not()
         int myNbrRuns = nbrruns;
 
-        // we can't use deepCopy/deepCopyIfShared because we already tested valueslentgh.lentgth above,
+        // we can't use deepCopy/deepCopyIfShared because we already tested valueslentgh.lentgth
+        // above,
         // and deepCopy may reduce valueslentgh.lentgth
         final RunContainer ans;
         if (shared) {
             ans = new RunContainer(Arrays.copyOf(valueslength, valueslength.length), 0, 0);
         } else {
-            nbrruns = 0;   // losing nbrruns, which is stashed in myNbrRuns.
+            nbrruns = 0; // losing nbrruns, which is stashed in myNbrRuns.
             cardinality = 0;
             ans = this;
         }
         int k = 0;
 
-        // could try using unsignedInterleavedBinarySearch(valueslength, 0, nbrruns, rangeStart) instead
+        // could try using unsignedInterleavedBinarySearch(valueslength, 0, nbrruns, rangeStart)
+        // instead
         // of sequential scan
         // to find the starting location
 
@@ -1690,7 +1709,8 @@ public final class RunContainer extends Container {
         // left of the write pointer. However, we need to give the read pointer a head start.
         // use local variables so we are always reading 1 location ahead.
 
-        short bufferedValue = 0, bufferedLength = 0; // MAX_VALUE start and MAX_VALUE length would be illegal,
+        short bufferedValue = 0, bufferedLength = 0; // MAX_VALUE start and MAX_VALUE length would
+                                                     // be illegal,
         // could use as sentinel
         short nextValue = 0, nextLength = 0;
         if (k < myNbrRuns) { // prime the readahead variables
@@ -1703,7 +1723,8 @@ public final class RunContainer extends Container {
         for (; k < myNbrRuns; ++k) {
             if (ans.nbrruns > k + 1) {
                 throw new RuntimeException(
-                        "internal error in inot, writer has overtaken reader!! " + k + " " + ans.nbrruns);
+                    "internal error in inot, writer has overtaken reader!! " + k + " "
+                        + ans.nbrruns);
             }
             if (k + 1 < myNbrRuns) {
                 nextValue = getValue(k + 1); // readahead for next iteration
@@ -1775,20 +1796,22 @@ public final class RunContainer extends Container {
     /**
      * Calculate the result of an or between two RunContainers storing the result in a RunContainer.
      *
-     * @param dst       A RunContainer where to store the result.  Its nbrruns field member should be zero on entry.
-     * @param src       A RunContainer with source data for the RunContainer part of the or; if the same object as
-     *                  dst, the operation is done in place and the data in src is expected to shifted by srcOffset.
-     * @param srcRuns   The number of runs in src; as a separate argument since dst and src may be the same object,
-     *                  in which case nbrruns for src is also cero.
+     * @param dst A RunContainer where to store the result. Its nbrruns field member should be zero
+     *        on entry.
+     * @param src A RunContainer with source data for the RunContainer part of the or; if the same
+     *        object as dst, the operation is done in place and the data in src is expected to
+     *        shifted by srcOffset.
+     * @param srcRuns The number of runs in src; as a separate argument since dst and src may be the
+     *        same object, in which case nbrruns for src is also cero.
      * @param srcOffset An offset ot use while reading a particular position in src.
-     * @param other     A second RunContainer, to or against src.
+     * @param other A second RunContainer, to or against src.
      */
     private static void orImpl(
-            final RunContainer dst,
-            final RunContainer src,
-            final int srcRuns,
-            final int srcOffset,
-            final RunContainer other) {
+        final RunContainer dst,
+        final RunContainer src,
+        final int srcRuns,
+        final int srcOffset,
+        final RunContainer other) {
         final int otherRuns = other.nbrruns;
         int srcPosWithOffset = srcOffset;
         final int srcRunsWithOffset = srcRuns + srcOffset;
@@ -1855,7 +1878,7 @@ public final class RunContainer extends Container {
     private Container iremoveImpl(final int begin, final int end) {
         int bIndex = unsignedInterleavedBinarySearch(valueslength, 0, nbrruns, (short) begin);
         int eIndex =
-                unsignedInterleavedBinarySearch(valueslength, 0, nbrruns, (short) (end - 1));
+            unsignedInterleavedBinarySearch(valueslength, 0, nbrruns, (short) (end - 1));
 
         if (bIndex >= 0) { // beginning marks beginning of a run
             if (eIndex < 0) {
@@ -1864,7 +1887,8 @@ public final class RunContainer extends Container {
             // eIndex could be a run that begins exactly at "end"
             // or it might be an earlier run
 
-            // if the end is before the first run, we'd have eIndex==-1. But bIndex makes this impossible.
+            // if the end is before the first run, we'd have eIndex==-1. But bIndex makes this
+            // impossible.
 
             if (valueLengthContains(end, eIndex)) {
                 chopValueLength(end, eIndex); // there is something left in the run
@@ -2039,7 +2063,7 @@ public final class RunContainer extends Container {
             if (rlepos < nbrruns) {
                 final int nruns = nbrruns - rlepos;
                 System.arraycopy(valueslength, 2 * rlepos, ans.valueslength, 2 * ans.nbrruns,
-                        2 * nruns);
+                    2 * nruns);
                 for (int i = 0; i < nruns; ++i) {
                     ans.cardinality += ans.getLengthAsInt(ans.nbrruns + i) + 1;
                 }
@@ -2050,20 +2074,24 @@ public final class RunContainer extends Container {
     }
 
     /**
-     * Calculate the result of an or between a RunContainer and an ArrayContainer storing the result in a RunContainer.
+     * Calculate the result of an or between a RunContainer and an ArrayContainer storing the result
+     * in a RunContainer.
      *
-     * @param dst       A RunContainer where to store the result.  Its nbrruns field member should be zero on entry.
-     * @param src       A RunContainer with source data for the RunContainer part of the or, potentially shifted by srcOffset.
-     * @param srcRuns   The number of runs in the srcValueslength array.
-     * @param srcOffset An offset ot use while reading a particular position in the srcValueslength array.
-     * @param other     An ArrayContainer to or against.
+     * @param dst A RunContainer where to store the result. Its nbrruns field member should be zero
+     *        on entry.
+     * @param src A RunContainer with source data for the RunContainer part of the or, potentially
+     *        shifted by srcOffset.
+     * @param srcRuns The number of runs in the srcValueslength array.
+     * @param srcOffset An offset ot use while reading a particular position in the srcValueslength
+     *        array.
+     * @param other An ArrayContainer to or against.
      */
     private static void orImpl(
-            final RunContainer dst,
-            final RunContainer src,
-            final int srcRuns,
-            final int srcOffset,
-            final ArrayContainer other) {
+        final RunContainer dst,
+        final RunContainer src,
+        final int srcRuns,
+        final int srcOffset,
+        final ArrayContainer other) {
         final int otherCardinality = other.getCardinality();
         int srcPosWithOffset = srcOffset;
         final int srcRunsWithOffset = srcRuns + srcOffset;
@@ -2254,11 +2282,11 @@ public final class RunContainer extends Container {
     // To recover rooms between begin(exclusive) and end(inclusive)
     private void recoverRoomsInRange(final int begin, final int end) {
         for (int run = begin + 1; run <= end; ++run) {
-           cardinality -= getLengthAsInt(run) + 1;
+            cardinality -= getLengthAsInt(run) + 1;
         }
         if (end + 1 < nbrruns) {
             copyValuesLength(valueslength, end + 1, valueslength, begin + 1,
-                    nbrruns - 1 - end);
+                nbrruns - 1 - end);
         }
         nbrruns -= end - begin;
     }
@@ -2287,17 +2315,20 @@ public final class RunContainer extends Container {
 
     @Override
     Container iunset(final short x, final PositionHint positionHint) {
-        final int index = unsignedInterleavedBinarySearch(valueslength, Math.max(positionHint.value, 0), nbrruns, x);
+        final int index = unsignedInterleavedBinarySearch(valueslength,
+            Math.max(positionHint.value, 0), nbrruns, x);
         return unsetImpl(x, index, true, positionHint);
     }
 
     @Override
     Container unset(final short x, final PositionHint positionHint) {
-        final int index = unsignedInterleavedBinarySearch(valueslength, Math.max(positionHint.value, 0), nbrruns, x);
+        final int index = unsignedInterleavedBinarySearch(valueslength,
+            Math.max(positionHint.value, 0), nbrruns, x);
         return unsetImpl(x, index, false, positionHint);
     }
 
-    private Container unsetImpl(final short x, int index, final boolean inPlace, final PositionHint positionHintOut) {
+    private Container unsetImpl(final short x, int index, final boolean inPlace,
+        final PositionHint positionHintOut) {
         if (index >= 0) {
             final RunContainer ans = inPlace ? deepcopyIfShared() : deepCopy();
             if (ans.getLength(index) == 0) {
@@ -2344,8 +2375,8 @@ public final class RunContainer extends Container {
     }
 
     /**
-     * Convert to Array or Bitmap container if the serialized form would be shorter. Exactly the same
-     * functionality as toEfficientContainer.
+     * Convert to Array or Bitmap container if the serialized form would be shorter. Exactly the
+     * same functionality as toEfficientContainer.
      */
 
     @Override
@@ -2364,7 +2395,7 @@ public final class RunContainer extends Container {
             offset = nextOffset;
         }
         throw new IllegalArgumentException(
-                "Cannot select " + j + " since cardinality is " + getCardinality());
+            "Cannot select " + j + " since cardinality is " + getCardinality());
     }
 
     @Override
@@ -2401,7 +2432,7 @@ public final class RunContainer extends Container {
         int kLen = getLengthAsInt(0);
         int kEndPos = kLen;
         int ostart = -1;
-        int oend = -1;  // inclusive
+        int oend = -1; // inclusive
         while (inPositions.hasNext()) {
             inPositions.next();
             int istart = inPositions.start();
@@ -2433,7 +2464,8 @@ public final class RunContainer extends Container {
     }
 
     @Override
-    public boolean findRanges(final RangeConsumer outPositions, final RangeIterator inValues, final int maxPos) {
+    public boolean findRanges(final RangeConsumer outPositions, final RangeIterator inValues,
+        final int maxPos) {
         if (!inValues.hasNext()) {
             return false;
         }
@@ -2443,7 +2475,7 @@ public final class RunContainer extends Container {
         int kLen = getLengthAsInt(0);
         int kEnd = kStart + kLen;
         int ostart = -1;
-        int oend = -1;  // inclusive
+        int oend = -1; // inclusive
         do {
             inValues.next();
             int istart = inValues.start();
@@ -2515,17 +2547,18 @@ public final class RunContainer extends Container {
         do {
             probePos = left + span;
             if (probePos >= skippingOn.nbrruns - 1) {
-                // expect it might be quite common to find the container cannot be advanced as far as
+                // expect it might be quite common to find the container cannot be advanced as far
+                // as
                 // requested. Optimize for it.
                 probePos = skippingOn.nbrruns - 1;
                 end = toIntUnsigned(skippingOn.getValue(probePos))
-                        + toIntUnsigned(skippingOn.getLength(probePos)) + 1;
+                    + toIntUnsigned(skippingOn.getLength(probePos)) + 1;
                 if (end <= targetToExceed) {
                     return skippingOn.nbrruns;
                 }
             }
             end = toIntUnsigned(skippingOn.getValue(probePos))
-                    + toIntUnsigned(skippingOn.getLength(probePos)) + 1;
+                + toIntUnsigned(skippingOn.getLength(probePos)) + 1;
             span *= 2;
         } while (end <= targetToExceed);
         int right = probePos;
@@ -2536,7 +2569,7 @@ public final class RunContainer extends Container {
         while (right - left > 1) {
             int mid = (right + left) / 2;
             int midVal = toIntUnsigned(skippingOn.getValue(mid))
-                    + toIntUnsigned(skippingOn.getLength(mid)) + 1;
+                + toIntUnsigned(skippingOn.getLength(mid)) + 1;
             if (midVal > targetToExceed) {
                 right = mid;
             } else {
@@ -2554,8 +2587,8 @@ public final class RunContainer extends Container {
     }
 
     /**
-     * Append a value to a RunContainer.
-     * Callers must guarantee there is no need to grow the array for appending.
+     * Append a value to a RunContainer. Callers must guarantee there is no need to grow the array
+     * for appending.
      *
      * @param val a value to append.
      */
@@ -2564,10 +2597,10 @@ public final class RunContainer extends Container {
     }
 
     /**
-     * Append a run to a RunContainer.
-     * Callers must guarantee there is no need to grow the array for appending.
+     * Append a run to a RunContainer. Callers must guarantee there is no need to grow the array for
+     * appending.
      *
-     * @param start  the value for the start of the run.
+     * @param start the value for the start of the run.
      * @param length the length of the run.
      */
     void smartAppend(final short start, final short length) {
@@ -2600,10 +2633,10 @@ public final class RunContainer extends Container {
     }
 
     /**
-     * Append a run to a RunContainer, or remove from it if some values already there (as in an XOR operation).
-     * Callers must guarantee there is no need to grow the array for appending.
+     * Append a run to a RunContainer, or remove from it if some values already there (as in an XOR
+     * operation). Callers must guarantee there is no need to grow the array for appending.
      *
-     * @param start  the value for the start of the run.
+     * @param start the value for the start of the run.
      * @param length the length of the run.
      */
     private void smartAppendForXor(final short start, final short length) {
@@ -2764,11 +2797,11 @@ public final class RunContainer extends Container {
 
     // other.getCardinality() > 0.
     private static void xOrImpl(
-            final RunContainer dst,
-            final RunContainer src,
-            final int srcRuns,
-            final int srcOffset,
-            final ArrayContainer other) {
+        final RunContainer dst,
+        final RunContainer src,
+        final int srcRuns,
+        final int srcOffset,
+        final ArrayContainer other) {
         int srcPosWithOffset = srcOffset;
         final int srcRunsWithOffset = srcRuns + srcOffset;
         int otherIdx = 0;
@@ -2804,7 +2837,8 @@ public final class RunContainer extends Container {
                         }
                     }
                     do {
-                        dst.smartAppendForXor(src.getValue(srcPosWithOffset), src.getLength(srcPosWithOffset));
+                        dst.smartAppendForXor(src.getValue(srcPosWithOffset),
+                            src.getLength(srcPosWithOffset));
                     } while (++srcPosWithOffset < srcRunsWithOffset);
                 }
                 return;
@@ -2821,8 +2855,9 @@ public final class RunContainer extends Container {
         if (isEmpty()) {
             return x.cowRef();
         }
-        // if the cardinality of the array is small, guess that the output will still be a run container
-        final int arbitrary_threshold = 32;  // 32 is arbitrary here
+        // if the cardinality of the array is small, guess that the output will still be a run
+        // container
+        final int arbitrary_threshold = 32; // 32 is arbitrary here
         final int xCard = x.getCardinality();
         if (xCard < arbitrary_threshold) {
             if (xCard == 0) {
@@ -2863,11 +2898,11 @@ public final class RunContainer extends Container {
     }
 
     private static void xOrImpl(
-            final RunContainer dst,
-            final RunContainer src,
-            final int srcRuns,
-            final int srcOffset,
-            final RunContainer other) {
+        final RunContainer dst,
+        final RunContainer src,
+        final int srcRuns,
+        final int srcOffset,
+        final RunContainer other) {
         int srcPosWithOffset = srcOffset;
         final int srcRunsWithOffset = srcRuns + srcOffset;
         int otherPos = 0;
@@ -2905,7 +2940,8 @@ public final class RunContainer extends Container {
                         }
                     }
                     do {
-                        dst.smartAppendForXor(src.getValue(srcPosWithOffset), src.getLength(srcPosWithOffset));
+                        dst.smartAppendForXor(src.getValue(srcPosWithOffset),
+                            src.getLength(srcPosWithOffset));
                     } while (++srcPosWithOffset < srcRunsWithOffset);
                 }
                 return;
@@ -3086,7 +3122,8 @@ public final class RunContainer extends Container {
                     return false;
                 }
 
-                int s = ContainerUtil.unsignedBinarySearch(c.content, ci, c.cardinality, lowbits(j));
+                int s =
+                    ContainerUtil.unsignedBinarySearch(c.content, ci, c.cardinality, lowbits(j));
                 if (s < 0) {
                     return false;
                 }
@@ -3175,7 +3212,8 @@ public final class RunContainer extends Container {
 
     @Override
     public boolean overlaps(final ArrayContainer c) {
-        return (getCardinality() < c.getCardinality()) ? ContainerUtil.overlaps(this, c) : ContainerUtil.overlaps(c, this);
+        return (getCardinality() < c.getCardinality()) ? ContainerUtil.overlaps(this, c)
+            : ContainerUtil.overlaps(c, this);
     }
 
     @Override
@@ -3254,13 +3292,15 @@ public final class RunContainer extends Container {
             final int len = getLengthAsInt(i);
             computedCard += len + 1;
             if (val - 1 <= prev || val + len > MAX_VALUE) {
-                throw new IllegalStateException("i=" + i + ", prev=" + prev + ", val=" + val + ", len=" + len);
+                throw new IllegalStateException(
+                    "i=" + i + ", prev=" + prev + ", val=" + val + ", len=" + len);
             }
             prev = val + len;
         }
         final int readCard = getCardinality();
         if (computedCard != readCard) {
-            throw new IllegalStateException("computedCard=" + computedCard + ", readCard=" + readCard);
+            throw new IllegalStateException(
+                "computedCard=" + computedCard + ", readCard=" + readCard);
         }
     }
 

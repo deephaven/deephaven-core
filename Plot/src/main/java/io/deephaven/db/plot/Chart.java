@@ -45,9 +45,10 @@ public interface Chart extends Serializable {
     /**
      * Sets the title of this Chart.
      *
-     * @param t            table
+     * @param t table
      * @param titleColumns columns to include in the chart title
-     * @return this {@link Chart} with the title set to display comma-separated values from the table
+     * @return this {@link Chart} with the title set to display comma-separated values from the
+     *         table
      */
     default Chart chartTitle(final Table t, final String... titleColumns) {
         return chartTitle(false, t, titleColumns);
@@ -56,21 +57,25 @@ public interface Chart extends Serializable {
     /**
      * Sets the title of this Chart.
      *
-     * @param showColumnNamesInTitle          Whether to show column names in title. If this is true, the title format will include the column name before the comma separated values;
-     *                                        otherwise only the comma separated values will be included.
-     * @param t            table
+     * @param showColumnNamesInTitle Whether to show column names in title. If this is true, the
+     *        title format will include the column name before the comma separated values; otherwise
+     *        only the comma separated values will be included.
+     * @param t table
      * @param titleColumns columns to include in the chart title
-     * @return this {@link Chart} with the title set to display comma-separated values from the table
+     * @return this {@link Chart} with the title set to display comma-separated values from the
+     *         table
      */
-    default Chart chartTitle(final boolean showColumnNamesInTitle, final Table t, final String... titleColumns) {
-        return chartTitle(showColumnNamesInTitle ? defaultTitleFormatWithColumnNames(titleColumns) : defaultTitleFormat(titleColumns), t, titleColumns);
+    default Chart chartTitle(final boolean showColumnNamesInTitle, final Table t,
+        final String... titleColumns) {
+        return chartTitle(showColumnNamesInTitle ? defaultTitleFormatWithColumnNames(titleColumns)
+            : defaultTitleFormat(titleColumns), t, titleColumns);
     }
 
     /**
      * Sets the title of this Chart.
      *
-     * @param titleFormat  a {@link java.text.MessageFormat} format string for the chart title
-     * @param t            table
+     * @param titleFormat a {@link java.text.MessageFormat} format string for the chart title
+     * @param t table
      * @param titleColumns columns to include in the chart title
      * @return this {@link Chart} with the title set to display values from the table
      */
@@ -79,9 +84,10 @@ public interface Chart extends Serializable {
     /**
      * Sets the title of this Chart.
      *
-     * @param sds          selectable data set (e.g. OneClick table)
+     * @param sds selectable data set (e.g. OneClick table)
      * @param titleColumns columns to include in the chart title
-     * @return this {@link Chart} with the title set to display comma-separated values from the table
+     * @return this {@link Chart} with the title set to display comma-separated values from the
+     *         table
      */
     default Chart chartTitle(final SelectableDataSet sds, final String... titleColumns) {
         return chartTitle(false, sds, titleColumns);
@@ -90,39 +96,41 @@ public interface Chart extends Serializable {
     /**
      * Sets the title of this Chart.
      *
-     * @param showColumnNamesInTitle          Whether to show column names in title. If this is true, the title format will include the column name before the comma separated values;
-     *                                        otherwise only the comma separated values will be included.
-     * @param sds          selectable data set (e.g. OneClick table)
+     * @param showColumnNamesInTitle Whether to show column names in title. If this is true, the
+     *        title format will include the column name before the comma separated values; otherwise
+     *        only the comma separated values will be included.
+     * @param sds selectable data set (e.g. OneClick table)
      * @param titleColumns columns to include in the chart title
-     * @return this {@link Chart} with the title set to display comma-separated values from the table
+     * @return this {@link Chart} with the title set to display comma-separated values from the
+     *         table
      */
-    default Chart chartTitle(final boolean showColumnNamesInTitle, final SelectableDataSet sds, final String... titleColumns) {
-        return chartTitle(showColumnNamesInTitle ? defaultTitleFormatWithColumnNames(titleColumns) : defaultTitleFormat(titleColumns), sds, titleColumns);
+    default Chart chartTitle(final boolean showColumnNamesInTitle, final SelectableDataSet sds,
+        final String... titleColumns) {
+        return chartTitle(showColumnNamesInTitle ? defaultTitleFormatWithColumnNames(titleColumns)
+            : defaultTitleFormat(titleColumns), sds, titleColumns);
     }
 
     /**
      * Sets the title of this Chart.
      *
-     * @param titleFormat  a {@link java.text.MessageFormat} format string for the chart title
-     * @param sds          selectable data set (e.g. OneClick table)
+     * @param titleFormat a {@link java.text.MessageFormat} format string for the chart title
+     * @param sds selectable data set (e.g. OneClick table)
      * @param titleColumns columns to include in the chart title
      * @return this {@link Chart} with the title set to display values from the table
      */
-    Chart chartTitle(final String titleFormat, final SelectableDataSet sds, final String... titleColumns);
+    Chart chartTitle(final String titleFormat, final SelectableDataSet sds,
+        final String... titleColumns);
 
     /**
      * Sets the maximum row values that will be shown in title.
      * <p>
      * If total rows < {@code maxRowsCount}, then all the values will be shown separated by comma,
-     * otherwise just {@code maxRowsCount} values will be shown along with ellipsis.
-     * <br/>
-     * if {@code maxRowsCount} is < 0, all values will be shown.
-     * <br/>
-     * if {@code maxRowsCount} is 0, then just first value will be shown without ellipsis.
-     * <br/>
+     * otherwise just {@code maxRowsCount} values will be shown along with ellipsis. <br/>
+     * if {@code maxRowsCount} is < 0, all values will be shown. <br/>
+     * if {@code maxRowsCount} is 0, then just first value will be shown without ellipsis. <br/>
      * The default is 0.
      *
-     * @param maxRowsCount maximum  number of row values to show in chart title
+     * @param maxRowsCount maximum number of row values to show in chart title
      * @return this Chart
      */
     Chart maxRowsInTitle(final int maxRowsCount);
@@ -139,8 +147,8 @@ public interface Chart extends Serializable {
      * Sets the font of this Chart's title.
      *
      * @param family font family; if null, set to Arial
-     * @param style  font style; if null, set to {@link Font.FontStyle} PLAIN
-     * @param size   the point size of the Font
+     * @param style font style; if null, set to {@link Font.FontStyle} PLAIN
+     * @param size the point size of the Font
      * @return this Chart
      */
     Chart chartTitleFont(final String family, final String style, final int size);
@@ -210,8 +218,8 @@ public interface Chart extends Serializable {
      * Sets the font of this Chart's legend.
      *
      * @param family font family; if null, set to Arial
-     * @param style  font style; if null, set to {@link Font.FontStyle} PLAIN
-     * @param size   the point size of the Font
+     * @param style font style; if null, set to {@link Font.FontStyle} PLAIN
+     * @param size the point size of the Font
      * @return this Chart
      */
     Chart legendFont(final String family, final String style, final int size);
@@ -292,7 +300,7 @@ public interface Chart extends Serializable {
      * Creates new {@link Axes} on this Chart.
      *
      * @param name name for the axes
-     * @param dim  dimensions of the {@link Axes}
+     * @param dim dimensions of the {@link Axes}
      * @return newly created {@link Axes} with dimension {@code dim} on this Chart
      */
     Axes newAxes(final String name, final int dim);

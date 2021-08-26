@@ -4,22 +4,33 @@ import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.utils.LongAbortableConsumer;
 
-public abstract class SinkFiller implements WritableChunkSink.FillFromContext, LongAbortableConsumer {
+public abstract class SinkFiller
+    implements WritableChunkSink.FillFromContext, LongAbortableConsumer {
     public static SinkFiller create(final ChunkType chunkType) {
         switch (chunkType) {
-            case Byte: return ByteFiller.INSTANCE;
-            case Char: return CharFiller.INSTANCE;
-            case Double: return DoubleFiller.INSTANCE;
-            case Float: return FloatFiller.INSTANCE;
-            case Int: return IntFiller.INSTANCE;
-            case Long: return LongFiller.INSTANCE;
-            case Short: return ShortFiller.INSTANCE;
-            case Object: return ObjectFiller.INSTANCE;
+            case Byte:
+                return ByteFiller.INSTANCE;
+            case Char:
+                return CharFiller.INSTANCE;
+            case Double:
+                return DoubleFiller.INSTANCE;
+            case Float:
+                return FloatFiller.INSTANCE;
+            case Int:
+                return IntFiller.INSTANCE;
+            case Long:
+                return LongFiller.INSTANCE;
+            case Short:
+                return ShortFiller.INSTANCE;
+            case Object:
+                return ObjectFiller.INSTANCE;
 
-            // Boolean Chunks will be passing in chunkType = Object, so there is no use case for passing in
+            // Boolean Chunks will be passing in chunkType = Object, so there is no use case for
+            // passing in
             // ChunkType.Boolean.
             case Boolean:
-            default: throw new UnsupportedOperationException("Unexpected chunkType " + chunkType);
+            default:
+                throw new UnsupportedOperationException("Unexpected chunkType " + chunkType);
         }
     }
 
@@ -34,6 +45,7 @@ public abstract class SinkFiller implements WritableChunkSink.FillFromContext, L
 
     abstract void resetSrc(Chunk<? extends Values> src);
 }
+
 
 class ByteFiller extends SinkFiller {
     static final ByteFiller INSTANCE = new ByteFiller();
@@ -52,6 +64,7 @@ class ByteFiller extends SinkFiller {
     }
 }
 
+
 class CharFiller extends SinkFiller {
     static final CharFiller INSTANCE = new CharFiller();
 
@@ -68,6 +81,7 @@ class CharFiller extends SinkFiller {
         return true;
     }
 }
+
 
 class DoubleFiller extends SinkFiller {
     static final DoubleFiller INSTANCE = new DoubleFiller();
@@ -86,6 +100,7 @@ class DoubleFiller extends SinkFiller {
     }
 }
 
+
 class FloatFiller extends SinkFiller {
     static final FloatFiller INSTANCE = new FloatFiller();
 
@@ -102,6 +117,7 @@ class FloatFiller extends SinkFiller {
         return true;
     }
 }
+
 
 class IntFiller extends SinkFiller {
     static final IntFiller INSTANCE = new IntFiller();
@@ -120,6 +136,7 @@ class IntFiller extends SinkFiller {
     }
 }
 
+
 class LongFiller extends SinkFiller {
     static final LongFiller INSTANCE = new LongFiller();
 
@@ -136,6 +153,7 @@ class LongFiller extends SinkFiller {
         return true;
     }
 }
+
 
 class ShortFiller extends SinkFiller {
     static final ShortFiller INSTANCE = new ShortFiller();
@@ -154,6 +172,7 @@ class ShortFiller extends SinkFiller {
     }
 }
 
+
 class ObjectFiller extends SinkFiller {
     static final ObjectFiller INSTANCE = new ObjectFiller();
 
@@ -166,7 +185,7 @@ class ObjectFiller extends SinkFiller {
 
     @Override
     public final boolean accept(long v) {
-        //noinspection unchecked
+        // noinspection unchecked
         dest.set(v, typedSrc.get(srcIndex++));
         return true;
     }

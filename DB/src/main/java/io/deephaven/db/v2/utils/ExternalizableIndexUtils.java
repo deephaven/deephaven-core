@@ -31,14 +31,15 @@ public class ExternalizableIndexUtils {
     /**
      * Write an {@link Index} to {@code out}.
      *
-     * @param out   The destination
+     * @param out The destination
      * @param index The index
      */
-    public static void writeExternalCompressedDeltas(@NotNull final DataOutput out, @NotNull final Index index) throws IOException {
+    public static void writeExternalCompressedDeltas(@NotNull final DataOutput out,
+        @NotNull final Index index) throws IOException {
         long offset = 0;
         final TShortArrayList shorts = new TShortArrayList();
 
-        for (final Index.RangeIterator it = index.rangeIterator(); it.hasNext(); ) {
+        for (final Index.RangeIterator it = index.rangeIterator(); it.hasNext();) {
             it.next();
             if (it.currentRangeEnd() == it.currentRangeStart()) {
                 offset = appendWithOffsetDelta(out, shorts, offset, it.currentRangeStart(), false);
@@ -53,8 +54,9 @@ public class ExternalizableIndexUtils {
         out.writeByte(END);
     }
 
-    private static long appendWithOffsetDelta(@NotNull final DataOutput out, @NotNull final TShortArrayList shorts,
-                                              final long offset, final long value, final boolean negate) throws IOException {
+    private static long appendWithOffsetDelta(@NotNull final DataOutput out,
+        @NotNull final TShortArrayList shorts,
+        final long offset, final long value, final boolean negate) throws IOException {
         if (value >= offset + Short.MAX_VALUE) {
             flushShorts(out, shorts);
 
@@ -71,11 +73,13 @@ public class ExternalizableIndexUtils {
     }
 
 
-    private static void flushShorts(@NotNull final DataOutput out, @NotNull final TShortArrayList shorts) throws IOException {
-        for (int offset = 0; offset < shorts.size(); ) {
+    private static void flushShorts(@NotNull final DataOutput out,
+        @NotNull final TShortArrayList shorts) throws IOException {
+        for (int offset = 0; offset < shorts.size();) {
             int byteCount = 0;
-            while (offset + byteCount < shorts.size() && (shorts.getQuick(offset + byteCount) < Byte.MAX_VALUE
-                   && shorts.getQuick(offset + byteCount) > Byte.MIN_VALUE)) {
+            while (offset + byteCount < shorts.size()
+                && (shorts.getQuick(offset + byteCount) < Byte.MAX_VALUE
+                    && shorts.getQuick(offset + byteCount) > Byte.MIN_VALUE)) {
                 byteCount++;
             }
             if (byteCount > 3 || byteCount + offset == shorts.size()) {
@@ -93,8 +97,10 @@ public class ExternalizableIndexUtils {
                 int shortCount = byteCount;
                 int consecutiveBytes = 0;
                 while (shortCount + consecutiveBytes + offset < shorts.size()) {
-                    final short shortValue = shorts.getQuick(offset + shortCount + consecutiveBytes);
-                    final boolean requiresShort = (shortValue >= Byte.MAX_VALUE || shortValue <= Byte.MIN_VALUE);
+                    final short shortValue =
+                        shorts.getQuick(offset + shortCount + consecutiveBytes);
+                    final boolean requiresShort =
+                        (shortValue >= Byte.MAX_VALUE || shortValue <= Byte.MIN_VALUE);
                     if (!requiresShort) {
                         consecutiveBytes++;
                     } else {
@@ -108,7 +114,8 @@ public class ExternalizableIndexUtils {
                     }
                 }
                 // if we have a small number of trailing bytes, tack them onto the end
-                if (consecutiveBytes > 0 && consecutiveBytes <= 3 && (offset + shortCount + consecutiveBytes == shorts.size())) {
+                if (consecutiveBytes > 0 && consecutiveBytes <= 3
+                    && (offset + shortCount + consecutiveBytes == shorts.size())) {
                     shortCount += consecutiveBytes;
                 }
                 if (shortCount >= 2) {
@@ -125,7 +132,8 @@ public class ExternalizableIndexUtils {
         shorts.resetQuick();
     }
 
-    private static void writeValue(@NotNull final DataOutput out, final byte command, final long value) throws IOException {
+    private static void writeValue(@NotNull final DataOutput out, final byte command,
+        final long value) throws IOException {
         if (value > Integer.MAX_VALUE || value < Integer.MIN_VALUE) {
             out.writeByte(command | LONG_VALUE);
             out.writeLong(value);
@@ -141,7 +149,8 @@ public class ExternalizableIndexUtils {
         }
     }
 
-    public static Index readExternalCompressedDelta(@NotNull final DataInput in) throws IOException {
+    public static Index readExternalCompressedDelta(@NotNull final DataInput in)
+        throws IOException {
         long offset = 0;
         final Index.SequentialBuilder builder = Index.FACTORY.getSequentialBuilder();
 
@@ -159,8 +168,7 @@ public class ExternalizableIndexUtils {
             }
         };
 
-        WHILE:
-        do {
+        WHILE: do {
             long actualValue;
             final int command = in.readByte();
             switch (command & CMD_MASK) {
@@ -193,8 +201,7 @@ public class ExternalizableIndexUtils {
                 default:
                     throw new IllegalStateException("Bad command: " + command);
             }
-        }
-        while (true);
+        } while (true);
 
         if (pending.longValue() >= 0) {
             builder.appendKey(pending.longValue());
@@ -203,7 +210,8 @@ public class ExternalizableIndexUtils {
         return builder.getIndex();
     }
 
-    private static long readValue(@NotNull final DataInput in, final int command) throws IOException {
+    private static long readValue(@NotNull final DataInput in, final int command)
+        throws IOException {
         final long value;
         switch (command & VALUE_MASK) {
             case LONG_VALUE:

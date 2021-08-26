@@ -14,218 +14,206 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.table_pb.ExportedTableUpdateMessage",
     namespace = JsPackage.GLOBAL)
 public class ExportedTableUpdateMessage {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ExportIdFieldType {
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetTicketUnionType {
-        @JsOverlay
-        static ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType.GetTicketUnionType
-            of(Object o) {
-          return Js.cast(o);
+    public interface ToObjectReturnType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ExportIdFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface GetTicketUnionType {
+                @JsOverlay
+                static ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType.GetTicketUnionType of(
+                    Object o) {
+                    return Js.cast(o);
+                }
+
+                @JsOverlay
+                default String asString() {
+                    return Js.asString(this);
+                }
+
+                @JsOverlay
+                default Uint8Array asUint8Array() {
+                    return Js.cast(this);
+                }
+
+                @JsOverlay
+                default boolean isString() {
+                    return (Object) this instanceof String;
+                }
+
+                @JsOverlay
+                default boolean isUint8Array() {
+                    return (Object) this instanceof Uint8Array;
+                }
+            }
+
+            @JsOverlay
+            static ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType.GetTicketUnionType getTicket();
+
+            @JsProperty
+            void setTicket(
+                ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType.GetTicketUnionType ticket);
+
+            @JsOverlay
+            default void setTicket(String ticket) {
+                setTicket(
+                    Js.<ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
+
+            @JsOverlay
+            default void setTicket(Uint8Array ticket) {
+                setTicket(
+                    Js.<ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
         }
 
         @JsOverlay
-        default String asString() {
-          return Js.asString(this);
+        static ExportedTableUpdateMessage.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
         }
 
-        @JsOverlay
-        default Uint8Array asUint8Array() {
-          return Js.cast(this);
-        }
+        @JsProperty
+        ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType getExportId();
 
-        @JsOverlay
-        default boolean isString() {
-          return (Object) this instanceof String;
-        }
+        @JsProperty
+        String getSize();
 
-        @JsOverlay
-        default boolean isUint8Array() {
-          return (Object) this instanceof Uint8Array;
-        }
-      }
+        @JsProperty
+        String getUpdateFailureMessage();
 
-      @JsOverlay
-      static ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
+        @JsProperty
+        void setExportId(ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType exportId);
 
-      @JsProperty
-      ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType.GetTicketUnionType
-          getTicket();
+        @JsProperty
+        void setSize(String size);
 
-      @JsProperty
-      void setTicket(
-          ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType.GetTicketUnionType
-              ticket);
-
-      @JsOverlay
-      default void setTicket(String ticket) {
-        setTicket(
-            Js
-                .<ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType
-                        .GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
-
-      @JsOverlay
-      default void setTicket(Uint8Array ticket) {
-        setTicket(
-            Js
-                .<ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType
-                        .GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
+        @JsProperty
+        void setUpdateFailureMessage(String updateFailureMessage);
     }
 
-    @JsOverlay
-    static ExportedTableUpdateMessage.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
-
-    @JsProperty
-    ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType getExportId();
-
-    @JsProperty
-    String getSize();
-
-    @JsProperty
-    String getUpdateFailureMessage();
-
-    @JsProperty
-    void setExportId(ExportedTableUpdateMessage.ToObjectReturnType.ExportIdFieldType exportId);
-
-    @JsProperty
-    void setSize(String size);
-
-    @JsProperty
-    void setUpdateFailureMessage(String updateFailureMessage);
-  }
-
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ExportIdFieldType {
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetTicketUnionType {
-        @JsOverlay
-        static ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType.GetTicketUnionType
-            of(Object o) {
-          return Js.cast(o);
+    public interface ToObjectReturnType0 {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ExportIdFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface GetTicketUnionType {
+                @JsOverlay
+                static ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType.GetTicketUnionType of(
+                    Object o) {
+                    return Js.cast(o);
+                }
+
+                @JsOverlay
+                default String asString() {
+                    return Js.asString(this);
+                }
+
+                @JsOverlay
+                default Uint8Array asUint8Array() {
+                    return Js.cast(this);
+                }
+
+                @JsOverlay
+                default boolean isString() {
+                    return (Object) this instanceof String;
+                }
+
+                @JsOverlay
+                default boolean isUint8Array() {
+                    return (Object) this instanceof Uint8Array;
+                }
+            }
+
+            @JsOverlay
+            static ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType.GetTicketUnionType getTicket();
+
+            @JsProperty
+            void setTicket(
+                ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType.GetTicketUnionType ticket);
+
+            @JsOverlay
+            default void setTicket(String ticket) {
+                setTicket(
+                    Js.<ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
+
+            @JsOverlay
+            default void setTicket(Uint8Array ticket) {
+                setTicket(
+                    Js.<ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
         }
 
         @JsOverlay
-        default String asString() {
-          return Js.asString(this);
+        static ExportedTableUpdateMessage.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
         }
 
-        @JsOverlay
-        default Uint8Array asUint8Array() {
-          return Js.cast(this);
-        }
+        @JsProperty
+        ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType getExportId();
 
-        @JsOverlay
-        default boolean isString() {
-          return (Object) this instanceof String;
-        }
+        @JsProperty
+        String getSize();
 
-        @JsOverlay
-        default boolean isUint8Array() {
-          return (Object) this instanceof Uint8Array;
-        }
-      }
+        @JsProperty
+        String getUpdateFailureMessage();
 
-      @JsOverlay
-      static ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
+        @JsProperty
+        void setExportId(ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType exportId);
 
-      @JsProperty
-      ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType.GetTicketUnionType
-          getTicket();
+        @JsProperty
+        void setSize(String size);
 
-      @JsProperty
-      void setTicket(
-          ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType.GetTicketUnionType
-              ticket);
-
-      @JsOverlay
-      default void setTicket(String ticket) {
-        setTicket(
-            Js
-                .<ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType
-                        .GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
-
-      @JsOverlay
-      default void setTicket(Uint8Array ticket) {
-        setTicket(
-            Js
-                .<ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType
-                        .GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
+        @JsProperty
+        void setUpdateFailureMessage(String updateFailureMessage);
     }
 
-    @JsOverlay
-    static ExportedTableUpdateMessage.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
+    public static native ExportedTableUpdateMessage deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType getExportId();
+    public static native ExportedTableUpdateMessage deserializeBinaryFromReader(
+        ExportedTableUpdateMessage message, Object reader);
 
-    @JsProperty
-    String getSize();
+    public static native void serializeBinaryToWriter(
+        ExportedTableUpdateMessage message, Object writer);
 
-    @JsProperty
-    String getUpdateFailureMessage();
+    public static native ExportedTableUpdateMessage.ToObjectReturnType toObject(
+        boolean includeInstance, ExportedTableUpdateMessage msg);
 
-    @JsProperty
-    void setExportId(ExportedTableUpdateMessage.ToObjectReturnType0.ExportIdFieldType exportId);
+    public native void clearExportId();
 
-    @JsProperty
-    void setSize(String size);
+    public native Ticket getExportId();
 
-    @JsProperty
-    void setUpdateFailureMessage(String updateFailureMessage);
-  }
+    public native String getSize();
 
-  public static native ExportedTableUpdateMessage deserializeBinary(Uint8Array bytes);
+    public native String getUpdateFailureMessage();
 
-  public static native ExportedTableUpdateMessage deserializeBinaryFromReader(
-      ExportedTableUpdateMessage message, Object reader);
+    public native boolean hasExportId();
 
-  public static native void serializeBinaryToWriter(
-      ExportedTableUpdateMessage message, Object writer);
+    public native Uint8Array serializeBinary();
 
-  public static native ExportedTableUpdateMessage.ToObjectReturnType toObject(
-      boolean includeInstance, ExportedTableUpdateMessage msg);
+    public native void setExportId();
 
-  public native void clearExportId();
+    public native void setExportId(Ticket value);
 
-  public native Ticket getExportId();
+    public native void setSize(String value);
 
-  public native String getSize();
+    public native void setUpdateFailureMessage(String value);
 
-  public native String getUpdateFailureMessage();
+    public native ExportedTableUpdateMessage.ToObjectReturnType0 toObject();
 
-  public native boolean hasExportId();
-
-  public native Uint8Array serializeBinary();
-
-  public native void setExportId();
-
-  public native void setExportId(Ticket value);
-
-  public native void setSize(String value);
-
-  public native void setUpdateFailureMessage(String value);
-
-  public native ExportedTableUpdateMessage.ToObjectReturnType0 toObject();
-
-  public native ExportedTableUpdateMessage.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native ExportedTableUpdateMessage.ToObjectReturnType0 toObject(boolean includeInstance);
 }

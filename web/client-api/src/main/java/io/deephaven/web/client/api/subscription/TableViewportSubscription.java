@@ -30,8 +30,9 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
  * Encapsulates event handling around table subscriptions by "cheating" and wrapping up a JsTable instance to do the
  * real dirty work. This allows a viewport to stay open on the old table if desired, while this one remains open.
  * <p>
- * As this just wraps a JsTable (and thus a CTS), it holds its own flattened, pUT'd handle to get deltas from the
- * server. The setViewport method can be used to adjust this table instead of creating a new one.
+ * As this just wraps a JsTable (and thus a CTS), it holds its own flattened, pUT'd handle to get
+ * deltas from the server. The setViewport method can be used to adjust this table instead of
+ * creating a new one.
  * <p>
  * Existing methods on JsTable like setViewport and getViewportData are intended to proxy to this, which then will talk
  * to the underlying handle and accumulated data.
@@ -140,9 +141,12 @@ public class TableViewportSubscription extends HasEventHandling {
     private void refire(Event e) {
         this.fireEvent(e.type, e);
         if (originalActive && state() == original.state()) {
-            // When these fail to match, it probably means that the original's state was paused, but we're still
-            // holding on to it. Since we haven't been internalClose()d yet, that means we're still waiting for
-            // the new state to resolve or fail, so we can be restored, or stopped. In theory, we should put this
+            // When these fail to match, it probably means that the original's state was paused, but
+            // we're still
+            // holding on to it. Since we haven't been internalClose()d yet, that means we're still
+            // waiting for
+            // the new state to resolve or fail, so we can be restored, or stopped. In theory, we
+            // should put this
             // assert back, and make the pause code also tell us to pause.
             // assert state() == original.state() : "Table owning this viewport subscription forgot to release it";
             original.fireEvent(e.type, e);
@@ -160,7 +164,8 @@ public class TableViewportSubscription extends HasEventHandling {
         setInternalViewport(firstRow, lastRow, columns, updateIntervalMs);
     }
 
-    public void setInternalViewport(double firstRow, double lastRow, Column[] columns, Double updateIntervalMs) {
+    public void setInternalViewport(double firstRow, double lastRow, Column[] columns,
+        Double updateIntervalMs) {
         if (updateIntervalMs != null && refresh != updateIntervalMs) {
             throw new IllegalArgumentException(
                     "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");
@@ -174,7 +179,8 @@ public class TableViewportSubscription extends HasEventHandling {
     @JsMethod
     public void close() {
         if (status == Status.DONE) {
-            JsLog.warn("TableViewportSubscription.close called on subscription that's already done.");
+            JsLog.warn(
+                "TableViewportSubscription.close called on subscription that's already done.");
         }
         retained = false;
         internalClose();
@@ -185,11 +191,13 @@ public class TableViewportSubscription extends HasEventHandling {
      * forwarding events and optionally close the underlying table/subscription.
      */
     public void internalClose() {
-        // indicate that the base table shouldn't get events any more, even if it this is still retained elsewhere
+        // indicate that the base table shouldn't get events any more, even if it this is still
+        // retained elsewhere
         originalActive = false;
 
         if (retained || status == Status.DONE) {
-            // the JsTable has indicated it is no longer interested in this viewport, but other calling
+            // the JsTable has indicated it is no longer interested in this viewport, but other
+            // calling
             // code has retained it, keep it open for now.
             return;
         }
@@ -224,7 +232,8 @@ public class TableViewportSubscription extends HasEventHandling {
                 assert status == Status.ACTIVE
                         : "realized table is alive, expected status ACTIVE, instead is " + status;
             } else {
-                assert status == Status.DONE : "realized table is closed, expected status DONE, instead is " + status;
+                assert status == Status.DONE
+                    : "realized table is closed, expected status DONE, instead is " + status;
             }
         }
 
@@ -247,8 +256,8 @@ public class TableViewportSubscription extends HasEventHandling {
         return copy.then(table -> {
             final ClientTableState state = table.state();
             String[] columnTypes = Arrays.stream(state.getAllColumns())
-                    .map(Column::getType)
-                    .toArray(String[]::new);
+                .map(Column::getType)
+                .toArray(String[]::new);
 
             final BitSet columnBitset = table.lastVisibleState().makeBitset(columns);
             return Callbacks.<TableSnapshot, String>promise(this, c -> {
@@ -257,7 +266,8 @@ public class TableViewportSubscription extends HasEventHandling {
                                 Js.uncheckedCast(state.getHandle().makeTicket()), table.getConnection().metadata()));
                 stream.onData(flightData -> {
 
-                    Message message = Message.getRootAsMessage(new ByteBuffer(flightData.getDataHeader_asU8()));
+                    Message message =
+                        Message.getRootAsMessage(new ByteBuffer(flightData.getDataHeader_asU8()));
                     if (message.headerType() == MessageHeader.Schema) {
                         // ignore for now, we'll handle this later
                         return;

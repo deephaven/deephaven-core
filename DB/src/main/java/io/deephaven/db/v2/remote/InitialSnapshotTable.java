@@ -26,13 +26,15 @@ public class InitialSnapshotTable extends QueryTable {
     protected int capacity;
     protected Index freeset = Index.FACTORY.getEmptyIndex();
     protected final Index populatedRows;
-    protected final Index [] populatedCells;
-    protected WritableSource [] writableSources;
+    protected final Index[] populatedCells;
+    protected WritableSource[] writableSources;
     protected RedirectionIndex redirectionIndex;
 
     private final BitSet subscribedColumns;
 
-    protected InitialSnapshotTable(Map<String, ? extends ColumnSource> result, WritableSource[] writableSources, RedirectionIndex redirectionIndex, BitSet subscribedColumns) {
+    protected InitialSnapshotTable(Map<String, ? extends ColumnSource> result,
+        WritableSource[] writableSources, RedirectionIndex redirectionIndex,
+        BitSet subscribedColumns) {
         super(Index.FACTORY.getEmptyIndex(), result);
         this.subscribedColumns = subscribedColumns;
         this.writableSources = writableSources;
@@ -56,24 +58,32 @@ public class InitialSnapshotTable extends QueryTable {
 
     protected Setter getSetter(final WritableSource source) {
         if (source.getType() == byte.class) {
-            return (Setter<byte[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
+            return (Setter<byte[]>) (array, arrayIndex, destIndex) -> source.set(destIndex,
+                array[arrayIndex]);
         } else if (source.getType() == char.class) {
-            return (Setter<char[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
+            return (Setter<char[]>) (array, arrayIndex, destIndex) -> source.set(destIndex,
+                array[arrayIndex]);
         } else if (source.getType() == double.class) {
-            return (Setter<double[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
+            return (Setter<double[]>) (array, arrayIndex, destIndex) -> source.set(destIndex,
+                array[arrayIndex]);
         } else if (source.getType() == float.class) {
-            return (Setter<float[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
+            return (Setter<float[]>) (array, arrayIndex, destIndex) -> source.set(destIndex,
+                array[arrayIndex]);
         } else if (source.getType() == int.class) {
-            return (Setter<int[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
+            return (Setter<int[]>) (array, arrayIndex, destIndex) -> source.set(destIndex,
+                array[arrayIndex]);
         } else if (source.getType() == long.class || source.getType() == DBDateTime.class) {
-            return (Setter<long[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
+            return (Setter<long[]>) (array, arrayIndex, destIndex) -> source.set(destIndex,
+                array[arrayIndex]);
         } else if (source.getType() == short.class) {
-            return (Setter<short[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
+            return (Setter<short[]>) (array, arrayIndex, destIndex) -> source.set(destIndex,
+                array[arrayIndex]);
         } else if (source.getType() == Boolean.class) {
-            return (Setter<byte[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
+            return (Setter<byte[]>) (array, arrayIndex, destIndex) -> source.set(destIndex,
+                array[arrayIndex]);
         } else {
             return (Setter<Object[]>) (array, arrayIndex, destIndex) -> {
-                //noinspection unchecked
+                // noinspection unchecked
                 source.set(destIndex, array[arrayIndex]);
             };
         }
@@ -82,7 +92,8 @@ public class InitialSnapshotTable extends QueryTable {
     protected void processInitialSnapshot(InitialSnapshot snapshot) {
         final Index viewPort = snapshot.viewport;
         final Index addedIndex = snapshot.rowsIncluded;
-        final Index newlyPopulated = viewPort == null ? addedIndex : snapshot.index.subindexByPos(viewPort);
+        final Index newlyPopulated =
+            viewPort == null ? addedIndex : snapshot.index.subindexByPos(viewPort);
         if (viewPort != null) {
             newlyPopulated.retain(addedIndex);
         }
@@ -112,7 +123,7 @@ public class InitialSnapshotTable extends QueryTable {
                 final long destIndex = destIt.nextLong();
                 for (int ii = 0; ii < setters.length; ii++) {
                     if (subscribedColumns.get(ii) && snapshot.dataColumns[ii] != null) {
-                        //noinspection unchecked
+                        // noinspection unchecked
                         setters[ii].set(snapshot.dataColumns[ii], arrayIndex, destIndex);
                     }
                 }
@@ -153,11 +164,11 @@ public class InitialSnapshotTable extends QueryTable {
         }
         if (needsResizing) {
             for (ColumnSource source : getColumnSources()) {
-                ((WritableSource)source).ensureCapacity(capacity);
+                ((WritableSource) source).ensureCapacity(capacity);
             }
         }
         Index result = freeset.subindexByPos(0, (int) size);
-        Assert.assertion(result.size() == size,"result.size() == size");
+        Assert.assertion(result.size() == size, "result.size() == size");
         freeset = freeset.subindexByPos((int) size, (int) freeset.size());
         return result;
     }
@@ -166,34 +177,43 @@ public class InitialSnapshotTable extends QueryTable {
         void set(T array, int arrayIndex, long destIndex);
     }
 
-    public static InitialSnapshotTable setupInitialSnapshotTable(Table originalTable, InitialSnapshot snapshot) {
+    public static InitialSnapshotTable setupInitialSnapshotTable(Table originalTable,
+        InitialSnapshot snapshot) {
         return setupInitialSnapshotTable(originalTable.getDefinition(), snapshot);
     }
 
-    public static InitialSnapshotTable setupInitialSnapshotTable(Table originalTable, InitialSnapshot snapshot, BitSet subscribedColumns) {
-        return setupInitialSnapshotTable(originalTable.getDefinition(), snapshot, subscribedColumns);
+    public static InitialSnapshotTable setupInitialSnapshotTable(Table originalTable,
+        InitialSnapshot snapshot, BitSet subscribedColumns) {
+        return setupInitialSnapshotTable(originalTable.getDefinition(), snapshot,
+            subscribedColumns);
     }
 
-    public static InitialSnapshotTable setupInitialSnapshotTable(TableDefinition definition, InitialSnapshot snapshot) {
+    public static InitialSnapshotTable setupInitialSnapshotTable(TableDefinition definition,
+        InitialSnapshot snapshot) {
         BitSet allColumns = new BitSet(definition.getColumns().length);
         allColumns.set(0, definition.getColumns().length);
         return setupInitialSnapshotTable(definition, snapshot, allColumns);
     }
 
-    public static InitialSnapshotTable setupInitialSnapshotTable(TableDefinition definition, InitialSnapshot snapshot, BitSet subscribedColumns) {
+    public static InitialSnapshotTable setupInitialSnapshotTable(TableDefinition definition,
+        InitialSnapshot snapshot, BitSet subscribedColumns) {
         final ColumnDefinition[] columns = definition.getColumns();
         WritableSource writableSources[] = new WritableSource[columns.length];
         RedirectionIndex redirectionIndex = RedirectionIndex.FACTORY.createRedirectionIndex(8);
         LinkedHashMap<String, ColumnSource> finalColumns = new LinkedHashMap<>();
         for (int i = 0; i < columns.length; i++) {
-            writableSources[i] = ArrayBackedColumnSource.getMemoryColumnSource(0, columns[i].getDataType(), columns[i].getComponentType());
-            //noinspection unchecked
-            finalColumns.put(columns[i].getName(), new RedirectedColumnSource<>(redirectionIndex, writableSources[i], 0));
+            writableSources[i] = ArrayBackedColumnSource.getMemoryColumnSource(0,
+                columns[i].getDataType(), columns[i].getComponentType());
+            // noinspection unchecked
+            finalColumns.put(columns[i].getName(),
+                new RedirectedColumnSource<>(redirectionIndex, writableSources[i], 0));
         }
-        // This table does not refresh, so we don't need to tell our redirection index or column source to start tracking
+        // This table does not refresh, so we don't need to tell our redirection index or column
+        // source to start tracking
         // prev values.
 
-        InitialSnapshotTable initialSnapshotTable = new InitialSnapshotTable(finalColumns, writableSources, redirectionIndex, subscribedColumns);
+        InitialSnapshotTable initialSnapshotTable = new InitialSnapshotTable(finalColumns,
+            writableSources, redirectionIndex, subscribedColumns);
         initialSnapshotTable.processInitialSnapshot(snapshot);
         return initialSnapshotTable;
     }

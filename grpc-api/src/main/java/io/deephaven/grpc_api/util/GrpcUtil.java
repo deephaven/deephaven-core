@@ -79,11 +79,13 @@ public class GrpcUtil {
         }
 
         final UUID errorId = UUID.randomUUID();
-        log.error().append("Internal Error '").append(errorId.toString()).append("' ").append(err).endl();
+        log.error().append("Internal Error '").append(errorId.toString()).append("' ").append(err)
+            .endl();
         return statusRuntimeException(statusCode, "Details Logged w/ID '" + errorId + "'");
     }
 
-    public static StatusRuntimeException statusRuntimeException(final Code statusCode, final String details) {
+    public static StatusRuntimeException statusRuntimeException(final Code statusCode,
+        final String details) {
         return Exceptions.statusRuntimeException(statusCode, details);
     }
 
@@ -98,7 +100,8 @@ public class GrpcUtil {
      * @param <V> output type
      * @return a new stream observer that maps from T to V before delivering to {@code delegate::onNext}
      */
-    public static <T, V> StreamObserver<T> mapOnNext(final StreamObserver<V> delegate, final Function<T, V> mapper) {
+    public static <T, V> StreamObserver<T> mapOnNext(final StreamObserver<V> delegate,
+        final Function<T, V> mapper) {
         return new StreamObserver<T>() {
             @Override
             public void onNext(final T value) {
@@ -121,11 +124,13 @@ public class GrpcUtil {
     }
 
     /**
-     * Wraps the provided runner in a try/catch block to minimize damage caused by a failing externally supplied helper.
+     * Wraps the provided runner in a try/catch block to minimize damage caused by a failing
+     * externally supplied helper.
      *
      * @param runner the runnable to execute safely
      */
-    public static void safelyExecute(final FunctionalInterfaces.ThrowingRunnable<Exception> runner) {
+    public static void safelyExecute(
+        final FunctionalInterfaces.ThrowingRunnable<Exception> runner) {
         try {
             runner.run();
         } catch (final Exception err) {
@@ -134,7 +139,8 @@ public class GrpcUtil {
     }
 
     /**
-     * Wraps the provided runner in a try/catch block to minimize damage caused by a failing externally supplied helper.
+     * Wraps the provided runner in a try/catch block to minimize damage caused by a failing
+     * externally supplied helper.
      *
      * @param runner the runnable to execute safely
      */

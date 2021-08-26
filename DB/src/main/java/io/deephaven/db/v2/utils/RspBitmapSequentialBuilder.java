@@ -54,7 +54,7 @@ public class RspBitmapSequentialBuilder implements TreeIndexImpl.SequentialBuild
         if (pendingStart != -1) {
             if (check && v <= pendingEnd) {
                 throw new IllegalArgumentException(outOfOrderKeyErrorMsg +
-                        "last=" + pendingEnd + " while appending value=" + v);
+                    "last=" + pendingEnd + " while appending value=" + v);
             }
             if (pendingEnd + 1 == v) {
                 pendingEnd = v;
@@ -75,7 +75,8 @@ public class RspBitmapSequentialBuilder implements TreeIndexImpl.SequentialBuild
         if (pendingStart != -1) {
             if (check && start <= pendingEnd) {
                 throw new IllegalArgumentException(outOfOrderKeyErrorMsg +
-                        "last=" + pendingEnd + " while appending range start=" + start + ", end=" + end);
+                    "last=" + pendingEnd + " while appending range start=" + start + ", end="
+                    + end);
             }
             if (pendingEnd + 1 == start) {
                 pendingEnd = end;
@@ -88,7 +89,8 @@ public class RspBitmapSequentialBuilder implements TreeIndexImpl.SequentialBuild
     }
 
     @Override
-    public void appendTreeIndexImpl(final long shiftAmount, final TreeIndexImpl ix, final boolean acquire) {
+    public void appendTreeIndexImpl(final long shiftAmount, final TreeIndexImpl ix,
+        final boolean acquire) {
         if (ix.ixIsEmpty()) {
             return;
         }
@@ -128,7 +130,8 @@ public class RspBitmapSequentialBuilder implements TreeIndexImpl.SequentialBuild
             final long pendingContainerBlockKey = highBits(pendingContainerKey);
             if (pendingContainerKey != -1 && pendingContainerBlockKey == highStart) { // short path.
                 if (pendingContainer == null) {
-                    pendingContainer = containerForLowValueAndRange(lowBitsAsInt(pendingContainerKey), lowStart, lowEnd);
+                    pendingContainer = containerForLowValueAndRange(
+                        lowBitsAsInt(pendingContainerKey), lowStart, lowEnd);
                     pendingContainerKey = highBits(pendingContainerKey);
                 } else {
                     pendingContainer = pendingContainer.iappend(lowStart, lowEnd + 1);
@@ -138,7 +141,7 @@ public class RspBitmapSequentialBuilder implements TreeIndexImpl.SequentialBuild
             if (pendingContainerKey != -1) {
                 if (check && pendingContainerKey > highStart) {
                     throw new IllegalStateException(outOfOrderKeyErrorMsg +
-                            "last=" + end + " while appending value=" + pendingContainer.last());
+                        "last=" + end + " while appending value=" + pendingContainer.last());
                 }
                 flushPendingContainer();
             }
@@ -162,15 +165,16 @@ public class RspBitmapSequentialBuilder implements TreeIndexImpl.SequentialBuild
         // * a block for an initial container.
         // * a full block span
         // * a block for a final container.
-        // Note we must have at least two of these, given code above already handled the case for a single block range.
+        // Note we must have at least two of these, given code above already handled the case for a
+        // single block range.
         // If we don't have a particular one, we set its key to -1.
         final long initialContainerKey;
         final int initialContainerStart;
         final int initialContainerEnd;
         final long midFullBlockSpanKey;
-        final long midFullBlockSpanLen ;
+        final long midFullBlockSpanLen;
         final long endingContainerKey;
-        // final int endingContainerStart;  The start of the ending container can only be 0.
+        // final int endingContainerStart; The start of the ending container can only be 0.
         final int endingContainerEnd;
 
         // Let's see if we have an initial container block.
@@ -200,7 +204,7 @@ public class RspBitmapSequentialBuilder implements TreeIndexImpl.SequentialBuild
         } else {
             // we don't have a full block span.
             midFullBlockSpanKey = -1;
-            midFullBlockSpanLen = 0;  // not used in this case.
+            midFullBlockSpanLen = 0; // not used in this case.
         }
 
         // Let's see if we have an ending container block.
@@ -210,7 +214,7 @@ public class RspBitmapSequentialBuilder implements TreeIndexImpl.SequentialBuild
         } else {
             // we don't have an ending container.
             endingContainerKey = -1;
-            endingContainerEnd = 0;  // not used in this case.
+            endingContainerEnd = 0; // not used in this case.
         }
 
         if (initialContainerKey != -1) {
@@ -219,10 +223,12 @@ public class RspBitmapSequentialBuilder implements TreeIndexImpl.SequentialBuild
             if (pendingContainerKey != -1 && highBits(pendingContainerKey) == initialContainerKey) {
                 if (pendingContainer == null) {
                     pendingContainer = containerForLowValueAndRange(
-                            lowBitsAsInt(pendingContainerKey), initialContainerStart, initialContainerEnd);
+                        lowBitsAsInt(pendingContainerKey), initialContainerStart,
+                        initialContainerEnd);
                     pendingContainerKey = highBits(pendingContainerKey);
                 } else {
-                    pendingContainer = pendingContainer.iappend(initialContainerStart, initialContainerEnd + 1);
+                    pendingContainer =
+                        pendingContainer.iappend(initialContainerStart, initialContainerEnd + 1);
                 }
                 flushPendingContainer();
             } else {
@@ -230,7 +236,7 @@ public class RspBitmapSequentialBuilder implements TreeIndexImpl.SequentialBuild
                     flushPendingContainer();
                 }
                 final Container initialContainer =
-                        Container.rangeOfOnes(initialContainerStart, initialContainerEnd + 1);
+                    Container.rangeOfOnes(initialContainerStart, initialContainerEnd + 1);
                 ensureRb();
                 rb.appendContainerUnsafeNoWriteCheck(initialContainerKey, initialContainer);
             }

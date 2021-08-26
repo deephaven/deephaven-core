@@ -23,7 +23,10 @@ public class Convert {
     /** the maximum number of bytes in the ASCII decimal representation of a long */
     public static int MAX_LONG_BYTES = 20;
 
-    /** the maximum number of bytes in the ASCII decimal representation of a double: 17 digits, decimal point, sign, 'E', exponent*/
+    /**
+     * the maximum number of bytes in the ASCII decimal representation of a double: 17 digits,
+     * decimal point, sign, 'E', exponent
+     */
     public static int MAX_DOUBLE_BYTES = 24;
 
     /** the exact number of bytes in an ISO8601 millis timestamp: YYYY-MM-DDTHH:MM:SS.MMM<suffix> */
@@ -38,14 +41,15 @@ public class Convert {
 
     /**
      * Append a decimal representation of a short to a byte buffer.
+     * 
      * @param n the integer to be converted
      * @param b the byte buffer
      * @return the byte buffer
      * @throws java.nio.BufferOverflowException if there is not enough space in the buffer
      */
     public static ByteBuffer appendShort(short n, ByteBuffer b) {
-        if ( n < 0 ) {
-            if ( n == Short.MIN_VALUE ) {
+        if (n < 0) {
+            if (n == Short.MIN_VALUE) {
                 b.put(MIN_SHORT_BYTES);
                 return b;
             }
@@ -55,9 +59,9 @@ public class Convert {
         int q = b.position();
         do {
             b.put((byte) (n % 10 + '0'));
-        } while ( (n /= 10) > 0 );
+        } while ((n /= 10) > 0);
         int p = b.position() - 1;
-        while ( q < p ) {
+        while (q < p) {
             byte tmp = b.get(p);
             b.put(p--, b.get(q));
             b.put(q++, tmp);
@@ -67,14 +71,15 @@ public class Convert {
 
     /**
      * Append a decimal representation of an integer to a byte buffer.
+     * 
      * @param n the integer to be converted
      * @param b the byte buffer
      * @return the byte buffer
      * @throws java.nio.BufferOverflowException if there is not enough space in the buffer
      */
     public static ByteBuffer appendInt(int n, ByteBuffer b) {
-        if ( n < 0 ) {
-            if ( n == Integer.MIN_VALUE ) {
+        if (n < 0) {
+            if (n == Integer.MIN_VALUE) {
                 b.put(MIN_INT_BYTES);
                 return b;
             }
@@ -84,9 +89,9 @@ public class Convert {
         int q = b.position();
         do {
             b.put((byte) (n % 10 + '0'));
-        } while ( (n /= 10) > 0 );
+        } while ((n /= 10) > 0);
         int p = b.position() - 1;
-        while ( q < p ) {
+        while (q < p) {
             byte tmp = b.get(p);
             b.put(p--, b.get(q));
             b.put(q++, tmp);
@@ -96,14 +101,15 @@ public class Convert {
 
     /**
      * Append a decimal representation of a long to a byte buffer.
+     * 
      * @param n the long to be converted
      * @param b the byte buffer
      * @return the byte buffer
      * @throws java.nio.BufferOverflowException if there is not enough space in the buffer
      */
     public static ByteBuffer appendLong(long n, ByteBuffer b) {
-        if ( n < 0 ) {
-            if ( n == Long.MIN_VALUE ) {
+        if (n < 0) {
+            if (n == Long.MIN_VALUE) {
                 b.put(MIN_LONG_BYTES);
                 return b;
             }
@@ -113,9 +119,9 @@ public class Convert {
         int q = b.position();
         do {
             b.put((byte) (n % 10 + '0'));
-        } while ( (n /= 10) > 0 );
+        } while ((n /= 10) > 0);
         int p = b.position() - 1;
-        while ( q < p ) {
+        while (q < p) {
             byte tmp = b.get(p);
             b.put(p--, b.get(q));
             b.put(q++, tmp);
@@ -123,15 +129,16 @@ public class Convert {
         return b;
     }
 
-    //------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------
     // Floating-point conversion
-    //------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------
 
-    private static final ThreadLocal<StringBuilder> STRING_BUILDER_THREAD_LOCAL = ThreadLocal.withInitial(() -> new StringBuilder(MAX_DOUBLE_BYTES));
+    private static final ThreadLocal<StringBuilder> STRING_BUILDER_THREAD_LOCAL =
+        ThreadLocal.withInitial(() -> new StringBuilder(MAX_DOUBLE_BYTES));
 
     /**
-     * Append a decimal representation of a {@code double} to a {@link ByteBuffer}.
-     * Works as if {@link Double#toString(double)} were used.
+     * Append a decimal representation of a {@code double} to a {@link ByteBuffer}. Works as if
+     * {@link Double#toString(double)} were used.
      *
      * @param input The {@code double} to be converted
      * @param dest The {@link ByteBuffer}
@@ -148,32 +155,36 @@ public class Convert {
         return dest;
     }
 
-    //------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------
     // Timestamp conversion
-    //------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------
 
-    /** The number of days preceding the first day of the given month,
-     * ignoring leap days, with Jan == 1. */
-    private static final int[] DAYS_SO_FAR={
-        0, 0, 31, 59, 90, 120,  // xxx Jan Feb Mar Apr May
-        151, 181, 212, 243,     // Jun Jul Aug Sep
-        273, 304, 334           // Oct Nov Dec
+    /**
+     * The number of days preceding the first day of the given month, ignoring leap days, with Jan
+     * == 1.
+     */
+    private static final int[] DAYS_SO_FAR = {
+            0, 0, 31, 59, 90, 120, // xxx Jan Feb Mar Apr May
+            151, 181, 212, 243, // Jun Jul Aug Sep
+            273, 304, 334 // Oct Nov Dec
     };
 
-    /** Returns the number of days preceding the first day of the
-     * given year. */
+    /**
+     * Returns the number of days preceding the first day of the given year.
+     */
     private static int yearToDays(int year) {
         int lastYear = year - 1;
-        return year * 365 + ( 0 == year ? 0 : lastYear / 4 - lastYear / 100 + lastYear/ 400 );
+        return year * 365 + (0 == year ? 0 : lastYear / 4 - lastYear / 100 + lastYear / 400);
     }
 
     /** Returns true if the given year is a leap year. */
     private static boolean isLeapYear(int year) {
-        return 0 == year % 4 && ( 0!= year % 100 || 0 == year % 400 ) && 0 != year;
+        return 0 == year % 4 && (0 != year % 100 || 0 == year % 400) && 0 != year;
     }
 
-    /** Returns the number of leap days that have happened so far this
-     * year. */
+    /**
+     * Returns the number of leap days that have happened so far this year.
+     */
     private static int countLeapDay(int year, int month) {
         return isLeapYear(year) && month > 2 ? 1 : 0;
     }
@@ -184,8 +195,8 @@ public class Convert {
     }
 
     /**
-     * Append an ISO 8601 representation of millis-since-the-epoch timestamp to a byte buffer.
-     * The output length is always 23 bytes plus the length of the GMT offset suffix:
+     * Append an ISO 8601 representation of millis-since-the-epoch timestamp to a byte buffer. The
+     * output length is always 23 bytes plus the length of the GMT offset suffix:
      * YYYY-MM-DDTHH:MM:SS.MMM&lt;suffix&gt;.
      *
      * @param t the timestamp to be converted, millis since 1970-01-01T00:00:00 GMT
@@ -199,24 +210,28 @@ public class Convert {
 
         // convert into whole days
         long days = t / 86400000L;
-        int millis = (int) ( t % 86400000L );
-        if ( millis < 0 ) {
+        int millis = (int) (t % 86400000L);
+        if (millis < 0) {
             days--;
             millis += 86400000L;
         }
         // put day 0 at 0000-01-01 (ignoring calendar reform)
         days += 719527L;
-        if (days < 0) { return appendISO8601(0, 0, 0, 0, 0, 0, 0, gmtOffsetSuffix, b); }
-        if (days > 3652423L) { return appendISO8601(9999, 99, 99, 99, 99, 99, 999, gmtOffsetSuffix, b); }
+        if (days < 0) {
+            return appendISO8601(0, 0, 0, 0, 0, 0, 0, gmtOffsetSuffix, b);
+        }
+        if (days > 3652423L) {
+            return appendISO8601(9999, 99, 99, 99, 99, 99, 999, gmtOffsetSuffix, b);
+        }
 
-        int year = (int) ( days * 10000 / 3652425 );
-        int daysLeft = (int) ( days - yearToDays(year) );
-        if ( daysLeft > 364 + countLeapYear(year) ) {
+        int year = (int) (days * 10000 / 3652425);
+        int daysLeft = (int) (days - yearToDays(year));
+        if (daysLeft > 364 + countLeapYear(year)) {
             daysLeft -= 365 + countLeapYear(year++);
         }
 
         int month = daysLeft / 31 + 1;
-        if ( month < 12 && DAYS_SO_FAR[month + 1] + countLeapDay(year, month + 1) < daysLeft + 1 ) {
+        if (month < 12 && DAYS_SO_FAR[month + 1] + countLeapDay(year, month + 1) < daysLeft + 1) {
             month++;
         }
 
@@ -234,8 +249,8 @@ public class Convert {
     }
 
     /**
-     * Append an ISO 8601 representation of a broken-down time to a byte buffer.
-     * The output length is always 23 bytes plus the length of the GMT offset suffix:
+     * Append an ISO 8601 representation of a broken-down time to a byte buffer. The output length
+     * is always 23 bytes plus the length of the GMT offset suffix:
      * YYYY-MM-DDTHH:MM:SS.MMM&lt;suffix&gt;.
      *
      * @param year the year
@@ -251,8 +266,8 @@ public class Convert {
      * @throws java.nio.BufferOverflowException if there is not enough space in the buffer
      */
     public static ByteBuffer appendISO8601(int year, int month, int day,
-                                           int hour, int minute, int second, int millis,
-                                           byte[] gmtOffsetSuffix, ByteBuffer b) {
+        int hour, int minute, int second, int millis,
+        byte[] gmtOffsetSuffix, ByteBuffer b) {
         b.put((byte) ('0' + year / 1000));
         b.put((byte) ('0' + (year % 1000) / 100));
         b.put((byte) ('0' + (year % 100) / 10));
@@ -276,15 +291,15 @@ public class Convert {
         b.put((byte) ('0' + (millis / 100)));
         b.put((byte) ('0' + (millis % 100) / 10));
         b.put((byte) ('0' + (millis % 10)));
-        if ( gmtOffsetSuffix != null ) {
+        if (gmtOffsetSuffix != null) {
             b.put(gmtOffsetSuffix);
         }
         return b;
     }
 
     /**
-     * Append an ISO 8601 representation of micros-since-the-epoch timestamp to a byte buffer.
-     * The output length is always 26 bytes plus the length of the GMT offset suffix:
+     * Append an ISO 8601 representation of micros-since-the-epoch timestamp to a byte buffer. The
+     * output length is always 26 bytes plus the length of the GMT offset suffix:
      * YYYY-MM-DDTHH:MM:SS.MMMMMM&lt;suffix&gt;.
      *
      * @param t the timestamp to be converted, micros since 1970-01-01T00:00:00 GMT
@@ -299,23 +314,27 @@ public class Convert {
         // convert into whole days
         long days = t / 86400000000L;
         long micros = t % 86400000000L;
-        if ( micros < 0 ) {
+        if (micros < 0) {
             days--;
             micros += 86400000000L;
         }
         // put day 0 at 0000-01-01 (ignoring calendar reform)
         days += 719527L;
-        if (days < 0) { return appendISO8601Micros(0, 0, 0, 0, 0, 0, 0, 0, gmtOffsetSuffix, b); }
-        if (days > 3652423L) { return appendISO8601Micros(9999, 99, 99, 99, 99, 99, 999, 999, gmtOffsetSuffix, b); }
+        if (days < 0) {
+            return appendISO8601Micros(0, 0, 0, 0, 0, 0, 0, 0, gmtOffsetSuffix, b);
+        }
+        if (days > 3652423L) {
+            return appendISO8601Micros(9999, 99, 99, 99, 99, 99, 999, 999, gmtOffsetSuffix, b);
+        }
 
-        int year = (int) ( days * 10000 / 3652425 );
-        int daysLeft = (int) ( days - yearToDays(year) );
-        if ( daysLeft > 364 + countLeapYear(year) ) {
+        int year = (int) (days * 10000 / 3652425);
+        int daysLeft = (int) (days - yearToDays(year));
+        if (daysLeft > 364 + countLeapYear(year)) {
             daysLeft -= 365 + countLeapYear(year++);
         }
 
         int month = daysLeft / 31 + 1;
-        if ( month < 12 && DAYS_SO_FAR[month + 1] + countLeapDay(year, month + 1) < daysLeft + 1 ) {
+        if (month < 12 && DAYS_SO_FAR[month + 1] + countLeapDay(year, month + 1) < daysLeft + 1) {
             month++;
         }
 
@@ -331,12 +350,13 @@ public class Convert {
         minute %= 60;
 
         /* put it into the byte buffer */
-        return appendISO8601Micros(year, month, day, hour, minute, second, millis, (int)micros, gmtOffsetSuffix, b);
+        return appendISO8601Micros(year, month, day, hour, minute, second, millis, (int) micros,
+            gmtOffsetSuffix, b);
     }
 
     /**
-     * Append an ISO 8601 representation of a broken-down time to a byte buffer.
-     * The output length is always 23 bytes plus the length of the GMT offset suffix:
+     * Append an ISO 8601 representation of a broken-down time to a byte buffer. The output length
+     * is always 23 bytes plus the length of the GMT offset suffix:
      * YYYY-MM-DDTHH:MM:SS.MMM&lt;suffix&gt;.
      *
      * @param year the year
@@ -353,8 +373,8 @@ public class Convert {
      * @throws java.nio.BufferOverflowException if there is not enough space in the buffer
      */
     public static ByteBuffer appendISO8601Micros(int year, int month, int day,
-                                                 int hour, int minute, int second, int millis, int micros,
-                                                 byte[] gmtOffsetSuffix, ByteBuffer b) {
+        int hour, int minute, int second, int millis, int micros,
+        byte[] gmtOffsetSuffix, ByteBuffer b) {
         b.put((byte) ('0' + year / 1000));
         b.put((byte) ('0' + (year % 1000) / 100));
         b.put((byte) ('0' + (year % 100) / 10));
@@ -381,7 +401,7 @@ public class Convert {
         b.put((byte) ('0' + (micros / 100)));
         b.put((byte) ('0' + (micros % 100) / 10));
         b.put((byte) ('0' + (micros % 10)));
-        if ( gmtOffsetSuffix != null ) {
+        if (gmtOffsetSuffix != null) {
             b.put(gmtOffsetSuffix);
         }
         return b;

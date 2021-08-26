@@ -12,36 +12,36 @@ public class TestKeyedPriorityBlockingQueue extends BaseArrayTestCase {
         final KeyedPriorityBlockingQueue<String> queue = new KeyedPriorityBlockingQueue<>();
         assertTrue(queue.isEmpty());
 
-        queue.enqueue("A",1);
+        queue.enqueue("A", 1);
         assertFalse(queue.isEmpty());
         assertEquals("A", queue.take());
         assertTrue(queue.isEmpty());
 
-        queue.enqueue("A",1);
+        queue.enqueue("A", 1);
         assertFalse(queue.isEmpty());
-        queue.enqueue("B",1);
+        queue.enqueue("B", 1);
         assertFalse(queue.isEmpty());
         assertEquals("A", queue.take());
         assertFalse(queue.isEmpty());
         assertEquals("B", queue.take());
         assertTrue(queue.isEmpty());
 
-        queue.enqueue("B",1);
+        queue.enqueue("B", 1);
         assertFalse(queue.isEmpty());
-        queue.enqueue("A",1);
+        queue.enqueue("A", 1);
         assertFalse(queue.isEmpty());
         assertEquals("B", queue.take());
         assertFalse(queue.isEmpty());
         assertEquals("A", queue.take());
         assertTrue(queue.isEmpty());
 
-        queue.enqueue("C",0);
+        queue.enqueue("C", 0);
         assertFalse(queue.isEmpty());
-        queue.enqueue("A",1);
+        queue.enqueue("A", 1);
         assertFalse(queue.isEmpty());
-        queue.enqueue("B",1);
+        queue.enqueue("B", 1);
         assertFalse(queue.isEmpty());
-        queue.enqueue("A",2);
+        queue.enqueue("A", 2);
         assertFalse(queue.isEmpty());
         assertEquals("A", queue.take());
         assertFalse(queue.isEmpty());

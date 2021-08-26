@@ -52,15 +52,18 @@ public interface DupCompactKernel extends Context {
     }
 
     /**
-     * Remove all adjacent values from chunkToCompact, except the last value in any adjacent run.  The keyIndices are
-     * parallel to the chunkToCompact; and when a value is removed from chunkToCompact it is also removed from keyIndices
+     * Remove all adjacent values from chunkToCompact, except the last value in any adjacent run.
+     * The keyIndices are parallel to the chunkToCompact; and when a value is removed from
+     * chunkToCompact it is also removed from keyIndices
      *
-     * Additionally, verify that the elements are properly ordered; returning the first position of an out of order element.
+     * Additionally, verify that the elements are properly ordered; returning the first position of
+     * an out of order element.
      *
      * @param chunkToCompact the values to remove duplicates from
      * @param keyIndices the key indices parallel to chunkToCompact
      *
      * @return the first position of an out-of-order element, or -1 if all elements are in order
      */
-    int compactDuplicates(WritableChunk<? extends Attributes.Any> chunkToCompact, WritableLongChunk<Attributes.KeyIndices> keyIndices);
+    int compactDuplicates(WritableChunk<? extends Attributes.Any> chunkToCompact,
+        WritableLongChunk<Attributes.KeyIndices> keyIndices);
 }

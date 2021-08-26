@@ -27,7 +27,7 @@ public class SimpleTsPlot2 {
 
         String line = reader.readLine();
         line = reader.readLine(); // skip header
-        while(line != null){
+        while (line != null) {
             final String[] sline = line.split(",");
             final String dateString = sline[0];
             final String priceString = sline[6];
@@ -42,13 +42,13 @@ public class SimpleTsPlot2 {
         final Number[] y1 = values.toArray(new Number[values.size()]);
 
         Figure fig = FigureFactory.figure()
-                .newChart(0)
-                .chartTitle(fileName)
-                .newAxes()
-                .xLabel("X")
-                .yLabel("Y")
-                .plot("Test1", x1,y1)
-                .pointsVisible(false);
+            .newChart(0)
+            .chartTitle(fileName)
+            .newAxes()
+            .xLabel("X")
+            .yLabel("Y")
+            .plot("Test1", x1, y1)
+            .pointsVisible(false);
 
         ExamplePlotUtils.display(fig);
     }

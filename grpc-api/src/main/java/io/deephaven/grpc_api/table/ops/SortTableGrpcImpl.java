@@ -22,11 +22,13 @@ public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
 
     @Inject
     public SortTableGrpcImpl() {
-        super(BatchTableRequest.Operation::getSort, SortTableRequest::getResultId, SortTableRequest::getSourceId);
+        super(BatchTableRequest.Operation::getSort, SortTableRequest::getResultId,
+            SortTableRequest::getSourceId);
     }
 
     @Override
-    public Table create(final SortTableRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final SortTableRequest request,
+        final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table original = sourceTables.get(0).get();
@@ -48,10 +50,11 @@ public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
         }
 
         // This loop does two optimizations:
-        // 1. Consolidate all sorts into a SortPair array in order to only call one sort on the table
+        // 1. Consolidate all sorts into a SortPair array in order to only call one sort on the
+        // table
         // 2. Move all the reverses to the back:
-        //    - For an odd number of reverses only call one reverse
-        //    - For an even number of reverses do not call reverse (they cancel out)
+        // - For an odd number of reverses only call one reverse
+        // - For an even number of reverses do not call reverse (they cancel out)
         // As a reverse moves past a sort, the direction of the sort is reversed (e.g. asc -> desc)
         final List<SortPair> sortPairs = new ArrayList<>();
         boolean shouldReverse = false;
@@ -61,7 +64,8 @@ public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
             int direction = 0;
             switch (sort.getDirection()) {
                 case REVERSE:
-                    // Toggle the reverse flag, should be true for odd number of reverses and false for an even number
+                    // Toggle the reverse flag, should be true for odd number of reverses and false
+                    // for an even number
                     shouldReverse = !shouldReverse;
                     continue;
                 case DESCENDING:
@@ -71,7 +75,8 @@ public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
                     direction = 1;
                     break;
                 default:
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Unexpected sort direction: " + direction);
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Unexpected sort direction: " + direction);
             }
 
             final StringBuilder columnName = new StringBuilder(sort.getColumnName());

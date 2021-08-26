@@ -8,8 +8,8 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 
 /**
- * A trivial circular buffer, like java.util.concurrent.ArrayBlockingQueue but without all
- * the synchronization and collection cruft.
+ * A trivial circular buffer, like java.util.concurrent.ArrayBlockingQueue but without all the
+ * synchronization and collection cruft.
  */
 public class RingBuffer<E> {
     private Object[] storage;
@@ -18,11 +18,10 @@ public class RingBuffer<E> {
 
     private void grow() {
         Object[] newStorage = new Object[storage.length << 1];
-        if ( tail > head ) {
+        if (tail > head) {
             System.arraycopy(storage, head, newStorage, 0, tail - head);
             tail = tail - head;
-        }
-        else {
+        } else {
             System.arraycopy(storage, head, newStorage, 0, storage.length - head);
             System.arraycopy(storage, 0, newStorage, storage.length - head, tail);
             tail += storage.length - head;
@@ -48,7 +47,7 @@ public class RingBuffer<E> {
     }
 
     public int size() {
-        return tail >= head? (tail - head) : (tail+ (storage.length - head));
+        return tail >= head ? (tail - head) : (tail + (storage.length - head));
     }
 
     public void clear() {
@@ -61,7 +60,7 @@ public class RingBuffer<E> {
     }
 
     public boolean add(E e) {
-        if ( isFull() ) {
+        if (isFull()) {
             grow();
         }
         storage[tail] = e;
@@ -70,7 +69,7 @@ public class RingBuffer<E> {
     }
 
     public boolean addFirst(E e) {
-        if ( isFull() ) {
+        if (isFull()) {
             grow();
         }
         head = (head - 1) & indexMask;
@@ -80,7 +79,7 @@ public class RingBuffer<E> {
 
     public E addOverwrite(E e) {
         E result = null;
-        if ( isFull() ) {
+        if (isFull()) {
             result = remove();
         }
         storage[tail] = e;
@@ -89,7 +88,7 @@ public class RingBuffer<E> {
     }
 
     public boolean offer(E e) {
-        if ( isFull() ) {
+        if (isFull()) {
             return false;
         }
         storage[tail] = e;
@@ -98,7 +97,7 @@ public class RingBuffer<E> {
     }
 
     public boolean offerFirst(E e) {
-        if ( isFull() ) {
+        if (isFull()) {
             return false;
         }
         head = (head - 1) & indexMask;
@@ -107,7 +106,7 @@ public class RingBuffer<E> {
     }
 
     public E remove() {
-        if ( isEmpty() ) {
+        if (isEmpty()) {
             throw new NoSuchElementException();
         }
         E e = (E) storage[head];
@@ -117,7 +116,7 @@ public class RingBuffer<E> {
     }
 
     public E poll() {
-        if ( isEmpty() ) {
+        if (isEmpty()) {
             return null;
         }
         E e = (E) storage[head];
@@ -127,21 +126,21 @@ public class RingBuffer<E> {
     }
 
     public E element() {
-        if ( isEmpty() ) {
+        if (isEmpty()) {
             throw new NoSuchElementException();
         }
         return (E) storage[head];
     }
 
     public E peek() {
-        if ( isEmpty() ) {
+        if (isEmpty()) {
             return null;
         }
         return (E) storage[head];
     }
 
     public E peek(int offset) {
-        if ( offset >= size() ) {
+        if (offset >= size()) {
             return null;
         }
         return (E) storage[(head + offset) & indexMask];
@@ -153,41 +152,41 @@ public class RingBuffer<E> {
     }
 
     public E front(int offset) {
-        if ( offset >= size() ) {
+        if (offset >= size()) {
             throw new NoSuchElementException();
         }
         return (E) storage[(head + offset) & indexMask];
     }
 
     public E removeAtSwapLast(int offset) {
-        if ( offset >= size() ) {
+        if (offset >= size()) {
             throw new NoSuchElementException();
         }
         final int index = (head + offset) & indexMask;
         final E removed = (E) storage[index];
         tail = (tail - 1) & indexMask;
-        if ( index != tail ) {
+        if (index != tail) {
             storage[index] = storage[tail];
         }
         return removed;
     }
 
     public E back() {
-        if ( isEmpty() ) {
+        if (isEmpty()) {
             throw new NoSuchElementException();
         }
-        return (E) (tail == 0 ? storage[storage.length - 1] : storage[tail-1]);
+        return (E) (tail == 0 ? storage[storage.length - 1] : storage[tail - 1]);
     }
 
     public E peekLast() {
-        if ( isEmpty() ) {
+        if (isEmpty()) {
             return null;
         }
-        return (E) (tail == 0 ? storage[storage.length - 1] : storage[tail-1]);
+        return (E) (tail == 0 ? storage[storage.length - 1] : storage[tail - 1]);
     }
 
     public E peekLast(int offset) {
-        if ( offset >= size() ) {
+        if (offset >= size()) {
             return null;
         }
         return (E) storage[(tail - 1 - offset) & indexMask];
@@ -199,13 +198,16 @@ public class RingBuffer<E> {
 
     public class Iterator {
         int count = -1;
+
         public boolean hasNext() {
             return count + 1 < size();
         }
+
         public E next() {
             count++;
             return (E) storage[(head + count) & indexMask];
         }
+
         public void remove() {
             throw new UnsupportedOperationException();
         }

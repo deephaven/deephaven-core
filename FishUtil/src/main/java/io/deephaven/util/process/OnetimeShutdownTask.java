@@ -12,7 +12,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class OnetimeShutdownTask implements ShutdownManager.Task {
 
     /**
-     * NB: This doesn't need to be an AtomicBoolean, only a volatile boolean, but we use the object for its monitor.
+     * NB: This doesn't need to be an AtomicBoolean, only a volatile boolean, but we use the object
+     * for its monitor.
      */
     private final AtomicBoolean isShutdown = new AtomicBoolean(false);
 

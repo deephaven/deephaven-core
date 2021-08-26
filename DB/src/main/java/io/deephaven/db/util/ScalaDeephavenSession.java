@@ -79,7 +79,8 @@ public class ScalaDeephavenSession extends AbstractScriptSession implements Scri
         }
     }
 
-    public ScalaDeephavenSession(@SuppressWarnings("unused") boolean runInitScripts, boolean isDefaultScriptSession) {
+    public ScalaDeephavenSession(@SuppressWarnings("unused") boolean runInitScripts,
+        boolean isDefaultScriptSession) {
         super(isDefaultScriptSession);
 
         errorHandler = new ErrorHandler();
@@ -104,11 +105,12 @@ public class ScalaDeephavenSession extends AbstractScriptSession implements Scri
 
         setVariable("log", log);
 
-        // Our first valueOfTerm will try to evaluate the Java classes, but there is a scala problem with Generics and inners.
+        // Our first valueOfTerm will try to evaluate the Java classes, but there is a scala problem
+        // with Generics and inners.
         interpreter.beSilentDuring(() -> {
-                    interpreter.valueOfTerm("log");
-                    return null;
-                });
+            interpreter.valueOfTerm("log");
+            return null;
+        });
     }
 
     @Override
@@ -118,7 +120,7 @@ public class ScalaDeephavenSession extends AbstractScriptSession implements Scri
 
     @Override
     public Object getVariable(String name) throws QueryScope.MissingVariableException {
-        Option <Object> value = interpreter.valueOfTerm(name);
+        Option<Object> value = interpreter.valueOfTerm(name);
         if (value.isEmpty())
             throw new QueryScope.MissingVariableException("No binding for: " + name);
         return value.get();
@@ -127,7 +129,7 @@ public class ScalaDeephavenSession extends AbstractScriptSession implements Scri
     @Override
     public <T> T getVariable(String name, T defaultValue) {
         Option<Object> value = interpreter.valueOfTerm(name);
-        //noinspection unchecked
+        // noinspection unchecked
         return value.isDefined() ? (T) value.get() : defaultValue;
     }
 
@@ -138,9 +140,11 @@ public class ScalaDeephavenSession extends AbstractScriptSession implements Scri
         log.info().append("Evaluating command: ").append(command).endl();
         Results.Result result;
         try {
-            result = LiveTableMonitor.DEFAULT.exclusiveLock().computeLockedInterruptibly(() -> interpreter.interpret(command));
+            result = LiveTableMonitor.DEFAULT.exclusiveLock()
+                .computeLockedInterruptibly(() -> interpreter.interpret(command));
         } catch (InterruptedException e) {
-            throw new QueryCancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted" , e);
+            throw new QueryCancellationException(
+                e.getMessage() != null ? e.getMessage() : "Query interrupted", e);
         }
 
         if (!(result instanceof Results.Success$)) {
@@ -148,21 +152,24 @@ public class ScalaDeephavenSession extends AbstractScriptSession implements Scri
                 if (reporter.lastError != null) {
                     throw new RuntimeException("Could not evaluate command: " + reporter.lastError);
                 } else if (reporter.lastUntruncated != null) {
-                    throw new RuntimeException("Could not evaluate command: " + reporter.lastUntruncated);
+                    throw new RuntimeException(
+                        "Could not evaluate command: " + reporter.lastUntruncated);
                 } else {
                     throw new RuntimeException("Could not evaluate command, unknown error!");
                 }
             } else if (result instanceof Results.Incomplete$) {
                 throw new IllegalStateException("Incomplete line");
             } else {
-                throw new IllegalStateException("Bad result type: " + result.getClass().getCanonicalName() + " (" + result + ")");
+                throw new IllegalStateException("Bad result type: "
+                    + result.getClass().getCanonicalName() + " (" + result + ")");
             }
         }
     }
 
     @Override
     public Map<String, Object> getVariables() {
-        Collection<Names.TermName> termNames = JavaConverters.asJavaCollection(interpreter.definedTerms());
+        Collection<Names.TermName> termNames =
+            JavaConverters.asJavaCollection(interpreter.definedTerms());
         Map<String, Object> variableMap = new HashMap<>();
         for (Names.TermName termName : termNames) {
             final String name = termName.toString();
@@ -174,10 +181,11 @@ public class ScalaDeephavenSession extends AbstractScriptSession implements Scri
 
     @Override
     public Set<String> getVariableNames() {
-        return Collections.unmodifiableSet(JavaConverters.asJavaCollection(interpreter.definedTerms())
-            .stream()
-            .map(Names.TermName::toString)
-            .collect(Collectors.toSet()));
+        return Collections
+            .unmodifiableSet(JavaConverters.asJavaCollection(interpreter.definedTerms())
+                .stream()
+                .map(Names.TermName::toString)
+                .collect(Collectors.toSet()));
     }
 
     @Override
@@ -188,10 +196,12 @@ public class ScalaDeephavenSession extends AbstractScriptSession implements Scri
     @Override
     public void setVariable(String name, Object value) {
         if (value == null) {
-            interpreter.beQuietDuring(() -> interpreter.bind(new NamedParamClass(name, Object.class.getCanonicalName(), null)));
+            interpreter.beQuietDuring(() -> interpreter
+                .bind(new NamedParamClass(name, Object.class.getCanonicalName(), null)));
         } else {
             final String type = value.getClass().getCanonicalName();
-            interpreter.beQuietDuring(() -> interpreter.bind(new NamedParamClass(name, type, value)));
+            interpreter
+                .beQuietDuring(() -> interpreter.bind(new NamedParamClass(name, type, value)));
         }
     }
 
@@ -201,20 +211,17 @@ public class ScalaDeephavenSession extends AbstractScriptSession implements Scri
     }
 
     @Override
-    public void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader, ScriptPathLoaderState scriptLoaderState) {
-    }
+    public void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader,
+        ScriptPathLoaderState scriptLoaderState) {}
 
     @Override
-    public void onApplicationInitializationEnd() {
-    }
+    public void onApplicationInitializationEnd() {}
 
     @Override
-    public void setScriptPathLoader(Supplier<ScriptPathLoader> scriptPathLoader, boolean caching) {
-    }
+    public void setScriptPathLoader(Supplier<ScriptPathLoader> scriptPathLoader, boolean caching) {}
 
     @Override
-    public void clearScriptPathLoader() {
-    }
+    public void clearScriptPathLoader() {}
 
     @Override
     public boolean setUseOriginalScriptLoaderState(boolean useOriginal) {

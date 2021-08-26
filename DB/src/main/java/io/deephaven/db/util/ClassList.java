@@ -18,7 +18,8 @@ import java.util.Collection;
  */
 public class ClassList {
     @NotNull
-    public static Class[] readClassList(String resourceName) throws IOException, ClassNotFoundException {
+    public static Class[] readClassList(String resourceName)
+        throws IOException, ClassNotFoundException {
         final ArrayList<String> classString = getClassStrings(resourceName);
 
         final Class[] classList = new Class[classString.size()];
@@ -29,7 +30,8 @@ public class ClassList {
     }
 
     @NotNull
-    public static Collection<Class<?>> readClassListAsCollection(String resourceName) throws IOException, ClassNotFoundException {
+    public static Collection<Class<?>> readClassListAsCollection(String resourceName)
+        throws IOException, ClassNotFoundException {
         final ArrayList<String> classString = getClassStrings(resourceName);
 
         ArrayList<Class<?>> result = new ArrayList<>(classString.size());
@@ -49,7 +51,8 @@ public class ClassList {
 
         for (String resourceNameLocal : resourceNameAry) {
 
-            final InputStream pushListStream = ClassList.class.getResourceAsStream("/" + resourceNameLocal);
+            final InputStream pushListStream =
+                ClassList.class.getResourceAsStream("/" + resourceNameLocal);
             if (pushListStream == null) {
                 throw new IOException("Could not open class list: " + resourceNameLocal);
             }
@@ -60,7 +63,8 @@ public class ClassList {
             while ((c = file.readLine()) != null) {
                 c = c.trim();
                 if (c.length() > 0 && c.charAt(0) != '#') {
-                    // No idea why this was here, pretty sure it's unnecessary: c = c.replace(" ", "");
+                    // No idea why this was here, pretty sure it's unnecessary: c = c.replace(" ",
+                    // "");
                     classString.add(c);
                 }
             }

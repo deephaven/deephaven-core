@@ -18,11 +18,13 @@ import static io.deephaven.db.v2.sources.chunk.Attributes.KeyIndices;
 import static io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import static io.deephaven.util.QueryConstants.*;
 
-public class ReadOnlyRedirectedColumnSource<T> extends AbstractColumnSource<T> implements UngroupableColumnSource {
+public class ReadOnlyRedirectedColumnSource<T> extends AbstractColumnSource<T>
+    implements UngroupableColumnSource {
     protected final RedirectionIndex redirectionIndex;
     protected final ColumnSource<T> innerSource;
 
-    public ReadOnlyRedirectedColumnSource(@NotNull final RedirectionIndex redirectionIndex, @NotNull final ColumnSource<T> innerSource) {
+    public ReadOnlyRedirectedColumnSource(@NotNull final RedirectionIndex redirectionIndex,
+        @NotNull final ColumnSource<T> innerSource) {
         super(innerSource.getType());
         this.redirectionIndex = redirectionIndex;
         this.innerSource = innerSource;
@@ -38,8 +40,7 @@ public class ReadOnlyRedirectedColumnSource<T> extends AbstractColumnSource<T> i
     }
 
     @Override
-    public void startTrackingPrevValues() {
-    }
+    public void startTrackingPrevValues() {}
 
     @Override
     public T get(long index) {
@@ -192,109 +193,130 @@ public class ReadOnlyRedirectedColumnSource<T> extends AbstractColumnSource<T> i
 
     @Override
     public boolean isUngroupable() {
-        return innerSource instanceof UngroupableColumnSource && ((UngroupableColumnSource) innerSource).isUngroupable();
+        return innerSource instanceof UngroupableColumnSource
+            && ((UngroupableColumnSource) innerSource).isUngroupable();
     }
 
     @Override
     public long getUngroupedSize(long columnIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedSize(redirectionIndex.get(columnIndex));
+        return ((UngroupableColumnSource) innerSource)
+            .getUngroupedSize(redirectionIndex.get(columnIndex));
     }
 
     @Override
     public long getUngroupedPrevSize(long columnIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevSize(redirectionIndex.getPrev(columnIndex));
+        return ((UngroupableColumnSource) innerSource)
+            .getUngroupedPrevSize(redirectionIndex.getPrev(columnIndex));
     }
 
     @Override
     public T getUngrouped(long columnIndex, int arrayIndex) {
-        //noinspection unchecked
-        return (T) ((UngroupableColumnSource) innerSource).getUngrouped(redirectionIndex.get(columnIndex), arrayIndex);
+        // noinspection unchecked
+        return (T) ((UngroupableColumnSource) innerSource)
+            .getUngrouped(redirectionIndex.get(columnIndex), arrayIndex);
     }
 
     @Override
     public T getUngroupedPrev(long columnIndex, int arrayIndex) {
-        //noinspection unchecked
-        return (T) ((UngroupableColumnSource) innerSource).getUngroupedPrev(redirectionIndex.getPrev(columnIndex), arrayIndex);
+        // noinspection unchecked
+        return (T) ((UngroupableColumnSource) innerSource)
+            .getUngroupedPrev(redirectionIndex.getPrev(columnIndex), arrayIndex);
     }
 
     @Override
     public Boolean getUngroupedBoolean(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedBoolean(redirectionIndex.get(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource)
+            .getUngroupedBoolean(redirectionIndex.get(columnIndex), arrayIndex);
     }
 
     @Override
     public Boolean getUngroupedPrevBoolean(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevBoolean(redirectionIndex.getPrev(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource)
+            .getUngroupedPrevBoolean(redirectionIndex.getPrev(columnIndex), arrayIndex);
     }
 
     @Override
     public double getUngroupedDouble(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedDouble(redirectionIndex.get(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource)
+            .getUngroupedDouble(redirectionIndex.get(columnIndex), arrayIndex);
     }
 
     @Override
     public double getUngroupedPrevDouble(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevDouble(redirectionIndex.getPrev(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource)
+            .getUngroupedPrevDouble(redirectionIndex.getPrev(columnIndex), arrayIndex);
     }
 
     @Override
     public float getUngroupedFloat(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedFloat(redirectionIndex.get(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource)
+            .getUngroupedFloat(redirectionIndex.get(columnIndex), arrayIndex);
     }
 
     @Override
     public float getUngroupedPrevFloat(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevFloat(redirectionIndex.getPrev(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource)
+            .getUngroupedPrevFloat(redirectionIndex.getPrev(columnIndex), arrayIndex);
     }
 
     @Override
     public byte getUngroupedByte(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedByte(redirectionIndex.get(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource)
+            .getUngroupedByte(redirectionIndex.get(columnIndex), arrayIndex);
     }
 
     @Override
     public byte getUngroupedPrevByte(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevByte(redirectionIndex.getPrev(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource)
+            .getUngroupedPrevByte(redirectionIndex.getPrev(columnIndex), arrayIndex);
     }
 
     @Override
     public char getUngroupedChar(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedChar(redirectionIndex.get(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource)
+            .getUngroupedChar(redirectionIndex.get(columnIndex), arrayIndex);
     }
 
     @Override
     public char getUngroupedPrevChar(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevChar(redirectionIndex.getPrev(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource)
+            .getUngroupedPrevChar(redirectionIndex.getPrev(columnIndex), arrayIndex);
     }
 
     @Override
     public short getUngroupedShort(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedShort(redirectionIndex.get(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource)
+            .getUngroupedShort(redirectionIndex.get(columnIndex), arrayIndex);
     }
 
     @Override
     public short getUngroupedPrevShort(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevShort(redirectionIndex.getPrev(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource)
+            .getUngroupedPrevShort(redirectionIndex.getPrev(columnIndex), arrayIndex);
     }
 
     @Override
     public int getUngroupedInt(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedInt(redirectionIndex.get(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource)
+            .getUngroupedInt(redirectionIndex.get(columnIndex), arrayIndex);
     }
 
     @Override
     public int getUngroupedPrevInt(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevInt(redirectionIndex.getPrev(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource)
+            .getUngroupedPrevInt(redirectionIndex.getPrev(columnIndex), arrayIndex);
     }
 
     @Override
     public long getUngroupedLong(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedLong(redirectionIndex.get(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource)
+            .getUngroupedLong(redirectionIndex.get(columnIndex), arrayIndex);
     }
 
     @Override
     public long getUngroupedPrevLong(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevLong(redirectionIndex.getPrev(columnIndex), arrayIndex);
+        return ((UngroupableColumnSource) innerSource)
+            .getUngroupedPrevLong(redirectionIndex.getPrev(columnIndex), arrayIndex);
     }
 
     @Override
@@ -304,22 +326,27 @@ public class ReadOnlyRedirectedColumnSource<T> extends AbstractColumnSource<T> i
     }
 
     @Override
-    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
+        @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         return innerSource.allowsReinterpret(alternateDataType);
     }
 
     @Override
-    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        if (TypeUtils.getUnboxedTypeIfBoxed(alternateDataType) == byte.class && getType() == Boolean.class) {
+    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
+        @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        if (TypeUtils.getUnboxedTypeIfBoxed(alternateDataType) == byte.class
+            && getType() == Boolean.class) {
             return new ReinterpretToOriginalForBoolean<>(alternateDataType);
         }
-        //noinspection unchecked
+        // noinspection unchecked
         return new ReinterpretToOriginal(alternateDataType);
     }
 
-    private class ReinterpretToOriginal<ALTERNATE_DATA_TYPE> extends ReadOnlyRedirectedColumnSource<ALTERNATE_DATA_TYPE> {
+    private class ReinterpretToOriginal<ALTERNATE_DATA_TYPE>
+        extends ReadOnlyRedirectedColumnSource<ALTERNATE_DATA_TYPE> {
         private ReinterpretToOriginal(Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-            super(ReadOnlyRedirectedColumnSource.this.redirectionIndex, ReadOnlyRedirectedColumnSource.this.innerSource.reinterpret(alternateDataType));
+            super(ReadOnlyRedirectedColumnSource.this.redirectionIndex,
+                ReadOnlyRedirectedColumnSource.this.innerSource.reinterpret(alternateDataType));
         }
 
         @Override
@@ -328,13 +355,15 @@ public class ReadOnlyRedirectedColumnSource<T> extends AbstractColumnSource<T> i
         }
 
         @Override
-        protected <ORIGINAL_TYPE> ColumnSource<ORIGINAL_TYPE> doReinterpret(@NotNull Class<ORIGINAL_TYPE> alternateDataType) {
-            //noinspection unchecked
+        protected <ORIGINAL_TYPE> ColumnSource<ORIGINAL_TYPE> doReinterpret(
+            @NotNull Class<ORIGINAL_TYPE> alternateDataType) {
+            // noinspection unchecked
             return (ColumnSource<ORIGINAL_TYPE>) ReadOnlyRedirectedColumnSource.this;
         }
     }
 
-    private class ReinterpretToOriginalForBoolean<ALTERNATE_DATA_TYPE> extends ReinterpretToOriginal<ALTERNATE_DATA_TYPE> {
+    private class ReinterpretToOriginalForBoolean<ALTERNATE_DATA_TYPE>
+        extends ReinterpretToOriginal<ALTERNATE_DATA_TYPE> {
         private ReinterpretToOriginalForBoolean(Class<ALTERNATE_DATA_TYPE> alternateDataType) {
             super(alternateDataType);
         }
@@ -367,16 +396,22 @@ public class ReadOnlyRedirectedColumnSource<T> extends AbstractColumnSource<T> i
     }
 
     @Override
-    public void fillChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+    public void fillChunk(@NotNull final ColumnSource.FillContext context,
+        @NotNull final WritableChunk<? super Values> destination,
+        @NotNull final OrderedKeys orderedKeys) {
         doFillChunk(context, destination, orderedKeys, false);
     }
 
     @Override
-    public void fillPrevChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys) {
+    public void fillPrevChunk(@NotNull final ColumnSource.FillContext context,
+        @NotNull final WritableChunk<? super Values> destination,
+        @NotNull final OrderedKeys orderedKeys) {
         doFillChunk(context, destination, orderedKeys, true);
     }
 
-    private void doFillChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final OrderedKeys orderedKeys, final boolean usePrev) {
+    private void doFillChunk(@NotNull final ColumnSource.FillContext context,
+        @NotNull final WritableChunk<? super Values> destination,
+        @NotNull final OrderedKeys orderedKeys, final boolean usePrev) {
         final int size = orderedKeys.intSize();
         if (size <= 0) {
             destination.setSize(0);
@@ -384,7 +419,8 @@ public class ReadOnlyRedirectedColumnSource<T> extends AbstractColumnSource<T> i
         }
         final FillContext effectiveContext = (FillContext) context;
 
-        effectiveContext.shareable.ensureMappedKeysInitialized(redirectionIndex, usePrev, orderedKeys);
+        effectiveContext.shareable.ensureMappedKeysInitialized(redirectionIndex, usePrev,
+            orderedKeys);
 
         if (innerSource instanceof FillUnordered) {
             effectiveContext.doUnorderedFill((FillUnordered) innerSource, usePrev, destination);
@@ -405,9 +441,12 @@ public class ReadOnlyRedirectedColumnSource<T> extends AbstractColumnSource<T> i
         private final PermuteKernel permuteKernel;
         private final boolean booleanNullByte;
 
-        FillContext(final ReadOnlyRedirectedColumnSource cs, final int chunkCapacity, final SharedContext sharedContext, boolean booleanNullByte) {
+        FillContext(final ReadOnlyRedirectedColumnSource cs, final int chunkCapacity,
+            final SharedContext sharedContext, boolean booleanNullByte) {
             this.booleanNullByte = booleanNullByte;
-            shareable = sharedContext == null ? new Shareable(false, cs, chunkCapacity) : sharedContext.getOrCreate(new SharingKey(cs.redirectionIndex), () -> new Shareable(true, cs, chunkCapacity));
+            shareable = sharedContext == null ? new Shareable(false, cs, chunkCapacity)
+                : sharedContext.getOrCreate(new SharingKey(cs.redirectionIndex),
+                    () -> new Shareable(true, cs, chunkCapacity));
             innerFillContext = cs.innerSource.makeFillContext(chunkCapacity, shareable);
 
             if (cs.innerSource instanceof FillUnordered) {
@@ -437,7 +476,8 @@ public class ReadOnlyRedirectedColumnSource<T> extends AbstractColumnSource<T> i
             }
         }
 
-        private static final class SharingKey extends SharedContext.ExactReferenceSharingKey<Shareable> {
+        private static final class SharingKey
+            extends SharedContext.ExactReferenceSharingKey<Shareable> {
 
             private SharingKey(@NotNull final RedirectionIndex redirectionIndex) {
                 super(redirectionIndex);
@@ -466,23 +506,29 @@ public class ReadOnlyRedirectedColumnSource<T> extends AbstractColumnSource<T> i
             private boolean hasNulls;
             private OrderedKeys innerOrderedKeys;
 
-            private Shareable(final boolean shared, final ReadOnlyRedirectedColumnSource cs, final int chunkCapacity) {
+            private Shareable(final boolean shared, final ReadOnlyRedirectedColumnSource cs,
+                final int chunkCapacity) {
                 this.shared = shared;
 
-                redirectionIndexFillContext = cs.redirectionIndex.makeFillContext(chunkCapacity, this);
+                redirectionIndexFillContext =
+                    cs.redirectionIndex.makeFillContext(chunkCapacity, this);
                 mappedKeys = WritableLongChunk.makeWritableChunk(chunkCapacity);
 
                 sortKernelContext = LongIntTimsortKernel.createContext(chunkCapacity);
-                sortedMappedKeys = shared ? WritableLongChunk.makeWritableChunk(chunkCapacity) : mappedKeys;
+                sortedMappedKeys =
+                    shared ? WritableLongChunk.makeWritableChunk(chunkCapacity) : mappedKeys;
                 mappedKeysOrder = WritableIntChunk.makeWritableChunk(chunkCapacity);
-                // Note that we can't just compact mappedKeys in place, in case we're sharing with another
+                // Note that we can't just compact mappedKeys in place, in case we're sharing with
+                // another
                 // source with an inner source that is a FillUnordered.
                 compactedMappedKeys = WritableLongChunk.makeWritableChunk(chunkCapacity);
                 nonNullCompactedMappedKeys = ResettableWritableLongChunk.makeResettableChunk();
                 runLengths = WritableIntChunk.makeWritableChunk(chunkCapacity);
             }
 
-            private void ensureMappedKeysInitialized(@NotNull final RedirectionIndex redirectionIndex, final boolean usePrev, @NotNull final OrderedKeys orderedKeys) {
+            private void ensureMappedKeysInitialized(
+                @NotNull final RedirectionIndex redirectionIndex, final boolean usePrev,
+                @NotNull final OrderedKeys orderedKeys) {
                 if (mappedKeysReusable) {
                     return;
                 }
@@ -494,9 +540,11 @@ public class ReadOnlyRedirectedColumnSource<T> extends AbstractColumnSource<T> i
                 Assert.gtZero(totalKeyCount, "totalKeyCount");
 
                 if (usePrev) {
-                    redirectionIndex.fillPrevChunk(redirectionIndexFillContext, mappedKeys, orderedKeys);
+                    redirectionIndex.fillPrevChunk(redirectionIndexFillContext, mappedKeys,
+                        orderedKeys);
                 } else {
-                    redirectionIndex.fillChunk(redirectionIndexFillContext, mappedKeys, orderedKeys);
+                    redirectionIndex.fillChunk(redirectionIndexFillContext, mappedKeys,
+                        orderedKeys);
                 }
 
                 mappedKeysReusable = shared;
@@ -543,8 +591,8 @@ public class ReadOnlyRedirectedColumnSource<T> extends AbstractColumnSource<T> i
                 hasNulls = compactedMappedKeys.get(0) == Index.NULL_KEY;
                 final int keysToSkip = hasNulls ? 1 : 0;
                 innerOrderedKeys = OrderedKeys.wrapKeyIndicesChunkAsOrderedKeys(
-                        LongChunk.downcast(nonNullCompactedMappedKeys.resetFromTypedChunk(compactedMappedKeys, keysToSkip, uniqueKeyCount - keysToSkip))
-                );
+                    LongChunk.downcast(nonNullCompactedMappedKeys.resetFromTypedChunk(
+                        compactedMappedKeys, keysToSkip, uniqueKeyCount - keysToSkip)));
 
                 sortedFillContextReusable = shared;
             }
@@ -588,16 +636,19 @@ public class ReadOnlyRedirectedColumnSource<T> extends AbstractColumnSource<T> i
             }
         }
 
-        private void doUnorderedFill(@NotNull final FillUnordered innerSource, final boolean usePrev, @NotNull final WritableChunk<? super Values> destination) {
+        private void doUnorderedFill(@NotNull final FillUnordered innerSource,
+            final boolean usePrev, @NotNull final WritableChunk<? super Values> destination) {
             if (usePrev) {
-                innerSource.fillPrevChunkUnordered(innerFillContext, destination, shareable.mappedKeys);
+                innerSource.fillPrevChunkUnordered(innerFillContext, destination,
+                    shareable.mappedKeys);
             } else {
                 innerSource.fillChunkUnordered(innerFillContext, destination, shareable.mappedKeys);
             }
             destination.setSize(shareable.totalKeyCount);
         }
 
-        private void doOrderedFillAndPermute(@NotNull final ColumnSource<?> innerSource, final boolean usePrev, @NotNull final WritableChunk<? super Values> destination) {
+        private void doOrderedFillAndPermute(@NotNull final ColumnSource<?> innerSource,
+            final boolean usePrev, @NotNull final WritableChunk<? super Values> destination) {
             shareable.ensureSortedFillContextInitialized();
 
             innerOrderedValues.setSize(shareable.uniqueKeyCount);
@@ -605,25 +656,30 @@ public class ReadOnlyRedirectedColumnSource<T> extends AbstractColumnSource<T> i
             final WritableChunk<Values> compactedOrderedValuesDestination;
             if (shareable.hasNulls) {
                 if (booleanNullByte) {
-                    innerOrderedValues.asWritableByteChunk().fillWithValue(0, 1, BooleanUtils.NULL_BOOLEAN_AS_BYTE);
+                    innerOrderedValues.asWritableByteChunk().fillWithValue(0, 1,
+                        BooleanUtils.NULL_BOOLEAN_AS_BYTE);
                 } else {
                     innerOrderedValues.fillWithNullValue(0, 1);
                 }
-                compactedOrderedValuesDestination = innerOrderedValuesSlice.resetFromChunk(innerOrderedValues, 1, shareable.uniqueKeyCount - 1);
+                compactedOrderedValuesDestination = innerOrderedValuesSlice
+                    .resetFromChunk(innerOrderedValues, 1, shareable.uniqueKeyCount - 1);
             } else {
                 compactedOrderedValuesDestination = innerOrderedValues;
             }
 
             // Read compacted, ordered keys
             if (usePrev) {
-                innerSource.fillPrevChunk(innerFillContext, compactedOrderedValuesDestination, shareable.innerOrderedKeys);
+                innerSource.fillPrevChunk(innerFillContext, compactedOrderedValuesDestination,
+                    shareable.innerOrderedKeys);
             } else {
-                innerSource.fillChunk(innerFillContext, compactedOrderedValuesDestination, shareable.innerOrderedKeys);
+                innerSource.fillChunk(innerFillContext, compactedOrderedValuesDestination,
+                    shareable.innerOrderedKeys);
             }
 
             // Expand unique values if necessary
             if (shareable.uniqueKeyCount != shareable.totalKeyCount) {
-                dupExpandKernel.expandDuplicates(shareable.totalKeyCount, innerOrderedValues, shareable.runLengths);
+                dupExpandKernel.expandDuplicates(shareable.totalKeyCount, innerOrderedValues,
+                    shareable.runLengths);
                 innerOrderedValues.setSize(shareable.totalKeyCount);
             }
 

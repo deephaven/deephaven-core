@@ -9,7 +9,7 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.grpcWeb.transports.http.fetch",
     namespace = JsPackage.GLOBAL)
 public class Fetch {
-  public static native TransportFactory FetchReadableStreamTransport(Object init);
+    public static native TransportFactory FetchReadableStreamTransport(Object init);
 
-  public static native boolean detectFetchSupport();
+    public static native boolean detectFetchSupport();
 }

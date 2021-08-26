@@ -43,7 +43,7 @@ interface DestructorModuleParent extends AutoCloseable {
         }
     }
 
-    class OnDelete  {
+    class OnDelete {
 
         private final CountDownLatch latch;
 
@@ -53,12 +53,8 @@ interface DestructorModuleParent extends AutoCloseable {
 
         // todo: this *doesn't* actually get mapped to a PyCallable_Check b/c the code looks like:
         /**
-         * int PyCallable_Check(PyObject *x)
-         * {
-         *     if (x == NULL)
-         *         return 0;
-         *     return Py_TYPE(x)->tp_call != NULL;
-         * }
+         * int PyCallable_Check(PyObject *x) { if (x == NULL) return 0; return Py_TYPE(x)->tp_call
+         * != NULL; }
          */
 
         public void __call__() {

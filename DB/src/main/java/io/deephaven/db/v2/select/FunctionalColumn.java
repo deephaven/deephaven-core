@@ -27,48 +27,55 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public class FunctionalColumn<S,D> implements SelectColumn {
+public class FunctionalColumn<S, D> implements SelectColumn {
 
-    @NotNull private final String sourceName;
-    @NotNull private final Class<S> sourceDataType;
-    @NotNull private final String destName;
-    @NotNull private final Class<D> destDataType;
-    @NotNull private final BiFunction<Long, S, D> function;
-    @NotNull private final Class componentType;
+    @NotNull
+    private final String sourceName;
+    @NotNull
+    private final Class<S> sourceDataType;
+    @NotNull
+    private final String destName;
+    @NotNull
+    private final Class<D> destDataType;
+    @NotNull
+    private final BiFunction<Long, S, D> function;
+    @NotNull
+    private final Class componentType;
 
     private ColumnSource<S> sourceColumnSource;
 
     public FunctionalColumn(@NotNull String sourceName,
-                            @NotNull Class<S> sourceDataType,
-                            @NotNull String destName,
-                            @NotNull Class<D> destDataType,
-                            @NotNull Function<S, D> function) {
+        @NotNull Class<S> sourceDataType,
+        @NotNull String destName,
+        @NotNull Class<D> destDataType,
+        @NotNull Function<S, D> function) {
         this(sourceName, sourceDataType, destName, destDataType, (l, v) -> function.apply(v));
     }
 
     public FunctionalColumn(@NotNull String sourceName,
-                            @NotNull Class<S> sourceDataType,
-                            @NotNull String destName,
-                            @NotNull Class<D> destDataType,
-                            @NotNull Class componentType,
-                            @NotNull Function<S, D> function) {
-        this(sourceName, sourceDataType, destName, destDataType, componentType, (l, v) -> function.apply(v));
+        @NotNull Class<S> sourceDataType,
+        @NotNull String destName,
+        @NotNull Class<D> destDataType,
+        @NotNull Class componentType,
+        @NotNull Function<S, D> function) {
+        this(sourceName, sourceDataType, destName, destDataType, componentType,
+            (l, v) -> function.apply(v));
     }
 
     public FunctionalColumn(@NotNull String sourceName,
-                            @NotNull Class<S> sourceDataType,
-                            @NotNull String destName,
-                            @NotNull Class<D> destDataType,
-                            @NotNull BiFunction<Long, S, D> function) {
+        @NotNull Class<S> sourceDataType,
+        @NotNull String destName,
+        @NotNull Class<D> destDataType,
+        @NotNull BiFunction<Long, S, D> function) {
         this(sourceName, sourceDataType, destName, destDataType, Object.class, function);
     }
 
     public FunctionalColumn(@NotNull String sourceName,
-                            @NotNull Class<S> sourceDataType,
-                            @NotNull String destName,
-                            @NotNull Class<D> destDataType,
-                            @NotNull Class componentType,
-                            @NotNull BiFunction<Long, S, D> function) {
+        @NotNull Class<S> sourceDataType,
+        @NotNull String destName,
+        @NotNull Class<D> destDataType,
+        @NotNull Class componentType,
+        @NotNull BiFunction<Long, S, D> function) {
         this.sourceName = NameValidator.validateColumnName(sourceName);
         this.sourceDataType = Require.neqNull(sourceDataType, "sourceDataType");
         this.destName = NameValidator.validateColumnName(destName);
@@ -89,29 +96,38 @@ public class FunctionalColumn<S,D> implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(Index index, Map<String, ? extends ColumnSource> columnsOfInterest) {
-        //noinspection unchecked
+    public List<String> initInputs(Index index,
+        Map<String, ? extends ColumnSource> columnsOfInterest) {
+        // noinspection unchecked
         final ColumnSource<S> localSourceColumnSource = columnsOfInterest.get(sourceName);
-        if(localSourceColumnSource == null) {
+        if (localSourceColumnSource == null) {
             throw new NoSuchColumnException(columnsOfInterest.keySet(), sourceName);
         }
-        if(!(sourceDataType.isAssignableFrom(localSourceColumnSource.getType()) || sourceDataType.isAssignableFrom(io.deephaven.util.type.TypeUtils.getBoxedType(localSourceColumnSource.getType())))) {
-            throw new IllegalArgumentException("Source column " + sourceName + " has wrong data type " + localSourceColumnSource.getType() + ", expected " + sourceDataType);
+        if (!(sourceDataType.isAssignableFrom(localSourceColumnSource.getType())
+            || sourceDataType.isAssignableFrom(io.deephaven.util.type.TypeUtils
+                .getBoxedType(localSourceColumnSource.getType())))) {
+            throw new IllegalArgumentException(
+                "Source column " + sourceName + " has wrong data type "
+                    + localSourceColumnSource.getType() + ", expected " + sourceDataType);
         }
-        //noinspection unchecked
-        sourceColumnSource = (ColumnSource<S>)columnsOfInterest.get(sourceName);
+        // noinspection unchecked
+        sourceColumnSource = (ColumnSource<S>) columnsOfInterest.get(sourceName);
         return getColumns();
     }
 
     @Override
     public List<String> initDef(Map<String, ColumnDefinition> columnDefinitionMap) {
-        //noinspection unchecked
+        // noinspection unchecked
         final ColumnDefinition<S> sourceColumnDefinition = columnDefinitionMap.get(sourceName);
-        if(sourceColumnDefinition == null) {
+        if (sourceColumnDefinition == null) {
             throw new NoSuchColumnException(columnDefinitionMap.keySet(), sourceName);
         }
-        if(!(sourceDataType.isAssignableFrom(sourceColumnDefinition.getDataType()) || sourceDataType.isAssignableFrom(TypeUtils.getBoxedType(sourceColumnDefinition.getDataType())))) {
-            throw new IllegalArgumentException("Source column " + sourceName + " has wrong data type " + sourceColumnDefinition.getDataType() + ", expected " + sourceDataType);
+        if (!(sourceDataType.isAssignableFrom(sourceColumnDefinition.getDataType())
+            || sourceDataType
+                .isAssignableFrom(TypeUtils.getBoxedType(sourceColumnDefinition.getDataType())))) {
+            throw new IllegalArgumentException(
+                "Source column " + sourceName + " has wrong data type "
+                    + sourceColumnDefinition.getDataType() + ", expected " + sourceDataType);
         }
         return getColumns();
     }
@@ -158,17 +174,17 @@ public class FunctionalColumn<S,D> implements SelectColumn {
 
             @Override
             public void fillChunk(@NotNull FillContext fillContext,
-                                  @NotNull final WritableChunk<? super Values> destination,
-                                  @NotNull final OrderedKeys orderedKeys) {
-                final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext)fillContext;
+                @NotNull final WritableChunk<? super Values> destination,
+                @NotNull final OrderedKeys orderedKeys) {
+                final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext) fillContext;
                 ctx.chunkFiller.fillByIndices(this, orderedKeys, destination);
             }
 
             @Override
             public void fillPrevChunk(@NotNull FillContext fillContext,
-                                      @NotNull final WritableChunk<? super Values> destination,
-                                      @NotNull final OrderedKeys orderedKeys) {
-                final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext)fillContext;
+                @NotNull final WritableChunk<? super Values> destination,
+                @NotNull final OrderedKeys orderedKeys) {
+                final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext) fillContext;
                 ctx.chunkFiller.fillByIndices(this, orderedKeys, destination);
             }
         });

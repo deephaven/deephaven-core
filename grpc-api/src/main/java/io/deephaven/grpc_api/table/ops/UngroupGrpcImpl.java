@@ -19,16 +19,20 @@ public class UngroupGrpcImpl extends GrpcTableOperation<UngroupRequest> {
 
     @Inject
     public UngroupGrpcImpl(final LiveTableMonitor liveTableMonitor) {
-        super(BatchTableRequest.Operation::getUngroup, UngroupRequest::getResultId, UngroupRequest::getSourceId);
+        super(BatchTableRequest.Operation::getUngroup, UngroupRequest::getResultId,
+            UngroupRequest::getSourceId);
         this.liveTableMonitor = liveTableMonitor;
     }
 
     @Override
-    public Table create(final UngroupRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final UngroupRequest request,
+        final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();
-        final String[] columnsToUngroup = request.getColumnsToUngroupList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-        return liveTableMonitor.sharedLock().computeLocked(() -> parent.ungroup(request.getNullFill(), columnsToUngroup));
+        final String[] columnsToUngroup =
+            request.getColumnsToUngroupList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        return liveTableMonitor.sharedLock()
+            .computeLocked(() -> parent.ungroup(request.getNullFill(), columnsToUngroup));
     }
 }

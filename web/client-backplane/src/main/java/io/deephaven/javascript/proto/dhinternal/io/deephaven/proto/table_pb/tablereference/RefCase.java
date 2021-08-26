@@ -8,7 +8,7 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.io.deephaven.proto.table_pb.TableReference.RefCase",
     namespace = JsPackage.GLOBAL)
 public class RefCase {
-  public static int BATCH_OFFSET,
-  REF_NOT_SET,
-  TICKET;
+    public static int BATCH_OFFSET,
+        REF_NOT_SET,
+        TICKET;
 }

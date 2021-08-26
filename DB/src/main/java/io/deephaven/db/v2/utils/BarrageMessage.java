@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 public class BarrageMessage implements SafeCloseable {
     public interface Listener {
         void handleBarrageMessage(BarrageMessage message);
+
         void handleBarrageError(Throwable t);
     }
 
@@ -53,8 +54,10 @@ public class BarrageMessage implements SafeCloseable {
     // Ensure that we clean up only after all copies of the update are released.
     private volatile int refCount = 1;
 
-    // Field updater for refCount, so we can avoid creating an {@link java.util.concurrent.atomic.AtomicInteger} for each instance.
-    private static final AtomicIntegerFieldUpdater<BarrageMessage> REFERENCE_COUNT_UPDATER = AtomicIntegerFieldUpdater.newUpdater(BarrageMessage.class, "refCount");
+    // Field updater for refCount, so we can avoid creating an {@link
+    // java.util.concurrent.atomic.AtomicInteger} for each instance.
+    private static final AtomicIntegerFieldUpdater<BarrageMessage> REFERENCE_COUNT_UPDATER =
+        AtomicIntegerFieldUpdater.newUpdater(BarrageMessage.class, "refCount");
 
     public BarrageMessage clone() {
         REFERENCE_COUNT_UPDATER.incrementAndGet(this);

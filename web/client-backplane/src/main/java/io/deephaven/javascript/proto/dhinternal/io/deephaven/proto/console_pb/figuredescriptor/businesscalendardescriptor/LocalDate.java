@@ -10,86 +10,85 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
     isNative = true,
-    name =
-        "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.BusinessCalendarDescriptor.LocalDate",
+    name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.BusinessCalendarDescriptor.LocalDate",
     namespace = JsPackage.GLOBAL)
 public class LocalDate {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
-    @JsOverlay
-    static LocalDate.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType {
+        @JsOverlay
+        static LocalDate.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        double getDay();
+
+        @JsProperty
+        double getMonth();
+
+        @JsProperty
+        double getYear();
+
+        @JsProperty
+        void setDay(double day);
+
+        @JsProperty
+        void setMonth(double month);
+
+        @JsProperty
+        void setYear(double year);
     }
 
-    @JsProperty
-    double getDay();
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType0 {
+        @JsOverlay
+        static LocalDate.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
 
-    @JsProperty
-    double getMonth();
+        @JsProperty
+        double getDay();
 
-    @JsProperty
-    double getYear();
+        @JsProperty
+        double getMonth();
 
-    @JsProperty
-    void setDay(double day);
+        @JsProperty
+        double getYear();
 
-    @JsProperty
-    void setMonth(double month);
+        @JsProperty
+        void setDay(double day);
 
-    @JsProperty
-    void setYear(double year);
-  }
+        @JsProperty
+        void setMonth(double month);
 
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsOverlay
-    static LocalDate.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+        @JsProperty
+        void setYear(double year);
     }
 
-    @JsProperty
-    double getDay();
+    public static native LocalDate deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    double getMonth();
+    public static native LocalDate deserializeBinaryFromReader(LocalDate message, Object reader);
 
-    @JsProperty
-    double getYear();
+    public static native void serializeBinaryToWriter(LocalDate message, Object writer);
 
-    @JsProperty
-    void setDay(double day);
+    public static native LocalDate.ToObjectReturnType toObject(
+        boolean includeInstance, LocalDate msg);
 
-    @JsProperty
-    void setMonth(double month);
+    public native int getDay();
 
-    @JsProperty
-    void setYear(double year);
-  }
+    public native int getMonth();
 
-  public static native LocalDate deserializeBinary(Uint8Array bytes);
+    public native int getYear();
 
-  public static native LocalDate deserializeBinaryFromReader(LocalDate message, Object reader);
+    public native Uint8Array serializeBinary();
 
-  public static native void serializeBinaryToWriter(LocalDate message, Object writer);
+    public native void setDay(int value);
 
-  public static native LocalDate.ToObjectReturnType toObject(
-      boolean includeInstance, LocalDate msg);
+    public native void setMonth(int value);
 
-  public native int getDay();
+    public native void setYear(int value);
 
-  public native int getMonth();
+    public native LocalDate.ToObjectReturnType0 toObject();
 
-  public native int getYear();
-
-  public native Uint8Array serializeBinary();
-
-  public native void setDay(int value);
-
-  public native void setMonth(int value);
-
-  public native void setYear(int value);
-
-  public native LocalDate.ToObjectReturnType0 toObject();
-
-  public native LocalDate.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native LocalDate.ToObjectReturnType0 toObject(boolean includeInstance);
 }

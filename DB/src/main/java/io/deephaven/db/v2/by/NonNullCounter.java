@@ -12,6 +12,7 @@ public final class NonNullCounter {
 
     /**
      * Add non-null values to destPos, return the updated count.
+     * 
      * @param destPos the destination to mark non-nulls for
      * @param count how many additional non-nulls
      * @return the new count

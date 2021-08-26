@@ -4,27 +4,29 @@ import io.deephaven.db.tables.dbarrays.DbArrayBase;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
 
 /**
- * A Preview Type for Arrays and DbArray.  Converts long arrays to a String "[1, 2, 3, 4, 5...]"
+ * A Preview Type for Arrays and DbArray. Converts long arrays to a String "[1, 2, 3, 4, 5...]"
  */
 public class ArrayPreview implements PreviewType {
     private static final int ARRAY_SIZE_CUTOFF = 5;
     private final String displayString;
 
     public static ArrayPreview fromDbArray(DbArrayBase dbArray) {
-        if(dbArray == null) {
+        if (dbArray == null) {
             return null;
         }
         return new ArrayPreview(dbArray.toString(ARRAY_SIZE_CUTOFF));
     }
 
     public static ArrayPreview fromArray(Object array) {
-        if(array == null) {
+        if (array == null) {
             return null;
         }
         if (!array.getClass().isArray()) {
-            throw new IllegalArgumentException("Input must be an array, instead input class is " + array.getClass());
+            throw new IllegalArgumentException(
+                "Input must be an array, instead input class is " + array.getClass());
         }
-        return new ArrayPreview(ChunkType.fromElementType(array.getClass().getComponentType()).dbArrayWrap(array).toString(ARRAY_SIZE_CUTOFF));
+        return new ArrayPreview(ChunkType.fromElementType(array.getClass().getComponentType())
+            .dbArrayWrap(array).toString(ARRAY_SIZE_CUTOFF));
     }
 
     private ArrayPreview(String displayString) {

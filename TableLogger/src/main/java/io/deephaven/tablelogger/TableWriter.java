@@ -42,19 +42,25 @@ public interface TableWriter<R extends Row> extends Row {
         public void setShort(short value) {}
 
         @Override
-        public Class getType() { return null; }
+        public Class getType() {
+            return null;
+        }
     };
 
     /**
      * {@inheritDoc}
-     * <p>The implementation is likely to delegate to {@link Row#getSetter(String)} in a default Row instance.
+     * <p>
+     * The implementation is likely to delegate to {@link Row#getSetter(String)} in a default Row
+     * instance.
      */
     @Override // Row
     RowSetter getSetter(String name);
 
     /**
      * {@inheritDoc}
-     * <p>The implementation is likely to delegate to {@link Row#getSetter(String, Class)} in a default Row instance.
+     * <p>
+     * The implementation is likely to delegate to {@link Row#getSetter(String, Class)} in a default
+     * Row instance.
      */
     @Override // Row
     default <T> RowSetter<T> getSetter(@NotNull final String name, @NotNull final Class<T> tClass) {
@@ -64,14 +70,17 @@ public interface TableWriter<R extends Row> extends Row {
 
     /**
      * {@inheritDoc}
-     * <p>The implementation is likely to delegate to {@link Row#setFlags(Flags)} in a default Row instance.
+     * <p>
+     * The implementation is likely to delegate to {@link Row#setFlags(Flags)} in a default Row
+     * instance.
      */
     @Override // Row
     void setFlags(Row.Flags flags);
 
     /**
-     * Get a writer for a Row entries. This is likely to be newly created, so callers should cache this value.
-     * In practice, TableWriter implementations generally cache the result of the first call to this method as a primary writer.
+     * Get a writer for a Row entries. This is likely to be newly created, so callers should cache
+     * this value. In practice, TableWriter implementations generally cache the result of the first
+     * call to this method as a primary writer.
      *
      * @return a Row, likely newly created
      */
@@ -79,9 +88,11 @@ public interface TableWriter<R extends Row> extends Row {
 
     /**
      * {@inheritDoc}
-     * <p> The implementation is likely to delegate to {@link Row#writeRow()} in a default Row instance.
+     * <p>
+     * The implementation is likely to delegate to {@link Row#writeRow()} in a default Row instance.
      *
-     * @implNote This method is used as part of the import portion of the table recording process in TableListeners
+     * @implNote This method is used as part of the import portion of the table recording process in
+     *           TableListeners
      */
     @Override // Row
     void writeRow() throws IOException;

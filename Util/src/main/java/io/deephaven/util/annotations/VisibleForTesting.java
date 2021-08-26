@@ -11,5 +11,5 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.TYPE, ElementType.FIELD})
 @Inherited
 @Documented
-public @interface VisibleForTesting
-{}
+public @interface VisibleForTesting {
+}

@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 /**
  * Indicates that a particular method is for internal use only and should not be used by client
- * code.  It is subject to change/removal at any time.
+ * code. It is subject to change/removal at any time.
  */
 @Target({ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.TYPE})
 @Inherited

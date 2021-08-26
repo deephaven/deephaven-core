@@ -50,12 +50,15 @@ public class TableMap extends HasEventHandling {
 
         @Override
         public boolean equals(final Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
 
             final LocalKey localKey = (LocalKey) o;
 
-            if (str != null ? !str.equals(localKey.str) : localKey.str != null) return false;
+            if (str != null ? !str.equals(localKey.str) : localKey.str != null)
+                return false;
             return Arrays.equals(arr, localKey.arr);
         }
 
@@ -70,17 +73,19 @@ public class TableMap extends HasEventHandling {
     }
 
     public static final String EVENT_KEYADDED = "keyadded",
-            EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT,
-            EVENT_RECONNECT = JsTable.EVENT_RECONNECT,
-            EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED;
+        EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT,
+        EVENT_RECONNECT = JsTable.EVENT_RECONNECT,
+        EVENT_RECONNECTFAILED = JsTable.EVENT_RECONNECTFAILED;
 
     private final WorkerConnection workerConnection;
     private final Consumer<Callback<TableMapDeclaration, String>> fetch;
 
     private TableMapHandle tableMapHandle;
 
-    // Represents the sorta-kinda memoized results, tables that we've already locally fetched from the tablemap,
-    // and if all references to a table are released, entries here will be replaced with unresolved instances so
+    // Represents the sorta-kinda memoized results, tables that we've already locally fetched from
+    // the tablemap,
+    // and if all references to a table are released, entries here will be replaced with unresolved
+    // instances so
     // we don't leak server references or memory.
     private final Map<LocalKey, JsLazy<Promise<ClientTableState>>> tables = new HashMap<>();
 
@@ -88,13 +93,14 @@ public class TableMap extends HasEventHandling {
     public TableMap(WorkerConnection workerConnection, String tableMapName) {
         this.workerConnection = workerConnection;
         this.fetch = c -> {
-//            workerConnection.getServer().fetchTableMap(tableMapName, c);
+            // workerConnection.getServer().fetchTableMap(tableMapName, c);
             throw new UnsupportedOperationException("fetchTableMap");
         };
     }
 
     @JsIgnore
-    public TableMap(WorkerConnection workerConnection, Consumer<Callback<TableMapDeclaration, String>> fetch) {
+    public TableMap(WorkerConnection workerConnection,
+        Consumer<Callback<TableMapDeclaration, String>> fetch) {
         this.workerConnection = workerConnection;
         this.fetch = fetch;
     }
@@ -121,13 +127,14 @@ public class TableMap extends HasEventHandling {
             fireEvent(EVENT_RECONNECTFAILED, init);
             suppressEvents();
 
-            //noinspection unchecked
+            // noinspection unchecked
             return (Promise<TableMap>) (Promise) Promise.reject(err);
         });
     }
 
     public Promise<JsTable> getTable(Object key) {
-        // Every caller gets a fresh table instance, and when all are closed, the CTS will be released.
+        // Every caller gets a fresh table instance, and when all are closed, the CTS will be
+        // released.
         // See #put for how that is tracked.
         final JsLazy<Promise<ClientTableState>> entry = tables.get(LocalKey.of(key));
         if (entry == null) {
@@ -139,11 +146,11 @@ public class TableMap extends HasEventHandling {
 
     public Promise<JsTable> getMergedTable() {
         return workerConnection.newState((c, cts, metadata) -> {
-//            workerConnection.getServer().getMergedTableMap(tableMapHandle, cts.getHandle(), c);
+            // workerConnection.getServer().getMergedTableMap(tableMapHandle, cts.getHandle(), c);
             throw new UnsupportedOperationException("getMergedTableMap");
         }, "tablemap merged table")
-                .refetch(this, workerConnection.metadata())
-                .then(cts -> Promise.resolve(new JsTable(cts.getConnection(), cts)));
+            .refetch(this, workerConnection.metadata())
+            .then(cts -> Promise.resolve(new JsTable(cts.getConnection(), cts)));
     }
 
     public JsSet<Object> getKeys() {
@@ -174,22 +181,28 @@ public class TableMap extends HasEventHandling {
 
     protected void put(Object key, LocalKey localKey) {
         tables.put(localKey, JsLazy.of(() -> {
-            // If we've entered this lambda, the JsLazy is being used, so we need to go ahead and get the tablehandle
+            // If we've entered this lambda, the JsLazy is being used, so we need to go ahead and
+            // get the tablehandle
             final ClientTableState entry = workerConnection.newState((c, cts, metadata) -> {
-//                        if (key == null || key instanceof String) {
-//                            workerConnection.getServer().getTableMapStringEntry(tableMapHandle, cts.getHandle(), (String) key, c);
-//                        } else {
-//                            workerConnection.getServer().getTableMapStringArrayEntry(tableMapHandle, cts.getHandle(), (String[]) key, c);
-//                        }
-                        throw new UnsupportedOperationException("getTableMapEntry");
-                    },
-                    "tablemap key " + key
-            );
+                // if (key == null || key instanceof String) {
+                // workerConnection.getServer().getTableMapStringEntry(tableMapHandle,
+                // cts.getHandle(), (String) key, c);
+                // } else {
+                // workerConnection.getServer().getTableMapStringArrayEntry(tableMapHandle,
+                // cts.getHandle(), (String[]) key, c);
+                // }
+                throw new UnsupportedOperationException("getTableMapEntry");
+            },
+                "tablemap key " + key);
 
-            // later, when the CTS is released, remove this "table" from the map and replace with an unresolved JsLazy
-            entry.onRunning(ignore -> {}, ignore -> {}, () -> put(key, localKey));
+            // later, when the CTS is released, remove this "table" from the map and replace with an
+            // unresolved JsLazy
+            entry.onRunning(ignore -> {
+            }, ignore -> {
+            }, () -> put(key, localKey));
 
-            // we'll make a table to return later, this func here just produces the JsLazy of the CTS
+            // we'll make a table to return later, this func here just produces the JsLazy of the
+            // CTS
             return entry.refetch(this, workerConnection.metadata());
         }));
     }

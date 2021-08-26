@@ -7,7 +7,7 @@ import java.io.Serializable;
  */
 public class PickledResult implements Serializable {
     private String pickled;
-    private String pythonVersion;  // version of python used to perform pickle
+    private String pythonVersion; // version of python used to perform pickle
 
     PickledResult(String pickled, String pythonVersion) {
         this.pickled = pickled;

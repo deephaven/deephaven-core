@@ -8,15 +8,16 @@ package io.deephaven.db.v2.by;
  * Factory for iterative average aggregations.
  */
 public class AvgStateFactory extends IterativeOperatorStateFactory {
-    public AvgStateFactory() {
-    }
+    public AvgStateFactory() {}
 
     @Override
-    public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name, boolean exposeInternalColumns) {
+    public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name,
+        boolean exposeInternalColumns) {
         return getAvgChunked(type, name, exposeInternalColumns);
     }
 
     private static final AggregationMemoKey AVG_INSTANCE = new AggregationMemoKey() {};
+
     @Override
     public AggregationMemoKey getMemoKey() {
         return AVG_INSTANCE;

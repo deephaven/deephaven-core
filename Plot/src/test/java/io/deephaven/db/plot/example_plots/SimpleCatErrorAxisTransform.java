@@ -1,6 +1,6 @@
 /*
  *
- *  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
+ * * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  *
  */
 
@@ -20,9 +20,9 @@ public class SimpleCatErrorAxisTransform {
 
 
         Figure fig = FigureFactory.figure()
-                .catErrorBar("S1", x1, y1, yLow, yHigh)
-                .plotStyle("bar")
-                .yTransform(AxisTransforms.LOG);
+            .catErrorBar("S1", x1, y1, yLow, yHigh)
+            .plotStyle("bar")
+            .yTransform(AxisTransforms.LOG);
 
         ExamplePlotUtils.display(fig);
     }

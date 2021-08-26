@@ -18,26 +18,31 @@ public class LogCrashDump {
 
         LogEntry entry = null;
 
-        for ( int i = 0; i < threadInfos.length; ++i ) {
+        for (int i = 0; i < threadInfos.length; ++i) {
             ThreadInfo ti = threadInfos[i];
-            if ( ti != null ) {
+            if (ti != null) {
                 StackTraceElement stack[] = ti.getStackTrace();
                 String lockName = ti.getLockName();
                 String lockOwnerName = lockName == null ? null : ti.getLockOwnerName();
                 long lockOwnerId = lockName == null ? -1 : ti.getLockOwnerId();
-                if ( lockName != null && lockOwnerName != null ) {
-                    (entry == null ? (entry = log.info()) : entry).append("ThreadInfo: ").append(ti.getThreadName()).append(", id=").append(ti.getThreadId()).append(", state=").append(ti.getThreadState().name())
-                            .append(" on ").append(lockName+" owned by ").append(lockOwnerName).append(" id=").append(lockOwnerId).nl();
+                if (lockName != null && lockOwnerName != null) {
+                    (entry == null ? (entry = log.info()) : entry).append("ThreadInfo: ")
+                        .append(ti.getThreadName()).append(", id=").append(ti.getThreadId())
+                        .append(", state=").append(ti.getThreadState().name())
+                        .append(" on ").append(lockName + " owned by ").append(lockOwnerName)
+                        .append(" id=").append(lockOwnerId).nl();
+                } else {
+                    (entry == null ? (entry = log.info()) : entry).append("ThreadInfo: ")
+                        .append(ti.getThreadName()).append(", id=").append(ti.getThreadId())
+                        .append(", state=").append(ti.getThreadState().name()).nl();
                 }
-                else {
-                    (entry == null ? (entry = log.info()) : entry).append("ThreadInfo: ").append(ti.getThreadName()).append(", id=").append(ti.getThreadId()).append(", state=").append(ti.getThreadState().name()).nl();
-                }
-                if ( stack == null || stack.length == 0 ) {
-                    (entry == null ? (entry = log.info()) : entry).append("   <no stack trace available>").nl();
-                }
-                else {
-                    for ( StackTraceElement e : stack ) {
-                        (entry == null ? (entry = log.info()) : entry).append("   ").append(e.toString()).nl();
+                if (stack == null || stack.length == 0) {
+                    (entry == null ? (entry = log.info()) : entry)
+                        .append("   <no stack trace available>").nl();
+                } else {
+                    for (StackTraceElement e : stack) {
+                        (entry == null ? (entry = log.info()) : entry).append("   ")
+                            .append(e.toString()).nl();
                     }
                 }
             }

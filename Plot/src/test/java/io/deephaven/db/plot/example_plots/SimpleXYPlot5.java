@@ -19,36 +19,36 @@ public class SimpleXYPlot5 {
         final Number[] y3 = {11.3, 2.2, 8.4};
 
         Figure fig = FigureFactory.figure(2, 2)
-                .figureTitle("Figure");
+            .figureTitle("Figure");
 
         Figure cht = fig.newChart(0)
-                .colSpan(2)
-                .chartTitle("My Chart 1");
+            .colSpan(2)
+            .chartTitle("My Chart 1");
 
         Figure ax = cht.newAxes()
-                .xLabel("X1")
-                .yLabel("Y1")
-                .plot("Test1", x1, y1)
-                .plotStyle("SCATTER");
+            .xLabel("X1")
+            .yLabel("Y1")
+            .plot("Test1", x1, y1)
+            .plotStyle("SCATTER");
 
 
         Figure cht2 = ax.newChart(1, 0)
-                .chartTitle("My Chart 2");
+            .chartTitle("My Chart 2");
 
         Figure ax2 = cht2.newAxes()
-                .xLabel("X2")
-                .yLabel("Y2")
-                .plot("Test1", x2, y2)
-                .plotStyle("SCATTER");
+            .xLabel("X2")
+            .yLabel("Y2")
+            .plot("Test1", x2, y2)
+            .plotStyle("SCATTER");
 
         Figure cht3 = ax2.newChart(1, 1)
-                .chartTitle("My Chart 3");
+            .chartTitle("My Chart 3");
 
         Figure ax3 = cht3.newAxes()
-                .xLabel("X3")
-                .yLabel("Y3")
-                .plot("Test1", x3, y3)
-                .plotStyle("SCATTER");
+            .xLabel("X3")
+            .yLabel("Y3")
+            .plot("Test1", x3, y3)
+            .plotStyle("SCATTER");
 
         ExamplePlotUtils.display(ax3);
     }

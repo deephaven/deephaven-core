@@ -14,7 +14,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * An {@link AggregationContextFactory} used in the implementation of {@link io.deephaven.db.tables.Table#by}.
+ * An {@link AggregationContextFactory} used in the implementation of
+ * {@link io.deephaven.db.tables.Table#by}.
  */
 public class ByAggregationFactory implements AggregationContextFactory {
 
@@ -24,8 +25,7 @@ public class ByAggregationFactory implements AggregationContextFactory {
         return INSTANCE;
     }
 
-    private ByAggregationFactory() {
-    }
+    private ByAggregationFactory() {}
 
     @Override
     public boolean allowKeyOnlySubstitution() {
@@ -33,15 +33,18 @@ public class ByAggregationFactory implements AggregationContextFactory {
     }
 
     @Override
-    public AggregationContext makeAggregationContext(@NotNull final Table inputTable, @NotNull final String... groupByColumnNames) {
-        final Set<String> groupByColumnNameSet = Arrays.stream(groupByColumnNames).collect(Collectors.toSet());
-        final String[] resultColumnNames = inputTable.getDefinition().getColumnNames().stream().filter(cn -> !groupByColumnNameSet.contains(cn)).toArray(String[]::new);
-        //noinspection unchecked
+    public AggregationContext makeAggregationContext(@NotNull final Table inputTable,
+        @NotNull final String... groupByColumnNames) {
+        final Set<String> groupByColumnNameSet =
+            Arrays.stream(groupByColumnNames).collect(Collectors.toSet());
+        final String[] resultColumnNames = inputTable.getDefinition().getColumnNames().stream()
+            .filter(cn -> !groupByColumnNameSet.contains(cn)).toArray(String[]::new);
+        // noinspection unchecked
         return new AggregationContext(
-                new IterativeChunkedAggregationOperator[]{new ByChunkedOperator((QueryTable) inputTable, true, MatchPairFactory.getExpressions(resultColumnNames))},
-                new String[][]{CollectionUtil.ZERO_LENGTH_STRING_ARRAY},
-                new ChunkSource.WithPrev[]{null}
-        );
+            new IterativeChunkedAggregationOperator[] {new ByChunkedOperator(
+                (QueryTable) inputTable, true, MatchPairFactory.getExpressions(resultColumnNames))},
+            new String[][] {CollectionUtil.ZERO_LENGTH_STRING_ARRAY},
+            new ChunkSource.WithPrev[] {null});
     }
 
     @Override
@@ -50,24 +53,26 @@ public class ByAggregationFactory implements AggregationContextFactory {
     }
 
     public static QueryTable by(@NotNull final QueryTable inputTable,
-                                @NotNull final String... groupByColumnNames) {
+        @NotNull final String... groupByColumnNames) {
         return by(AggregationControl.DEFAULT_FOR_OPERATOR, inputTable, groupByColumnNames);
     }
 
     public static QueryTable by(@NotNull final QueryTable inputTable,
-                                @NotNull final SelectColumn[] groupByColumns) {
+        @NotNull final SelectColumn[] groupByColumns) {
         return by(AggregationControl.DEFAULT_FOR_OPERATOR, inputTable, groupByColumns);
     }
 
     public static QueryTable by(@NotNull final AggregationControl aggregationControl,
-                                @NotNull final QueryTable inputTable,
-                                @NotNull final String... groupByColumnNames) {
-        return by(aggregationControl, inputTable, SelectColumnFactory.getExpressions(groupByColumnNames));
+        @NotNull final QueryTable inputTable,
+        @NotNull final String... groupByColumnNames) {
+        return by(aggregationControl, inputTable,
+            SelectColumnFactory.getExpressions(groupByColumnNames));
     }
 
     public static QueryTable by(@NotNull final AggregationControl aggregationControl,
-                                @NotNull final QueryTable inputTable,
-                                @NotNull final SelectColumn[] groupByColumns) {
-        return ChunkedOperatorAggregationHelper.aggregation(aggregationControl, getInstance(), inputTable, groupByColumns);
+        @NotNull final QueryTable inputTable,
+        @NotNull final SelectColumn[] groupByColumns) {
+        return ChunkedOperatorAggregationHelper.aggregation(aggregationControl, getInstance(),
+            inputTable, groupByColumns);
     }
 }

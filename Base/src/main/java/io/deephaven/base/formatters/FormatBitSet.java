@@ -14,7 +14,7 @@ public class FormatBitSet {
         return logOutput -> {
             logOutput.append("{");
             boolean first = true;
-            for (int runStart = 0; runStart < bitSet.size(); ) {
+            for (int runStart = 0; runStart < bitSet.size();) {
                 if (bitSet.get(runStart)) {
                     if (first) {
                         first = false;
@@ -25,8 +25,9 @@ public class FormatBitSet {
 
                     logOutput.append(runStart);
                     int runEnd;
-                    //noinspection StatementWithEmptyBody
-                    for (runEnd = runStart + 1; runEnd < bitSet.size() && bitSet.get(runEnd); runEnd++);
+                    // noinspection StatementWithEmptyBody
+                    for (runEnd = runStart + 1; runEnd < bitSet.size()
+                        && bitSet.get(runEnd); runEnd++);
                     if (runEnd > runStart + 1) {
                         logOutput.append("-").append(runEnd - 1);
                     }
@@ -45,7 +46,7 @@ public class FormatBitSet {
 
         builder.append("{");
         boolean first = true;
-        for (int runStart = 0; runStart < bitSet.size(); ) {
+        for (int runStart = 0; runStart < bitSet.size();) {
             if (bitSet.get(runStart)) {
                 if (first) {
                     first = false;
@@ -56,7 +57,7 @@ public class FormatBitSet {
 
                 builder.append(runStart);
                 int runEnd;
-                //noinspection StatementWithEmptyBody
+                // noinspection StatementWithEmptyBody
                 for (runEnd = runStart + 1; runEnd < bitSet.size() && bitSet.get(runEnd); runEnd++);
                 if (runEnd > runStart + 1) {
                     builder.append("-").append(runEnd - 1);

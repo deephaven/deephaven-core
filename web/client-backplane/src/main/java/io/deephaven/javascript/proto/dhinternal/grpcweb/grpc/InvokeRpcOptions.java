@@ -8,4 +8,5 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.grpcWeb.grpc.InvokeRpcOptions",
     namespace = JsPackage.GLOBAL)
 public interface InvokeRpcOptions<TRequest, TResponse>
-    extends io.deephaven.javascript.proto.dhinternal.grpcweb.invoke.InvokeRpcOptions {}
+    extends io.deephaven.javascript.proto.dhinternal.grpcweb.invoke.InvokeRpcOptions {
+}

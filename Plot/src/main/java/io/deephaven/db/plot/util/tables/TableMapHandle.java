@@ -24,7 +24,7 @@ public abstract class TableMapHandle implements Serializable, PlotExceptionCause
     /** A reference to the source {@link TableMap} for this handle. */
     private transient TableMap tableMap;
 
-    /** The key columns that define the tablemap,  in order */
+    /** The key columns that define the tablemap, in order */
     private String[] orderedKeyColumns;
 
     /** The set of all columns that will be used by clients of this handle. */
@@ -41,7 +41,8 @@ public abstract class TableMapHandle implements Serializable, PlotExceptionCause
 
     private final PlotInfo plotInfo;
 
-    protected TableMapHandle(final Collection<String> columns, final String[] keyColumns, final PlotInfo plotInfo) {
+    protected TableMapHandle(final Collection<String> columns, final String[] keyColumns,
+        final PlotInfo plotInfo) {
         this.id = nextId.incrementAndGet();
         this.requiredColumns = new LinkedHashSet<>(columns);
         Collections.addAll(this.requiredColumns, keyColumns);
@@ -55,12 +56,12 @@ public abstract class TableMapHandle implements Serializable, PlotExceptionCause
         return tableMap;
     }
 
-    //Please call setKeyColumnsOrdered if necessary after using this method
+    // Please call setKeyColumnsOrdered if necessary after using this method
     public void setTableMap(final TableMap tableMap) {
         this.tableMap = tableMap;
     }
 
-    //Setting the TableMap may result in a different order for columns
+    // Setting the TableMap may result in a different order for columns
     public void setKeyColumnsOrdered(final String[] orderedKeyColumns) {
         this.orderedKeyColumns = orderedKeyColumns;
     }
@@ -78,9 +79,10 @@ public abstract class TableMapHandle implements Serializable, PlotExceptionCause
     }
 
     /**
-     * Get the set of columns to .view() when the table is fetched.  Typically this is identical to {@link #getColumns()}
-     * however, there are situations where the transformations applied to a TableMap result in columns that are not
-     * present in the base tableMap.  (for example catHistPlot).
+     * Get the set of columns to .view() when the table is fetched. Typically this is identical to
+     * {@link #getColumns()} however, there are situations where the transformations applied to a
+     * TableMap result in columns that are not present in the base tableMap. (for example
+     * catHistPlot).
      *
      * @return
      */
@@ -110,6 +112,6 @@ public abstract class TableMapHandle implements Serializable, PlotExceptionCause
     }
 
     public void applyFunction(final Function<Table, Table> function) {
-        //do nothing
+        // do nothing
     }
 }

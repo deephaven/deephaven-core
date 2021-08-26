@@ -45,7 +45,8 @@ public final class SingleRangeContainer extends ImmutableContainer {
             return Container.twoRanges(begin, end, rangeBegin, rangeEnd);
         }
         // rangeBegin <= end
-        return new SingleRangeContainer(minBeginIsUs ? begin : rangeBegin, maxEndIsUs ? end : rangeEnd);
+        return new SingleRangeContainer(minBeginIsUs ? begin : rangeBegin,
+            maxEndIsUs ? end : rangeEnd);
     }
 
     @Override
@@ -113,10 +114,11 @@ public final class SingleRangeContainer extends ImmutableContainer {
         }
         final boolean minBeginIsThem = rangeBegin <= begin;
         final boolean maxEndIsThem = end <= rangeEnd;
-        if (minBeginIsThem && maxEndIsThem) {  // avoid creating a new object if we can.
+        if (minBeginIsThem && maxEndIsThem) { // avoid creating a new object if we can.
             return this;
         }
-        return new SingleRangeContainer(minBeginIsThem ? begin : rangeBegin, maxEndIsThem ? end : rangeEnd);
+        return new SingleRangeContainer(minBeginIsThem ? begin : rangeBegin,
+            maxEndIsThem ? end : rangeEnd);
     }
 
     private Container andNotImpl(final Container x) {
@@ -163,7 +165,7 @@ public final class SingleRangeContainer extends ImmutableContainer {
 
     private boolean containsImpl(final Container c) {
         return c.isEmpty() ||
-                (begin() <= c.first() && c.last() < end());
+            (begin() <= c.first() && c.last() < end());
     }
 
     @Override
@@ -247,7 +249,8 @@ public final class SingleRangeContainer extends ImmutableContainer {
     public boolean forEachRange(final int rankOffset, final ShortRangeConsumer sc) {
         final int rangeStart = begin() + rankOffset;
         if (rangeStart >= end()) {
-            throw new IllegalStateException("rankOffset=" + rankOffset + ", cardinality=" + getCardinality());
+            throw new IllegalStateException(
+                "rankOffset=" + rankOffset + ", cardinality=" + getCardinality());
         }
         return sc.accept(ContainerUtil.lowbits(rangeStart), rangeLastValue);
     }
@@ -388,7 +391,7 @@ public final class SingleRangeContainer extends ImmutableContainer {
     public ContainerShortBatchIterator getShortBatchIterator(final int skipFromStartCount) {
         if (DEBUG && skipFromStartCount >= getCardinality()) {
             throw new IllegalArgumentException(
-                    "skipFromStartCount=" + skipFromStartCount + ", cardinality=" + getCardinality());
+                "skipFromStartCount=" + skipFromStartCount + ", cardinality=" + getCardinality());
         }
         return new ContainerShortBatchIter(this, skipFromStartCount);
     }
@@ -466,7 +469,7 @@ public final class SingleRangeContainer extends ImmutableContainer {
     public SearchRangeIterator getShortRangeIterator(final int skipFromStartCount) {
         if (DEBUG && skipFromStartCount >= getCardinality()) {
             throw new IllegalArgumentException(
-                    "skipFromStartCount=" + skipFromStartCount + ", cardinality=" + getCardinality());
+                "skipFromStartCount=" + skipFromStartCount + ", cardinality=" + getCardinality());
         }
         return new SearchRangeIter(this, skipFromStartCount);
     }
@@ -593,7 +596,8 @@ public final class SingleRangeContainer extends ImmutableContainer {
         }
         // rangeLast < last.
         if (first + 1 == rangeFirst && rangeLast + 1 == last) {
-            return new TwoValuesContainer(ContainerUtil.lowbits(first), ContainerUtil.lowbits(last));
+            return new TwoValuesContainer(ContainerUtil.lowbits(first),
+                ContainerUtil.lowbits(last));
         }
         return new RunContainer(first, rangeFirst, rangeLast + 1, last + 1);
     }
@@ -678,7 +682,8 @@ public final class SingleRangeContainer extends ImmutableContainer {
     }
 
     @Override
-    public boolean findRanges(final RangeConsumer outPositions, final RangeIterator inValues, final int maxPos) {
+    public boolean findRanges(final RangeConsumer outPositions, final RangeIterator inValues,
+        final int maxPos) {
         final int begin = begin();
         final int end = end();
         while (inValues.hasNext()) {
@@ -707,8 +712,7 @@ public final class SingleRangeContainer extends ImmutableContainer {
     }
 
     @Override
-    public void trim() {
-    }
+    public void trim() {}
 
     @Override
     public Container xor(final ArrayContainer x) {
@@ -798,8 +802,7 @@ public final class SingleRangeContainer extends ImmutableContainer {
     }
 
     @Override
-    public void setCopyOnWrite() {
-    }
+    public void setCopyOnWrite() {}
 
     @Override
     public int bytesAllocated() {

@@ -138,27 +138,27 @@ public final class SingletonContainer extends ImmutableContainer {
     @Override
     public boolean contains(final int rangeStart, final int rangeEnd) {
         return rangeEnd <= rangeStart ||
-                (rangeStart == intValue() && rangeEnd - rangeStart == 1);
+            (rangeStart == intValue() && rangeEnd - rangeStart == 1);
     }
 
     @Override
     protected boolean contains(final RunContainer runContainer) {
         return runContainer.nbrruns == 0 ||
-                (runContainer.nbrruns == 1 &&
-                        runContainer.getValue(0) == value &&
-                        runContainer.getLength(0) == 0);
+            (runContainer.nbrruns == 1 &&
+                runContainer.getValue(0) == value &&
+                runContainer.getLength(0) == 0);
     }
 
     @Override
     protected boolean contains(final ArrayContainer arrayContainer) {
         return arrayContainer.cardinality == 0 ||
-                (arrayContainer.cardinality == 1 && arrayContainer.content[0] == value);
+            (arrayContainer.cardinality == 1 && arrayContainer.content[0] == value);
     }
 
     @Override
     protected boolean contains(final BitmapContainer bitmapContainer) {
         return bitmapContainer.cardinality == 0 ||
-                (bitmapContainer.cardinality == 1 && bitmapContainer.contains(value));
+            (bitmapContainer.cardinality == 1 && bitmapContainer.contains(value));
     }
 
     @Override
@@ -512,7 +512,8 @@ public final class SingletonContainer extends ImmutableContainer {
     }
 
     @Override
-    public boolean findRanges(final RangeConsumer outPositions, final RangeIterator inValues, final int maxPos) {
+    public boolean findRanges(final RangeConsumer outPositions, final RangeIterator inValues,
+        final int maxPos) {
         if (maxPos < 0 || !inValues.hasNext()) {
             return false;
         }
@@ -528,8 +529,7 @@ public final class SingletonContainer extends ImmutableContainer {
     }
 
     @Override
-    public void trim() {
-    }
+    public void trim() {}
 
     @Override
     public Container xor(final ArrayContainer x) {
@@ -611,8 +611,7 @@ public final class SingletonContainer extends ImmutableContainer {
     }
 
     @Override
-    public void setCopyOnWrite() {
-    }
+    public void setCopyOnWrite() {}
 
     @Override
     public int bytesAllocated() {
@@ -631,10 +630,9 @@ public final class SingletonContainer extends ImmutableContainer {
 
     @Override
     public Container toLargeContainer() {
-        return new ArrayContainer(new short[]{value});
+        return new ArrayContainer(new short[] {value});
     }
 
     @Override
-    public void validate() {
-    }
+    public void validate() {}
 }

@@ -10,8 +10,7 @@ public class Validate {
 
         try {
             i = Integer.parseInt(s);
-        }
-        catch (NumberFormatException e) {
+        } catch (NumberFormatException e) {
             throw new NumberFormatException(name + " is not a valid number");
         }
 
@@ -27,21 +26,20 @@ public class Validate {
 
         try {
             i = Integer.parseInt(s);
-        }
-        catch (NumberFormatException e) {
+        } catch (NumberFormatException e) {
             throw new NumberFormatException(name + " is not a valid number");
         }
 
         return i;
     }
 
-    public static double validatePositiveDouble(String name, String s) throws NumberFormatException {
+    public static double validatePositiveDouble(String name, String s)
+        throws NumberFormatException {
         double d = 0;
 
         try {
             d = Double.parseDouble(s);
-        }
-        catch (NumberFormatException e) {
+        } catch (NumberFormatException e) {
             throw new NumberFormatException(name + " is not a valid number");
         }
 
@@ -57,8 +55,7 @@ public class Validate {
 
         try {
             d = Double.parseDouble(s);
-        }
-        catch (NumberFormatException e) {
+        } catch (NumberFormatException e) {
             throw new NumberFormatException(name + " is not a valid number");
         }
 
@@ -71,42 +68,44 @@ public class Validate {
         }
     }
 
-    public static void validateDouble(String name, double value, double min, double max, boolean inclusiveMin, boolean inclusiveMax) throws Exception {
-        if (Double.isNaN(value)){
+    public static void validateDouble(String name, double value, double min, double max,
+        boolean inclusiveMin, boolean inclusiveMax) throws Exception {
+        if (Double.isNaN(value)) {
             throw new Exception(name + " may not be NaN");
         }
 
-        if (inclusiveMin && value<min){
+        if (inclusiveMin && value < min) {
             throw new Exception(name + " must be greater than or equal to " + min);
         }
 
-        if (!inclusiveMin && value<=min){
+        if (!inclusiveMin && value <= min) {
             throw new Exception(name + " must be greater than " + min);
         }
 
-        if (inclusiveMax && value>max){
+        if (inclusiveMax && value > max) {
             throw new Exception(name + " must be less than or equal to " + max);
         }
 
-        if (!inclusiveMax && value>=max){
+        if (!inclusiveMax && value >= max) {
             throw new Exception(name + " must be less than " + max);
         }
     }
 
-    public static void validateInteger(String name, int value, int min, int max, boolean inclusiveMin, boolean inclusiveMax) throws Exception {
-        if (inclusiveMin && value<min){
+    public static void validateInteger(String name, int value, int min, int max,
+        boolean inclusiveMin, boolean inclusiveMax) throws Exception {
+        if (inclusiveMin && value < min) {
             throw new Exception(name + " must be greater than or equal to " + min);
         }
 
-        if (!inclusiveMin && value<=min){
+        if (!inclusiveMin && value <= min) {
             throw new Exception(name + " must be greater than " + min);
         }
 
-        if (inclusiveMax && value>max){
+        if (inclusiveMax && value > max) {
             throw new Exception(name + " must be less than or equal to " + max);
         }
 
-        if (!inclusiveMax && value>=max){
+        if (!inclusiveMax && value >= max) {
             throw new Exception(name + " must be less than " + max);
         }
     }

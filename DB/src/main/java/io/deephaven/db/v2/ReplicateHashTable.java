@@ -28,85 +28,115 @@ import java.util.stream.Collectors;
 /**
  * This code replicator is designed to operate differently than the other replication in our system.
  *
- * It reads both the source and destination file, preserving custom code inside of the destination file.
+ * It reads both the source and destination file, preserving custom code inside of the destination
+ * file.
  *
- * The source and destination files must provide annotations for their state column source, overflow column source,
- * and empty state value.  These are used to translate names, and also to determine the appropriate types for
- * substitution.
+ * The source and destination files must provide annotations for their state column source, overflow
+ * column source, and empty state value. These are used to translate names, and also to determine
+ * the appropriate types for substitution.
  *
  * The source file has three kinds of structured comments that control behavior.
  * <ul>
- *     <li><b>regions</b>, denoted by <code>// region <i>name</i></code> and <code>// endregion <i>name</i></code> are
- *     snippets of code that change between the source and destination.  You should edit the code within a region
- *     in either the source or destination file.  Each region that exists in the source must exist in the destination
- *     (this is a sanity check to prevent you from overwriting your work).  Regions must have unique names.</li>
+ * <li><b>regions</b>, denoted by <code>// region <i>name</i></code> and
+ * <code>// endregion <i>name</i></code> are snippets of code that change between the source and
+ * destination. You should edit the code within a region in either the source or destination file.
+ * Each region that exists in the source must exist in the destination (this is a sanity check to
+ * prevent you from overwriting your work). Regions must have unique names.</li>
  *
- *     <li><b>mixins</b>, denoted by <code>// mixin <i>name</i></code> and <code>// mixin <i>name</i></code> are
- *     snippets of code that may not be useful in the destination class.  Any mixins in the destination class will
- *     be overwritten!  A mixin can be spread across multiple structured blocks, for example imports and a function
- *     definition may both use the same mixin name.  Regions may exist inside a mixin.  When mixins are excluded,
- *     the regions that exist within them are ignored.</li>
+ * <li><b>mixins</b>, denoted by <code>// mixin <i>name</i></code> and
+ * <code>// mixin <i>name</i></code> are snippets of code that may not be useful in the destination
+ * class. Any mixins in the destination class will be overwritten! A mixin can be spread across
+ * multiple structured blocks, for example imports and a function definition may both use the same
+ * mixin name. Regions may exist inside a mixin. When mixins are excluded, the regions that exist
+ * within them are ignored.</li>
  *
- *     <li><b>substitutions</b>, denoted by <code>// @<i>thing</i> from <i>literal</i></code> are instructions to
- *     replace a particular literal with the appropriate type denoted by thing on the next line.  Multiple substitutions
- *     may be separated using commas. The valid substitutions are:
- *     <ul>
- *         <li><b>StateChunkName</b>, e.g. "LongChunk"</li>
- *         <li><b>StateChunkIdentityName</b>, e.g. "LongChunk" or "ObjectChunkIdentity"</li>
- *         <li><b>StateChunkType</b>, e.g. "LongChunk&lt;Values&gt;"</li>
- *         <li><b>WritableStateChunkName</b>, e.g. "WritableLongChunk"</li>
- *         <li><b>WritableStateChunkType</b>, e.g. "WritableLongChunk&lt;Values&gt;"</li>
- *         <li><b>StateColumnSourceType</b>, e.g. "LongArraySource"</li>
- *         <li><b>StateColumnSourceConstructor</b>, e.g. "LongArraySource()"</li>
- *         <li><b>NullStateValue</b>, e.g. "QueryConstants.NULL_LONG"</li>
- *         <li><b>StateValueType</b>, e.g. "long"</li>
- *         <li><b>StateChunkTypeEnum</b>, e.g. "Long"</li>
- *     </ul>
- *     </li>
+ * <li><b>substitutions</b>, denoted by <code>// @<i>thing</i> from <i>literal</i></code> are
+ * instructions to replace a particular literal with the appropriate type denoted by thing on the
+ * next line. Multiple substitutions may be separated using commas. The valid substitutions are:
+ * <ul>
+ * <li><b>StateChunkName</b>, e.g. "LongChunk"</li>
+ * <li><b>StateChunkIdentityName</b>, e.g. "LongChunk" or "ObjectChunkIdentity"</li>
+ * <li><b>StateChunkType</b>, e.g. "LongChunk&lt;Values&gt;"</li>
+ * <li><b>WritableStateChunkName</b>, e.g. "WritableLongChunk"</li>
+ * <li><b>WritableStateChunkType</b>, e.g. "WritableLongChunk&lt;Values&gt;"</li>
+ * <li><b>StateColumnSourceType</b>, e.g. "LongArraySource"</li>
+ * <li><b>StateColumnSourceConstructor</b>, e.g. "LongArraySource()"</li>
+ * <li><b>NullStateValue</b>, e.g. "QueryConstants.NULL_LONG"</li>
+ * <li><b>StateValueType</b>, e.g. "long"</li>
+ * <li><b>StateChunkTypeEnum</b>, e.g. "Long"</li>
+ * </ul>
+ * </li>
  * </ul>
  */
 public class ReplicateHashTable {
     /**
-     * We tag the empty state variable with this annotation, so we know what its name is in the source and destination.
+     * We tag the empty state variable with this annotation, so we know what its name is in the
+     * source and destination.
      */
     @Retention(RetentionPolicy.RUNTIME)
     public @interface EmptyStateValue {
     }
 
     /**
-     * We tag the state ColumnSource with this annotation, so we know what its name is in the source and destination.
+     * We tag the state ColumnSource with this annotation, so we know what its name is in the source
+     * and destination.
      */
     @Retention(RetentionPolicy.RUNTIME)
     public @interface StateColumnSource {
     }
 
     /**
-     * We tag the overflow state ColumnSource with this annotation, so we know what its name is in the source and destination.
+     * We tag the overflow state ColumnSource with this annotation, so we know what its name is in
+     * the source and destination.
      */
     @Retention(RetentionPolicy.RUNTIME)
     public @interface OverflowStateColumnSource {
     }
 
-    public static void main(String [] args) throws IOException {
+    public static void main(String[] args) throws IOException {
         final boolean allowMissingDestinations = false;
 
-        doReplicate(IncrementalChunkedNaturalJoinStateManager.class, RightIncrementalChunkedNaturalJoinStateManager.class, allowMissingDestinations, Arrays.asList("rehash", "allowUpdateWriteThroughState", "dumpTable"));
-        doReplicate(IncrementalChunkedNaturalJoinStateManager.class, StaticChunkedNaturalJoinStateManager.class, allowMissingDestinations, Arrays.asList("rehash", "allowUpdateWriteThroughState", "dumpTable", "prev"));
-        doReplicate(IncrementalChunkedNaturalJoinStateManager.class, StaticChunkedAsOfJoinStateManager.class, allowMissingDestinations, Arrays.asList("dumpTable", "prev"));
-        doReplicate(IncrementalChunkedNaturalJoinStateManager.class, RightIncrementalChunkedAsOfJoinStateManager.class, allowMissingDestinations, Collections.singletonList("dumpTable"));
-        doReplicate(IncrementalChunkedNaturalJoinStateManager.class, SymbolTableCombiner.class, allowMissingDestinations, Arrays.asList("overflowLocationToHashLocation", "getStateValue", "prev"));
+        doReplicate(IncrementalChunkedNaturalJoinStateManager.class,
+            RightIncrementalChunkedNaturalJoinStateManager.class, allowMissingDestinations,
+            Arrays.asList("rehash", "allowUpdateWriteThroughState", "dumpTable"));
+        doReplicate(IncrementalChunkedNaturalJoinStateManager.class,
+            StaticChunkedNaturalJoinStateManager.class, allowMissingDestinations,
+            Arrays.asList("rehash", "allowUpdateWriteThroughState", "dumpTable", "prev"));
+        doReplicate(IncrementalChunkedNaturalJoinStateManager.class,
+            StaticChunkedAsOfJoinStateManager.class, allowMissingDestinations,
+            Arrays.asList("dumpTable", "prev"));
+        doReplicate(IncrementalChunkedNaturalJoinStateManager.class,
+            RightIncrementalChunkedAsOfJoinStateManager.class, allowMissingDestinations,
+            Collections.singletonList("dumpTable"));
+        doReplicate(IncrementalChunkedNaturalJoinStateManager.class, SymbolTableCombiner.class,
+            allowMissingDestinations,
+            Arrays.asList("overflowLocationToHashLocation", "getStateValue", "prev"));
 
-        doReplicate(IncrementalChunkedNaturalJoinStateManager.class, LeftOnlyIncrementalChunkedCrossJoinStateManager.class, allowMissingDestinations, Collections.singletonList("dumpTable"));
-        doReplicate(IncrementalChunkedNaturalJoinStateManager.class, RightIncrementalChunkedCrossJoinStateManager.class, allowMissingDestinations, Arrays.asList("dumpTable", "allowUpdateWriteThroughState"));
-        doReplicate(IncrementalChunkedNaturalJoinStateManager.class, StaticChunkedCrossJoinStateManager.class, allowMissingDestinations, Arrays.asList("dumpTable", "prev"));
+        doReplicate(IncrementalChunkedNaturalJoinStateManager.class,
+            LeftOnlyIncrementalChunkedCrossJoinStateManager.class, allowMissingDestinations,
+            Collections.singletonList("dumpTable"));
+        doReplicate(IncrementalChunkedNaturalJoinStateManager.class,
+            RightIncrementalChunkedCrossJoinStateManager.class, allowMissingDestinations,
+            Arrays.asList("dumpTable", "allowUpdateWriteThroughState"));
+        doReplicate(IncrementalChunkedNaturalJoinStateManager.class,
+            StaticChunkedCrossJoinStateManager.class, allowMissingDestinations,
+            Arrays.asList("dumpTable", "prev"));
 
         // Incremental NJ -> Static & Incremental Operator Aggregations
-        doReplicate(IncrementalChunkedNaturalJoinStateManager.class, StaticChunkedOperatorAggregationStateManager.class, allowMissingDestinations, Arrays.asList("dumpTable", "prev", "decorationProbe"));
-        doReplicate(IncrementalChunkedNaturalJoinStateManager.class, IncrementalChunkedOperatorAggregationStateManager.class, allowMissingDestinations, Collections.singletonList("dumpTable"));
+        doReplicate(IncrementalChunkedNaturalJoinStateManager.class,
+            StaticChunkedOperatorAggregationStateManager.class, allowMissingDestinations,
+            Arrays.asList("dumpTable", "prev", "decorationProbe"));
+        doReplicate(IncrementalChunkedNaturalJoinStateManager.class,
+            IncrementalChunkedOperatorAggregationStateManager.class, allowMissingDestinations,
+            Collections.singletonList("dumpTable"));
 
         // Incremental NJ -> Incremental By -> Static By
-        doReplicate(IncrementalChunkedNaturalJoinStateManager.class, IncrementalChunkedByAggregationStateManager.class, allowMissingDestinations, Arrays.asList("dumpTable", "allowUpdateWriteThroughState"));
-        doReplicate(IncrementalChunkedByAggregationStateManager.class, StaticChunkedByAggregationStateManager.class, allowMissingDestinations, Arrays.asList("dumpTable", "prev", "decorationProbe"));
+        doReplicate(IncrementalChunkedNaturalJoinStateManager.class,
+            IncrementalChunkedByAggregationStateManager.class, allowMissingDestinations,
+            Arrays.asList("dumpTable", "allowUpdateWriteThroughState"));
+        doReplicate(IncrementalChunkedByAggregationStateManager.class,
+            StaticChunkedByAggregationStateManager.class, allowMissingDestinations,
+            Arrays.asList("dumpTable", "prev", "decorationProbe"));
     }
 
     private static class RegionedFile {
@@ -132,11 +162,13 @@ public class ReplicateHashTable {
         }
 
         String stateChunkIdentityName() {
-            return writableStateChunkName().replace("Writable", "") + (stateChunkType == ChunkType.Object ? "Identity" : "");
+            return writableStateChunkName().replace("Writable", "")
+                + (stateChunkType == ChunkType.Object ? "Identity" : "");
         }
 
         String writableStateChunkType() {
-            return writableStateChunkName() + (genericDataType == null ? "<Values>" : "<" + genericDataType + ",Values>");
+            return writableStateChunkName()
+                + (genericDataType == null ? "<Values>" : "<" + genericDataType + ",Values>");
         }
 
         String writableStateChunkName() {
@@ -178,21 +210,27 @@ public class ReplicateHashTable {
 
     @SuppressWarnings("SameParameterValue")
     private static void doReplicate(final Class<?> sourceClass,
-                                    final Class<?> destinationClass,
-                                    final boolean allowMissingDestinations,
-                                    Collection<String> excludedMixins) throws IOException {
+        final Class<?> destinationClass,
+        final boolean allowMissingDestinations,
+        Collection<String> excludedMixins) throws IOException {
         final ColumnSourceInfo sourceColumnSourceInfo = findAnnotations(sourceClass);
         final ColumnSourceInfo destinationColumnSourceInfo = findAnnotations(destinationClass);
 
-        final String sourcePath = ReplicatePrimitiveCode.pathForClass(sourceClass, ReplicatePrimitiveCode.MAIN_SRC);
-        final String destinationPath = ReplicatePrimitiveCode.pathForClass(destinationClass, ReplicatePrimitiveCode.MAIN_SRC);
+        final String sourcePath =
+            ReplicatePrimitiveCode.pathForClass(sourceClass, ReplicatePrimitiveCode.MAIN_SRC);
+        final String destinationPath =
+            ReplicatePrimitiveCode.pathForClass(destinationClass, ReplicatePrimitiveCode.MAIN_SRC);
 
-        final List<String> sourceLines = FileUtils.readLines(new File(sourcePath), Charset.defaultCharset());
+        final List<String> sourceLines =
+            FileUtils.readLines(new File(sourcePath), Charset.defaultCharset());
         final File destinationFile = new File(destinationPath);
-        final List<String> destLines = FileUtils.readLines(destinationFile, Charset.defaultCharset());
+        final List<String> destLines =
+            FileUtils.readLines(destinationFile, Charset.defaultCharset());
 
-        final RegionedFile sourceRegioned = makeRegionedFile(sourcePath, sourceLines, excludedMixins);
-        final RegionedFile destRegioned = makeRegionedFile(destinationPath, destLines, excludedMixins);
+        final RegionedFile sourceRegioned =
+            makeRegionedFile(sourcePath, sourceLines, excludedMixins);
+        final RegionedFile destRegioned =
+            makeRegionedFile(destinationPath, destLines, excludedMixins);
 
         final Set<String> missingInSource = new LinkedHashSet<>(destRegioned.regionNames);
         final Set<String> missingInDestination = new LinkedHashSet<>(sourceRegioned.regionNames);
@@ -201,29 +239,40 @@ public class ReplicateHashTable {
         missingInDestination.removeAll(destRegioned.regionNames);
 
         if (!missingInSource.isEmpty()) {
-            throw new IllegalStateException(destinationPath + ": Region mismatch, not in source " + missingInSource + ", not in destination" + missingInDestination);
+            throw new IllegalStateException(destinationPath + ": Region mismatch, not in source "
+                + missingInSource + ", not in destination" + missingInDestination);
         }
         if (!missingInDestination.isEmpty()) {
             if (allowMissingDestinations) {
-                System.err.println("Allowing missing regions in destination: " + missingInDestination);
+                System.err
+                    .println("Allowing missing regions in destination: " + missingInDestination);
             } else {
-                throw new IllegalStateException(destinationPath + ": Region mismatch, not in source " + missingInSource + ", not in destination" + missingInDestination);
+                throw new IllegalStateException(
+                    destinationPath + ": Region mismatch, not in source " + missingInSource
+                        + ", not in destination" + missingInDestination);
             }
         }
 
-        if (!allowMissingDestinations && sourceRegioned.noRegionSegments.size() != destRegioned.noRegionSegments.size()) {
-            throw new IllegalStateException(destinationPath + ": Number of segments outside of regions does not match!");
+        if (!allowMissingDestinations
+            && sourceRegioned.noRegionSegments.size() != destRegioned.noRegionSegments.size()) {
+            throw new IllegalStateException(
+                destinationPath + ": Number of segments outside of regions does not match!");
         }
 
-        final Function<String, String> replaceFunction = (sourceString) -> sourceString.replaceAll(sourceClass.getSimpleName(), destinationClass.getSimpleName())
-                .replaceAll(sourceColumnSourceInfo.stateColumnSourceName, destinationColumnSourceInfo.stateColumnSourceName)
-                .replaceAll(sourceColumnSourceInfo.overflowStateColumnSourceName, destinationColumnSourceInfo.overflowStateColumnSourceName)
-                .replaceAll(sourceColumnSourceInfo.emptyStateValue, destinationColumnSourceInfo.emptyStateValue);
+        final Function<String, String> replaceFunction = (sourceString) -> sourceString
+            .replaceAll(sourceClass.getSimpleName(), destinationClass.getSimpleName())
+            .replaceAll(sourceColumnSourceInfo.stateColumnSourceName,
+                destinationColumnSourceInfo.stateColumnSourceName)
+            .replaceAll(sourceColumnSourceInfo.overflowStateColumnSourceName,
+                destinationColumnSourceInfo.overflowStateColumnSourceName)
+            .replaceAll(sourceColumnSourceInfo.emptyStateValue,
+                destinationColumnSourceInfo.emptyStateValue);
 
         final List<String> rewrittenLines = new ArrayList<>();
         for (int ii = 0; ii < sourceRegioned.noRegionSegments.size() - 1; ++ii) {
             final List<String> unregionedSegment = sourceRegioned.noRegionSegments.get(ii);
-            final List<String> segmentLines = rewriteSegment(destinationColumnSourceInfo, replaceFunction, unregionedSegment);
+            final List<String> segmentLines =
+                rewriteSegment(destinationColumnSourceInfo, replaceFunction, unregionedSegment);
 
             rewrittenLines.addAll(segmentLines);
 
@@ -239,8 +288,10 @@ public class ReplicateHashTable {
                 rewrittenLines.addAll(destinationRegion);
             }
         }
-        final List<String> unregionedSegment = sourceRegioned.noRegionSegments.get(sourceRegioned.noRegionSegments.size() - 1);
-        rewrittenLines.addAll(rewriteSegment(destinationColumnSourceInfo, replaceFunction, unregionedSegment));
+        final List<String> unregionedSegment =
+            sourceRegioned.noRegionSegments.get(sourceRegioned.noRegionSegments.size() - 1);
+        rewrittenLines.addAll(
+            rewriteSegment(destinationColumnSourceInfo, replaceFunction, unregionedSegment));
 
         final String sourcePackage = sourceClass.getPackage().getName();
         final String destinationPackage = destinationClass.getPackage().getName();
@@ -248,13 +299,15 @@ public class ReplicateHashTable {
         int packageLine;
         for (packageLine = 0; packageLine < 10; ++packageLine) {
             if (rewrittenLines.get(packageLine).startsWith("package")) {
-                final String rewritePackage = rewrittenLines.get(packageLine).replace(sourcePackage, destinationPackage);
+                final String rewritePackage =
+                    rewrittenLines.get(packageLine).replace(sourcePackage, destinationPackage);
                 rewrittenLines.set(packageLine, rewritePackage);
                 break;
             }
         }
         if (packageLine == 10) {
-            throw new RuntimeException("Could not find package line to rewrite for " + destinationClass);
+            throw new RuntimeException(
+                "Could not find package line to rewrite for " + destinationClass);
         }
 
         FileUtils.writeLines(destinationFile, rewrittenLines);
@@ -262,10 +315,13 @@ public class ReplicateHashTable {
     }
 
     @NotNull
-    private static List<String> rewriteSegment(ColumnSourceInfo destinationColumnSourceInfo, Function<String, String> replaceFunction, List<String> unregionedSegment) {
-        final List<String> segmentLines = unregionedSegment.stream().map(replaceFunction).collect(Collectors.toList());
+    private static List<String> rewriteSegment(ColumnSourceInfo destinationColumnSourceInfo,
+        Function<String, String> replaceFunction, List<String> unregionedSegment) {
+        final List<String> segmentLines =
+            unregionedSegment.stream().map(replaceFunction).collect(Collectors.toList());
 
-        final String replacementRegex = "@(\\S+)@\\s+from\\s+(\\S+)(\\s*,\\s*@\\S+@\\s+from\\s+\\S+)*\\s*";
+        final String replacementRegex =
+            "@(\\S+)@\\s+from\\s+(\\S+)(\\s*,\\s*@\\S+@\\s+from\\s+\\S+)*\\s*";
         final Pattern controlPattern = Pattern.compile("(\\s*//\\s+)" + replacementRegex);
         final Pattern subsequentPattern = Pattern.compile(replacementRegex);
         for (int jj = 0; jj < segmentLines.size(); ++jj) {
@@ -303,10 +359,12 @@ public class ReplicateHashTable {
                             replacementValue = destinationColumnSourceInfo.writableStateChunkType();
                             break;
                         case "StateColumnSourceType":
-                            replacementValue = destinationColumnSourceInfo.getStateColumnSourceType();
+                            replacementValue =
+                                destinationColumnSourceInfo.getStateColumnSourceType();
                             break;
                         case "StateColumnSourceConstructor":
-                            replacementValue = destinationColumnSourceInfo.getStateColumnSourceConstructor();
+                            replacementValue =
+                                destinationColumnSourceInfo.getStateColumnSourceConstructor();
                             break;
                         case "NullStateValue":
                             replacementValue = destinationColumnSourceInfo.getNullStateValue();
@@ -318,19 +376,25 @@ public class ReplicateHashTable {
                             replacementValue = destinationColumnSourceInfo.getStateChunkTypeEnum();
                             break;
                         default:
-                            throw new IllegalStateException("Unknown replacement: " + replacementType);
+                            throw new IllegalStateException(
+                                "Unknown replacement: " + replacementType);
                     }
-                    controlReplacement.append(firstControl ? "" : ", ").append('@').append(replacementType).append("@ from ").append(Pattern.quote(replacementValue));
+                    controlReplacement.append(firstControl ? "" : ", ").append('@')
+                        .append(replacementType).append("@ from ")
+                        .append(Pattern.quote(replacementValue));
                     firstControl = false;
 
-                    final String replacementLine = originalLine.replaceAll(fromReplacement, replacementValue);
+                    final String replacementLine =
+                        originalLine.replaceAll(fromReplacement, replacementValue);
                     segmentLines.set(jj + 1, replacementLine);
                     if (subsequentReplacement == null) {
                         break;
                     }
-                    final Matcher subsequentMatcher = subsequentPattern.matcher(subsequentReplacement.replaceFirst("\\s*,\\s*", ""));
+                    final Matcher subsequentMatcher = subsequentPattern
+                        .matcher(subsequentReplacement.replaceFirst("\\s*,\\s*", ""));
                     if (!subsequentMatcher.matches()) {
-                        throw new IllegalStateException("Invalid subsequent replacement: " + subsequentReplacement);
+                        throw new IllegalStateException(
+                            "Invalid subsequent replacement: " + subsequentReplacement);
                     }
                     replacementType = subsequentMatcher.group(1);
                     fromReplacement = subsequentMatcher.group(2);
@@ -348,25 +412,30 @@ public class ReplicateHashTable {
 
         final Field[] fields = clazz.getDeclaredFields();
 
-        final Field stateColumnSourceField = findAnnotatedField(clazz, fields, StateColumnSource.class);
+        final Field stateColumnSourceField =
+            findAnnotatedField(clazz, fields, StateColumnSource.class);
         final Class<?> type = stateColumnSourceField.getType();
         if (ColumnSource.class.isAssignableFrom(type)) {
             final Type genericType = stateColumnSourceField.getGenericType();
             if (genericType instanceof ParameterizedType) {
                 final ParameterizedType parameterizedType = (ParameterizedType) genericType;
-                final Class dataType = (Class) ((ParameterizedType) genericType).getActualTypeArguments()[0];
+                final Class dataType =
+                    (Class) ((ParameterizedType) genericType).getActualTypeArguments()[0];
                 result.genericDataType = dataType.getSimpleName();
-                //noinspection unchecked
-                final Class<ColumnSource> asColumnSource = (Class<ColumnSource>) parameterizedType.getRawType();
+                // noinspection unchecked
+                final Class<ColumnSource> asColumnSource =
+                    (Class<ColumnSource>) parameterizedType.getRawType();
                 try {
                     result.stateColumnSourceRawType = asColumnSource.getSimpleName();
-                    final ColumnSource cs = asColumnSource.getConstructor(Class.class).newInstance(dataType);
+                    final ColumnSource cs =
+                        asColumnSource.getConstructor(Class.class).newInstance(dataType);
                     result.stateChunkType = cs.getChunkType();
-                } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+                } catch (InstantiationException | IllegalAccessException | NoSuchMethodException
+                    | InvocationTargetException e) {
                     throw new RuntimeException(e);
                 }
             } else { // type instanceof Class
-                //noinspection unchecked
+                // noinspection unchecked
                 final Class<ColumnSource> asColumnSource = (Class<ColumnSource>) type;
                 try {
                     result.stateColumnSourceRawType = asColumnSource.getSimpleName();
@@ -377,32 +446,40 @@ public class ReplicateHashTable {
                 }
             }
         } else {
-            throw new IllegalStateException("Not a column source: field=" + stateColumnSourceField + ", type=" + type);
+            throw new IllegalStateException(
+                "Not a column source: field=" + stateColumnSourceField + ", type=" + type);
         }
 
         result.stateColumnSourceName = stateColumnSourceField.getName();
-        result.overflowStateColumnSourceName = findAnnotatedField(clazz, fields, OverflowStateColumnSource.class).getName();
+        result.overflowStateColumnSourceName =
+            findAnnotatedField(clazz, fields, OverflowStateColumnSource.class).getName();
         result.emptyStateValue = findAnnotatedField(clazz, fields, EmptyStateValue.class).getName();
 
         return result;
     }
 
     @NotNull
-    private static Field findAnnotatedField(Class<?> clazz, Field[] fields, Class<? extends Annotation> annotationClass) {
-        final List<Field> matchingFields = Arrays.stream(fields).filter(f -> f.getAnnotation(annotationClass) != null).collect(Collectors.toList());
+    private static Field findAnnotatedField(Class<?> clazz, Field[] fields,
+        Class<? extends Annotation> annotationClass) {
+        final List<Field> matchingFields = Arrays.stream(fields)
+            .filter(f -> f.getAnnotation(annotationClass) != null).collect(Collectors.toList());
         if (matchingFields.size() > 1) {
-            throw new RuntimeException("Multiple fields annotated with " + annotationClass.getSimpleName() + " annotation in " + clazz.getCanonicalName());
+            throw new RuntimeException("Multiple fields annotated with "
+                + annotationClass.getSimpleName() + " annotation in " + clazz.getCanonicalName());
         }
         if (matchingFields.size() < 1) {
-            throw new RuntimeException("Could not find annotation with " + annotationClass.getSimpleName() + " annotation in " + clazz.getCanonicalName());
+            throw new RuntimeException("Could not find annotation with "
+                + annotationClass.getSimpleName() + " annotation in " + clazz.getCanonicalName());
         }
         return matchingFields.get(0);
     }
 
-    private static RegionedFile makeRegionedFile(final String name, List<String> lines, Collection<String> excludedMixins) {
+    private static RegionedFile makeRegionedFile(final String name, List<String> lines,
+        Collection<String> excludedMixins) {
         final Pattern startMixinPattern = Pattern.compile("\\s*//\\s+mixin\\s+(.*)?\\s*");
         final Pattern endMixinPattern = Pattern.compile("\\s*//\\s+endmixin\\s+(.*)?\\s*");
-        final Pattern altMixinPattern = Pattern.compile("(\\s*)//\\s+altmixin\\s+(.*?):\\s(.*?)(\\\\)?");
+        final Pattern altMixinPattern =
+            Pattern.compile("(\\s*)//\\s+altmixin\\s+(.*?):\\s(.*?)(\\\\)?");
 
         final Pattern startRegionPattern = Pattern.compile("\\s*//\\s+region\\s+(.*)?\\s*");
         final Pattern endRegionPattern = Pattern.compile("\\s*//\\s+endregion\\s+(.*)?\\s*");
@@ -435,13 +512,17 @@ public class ReplicateHashTable {
             final Matcher mixinEndMatcher = endMixinPattern.matcher(line);
             if (mixinEndMatcher.matches()) {
                 if (currentRegion != null) {
-                    throw new IllegalStateException(name + ":" + lineNumber + ": Can not end mixin while a region is open,  " + currentRegion + " opened at line " + regionOpenLine);
+                    throw new IllegalStateException(
+                        name + ":" + lineNumber + ": Can not end mixin while a region is open,  "
+                            + currentRegion + " opened at line " + regionOpenLine);
                 }
                 if (currentMixin == null) {
-                    throw new IllegalStateException(name + ":" + lineNumber + ": Can not end mixin without an open mixin.");
+                    throw new IllegalStateException(
+                        name + ":" + lineNumber + ": Can not end mixin without an open mixin.");
                 }
                 if (!currentMixin.equals(mixinEndMatcher.group(1))) {
-                    throw new IllegalStateException(name + ":" + lineNumber + ": ended mixin " + mixinEndMatcher.group(1) + ", but current mixin is " + currentMixin);
+                    throw new IllegalStateException(name + ":" + lineNumber + ": ended mixin "
+                        + mixinEndMatcher.group(1) + ", but current mixin is " + currentMixin);
                 }
                 mixinStack.pop();
                 currentMixin = mixinStack.isEmpty() ? null : mixinStack.peek();
@@ -455,7 +536,9 @@ public class ReplicateHashTable {
             final Matcher mixinStartMatcher = startMixinPattern.matcher(line);
             if (mixinStartMatcher.matches()) {
                 if (currentRegion != null) {
-                    throw new IllegalStateException(name + ":" + lineNumber + ": Can not start mixin while a region is open,  " + currentRegion + " opened at line " + regionOpenLine);
+                    throw new IllegalStateException(
+                        name + ":" + lineNumber + ": Can not start mixin while a region is open,  "
+                            + currentRegion + " opened at line " + regionOpenLine);
                 }
                 currentMixin = mixinStartMatcher.group(1);
                 mixinStack.push(currentMixin);
@@ -472,21 +555,25 @@ public class ReplicateHashTable {
                 result.noRegionSegments.add(accumulated);
                 accumulated = new ArrayList<>();
                 if (currentRegion != null) {
-                    throw new IllegalStateException(name + ":" + lineNumber + ": Already in region " + currentRegion + " opened at line" + regionOpenLine);
+                    throw new IllegalStateException(name + ":" + lineNumber + ": Already in region "
+                        + currentRegion + " opened at line" + regionOpenLine);
                 }
                 currentRegion = regionStartMatcher.group(1);
                 regionOpenLine = lineNumber;
                 if (result.regionText.containsKey(currentRegion)) {
-                    throw new IllegalStateException(name + ":" + lineNumber + ": Multiply defined region " + currentRegion + ".");
+                    throw new IllegalStateException(name + ":" + lineNumber
+                        + ": Multiply defined region " + currentRegion + ".");
                 }
             }
             final Matcher regionEndMatcher = endRegionPattern.matcher(line);
             if (regionEndMatcher.matches()) {
                 if (currentRegion == null) {
-                    throw new IllegalStateException(name + ":" + lineNumber + ": not in region, but encountered " + line);
+                    throw new IllegalStateException(
+                        name + ":" + lineNumber + ": not in region, but encountered " + line);
                 }
                 if (!currentRegion.equals(regionEndMatcher.group(1))) {
-                    throw new IllegalStateException(name + ":" + lineNumber + ": ended region " + regionEndMatcher.group(1) + ", but current region is " + currentRegion);
+                    throw new IllegalStateException(name + ":" + lineNumber + ": ended region "
+                        + regionEndMatcher.group(1) + ", but current region is " + currentRegion);
                 }
                 result.regionNames.add(currentRegion);
                 result.regionText.put(currentRegion, accumulated);
@@ -501,12 +588,14 @@ public class ReplicateHashTable {
         }
 
         if (currentMixin != null) {
-            throw new IllegalStateException("Mixin " + currentMixin + " never ended, started on line " + mixinOpenLine.peek());
+            throw new IllegalStateException(
+                "Mixin " + currentMixin + " never ended, started on line " + mixinOpenLine.peek());
         }
 
         result.noRegionSegments.add(accumulated);
 
-        Require.eq(result.noRegionSegments.size() - 1, "result.noRegionSegments.size() - 1", result.regionText.size(), "result.regionText.size()");
+        Require.eq(result.noRegionSegments.size() - 1, "result.noRegionSegments.size() - 1",
+            result.regionText.size(), "result.regionText.size()");
 
         return result;
     }

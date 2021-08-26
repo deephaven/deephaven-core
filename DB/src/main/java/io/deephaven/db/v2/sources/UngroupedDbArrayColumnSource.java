@@ -7,7 +7,8 @@ package io.deephaven.db.v2.sources;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.dbarrays.*;
 
-public class UngroupedDbArrayColumnSource<T> extends UngroupedColumnSource<T> implements MutableColumnSourceGetDefaults.ForObject<T> {
+public class UngroupedDbArrayColumnSource<T> extends UngroupedColumnSource<T>
+    implements MutableColumnSourceGetDefaults.ForObject<T> {
     private final ColumnSource<DbArray<T>> innerSource;
     private final boolean isUngroupable;
 
@@ -17,10 +18,11 @@ public class UngroupedDbArrayColumnSource<T> extends UngroupedColumnSource<T> im
     }
 
     public UngroupedDbArrayColumnSource(ColumnSource<DbArray<T>> innerSource) {
-        //noinspection unchecked
-        super((Class<T>)innerSource.getComponentType());
+        // noinspection unchecked
+        super((Class<T>) innerSource.getComponentType());
         this.innerSource = innerSource;
-        this.isUngroupable = innerSource instanceof UngroupableColumnSource && ((UngroupableColumnSource)innerSource).isUngroupable();
+        this.isUngroupable = innerSource instanceof UngroupableColumnSource
+            && ((UngroupableColumnSource) innerSource).isUngroupable();
     }
 
     @Override
@@ -28,11 +30,11 @@ public class UngroupedDbArrayColumnSource<T> extends UngroupedColumnSource<T> im
         if (index < 0) {
             return null;
         }
-        long segment = index>>base;
-        long offset = index & ((1<<base) - 1);
+        long segment = index >> base;
+        long offset = index & ((1 << base) - 1);
         if (isUngroupable) {
-            //noinspection unchecked
-            return (T)((UngroupableColumnSource)innerSource).getUngrouped(segment, (int)offset);
+            // noinspection unchecked
+            return (T) ((UngroupableColumnSource) innerSource).getUngrouped(segment, (int) offset);
         } else {
             return (innerSource.get(segment)).get((int) offset);
         }
@@ -43,12 +45,13 @@ public class UngroupedDbArrayColumnSource<T> extends UngroupedColumnSource<T> im
         if (index < 0) {
             return null;
         }
-        long segment = index>> getPrevBase();
-        long offset = index & ((1<< getPrevBase()) - 1);
+        long segment = index >> getPrevBase();
+        long offset = index & ((1 << getPrevBase()) - 1);
 
         if (isUngroupable) {
-            //noinspection unchecked
-            return (T)((UngroupableColumnSource)innerSource).getUngroupedPrev(segment, (int)offset);
+            // noinspection unchecked
+            return (T) ((UngroupableColumnSource) innerSource).getUngroupedPrev(segment,
+                (int) offset);
         } else {
             Assert.neqNull(innerSource, "innerSource");
             DbArray<T> prevArray = innerSource.getPrev(segment);

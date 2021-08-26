@@ -8,7 +8,8 @@ import java.io.File;
 import java.io.IOException;
 
 public class DbImageTest extends BaseArrayTestCase {
-    final private String fileName = Configuration.getInstance().getDevRootPath() + "/DbTypesImpl/src/test/resources/io/deephaven/dbtypes/white.jpg";
+    final private String fileName = Configuration.getInstance().getDevRootPath()
+        + "/DbTypesImpl/src/test/resources/io/deephaven/dbtypes/white.jpg";
 
     public void testNewInstanceByteArray() throws IOException {
         final DbImage f = DbImage.newInstance(ImageIO.read(new java.io.File(fileName)));

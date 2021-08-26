@@ -13,7 +13,8 @@ import io.deephaven.db.plot.util.ArgumentValidations;
 /**
  * Dataset appropriate for an {@link XYErrorBarDataSeriesInternal} composed of indexable data.
  */
-public class XYErrorBarDataSeriesArray extends XYDataSeriesArray implements XYErrorBarDataSeriesInternal{
+public class XYErrorBarDataSeriesArray extends XYDataSeriesArray
+    implements XYErrorBarDataSeriesInternal {
 
     private IndexableNumericData x;
     private IndexableNumericData xLow;
@@ -25,15 +26,23 @@ public class XYErrorBarDataSeriesArray extends XYDataSeriesArray implements XYEr
     private final boolean drawXError;
     private final boolean drawYError;
 
-    public XYErrorBarDataSeriesArray(final AxesImpl axes, final int id, final Comparable name, final IndexableNumericData x, final IndexableNumericData xLow, final IndexableNumericData xHigh, final IndexableNumericData y, final IndexableNumericData yLow, final IndexableNumericData yHigh, final boolean drawXError, final boolean drawYError) {
+    public XYErrorBarDataSeriesArray(final AxesImpl axes, final int id, final Comparable name,
+        final IndexableNumericData x, final IndexableNumericData xLow,
+        final IndexableNumericData xHigh, final IndexableNumericData y,
+        final IndexableNumericData yLow, final IndexableNumericData yHigh, final boolean drawXError,
+        final boolean drawYError) {
         this(axes, id, name, x, xLow, xHigh, y, yLow, yHigh, drawXError, drawYError, null);
     }
 
-    public XYErrorBarDataSeriesArray(final AxesImpl axes, final int id, final Comparable name, final IndexableNumericData x, final IndexableNumericData xLow, final IndexableNumericData xHigh, final IndexableNumericData y, final IndexableNumericData yLow, final IndexableNumericData yHigh, final boolean drawXError, final boolean drawYError, final AbstractXYDataSeries series) {
+    public XYErrorBarDataSeriesArray(final AxesImpl axes, final int id, final Comparable name,
+        final IndexableNumericData x, final IndexableNumericData xLow,
+        final IndexableNumericData xHigh, final IndexableNumericData y,
+        final IndexableNumericData yLow, final IndexableNumericData yHigh, final boolean drawXError,
+        final boolean drawYError, final AbstractXYDataSeries series) {
         super(axes, id, name, x, y, series);
         ArgumentValidations.assertNotNull(x, "x", getPlotInfo());
         this.x = x;
-        if(drawXError) {
+        if (drawXError) {
             ArgumentValidations.assertNotNull(xLow, "xLow", getPlotInfo());
             ArgumentValidations.assertNotNull(xHigh, "xHigh", getPlotInfo());
             this.xLow = xLow;
@@ -44,7 +53,7 @@ public class XYErrorBarDataSeriesArray extends XYDataSeriesArray implements XYEr
         }
         ArgumentValidations.assertNotNull(y, "y", getPlotInfo());
         this.y = y;
-        if(drawYError) {
+        if (drawYError) {
             ArgumentValidations.assertNotNull(yLow, "yLow", getPlotInfo());
             ArgumentValidations.assertNotNull(yHigh, "yHigh", getPlotInfo());
             this.yLow = yLow;
@@ -64,7 +73,8 @@ public class XYErrorBarDataSeriesArray extends XYDataSeriesArray implements XYEr
      * @param series series to copy.
      * @param axes new axes to use.
      */
-    protected XYErrorBarDataSeriesArray(final XYErrorBarDataSeriesArray series, final AxesImpl axes) {
+    protected XYErrorBarDataSeriesArray(final XYErrorBarDataSeriesArray series,
+        final AxesImpl axes) {
         super(series, axes);
         this.x = series.x;
         this.xLow = series.xLow;

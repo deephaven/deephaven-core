@@ -119,7 +119,8 @@ public class IdeSession extends HasEventHandling {
         return connection.getObject(definition, result);
     }
 
-    public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data, String userTimeZone) {
+    public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data,
+        String userTimeZone) {
         return connection.newTable(columnNames, types, data, userTimeZone, this).then(table -> {
             final CustomEventInit event = CustomEventInit.create();
             event.setDetail(table);
@@ -160,7 +161,8 @@ public class IdeSession extends HasEventHandling {
         request.setConsoleId(this.result);
         request.setCode(code);
         Promise<ExecuteCommandResponse> runCodePromise = Callbacks.grpcUnaryPromise(c -> {
-            connection.consoleServiceClient().executeCommand(request, connection.metadata(), c::apply);
+            connection.consoleServiceClient().executeCommand(request, connection.metadata(),
+                c::apply);
         });
         runCodePromise.then(response -> {
             CommandResult commandResult = new CommandResult();
@@ -314,11 +316,13 @@ public class IdeSession extends HasEventHandling {
         return result;
     }
 
-    public Promise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>> getCompletionItems(Object params) {
+    public Promise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>> getCompletionItems(
+        Object params) {
         final JsPropertyMap<Object> jsMap = Js.uncheckedCast(params);
         final GetCompletionItemsRequest request = new GetCompletionItemsRequest();
 
-        final VersionedTextDocumentIdentifier textDocument = toVersionedTextDoc(jsMap.getAny("textDocument"));
+        final VersionedTextDocumentIdentifier textDocument =
+            toVersionedTextDoc(jsMap.getAny("textDocument"));
         request.setTextDocument(textDocument);
         request.setPosition(toPosition(jsMap.getAny("position")));
         request.setContext(toContext(jsMap.getAny("context")));
@@ -370,7 +374,8 @@ public class IdeSession extends HasEventHandling {
         final JsPropertyMap<Object> jsMap = Js.uncheckedCast(params);
         final CloseDocumentRequest request = new CloseDocumentRequest();
         request.setConsoleId(result);
-        final VersionedTextDocumentIdentifier textDocument = toVersionedTextDoc(jsMap.getAny("textDocument"));
+        final VersionedTextDocumentIdentifier textDocument =
+            toVersionedTextDoc(jsMap.getAny("textDocument"));
         request.setTextDocument(textDocument);
 
         JsLog.debug("Closing document for autocomplete ", request);

@@ -49,8 +49,8 @@ import java.util.stream.Stream;
 import static io.deephaven.db.v2.sources.chunk.Attributes.Values;
 
 /**
- * A Set of static utilities for computing values from a table while avoiding the use of the LTM lock.  This class supports
- * snapshots in both position space and key space.
+ * A Set of static utilities for computing values from a table while avoiding the use of the LTM
+ * lock. This class supports snapshots in both position space and key space.
  */
 public class ConstructSnapshot {
 
@@ -64,20 +64,24 @@ public class ConstructSnapshot {
         }
     }
 
-    private static final io.deephaven.io.logger.Logger log = LoggerFactory.getLogger(InstrumentedListener.class);
+    private static final io.deephaven.io.logger.Logger log =
+        LoggerFactory.getLogger(InstrumentedListener.class);
 
     /**
-     * The maximum number of allowed attempts to construct a snapshot concurrently with {@link LiveTableMonitor} refresh
-     * processing. After this many attempts, we fall back and wait until we can block refreshes.
+     * The maximum number of allowed attempts to construct a snapshot concurrently with
+     * {@link LiveTableMonitor} refresh processing. After this many attempts, we fall back and wait
+     * until we can block refreshes.
      */
-    private static final int MAX_CONCURRENT_ATTEMPTS = Configuration.getInstance().getIntegerWithDefault("ConstructSnapshot.maxConcurrentAttempts", 2);
+    private static final int MAX_CONCURRENT_ATTEMPTS = Configuration.getInstance()
+        .getIntegerWithDefault("ConstructSnapshot.maxConcurrentAttempts", 2);
 
     /**
-     * The maximum duration of an attempt to construct a snapshot concurrently with {@link LiveTableMonitor} refresh
-     * processing. If an unsuccessful attempt takes longer than this timeout, we will fall back and wait until we can
-     * block refreshes.
+     * The maximum duration of an attempt to construct a snapshot concurrently with
+     * {@link LiveTableMonitor} refresh processing. If an unsuccessful attempt takes longer than
+     * this timeout, we will fall back and wait until we can block refreshes.
      */
-    private static final int MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS = Configuration.getInstance().getIntegerWithDefault("ConstructSnapshot.maxConcurrentAttemptDurationMillis", 5000);
+    private static final int MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS = Configuration.getInstance()
+        .getIntegerWithDefault("ConstructSnapshot.maxConcurrentAttemptDurationMillis", 5000);
 
     /**
      * Holder for thread-local state.
@@ -119,8 +123,8 @@ public class ConstructSnapshot {
             private final boolean usingPreviousValues;
 
             private ConcurrentAttemptParameters(@NotNull final SnapshotControl control,
-                                                final long beforeClockValue,
-                                                final boolean usingPreviousValues) {
+                final long beforeClockValue,
+                final boolean usingPreviousValues) {
                 this.control = control;
                 this.beforeClockValue = beforeClockValue;
                 this.usingPreviousValues = usingPreviousValues;
@@ -128,21 +132,23 @@ public class ConstructSnapshot {
         }
 
         /**
-         * {@link ConcurrentAttemptParameters Per-snapshot attempt parameters} for the lowest-depth concurrent snapshot
-         * on this thread. {@code null} if there are no concurrent snapshots in progress at any depth on this thread.
+         * {@link ConcurrentAttemptParameters Per-snapshot attempt parameters} for the lowest-depth
+         * concurrent snapshot on this thread. {@code null} if there are no concurrent snapshots in
+         * progress at any depth on this thread.
          */
         private ConcurrentAttemptParameters activeConcurrentAttempt;
 
         /**
-         * The depth of nested concurrent snapshots. Used to avoid releasing the LTM lock if it's acquired by a nested
-         * snapshot. Zero if there are no concurrent snapshots in progress.
+         * The depth of nested concurrent snapshots. Used to avoid releasing the LTM lock if it's
+         * acquired by a nested snapshot. Zero if there are no concurrent snapshots in progress.
          */
         private int concurrentSnapshotDepth;
 
         /**
-         * The depth of nested locked snapshots. Used to treat nested locked snapshots as non-concurrent for purposes of
-         * consistency checks and to avoid releasing the LTM lock if it's acquired by a nested snapshot. Zero if there
-         * are no concurrent snapshots in progress.
+         * The depth of nested locked snapshots. Used to treat nested locked snapshots as
+         * non-concurrent for purposes of consistency checks and to avoid releasing the LTM lock if
+         * it's acquired by a nested snapshot. Zero if there are no concurrent snapshots in
+         * progress.
          */
         private int lockedSnapshotDepth;
 
@@ -157,32 +163,33 @@ public class ConstructSnapshot {
         private long lastObservedClockValue;
 
         /**
-         * Called before starting a concurrent snapshot in order to increase depth and record per-snapshot attempt
-         * parameters.
+         * Called before starting a concurrent snapshot in order to increase depth and record
+         * per-snapshot attempt parameters.
          *
-         * @param control             The {@link SnapshotControl control} to record
-         * @param beforeClockValue    The "before" clock value to record
+         * @param control The {@link SnapshotControl control} to record
+         * @param beforeClockValue The "before" clock value to record
          * @param usingPreviousValues Whether this attempt will use previous values
          * @return An opaque object describing the enclosing attempt, to be supplied to
          *         {@link #endConcurrentSnapshot(Object)}
          */
         private Object startConcurrentSnapshot(@NotNull final SnapshotControl control,
-                                               final long beforeClockValue,
-                                               final boolean usingPreviousValues) {
+            final long beforeClockValue,
+            final boolean usingPreviousValues) {
             Assert.assertion(!locked() && !acquiredLock, "!locked() && !acquiredLock");
             final Object enclosingAttemptState = activeConcurrentAttempt;
-            activeConcurrentAttempt = new ConcurrentAttemptParameters(control, beforeClockValue, usingPreviousValues);
+            activeConcurrentAttempt =
+                new ConcurrentAttemptParameters(control, beforeClockValue, usingPreviousValues);
             ++concurrentSnapshotDepth;
             lastObservedClockValue = beforeClockValue;
             return enclosingAttemptState;
         }
 
         /**
-         * Called after finishing a concurrent snapshot attempt in order to record the decrease in depth and restore
-         * the enclosing attempt's parameters.
+         * Called after finishing a concurrent snapshot attempt in order to record the decrease in
+         * depth and restore the enclosing attempt's parameters.
          *
          * @param enclosingAttemptParameters The opaque state object returned from
-         *                                   {@link #startConcurrentSnapshot(SnapshotControl, long, boolean)}
+         *        {@link #startConcurrentSnapshot(SnapshotControl, long, boolean)}
          */
         private void endConcurrentSnapshot(final Object enclosingAttemptParameters) {
             --concurrentSnapshotDepth;
@@ -190,7 +197,8 @@ public class ConstructSnapshot {
         }
 
         /**
-         * Called before starting a locked snapshot in order to increase depth and acquire the LTM lock if needed.
+         * Called before starting a locked snapshot in order to increase depth and acquire the LTM
+         * lock if needed.
          */
         private void startLockedSnapshot() {
             ++lockedSnapshotDepth;
@@ -198,7 +206,8 @@ public class ConstructSnapshot {
         }
 
         /**
-         * Called after finishing a concurrent snapshot in order to decrease depth and release the LTM lock if needed.
+         * Called after finishing a concurrent snapshot in order to decrease depth and release the
+         * LTM lock if needed.
          */
         private void endLockedSnapshot() {
             --lockedSnapshotDepth;
@@ -215,36 +224,37 @@ public class ConstructSnapshot {
         }
 
         /**
-         * Test that determines whether the currently-active concurrent snapshot attempt has become inconsistent.
-         * Always returns {@code false} if there is no snapshot attempt active, or if there is a locked attempt active
-         * (necessarily at lower depth than the lowest concurrent attempt).
+         * Test that determines whether the currently-active concurrent snapshot attempt has become
+         * inconsistent. Always returns {@code false} if there is no snapshot attempt active, or if
+         * there is a locked attempt active (necessarily at lower depth than the lowest concurrent
+         * attempt).
          *
-         * @return Whether the clock or sources have changed in such a way as to make the currently-active concurrent
-         *         snapshot attempt inconsistent
+         * @return Whether the clock or sources have changed in such a way as to make the
+         *         currently-active concurrent snapshot attempt inconsistent
          */
         private boolean concurrentAttemptInconsistent() {
             if (!concurrentAttemptActive()) {
                 return false;
             }
             if (!clockConsistent(
-                    activeConcurrentAttempt.beforeClockValue,
-                    lastObservedClockValue = LogicalClock.DEFAULT.currentValue(),
-                    activeConcurrentAttempt.usingPreviousValues)) {
+                activeConcurrentAttempt.beforeClockValue,
+                lastObservedClockValue = LogicalClock.DEFAULT.currentValue(),
+                activeConcurrentAttempt.usingPreviousValues)) {
                 return true;
             }
             return !activeConcurrentAttempt.control.snapshotConsistent(
-                    lastObservedClockValue,
-                    activeConcurrentAttempt.usingPreviousValues);
+                lastObservedClockValue,
+                activeConcurrentAttempt.usingPreviousValues);
         }
 
         /**
-         * Check that fails if the currently-active concurrent snapshot attempt has become inconsistent.
-         * source.
-         * This is a no-op if there is no snapshot attempt active, or if there is a locked attempt active
-         * (necessarily at lower depth than the lowest concurrent attempt).
+         * Check that fails if the currently-active concurrent snapshot attempt has become
+         * inconsistent. source. This is a no-op if there is no snapshot attempt active, or if there
+         * is a locked attempt active (necessarily at lower depth than the lowest concurrent
+         * attempt).
          *
-         * @throws SnapshotInconsistentException If the currently-active concurrent snapshot attempt has become
-         *                                       inconsistent
+         * @throws SnapshotInconsistentException If the currently-active concurrent snapshot attempt
+         *         has become inconsistent
          */
         private void failIfConcurrentAttemptInconsistent() {
             if (concurrentAttemptInconsistent())
@@ -252,27 +262,30 @@ public class ConstructSnapshot {
         }
 
         /**
-         * Wait for a dependency to become satisfied on the current cycle if we're trying to use current values
-         * for the currently-active concurrent snapshot attempt.
-         * This is a no-op if there is no snapshot attempt active, or if there is a locked attempt active
-         * (necessarily at lower depth than the lowest concurrent attempt).
+         * Wait for a dependency to become satisfied on the current cycle if we're trying to use
+         * current values for the currently-active concurrent snapshot attempt. This is a no-op if
+         * there is no snapshot attempt active, or if there is a locked attempt active (necessarily
+         * at lower depth than the lowest concurrent attempt).
          *
-         * @param dependency The dependency, which may be null in order to avoid redundant checks in calling code
-         * @throws SnapshotInconsistentException If we cannot wait for this dependency on the current step because
-         *                                          the step changed
+         * @param dependency The dependency, which may be null in order to avoid redundant checks in
+         *        calling code
+         * @throws SnapshotInconsistentException If we cannot wait for this dependency on the
+         *         current step because the step changed
          */
-        private void maybeWaitForSatisfaction(@Nullable final NotificationQueue.Dependency dependency) {
+        private void maybeWaitForSatisfaction(
+            @Nullable final NotificationQueue.Dependency dependency) {
             if (!concurrentAttemptActive()
-                    || dependency == null
-                    || activeConcurrentAttempt.usingPreviousValues
-                    || LogicalClock.getState(activeConcurrentAttempt.beforeClockValue) == LogicalClock.State.Idle) {
+                || dependency == null
+                || activeConcurrentAttempt.usingPreviousValues
+                || LogicalClock.getState(
+                    activeConcurrentAttempt.beforeClockValue) == LogicalClock.State.Idle) {
                 // No cycle or dependency to wait for.
                 return;
             }
             final long beforeStep = LogicalClock.getStep(activeConcurrentAttempt.beforeClockValue);
             // Wait for satisfaction if necessary
             if (dependency.satisfied(beforeStep)
-                    || WaitNotification.waitForSatisfaction(beforeStep, dependency)) {
+                || WaitNotification.waitForSatisfaction(beforeStep, dependency)) {
                 return;
             }
             lastObservedClockValue = LogicalClock.DEFAULT.currentValue();
@@ -281,9 +294,10 @@ public class ConstructSnapshot {
                 throw new SnapshotInconsistentException();
             }
         }
+
         /**
-         * Return the currently-active concurrent snapshot attempt's "before" clock value, or zero if there is no concurrent
-         * attempt active.
+         * Return the currently-active concurrent snapshot attempt's "before" clock value, or zero
+         * if there is no concurrent attempt active.
          *
          * @return The concurrent snapshot attempt's "before" clock value, or zero
          */
@@ -300,8 +314,10 @@ public class ConstructSnapshot {
         private LogOutput appendConcurrentAttemptClockInfo(@NotNull final LogOutput logOutput) {
             logOutput.append("concurrent snapshot state: ");
             if (concurrentAttemptActive()) {
-                logOutput.append("active, beforeClockValue=").append(activeConcurrentAttempt.beforeClockValue)
-                        .append(", usingPreviousValues=").append(activeConcurrentAttempt.usingPreviousValues);
+                logOutput.append("active, beforeClockValue=")
+                    .append(activeConcurrentAttempt.beforeClockValue)
+                    .append(", usingPreviousValues=")
+                    .append(activeConcurrentAttempt.usingPreviousValues);
             } else {
                 logOutput.append("inactive");
             }
@@ -314,7 +330,8 @@ public class ConstructSnapshot {
          * @return Whether this thread currently holds a lock on the LTM
          */
         private boolean locked() {
-            return LiveTableMonitor.DEFAULT.sharedLock().isHeldByCurrentThread() || LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
+            return LiveTableMonitor.DEFAULT.sharedLock().isHeldByCurrentThread()
+                || LiveTableMonitor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
         }
 
         /**
@@ -346,28 +363,33 @@ public class ConstructSnapshot {
     }
 
     /**
-     * Test whether the logical clock has remained sufficiently consistent to allow a snapshot function to succeed.
-     * Note that this is a necessary but not sufficient test in most cases; this test is invoked (in short-circuit
-     * fashion) before invoking @link SnapshotControl#snapshotConsistent(long, boolean)} (long, boolean)}.
+     * Test whether the logical clock has remained sufficiently consistent to allow a snapshot
+     * function to succeed. Note that this is a necessary but not sufficient test in most cases;
+     * this test is invoked (in short-circuit fashion) before invoking @link
+     * SnapshotControl#snapshotConsistent(long, boolean)} (long, boolean)}.
      *
      * @param beforeClockValue The clock value from before the snapshot was attempted
-     * @param afterClockValue  The clock value from after the snapshot was attempted
-     * @param usedPrev         Whether the snapshot used previous values
+     * @param afterClockValue The clock value from after the snapshot was attempted
+     * @param usedPrev Whether the snapshot used previous values
      * @return Whether the snapshot succeeded (based on clock changes)
      */
-    private static boolean clockConsistent(final long beforeClockValue, final long afterClockValue, final boolean usedPrev) {
-        final boolean stepSame = LogicalClock.getStep(beforeClockValue) == LogicalClock.getStep(afterClockValue);
-        final boolean stateSame = LogicalClock.getState(beforeClockValue) == LogicalClock.getState(afterClockValue);
+    private static boolean clockConsistent(final long beforeClockValue, final long afterClockValue,
+        final boolean usedPrev) {
+        final boolean stepSame =
+            LogicalClock.getStep(beforeClockValue) == LogicalClock.getStep(afterClockValue);
+        final boolean stateSame =
+            LogicalClock.getState(beforeClockValue) == LogicalClock.getState(afterClockValue);
         return stepSame && (stateSame || !usedPrev);
     }
 
     /**
-     * Test that determines whether the currently-active concurrent snapshot attempt has become inconsistent.
-     * Always returns {@code false} if there is no snapshot attempt active, or if there is a locked attempt active
-     * (necessarily at lower depth than the lowest concurrent attempt).
+     * Test that determines whether the currently-active concurrent snapshot attempt has become
+     * inconsistent. Always returns {@code false} if there is no snapshot attempt active, or if
+     * there is a locked attempt active (necessarily at lower depth than the lowest concurrent
+     * attempt).
      *
-     * @return Whether the clock or sources have changed in such a way as to make the currently-active concurrent
-     *         snapshot attempt inconsistent
+     * @return Whether the clock or sources have changed in such a way as to make the
+     *         currently-active concurrent snapshot attempt inconsistent
      */
     public static boolean concurrentAttemptInconsistent() {
         return State.get().concurrentAttemptInconsistent();
@@ -375,34 +397,35 @@ public class ConstructSnapshot {
 
     /**
      * Check that fails if the currently-active concurrent snapshot attempt has become inconsistent.
-     * source.
-     * This is a no-op if there is no snapshot attempt active, or if there is a locked attempt active
-     * (necessarily at lower depth than the lowest concurrent attempt).
+     * source. This is a no-op if there is no snapshot attempt active, or if there is a locked
+     * attempt active (necessarily at lower depth than the lowest concurrent attempt).
      *
-     * @throws SnapshotInconsistentException If the currently-active concurrent snapshot attempt has become
-     *                                       inconsistent
+     * @throws SnapshotInconsistentException If the currently-active concurrent snapshot attempt has
+     *         become inconsistent
      */
     public static void failIfConcurrentAttemptInconsistent() {
         State.get().failIfConcurrentAttemptInconsistent();
     }
 
     /**
-     * Wait for a dependency to become satisfied on the current cycle if we're trying to use current values
-     * for the currently-active concurrent snapshot attempt.
-     * This is a no-op if there is no snapshot attempt active, or if there is a locked attempt active
-     * (necessarily at lower depth than the lowest concurrent attempt).
+     * Wait for a dependency to become satisfied on the current cycle if we're trying to use current
+     * values for the currently-active concurrent snapshot attempt. This is a no-op if there is no
+     * snapshot attempt active, or if there is a locked attempt active (necessarily at lower depth
+     * than the lowest concurrent attempt).
      *
-     * @param dependency The dependency, which may be null in order to avoid redundant checks in calling code
-     * @throws SnapshotInconsistentException If we cannot wait for this dependency on the current step because
-     *                                          the step changed
+     * @param dependency The dependency, which may be null in order to avoid redundant checks in
+     *        calling code
+     * @throws SnapshotInconsistentException If we cannot wait for this dependency on the current
+     *         step because the step changed
      */
-    public static void maybeWaitForSatisfaction(@Nullable final NotificationQueue.Dependency dependency) {
+    public static void maybeWaitForSatisfaction(
+        @Nullable final NotificationQueue.Dependency dependency) {
         State.get().maybeWaitForSatisfaction(dependency);
     }
 
     /**
-     * Return the currently-active concurrent snapshot attempt's "before" clock value, or zero if there is no concurrent
-     * attempt active.
+     * Return the currently-active concurrent snapshot attempt's "before" clock value, or zero if
+     * there is no concurrent attempt active.
      *
      * @return The concurrent snapshot attempt's "before" clock value, or zero
      */
@@ -422,73 +445,81 @@ public class ConstructSnapshot {
     }
 
     /**
-     * Create a {@link InitialSnapshot snapshot} of the entire table specified. Note that this method is
-     * notification-oblivious, i.e. it makes no attempt to ensure that notifications are not missed.
+     * Create a {@link InitialSnapshot snapshot} of the entire table specified. Note that this
+     * method is notification-oblivious, i.e. it makes no attempt to ensure that notifications are
+     * not missed.
      *
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
      * @return a snapshot of the entire base table.
      */
     public static InitialSnapshot constructInitialSnapshot(final Object logIdentityObject,
-                                                           @NotNull final BaseTable table) {
+        @NotNull final BaseTable table) {
         return constructInitialSnapshot(logIdentityObject, table, null, null);
     }
 
     /**
-     * Create a {@link InitialSnapshot snapshot} of the specified table using a set of requested columns and keys.
-     * Note that this method uses an index that is in Key space, and that it is notification-oblivious, i.e. it makes no
-     * attempt to ensure that notifications are not missed.
+     * Create a {@link InitialSnapshot snapshot} of the specified table using a set of requested
+     * columns and keys. Note that this method uses an index that is in Key space, and that it is
+     * notification-oblivious, i.e. it makes no attempt to ensure that notifications are not missed.
      *
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
-     * @param columnsToSerialize  A {@link BitSet} of columns to include, null for all
+     * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
      * @param keysToSnapshot An Index of keys within the table to include, null for all
      * @return a snapshot of the entire base table.
      */
     public static InitialSnapshot constructInitialSnapshot(final Object logIdentityObject,
-                                                           @NotNull final BaseTable table,
-                                                           @Nullable final BitSet columnsToSerialize,
-                                                           @Nullable final Index keysToSnapshot) {
-        return constructInitialSnapshot(logIdentityObject, table, columnsToSerialize, keysToSnapshot, makeSnapshotControl(false, table));
+        @NotNull final BaseTable table,
+        @Nullable final BitSet columnsToSerialize,
+        @Nullable final Index keysToSnapshot) {
+        return constructInitialSnapshot(logIdentityObject, table, columnsToSerialize,
+            keysToSnapshot, makeSnapshotControl(false, table));
     }
 
     static InitialSnapshot constructInitialSnapshot(final Object logIdentityObject,
-                                                    @NotNull final BaseTable table,
-                                                    @Nullable final BitSet columnsToSerialize,
-                                                    @Nullable final Index keysToSnapshot,
-                                                    @NotNull final SnapshotControl control) {
+        @NotNull final BaseTable table,
+        @Nullable final BitSet columnsToSerialize,
+        @Nullable final Index keysToSnapshot,
+        @NotNull final SnapshotControl control) {
         final InitialSnapshot snapshot = new InitialSnapshot();
 
-        final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
+        final SnapshotFunction doSnapshot =
+            (usePrev, beforeClockValue) -> serializeAllTable(usePrev, snapshot, table,
+                logIdentityObject, columnsToSerialize, keysToSnapshot);
 
-        snapshot.step = callDataSnapshotFunction(System.identityHashCode(logIdentityObject), control, doSnapshot);
+        snapshot.step = callDataSnapshotFunction(System.identityHashCode(logIdentityObject),
+            control, doSnapshot);
 
         return snapshot;
     }
 
     /**
-     * Create a {@link InitialSnapshot snapshot} of the specified table using a set of requested columns and positions.
-     * Note that this method uses an index that is in Position space, and that it is notification-oblivious, i.e. it
-     * makes no attempt to ensure that notifications are not missed.
+     * Create a {@link InitialSnapshot snapshot} of the specified table using a set of requested
+     * columns and positions. Note that this method uses an index that is in Position space, and
+     * that it is notification-oblivious, i.e. it makes no attempt to ensure that notifications are
+     * not missed.
      *
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
-     * @param columnsToSerialize  A {@link BitSet} of columns to include, null for all
+     * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
      * @param positionsToSnapshot An Index of positions within the table to include, null for all
      * @return a snapshot of the entire base table.
      */
-    public static InitialSnapshot constructInitialSnapshotInPositionSpace(final Object logIdentityObject,
-                                                                          @NotNull final BaseTable table,
-                                                                          @Nullable final BitSet columnsToSerialize,
-                                                                          @Nullable final Index positionsToSnapshot) {
-        return constructInitialSnapshotInPositionSpace(logIdentityObject, table,  columnsToSerialize, positionsToSnapshot, makeSnapshotControl(false, table));
+    public static InitialSnapshot constructInitialSnapshotInPositionSpace(
+        final Object logIdentityObject,
+        @NotNull final BaseTable table,
+        @Nullable final BitSet columnsToSerialize,
+        @Nullable final Index positionsToSnapshot) {
+        return constructInitialSnapshotInPositionSpace(logIdentityObject, table, columnsToSerialize,
+            positionsToSnapshot, makeSnapshotControl(false, table));
     }
 
     static InitialSnapshot constructInitialSnapshotInPositionSpace(final Object logIdentityObject,
-                                                                   @NotNull final BaseTable table,
-                                                                   @Nullable final BitSet columnsToSerialize,
-                                                                   @Nullable final Index positionsToSnapshot,
-                                                                   @NotNull final SnapshotControl control) {
+        @NotNull final BaseTable table,
+        @Nullable final BitSet columnsToSerialize,
+        @Nullable final Index positionsToSnapshot,
+        @NotNull final SnapshotControl control) {
         final InitialSnapshot snapshot = new InitialSnapshot();
 
         final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> {
@@ -502,60 +533,68 @@ public class ConstructSnapshot {
             } else {
                 keysToSnapshot = table.getIndex().subindexByPos(positionsToSnapshot);
             }
-            return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
+            return serializeAllTable(usePrev, snapshot, table, logIdentityObject,
+                columnsToSerialize, keysToSnapshot);
         };
 
-        snapshot.step = callDataSnapshotFunction(System.identityHashCode(logIdentityObject), control, doSnapshot);
+        snapshot.step = callDataSnapshotFunction(System.identityHashCode(logIdentityObject),
+            control, doSnapshot);
         return snapshot;
     }
 
     /**
-     * Create a {@link BarrageMessage snapshot} of the specified table including all columns and rows.
-     * Note that this method is notification-oblivious, i.e. it makes no attempt to ensure that notifications are not missed.
+     * Create a {@link BarrageMessage snapshot} of the specified table including all columns and
+     * rows. Note that this method is notification-oblivious, i.e. it makes no attempt to ensure
+     * that notifications are not missed.
      *
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
      * @return a snapshot of the entire base table.
      */
     public static BarrageMessage constructBackplaneSnapshot(final Object logIdentityObject,
-                                                            final BaseTable table) {
+        final BaseTable table) {
         return constructBackplaneSnapshotInPositionSpace(logIdentityObject, table, null, null);
     }
 
     /**
-     * Create a {@link BarrageMessage snapshot} of the specified table using a set of requested columns and positions.
-     * Note that this method uses an index that is in Position space, and that it is notification-oblivious, i.e. it
-     * makes no attempt to ensure that notifications are not missed.
+     * Create a {@link BarrageMessage snapshot} of the specified table using a set of requested
+     * columns and positions. Note that this method uses an index that is in Position space, and
+     * that it is notification-oblivious, i.e. it makes no attempt to ensure that notifications are
+     * not missed.
      *
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
-     * @param columnsToSerialize  A {@link BitSet} of columns to include, null for all
+     * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
      * @param positionsToSnapshot An Index of positions within the table to include, null for all
      * @return a snapshot of the entire base table.
      */
-    public static BarrageMessage constructBackplaneSnapshotInPositionSpace(final Object logIdentityObject,
-                                                                           final BaseTable table,
-                                                                           @Nullable final BitSet columnsToSerialize,
-                                                                           @Nullable final Index positionsToSnapshot) {
-        return constructBackplaneSnapshotInPositionSpace(logIdentityObject, table, columnsToSerialize, positionsToSnapshot, makeSnapshotControl(false, table));
+    public static BarrageMessage constructBackplaneSnapshotInPositionSpace(
+        final Object logIdentityObject,
+        final BaseTable table,
+        @Nullable final BitSet columnsToSerialize,
+        @Nullable final Index positionsToSnapshot) {
+        return constructBackplaneSnapshotInPositionSpace(logIdentityObject, table,
+            columnsToSerialize, positionsToSnapshot, makeSnapshotControl(false, table));
     }
 
     /**
-     * Create a {@link BarrageMessage snapshot} of the specified table using a set of requested columns and positions.
-     * Note that this method uses an index that is in Position space.
+     * Create a {@link BarrageMessage snapshot} of the specified table using a set of requested
+     * columns and positions. Note that this method uses an index that is in Position space.
      *
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
-     * @param columnsToSerialize  A {@link BitSet} of columns to include, null for all
+     * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
      * @param positionsToSnapshot An Index of positions within the table to include, null for all
-     * @param control A {@link SnapshotControl} to define the parameters and consistency for this snapshot
+     * @param control A {@link SnapshotControl} to define the parameters and consistency for this
+     *        snapshot
      * @return a snapshot of the entire base table.
      */
-    public static BarrageMessage constructBackplaneSnapshotInPositionSpace(final Object logIdentityObject,
-                                                                           @NotNull final BaseTable table,
-                                                                           @Nullable final BitSet columnsToSerialize,
-                                                                           @Nullable final Index positionsToSnapshot,
-                                                                           @NotNull final SnapshotControl control) {
+    public static BarrageMessage constructBackplaneSnapshotInPositionSpace(
+        final Object logIdentityObject,
+        @NotNull final BaseTable table,
+        @Nullable final BitSet columnsToSerialize,
+        @Nullable final Index positionsToSnapshot,
+        @NotNull final SnapshotControl control) {
 
         final BarrageMessage snapshot = new BarrageMessage();
         snapshot.isSnapshot = true;
@@ -567,15 +606,17 @@ public class ConstructSnapshot {
                 keysToSnapshot = null;
             } else if (usePrev) {
                 try (final Index prevIndex = table.getIndex().getPrevIndex()) {
-                   keysToSnapshot = prevIndex.subindexByPos(positionsToSnapshot);
+                    keysToSnapshot = prevIndex.subindexByPos(positionsToSnapshot);
                 }
             } else {
                 keysToSnapshot = table.getIndex().subindexByPos(positionsToSnapshot);
             }
-            return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
+            return serializeAllTable(usePrev, snapshot, table, logIdentityObject,
+                columnsToSerialize, keysToSnapshot);
         };
 
-        snapshot.step = callDataSnapshotFunction(System.identityHashCode(logIdentityObject), control, doSnapshot);
+        snapshot.step = callDataSnapshotFunction(System.identityHashCode(logIdentityObject),
+            control, doSnapshot);
         snapshot.firstSeq = snapshot.lastSeq = snapshot.step;
 
         return snapshot;
@@ -589,14 +630,18 @@ public class ConstructSnapshot {
      * @param tables tables to snapshot
      * @return list of the resulting {@link InitialSnapshot}s
      */
-    public static List<InitialSnapshot> constructInitialSnapshots(final Object logIdentityObject, final BaseTable... tables) {
+    public static List<InitialSnapshot> constructInitialSnapshots(final Object logIdentityObject,
+        final BaseTable... tables) {
         final List<InitialSnapshot> snapshots = new ArrayList<>();
 
-        final NotificationObliviousMultipleSourceSnapshotControl snapshotControl = new NotificationObliviousMultipleSourceSnapshotControl(tables);
+        final NotificationObliviousMultipleSourceSnapshotControl snapshotControl =
+            new NotificationObliviousMultipleSourceSnapshotControl(tables);
 
-        final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> serializeAllTables(usePrev, snapshots, tables, logIdentityObject);
+        final SnapshotFunction doSnapshot = (usePrev,
+            beforeClockValue) -> serializeAllTables(usePrev, snapshots, tables, logIdentityObject);
 
-        callDataSnapshotFunction(System.identityHashCode(logIdentityObject), snapshotControl, doSnapshot);
+        callDataSnapshotFunction(System.identityHashCode(logIdentityObject), snapshotControl,
+            doSnapshot);
 
         return snapshots;
     }
@@ -604,11 +649,14 @@ public class ConstructSnapshot {
     @FunctionalInterface
     public interface SnapshotFunction {
         /**
-         * A function that would like to take a snapshot of data guarded by a retry loop with data consistency tests.
+         * A function that would like to take a snapshot of data guarded by a retry loop with data
+         * consistency tests.
          *
-         * @param usePrev          Whether data from the previous cycle should be used (otherwise use this cycle)
-         * @param beforeClockValue The clock value that we captured before the function began; the function can use
-         *                         this value to bail out early if it notices something has gone wrong
+         * @param usePrev Whether data from the previous cycle should be used (otherwise use this
+         *        cycle)
+         * @param beforeClockValue The clock value that we captured before the function began; the
+         *        function can use this value to bail out early if it notices something has gone
+         *        wrong
          * @return true if the function was successful, false if it should be retried
          */
         boolean call(boolean usePrev, long beforeClockValue);
@@ -620,19 +668,26 @@ public class ConstructSnapshot {
     @FunctionalInterface
     public interface UsePreviousValues {
         /**
-         * <p>Determine if previous values should be used in table data access for the given {@link LogicalClock clock}
-         * value.
-         * <p>Expected to never request previous values during the idle phase of a cycle.
-         * <p>Must never request previous values for a source that has already been updated on the current cycle, unless
-         * it can be proven that that source was not instantiated on the current cycle.
-         * <p>Must be safe to call more than once, exactly once per snapshot attempt.
+         * <p>
+         * Determine if previous values should be used in table data access for the given
+         * {@link LogicalClock clock} value.
+         * <p>
+         * Expected to never request previous values during the idle phase of a cycle.
+         * <p>
+         * Must never request previous values for a source that has already been updated on the
+         * current cycle, unless it can be proven that that source was not instantiated on the
+         * current cycle.
+         * <p>
+         * Must be safe to call more than once, exactly once per snapshot attempt.
          *
-         * @param beforeClockValue The current clock value before the snapshot function will be invoked
-         * @return A {@link Boolean} with the following meaning:<ul>
+         * @param beforeClockValue The current clock value before the snapshot function will be
+         *        invoked
+         * @return A {@link Boolean} with the following meaning:
+         *         <ul>
          *         <li>{@code true} if previous values should be used</li>
          *         <li>{@code false} if they should not</li>
          *         <li>{@code null} if a clock discrepancy was detected and we must retry with a new
-         *             {@code beforeClockValue}</li>
+         *         {@code beforeClockValue}</li>
          *         </ul>
          */
         Boolean usePreviousValues(long beforeClockValue);
@@ -644,16 +699,22 @@ public class ConstructSnapshot {
     @FunctionalInterface
     public interface SnapshotConsistent {
         /**
-         * <p>Determine (from within a snapshot function) if the snapshot appears to still be consistent.
-         * <p>This should be no more restrictive than the associated {@link SnapshotCompletedConsistently}.
-         * <p>Can assume as a precondition that the clock step has not been observed to change since the last time
-         * the associated {@link UsePreviousValues#usePreviousValues(long)} was invoked, and that the clock state has
-         * not been observed to change if previous values were used.
-         * See {@link #clockConsistent(long, long, boolean)}.
+         * <p>
+         * Determine (from within a snapshot function) if the snapshot appears to still be
+         * consistent.
+         * <p>
+         * This should be no more restrictive than the associated
+         * {@link SnapshotCompletedConsistently}.
+         * <p>
+         * Can assume as a precondition that the clock step has not been observed to change since
+         * the last time the associated {@link UsePreviousValues#usePreviousValues(long)} was
+         * invoked, and that the clock state has not been observed to change if previous values were
+         * used. See {@link #clockConsistent(long, long, boolean)}.
          *
-         * @param currentClockValue   The current clock value
+         * @param currentClockValue The current clock value
          * @param usingPreviousValues Whether the snapshot function is using previous values
-         * @return True if we can no longer expect that the snapshot function's result will be consistent
+         * @return True if we can no longer expect that the snapshot function's result will be
+         *         consistent
          */
         boolean snapshotConsistent(long currentClockValue, boolean usingPreviousValues);
     }
@@ -664,31 +725,39 @@ public class ConstructSnapshot {
     @FunctionalInterface
     public interface SnapshotCompletedConsistently {
         /**
-         * <p>Determine if a snapshot was consistent according to the clock cycle. Intended to be paired with a
-         * {@link UsePreviousValues} function.
-         * <p>Can assume as a precondition that the clock step has not been observed to change since the last time
-         * the associated {@link UsePreviousValues#usePreviousValues(long)} was invoked, and that the clock state has
-         * not been observed to change if previous values were used.
-         * See {@link #clockConsistent(long, long, boolean)}.
-         * <p>Will be called at most once per snapshot attempt. Will be called for all possibly-successful snapshot
-         * attempts. May be called after unsuccessful concurrent snapshot attempts.
+         * <p>
+         * Determine if a snapshot was consistent according to the clock cycle. Intended to be
+         * paired with a {@link UsePreviousValues} function.
+         * <p>
+         * Can assume as a precondition that the clock step has not been observed to change since
+         * the last time the associated {@link UsePreviousValues#usePreviousValues(long)} was
+         * invoked, and that the clock state has not been observed to change if previous values were
+         * used. See {@link #clockConsistent(long, long, boolean)}.
+         * <p>
+         * Will be called at most once per snapshot attempt. Will be called for all
+         * possibly-successful snapshot attempts. May be called after unsuccessful concurrent
+         * snapshot attempts.
          *
-         * @param afterClockValue    The current clock value after the snapshot function was invoked
+         * @param afterClockValue The current clock value after the snapshot function was invoked
          * @param usedPreviousValues If previous values were used
          * @return Whether the snapshot is provably consistent
-         * @throws RuntimeException If the snapshot was consistent but the snapshot function failed to satisfy this
-         *                          function's expectations; this will be treated as a failure of the snapshot function
+         * @throws RuntimeException If the snapshot was consistent but the snapshot function failed
+         *         to satisfy this function's expectations; this will be treated as a failure of the
+         *         snapshot function
          */
         boolean snapshotCompletedConsistently(long afterClockValue, boolean usedPreviousValues);
     }
 
     /**
-     * Interface used to control snapshot behavior, including previous value usage and consistency testing.
+     * Interface used to control snapshot behavior, including previous value usage and consistency
+     * testing.
      */
-    public interface SnapshotControl extends UsePreviousValues, SnapshotConsistent, SnapshotCompletedConsistently {
+    public interface SnapshotControl
+        extends UsePreviousValues, SnapshotConsistent, SnapshotCompletedConsistently {
 
         @Override
-        default boolean snapshotCompletedConsistently(final long afterClockValue, final boolean usedPreviousValues) {
+        default boolean snapshotCompletedConsistently(final long afterClockValue,
+            final boolean usedPreviousValues) {
             return snapshotConsistent(afterClockValue, usedPreviousValues);
         }
     }
@@ -700,12 +769,11 @@ public class ConstructSnapshot {
 
         public static final SnapshotControl INSTANCE = new StaticSnapshotControl();
 
-        private StaticSnapshotControl() {
-        }
+        private StaticSnapshotControl() {}
 
         @Override
         public Boolean usePreviousValues(long beforeClockValue) {
-            //noinspection AutoBoxing
+            // noinspection AutoBoxing
             return false;
         }
 
@@ -718,21 +786,26 @@ public class ConstructSnapshot {
     /*
      * Make a {@link SnapshotControl} from individual function objects.
      *
-     * @param usePreviousValues             The {@link UsePreviousValues} to use
-     * @param snapshotConsistent            The {@link SnapshotConsistent} to use
-     * @param snapshotCompletedConsistently The {@link SnapshotCompletedConsistently} to use, or null to use
-     *      *                               {@code snapshotConsistent}
+     * @param usePreviousValues The {@link UsePreviousValues} to use
+     * 
+     * @param snapshotConsistent The {@link SnapshotConsistent} to use
+     * 
+     * @param snapshotCompletedConsistently The {@link SnapshotCompletedConsistently} to use, or
+     * null to use * {@code snapshotConsistent}
      */
-    public static SnapshotControl makeSnapshotControl(@NotNull final UsePreviousValues usePreviousValues,
-                                                      @NotNull final SnapshotConsistent snapshotConsistent,
-                                                      @Nullable final SnapshotCompletedConsistently snapshotCompletedConsistently) {
+    public static SnapshotControl makeSnapshotControl(
+        @NotNull final UsePreviousValues usePreviousValues,
+        @NotNull final SnapshotConsistent snapshotConsistent,
+        @Nullable final SnapshotCompletedConsistently snapshotCompletedConsistently) {
         return snapshotCompletedConsistently == null
-                ? new SnapshotControlAdapter(usePreviousValues, snapshotConsistent)
-                : new SnapshotControlAdapter(usePreviousValues, snapshotConsistent, snapshotCompletedConsistently);
+            ? new SnapshotControlAdapter(usePreviousValues, snapshotConsistent)
+            : new SnapshotControlAdapter(usePreviousValues, snapshotConsistent,
+                snapshotCompletedConsistently);
     }
 
     /**
-     * Adapter to combine the individual component functions of {@link SnapshotControl} into a valid snapshot control.
+     * Adapter to combine the individual component functions of {@link SnapshotControl} into a valid
+     * snapshot control.
      */
     private static class SnapshotControlAdapter implements SnapshotControl {
 
@@ -743,27 +816,28 @@ public class ConstructSnapshot {
         /**
          * Make a SnapshotControlAdapter.
          *
-         * @param usePreviousValues             The {@link UsePreviousValues} to use
-         * @param snapshotConsistent            The {@link SnapshotConsistent} to use
+         * @param usePreviousValues The {@link UsePreviousValues} to use
+         * @param snapshotConsistent The {@link SnapshotConsistent} to use
          * @param snapshotCompletedConsistently The {@link SnapshotCompletedConsistently} to use
          */
         private SnapshotControlAdapter(@NotNull final UsePreviousValues usePreviousValues,
-                                       @NotNull final SnapshotConsistent snapshotConsistent,
-                                       @NotNull final SnapshotCompletedConsistently snapshotCompletedConsistently) {
+            @NotNull final SnapshotConsistent snapshotConsistent,
+            @NotNull final SnapshotCompletedConsistently snapshotCompletedConsistently) {
             this.usePreviousValues = usePreviousValues;
             this.snapshotConsistent = snapshotConsistent;
             this.snapshotCompletedConsistently = snapshotCompletedConsistently;
         }
 
         /**
-         * Make a SnapshotControlAdapter without a dedicated {@link SnapshotCompletedConsistently} implementation.
-         * The {@link SnapshotConsistent} will be used as the {@link SnapshotCompletedConsistently} implementation.
+         * Make a SnapshotControlAdapter without a dedicated {@link SnapshotCompletedConsistently}
+         * implementation. The {@link SnapshotConsistent} will be used as the
+         * {@link SnapshotCompletedConsistently} implementation.
          *
-         * @param usePreviousValues  The {@link UsePreviousValues} to use
+         * @param usePreviousValues The {@link UsePreviousValues} to use
          * @param snapshotConsistent The {@link SnapshotCompletedConsistently} to use
          */
         private SnapshotControlAdapter(@NotNull final UsePreviousValues usePreviousValues,
-                                       @NotNull final SnapshotConsistent snapshotConsistent) {
+            @NotNull final SnapshotConsistent snapshotConsistent) {
             this.usePreviousValues = usePreviousValues;
             this.snapshotConsistent = snapshotConsistent;
             this.snapshotCompletedConsistently = snapshotConsistent::snapshotConsistent;
@@ -775,112 +849,129 @@ public class ConstructSnapshot {
         }
 
         @Override
-        public boolean snapshotConsistent(final long currentClockValue, final boolean usingPreviousValues) {
+        public boolean snapshotConsistent(final long currentClockValue,
+            final boolean usingPreviousValues) {
             return snapshotConsistent.snapshotConsistent(currentClockValue, usingPreviousValues);
         }
 
         @Override
-        public boolean snapshotCompletedConsistently(final long afterClockValue, final boolean usedPreviousValues) {
-            return snapshotCompletedConsistently.snapshotCompletedConsistently(afterClockValue, usedPreviousValues);
+        public boolean snapshotCompletedConsistently(final long afterClockValue,
+            final boolean usedPreviousValues) {
+            return snapshotCompletedConsistently.snapshotCompletedConsistently(afterClockValue,
+                usedPreviousValues);
         }
     }
 
     /**
      * Make a default {@link SnapshotControl} for a single source.
      *
-     * @param notificationAware Whether the result should be concerned with not missing notifications
-     * @param source            The source
+     * @param notificationAware Whether the result should be concerned with not missing
+     *        notifications
+     * @param source The source
      * @return An appropriate {@link SnapshotControl}
      */
-    public static SnapshotControl makeSnapshotControl(final boolean notificationAware, @NotNull final NotificationStepSource source) {
+    public static SnapshotControl makeSnapshotControl(final boolean notificationAware,
+        @NotNull final NotificationStepSource source) {
         return notificationAware
-                ? new NotificationAwareSingleSourceSnapshotControl(source)
-                : new NotificationObliviousSingleSourceSnapshotControl(source);
+            ? new NotificationAwareSingleSourceSnapshotControl(source)
+            : new NotificationObliviousSingleSourceSnapshotControl(source);
     }
 
     /**
      * Make a default {@link SnapshotControl} for one or more sources.
      *
-     * @param notificationAware Whether the result should be concerned with not missing notifications
-     * @param sources           The sources
+     * @param notificationAware Whether the result should be concerned with not missing
+     *        notifications
+     * @param sources The sources
      * @return An appropriate {@link SnapshotControl}
      */
-    public static SnapshotControl makeSnapshotControl(final boolean notificationAware, @NotNull final NotificationStepSource... sources) {
+    public static SnapshotControl makeSnapshotControl(final boolean notificationAware,
+        @NotNull final NotificationStepSource... sources) {
         if (sources.length == 1) {
             return makeSnapshotControl(notificationAware, sources[0]);
         }
         return notificationAware
-                ? new NotificationAwareMultipleSourceSnapshotControl(sources)
-                : new NotificationObliviousMultipleSourceSnapshotControl(sources);
+            ? new NotificationAwareMultipleSourceSnapshotControl(sources)
+            : new NotificationObliviousMultipleSourceSnapshotControl(sources);
     }
 
     /**
-     * A SnapshotControl implementation driven by a single data source for use cases when the snapshot function
-     * must not miss a notification. For use when instantiating concurrent consumers of all updates from a source.
+     * A SnapshotControl implementation driven by a single data source for use cases when the
+     * snapshot function must not miss a notification. For use when instantiating concurrent
+     * consumers of all updates from a source.
      */
     private static class NotificationAwareSingleSourceSnapshotControl implements SnapshotControl {
 
         private final NotificationStepSource source;
 
-        private NotificationAwareSingleSourceSnapshotControl(@NotNull final NotificationStepSource source) {
+        private NotificationAwareSingleSourceSnapshotControl(
+            @NotNull final NotificationStepSource source) {
             this.source = source;
         }
 
         @Override
         public Boolean usePreviousValues(final long beforeClockValue) {
-            //noinspection AutoBoxing
+            // noinspection AutoBoxing
             return LogicalClock.getState(beforeClockValue) == LogicalClock.State.Updating &&
-                    source.getLastNotificationStep() != LogicalClock.getStep(beforeClockValue);
+                source.getLastNotificationStep() != LogicalClock.getStep(beforeClockValue);
         }
 
         @Override
-        public boolean snapshotConsistent(final long currentClockValue, final boolean usingPreviousValues) {
+        public boolean snapshotConsistent(final long currentClockValue,
+            final boolean usingPreviousValues) {
             if (!usingPreviousValues) {
-                // Cycle was Idle or we had already ticked, and so we're using current values on the current cycle: Success
+                // Cycle was Idle or we had already ticked, and so we're using current values on the
+                // current cycle: Success
                 return true;
             }
-            // If we didn't miss an update then we're succeeding using previous values, else we've failed
+            // If we didn't miss an update then we're succeeding using previous values, else we've
+            // failed
             return source.getLastNotificationStep() != LogicalClock.getStep(currentClockValue);
 
         }
     }
 
     /**
-     * A SnapshotControl implementation driven by a single data source for use cases when the snapshot function doesn't
-     * care if it misses a notification. For use by consistent consumers of consistent current state.
+     * A SnapshotControl implementation driven by a single data source for use cases when the
+     * snapshot function doesn't care if it misses a notification. For use by consistent consumers
+     * of consistent current state.
      */
-    private static class NotificationObliviousSingleSourceSnapshotControl implements SnapshotControl {
+    private static class NotificationObliviousSingleSourceSnapshotControl
+        implements SnapshotControl {
 
         private final NotificationStepSource source;
 
-        private NotificationObliviousSingleSourceSnapshotControl(@NotNull final NotificationStepSource source) {
+        private NotificationObliviousSingleSourceSnapshotControl(
+            @NotNull final NotificationStepSource source) {
             this.source = source;
         }
 
         @Override
         public Boolean usePreviousValues(final long beforeClockValue) {
-            //noinspection AutoBoxing
+            // noinspection AutoBoxing
             return LogicalClock.getState(beforeClockValue) == LogicalClock.State.Updating &&
-                    source.getLastNotificationStep() != LogicalClock.getStep(beforeClockValue);
+                source.getLastNotificationStep() != LogicalClock.getStep(beforeClockValue);
         }
 
         @Override
-        public boolean snapshotConsistent(final long currentClockValue, final boolean usingPreviousValues) {
+        public boolean snapshotConsistent(final long currentClockValue,
+            final boolean usingPreviousValues) {
             return true;
         }
     }
 
     /**
-     * A SnapshotControl implementation driven by multiple data sources for use cases when the snapshot function
-     * must not miss a notification.
-     * Waits for all sources to be notified on this cycle if any has been notified on this cycle.
-     * For use when instantiating concurrent consumers of all updates from a set of sources.
+     * A SnapshotControl implementation driven by multiple data sources for use cases when the
+     * snapshot function must not miss a notification. Waits for all sources to be notified on this
+     * cycle if any has been notified on this cycle. For use when instantiating concurrent consumers
+     * of all updates from a set of sources.
      */
     private static class NotificationAwareMultipleSourceSnapshotControl implements SnapshotControl {
 
         private final NotificationStepSource[] sources;
 
-        private NotificationAwareMultipleSourceSnapshotControl(@NotNull final NotificationStepSource... sources) {
+        private NotificationAwareMultipleSourceSnapshotControl(
+            @NotNull final NotificationStepSource... sources) {
             this.sources = sources;
         }
 
@@ -892,18 +983,19 @@ public class ConstructSnapshot {
             }
             final long beforeStep = LogicalClock.getStep(beforeClockValue);
             final NotificationStepSource[] notYetNotified = Stream.of(sources)
-                    .filter((final NotificationStepSource source) -> source.getLastNotificationStep() != beforeStep)
-                    .toArray(NotificationStepSource[]::new);
+                .filter((final NotificationStepSource source) -> source
+                    .getLastNotificationStep() != beforeStep)
+                .toArray(NotificationStepSource[]::new);
             if (notYetNotified.length == sources.length) {
                 return true;
             }
             if (notYetNotified.length > 0) {
                 final NotificationStepSource[] notYetSatisfied = Stream.of(sources)
-                        .filter((final NotificationQueue.Dependency dep) -> !dep.satisfied(beforeStep))
-                        .toArray(NotificationStepSource[]::new);
+                    .filter((final NotificationQueue.Dependency dep) -> !dep.satisfied(beforeStep))
+                    .toArray(NotificationStepSource[]::new);
                 if (notYetSatisfied.length > 0
-                        && !WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)
-                        && LogicalClock.DEFAULT.currentStep() != beforeStep) {
+                    && !WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)
+                    && LogicalClock.DEFAULT.currentStep() != beforeStep) {
                     // If we missed a step change, we've already failed, request a do-over.
                     return null;
                 }
@@ -912,29 +1004,35 @@ public class ConstructSnapshot {
         }
 
         @Override
-        public boolean snapshotConsistent(final long currentClockValue, final boolean usingPreviousValues) {
+        public boolean snapshotConsistent(final long currentClockValue,
+            final boolean usingPreviousValues) {
             if (!usingPreviousValues) {
-                // Cycle was Idle or we had already ticked, and so we're using current values on the current cycle: Success
+                // Cycle was Idle or we had already ticked, and so we're using current values on the
+                // current cycle: Success
                 return true;
             }
-            // If we didn't miss an update then we're succeeding using previous values, else we've failed
+            // If we didn't miss an update then we're succeeding using previous values, else we've
+            // failed
             final long currentStep = LogicalClock.getStep(currentClockValue);
             return Stream.of(sources)
-                    .allMatch((final NotificationStepSource source) -> source.getLastNotificationStep() != currentStep);
+                .allMatch((final NotificationStepSource source) -> source
+                    .getLastNotificationStep() != currentStep);
         }
     }
 
     /**
-     * A SnapshotControl implementation driven by multiple data sources for use cases when the snapshot function
-     * must not miss a notification.
-     * Waits for all sources to be notified on this cycle if any has been notified on this cycle.
-     * For use by consistent consumers of consistent current state.
+     * A SnapshotControl implementation driven by multiple data sources for use cases when the
+     * snapshot function must not miss a notification. Waits for all sources to be notified on this
+     * cycle if any has been notified on this cycle. For use by consistent consumers of consistent
+     * current state.
      */
-    private static class NotificationObliviousMultipleSourceSnapshotControl implements SnapshotControl {
+    private static class NotificationObliviousMultipleSourceSnapshotControl
+        implements SnapshotControl {
 
         private final NotificationStepSource[] sources;
 
-        private NotificationObliviousMultipleSourceSnapshotControl(@NotNull final NotificationStepSource... sources) {
+        private NotificationObliviousMultipleSourceSnapshotControl(
+            @NotNull final NotificationStepSource... sources) {
             this.sources = sources;
         }
 
@@ -946,18 +1044,19 @@ public class ConstructSnapshot {
             }
             final long beforeStep = LogicalClock.getStep(beforeClockValue);
             final NotificationStepSource[] notYetNotified = Stream.of(sources)
-                    .filter((final NotificationStepSource source) -> source.getLastNotificationStep() != beforeStep)
-                    .toArray(NotificationStepSource[]::new);
+                .filter((final NotificationStepSource source) -> source
+                    .getLastNotificationStep() != beforeStep)
+                .toArray(NotificationStepSource[]::new);
             if (notYetNotified.length == sources.length) {
                 return true;
             }
             if (notYetNotified.length > 0) {
                 final NotificationStepSource[] notYetSatisfied = Stream.of(sources)
-                        .filter((final NotificationQueue.Dependency dep) -> !dep.satisfied(beforeStep))
-                        .toArray(NotificationStepSource[]::new);
+                    .filter((final NotificationQueue.Dependency dep) -> !dep.satisfied(beforeStep))
+                    .toArray(NotificationStepSource[]::new);
                 if (notYetSatisfied.length > 0
-                        && !WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)
-                        && LogicalClock.DEFAULT.currentStep() != beforeStep) {
+                    && !WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)
+                    && LogicalClock.DEFAULT.currentStep() != beforeStep) {
                     // If we missed a step change, we've already failed, request a do-over.
                     return null;
                 }
@@ -966,46 +1065,50 @@ public class ConstructSnapshot {
         }
 
         @Override
-        public boolean snapshotConsistent(final long currentClockValue, final boolean usingPreviousValues) {
+        public boolean snapshotConsistent(final long currentClockValue,
+            final boolean usingPreviousValues) {
             return true;
         }
     }
 
     private static long callDataSnapshotFunction(final int logInt,
-                                                 @NotNull final SnapshotControl control,
-                                                 @NotNull final SnapshotFunction function) {
+        @NotNull final SnapshotControl control,
+        @NotNull final SnapshotFunction function) {
         return callDataSnapshotFunction(logOutput -> logOutput.append(logInt), control, function);
     }
 
     /**
-     * Invokes the snapshot function in a loop until it succeeds with provably consistent results, or until
-     * {@code MAX_CONCURRENT_ATTEMPTS} or {@code MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS} are exceeded. Falls back
-     * to acquiring a shared LTM lock for a final attempt.
+     * Invokes the snapshot function in a loop until it succeeds with provably consistent results,
+     * or until {@code MAX_CONCURRENT_ATTEMPTS} or {@code MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS}
+     * are exceeded. Falls back to acquiring a shared LTM lock for a final attempt.
      *
      * @param logPrefix A prefix for our log messages
-     * @param control   A {@link SnapshotControl} to define the parameters and consistency for this snapshot
-     * @param function  The function to execute
+     * @param control A {@link SnapshotControl} to define the parameters and consistency for this
+     *        snapshot
+     * @param function The function to execute
      * @return The logical clock step that applied to this snapshot
      */
     public static long callDataSnapshotFunction(@NotNull final String logPrefix,
-                                                @NotNull final SnapshotControl control,
-                                                @NotNull final SnapshotFunction function) {
-        return callDataSnapshotFunction((final LogOutput logOutput) -> logOutput.append(logPrefix), control, function);
+        @NotNull final SnapshotControl control,
+        @NotNull final SnapshotFunction function) {
+        return callDataSnapshotFunction((final LogOutput logOutput) -> logOutput.append(logPrefix),
+            control, function);
     }
 
     /**
-     * Invokes the snapshot function in a loop until it succeeds with provably consistent results, or until
-     * {@code MAX_CONCURRENT_ATTEMPTS} or {@code MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS} are exceeded. Falls back
-     * to acquiring a shared LTM lock for a final attempt.
+     * Invokes the snapshot function in a loop until it succeeds with provably consistent results,
+     * or until {@code MAX_CONCURRENT_ATTEMPTS} or {@code MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS}
+     * are exceeded. Falls back to acquiring a shared LTM lock for a final attempt.
      *
      * @param logPrefix A prefix for our log messages
-     * @param control   A {@link SnapshotControl} to define the parameters and consistency for this snapshot
-     * @param function  The function to execute
+     * @param control A {@link SnapshotControl} to define the parameters and consistency for this
+     *        snapshot
+     * @param function The function to execute
      * @return The logical clock step that applied to this snapshot
      */
     public static long callDataSnapshotFunction(@NotNull final LogOutputAppendable logPrefix,
-                                                @NotNull final SnapshotControl control,
-                                                @NotNull final SnapshotFunction function) {
+        @NotNull final SnapshotControl control,
+        @NotNull final SnapshotFunction function) {
         final long overallStart = System.currentTimeMillis();
         final State state = State.get();
 
@@ -1027,33 +1130,41 @@ public class ConstructSnapshot {
                 // usePreviousValues detected a step change; we should try again
                 continue;
             }
-            //noinspection AutoUnboxing
+            // noinspection AutoUnboxing
             final boolean usePrev = previousValuesRequested;
             if (LogicalClock.getState(beforeClockValue) == LogicalClock.State.Idle && usePrev) {
-                Assert.statementNeverExecuted("Previous values requested while not updating: " + beforeClockValue);
+                Assert.statementNeverExecuted(
+                    "Previous values requested while not updating: " + beforeClockValue);
             }
             if (LiveTableMonitor.DEFAULT.isRefreshThread() && usePrev) {
-                Assert.statementNeverExecuted("Previous values requested from a refresh thread: " + beforeClockValue);
+                Assert.statementNeverExecuted(
+                    "Previous values requested from a refresh thread: " + beforeClockValue);
             }
 
             final long attemptDurationMillis;
 
             final LivenessScope snapshotLivenessScope = new LivenessScope();
-            try (final SafeCloseable ignored = LivenessScopeStack.open(snapshotLivenessScope, true)) {
-                final Object startObject = state.startConcurrentSnapshot(control, beforeClockValue, usePrev);
+            try (final SafeCloseable ignored =
+                LivenessScopeStack.open(snapshotLivenessScope, true)) {
+                final Object startObject =
+                    state.startConcurrentSnapshot(control, beforeClockValue, usePrev);
                 try {
                     functionSuccessful = function.call(usePrev, beforeClockValue);
                 } catch (NoSnapshotAllowedException ex) {
                     // Breaking here will force an LTM acquire.
-                    // TODO: Optimization. If this exception is only used for cases when we can't use previous values,
-                    //       then we could simply wait for the source to become satisfied on this cycle, rather than
-                    //       waiting for the LTM lock. Likely requires work for all code that uses this pattern.
-                    log.debug().append(logPrefix).append(" Disallowed LTM-less Snapshot Function took ")
-                            .append(System.currentTimeMillis() - attemptStart).append("ms")
-                            .append(", beforeClockValue=").append(beforeClockValue)
-                            .append(", afterClockValue=").append(LogicalClock.DEFAULT.currentValue())
-                            .append(", usePrev=").append(usePrev)
-                            .endl();
+                    // TODO: Optimization. If this exception is only used for cases when we can't
+                    // use previous values,
+                    // then we could simply wait for the source to become satisfied on this cycle,
+                    // rather than
+                    // waiting for the LTM lock. Likely requires work for all code that uses this
+                    // pattern.
+                    log.debug().append(logPrefix)
+                        .append(" Disallowed LTM-less Snapshot Function took ")
+                        .append(System.currentTimeMillis() - attemptStart).append("ms")
+                        .append(", beforeClockValue=").append(beforeClockValue)
+                        .append(", afterClockValue=").append(LogicalClock.DEFAULT.currentValue())
+                        .append(", usePrev=").append(usePrev)
+                        .endl();
                     break;
                 } catch (Exception e) {
                     functionSuccessful = false;
@@ -1065,42 +1176,47 @@ public class ConstructSnapshot {
                 final long afterClockValue = LogicalClock.DEFAULT.currentValue();
                 try {
                     snapshotSuccessful = clockConsistent(beforeClockValue, afterClockValue, usePrev)
-                            && control.snapshotCompletedConsistently(afterClockValue, usePrev);
+                        && control.snapshotCompletedConsistently(afterClockValue, usePrev);
                 } catch (Exception e) {
                     if (functionSuccessful) {
-                        // Treat this exception as a snapshot function failure despite consistent snapshot
+                        // Treat this exception as a snapshot function failure despite consistent
+                        // snapshot
                         functionSuccessful = false;
                         caughtException = e;
                         snapshotSuccessful = true;
                     } else {
-                        log.debug().append(logPrefix).append(" Suppressed exception from snapshot success function: ").append(e).endl();
+                        log.debug().append(logPrefix)
+                            .append(" Suppressed exception from snapshot success function: ")
+                            .append(e).endl();
                     }
                 }
                 attemptDurationMillis = System.currentTimeMillis() - attemptStart;
                 log.debug().append(logPrefix).append(" LTM-less Snapshot Function took ")
-                        .append(attemptDurationMillis).append("ms")
-                        .append(", snapshotSuccessful=").append(snapshotSuccessful)
-                        .append(", functionSuccessful=").append(functionSuccessful)
-                        .append(", beforeClockValue=").append(beforeClockValue)
-                        .append(", afterClockValue=").append(afterClockValue)
-                        .append(", usePrev=").append(usePrev)
-                        .endl();
+                    .append(attemptDurationMillis).append("ms")
+                    .append(", snapshotSuccessful=").append(snapshotSuccessful)
+                    .append(", functionSuccessful=").append(functionSuccessful)
+                    .append(", beforeClockValue=").append(beforeClockValue)
+                    .append(", afterClockValue=").append(afterClockValue)
+                    .append(", usePrev=").append(usePrev)
+                    .endl();
                 if (snapshotSuccessful) {
                     if (functionSuccessful) {
-                        step = usePrev ? LogicalClock.getStep(beforeClockValue) - 1 : LogicalClock.getStep(beforeClockValue);
+                        step = usePrev ? LogicalClock.getStep(beforeClockValue) - 1
+                            : LogicalClock.getStep(beforeClockValue);
                         snapshotLivenessScope.transferTo(initialLivenessManager);
                     }
                     break;
                 }
             }
             if (attemptDurationMillis > MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS) {
-                log.info().append(logPrefix).append(" Failed concurrent execution exceeded maximum duration (")
-                        .append(attemptDurationMillis).append(" ms > ")
-                        .append(MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS).append(" ms)").endl();
+                log.info().append(logPrefix)
+                    .append(" Failed concurrent execution exceeded maximum duration (")
+                    .append(attemptDurationMillis).append(" ms > ")
+                    .append(MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS).append(" ms)").endl();
                 break;
             } else {
                 try {
-                    //noinspection BusyWait
+                    // noinspection BusyWait
                     Thread.sleep(delay);
                     delay *= 2;
                 } catch (InterruptedException interruptIsCancel) {
@@ -1113,16 +1229,22 @@ public class ConstructSnapshot {
             state.maybeReleaseLock();
             if (!functionSuccessful) {
                 if (caughtException != null) {
-                    throw new UncheckedDeephavenException("Failure to execute snapshot function with unchanged clock", caughtException);
+                    throw new UncheckedDeephavenException(
+                        "Failure to execute snapshot function with unchanged clock",
+                        caughtException);
                 } else {
-                    throw new UncheckedDeephavenException("Failure to execute snapshot function with unchanged clock");
+                    throw new UncheckedDeephavenException(
+                        "Failure to execute snapshot function with unchanged clock");
                 }
             }
         } else {
             if (numConcurrentAttempts == 0) {
-                log.info().append(logPrefix).append(" Already held lock, proceeding to locked snapshot").endl();
+                log.info().append(logPrefix)
+                    .append(" Already held lock, proceeding to locked snapshot").endl();
             } else {
-                log.info().append(logPrefix).append(" Failed to obtain clean execution without blocking refresh processing").endl();
+                log.info().append(logPrefix)
+                    .append(" Failed to obtain clean execution without blocking refresh processing")
+                    .endl();
             }
 
             state.startLockedSnapshot();
@@ -1131,8 +1253,10 @@ public class ConstructSnapshot {
 
                 final Boolean previousValuesRequested = control.usePreviousValues(beforeClockValue);
                 if (!Boolean.FALSE.equals(previousValuesRequested)) {
-                    Assert.statementNeverExecuted("Previous values requested or inconsistent while blocking refresh processing: beforeClockValue="
-                            + beforeClockValue + ", previousValuesRequested=" + previousValuesRequested);
+                    Assert.statementNeverExecuted(
+                        "Previous values requested or inconsistent while blocking refresh processing: beforeClockValue="
+                            + beforeClockValue + ", previousValuesRequested="
+                            + previousValuesRequested);
                 }
 
                 final long attemptStart = System.currentTimeMillis();
@@ -1143,12 +1267,15 @@ public class ConstructSnapshot {
 
                 Assert.eq(beforeClockValue, "beforeClockValue", afterClockValue, "afterClockValue");
 
-                final boolean consistent = control.snapshotCompletedConsistently(afterClockValue, false);
+                final boolean consistent =
+                    control.snapshotCompletedConsistently(afterClockValue, false);
                 if (!consistent) {
-                    Assert.statementNeverExecuted("Consistent snapshot not generated despite blocking refresh processing!");
+                    Assert.statementNeverExecuted(
+                        "Consistent snapshot not generated despite blocking refresh processing!");
                 }
 
-                log.info().append(logPrefix).append(" non-concurrent Snapshot Function took ").append(System.currentTimeMillis() - attemptStart).append("ms").endl();
+                log.info().append(logPrefix).append(" non-concurrent Snapshot Function took ")
+                    .append(System.currentTimeMillis() - attemptStart).append("ms").endl();
                 step = LogicalClock.getStep(afterClockValue);
             } finally {
                 state.endLockedSnapshot();
@@ -1156,34 +1283,38 @@ public class ConstructSnapshot {
         }
         final long duration = System.currentTimeMillis() - overallStart;
         if (duration > 10) {
-            log.info().append(logPrefix).append(" Snapshot Function elapsed time ").append(duration).append(" ms").append(", step=").append(step).endl();
+            log.info().append(logPrefix).append(" Snapshot Function elapsed time ").append(duration)
+                .append(" ms").append(", step=").append(step).endl();
         } else {
-            log.debug().append(logPrefix).append(" Snapshot Function elapsed time ").append(duration).append(" ms").append(", step=").append(step).endl();
+            log.debug().append(logPrefix).append(" Snapshot Function elapsed time ")
+                .append(duration).append(" ms").append(", step=").append(step).endl();
         }
         return step;
     }
 
     /**
-     * <p>Populate an {@link InitialSnapshot} with the specified keys and columns to snapshot.
-     * <p>Note that care must be taken while using this method to ensure the underlying table is locked or does not
-     * change, otherwise the resulting snapshot may be inconsistent. In general users should instead use
-     * {@link #constructInitialSnapshot} for simple use cases or {@link #callDataSnapshotFunction} for more advanced
-     * uses.
+     * <p>
+     * Populate an {@link InitialSnapshot} with the specified keys and columns to snapshot.
+     * <p>
+     * Note that care must be taken while using this method to ensure the underlying table is locked
+     * or does not change, otherwise the resulting snapshot may be inconsistent. In general users
+     * should instead use {@link #constructInitialSnapshot} for simple use cases or
+     * {@link #callDataSnapshotFunction} for more advanced uses.
      *
-     * @param usePrev            Whether to use previous values
-     * @param snapshot           The snapshot to populate
-     * @param logIdentityObject  An object for use with log() messages
+     * @param usePrev Whether to use previous values
+     * @param snapshot The snapshot to populate
+     * @param logIdentityObject An object for use with log() messages
      * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param keysToSnapshot     An Index of keys within the table to include, null for all
+     * @param keysToSnapshot An Index of keys within the table to include, null for all
      *
      * @return Whether the snapshot succeeded
      */
     public static boolean serializeAllTable(boolean usePrev,
-                                            InitialSnapshot snapshot,
-                                            BaseTable table,
-                                            Object logIdentityObject,
-                                            BitSet columnsToSerialize,
-                                            Index keysToSnapshot) {
+        InitialSnapshot snapshot,
+        BaseTable table,
+        Object logIdentityObject,
+        BitSet columnsToSerialize,
+        Index keysToSnapshot) {
         snapshot.index = (usePrev ? table.getIndex().getPrevIndex() : table.getIndex()).clone();
 
         if (keysToSnapshot != null) {
@@ -1195,17 +1326,20 @@ public class ConstructSnapshot {
         LongSizedDataStructure.intSize("construct snapshot", snapshot.rowsIncluded.size());
 
         final Map<String, ? extends ColumnSource> sourceMap = table.getColumnSourceMap();
-        final String[] columnSources = sourceMap.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] columnSources =
+            sourceMap.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
         snapshot.dataColumns = new Object[columnSources.length];
-        try (final SharedContext sharedContext = (columnSources.length > 1) ? SharedContext.makeSharedContext() : null) {
+        try (final SharedContext sharedContext =
+            (columnSources.length > 1) ? SharedContext.makeSharedContext() : null) {
             for (int ii = 0; ii < columnSources.length; ii++) {
                 if (columnsToSerialize != null && !columnsToSerialize.get(ii)) {
                     continue;
                 }
 
                 if (concurrentAttemptInconsistent()) {
-                    final LogEntry logEntry = log.info().append(System.identityHashCode(logIdentityObject))
+                    final LogEntry logEntry =
+                        log.info().append(System.identityHashCode(logIdentityObject))
                             .append(" Bad snapshot before column ").append(ii);
                     appendConcurrentAttemptClockInfo(logEntry);
                     logEntry.endl();
@@ -1213,40 +1347,45 @@ public class ConstructSnapshot {
                 }
 
                 final ColumnSource<?> columnSource = table.getColumnSource(columnSources[ii]);
-                snapshot.dataColumns[ii] = getSnapshotData(columnSource, sharedContext, snapshot.rowsIncluded, usePrev);
+                snapshot.dataColumns[ii] =
+                    getSnapshotData(columnSource, sharedContext, snapshot.rowsIncluded, usePrev);
             }
         }
 
         log.info().append(System.identityHashCode(logIdentityObject))
-                .append(": Snapshot candidate step=").append((usePrev ? -1 : 0) + LogicalClock.getStep(getConcurrentAttemptClockValue()))
-                .append(", rows=").append(snapshot.rowsIncluded).append("/").append(keysToSnapshot)
-                .append(", cols=").append(FormatBitSet.arrayToLog(snapshot.dataColumns)).append("/")
-                .append((columnsToSerialize != null) ? FormatBitSet.formatBitSet(columnsToSerialize) : FormatBitSet.arrayToLog(snapshot.dataColumns))
-                .append(", usePrev=").append(usePrev).endl();
+            .append(": Snapshot candidate step=")
+            .append((usePrev ? -1 : 0) + LogicalClock.getStep(getConcurrentAttemptClockValue()))
+            .append(", rows=").append(snapshot.rowsIncluded).append("/").append(keysToSnapshot)
+            .append(", cols=").append(FormatBitSet.arrayToLog(snapshot.dataColumns)).append("/")
+            .append((columnsToSerialize != null) ? FormatBitSet.formatBitSet(columnsToSerialize)
+                : FormatBitSet.arrayToLog(snapshot.dataColumns))
+            .append(", usePrev=").append(usePrev).endl();
         return true;
-     }
+    }
 
     /**
-     * <p>Populate a BarrageMessage with the specified positions to snapshot and columns.
-     * <p>>Note that care must be taken while using this method to ensure the underlying table is locked or does not
-     * change, otherwise the resulting snapshot may be inconsistent. In general users should instead use
-     * {@link #constructBackplaneSnapshot} for simple use cases or {@link #callDataSnapshotFunction} for
-     * more advanced uses.
+     * <p>
+     * Populate a BarrageMessage with the specified positions to snapshot and columns.
+     * <p>
+     * >Note that care must be taken while using this method to ensure the underlying table is
+     * locked or does not change, otherwise the resulting snapshot may be inconsistent. In general
+     * users should instead use {@link #constructBackplaneSnapshot} for simple use cases or
+     * {@link #callDataSnapshotFunction} for more advanced uses.
      *
-     * @param usePrev             Use previous values?
-     * @param snapshot            The snapshot to populate
-     * @param logIdentityObject   an object for use with log() messages
-     * @param columnsToSerialize  A {@link BitSet} of columns to include, null for all
+     * @param usePrev Use previous values?
+     * @param snapshot The snapshot to populate
+     * @param logIdentityObject an object for use with log() messages
+     * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
      * @param positionsToSnapshot An Index of keys within the table to include, null for all
      *
      * @return true if the snapshot was computed with an unchanged clock, false otherwise.
      */
     public static boolean serializeAllTable(final boolean usePrev,
-                                            final BarrageMessage snapshot,
-                                            final BaseTable table,
-                                            final Object logIdentityObject,
-                                            final BitSet columnsToSerialize,
-                                            final Index positionsToSnapshot) {
+        final BarrageMessage snapshot,
+        final BaseTable table,
+        final Object logIdentityObject,
+        final BitSet columnsToSerialize,
+        final Index positionsToSnapshot) {
         snapshot.rowsAdded = (usePrev ? table.getIndex().getPrevIndex() : table.getIndex()).clone();
         snapshot.rowsRemoved = Index.CURRENT_FACTORY.getEmptyIndex();
         snapshot.addColumnData = new BarrageMessage.AddColumnData[table.getColumnSources().size()];
@@ -1263,12 +1402,15 @@ public class ConstructSnapshot {
         LongSizedDataStructure.intSize("construct snapshot", snapshot.rowsIncluded.size());
 
         final Map<String, ? extends ColumnSource> sourceMap = table.getColumnSourceMap();
-        final String[] columnSources = sourceMap.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] columnSources =
+            sourceMap.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
-        try (final SharedContext sharedContext = (columnSources.length > 1) ? SharedContext.makeSharedContext() : null) {
+        try (final SharedContext sharedContext =
+            (columnSources.length > 1) ? SharedContext.makeSharedContext() : null) {
             for (int ii = 0; ii < columnSources.length; ++ii) {
                 if (concurrentAttemptInconsistent()) {
-                    final LogEntry logEntry = log.info().append(System.identityHashCode(logIdentityObject))
+                    final LogEntry logEntry =
+                        log.info().append(System.identityHashCode(logIdentityObject))
                             .append(" Bad snapshot before column ").append(ii);
                     appendConcurrentAttemptClockInfo(logEntry);
                     logEntry.endl();
@@ -1279,26 +1421,32 @@ public class ConstructSnapshot {
 
                 final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
                 snapshot.addColumnData[ii] = acd;
-                final boolean columnIsEmpty = columnsToSerialize != null && !columnsToSerialize.get(ii);
-                final Index rows = columnIsEmpty ? Index.FACTORY.getEmptyIndex() : snapshot.rowsIncluded;
-                // Note: cannot use shared context across several calls of differing lengths and no sharing necessary when empty
-                acd.data = getSnapshotDataAsChunk(columnSource, columnIsEmpty ? null : sharedContext, rows, usePrev);
+                final boolean columnIsEmpty =
+                    columnsToSerialize != null && !columnsToSerialize.get(ii);
+                final Index rows =
+                    columnIsEmpty ? Index.FACTORY.getEmptyIndex() : snapshot.rowsIncluded;
+                // Note: cannot use shared context across several calls of differing lengths and no
+                // sharing necessary when empty
+                acd.data = getSnapshotDataAsChunk(columnSource,
+                    columnIsEmpty ? null : sharedContext, rows, usePrev);
                 acd.type = columnSource.getType();
                 acd.componentType = columnSource.getComponentType();
 
                 final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
                 snapshot.modColumnData[ii] = mcd;
                 mcd.rowsModified = Index.CURRENT_FACTORY.getEmptyIndex();
-                mcd.data = getSnapshotDataAsChunk(columnSource, null, Index.FACTORY.getEmptyIndex(), usePrev);
+                mcd.data = getSnapshotDataAsChunk(columnSource, null, Index.FACTORY.getEmptyIndex(),
+                    usePrev);
                 mcd.type = acd.type;
                 mcd.componentType = acd.componentType;
             }
         }
 
         final LogEntry infoEntry = log.info().append(System.identityHashCode(logIdentityObject))
-                .append(": Snapshot candidate step=").append((usePrev ? -1 : 0) + LogicalClock.getStep(getConcurrentAttemptClockValue()))
-                .append(", rows=").append(snapshot.rowsIncluded).append("/").append(positionsToSnapshot)
-                .append(", cols=");
+            .append(": Snapshot candidate step=")
+            .append((usePrev ? -1 : 0) + LogicalClock.getStep(getConcurrentAttemptClockValue()))
+            .append(", rows=").append(snapshot.rowsIncluded).append("/").append(positionsToSnapshot)
+            .append(", cols=");
         if (columnsToSerialize == null) {
             infoEntry.append("ALL");
         } else {
@@ -1309,13 +1457,14 @@ public class ConstructSnapshot {
         return true;
     }
 
-    private static boolean serializeAllTables(boolean usePrev, List<InitialSnapshot> snapshots, BaseTable[] tables, Object logIdentityObject) {
+    private static boolean serializeAllTables(boolean usePrev, List<InitialSnapshot> snapshots,
+        BaseTable[] tables, Object logIdentityObject) {
         snapshots.clear();
 
         for (final BaseTable table : tables) {
             final InitialSnapshot snapshot = new InitialSnapshot();
             snapshots.add(snapshot);
-            if(!serializeAllTable(usePrev, snapshot, table, logIdentityObject, null, null)) {
+            if (!serializeAllTable(usePrev, snapshot, table, logIdentityObject, null, null)) {
                 snapshots.clear();
                 return false;
             }
@@ -1324,11 +1473,14 @@ public class ConstructSnapshot {
         return true;
     }
 
-    private static <T> Object getSnapshotData(final ColumnSource<T> columnSource, final SharedContext sharedContext, final Index index, final boolean usePrev) {
-        final ColumnSource<?> sourceToUse = ReinterpretUtilities.maybeConvertToPrimitive(columnSource);
+    private static <T> Object getSnapshotData(final ColumnSource<T> columnSource,
+        final SharedContext sharedContext, final Index index, final boolean usePrev) {
+        final ColumnSource<?> sourceToUse =
+            ReinterpretUtilities.maybeConvertToPrimitive(columnSource);
         final Class<?> type = sourceToUse.getType();
         final int size = index.intSize();
-        try (final ColumnSource.FillContext context = sourceToUse.makeFillContext(size, sharedContext)) {
+        try (final ColumnSource.FillContext context =
+            sourceToUse.makeFillContext(size, sharedContext)) {
             final ChunkType chunkType = sourceToUse.getChunkType();
             final Object resultArray = chunkType.makeArray(size);
             final WritableChunk<Values> result = chunkType.writableChunkWrap(resultArray, 0, size);
@@ -1338,11 +1490,11 @@ public class ConstructSnapshot {
                 sourceToUse.fillChunk(context, result, index);
             }
             if (chunkType == ChunkType.Object) {
-                //noinspection unchecked
-                final T [] values = (T[]) Array.newInstance(type, size);
+                // noinspection unchecked
+                final T[] values = (T[]) Array.newInstance(type, size);
                 for (int ii = 0; ii < values.length; ++ii) {
-                    //noinspection unchecked
-                    values[ii] = (T)result.asObjectChunk().get(ii);
+                    // noinspection unchecked
+                    values[ii] = (T) result.asObjectChunk().get(ii);
                 }
                 return values;
 
@@ -1351,11 +1503,15 @@ public class ConstructSnapshot {
         }
     }
 
-    private static <T> WritableChunk<Values> getSnapshotDataAsChunk(final ColumnSource<T> columnSource, final SharedContext sharedContext, final Index index, final boolean usePrev) {
-        final ColumnSource<?> sourceToUse = ReinterpretUtilities.maybeConvertToPrimitive(columnSource);
+    private static <T> WritableChunk<Values> getSnapshotDataAsChunk(
+        final ColumnSource<T> columnSource, final SharedContext sharedContext, final Index index,
+        final boolean usePrev) {
+        final ColumnSource<?> sourceToUse =
+            ReinterpretUtilities.maybeConvertToPrimitive(columnSource);
         final int size = index.intSize();
         try (final ColumnSource.FillContext context = sharedContext != null
-                ? sourceToUse.makeFillContext(size, sharedContext) : sourceToUse.makeFillContext(size)) {
+            ? sourceToUse.makeFillContext(size, sharedContext)
+            : sourceToUse.makeFillContext(size)) {
             final ChunkType chunkType = sourceToUse.getChunkType();
             final WritableChunk<Values> result = chunkType.makeWritableChunk(size);
             if (usePrev) {
@@ -1380,15 +1536,17 @@ public class ConstructSnapshot {
     }
 
     /**
-     * Make a rough guess at the size of a snapshot, using the column types and common column names.  The use case is
-     * when a user requests something from the GUI; we'd like to know if it is ridiculous before actually doing it.
+     * Make a rough guess at the size of a snapshot, using the column types and common column names.
+     * The use case is when a user requests something from the GUI; we'd like to know if it is
+     * ridiculous before actually doing it.
      *
-     * @param tableDefinition  the table definitionm
+     * @param tableDefinition the table definitionm
      * @param columns a bitset indicating which columns are included
      * @param rowCount how many rows of this data we'll be snapshotting
      * @return the estimated size of the snapshot
      */
-    public static long estimateSnapshotSize(TableDefinition tableDefinition, BitSet columns, long rowCount) {
+    public static long estimateSnapshotSize(TableDefinition tableDefinition, BitSet columns,
+        long rowCount) {
         long sizePerRow = 0;
         long totalSize = 0;
 
@@ -1401,19 +1559,19 @@ public class ConstructSnapshot {
             totalSize += 44; // for an array
 
             final ColumnDefinition definition = columnDefinitions[ii];
-            if (definition.getDataType() == byte.class || definition.getDataType() == char.class || definition.getDataType() == Boolean.class) {
+            if (definition.getDataType() == byte.class || definition.getDataType() == char.class
+                || definition.getDataType() == Boolean.class) {
                 sizePerRow += 1;
-            }
-            else if (definition.getDataType() == short.class) {
+            } else if (definition.getDataType() == short.class) {
                 sizePerRow += 2;
-            }
-            else if (definition.getDataType() == int.class || definition.getDataType() == float.class) {
+            } else if (definition.getDataType() == int.class
+                || definition.getDataType() == float.class) {
                 sizePerRow += 4;
-            }
-            else if (definition.getDataType() == long.class || definition.getDataType() == double.class || definition.getDataType() == DBDateTime.class) {
+            } else if (definition.getDataType() == long.class
+                || definition.getDataType() == double.class
+                || definition.getDataType() == DBDateTime.class) {
                 sizePerRow += 8;
-            }
-            else {
+            } else {
                 switch (definition.getName()) {
                     case "Date":
                         sizePerRow += 5;

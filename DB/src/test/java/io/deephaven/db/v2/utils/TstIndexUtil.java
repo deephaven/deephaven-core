@@ -27,12 +27,15 @@ public class TstIndexUtil {
 
     public static class BuilderToRangeConsumer implements LongRangeAbortableConsumer {
         private IndexBuilder builder;
+
         private BuilderToRangeConsumer(final IndexBuilder builder) {
             this.builder = builder;
         }
+
         public static BuilderToRangeConsumer adapt(final IndexBuilder builder) {
             return new BuilderToRangeConsumer(builder);
         }
+
         @Override
         public boolean accept(final long start, final long end) {
             builder.addRange(start, end);
@@ -53,11 +56,29 @@ public class TstIndexUtil {
 
     public static final class IndexToBuilderAdaptor implements IndexBuilder {
         private final Index ix;
-        public IndexToBuilderAdaptor(final Index ix) { this.ix = ix; }
-        @Override public Index getIndex() { return ix; }
-        @Override public void addKey(final long key) { ix.insert(key); }
-        @Override public void addRange(final long firstKey, final long lastKey) { ix.insertRange(firstKey, lastKey); }
-        public static IndexToBuilderAdaptor adapt(final Index ix) { return new IndexToBuilderAdaptor(ix); }
+
+        public IndexToBuilderAdaptor(final Index ix) {
+            this.ix = ix;
+        }
+
+        @Override
+        public Index getIndex() {
+            return ix;
+        }
+
+        @Override
+        public void addKey(final long key) {
+            ix.insert(key);
+        }
+
+        @Override
+        public void addRange(final long firstKey, final long lastKey) {
+            ix.insertRange(firstKey, lastKey);
+        }
+
+        public static IndexToBuilderAdaptor adapt(final Index ix) {
+            return new IndexToBuilderAdaptor(ix);
+        }
     }
 
     public static Index indexFromString(String string, final Index ix) {

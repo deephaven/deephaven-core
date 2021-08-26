@@ -22,8 +22,8 @@ public abstract class SystemMemoryOshi implements PropertySet {
     public abstract long getPhysicalTotal();
 
     /**
-     * The current size of the paging/swap file(s), in bytes. If the paging/swap
-     * file can be extended, this is a soft limit.
+     * The current size of the paging/swap file(s), in bytes. If the paging/swap file can be
+     * extended, this is a soft limit.
      *
      * @return Total swap in bytes.
      */

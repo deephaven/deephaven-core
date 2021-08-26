@@ -13,7 +13,8 @@ public class TestAxisTransformLambda extends BaseArrayTestCase {
     private final DoubleUnaryOperator dataToAxis = Math::exp;
     private final DoubleUnaryOperator axisToData = Math::log;
     private final DoublePredicate isVisible = d -> d > 1;
-    private final AxisTransformLambda lambda = new AxisTransformLambda(dataToAxis, axisToData, isVisible);
+    private final AxisTransformLambda lambda =
+        new AxisTransformLambda(dataToAxis, axisToData, isVisible);
     private final AxisTransformLambda lambda2 = new AxisTransformLambda(dataToAxis, axisToData);
     private final AxisTransformLambda lambda3 = new AxisTransformLambda();
     private final double delta = 0.00001;

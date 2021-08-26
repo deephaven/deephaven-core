@@ -15,8 +15,7 @@ public class SafeCloseableList implements SafeCloseable {
 
     private final List<SafeCloseable> list = new ArrayList<>();
 
-    public SafeCloseableList() {
-    }
+    public SafeCloseableList() {}
 
     public SafeCloseableList(SafeCloseable... entries) {
         this(Arrays.asList(entries));

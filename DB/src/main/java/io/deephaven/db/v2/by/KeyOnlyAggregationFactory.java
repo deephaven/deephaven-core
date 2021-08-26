@@ -10,11 +10,13 @@ import org.jetbrains.annotations.NotNull;
  */
 public class KeyOnlyAggregationFactory implements AggregationContextFactory {
     @Override
-    public AggregationContext makeAggregationContext(@NotNull final Table table, @NotNull final String... groupByColumns) {
-        //noinspection unchecked
-        return new AggregationContext(IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY,
-                CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY,
-                ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY,
-                false);
+    public AggregationContext makeAggregationContext(@NotNull final Table table,
+        @NotNull final String... groupByColumns) {
+        // noinspection unchecked
+        return new AggregationContext(
+            IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY,
+            CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY,
+            ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY,
+            false);
     }
 }

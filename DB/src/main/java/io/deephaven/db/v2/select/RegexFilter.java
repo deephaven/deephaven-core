@@ -26,7 +26,8 @@ public class RegexFilter extends PatternFilter {
         this(MatchType.Regular, columnName, value);
     }
 
-    public RegexFilter(CaseSensitivity sensitivity, MatchType matchType, @NotNull String columnName, String value) {
+    public RegexFilter(CaseSensitivity sensitivity, MatchType matchType, @NotNull String columnName,
+        String value) {
         super(sensitivity, matchType, columnName, value);
     }
 
@@ -46,7 +47,8 @@ public class RegexFilter extends PatternFilter {
 
     @Override
     public String toString() {
-        return (invertMatch ? "!" : "") + columnName + " =~ /" + value + "/" + (caseInsensitive ? "i" : "");
+        return (invertMatch ? "!" : "") + columnName + " =~ /" + value + "/"
+            + (caseInsensitive ? "i" : "");
     }
 
     @Override

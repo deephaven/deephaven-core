@@ -65,7 +65,7 @@ public class StringUtils {
         char first = toUpperCase(target.charAt(0));
         int max = (source.length() - target.length());
 
-        for (int i=0; i <= max; i++) {
+        for (int i = 0; i <= max; i++) {
             /* Look for first character. */
             if (toUpperCase(source.charAt(i)) != first) {
                 while (++i <= max && toUpperCase(source.charAt(i)) != first);
@@ -75,7 +75,8 @@ public class StringUtils {
             if (i <= max) {
                 int j = i + 1;
                 int end = j + target.length() - 1;
-                for (int k=1; j < end && toUpperCase(source.charAt(j))==toUpperCase(target.charAt(k)); j++, k++);
+                for (int k = 1; j < end
+                    && toUpperCase(source.charAt(j)) == toUpperCase(target.charAt(k)); j++, k++);
 
                 if (j == end) {
                     /* Found whole string. */
@@ -87,16 +88,17 @@ public class StringUtils {
         return -1;
     }
 
-    public static char toUpperCase(char c){
-        if (c>=97 && c<=122){
-            c-=32;
+    public static char toUpperCase(char c) {
+        if (c >= 97 && c <= 122) {
+            c -= 32;
         }
 
         return c;
     }
 
     public static String joinStrings(final String[] strs, final String joinStr) {
-        if (strs.length == 0) return "";
+        if (strs.length == 0)
+            return "";
         StringBuilder builder = new StringBuilder(strs[0]);
         for (int i = 1; i < strs.length; i++)
             builder.append(joinStr).append(strs[i]);
@@ -104,7 +106,8 @@ public class StringUtils {
     }
 
     public static <T> String joinStrings(final Iterator<T> it, final String joinStr) {
-        if (!it.hasNext()) return "";
+        if (!it.hasNext())
+            return "";
         StringBuilder builder = new StringBuilder();
         builder.append(it.next());
         while (it.hasNext()) {
@@ -123,7 +126,8 @@ public class StringUtils {
     }
 
     public static String joinStrings(final int[] ints, final String joinStr) {
-        if (ints.length == 0) return "";
+        if (ints.length == 0)
+            return "";
         StringBuilder builder = new StringBuilder(ints[0] + "");
         for (int i = 1; i < ints.length; i++)
             builder.append(joinStr).append(ints[i]);
@@ -131,7 +135,8 @@ public class StringUtils {
     }
 
     public static String joinStrings(final double[] doubles, final String joinStr) {
-        if (doubles.length == 0) return "";
+        if (doubles.length == 0)
+            return "";
         StringBuilder builder = new StringBuilder(doubles[0] + "");
         for (int i = 1; i < doubles.length; i++)
             builder.append(joinStr).append(doubles[i]);
@@ -139,7 +144,8 @@ public class StringUtils {
     }
 
     public static <T> String joinStrings(final T[] objs, final String joinStr) {
-        if (objs.length == 0) return "";
+        if (objs.length == 0)
+            return "";
         StringBuilder builder = new StringBuilder(objs[0] + "");
         for (int i = 1; i < objs.length; i++)
             builder.append(joinStr).append(objs[i]);
@@ -147,21 +153,22 @@ public class StringUtils {
     }
 
     public static String joinStrings(final long[] longs, final String joinStr) {
-        if (longs.length == 0) return "";
+        if (longs.length == 0)
+            return "";
         StringBuilder builder = new StringBuilder(longs[0] + "");
         for (int i = 1; i < longs.length; i++)
             builder.append(joinStr).append(longs[i]);
         return builder.toString();
     }
 
-    public static String pad(String s, int length, char padChar){
-        if (length<=s.length()){
+    public static String pad(String s, int length, char padChar) {
+        if (length <= s.length()) {
             return s;
         }
 
         StringBuilder buf = new StringBuilder();
 
-        for (int i=s.length(); i<length; i++){
+        for (int i = s.length(); i < length; i++) {
             buf.append(padChar);
         }
 

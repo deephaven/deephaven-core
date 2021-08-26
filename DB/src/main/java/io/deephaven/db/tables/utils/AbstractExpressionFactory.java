@@ -4,10 +4,10 @@
 
 package io.deephaven.db.tables.utils;
 
-public abstract class AbstractExpressionFactory<T> implements ExpressionFactory<T>{
+public abstract class AbstractExpressionFactory<T> implements ExpressionFactory<T> {
     private final String pattern;
 
-    public AbstractExpressionFactory(String pattern){
+    public AbstractExpressionFactory(String pattern) {
         this.pattern = pattern;
     }
 

@@ -17,7 +17,8 @@ import static org.junit.Assert.*;
 
 public class TestSharedContext {
 
-    private static final class TestSharedContextKey implements SharedContext.Key<TestResettableContext> {
+    private static final class TestSharedContextKey
+        implements SharedContext.Key<TestResettableContext> {
     }
 
     private static final class TestResettableContext implements ResettableContext {
@@ -36,14 +37,15 @@ public class TestSharedContext {
         }
     }
 
-    @Test public void testBasic() {
+    @Test
+    public void testBasic() {
         final TestSharedContextKey k1 = new TestSharedContextKey();
         final TestSharedContextKey k2 = new TestSharedContextKey();
         final TestResettableContext v1 = new TestResettableContext();
         final TestResettableContext v2 = new TestResettableContext();
         final TestResettableContext v3 = new TestResettableContext();
 
-        try  (final SharedContext sharedContext = SharedContext.makeSharedContext()) {
+        try (final SharedContext sharedContext = SharedContext.makeSharedContext()) {
             ResettableContext result = sharedContext.getOrCreate(k1, () -> v1);
             assertEquals(v1, result);
             result = sharedContext.getOrCreate(k2, () -> v2);
@@ -71,8 +73,9 @@ public class TestSharedContext {
         assertFalse(v3.closed);
     }
 
-    @Test public void testConditionFilterWithSimpleRedirections() {
-        final int size = 16*1024;  // hopefully bigger that twice our chunk size.
+    @Test
+    public void testConditionFilterWithSimpleRedirections() {
+        final int size = 16 * 1024; // hopefully bigger that twice our chunk size.
         final Random random = new Random(1);
         final int nCols = 4;
         final TstUtils.Generator[] gs = new TstUtils.Generator[nCols];
@@ -108,8 +111,9 @@ public class TestSharedContext {
         });
     }
 
-    @Test public void testConditionFilterWithMoreComplexRedirections() {
-        final int size = 16*1024;  // hopefully bigger that twice our chunk size.
+    @Test
+    public void testConditionFilterWithMoreComplexRedirections() {
+        final int size = 16 * 1024; // hopefully bigger that twice our chunk size.
         final Random random = new Random(1);
         final int nCols = 4;
         final TstUtils.Generator[] gs = new TstUtils.Generator[nCols];
@@ -134,9 +138,11 @@ public class TestSharedContext {
         final String sortCol = "TS";
         final String formulaCol = "F";
         LiveTableMonitor.DEFAULT.exclusiveLock().doLocked(() -> {
-            final Table t1 = t0.update(sortCol + "=i", formulaCol + "=" + cols[0] + "+" + cols[1]).reverse();
+            final Table t1 =
+                t0.update(sortCol + "=i", formulaCol + "=" + cols[0] + "+" + cols[1]).reverse();
             final Table t1Filtered = t1.where(condition);
-            final Table t2 = t1.sort(sortCol).naturalJoin(t1, sortCol, Strings.join(joinColumnsToAdd, ","));
+            final Table t2 =
+                t1.sort(sortCol).naturalJoin(t1, sortCol, Strings.join(joinColumnsToAdd, ","));
             final Table t2Filtered = t2.where(joinedCondition).reverse();
             assertEquals(t2.size(), t1.size());
             final Consumer<String> columnChecker = (final String col) -> {

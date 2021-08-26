@@ -13,8 +13,8 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * A class specifically for completing column names;
- * to be called after the completer has discovered the name of the column to match.
+ * A class specifically for completing column names; to be called after the completer has discovered
+ * the name of the column to match.
  *
  */
 public class CompleteColumnName extends CompletionBuilder {
@@ -25,8 +25,7 @@ public class CompleteColumnName extends CompletionBuilder {
     public CompleteColumnName(
         ChunkerCompleter completer,
         Node node,
-        ChunkerInvoke invoke
-    ) {
+        ChunkerInvoke invoke) {
         super(completer);
         this.node = node;
         this.invoke = invoke;
@@ -35,8 +34,7 @@ public class CompleteColumnName extends CompletionBuilder {
     public void doCompletion(
         Collection<CompletionItem.Builder> results,
         CompletionRequest request,
-        String colName
-    ) {
+        String colName) {
         final String src;
         final DocumentRange.Builder range;
         src = node == null ? "" : node.toSource();
@@ -56,20 +54,21 @@ public class CompleteColumnName extends CompletionBuilder {
         StringBuilder b = new StringBuilder();
         b.append(qt);
         b.append(colName);
-        // Instead of addTokens, we need to use raw strings, since we don't tokenize inside strings (yet).
+        // Instead of addTokens, we need to use raw strings, since we don't tokenize inside strings
+        // (yet).
         int ind = src.indexOf('=');
         if (ind == -1) {
             b.append(" = ");
             if (node != null) {
                 final Token suffix = node.jjtGetLastToken().next;
                 if (suffix != null && suffix.kind == ChunkerConstants.WHITESPACE) {
-                    b.setLength(b.length()-1);
+                    b.setLength(b.length() - 1);
                 }
             }
         } else {
             // we don't want to erase anything the user has after the =
             // we also want to detect and respect their whitespace usage
-            if (ind < src.length() && Character.isWhitespace(src.charAt(ind+1))) {
+            if (ind < src.length() && Character.isWhitespace(src.charAt(ind + 1))) {
                 b.append(" ");
             }
             b.append(src.substring(ind));
@@ -84,11 +83,11 @@ public class CompleteColumnName extends CompletionBuilder {
         final CompletionItem.Builder result = CompletionItem.newBuilder();
         String item = b.toString();
         result.setStart(start)
-                .setLength(len)
-                .setLabel(item)
-                .getTextEditBuilder()
-                        .setText(item)
-                        .setRange(range);
+            .setLength(len)
+            .setLabel(item)
+            .getTextEditBuilder()
+            .setText(item)
+            .setRange(range);
         results.add(result);
     }
 }

@@ -22,24 +22,24 @@ import static io.deephaven.benchmarking.BenchmarkTools.applySparsity;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 1, time = 1)
 @Measurement(iterations = 1, time = 1)
-@Timeout(time=3)
+@Timeout(time = 3)
 @Fork(1)
 public class SingleTableOperations {
     private TableBenchmarkState state;
     BenchmarkTable bmTable;
 
-    //@Param({"1","2","4","16"})
-    @Param({"1","4","16"})
+    // @Param({"1","2","4","16"})
+    @Param({"1", "4", "16"})
     private int columnCount;
 
-    //@Param({"100", "10000", "100000", "1000000", "10000000"})
+    // @Param({"100", "10000", "100000", "1000000", "10000000"})
     @Param({"100", "100000", "1000000"})
     private int tableSize;
 
-    @Param({"100",/* "90", "50",*/ "10"}) //, "10", "5", "1"})
+    @Param({"100", /* "90", "50", */ "10"}) // , "10", "5", "1"})
     private int sparsity;
 
-    @Param({"int" /*, "short", "float" /*, "long", "double", "byte"*/})
+    @Param({"int" /* , "short", "float" /*, "long", "double", "byte" */})
     private String typeName;
 
     private Class type;
@@ -51,30 +51,32 @@ public class SingleTableOperations {
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
         type = Utils.primitiveTypeForName.get(typeName);
-        Configuration.getInstance().setProperty("QueryTable.memoizeResults","false");
+        Configuration.getInstance().setProperty("QueryTable.memoizeResults", "false");
 
-        final BenchmarkTableBuilder builder = BenchmarkTools.inMemoryTableBuilder("SingleTableOperations",
+        final BenchmarkTableBuilder builder =
+            BenchmarkTools.inMemoryTableBuilder("SingleTableOperations",
                 BenchmarkTools.sizeWithSparsity(tableSize, sparsity));
 
         builder.setSeed(0xDEADBEEF);
-        for (int i = 0;i < columnCount;i++) {
-            builder.addColumn(BenchmarkTools.numberCol("InputColumn" + i,type));
+        for (int i = 0; i < columnCount; i++) {
+            builder.addColumn(BenchmarkTools.numberCol("InputColumn" + i, type));
         }
         bmTable = builder.build();
 
-        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
+        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()),
+            params.getWarmup().getCount());
 
 
         inputTable = applySparsity(bmTable.getTable(), tableSize, sparsity, 0);
 
         expression = "(InputColumn0";
-        for (int i = 1; i < columnCount;i++) {
+        for (int i = 1; i < columnCount; i++) {
             expression += (" + InputColumn" + i);
         }
         expression += ")";
     }
 
-   // @TearDown(Level.Trial)
+    // @TearDown(Level.Trial)
     public void finishTrial() {
         try {
             state.logOutput();

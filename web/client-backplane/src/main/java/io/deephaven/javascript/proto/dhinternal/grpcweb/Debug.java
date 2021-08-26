@@ -5,5 +5,5 @@ import jsinterop.annotations.JsType;
 
 @JsType(isNative = true, name = "dhinternal.grpcWeb.debug", namespace = JsPackage.GLOBAL)
 public class Debug {
-  public static native void debug(Object... args);
+    public static native void debug(Object... args);
 }

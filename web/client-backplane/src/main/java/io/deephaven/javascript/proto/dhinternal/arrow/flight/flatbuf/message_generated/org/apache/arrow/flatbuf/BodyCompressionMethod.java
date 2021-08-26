@@ -5,9 +5,8 @@ import jsinterop.annotations.JsType;
 
 @JsType(
     isNative = true,
-    name =
-        "dhinternal.arrow.flight.flatbuf.Message_generated.org.apache.arrow.flatbuf.BodyCompressionMethod",
+    name = "dhinternal.arrow.flight.flatbuf.Message_generated.org.apache.arrow.flatbuf.BodyCompressionMethod",
     namespace = JsPackage.GLOBAL)
 public class BodyCompressionMethod {
-  public static int BUFFER;
+    public static int BUFFER;
 }

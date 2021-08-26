@@ -29,20 +29,23 @@ import java.util.concurrent.atomic.AtomicInteger;
 abstract public class BaseCachedJMockTestCase extends TestCase {
     protected final Mockery context;
 
-    {   // use an initializer rather than setUp so forgetting to
-        //   call super.setUp won't use the wrong imposteriser
-        context=new Mockery();
+    { // use an initializer rather than setUp so forgetting to
+      // call super.setUp won't use the wrong imposteriser
+        context = new Mockery();
         context.setImposteriser(CachingImposteriser.INSTANCE);
         new Mockomatic(context) {
-            @Override protected void autoInstantiate(Object parentObject, Field field) {
+            @Override
+            protected void autoInstantiate(Object parentObject, Field field) {
                 final Class<?> type = field.getType();
                 if (States.class != type && Sequence.class != type) {
                     try {
                         Constructor<?> constructor = type.getConstructor();
                         Object childObject = constructor.newInstance();
-                        setAutoField(field, parentObject, childObject, "auto-instantiate "+type.getSimpleName()+" field " + field.getName());
+                        setAutoField(field, parentObject, childObject, "auto-instantiate "
+                            + type.getSimpleName() + " field " + field.getName());
                         return;
-                    } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+                    } catch (NoSuchMethodException | InstantiationException | IllegalAccessException
+                        | InvocationTargetException e) {
                         // fall through and call super implementation
                     }
                 }
@@ -98,8 +101,9 @@ abstract public class BaseCachedJMockTestCase extends TestCase {
         public void willDo(final Function.Nullary<Object> proc) {
             this.currentBuilder().setAction(run(proc));
         }
+
         public static CustomAction run(final Function.Nullary<Object> proc) {
-            return new CustomAction("willDo_"+willDoCounter.incrementAndGet()) {
+            return new CustomAction("willDo_" + willDoCounter.incrementAndGet()) {
                 @Override
                 public Object invoke(Invocation invocation) throws Throwable {
                     return proc.call();
@@ -110,8 +114,9 @@ abstract public class BaseCachedJMockTestCase extends TestCase {
         public void willDo(final Function.Unary<Object, Invocation> proc) {
             this.currentBuilder().setAction(run(proc));
         }
+
         public static CustomAction run(final Function.Unary<Object, Invocation> proc) {
-            return new CustomAction("willDo_"+willDoCounter.incrementAndGet()) {
+            return new CustomAction("willDo_" + willDoCounter.incrementAndGet()) {
                 @Override
                 public Object invoke(Invocation invocation) throws Throwable {
                     return proc.call(invocation);
@@ -120,35 +125,38 @@ abstract public class BaseCachedJMockTestCase extends TestCase {
         }
     }
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     public static class CachingImposteriser implements Imposteriser {
 
-        public static final BaseCachedJMockTestCase.CachingImposteriser INSTANCE=new CachingImposteriser();
+        public static final BaseCachedJMockTestCase.CachingImposteriser INSTANCE =
+            new CachingImposteriser();
 
-        private final static Class[] CONSTRUCTOR_PARAMS={InvocationHandler.class};
+        private final static Class[] CONSTRUCTOR_PARAMS = {InvocationHandler.class};
 
-        private static Map<ProxyInfo, Function.Unary<?, Invokable>> proxyInfoToConstructorMap=new HashMap<>();
+        private static Map<ProxyInfo, Function.Unary<?, Invokable>> proxyInfoToConstructorMap =
+            new HashMap<>();
 
-        //----------------------------------------------------------------
+        // ----------------------------------------------------------------
         @Override // from Imposteriser
         public boolean canImposterise(Class<?> type) {
             return ClassImposteriser.INSTANCE.canImposterise(type);
         }
 
-        //----------------------------------------------------------------
+        // ----------------------------------------------------------------
         @Override // from Imposteriser
-        public <T> T imposterise(final Invokable mockObject, Class<T> mockedType, Class<?>... ancillaryTypes) {
-            ProxyInfo proxyInfo=new ProxyInfo(mockedType, ancillaryTypes);
-            Function.Unary<?, Invokable> constructor=proxyInfoToConstructorMap.get(proxyInfo);
-            if (null==constructor) {
-                constructor=createConstructor(proxyInfo);
+        public <T> T imposterise(final Invokable mockObject, Class<T> mockedType,
+            Class<?>... ancillaryTypes) {
+            ProxyInfo proxyInfo = new ProxyInfo(mockedType, ancillaryTypes);
+            Function.Unary<?, Invokable> constructor = proxyInfoToConstructorMap.get(proxyInfo);
+            if (null == constructor) {
+                constructor = createConstructor(proxyInfo);
                 proxyInfoToConstructorMap.put(proxyInfo, constructor);
             }
-            //noinspection unchecked
-            return (T)constructor.call(mockObject);
+            // noinspection unchecked
+            return (T) constructor.call(mockObject);
         }
 
-        //----------------------------------------------------------------
+        // ----------------------------------------------------------------
         private Function.Unary<?, Invokable> createConstructor(ProxyInfo proxyInfo) {
             if (proxyInfo.mockedType.isInterface()) {
                 return createInterfaceConstructor(proxyInfo);
@@ -157,53 +165,61 @@ abstract public class BaseCachedJMockTestCase extends TestCase {
             }
         }
 
-        //----------------------------------------------------------------
+        // ----------------------------------------------------------------
         /** Based on {@link org.jmock.lib.JavaReflectionImposteriser}. */
         private Function.Unary<?, Invokable> createInterfaceConstructor(ProxyInfo proxyInfo) {
-            ClassLoader proxyClassLoader=BaseCachedJMockTestCase.class.getClassLoader();
-            Class proxyClass= Proxy.getProxyClass(proxyClassLoader, proxyInfo.proxiedClasses);
+            ClassLoader proxyClassLoader = BaseCachedJMockTestCase.class.getClassLoader();
+            Class proxyClass = Proxy.getProxyClass(proxyClassLoader, proxyInfo.proxiedClasses);
 
             final Constructor constructor;
             try {
-                constructor=proxyClass.getConstructor(CONSTRUCTOR_PARAMS);
+                constructor = proxyClass.getConstructor(CONSTRUCTOR_PARAMS);
             } catch (NoSuchMethodException e) {
                 throw Assert.exceptionNeverCaught(e);
             }
             return new Function.Unary<Object, Invokable>() {
-                @Override public Object call(final Invokable invokable) {
+                @Override
+                public Object call(final Invokable invokable) {
                     try {
                         return constructor.newInstance(new InvocationHandler() {
-                            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                            public Object invoke(Object proxy, Method method, Object[] args)
+                                throws Throwable {
                                 return invokable.invoke(new Invocation(proxy, method, args));
                             }
                         });
-                    } catch (InstantiationException|IllegalAccessException|InvocationTargetException e) {
+                    } catch (InstantiationException | IllegalAccessException
+                        | InvocationTargetException e) {
                         throw Assert.exceptionNeverCaught(e);
                     }
                 }
             };
         }
 
-        //----------------------------------------------------------------
+        // ----------------------------------------------------------------
         /** Based on {@link ClassImposteriser}. */
         private Function.Unary<?, Invokable> createClassConstructor(final ProxyInfo proxyInfo) {
             final Class proxyClass;
             try {
-                proxyClass=(Class)CREATE_PROXY_CLASS.invoke(ClassImposteriser.INSTANCE, proxyInfo.mockedType, proxyInfo.ancillaryTypes);
-            } catch (IllegalAccessException|InvocationTargetException e) {
+                proxyClass = (Class) CREATE_PROXY_CLASS.invoke(ClassImposteriser.INSTANCE,
+                    proxyInfo.mockedType, proxyInfo.ancillaryTypes);
+            } catch (IllegalAccessException | InvocationTargetException e) {
                 throw Assert.exceptionNeverCaught(e);
             }
 
             return new Function.Unary<Object, Invokable>() {
-                @Override public Object call(final Invokable invokable) {
+                @Override
+                public Object call(final Invokable invokable) {
                     try {
                         try {
-                            SET_CONSTRUCTORS_ACCESSIBLE.invoke(ClassImposteriser.INSTANCE, proxyInfo.mockedType, true);
-                            return CREATE_PROXY.invoke(ClassImposteriser.INSTANCE, proxyClass, invokable);
+                            SET_CONSTRUCTORS_ACCESSIBLE.invoke(ClassImposteriser.INSTANCE,
+                                proxyInfo.mockedType, true);
+                            return CREATE_PROXY.invoke(ClassImposteriser.INSTANCE, proxyClass,
+                                invokable);
                         } finally {
-                            SET_CONSTRUCTORS_ACCESSIBLE.invoke(ClassImposteriser.INSTANCE, proxyInfo.mockedType, false);
+                            SET_CONSTRUCTORS_ACCESSIBLE.invoke(ClassImposteriser.INSTANCE,
+                                proxyInfo.mockedType, false);
                         }
-                    } catch (IllegalAccessException|InvocationTargetException e) {
+                    } catch (IllegalAccessException | InvocationTargetException e) {
                         throw Assert.exceptionNeverCaught(e);
                     }
                 }
@@ -215,11 +231,14 @@ abstract public class BaseCachedJMockTestCase extends TestCase {
         private static final Method SET_CONSTRUCTORS_ACCESSIBLE;
         static {
             try {
-                CREATE_PROXY=ClassImposteriser.class.getDeclaredMethod("proxy", Class.class, Invokable.class);
+                CREATE_PROXY = ClassImposteriser.class.getDeclaredMethod("proxy", Class.class,
+                    Invokable.class);
                 CREATE_PROXY.setAccessible(true);
-                CREATE_PROXY_CLASS=ClassImposteriser.class.getDeclaredMethod("proxyClass", Class.class, Class[].class);
+                CREATE_PROXY_CLASS = ClassImposteriser.class.getDeclaredMethod("proxyClass",
+                    Class.class, Class[].class);
                 CREATE_PROXY_CLASS.setAccessible(true);
-                SET_CONSTRUCTORS_ACCESSIBLE=ClassImposteriser.class.getDeclaredMethod("setConstructorsAccessible", Class.class, boolean.class);
+                SET_CONSTRUCTORS_ACCESSIBLE = ClassImposteriser.class
+                    .getDeclaredMethod("setConstructorsAccessible", Class.class, boolean.class);
                 SET_CONSTRUCTORS_ACCESSIBLE.setAccessible(true);
             } catch (NoSuchMethodException e) {
                 throw Assert.exceptionNeverCaught(e);
@@ -227,7 +246,7 @@ abstract public class BaseCachedJMockTestCase extends TestCase {
         }
     }
 
-    //----------------------------------------------------------------
+    // ----------------------------------------------------------------
     private static class ProxyInfo {
 
         public Class[] proxiedClasses;
@@ -235,34 +254,44 @@ abstract public class BaseCachedJMockTestCase extends TestCase {
         public Class[] ancillaryTypes;
 
 
-        //----------------------------------------------------------------
+        // ----------------------------------------------------------------
         public ProxyInfo(Class<?> mockedType, Class<?>... ancillaryTypes) {
-            this.mockedType=mockedType;
-            this.ancillaryTypes=ancillaryTypes;
-            proxiedClasses = new Class<?>[ancillaryTypes.length+1];
+            this.mockedType = mockedType;
+            this.ancillaryTypes = ancillaryTypes;
+            proxiedClasses = new Class<?>[ancillaryTypes.length + 1];
             proxiedClasses[0] = mockedType;
             System.arraycopy(ancillaryTypes, 0, proxiedClasses, 1, ancillaryTypes.length);
         }
 
-        //------------------------------------------------------------
-        @Override public boolean equals(Object that) {
-            if (this==that) { return true; }
-            if (that==null || getClass()!=that.getClass()) { return false; }
-            ProxyInfo proxyInfo=(ProxyInfo)that;
-            if (!Arrays.equals(proxiedClasses, proxyInfo.proxiedClasses)) { return false; }
+        // ------------------------------------------------------------
+        @Override
+        public boolean equals(Object that) {
+            if (this == that) {
+                return true;
+            }
+            if (that == null || getClass() != that.getClass()) {
+                return false;
+            }
+            ProxyInfo proxyInfo = (ProxyInfo) that;
+            if (!Arrays.equals(proxiedClasses, proxyInfo.proxiedClasses)) {
+                return false;
+            }
             return true;
         }
 
-        //------------------------------------------------------------
-        @Override public int hashCode() {
+        // ------------------------------------------------------------
+        @Override
+        public int hashCode() {
             return Arrays.hashCode(proxiedClasses);
         }
 
-        //------------------------------------------------------------
-        @Override public String toString() {
-            StringBuilder stringBuilder=new StringBuilder();
+        // ------------------------------------------------------------
+        @Override
+        public String toString() {
+            StringBuilder stringBuilder = new StringBuilder();
             for (Class proxiedClass : proxiedClasses) {
-                stringBuilder.append(0==stringBuilder.length()?"[":", ").append(proxiedClass.getSimpleName());
+                stringBuilder.append(0 == stringBuilder.length() ? "[" : ", ")
+                    .append(proxiedClass.getSimpleName());
             }
             return stringBuilder.append("]").toString();
         }

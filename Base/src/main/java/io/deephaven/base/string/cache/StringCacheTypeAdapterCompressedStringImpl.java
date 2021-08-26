@@ -9,9 +9,11 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Type adapter for CompressedStrings.
  */
-public class StringCacheTypeAdapterCompressedStringImpl implements StringCacheTypeAdapter<CompressedString> {
+public class StringCacheTypeAdapterCompressedStringImpl
+    implements StringCacheTypeAdapter<CompressedString> {
 
-    public static final StringCacheTypeAdapter<CompressedString> INSTANCE = new StringCacheTypeAdapterCompressedStringImpl();
+    public static final StringCacheTypeAdapter<CompressedString> INSTANCE =
+        new StringCacheTypeAdapterCompressedStringImpl();
 
     private static final CompressedString EMPTY_VALUE = new CompressedString("");
 
@@ -42,7 +44,8 @@ public class StringCacheTypeAdapterCompressedStringImpl implements StringCacheTy
     }
 
     @Override
-    public final boolean areEqual(@NotNull final CharSequence key, @NotNull final CompressedString value) {
+    public final boolean areEqual(@NotNull final CharSequence key,
+        @NotNull final CompressedString value) {
         return CharSequenceUtils.contentEquals(key, value);
     }
 }

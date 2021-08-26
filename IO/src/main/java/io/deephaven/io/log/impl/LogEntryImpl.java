@@ -17,6 +17,7 @@ public class LogEntryImpl extends LogOutputCsvImpl implements LogEntry {
 
     private static final AtomicLong starts = new AtomicLong(0);
     private static final AtomicLong ends = new AtomicLong(0);
+
     public static long getDifferenceInStartToEnds() {
         final long e = ends.get(); // getting this one first
         final long s = starts.get();
@@ -38,6 +39,7 @@ public class LogEntryImpl extends LogOutputCsvImpl implements LogEntry {
 
     /**
      * Constructor
+     * 
      * @param bufferPool where we get our buffers
      */
     public LogEntryImpl(LogBufferPool bufferPool) {
@@ -60,7 +62,8 @@ public class LogEntryImpl extends LogOutputCsvImpl implements LogEntry {
     }
 
     @Override
-    public LogEntry start(final LogSink sink, final LogLevel level, final long currentTimeMicros, final Throwable t) {
+    public LogEntry start(final LogSink sink, final LogLevel level, final long currentTimeMicros,
+        final Throwable t) {
         super.start();
         starts.getAndIncrement();
         this.timestamp = currentTimeMicros;
@@ -85,9 +88,9 @@ public class LogEntryImpl extends LogOutputCsvImpl implements LogEntry {
         return this;
     }
 
-    //------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------
     // LogSink.Element implementation
-    //------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------
 
     @Override
     public long getTimestampMicros() {
@@ -111,13 +114,13 @@ public class LogEntryImpl extends LogOutputCsvImpl implements LogEntry {
 
     @Override
     public void written(LogOutput outputBuffer) {
-//        assert outputBuffer == this;
+        // assert outputBuffer == this;
         super.clear();
     }
 
-    //------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------
     // LogEntry methods covariant with LogOutput methods
-    //------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------
 
     @Override
     public LogEntry append(final boolean b) {

@@ -41,12 +41,15 @@ public class TestStreamToTableAdapter {
 
     @Test
     public void testSimple() {
-        final TableDefinition tableDefinition = new TableDefinition(Arrays.asList(String.class, int.class, long.class, double.class), Arrays.asList("S", "I", "L", "D"));
+        final TableDefinition tableDefinition =
+            new TableDefinition(Arrays.asList(String.class, int.class, long.class, double.class),
+                Arrays.asList("S", "I", "L", "D"));
         final DynamicTable empty = TableTools.newTable(tableDefinition);
 
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
-        final StreamToTableAdapter adapter = new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
+        final StreamToTableAdapter adapter =
+            new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
         final DynamicTable result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
@@ -57,7 +60,7 @@ public class TestStreamToTableAdapter {
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(0, listener.getCount());
 
-        final WritableChunk<Attributes.Values> [] chunks = new WritableChunk[4];
+        final WritableChunk<Attributes.Values>[] chunks = new WritableChunk[4];
         WritableObjectChunk<Object, Attributes.Values> woc;
         WritableIntChunk<Attributes.Values> wic;
         WritableLongChunk<Attributes.Values> wlc;
@@ -90,7 +93,8 @@ public class TestStreamToTableAdapter {
         TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
-        final Table expect1 = TableTools.newTable(col("S", "Bill", "Ted"), intCol("I", 2, 3), longCol("L", 4L, 5L), doubleCol("D", Math.PI, Math.E));
+        final Table expect1 = TableTools.newTable(col("S", "Bill", "Ted"), intCol("I", 2, 3),
+            longCol("L", 4L, 5L), doubleCol("D", Math.PI, Math.E));
         TstUtils.assertTableEquals(expect1, result);
 
         listener.reset();
@@ -160,7 +164,9 @@ public class TestStreamToTableAdapter {
         TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
-        final Table expect2 = TableTools.newTable(col("S", "Ren", "Stimpy", "Jekyll", "Hyde"), intCol("I", 7, 8, 13, 14), longCol("L", 9, 10, 15, 16), doubleCol("D", 11.1, 12.2, 17.7, 18.8));
+        final Table expect2 = TableTools.newTable(col("S", "Ren", "Stimpy", "Jekyll", "Hyde"),
+            intCol("I", 7, 8, 13, 14), longCol("L", 9, 10, 15, 16),
+            doubleCol("D", 11.1, 12.2, 17.7, 18.8));
         TstUtils.assertTableEquals(expect2, result);
 
         chunks[0] = woc = WritableObjectChunk.makeWritableChunk(2);
@@ -190,7 +196,8 @@ public class TestStreamToTableAdapter {
         TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
-        final Table expect3 = TableTools.newTable(col("S", "Ben", "Jerry"), intCol("I", 19, 20), longCol("L", 21, 22), doubleCol("D", 23.3, 24.4));
+        final Table expect3 = TableTools.newTable(col("S", "Ben", "Jerry"), intCol("I", 19, 20),
+            longCol("L", 21, 22), doubleCol("D", 23.3, 24.4));
         TstUtils.assertTableEquals(expect3, result);
 
         listener.reset();
@@ -211,12 +218,15 @@ public class TestStreamToTableAdapter {
 
     @Test
     public void testWrappedTypes() {
-        final TableDefinition tableDefinition = new TableDefinition(Arrays.asList(String.class, Boolean.class, DBDateTime.class), Arrays.asList("S", "B", "D"));
+        final TableDefinition tableDefinition =
+            new TableDefinition(Arrays.asList(String.class, Boolean.class, DBDateTime.class),
+                Arrays.asList("S", "B", "D"));
         final DynamicTable empty = TableTools.newTable(tableDefinition);
 
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
-        final StreamToTableAdapter adapter = new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
+        final StreamToTableAdapter adapter =
+            new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
         final DynamicTable result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
@@ -227,8 +237,9 @@ public class TestStreamToTableAdapter {
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(0, listener.getCount());
 
-        final WritableChunk<Attributes.Values> [] chunks = new WritableChunk[3];
-        final WritableObjectChunk<Object, Attributes.Values> woc = WritableObjectChunk.makeWritableChunk(3);
+        final WritableChunk<Attributes.Values>[] chunks = new WritableChunk[3];
+        final WritableObjectChunk<Object, Attributes.Values> woc =
+            WritableObjectChunk.makeWritableChunk(3);
         chunks[0] = woc;
         woc.set(0, "Collins");
         woc.set(1, "Armstrong");
@@ -260,7 +271,8 @@ public class TestStreamToTableAdapter {
         TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
-        final Table expect1 = TableTools.newTable(col("S", "Collins", "Armstrong", "Aldrin"), col("B", true, false, null), col("D", dt1, dt2, dt3));
+        final Table expect1 = TableTools.newTable(col("S", "Collins", "Armstrong", "Aldrin"),
+            col("B", true, false, null), col("D", dt1, dt2, dt3));
         TstUtils.assertTableEquals(expect1, result);
 
         listener.reset();
@@ -277,12 +289,14 @@ public class TestStreamToTableAdapter {
 
     @Test
     public void testArrayTypes() {
-        final TableDefinition tableDefinition = new TableDefinition(Arrays.asList(String[].class, int[].class), Arrays.asList("SA", "IA"));
+        final TableDefinition tableDefinition = new TableDefinition(
+            Arrays.asList(String[].class, int[].class), Arrays.asList("SA", "IA"));
         final DynamicTable empty = TableTools.newTable(tableDefinition);
 
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
-        final StreamToTableAdapter adapter = new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
+        final StreamToTableAdapter adapter =
+            new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
         final DynamicTable result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
@@ -293,15 +307,17 @@ public class TestStreamToTableAdapter {
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(0, listener.getCount());
 
-        final WritableChunk<Attributes.Values> [] chunks = new WritableChunk[2];
-        final WritableObjectChunk<String[], Attributes.Values> woc = WritableObjectChunk.makeWritableChunk(2);
+        final WritableChunk<Attributes.Values>[] chunks = new WritableChunk[2];
+        final WritableObjectChunk<String[], Attributes.Values> woc =
+            WritableObjectChunk.makeWritableChunk(2);
         chunks[0] = woc;
-        woc.set(0, new String[]{"Gagarin", "Tereshkova"});
-        woc.set(1, new String[]{});
-        final WritableObjectChunk<int[], Attributes.Values> wic = WritableObjectChunk.makeWritableChunk(2);
+        woc.set(0, new String[] {"Gagarin", "Tereshkova"});
+        woc.set(1, new String[] {});
+        final WritableObjectChunk<int[], Attributes.Values> wic =
+            WritableObjectChunk.makeWritableChunk(2);
         chunks[1] = wic;
-        wic.set(0, new int[]{1, 2, 3});
-        wic.set(1, new int[]{4, 5, 6});
+        wic.set(0, new int[] {1, 2, 3});
+        wic.set(1, new int[] {4, 5, 6});
 
         adapter.accept(chunks);
 
@@ -316,7 +332,10 @@ public class TestStreamToTableAdapter {
         TestCase.assertEquals(IndexShiftData.EMPTY, listener.getUpdate().shifted);
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet);
 
-        final Table expect1 = TableTools.newTable(col("SA", new String[]{"Gagarin", "Tereshkova"}, CollectionUtil.ZERO_LENGTH_STRING_ARRAY), col("IA", new int[]{1, 2, 3}, new int[]{4, 5, 6}));
+        final Table expect1 = TableTools.newTable(
+            col("SA", new String[] {"Gagarin", "Tereshkova"},
+                CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+            col("IA", new int[] {1, 2, 3}, new int[] {4, 5, 6}));
         TstUtils.assertTableEquals(expect1, result);
 
         listener.reset();
@@ -333,12 +352,14 @@ public class TestStreamToTableAdapter {
 
     @Test
     public void testBig() {
-        final TableDefinition tableDefinition = new TableDefinition(Collections.singletonList(long.class), Arrays.asList("L"));
+        final TableDefinition tableDefinition =
+            new TableDefinition(Collections.singletonList(long.class), Arrays.asList("L"));
         final DynamicTable empty = TableTools.newTable(tableDefinition);
 
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
-        final StreamToTableAdapter adapter = new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
+        final StreamToTableAdapter adapter =
+            new StreamToTableAdapter(tableDefinition, streamPublisher, LiveTableMonitor.DEFAULT);
         final DynamicTable result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
@@ -349,10 +370,10 @@ public class TestStreamToTableAdapter {
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(0, listener.getCount());
 
-        final long [] exVals = new long[4048];
+        final long[] exVals = new long[4048];
         int pos = 0;
 
-        final WritableChunk<Attributes.Values> [] chunks = new WritableChunk[1];
+        final WritableChunk<Attributes.Values>[] chunks = new WritableChunk[1];
         WritableLongChunk<Attributes.Values> wlc;
         chunks[0] = wlc = WritableLongChunk.makeWritableChunk(2048);
         wlc.setSize(2048);

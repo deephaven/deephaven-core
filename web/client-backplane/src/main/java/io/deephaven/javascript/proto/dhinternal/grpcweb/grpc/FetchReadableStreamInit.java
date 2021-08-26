@@ -7,4 +7,5 @@ import jsinterop.annotations.JsType;
     isNative = true,
     name = "dhinternal.grpcWeb.grpc.FetchReadableStreamInit",
     namespace = JsPackage.GLOBAL)
-public interface FetchReadableStreamInit {}
+public interface FetchReadableStreamInit {
+}

@@ -1,10 +1,7 @@
 package io.deephaven.db.tables.lang;
 
 public enum DBLanguageParserDummyEnum {
-    ONE("One"),
-    TWO("Two"),
-    THREE("Red"),
-    FOUR("Blue");
+    ONE("One"), TWO("Two"), THREE("Red"), FOUR("Blue");
 
     private final String attribute;
 

@@ -13,100 +13,100 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.MultiSeriesSourceDescriptor",
     namespace = JsPackage.GLOBAL)
 public class MultiSeriesSourceDescriptor {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
-    @JsOverlay
-    static MultiSeriesSourceDescriptor.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType {
+        @JsOverlay
+        static MultiSeriesSourceDescriptor.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getAxisId();
+
+        @JsProperty
+        String getColumnName();
+
+        @JsProperty
+        double getTableMapId();
+
+        @JsProperty
+        double getType();
+
+        @JsProperty
+        void setAxisId(String axisId);
+
+        @JsProperty
+        void setColumnName(String columnName);
+
+        @JsProperty
+        void setTableMapId(double tableMapId);
+
+        @JsProperty
+        void setType(double type);
     }
 
-    @JsProperty
-    String getAxisId();
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType0 {
+        @JsOverlay
+        static MultiSeriesSourceDescriptor.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
 
-    @JsProperty
-    String getColumnName();
+        @JsProperty
+        String getAxisId();
 
-    @JsProperty
-    double getTableMapId();
+        @JsProperty
+        String getColumnName();
 
-    @JsProperty
-    double getType();
+        @JsProperty
+        double getTableMapId();
 
-    @JsProperty
-    void setAxisId(String axisId);
+        @JsProperty
+        double getType();
 
-    @JsProperty
-    void setColumnName(String columnName);
+        @JsProperty
+        void setAxisId(String axisId);
 
-    @JsProperty
-    void setTableMapId(double tableMapId);
+        @JsProperty
+        void setColumnName(String columnName);
 
-    @JsProperty
-    void setType(double type);
-  }
+        @JsProperty
+        void setTableMapId(double tableMapId);
 
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsOverlay
-    static MultiSeriesSourceDescriptor.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+        @JsProperty
+        void setType(double type);
     }
 
-    @JsProperty
-    String getAxisId();
+    public static native MultiSeriesSourceDescriptor deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    String getColumnName();
+    public static native MultiSeriesSourceDescriptor deserializeBinaryFromReader(
+        MultiSeriesSourceDescriptor message, Object reader);
 
-    @JsProperty
-    double getTableMapId();
+    public static native void serializeBinaryToWriter(
+        MultiSeriesSourceDescriptor message, Object writer);
 
-    @JsProperty
-    double getType();
+    public static native MultiSeriesSourceDescriptor.ToObjectReturnType toObject(
+        boolean includeInstance, MultiSeriesSourceDescriptor msg);
 
-    @JsProperty
-    void setAxisId(String axisId);
+    public native String getAxisId();
 
-    @JsProperty
-    void setColumnName(String columnName);
+    public native String getColumnName();
 
-    @JsProperty
-    void setTableMapId(double tableMapId);
+    public native int getTableMapId();
 
-    @JsProperty
-    void setType(double type);
-  }
+    public native int getType();
 
-  public static native MultiSeriesSourceDescriptor deserializeBinary(Uint8Array bytes);
+    public native Uint8Array serializeBinary();
 
-  public static native MultiSeriesSourceDescriptor deserializeBinaryFromReader(
-      MultiSeriesSourceDescriptor message, Object reader);
+    public native void setAxisId(String value);
 
-  public static native void serializeBinaryToWriter(
-      MultiSeriesSourceDescriptor message, Object writer);
+    public native void setColumnName(String value);
 
-  public static native MultiSeriesSourceDescriptor.ToObjectReturnType toObject(
-      boolean includeInstance, MultiSeriesSourceDescriptor msg);
+    public native void setTableMapId(int value);
 
-  public native String getAxisId();
+    public native void setType(int value);
 
-  public native String getColumnName();
+    public native MultiSeriesSourceDescriptor.ToObjectReturnType0 toObject();
 
-  public native int getTableMapId();
-
-  public native int getType();
-
-  public native Uint8Array serializeBinary();
-
-  public native void setAxisId(String value);
-
-  public native void setColumnName(String value);
-
-  public native void setTableMapId(int value);
-
-  public native void setType(int value);
-
-  public native MultiSeriesSourceDescriptor.ToObjectReturnType0 toObject();
-
-  public native MultiSeriesSourceDescriptor.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native MultiSeriesSourceDescriptor.ToObjectReturnType0 toObject(boolean includeInstance);
 }

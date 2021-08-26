@@ -16,19 +16,21 @@ import java.io.IOException;
  */
 public abstract class Job implements LogOutputAppendable {
 
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
     // public interface
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
 
     /**
      * This method is invoked by the scheduler when the job's channel becomes ready.
      *
      * @param channel the channel which has become ready
      * @param readyOps the operations which can be performed on this channel without blocking
-     * @returns the modified readyOps after the invocation; if non-zero, the job will be invoked again with these
+     * @returns the modified readyOps after the invocation; if non-zero, the job will be invoked
+     *          again with these
      * @throws IOException - if something bad happens
      */
-    public abstract int invoke(SelectableChannel channel, int readyOps, Procedure.Nullary handoff) throws IOException;
+    public abstract int invoke(SelectableChannel channel, int readyOps, Procedure.Nullary handoff)
+        throws IOException;
 
     /**
      * This method is invoked if the job times out.
@@ -36,14 +38,14 @@ public abstract class Job implements LogOutputAppendable {
     public abstract void timedOut();
 
     /**
-     * This method is called if the job is explicitly cancelled before it becomes
-     * ready or times out.
+     * This method is called if the job is explicitly cancelled before it becomes ready or times
+     * out.
      */
     public abstract void cancelled();
 
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
     // scheduler state management
-    //--------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
 
     // TODO: currently, we assume that the scheduler is a singleton, or at the least
     // TODO: that no job will be used with more than one scheduler throughout its lifetime.

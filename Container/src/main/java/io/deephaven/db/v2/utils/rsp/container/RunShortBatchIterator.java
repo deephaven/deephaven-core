@@ -6,7 +6,7 @@ public class RunShortBatchIterator implements ContainerShortBatchIterator {
     private final RunContainer runs;
 
     private int run = 0;
-    private int cursor = 0;  // relative position inside the current run.
+    private int cursor = 0; // relative position inside the current run.
 
     public RunShortBatchIterator(final RunContainer runs, final int initialSkipCount) {
         this.runs = runs;

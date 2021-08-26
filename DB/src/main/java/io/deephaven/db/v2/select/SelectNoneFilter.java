@@ -27,7 +27,7 @@ public class SelectNoneFilter extends SelectFilterImpl {
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) { }
+    public void init(TableDefinition tableDefinition) {}
 
     @Override
     public Index filter(Index selection, Index fullSet, Table table, boolean usePrev) {
@@ -40,7 +40,7 @@ public class SelectNoneFilter extends SelectFilterImpl {
     }
 
     @Override
-    public void setRecomputeListener(RecomputeListener result) { }
+    public void setRecomputeListener(RecomputeListener result) {}
 
     @Override
     public SelectFilter copy() {

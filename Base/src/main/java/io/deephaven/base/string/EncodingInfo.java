@@ -13,28 +13,26 @@ import java.lang.ref.SoftReference;
 import java.nio.charset.*;
 
 /**
- * Encoding info enum, to help code determine what assumptions it can make about a CharSet, as well as simplification
- * for encode/decode operations.
+ * Encoding info enum, to help code determine what assumptions it can make about a CharSet, as well
+ * as simplification for encode/decode operations.
  */
 public enum EncodingInfo implements LogOutputAppendable {
 
-    US_ASCII(StandardCharsets.US_ASCII, true),
-    ISO_8859_1(StandardCharsets.ISO_8859_1, true),
-    UTF_8(StandardCharsets.UTF_8, false),
-    UTF_16BE(StandardCharsets.UTF_16BE, false),
-    UTF_16LE(StandardCharsets.UTF_16LE, false),
-    UTF_16(StandardCharsets.UTF_16, false);
+    US_ASCII(StandardCharsets.US_ASCII, true), ISO_8859_1(StandardCharsets.ISO_8859_1, true), UTF_8(
+        StandardCharsets.UTF_8, false), UTF_16BE(StandardCharsets.UTF_16BE, false), UTF_16LE(
+            StandardCharsets.UTF_16LE, false), UTF_16(StandardCharsets.UTF_16, false);
 
     private final Charset charset;
     private final String encodingName;
-    private final boolean isSimple; // Can we simply cast single bytes to single chars without breaking anything? Not multi-byte, subset of UCS-2.
+    private final boolean isSimple; // Can we simply cast single bytes to single chars without
+                                    // breaking anything? Not multi-byte, subset of UCS-2.
 
     private final ThreadLocal<SoftReference<CharsetEncoder>> encoder;
     private final ThreadLocal<SoftReference<CharsetDecoder>> decoder;
 
     EncodingInfo(@NotNull final Charset charset,
-                 @NotNull final String encodingName,
-                 final boolean isSimple) {
+        @NotNull final String encodingName,
+        final boolean isSimple) {
         this.charset = Require.neqNull(charset, "charSet");
         this.encodingName = Require.neqNull(encodingName, "encodingName");
         this.isSimple = isSimple;
@@ -44,13 +42,13 @@ public enum EncodingInfo implements LogOutputAppendable {
     }
 
     EncodingInfo(@NotNull final Charset charset,
-                 final boolean isSimple) {
+        final boolean isSimple) {
         this(charset, charset.name(), isSimple);
     }
 
     @SuppressWarnings("unused")
     EncodingInfo(@NotNull final String encodingName,
-                 final boolean isSimple) {
+        final boolean isSimple) {
         this(Charset.forName(encodingName), encodingName, isSimple);
     }
 
@@ -59,7 +57,9 @@ public enum EncodingInfo implements LogOutputAppendable {
     }
 
     /**
-     * Can this encoding info's charset be encoded or decoded by simple linear assignment of char->byte or byte->char.
+     * Can this encoding info's charset be encoded or decoded by simple linear assignment of
+     * char->byte or byte->char.
+     * 
      * @return Whether this encoding info's charset is simple
      */
     public boolean isSimple() {
@@ -71,14 +71,17 @@ public enum EncodingInfo implements LogOutputAppendable {
     }
 
     private CharsetEncoder makeEncoder() {
-        return charset.newEncoder().onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
+        return charset.newEncoder().onMalformedInput(CodingErrorAction.REPLACE)
+            .onUnmappableCharacter(CodingErrorAction.REPLACE);
     }
 
     /**
-     * <p>Get a thread local encoder for this encoding info.
+     * <p>
+     * Get a thread local encoder for this encoding info.
      *
-     * <p>The encoder will be setup to replace malformed input or unmappable characters, and these settings should
-     * be restored if changed.
+     * <p>
+     * The encoder will be setup to replace malformed input or unmappable characters, and these
+     * settings should be restored if changed.
      *
      * @return A thread local encoder for this encoding info
      */
@@ -91,14 +94,17 @@ public enum EncodingInfo implements LogOutputAppendable {
     }
 
     private CharsetDecoder makeDecoder() {
-        return charset.newDecoder().onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
+        return charset.newDecoder().onMalformedInput(CodingErrorAction.REPLACE)
+            .onUnmappableCharacter(CodingErrorAction.REPLACE);
     }
 
     /**
-     * <p>Get a thread local decoder for this encoding info.
+     * <p>
+     * Get a thread local decoder for this encoding info.
      *
-     * <p>The decoder will be setup to replace malformed input or unmappable characters, and these settings should
-     * be restored if changed.
+     * <p>
+     * The decoder will be setup to replace malformed input or unmappable characters, and these
+     * settings should be restored if changed.
      *
      * @return A thread local decoder for this encoding info
      */

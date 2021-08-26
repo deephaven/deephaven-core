@@ -64,12 +64,13 @@ public class ComplementRangeIteratorTest {
 
     @Test
     public void testSingleRangeInput() {
-        final long[] points = new long[]{ 0, 100, 200, Long.MAX_VALUE };
+        final long[] points = new long[] {0, 100, 200, Long.MAX_VALUE};
         for (int i = 0; i < points.length - 1; ++i) {
             final long start = points[i];
             final long end = points[i + 1];
             final Index ix = Index.FACTORY.getIndexByRange(start, end);
-            try (final ComplementRangeIterator cit = new ComplementRangeIterator(ix.rangeIterator())) {
+            try (final ComplementRangeIterator cit =
+                new ComplementRangeIterator(ix.rangeIterator())) {
                 assertTrue(cit.hasNext());
                 final String m = "i=" + i;
                 if (i == 0) {
@@ -142,9 +143,10 @@ public class ComplementRangeIteratorTest {
         ix.insertRange(10, 20);
         ix.insertRange(30, 40);
 
-        for (long v : new long[] { 0, 1, 5, 8, 9 }) {
+        for (long v : new long[] {0, 1, 5, 8, 9}) {
             final String m = "v=" + v;
-            try (final ComplementRangeIterator cit = new ComplementRangeIterator(ix.rangeIterator())) {
+            try (final ComplementRangeIterator cit =
+                new ComplementRangeIterator(ix.rangeIterator())) {
                 assertTrue(m, cit.hasNext());
                 assertTrue(m, cit.advance(v));
                 assertEquals(m, v, cit.currentRangeStart());
@@ -156,9 +158,10 @@ public class ComplementRangeIteratorTest {
             }
         }
 
-        for (long v : new long[] { 10, 11, 15, 20, 21, 26, 28, 29 }) {
+        for (long v : new long[] {10, 11, 15, 20, 21, 26, 28, 29}) {
             final String m = "v=" + v;
-            try (final ComplementRangeIterator cit = new ComplementRangeIterator(ix.rangeIterator())) {
+            try (final ComplementRangeIterator cit =
+                new ComplementRangeIterator(ix.rangeIterator())) {
                 assertTrue(m, cit.hasNext());
                 assertTrue(m, cit.advance(v));
                 assertEquals(m, Math.max(v, 21), cit.currentRangeStart());
@@ -170,9 +173,11 @@ public class ComplementRangeIteratorTest {
             }
         }
 
-        for (long v : new long[] { 30, 31, 35, 39, 40, 41, 600, Long.MAX_VALUE - 1, Long.MAX_VALUE }) {
+        for (long v : new long[] {30, 31, 35, 39, 40, 41, 600, Long.MAX_VALUE - 1,
+                Long.MAX_VALUE}) {
             final String m = "v=" + v;
-            try (final ComplementRangeIterator cit = new ComplementRangeIterator(ix.rangeIterator())) {
+            try (final ComplementRangeIterator cit =
+                new ComplementRangeIterator(ix.rangeIterator())) {
                 assertTrue(m, cit.hasNext());
                 assertTrue(m, cit.advance(v));
                 assertEquals(m, Math.max(v, 41), cit.currentRangeStart());
@@ -188,9 +193,10 @@ public class ComplementRangeIteratorTest {
         ix.insertRange(0, 10);
         ix.insertRange(20, 40);
 
-        for (long v : new long[] { 0, 1, 5, 9, 10, 11, 12, 15, 18, 19 }) {
+        for (long v : new long[] {0, 1, 5, 9, 10, 11, 12, 15, 18, 19}) {
             final String m = "v=" + v;
-            try (final ComplementRangeIterator cit = new ComplementRangeIterator(ix.rangeIterator())) {
+            try (final ComplementRangeIterator cit =
+                new ComplementRangeIterator(ix.rangeIterator())) {
                 assertTrue(m, cit.hasNext());
                 assertTrue(m, cit.advance(v));
                 assertEquals(m, Math.max(11, v), cit.currentRangeStart());
@@ -209,9 +215,10 @@ public class ComplementRangeIteratorTest {
         ix.insertRange(5, 10);
         ix.insertRange(20, Long.MAX_VALUE);
 
-        for (long v : new long[] { 20, 21, 25, 1000000, Long.MAX_VALUE - 1, Long.MAX_VALUE }) {
+        for (long v : new long[] {20, 21, 25, 1000000, Long.MAX_VALUE - 1, Long.MAX_VALUE}) {
             final String m = "v=" + v;
-            try (final ComplementRangeIterator cit = new ComplementRangeIterator(ix.rangeIterator())) {
+            try (final ComplementRangeIterator cit =
+                new ComplementRangeIterator(ix.rangeIterator())) {
                 assertTrue(m, cit.hasNext());
                 assertEquals(0, cit.next());
                 assertFalse(m, cit.advance(v));
@@ -223,9 +230,10 @@ public class ComplementRangeIteratorTest {
     @Test
     public void testAdvanceEmpty() {
         final Index ix = Index.FACTORY.getIndexByRange(0, Long.MAX_VALUE);
-        for (long v : new long[] { 0, 1, 20, Long.MAX_VALUE - 1, Long.MAX_VALUE }) {
+        for (long v : new long[] {0, 1, 20, Long.MAX_VALUE - 1, Long.MAX_VALUE}) {
             final String m = "v=" + v;
-            try (final ComplementRangeIterator cit = new ComplementRangeIterator(ix.rangeIterator())) {
+            try (final ComplementRangeIterator cit =
+                new ComplementRangeIterator(ix.rangeIterator())) {
                 assertFalse(m, cit.advance(v));
                 assertFalse(m, cit.hasNext());
             }
@@ -237,9 +245,10 @@ public class ComplementRangeIteratorTest {
         final Index ix = Index.FACTORY.getEmptyIndex();
         ix.insertRange(0, 10);
         ix.insertRange(20, Long.MAX_VALUE);
-        for (long v : new long[] { 20, 21, 30, Long.MAX_VALUE }) {
+        for (long v : new long[] {20, 21, 30, Long.MAX_VALUE}) {
             final String m = "v=" + v;
-            try (final ComplementRangeIterator cit = new ComplementRangeIterator(ix.rangeIterator())) {
+            try (final ComplementRangeIterator cit =
+                new ComplementRangeIterator(ix.rangeIterator())) {
                 assertTrue(m, cit.hasNext());
                 assertEquals(11, cit.next());
                 assertFalse(cit.advance(v));
@@ -254,9 +263,10 @@ public class ComplementRangeIteratorTest {
         ix.insertRange(10, 20);
         ix.insertRange(30, 40);
         ix.insertRange(50, 60);
-        for (long v : new long[] { 30, 31, 35, 39, 40, 41, 42, 45, 48, 49 }) {
+        for (long v : new long[] {30, 31, 35, 39, 40, 41, 42, 45, 48, 49}) {
             final String m = "v=" + v;
-            try (final ComplementRangeIterator cit = new ComplementRangeIterator(ix.rangeIterator())) {
+            try (final ComplementRangeIterator cit =
+                new ComplementRangeIterator(ix.rangeIterator())) {
                 assertTrue(m, cit.hasNext());
                 assertEquals(m, 0, cit.next());
                 assertTrue(m, cit.advance(v));
@@ -270,9 +280,10 @@ public class ComplementRangeIteratorTest {
             }
         }
 
-        for (long v : new long[] { 40, 41, 42, 45, 48, 49 }) {
+        for (long v : new long[] {40, 41, 42, 45, 48, 49}) {
             final String m = "v=" + v;
-            try (final ComplementRangeIterator cit = new ComplementRangeIterator(ix.rangeIterator())) {
+            try (final ComplementRangeIterator cit =
+                new ComplementRangeIterator(ix.rangeIterator())) {
                 assertTrue(m, cit.hasNext());
                 assertEquals(m, 0, cit.next());
                 assertTrue(m, cit.advance(v));
@@ -286,9 +297,10 @@ public class ComplementRangeIteratorTest {
         }
 
         ix.insertRange(70, 80);
-        for (long v : new long[] { 30, 31, 35, 39, 40, 41, 42, 45, 48, 49 }) {
+        for (long v : new long[] {30, 31, 35, 39, 40, 41, 42, 45, 48, 49}) {
             final String m = "v=" + v;
-            try (final ComplementRangeIterator cit = new ComplementRangeIterator(ix.rangeIterator())) {
+            try (final ComplementRangeIterator cit =
+                new ComplementRangeIterator(ix.rangeIterator())) {
                 assertTrue(m, cit.hasNext());
                 assertEquals(m, 0, cit.next());
                 assertTrue(m, cit.advance(v));
@@ -303,9 +315,10 @@ public class ComplementRangeIteratorTest {
         }
 
         ix.insertRange(70, Long.MAX_VALUE);
-        for (long v : new long[] { 50, 51, 55, 59, 60, 61, 62, 65, 68, 69 }) {
+        for (long v : new long[] {50, 51, 55, 59, 60, 61, 62, 65, 68, 69}) {
             final String m = "v=" + v;
-            try (final ComplementRangeIterator cit = new ComplementRangeIterator(ix.rangeIterator())) {
+            try (final ComplementRangeIterator cit =
+                new ComplementRangeIterator(ix.rangeIterator())) {
                 assertTrue(m, cit.hasNext());
                 assertEquals(m, 0, cit.next());
                 assertTrue(m, cit.advance(v));

@@ -24,7 +24,7 @@ import static io.deephaven.benchmarking.BenchmarkTools.applySparsity;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Warmup(iterations = 1, time = 1)
 @Measurement(iterations = 1, time = 1)
-@Timeout(time=3)
+@Timeout(time = 3)
 @Fork(1)
 public class WhereBenchmark {
     private SelectFilter selectFilter;
@@ -44,25 +44,29 @@ public class WhereBenchmark {
     @Param({"100", "10000", "1000000"})
     private int tableSize;
 
-    @Param({"100", "90", "50", "20"}) //, "10", "5", "1"})
+    @Param({"100", "90", "50", "20"}) // , "10", "5", "1"})
     private int sparsity;
     private Table inputTable;
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        final EnumStringColumnGenerator enumStringyCol = (EnumStringColumnGenerator)BenchmarkTools.stringCol("Thingy", 30, 6, 6, 0xB00FB00F);
+        final EnumStringColumnGenerator enumStringyCol =
+            (EnumStringColumnGenerator) BenchmarkTools.stringCol("Thingy", 30, 6, 6, 0xB00FB00F);
 
 
         final BenchmarkTableBuilder builder;
-        switch(tableType) {
+        switch (tableType) {
             case "Historical":
-                builder = BenchmarkTools.persistentTableBuilder("Carlos", BenchmarkTools.sizeWithSparsity(tableSize, sparsity))
-                        .addGroupingColumns("Thingy")
-                        .setPartitioningFormula("${autobalance_single}")
-                        .setPartitionCount(10);
+                builder = BenchmarkTools
+                    .persistentTableBuilder("Carlos",
+                        BenchmarkTools.sizeWithSparsity(tableSize, sparsity))
+                    .addGroupingColumns("Thingy")
+                    .setPartitioningFormula("${autobalance_single}")
+                    .setPartitionCount(10);
                 break;
             case "Intraday":
-                builder = BenchmarkTools.persistentTableBuilder("Carlos", BenchmarkTools.sizeWithSparsity(tableSize, sparsity));
+                builder = BenchmarkTools.persistentTableBuilder("Carlos",
+                    BenchmarkTools.sizeWithSparsity(tableSize, sparsity));
                 break;
 
             default:
@@ -70,29 +74,31 @@ public class WhereBenchmark {
         }
 
         bmTable = builder
-                .setSeed(0xDEADBEEF)
-                .addColumn(BenchmarkTools.stringCol("Stringy", 1, 10))
-                .addColumn(BenchmarkTools.numberCol("C2", int.class))
-                .addColumn(BenchmarkTools.numberCol("C3", double.class, -10e6, 10e6))
-                .addColumn(BenchmarkTools.stringCol("C4", 4, 5, 7, 0xFEEDBEEF))
-                .addColumn(BenchmarkTools.numberCol("C5", double.class, -10e6, 10e6))
-                .addColumn(enumStringyCol)
-                .build();
+            .setSeed(0xDEADBEEF)
+            .addColumn(BenchmarkTools.stringCol("Stringy", 1, 10))
+            .addColumn(BenchmarkTools.numberCol("C2", int.class))
+            .addColumn(BenchmarkTools.numberCol("C3", double.class, -10e6, 10e6))
+            .addColumn(BenchmarkTools.stringCol("C4", 4, 5, 7, 0xFEEDBEEF))
+            .addColumn(BenchmarkTools.numberCol("C5", double.class, -10e6, 10e6))
+            .addColumn(enumStringyCol)
+            .build();
 
-        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
+        state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()),
+            params.getWarmup().getCount());
 
         final List<String> uniqueThingyVals = Arrays.asList(enumStringyCol.getEnumVals());
         final String filterString;
 
-        switch(testType) {
+        switch (testType) {
             case "StringGroupedMatch":
                 filterString = "Thingy in " +
-                        "`"+ uniqueThingyVals.get(0)+"`, " +
-                        "`"+ uniqueThingyVals.get(uniqueThingyVals.size()-1)+"`, "+
-                        "`NotInTheSet`";
+                    "`" + uniqueThingyVals.get(0) + "`, " +
+                    "`" + uniqueThingyVals.get(uniqueThingyVals.size() - 1) + "`, " +
+                    "`NotInTheSet`";
                 break;
             case "StringGroupedCondition":
-                filterString = "Thingy.startsWith(`"+ uniqueThingyVals.get(0).substring(0,2)+"`)";
+                filterString =
+                    "Thingy.startsWith(`" + uniqueThingyVals.get(0).substring(0, 2) + "`)";
                 break;
             case "DoubleUngroupedCondition":
                 filterString = "C3 > 0";
@@ -125,7 +131,7 @@ public class WhereBenchmark {
     @Setup(Level.Iteration)
     public void setupIteration() {
         state.init();
-        inputTable = applySparsity(bmTable.getTable(),tableSize,sparsity,0);
+        inputTable = applySparsity(bmTable.getTable(), tableSize, sparsity, 0);
     }
 
     @TearDown(Level.Iteration)

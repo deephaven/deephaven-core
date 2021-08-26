@@ -10,7 +10,8 @@ import java.util.Collection;
 import java.util.Collections;
 
 /**
- * Partial {@link TableLocationProvider} implementation for standalone use or as part of a {@link TableDataService}.
+ * Partial {@link TableLocationProvider} implementation for standalone use or as part of a
+ * {@link TableDataService}.
  * <p>
  * Presents an interface similar to {@link TableLocationProvider.Listener} for subclasses to use when communicating with
  * the parent; see {@link #handleTableLocationKey(TableLocationKey)}.
@@ -19,14 +20,14 @@ import java.util.Collections;
  * override {@link #doInitialization()}.
  */
 public abstract class AbstractTableLocationProvider
-        extends SubscriptionAggregator<TableLocationProvider.Listener>
-        implements TableLocationProvider {
+    extends SubscriptionAggregator<TableLocationProvider.Listener>
+    implements TableLocationProvider {
 
     private final ImmutableTableKey tableKey;
 
     /**
-     * Map from {@link TableLocationKey} to itself, or to a {@link TableLocation}. The values are {@link TableLocation}s
-     * if:
+     * Map from {@link TableLocationKey} to itself, or to a {@link TableLocation}. The values are
+     * {@link TableLocation}s if:
      * <ol>
      * <li>The location has been requested via {@link #getTableLocation(TableLocationKey)} or
      * {@link #getTableLocationIfPresent(TableLocationKey)}</li>
@@ -50,7 +51,8 @@ public abstract class AbstractTableLocationProvider
      * @param tableKey A key that will be used by this provider
      * @param supportsSubscriptions Whether this provider should support subscriptions
      */
-    protected AbstractTableLocationProvider(@NotNull final TableKey tableKey, final boolean supportsSubscriptions) {
+    protected AbstractTableLocationProvider(@NotNull final TableKey tableKey,
+        final boolean supportsSubscriptions) {
         super(supportsSubscriptions);
         this.tableKey = tableKey.makeImmutable();
     }
@@ -78,7 +80,8 @@ public abstract class AbstractTableLocationProvider
     // ------------------------------------------------------------------------------------------------------------------
 
     @Override
-    protected final void deliverInitialSnapshot(@NotNull final TableLocationProvider.Listener listener) {
+    protected final void deliverInitialSnapshot(
+        @NotNull final TableLocationProvider.Listener listener) {
         unmodifiableTableLocationKeys.forEach(listener::handleTableLocationKey);
     }
 
@@ -86,7 +89,8 @@ public abstract class AbstractTableLocationProvider
      * Deliver a possibly-new key.
      *
      * @param locationKey The new key
-     * @apiNote This method is intended to be used by subclasses or by tightly-coupled discovery tools.
+     * @apiNote This method is intended to be used by subclasses or by tightly-coupled discovery
+     *          tools.
      */
     protected final void handleTableLocationKey(@NotNull final TableLocationKey locationKey) {
         if (!supportsSubscriptions()) {
@@ -94,9 +98,12 @@ public abstract class AbstractTableLocationProvider
             return;
         }
         synchronized (subscriptions) {
-            // Since we're holding the lock on subscriptions, the following code is overly complicated - we could
-            // certainly just deliver the notification in observeInsert. That said, I'm happier with this approach,
-            // as it minimizes lock duration for tableLocations, exemplifies correct use of putIfAbsent, and keeps
+            // Since we're holding the lock on subscriptions, the following code is overly
+            // complicated - we could
+            // certainly just deliver the notification in observeInsert. That said, I'm happier with
+            // this approach,
+            // as it minimizes lock duration for tableLocations, exemplifies correct use of
+            // putIfAbsent, and keeps
             // observeInsert out of the business of subscription processing.
             locationCreatedRecorder = false;
             final Object result = tableLocations.putIfAbsent(locationKey, this::observeInsert);
@@ -132,8 +139,9 @@ public abstract class AbstractTableLocationProvider
     }
 
     /**
-     * Internal method for subclasses to call to determine if they need to call {@link #ensureInitialized()}, if doing
-     * so might entail extra work (e.g. enqueueing an asynchronous job).
+     * Internal method for subclasses to call to determine if they need to call
+     * {@link #ensureInitialized()}, if doing so might entail extra work (e.g. enqueueing an
+     * asynchronous job).
      *
      * @return Whether {@link #setInitialized()} has been called
      */
@@ -142,16 +150,17 @@ public abstract class AbstractTableLocationProvider
     }
 
     /**
-     * Internal method for subclasses to call when they consider themselves to have been initialized.
+     * Internal method for subclasses to call when they consider themselves to have been
+     * initialized.
      */
     protected final void setInitialized() {
         initialized = true;
     }
 
     /**
-     * Initialization method for subclasses to override, in case simply calling {@link #refresh()} is inappropriate.
-     * This is *not* guaranteed to be called only once. It should internally call {@link #setInitialized()} upon
-     * successful initialization.
+     * Initialization method for subclasses to override, in case simply calling {@link #refresh()}
+     * is inappropriate. This is *not* guaranteed to be called only once. It should internally call
+     * {@link #setInitialized()} upon successful initialization.
      */
     protected void doInitialization() {
         refresh();
@@ -171,13 +180,15 @@ public abstract class AbstractTableLocationProvider
 
     @Override
     @Nullable
-    public TableLocation getTableLocationIfPresent(@NotNull final TableLocationKey tableLocationKey) {
+    public TableLocation getTableLocationIfPresent(
+        @NotNull final TableLocationKey tableLocationKey) {
         Object current = tableLocations.get(tableLocationKey);
         if (current == null) {
             return null;
         }
         // See JavaDoc on tableLocations for background.
-        // The intent is to create a TableLocation exactly once to replace the TableLocationKey placeholder that was
+        // The intent is to create a TableLocation exactly once to replace the TableLocationKey
+        // placeholder that was
         // added in handleTableLocationKey.
         if (current instanceof TableLocation) {
             return (TableLocation) current;
@@ -194,11 +205,14 @@ public abstract class AbstractTableLocationProvider
     }
 
     /**
-     * Key definition for {@link TableLocation} or {@link TableLocationKey} lookup by {@link TableLocationKey}.
+     * Key definition for {@link TableLocation} or {@link TableLocationKey} lookup by
+     * {@link TableLocationKey}.
      */
-    private static final class LocationKeyDefinition extends KeyedObjectKey.Basic<TableLocationKey, Object> {
+    private static final class LocationKeyDefinition
+        extends KeyedObjectKey.Basic<TableLocationKey, Object> {
 
-        private static final KeyedObjectKey<TableLocationKey, Object> INSTANCE = new LocationKeyDefinition();
+        private static final KeyedObjectKey<TableLocationKey, Object> INSTANCE =
+            new LocationKeyDefinition();
 
         private LocationKeyDefinition() {}
 

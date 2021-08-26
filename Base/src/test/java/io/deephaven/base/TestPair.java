@@ -24,7 +24,7 @@ public class TestPair {
         TestCase.assertEquals(p4, p5);
         TestCase.assertEquals(p11, p11);
         TestCase.assertEquals(p11, p12);
-        
+
         TestCase.assertEquals(-1, p1.compareTo(p2));
         TestCase.assertEquals(1, p2.compareTo(p1));
         TestCase.assertEquals(-1, p1.compareTo(p3));
@@ -32,16 +32,16 @@ public class TestPair {
         TestCase.assertEquals(1, p4.compareTo(p3));
         TestCase.assertEquals(-1, p3.compareTo(p4));
 
-        //noinspection EqualsWithItself
+        // noinspection EqualsWithItself
         TestCase.assertEquals(0, p7.compareTo(p7));
-        //noinspection EqualsWithItself
+        // noinspection EqualsWithItself
         TestCase.assertEquals(0, p8.compareTo(p8));
         TestCase.assertEquals(0, p7.compareTo(p8));
         TestCase.assertEquals(0, p8.compareTo(p7));
 
-        //noinspection EqualsWithItself
+        // noinspection EqualsWithItself
         TestCase.assertEquals(0, p9.compareTo(p9));
-        //noinspection EqualsWithItself
+        // noinspection EqualsWithItself
         TestCase.assertEquals(0, p9.compareTo(p9));
         TestCase.assertEquals(0, p9.compareTo(p10));
         TestCase.assertEquals(0, p9.compareTo(p10));

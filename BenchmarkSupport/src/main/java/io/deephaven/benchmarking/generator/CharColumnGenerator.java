@@ -21,7 +21,7 @@ public class CharColumnGenerator implements ColumnGenerator<Character> {
 
     @Override
     public String getUpdateString(String varName) {
-        return def.getName()+"=(char)"+varName+".getChar()";
+        return def.getName() + "=(char)" + varName + ".getChar()";
     }
 
     @Override

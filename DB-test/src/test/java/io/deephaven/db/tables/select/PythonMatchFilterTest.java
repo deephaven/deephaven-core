@@ -24,13 +24,15 @@ import org.junit.Test;
 /**
  * Test MatchFilters that reference Python lists.
  */
-@Ignore// TODO (deephaven-core#734)
+@Ignore // TODO (deephaven-core#734)
 public class PythonMatchFilterTest extends PythonTest {
 
     @Before
     public void setUp() {
         if (ProcessEnvironment.tryGet() == null) {
-            ProcessEnvironment.basicInteractiveProcessInitialization(Configuration.getInstance(), PythonMatchFilterTest.class.getCanonicalName(), new StreamLoggerImpl(System.out, LogLevel.INFO));
+            ProcessEnvironment.basicInteractiveProcessInitialization(Configuration.getInstance(),
+                PythonMatchFilterTest.class.getCanonicalName(),
+                new StreamLoggerImpl(System.out, LogLevel.INFO));
         }
     }
 
@@ -43,10 +45,11 @@ public class PythonMatchFilterTest extends PythonTest {
         SelectFilter filter = SelectFilterFactory.getExpression("ival in iii");
         assertEquals(MatchFilter.class, filter.getClass());
 
-        TableDefinition tableDef = new TableDefinition(Collections.singletonList(int.class), Collections.singletonList("ival"));
+        TableDefinition tableDef = new TableDefinition(Collections.singletonList(int.class),
+            Collections.singletonList("ival"));
         filter.init(tableDef);
-        Object[] values = ((MatchFilter)filter).getValues();
-//        System.out.println(Arrays.toString(values));
+        Object[] values = ((MatchFilter) filter).getValues();
+        // System.out.println(Arrays.toString(values));
         assertEquals(1, values[0]);
         assertEquals(2, values[1]);
         assertEquals(3, values[2]);
@@ -61,10 +64,11 @@ public class PythonMatchFilterTest extends PythonTest {
         SelectFilter filter = SelectFilterFactory.getExpression("sval in ss");
         assertEquals(MatchFilter.class, filter.getClass());
 
-        TableDefinition tableDef = new TableDefinition(Collections.singletonList(String.class), Collections.singletonList("sval"));
+        TableDefinition tableDef = new TableDefinition(Collections.singletonList(String.class),
+            Collections.singletonList("sval"));
         filter.init(tableDef);
-        Object[] values = ((MatchFilter)filter).getValues();
-//        System.out.println(Arrays.toString(values));
+        Object[] values = ((MatchFilter) filter).getValues();
+        // System.out.println(Arrays.toString(values));
         assertEquals("aa", values[0]);
         assertEquals("bb", values[1]);
         assertEquals("cc", values[2]);

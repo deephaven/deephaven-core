@@ -3,9 +3,8 @@ package io.deephaven.db.v2.utils.rsp.container;
 public interface BatchIterator {
 
     /**
-     * Writes the next batch of integers onto the buffer,
-     * and returns how many were written. Aims to fill
-     * the buffer.
+     * Writes the next batch of integers onto the buffer, and returns how many were written. Aims to
+     * fill the buffer.
      *
      * @param buffer - the target to write onto
      * @return how many values were written during the call.

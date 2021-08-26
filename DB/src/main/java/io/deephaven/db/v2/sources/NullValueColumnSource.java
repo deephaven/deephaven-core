@@ -28,30 +28,36 @@ import java.util.stream.Collectors;
  * A column source that returns null for all keys.
  */
 @AbstractColumnSource.IsSerializable(value = true)
-public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements ShiftData.ShiftCallback {
-    private static final KeyedObjectKey.Basic<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>> KEY_TYPE = new KeyedObjectKey.Basic<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>>() {
-        @Override
-        public Pair<Class<?>, Class<?>> getKey(NullValueColumnSource columnSource) {
-            //noinspection unchecked,rawtypes
-            return new Pair<>(columnSource.getType(), columnSource.getComponentType());
-        }
-    };
+public class NullValueColumnSource<T> extends AbstractColumnSource<T>
+    implements ShiftData.ShiftCallback {
+    private static final KeyedObjectKey.Basic<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>> KEY_TYPE =
+        new KeyedObjectKey.Basic<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>>() {
+            @Override
+            public Pair<Class<?>, Class<?>> getKey(NullValueColumnSource columnSource) {
+                // noinspection unchecked,rawtypes
+                return new Pair<>(columnSource.getType(), columnSource.getComponentType());
+            }
+        };
 
-    private static final KeyedObjectHashMap<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>> INSTANCES = new KeyedObjectHashMap<>(KEY_TYPE);
-    private static final ColumnSource<Byte> BOOL_AS_BYTE_SOURCE = new BooleanAsByteColumnSource(getInstance(Boolean.class, null));
+    private static final KeyedObjectHashMap<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>> INSTANCES =
+        new KeyedObjectHashMap<>(KEY_TYPE);
+    private static final ColumnSource<Byte> BOOL_AS_BYTE_SOURCE =
+        new BooleanAsByteColumnSource(getInstance(Boolean.class, null));
 
-    public static <T2> NullValueColumnSource<T2> getInstance(Class<T2> clazz, @Nullable final Class elementType) {
-        //noinspection unchecked,rawtypes
-        return (NullValueColumnSource) INSTANCES.putIfAbsent(new Pair<>(clazz, elementType), p -> new NullValueColumnSource<T2>(clazz, elementType));
+    public static <T2> NullValueColumnSource<T2> getInstance(Class<T2> clazz,
+        @Nullable final Class elementType) {
+        // noinspection unchecked,rawtypes
+        return (NullValueColumnSource) INSTANCES.putIfAbsent(new Pair<>(clazz, elementType),
+            p -> new NullValueColumnSource<T2>(clazz, elementType));
     }
 
     public static Map<String, ColumnSource<?>> createColumnSourceMap(TableDefinition definition) {
-        //noinspection unchecked
+        // noinspection unchecked
         return Arrays.stream(definition.getColumns()).collect(Collectors.toMap(
-                ColumnDefinition::getName,
-                c-> getInstance(c.getDataType(), c.getComponentType()),
-                (BinaryOperator<ColumnSource<?>>) Assert::neverInvoked,
-                LinkedHashMap::new));
+            ColumnDefinition::getName,
+            c -> getInstance(c.getDataType(), c.getComponentType()),
+            (BinaryOperator<ColumnSource<?>>) Assert::neverInvoked,
+            LinkedHashMap::new));
     }
 
     private NullValueColumnSource(Class<T> type, @Nullable final Class elementType) {
@@ -154,8 +160,7 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements
     }
 
     @Override
-    public void shift(long start, long end, long offset) {
-    }
+    public void shift(long start, long end, long offset) {}
 
     @Override
     public boolean isImmutable() {
@@ -163,29 +168,35 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements
     }
 
     @Override
-    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
+        @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         return true;
     }
 
     @Override
-    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        if((type == Boolean.class || type == boolean.class) &&
-           (alternateDataType == byte.class || alternateDataType == Byte.class)) {
-            //noinspection unchecked
-            return (ColumnSource)BOOL_AS_BYTE_SOURCE;
+    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
+        @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        if ((type == Boolean.class || type == boolean.class) &&
+            (alternateDataType == byte.class || alternateDataType == Byte.class)) {
+            // noinspection unchecked
+            return (ColumnSource) BOOL_AS_BYTE_SOURCE;
         }
 
         return getInstance(alternateDataType, null);
     }
 
     @Override
-    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
+    public void fillChunk(@NotNull FillContext context,
+        @NotNull WritableChunk<? super Attributes.Values> destination,
+        @NotNull OrderedKeys orderedKeys) {
         destination.setSize(orderedKeys.intSize());
         destination.fillWithNullValue(0, orderedKeys.intSize());
     }
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull OrderedKeys orderedKeys) {
+    public void fillPrevChunk(@NotNull FillContext context,
+        @NotNull WritableChunk<? super Attributes.Values> destination,
+        @NotNull OrderedKeys orderedKeys) {
         fillChunk(context, destination, orderedKeys);
     }
 }

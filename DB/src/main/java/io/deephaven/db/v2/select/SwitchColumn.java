@@ -28,7 +28,8 @@ public class SwitchColumn implements SelectColumn {
     private final FormulaParserConfiguration parser;
 
 
-    public SwitchColumn(String columnName, String expression, FormulaParserConfiguration parserConfiguration) {
+    public SwitchColumn(String columnName, String expression,
+        FormulaParserConfiguration parserConfiguration) {
         this.expression = Require.neqNull(expression, "expression");
         this.columnName = NameValidator.validateColumnName(columnName);
         this.parser = parserConfiguration;
@@ -47,7 +48,8 @@ public class SwitchColumn implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(Index index, Map<String, ? extends ColumnSource> columnsOfInterest) {
+    public List<String> initInputs(Index index,
+        Map<String, ? extends ColumnSource> columnsOfInterest) {
         if (realColumn == null) {
             if (columnsOfInterest.get(expression) != null) {
                 realColumn = new SourceColumn(expression, columnName);
@@ -69,8 +71,9 @@ public class SwitchColumn implements SelectColumn {
         }
         List<String> usedColumns = realColumn.initDef(columnDefinitionMap);
         if (realColumn instanceof DhFormulaColumn) {
-            FormulaColumnPython formulaColumnPython = ((DhFormulaColumn) realColumn).getFormulaColumnPython();
-            realColumn = formulaColumnPython != null ? formulaColumnPython: realColumn;
+            FormulaColumnPython formulaColumnPython =
+                ((DhFormulaColumn) realColumn).getFormulaColumnPython();
+            realColumn = formulaColumnPython != null ? formulaColumnPython : realColumn;
         }
         return usedColumns;
     }
@@ -119,7 +122,8 @@ public class SwitchColumn implements SelectColumn {
 
     @Override
     public boolean isRetain() {
-        return false; // We use SourceColumns if there's no "=", so there's no need for something more complicated here.
+        return false; // We use SourceColumns if there's no "=", so there's no need for something
+                      // more complicated here.
     }
 
     @Override

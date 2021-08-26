@@ -247,7 +247,7 @@ public abstract class AtomicUtil {
         do {
             expect = i.get();
             update = expect | mask;
-        } while ( !i.compareAndSet(expect, update));
+        } while (!i.compareAndSet(expect, update));
         return update;
     }
 
@@ -256,7 +256,7 @@ public abstract class AtomicUtil {
         do {
             expect = i.get();
             update = expect & mask;
-        } while ( !i.compareAndSet(expect, update));
+        } while (!i.compareAndSet(expect, update));
         return update;
     }
 
@@ -265,7 +265,7 @@ public abstract class AtomicUtil {
         do {
             expect = i.get();
             update = expect & ~mask;
-        } while ( !i.compareAndSet(expect, update));
+        } while (!i.compareAndSet(expect, update));
         return update;
     }
 }

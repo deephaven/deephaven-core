@@ -65,7 +65,7 @@ public abstract class LogOutputBaseImpl implements LogOutput, ByteBufferSink {
 
     @Override // from ByteBufferSink
     public void close(ByteBuffer b) throws IOException {
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         throw Assert.statementNeverExecuted();
     }
 
@@ -89,7 +89,7 @@ public abstract class LogOutputBaseImpl implements LogOutput, ByteBufferSink {
     @Override // from LogOutput
     public int size() {
         int byteCount = 0;
-        for ( int nIndex = 0, nLength = bufferCount; nIndex < nLength; nIndex++ ) {
+        for (int nIndex = 0, nLength = bufferCount; nIndex < nLength; nIndex++) {
             byteCount += buffers[nIndex].position();
         }
         return byteCount;
@@ -107,7 +107,7 @@ public abstract class LogOutputBaseImpl implements LogOutput, ByteBufferSink {
 
     @Override // from LogOutput
     public LogOutput clear() {
-        for ( int nIndex = 0, nLength = bufferCount; nIndex < nLength; nIndex++ ) {
+        for (int nIndex = 0, nLength = bufferCount; nIndex < nLength; nIndex++) {
             buffers[nIndex].clear();
             bufferPool.give(buffers[nIndex]);
             buffers[nIndex] = null;

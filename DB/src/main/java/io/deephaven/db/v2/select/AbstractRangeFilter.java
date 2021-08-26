@@ -14,8 +14,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A filter that determines if a column value is between an upper and lower bound
- * (which each may either be inclusive or exclusive).
+ * A filter that determines if a column value is between an upper and lower bound (which each may
+ * either be inclusive or exclusive).
  */
 public abstract class AbstractRangeFilter extends SelectFilterImpl {
     private static final Pattern decimalPattern = Pattern.compile("(-)?\\d+(?:\\.((\\d+)0*)?)?");
@@ -31,7 +31,8 @@ public abstract class AbstractRangeFilter extends SelectFilterImpl {
      */
     ChunkFilter chunkFilter;
     /**
-     * If the column can be be reinterpreted to a long, then we should prefer to use the longFilter instead.
+     * If the column can be be reinterpreted to a long, then we should prefer to use the longFilter
+     * instead.
      *
      * In practice, this is used for reinterpretable DBDateTimes.
      */
@@ -49,12 +50,14 @@ public abstract class AbstractRangeFilter extends SelectFilterImpl {
         final BigDecimal offset = BigDecimal.valueOf(1, precision);
         final boolean positiveOrZero = parsed.signum() >= 0;
 
-        return new ComparableRangeFilter(columnName, parsed, positiveOrZero ? parsed.add(offset) : parsed.subtract(offset), positiveOrZero, !positiveOrZero);
+        return new ComparableRangeFilter(columnName, parsed,
+            positiveOrZero ? parsed.add(offset) : parsed.subtract(offset), positiveOrZero,
+            !positiveOrZero);
     }
 
     static int findPrecision(String val) {
         final Matcher m = decimalPattern.matcher(val);
-        if(m.matches()) {
+        if (m.matches()) {
             final String fractionalPart = m.group(2);
             return fractionalPart == null ? 0 : fractionalPart.length();
         }
@@ -75,18 +78,22 @@ public abstract class AbstractRangeFilter extends SelectFilterImpl {
     @Override
     public Index filter(Index selection, Index fullSet, Table table, boolean usePrev) {
         final ColumnSource columnSource = table.getColumnSource(columnName);
-        final Optional<SortingOrder> orderForColumn = SortedColumnsAttribute.getOrderForColumn(table, columnName);
+        final Optional<SortingOrder> orderForColumn =
+            SortedColumnsAttribute.getOrderForColumn(table, columnName);
         if (orderForColumn.isPresent()) {
             // do binary search for value
-            return binarySearch(selection, columnSource, usePrev, orderForColumn.get().isDescending());
+            return binarySearch(selection, columnSource, usePrev,
+                orderForColumn.get().isDescending());
         }
         if (longFilter != null && columnSource.allowsReinterpret(long.class)) {
-            return ChunkFilter.applyChunkFilter(selection, columnSource.reinterpret(long.class), usePrev, longFilter);
+            return ChunkFilter.applyChunkFilter(selection, columnSource.reinterpret(long.class),
+                usePrev, longFilter);
         }
         return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev, chunkFilter);
     }
 
-    abstract Index binarySearch(Index selection, ColumnSource columnSource, boolean usePrev, boolean reverse);
+    abstract Index binarySearch(Index selection, ColumnSource columnSource, boolean usePrev,
+        boolean reverse);
 
     @Override
     public boolean isSimpleFilter() {
@@ -94,6 +101,5 @@ public abstract class AbstractRangeFilter extends SelectFilterImpl {
     }
 
     @Override
-    public void setRecomputeListener(RecomputeListener listener) {
-    }
+    public void setRecomputeListener(RecomputeListener listener) {}
 }

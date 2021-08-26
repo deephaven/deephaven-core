@@ -25,7 +25,7 @@ public class ColorPaletteArray implements ColorPalette, Serializable {
     public ColorPaletteArray(Color[] colors) {
         Require.neqNull(colors, "colors");
 
-        if(colors.length < 1) {
+        if (colors.length < 1) {
             throw new IllegalArgumentException("Color palette can not be empty");
         }
 
@@ -33,15 +33,14 @@ public class ColorPaletteArray implements ColorPalette, Serializable {
     }
 
     /**
-     * Creates a {@link ColorPalette} with the
-     * specified {@link Palette} {@code palette}.
+     * Creates a {@link ColorPalette} with the specified {@link Palette} {@code palette}.
      *
      * @param palette color palette
      */
     public ColorPaletteArray(Palette palette) {
-        Require.neqNull(palette,"palette");
+        Require.neqNull(palette, "palette");
 
-        if(palette.colors.length < 1) {
+        if (palette.colors.length < 1) {
             throw new IllegalArgumentException("Color palette can not be empty");
         }
 
@@ -78,41 +77,41 @@ public class ColorPaletteArray implements ColorPalette, Serializable {
          */
         JAVAFX(new Color[] {
                 new Color("#f9d900"), // yellow
-                new Color("#a9e200"), //green
-                new Color("#22bad9"), //light blue
-                new Color("#0181e2"), //dark blue
-                new Color("#2f357f"), //indigo
-                new Color("#860061"), //purple
-                new Color("#c62b00"), //red
-                new Color("#ff5700"),}), //orange
+                new Color("#a9e200"), // green
+                new Color("#22bad9"), // light blue
+                new Color("#0181e2"), // dark blue
+                new Color("#2f357f"), // indigo
+                new Color("#860061"), // purple
+                new Color("#c62b00"), // red
+                new Color("#ff5700"),}), // orange
 
         /**
          * Colors used in Matlab plotting.
          */
         MATLAB(new Color[] {
-                new Color(0f, 0.4470f, 0.7410f),    //blue
-                new Color(0.85f, 0.3250f, 0.0980f), //orange
-                new Color(0.9290f, 0.6940f, 0.1250f),   //yellow
-                new Color(0.4940f, 0.1840f, 0.5560f),   //purple
-                new Color(0.4660f, 0.6740f, 0.1880f),   //green
-                new Color(0.3010f, 0.7450f, 0.9330f),   //light blue
-                new Color(0.6350f, 0.0780f, 0.1840f),   //red
+                new Color(0f, 0.4470f, 0.7410f), // blue
+                new Color(0.85f, 0.3250f, 0.0980f), // orange
+                new Color(0.9290f, 0.6940f, 0.1250f), // yellow
+                new Color(0.4940f, 0.1840f, 0.5560f), // purple
+                new Color(0.4660f, 0.6740f, 0.1880f), // green
+                new Color(0.3010f, 0.7450f, 0.9330f), // light blue
+                new Color(0.6350f, 0.0780f, 0.1840f), // red
         }),
 
         /**
          * Colors used in Matplotlib plotting.
          */
         MATPLOTLIB(new Color[] {
-                new Color("#d62728"), //red
-                new Color("#1f77b4"), //dark blue
-                new Color("#2ca02c"), //dark green
-                new Color("#ff7f0e"), //orange
-                new Color("#9467bd"), //purple
-                new Color("#8c564b"), //brown
-                new Color("#17becf"), //sky blue
-                new Color("#e377c2"), //pink
-                new Color("#7f7f7f"), //grey
-                new Color("#bcbd22"), //mustard yellow
+                new Color("#d62728"), // red
+                new Color("#1f77b4"), // dark blue
+                new Color("#2ca02c"), // dark green
+                new Color("#ff7f0e"), // orange
+                new Color("#9467bd"), // purple
+                new Color("#8c564b"), // brown
+                new Color("#17becf"), // sky blue
+                new Color("#e377c2"), // pink
+                new Color("#7f7f7f"), // grey
+                new Color("#bcbd22"), // mustard yellow
         });
 
         private final Color[] colors;
@@ -126,7 +125,9 @@ public class ColorPaletteArray implements ColorPalette, Serializable {
          *
          * @return array of colors in this Palette.
          */
-        public Color[] getColors() { return colors; }
+        public Color[] getColors() {
+            return colors;
+        }
 
         /**
          * Gets the Palette corresponding to the {@code name}.
@@ -140,9 +141,9 @@ public class ColorPaletteArray implements ColorPalette, Serializable {
                 throw new IllegalArgumentException("Palette name can not be null");
             }
 
-            try{
+            try {
                 return valueOf(name.trim().toUpperCase());
-            } catch(IllegalArgumentException e){
+            } catch (IllegalArgumentException e) {
                 throw new UnsupportedOperationException("Color palette " + name + " not found");
             }
         }

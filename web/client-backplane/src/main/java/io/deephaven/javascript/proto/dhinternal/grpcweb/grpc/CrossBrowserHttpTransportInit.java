@@ -8,5 +8,6 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.grpcWeb.grpc.CrossBrowserHttpTransportInit",
     namespace = JsPackage.GLOBAL)
 public interface CrossBrowserHttpTransportInit
-    extends io.deephaven.javascript.proto.dhinternal.grpcweb.transports.http.http
-        .CrossBrowserHttpTransportInit {}
+    extends
+    io.deephaven.javascript.proto.dhinternal.grpcweb.transports.http.http.CrossBrowserHttpTransportInit {
+}

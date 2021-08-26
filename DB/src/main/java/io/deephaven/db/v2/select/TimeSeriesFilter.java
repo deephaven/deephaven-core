@@ -73,7 +73,7 @@ public class TimeSeriesFilter extends SelectFilterLivenessArtifactImpl implement
         long nanoBoundary = getNow().getNanos() - nanos;
 
         Index.SequentialBuilder indexBuilder = Index.FACTORY.getSequentialBuilder();
-        for (Index.Iterator it = selection.iterator(); it.hasNext(); ) {
+        for (Index.Iterator it = selection.iterator(); it.hasNext();) {
             long row = it.nextLong();
             long nanoValue = dateColumn.get(row).getNanos();
             if (nanoValue >= nanoBoundary) {
@@ -90,7 +90,10 @@ public class TimeSeriesFilter extends SelectFilterLivenessArtifactImpl implement
 
     @Override
     public boolean isSimpleFilter() {
-        /* This doesn't execute any user code, so it should be safe to execute it against untrusted data. */
+        /*
+         * This doesn't execute any user code, so it should be safe to execute it against untrusted
+         * data.
+         */
         return true;
     }
 

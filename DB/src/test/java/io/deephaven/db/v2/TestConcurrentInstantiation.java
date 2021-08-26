@@ -56,20 +56,23 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
     public void testTreeTableFilter() throws ExecutionException, InterruptedException {
         final QueryTable source = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(10),
-                col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
-                col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2));
-        final Table treed = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> source.treeTable("Sentinel", "Parent"));
+            col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+            col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2));
+        final Table treed = LiveTableMonitor.DEFAULT.exclusiveLock()
+            .computeLocked(() -> source.treeTable("Sentinel", "Parent"));
 
-        final Callable<Table> callable = () -> TreeTableFilter.rawFilterTree(treed, "Sentinel in 4, 6, 9, 11, 12, 13, 14, 15");
+        final Callable<Table> callable =
+            () -> TreeTableFilter.rawFilterTree(treed, "Sentinel in 4, 6, 9, 11, 12, 13, 14, 15");
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
         final Table rawSorted = pool.submit(callable).get();
         TableTools.show(rawSorted);
 
-        assertTrue(Arrays.equals(new int[]{1, 3, 4, 6, 9}, (int[]) rawSorted.getColumn("Sentinel").getDirect()));
+        assertTrue(Arrays.equals(new int[] {1, 3, 4, 6, 9},
+            (int[]) rawSorted.getColumn("Sentinel").getDirect()));
 
         TstUtils.addToTable(source, i(10), c("Sentinel", 11),
-                c("Parent", 2));
+            c("Parent", 2));
         final Table table2 = pool.submit(callable).get();
         assertEquals(TableTools.diff(rawSorted, table2, 20), "");
 
@@ -95,7 +98,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         source.notifyListeners(i(11), i(), i());
         LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
 
-        assertTrue(Arrays.equals(new int[]{1, 2, 3, 4, 6, 9, 10, 11, 12}, (int[]) rawSorted.getColumn("Sentinel").getDirect()));
+        assertTrue(Arrays.equals(new int[] {1, 2, 3, 4, 6, 9, 10, 11, 12},
+            (int[]) rawSorted.getColumn("Sentinel").getDirect()));
         assertEquals(TableTools.diff(rawSorted, table2, 20), "");
         assertEquals(TableTools.diff(table2, table3, 20), "");
         assertEquals(TableTools.diff(table3, table4, 20), "");
@@ -104,8 +108,10 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
 
     public void testFlatten() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"));
-        final Table tableStart = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"));
+        final QueryTable table =
+            TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"));
+        final Table tableStart =
+            TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"));
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
 
@@ -136,9 +142,12 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testUpdateView() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"));
-        final Table tableStart = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"), c("z", 4, 8, 12));
-        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 4, 6), c("x", 1, 4, 2, 3), c("y", "a", "d", "b", "c"), c("z", 4, 16, 8, 12));
+        final QueryTable table =
+            TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"));
+        final Table tableStart = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3),
+            c("y", "a", "b", "c"), c("z", 4, 8, 12));
+        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 4, 6), c("x", 1, 4, 2, 3),
+            c("y", "a", "d", "b", "c"), c("z", 4, 16, 8, 12));
 
         final Callable<Table> callable = () -> table.updateView("z=x*4");
 
@@ -170,9 +179,12 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testView() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"));
-        final Table tableStart = TstUtils.testRefreshingTable(i(2, 4, 6), c("y", "a", "b", "c"), c("z", 4, 8, 12));
-        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 4, 6), c("y", "a", "d", "b", "c"), c("z", 4, 16, 8, 12));
+        final QueryTable table =
+            TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"));
+        final Table tableStart =
+            TstUtils.testRefreshingTable(i(2, 4, 6), c("y", "a", "b", "c"), c("z", 4, 8, 12));
+        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 4, 6),
+            c("y", "a", "d", "b", "c"), c("z", 4, 16, 8, 12));
 
         final Callable<Table> callable = () -> table.view("y", "z=x*4");
 
@@ -204,9 +216,12 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testDropColumns() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"), c("z", 4, 8, 12));
-        final Table tableStart = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"));
-        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 4, 6), c("x", 1, 4, 2, 3), c("y", "a", "d", "b", "c"));
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3),
+            c("y", "a", "b", "c"), c("z", 4, 8, 12));
+        final Table tableStart =
+            TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"));
+        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 4, 6), c("x", 1, 4, 2, 3),
+            c("y", "a", "d", "b", "c"));
 
         final Callable<Table> callable = () -> table.dropColumns("z");
 
@@ -238,9 +253,12 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testWhere() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"), c("z", true, false, true));
-        final Table tableStart = TstUtils.testRefreshingTable(i(2, 6), c("x", 1, 3), c("y", "a", "c"), c("z", true, true));
-        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 6), c("x", 1, 4, 3), c("y", "a", "d", "c"), c("z", true, true, true));
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3),
+            c("y", "a", "b", "c"), c("z", true, false, true));
+        final Table tableStart = TstUtils.testRefreshingTable(i(2, 6), c("x", 1, 3),
+            c("y", "a", "c"), c("z", true, true));
+        final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 6), c("x", 1, 4, 3),
+            c("y", "a", "d", "c"), c("z", true, true, true));
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
 
@@ -270,9 +288,12 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testWhere2() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"), c("z", true, false, true));
-        final Table tableStart = TstUtils.testRefreshingTable(i(2, 6), c("x", 1, 3), c("y", "a", "c"), c("z", true, true));
-        final Table testUpdate = TstUtils.testRefreshingTable(i(3, 6), c("x", 4, 3), c("y", "d", "c"), c("z", true, true));
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3),
+            c("y", "a", "b", "c"), c("z", true, false, true));
+        final Table tableStart = TstUtils.testRefreshingTable(i(2, 6), c("x", 1, 3),
+            c("y", "a", "c"), c("z", true, true));
+        final Table testUpdate = TstUtils.testRefreshingTable(i(3, 6), c("x", 4, 3),
+            c("y", "d", "c"), c("z", true, true));
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
 
@@ -308,12 +329,16 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
     public void testWhereDynamic() throws ExecutionException, InterruptedException {
 
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"), c("z", true, false, true));
-        final Table tableStart = TstUtils.testRefreshingTable(i(2, 6), c("x", 1, 3), c("y", "a", "c"), c("z", true, true));
-        final Table testUpdate = TstUtils.testRefreshingTable(i(3, 6), c("x", 4, 3), c("y", "d", "c"), c("z", true, true));
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3),
+            c("y", "a", "b", "c"), c("z", true, false, true));
+        final Table tableStart = TstUtils.testRefreshingTable(i(2, 6), c("x", 1, 3),
+            c("y", "a", "c"), c("z", true, true));
+        final Table testUpdate = TstUtils.testRefreshingTable(i(3, 6), c("x", 4, 3),
+            c("y", "d", "c"), c("z", true, true));
         final Table whereTable = TstUtils.testRefreshingTable(i(0), c("z", true));
 
-        final DynamicWhereFilter filter = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> new DynamicWhereFilter(whereTable, true, MatchPairFactory.getExpressions("z")));
+        final DynamicWhereFilter filter = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(
+            () -> new DynamicWhereFilter(whereTable, true, MatchPairFactory.getExpressions("z")));
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
 
@@ -338,9 +363,12 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testSort() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"));
-        final Table tableStart = TstUtils.testRefreshingTable(i(1, 2, 3), c("x", 3, 2, 1), c("y", "c", "b", "a"));
-        final Table tableUpdate = TstUtils.testRefreshingTable(i(1, 2, 3, 4), c("x", 4, 3, 2, 1), c("y", "d", "c", "b", "a"));
+        final QueryTable table =
+            TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"));
+        final Table tableStart =
+            TstUtils.testRefreshingTable(i(1, 2, 3), c("x", 3, 2, 1), c("y", "c", "b", "a"));
+        final Table tableUpdate = TstUtils.testRefreshingTable(i(1, 2, 3, 4), c("x", 4, 3, 2, 1),
+            c("y", "d", "c", "b", "a"));
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
 
@@ -370,11 +398,16 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testReverse() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"));
-        final Table tableStart = TstUtils.testRefreshingTable(i(1, 2, 3), c("x", 3, 2, 1), c("y", "c", "b", "a"));
-        final Table tableUpdate = TstUtils.testRefreshingTable(i(1, 2, 3, 4), c("x", 4, 3, 2, 1), c("y", "d", "c", "b", "a"));
-        final Table tableUpdate2 = TstUtils.testRefreshingTable(i(1, 2, 3, 4, 5), c("x", 5, 4, 3, 2, 1), c("y", "e", "d", "c", "b", "a"));
-        final Table tableUpdate3 = TstUtils.testRefreshingTable(i(1, 2, 3, 4, 5, 6), c("x", 6, 5, 4, 3, 2, 1), c("y", "f", "e", "d", "c", "b", "a"));
+        final QueryTable table =
+            TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"));
+        final Table tableStart =
+            TstUtils.testRefreshingTable(i(1, 2, 3), c("x", 3, 2, 1), c("y", "c", "b", "a"));
+        final Table tableUpdate = TstUtils.testRefreshingTable(i(1, 2, 3, 4), c("x", 4, 3, 2, 1),
+            c("y", "d", "c", "b", "a"));
+        final Table tableUpdate2 = TstUtils.testRefreshingTable(i(1, 2, 3, 4, 5),
+            c("x", 5, 4, 3, 2, 1), c("y", "e", "d", "c", "b", "a"));
+        final Table tableUpdate3 = TstUtils.testRefreshingTable(i(1, 2, 3, 4, 5, 6),
+            c("x", 6, 5, 4, 3, 2, 1), c("y", "f", "e", "d", "c", "b", "a"));
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
 
@@ -427,7 +460,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
 
     public void testSortOfByExternal() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "a", "a"));
+        final QueryTable table =
+            TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "a", "a"));
         final TableMap tm = table.byExternal("y");
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
@@ -436,7 +470,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         table.notifyListeners(i(3), i(), i());
 
-        // We need to flush two notifications: one for the source table and one for the "withView" table in the aggregation helper.
+        // We need to flush two notifications: one for the source table and one for the "withView"
+        // table in the aggregation helper.
         LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
         LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
 
@@ -459,12 +494,16 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
 
     public void testChain() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"), c("z", true, false, true));
-        final Table tableStart = TstUtils.testRefreshingTable(i(1, 3), c("x", 3, 1), c("y", "c", "a"), c("z", true, true), c("u", 12, 4));
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3),
+            c("y", "a", "b", "c"), c("z", true, false, true));
+        final Table tableStart = TstUtils.testRefreshingTable(i(1, 3), c("x", 3, 1),
+            c("y", "c", "a"), c("z", true, true), c("u", 12, 4));
 
-        final Table tableUpdate = TstUtils.testRefreshingTable(i(1, 2, 4), c("x", 4, 3, 1), c("y", "d", "c", "a"), c("z", true, true, true), c("u", 16, 12, 4));
+        final Table tableUpdate = TstUtils.testRefreshingTable(i(1, 2, 4), c("x", 4, 3, 1),
+            c("y", "d", "c", "a"), c("z", true, true, true), c("u", 16, 12, 4));
 
-        final Callable<Table> callable = () -> table.updateView("u=x*4").where("z").sortDescending("x");
+        final Callable<Table> callable =
+            () -> table.updateView("u=x*4").where("z").sortDescending("x");
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
 
@@ -496,11 +535,14 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testReverseLookupListener() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"));
+        final QueryTable table =
+            TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"));
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
 
-        final ReverseLookupListener rll = pool.submit(() -> ReverseLookupListener.makeReverseLookupListenerWithSnapshot(table, "x")).get();
+        final ReverseLookupListener rll = pool
+            .submit(() -> ReverseLookupListener.makeReverseLookupListenerWithSnapshot(table, "x"))
+            .get();
 
         TestCase.assertEquals(rll.get(1), 2);
         TestCase.assertEquals(rll.get(2), 4);
@@ -509,7 +551,9 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         TstUtils.addToTable(table, i(4), c("x", 4), c("y", "d"));
 
-        final ReverseLookupListener rll2 = pool.submit(() -> ReverseLookupListener.makeReverseLookupListenerWithSnapshot(table, "x")).get();
+        final ReverseLookupListener rll2 = pool
+            .submit(() -> ReverseLookupListener.makeReverseLookupListenerWithSnapshot(table, "x"))
+            .get();
 
         TestCase.assertEquals(rll2.get(1), 2);
         TestCase.assertEquals(rll2.get(2), 4);
@@ -518,7 +562,9 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         table.notifyListeners(i(), i(), i(4));
 
-        final ReverseLookupListener rll3 = pool.submit(() -> ReverseLookupListener.makeReverseLookupListenerWithSnapshot(table, "x")).get();
+        final ReverseLookupListener rll3 = pool
+            .submit(() -> ReverseLookupListener.makeReverseLookupListenerWithSnapshot(table, "x"))
+            .get();
 
         TestCase.assertEquals(rll3.get(1), 2);
         TestCase.assertEquals(rll3.get(2), rll.getNoEntryValue());
@@ -565,7 +611,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     public void testIterativeQuickFilter() {
         final List<Function<Table, Table>> transformations = new ArrayList<>();
         transformations.add(t -> t.where("boolCol2"));
-        transformations.add(t -> t.where(DisjunctiveFilter.makeDisjunctiveFilter(SelectFilterFactory.expandQuickFilter(t, "10", QuickFilterMode.NORMAL))));
+        transformations.add(t -> t.where(DisjunctiveFilter.makeDisjunctiveFilter(
+            SelectFilterFactory.expandQuickFilter(t, "10", QuickFilterMode.NORMAL))));
         transformations.add(t -> t.sortDescending("doubleCol"));
         transformations.add(Table::flatten);
         testIterative(transformations);
@@ -573,7 +620,9 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
     public void testIterativeDisjunctiveCondition() {
         final List<Function<Table, Table>> transformations = new ArrayList<>();
-        transformations.add(t -> t.where(DisjunctiveFilter.makeDisjunctiveFilter(ConditionFilter.createConditionFilter("false"), ConditionFilter.createConditionFilter("true"))));
+        transformations.add(t -> t.where(
+            DisjunctiveFilter.makeDisjunctiveFilter(ConditionFilter.createConditionFilter("false"),
+                ConditionFilter.createConditionFilter("true"))));
         testIterative(transformations);
     }
 
@@ -581,20 +630,22 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         testIterative(transformations, 0, new MutableInt(50));
     }
 
-    private void testIterative(List<Function<Table, Table>> transformations, int seed, MutableInt numSteps) {
+    private void testIterative(List<Function<Table, Table>> transformations, int seed,
+        MutableInt numSteps) {
         final TstUtils.ColumnInfo[] columnInfos;
 
         final int size = 100;
         final Random random = new Random(seed);
         final int maxSteps = numSteps.intValue();
 
-        final QueryTable table = getTable(size, random, columnInfos = initColumnInfos(new String[]{"Sym", "intCol", "boolCol", "boolCol2", "doubleCol"},
-                new SetGenerator<>("aa", "bb", "bc", "cc", "dd", "ee", "ff", "gg", "hh", "ii"),
-                new IntGenerator(0, 100),
-                new BooleanGenerator(),
-                new BooleanGenerator(),
-                new DoubleGenerator(0, 100)
-        ));
+        final QueryTable table = getTable(size, random,
+            columnInfos =
+                initColumnInfos(new String[] {"Sym", "intCol", "boolCol", "boolCol2", "doubleCol"},
+                    new SetGenerator<>("aa", "bb", "bc", "cc", "dd", "ee", "ff", "gg", "hh", "ii"),
+                    new IntGenerator(0, 100),
+                    new BooleanGenerator(),
+                    new BooleanGenerator(),
+                    new DoubleGenerator(0, 100)));
 
 
         final Callable<Table> complete = () -> {
@@ -605,7 +656,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             return t;
         };
 
-        final List<Pair<Callable<Table>, Function<Table, Table>>> splitCallables = new ArrayList<>();
+        final List<Pair<Callable<Table>, Function<Table, Table>>> splitCallables =
+            new ArrayList<>();
         for (int ii = 1; ii <= transformations.size() - 1; ++ii) {
             final int fii = ii;
             final Callable<Table> firstHalf = () -> {
@@ -652,7 +704,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final boolean beforeStartAndAfterCycle = true;
 
         final List<Table> results = new ArrayList<>();
-        //noinspection MismatchedQueryAndUpdateOfCollection
+        // noinspection MismatchedQueryAndUpdateOfCollection
         final List<ShiftAwareListener> listeners = new ArrayList<>();
         int lastResultSize = 0;
 
@@ -684,10 +736,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 }
 
                 if (beforeStartAndBeforeUpdate) {
-                    final List<Table> beforeStartAndBeforeUpdateSplitResults = new ArrayList<>(splitCallables.size());
+                    final List<Table> beforeStartAndBeforeUpdateSplitResults =
+                        new ArrayList<>(splitCallables.size());
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
-                        final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second.apply(beforeStartFirstHalf.get(fSplitIndex))).get();
+                        final Table splitResult =
+                            pool.submit(() -> splitCallables.get(fSplitIndex).second
+                                .apply(beforeStartFirstHalf.get(fSplitIndex))).get();
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeUpdateSplit");
                         beforeStartAndBeforeUpdateSplitResults.add(splitResult);
@@ -700,7 +755,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     beforeUpdateFirstHalf.add(pool.submit(splitCallable.first).get());
                 }
 
-                final Index[] updates = GenerateTableUpdates.computeTableUpdates(size, random, table, columnInfos);
+                final Index[] updates =
+                    GenerateTableUpdates.computeTableUpdates(size, random, table, columnInfos);
 
                 if (beforeNotify) {
                     // after we update the underlying data, but before we notify
@@ -711,10 +767,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 }
 
                 if (beforeAndAfterUpdate) {
-                    final List<Table> beforeAndAfterUpdateSplitResults = new ArrayList<>(splitCallables.size());
+                    final List<Table> beforeAndAfterUpdateSplitResults =
+                        new ArrayList<>(splitCallables.size());
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
-                        final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second.apply(beforeUpdateFirstHalf.get(fSplitIndex))).get();
+                        final Table splitResult =
+                            pool.submit(() -> splitCallables.get(fSplitIndex).second
+                                .apply(beforeUpdateFirstHalf.get(fSplitIndex))).get();
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeAndAfterUpdateSplit");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -724,10 +783,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 }
 
                 if (beforeStartAndAfterUpdate) {
-                    final List<Table> beforeStartAndAfterUpdateSplitResults = new ArrayList<>(splitCallables.size());
+                    final List<Table> beforeStartAndAfterUpdateSplitResults =
+                        new ArrayList<>(splitCallables.size());
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
-                        final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second.apply(beforeStartFirstHalf.get(fSplitIndex))).get();
+                        final Table splitResult =
+                            pool.submit(() -> splitCallables.get(fSplitIndex).second
+                                .apply(beforeStartFirstHalf.get(fSplitIndex))).get();
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeStartAndAfterUpdate");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -744,10 +806,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 table.notifyListeners(updates[0], updates[1], updates[2]);
 
                 if (beforeAndAfterNotify) {
-                    final List<Table> beforeAndAfterNotifySplitResults = new ArrayList<>(splitCallables.size());
+                    final List<Table> beforeAndAfterNotifySplitResults =
+                        new ArrayList<>(splitCallables.size());
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
-                        final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second.apply(beforeNotifyFirstHalf.get(fSplitIndex))).get();
+                        final Table splitResult =
+                            pool.submit(() -> splitCallables.get(fSplitIndex).second
+                                .apply(beforeNotifyFirstHalf.get(fSplitIndex))).get();
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeAndAfterNotify");
                         beforeAndAfterNotifySplitResults.add(splitResult);
@@ -756,10 +821,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 }
 
                 if (beforeStartAndAfterNotify) {
-                    final List<Table> beforeStartAndAfterNotifySplitResults = new ArrayList<>(splitCallables.size());
+                    final List<Table> beforeStartAndAfterNotifySplitResults =
+                        new ArrayList<>(splitCallables.size());
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
-                        final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second.apply(beforeStartFirstHalf.get(fSplitIndex))).get();
+                        final Table splitResult =
+                            pool.submit(() -> splitCallables.get(fSplitIndex).second
+                                .apply(beforeStartFirstHalf.get(fSplitIndex))).get();
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeStartAndAfterNotify");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -769,10 +837,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 }
 
                 if (beforeUpdateAndAfterNotify) {
-                    final List<Table> beforeUpdateAndAfterNotifySplitResults = new ArrayList<>(splitCallables.size());
+                    final List<Table> beforeUpdateAndAfterNotifySplitResults =
+                        new ArrayList<>(splitCallables.size());
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
-                        final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second.apply(beforeUpdateFirstHalf.get(fSplitIndex))).get();
+                        final Table splitResult =
+                            pool.submit(() -> splitCallables.get(fSplitIndex).second
+                                .apply(beforeUpdateFirstHalf.get(fSplitIndex))).get();
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeUpdateAndAfterNotify");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -798,16 +869,19 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
                 for (int newResult = lastResultSize; newResult < results.size(); ++newResult) {
                     final DynamicTable dynamicTable = (DynamicTable) results.get(newResult);
-                    final InstrumentedShiftAwareListenerAdapter listener = new InstrumentedShiftAwareListenerAdapter("errorListener", dynamicTable, false) {
-                        @Override
-                        public void onUpdate(final Update upstream) {}
+                    final InstrumentedShiftAwareListenerAdapter listener =
+                        new InstrumentedShiftAwareListenerAdapter("errorListener", dynamicTable,
+                            false) {
+                            @Override
+                            public void onUpdate(final Update upstream) {}
 
-                        @Override
-                        public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
-                            originalException.printStackTrace(System.err);
-                            TestCase.fail(originalException.getMessage());
-                        }
-                    };
+                            @Override
+                            public void onFailureInternal(Throwable originalException,
+                                UpdatePerformanceTracker.Entry sourceEntry) {
+                                originalException.printStackTrace(System.err);
+                                TestCase.fail(originalException.getMessage());
+                            }
+                        };
                     listeners.add(listener);
                     dynamicTable.listenForUpdates(listener);
                 }
@@ -815,10 +889,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
 
                 if (beforeStartAndAfterCycle) {
-                    final List<Table> beforeStartAndAfterCycleSplitResults = new ArrayList<>(splitCallables.size());
+                    final List<Table> beforeStartAndAfterCycleSplitResults =
+                        new ArrayList<>(splitCallables.size());
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
-                        final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second.apply(beforeStartFirstHalf.get(fSplitIndex))).get();
+                        final Table splitResult =
+                            pool.submit(() -> splitCallables.get(fSplitIndex).second
+                                .apply(beforeStartFirstHalf.get(fSplitIndex))).get();
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeStartAndAfterCycle");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -827,7 +904,9 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
-                        final Table splitResult = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> splitCallables.get(fSplitIndex).second.apply(beforeStartFirstHalf.get(fSplitIndex)));
+                        final Table splitResult = LiveTableMonitor.DEFAULT.exclusiveLock()
+                            .computeLocked(() -> splitCallables.get(fSplitIndex).second
+                                .apply(beforeStartFirstHalf.get(fSplitIndex)));
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeStartAndAfterCycleLocked");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -837,10 +916,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 }
 
                 if (beforeUpdateAndAfterCycle) {
-                    final List<Table> beforeUpdateAndAfterCycleSplitResults = new ArrayList<>(splitCallables.size());
+                    final List<Table> beforeUpdateAndAfterCycleSplitResults =
+                        new ArrayList<>(splitCallables.size());
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
-                        final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second.apply(beforeUpdateFirstHalf.get(fSplitIndex))).get();
+                        final Table splitResult =
+                            pool.submit(() -> splitCallables.get(fSplitIndex).second
+                                .apply(beforeUpdateFirstHalf.get(fSplitIndex))).get();
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeUpdateAndAfterCycle");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -849,7 +931,9 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
-                        final Table splitResult = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> splitCallables.get(fSplitIndex).second.apply(beforeUpdateFirstHalf.get(fSplitIndex)));
+                        final Table splitResult = LiveTableMonitor.DEFAULT.exclusiveLock()
+                            .computeLocked(() -> splitCallables.get(fSplitIndex).second
+                                .apply(beforeUpdateFirstHalf.get(fSplitIndex)));
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeUpdateAndAfterCycleLocked");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -859,10 +943,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 }
 
                 if (beforeNotifyAndAfterCycle) {
-                    final List<Table> beforeNotifyAndAfterCycleSplitResults = new ArrayList<>(splitCallables.size());
+                    final List<Table> beforeNotifyAndAfterCycleSplitResults =
+                        new ArrayList<>(splitCallables.size());
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
-                        final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second.apply(beforeNotifyFirstHalf.get(fSplitIndex))).get();
+                        final Table splitResult =
+                            pool.submit(() -> splitCallables.get(fSplitIndex).second
+                                .apply(beforeNotifyFirstHalf.get(fSplitIndex))).get();
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeNotifyAndAfterCycle");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -870,7 +957,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     }
 
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
-                        final Table splitResult = splitCallables.get(splitIndex).second.apply(beforeNotifyFirstHalf.get(splitIndex));
+                        final Table splitResult = splitCallables.get(splitIndex).second
+                            .apply(beforeNotifyFirstHalf.get(splitIndex));
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeNotifyAndAfterCycleLocked");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -882,12 +970,16 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
                 Assert.eqTrue(beforeAndAfterCycle, "beforeAndAfterCycle");
                 if (transformations.size() > 1) {
-                    Assert.eqFalse(beforeCycleFirstHalf.isEmpty(), "beforeCycleFirstHalf.isEmpty()");
-                    final List<Table> beforeAndAfterCycleSplitResults = new ArrayList<>(splitCallables.size());
+                    Assert.eqFalse(beforeCycleFirstHalf.isEmpty(),
+                        "beforeCycleFirstHalf.isEmpty()");
+                    final List<Table> beforeAndAfterCycleSplitResults =
+                        new ArrayList<>(splitCallables.size());
 
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
-                        final Table splitResult = pool.submit(() -> splitCallables.get(fSplitIndex).second.apply(beforeCycleFirstHalf.get(fSplitIndex))).get();
+                        final Table splitResult =
+                            pool.submit(() -> splitCallables.get(fSplitIndex).second
+                                .apply(beforeCycleFirstHalf.get(fSplitIndex))).get();
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeAndAfterCycle");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -896,7 +988,9 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
                     for (int splitIndex = 0; splitIndex < splitCallables.size(); ++splitIndex) {
                         final int fSplitIndex = splitIndex;
-                        final Table splitResult = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> splitCallables.get(fSplitIndex).second.apply(beforeCycleFirstHalf.get(fSplitIndex)));
+                        final Table splitResult = LiveTableMonitor.DEFAULT.exclusiveLock()
+                            .computeLocked(() -> splitCallables.get(fSplitIndex).second
+                                .apply(beforeCycleFirstHalf.get(fSplitIndex)));
                         splitResult.setAttribute("Step", i);
                         splitResult.setAttribute("Type", "beforeAndAfterCycle");
                         splitResult.setAttribute("SplitIndex", splitIndex);
@@ -911,14 +1005,16 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     TableTools.showWithIndex(table);
                     System.out.println("Standard Table: (" + Objects.hashCode(standard) + ")");
                     TableTools.showWithIndex(standard);
-                    System.out.println("Verifying " + results.size() + " tables (size = " + standard.size() +")");
+                    System.out.println(
+                        "Verifying " + results.size() + " tables (size = " + standard.size() + ")");
                 }
 
                 // now verify all the outstanding results
                 for (Table checkTable : results) {
                     String diff = diff(checkTable, standard, 10);
                     if (!diff.isEmpty() && LiveTableTestCase.printTableUpdates) {
-                        System.out.println("Check Table: " + checkTable.getAttribute("Step") + ", " +
+                        System.out
+                            .println("Check Table: " + checkTable.getAttribute("Step") + ", " +
                                 checkTable.getAttribute("Type") +
                                 ", splitIndex=" + checkTable.getAttribute("SplitIndex") +
                                 ", hash=" + Objects.hashCode(checkTable));
@@ -935,7 +1031,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testSelectDistinct() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6, 8), c("y", "a", "b", "a", "c"));
+        final QueryTable table =
+            TstUtils.testRefreshingTable(i(2, 4, 6, 8), c("y", "a", "b", "a", "c"));
         final Table expected1 = newTable(c("y", "a", "b", "c"));
         final Table expected2 = newTable(c("y", "a", "d", "b", "c"));
         final Table expected2outOfOrder = newTable(c("y", "a", "b", "c", "d"));
@@ -1018,7 +1115,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         QueryScope.addParam("barrierFunction", barrierFunction);
 
         try {
-            final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6, 8), c("y", "a", "b", "a", "c"));
+            final QueryTable table =
+                TstUtils.testRefreshingTable(i(2, 4, 6, 8), c("y", "a", "b", "a", "c"));
             final Table slowed = table.updateView("z=barrierFunction.apply(y)");
             final Table expected1 = newTable(c("z", "a", "b"));
 
@@ -1068,8 +1166,10 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     public void testMinMaxBy() throws Exception {
         testByConcurrent(t -> t.maxBy("KeyColumn"));
         testByConcurrent(t -> t.minBy("KeyColumn"));
-        testByConcurrent(t -> t.by(new AddOnlyMinMaxByStateFactoryImpl(true), "KeyColumn"), true, false, false, true);
-        testByConcurrent(t -> t.by(new AddOnlyMinMaxByStateFactoryImpl(false), "KeyColumn"), true, false, false, true);
+        testByConcurrent(t -> t.by(new AddOnlyMinMaxByStateFactoryImpl(true), "KeyColumn"), true,
+            false, false, true);
+        testByConcurrent(t -> t.by(new AddOnlyMinMaxByStateFactoryImpl(false), "KeyColumn"), true,
+            false, false, true);
     }
 
     public void testFirstLastBy() throws Exception {
@@ -1093,13 +1193,16 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testPercentileBy() throws Exception {
-        testByConcurrent(t -> t.dropColumns("KeyColumn").by(new PercentileByStateFactoryImpl(0.25)), false, false, true, true);
-        testByConcurrent(t -> t.dropColumns("KeyColumn").by(new PercentileByStateFactoryImpl(0.75)), false, false, true, true);
+        testByConcurrent(t -> t.dropColumns("KeyColumn").by(new PercentileByStateFactoryImpl(0.25)),
+            false, false, true, true);
+        testByConcurrent(t -> t.dropColumns("KeyColumn").by(new PercentileByStateFactoryImpl(0.75)),
+            false, false, true, true);
         testByConcurrent(t -> t.medianBy("KeyColumn"));
     }
 
     public void testAggCombo() throws Exception {
-        testByConcurrent(t -> t.by(AggCombo(AggAvg("AvgInt=IntCol"), AggCount("NumInts"), AggSum("SumDouble=DoubleCol"), AggMax("MaxDouble=DoubleCol")), "KeyColumn"));
+        testByConcurrent(t -> t.by(AggCombo(AggAvg("AvgInt=IntCol"), AggCount("NumInts"),
+            AggSum("SumDouble=DoubleCol"), AggMax("MaxDouble=DoubleCol")), "KeyColumn"));
     }
 
     public void testWavgBy() throws Exception {
@@ -1114,13 +1217,14 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         testByConcurrent(function, true, true, true, true);
     }
 
-    private void testByConcurrent(Function<Table, Table> function, boolean hasKeys, boolean withReset, boolean allowModifications, boolean haveBigNumerics) throws Exception {
+    private void testByConcurrent(Function<Table, Table> function, boolean hasKeys,
+        boolean withReset, boolean allowModifications, boolean haveBigNumerics) throws Exception {
         setExpectError(false);
 
         final QueryTable table = makeByConcurrentBaseTable(haveBigNumerics);
         final QueryTable table2 = makeByConcurrentStep2Table(allowModifications, haveBigNumerics);
 
-        final BarrierFunction barrierFunction =  withReset ? new BarrierFunction() : null;
+        final BarrierFunction barrierFunction = withReset ? new BarrierFunction() : null;
         QueryScope.addParam("barrierFunction", barrierFunction);
 
         try {
@@ -1136,7 +1240,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     try {
                         return function.apply(slowed);
                     } finally {
-                        System.out.println("Callable complete: " + (System.currentTimeMillis() - start));
+                        System.out
+                            .println("Callable complete: " + (System.currentTimeMillis() - start));
                     }
                 };
             } else {
@@ -1144,10 +1249,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 callable = () -> function.apply(table);
             }
 
-            // We only care about the silent version of this table, as it's just a vessel to tick and ensure that the resultant table
+            // We only care about the silent version of this table, as it's just a vessel to tick
+            // and ensure that the resultant table
             // is computed using the appropriate version.
-            final Table expected1 = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> function.apply(table.silent()).select());
-            final Table expected2 = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> function.apply(table2));
+            final Table expected1 = LiveTableMonitor.DEFAULT.exclusiveLock()
+                .computeLocked(() -> function.apply(table.silent()).select());
+            final Table expected2 = LiveTableMonitor.DEFAULT.exclusiveLock()
+                .computeLocked(() -> function.apply(table2));
 
             LiveTableMonitor.DEFAULT.startCycleForUnitTests();
 
@@ -1185,10 +1293,12 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             System.out.println("Expected 1");
             TableTools.show(expected1);
 
-            // The column sources are redirected, and the underlying table has been updated without a notification _yet_,
-            // so the column sources have _already_ changed and we are inside an update cycle, so the value of get() is indeterminate
+            // The column sources are redirected, and the underlying table has been updated without
+            // a notification _yet_,
+            // so the column sources have _already_ changed and we are inside an update cycle, so
+            // the value of get() is indeterminate
             // therefore this assert is not really a valid thing to do.
-            //TstUtils.assertTableEquals(expected1, result2);
+            // TstUtils.assertTableEquals(expected1, result2);
             final Table prevResult2a = prevTable(result2);
             System.out.println("Prev Result 2a");
             TableTools.show(prevResult2a);
@@ -1199,7 +1309,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
             final Future<Table> future3 = pool.submit(callable);
             if (withReset) {
-                while (((QueryTable) slowed).getLastNotificationStep() != LogicalClock.DEFAULT.currentStep()) {
+                while (((QueryTable) slowed).getLastNotificationStep() != LogicalClock.DEFAULT
+                    .currentStep()) {
                     LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
                 }
             }
@@ -1224,8 +1335,10 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
 
             if (hasKeys) {
-                TstUtils.assertTableEquals(expected2.sort("KeyColumn"), result1.sort("KeyColumn"), TableDiff.DiffItems.DoublesExact);
-                TstUtils.assertTableEquals(expected2.sort("KeyColumn"), result2.sort("KeyColumn"), TableDiff.DiffItems.DoublesExact);
+                TstUtils.assertTableEquals(expected2.sort("KeyColumn"), result1.sort("KeyColumn"),
+                    TableDiff.DiffItems.DoublesExact);
+                TstUtils.assertTableEquals(expected2.sort("KeyColumn"), result2.sort("KeyColumn"),
+                    TableDiff.DiffItems.DoublesExact);
             } else {
                 TstUtils.assertTableEquals(expected2, result1, TableDiff.DiffItems.DoublesExact);
                 TstUtils.assertTableEquals(expected2, result2, TableDiff.DiffItems.DoublesExact);
@@ -1261,10 +1374,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             callable = () -> table.byExternal("KeyColumn");
         }
 
-        // We only care about the silent version of this table, as it's just a vessel to tick and ensure that the resultant table
+        // We only care about the silent version of this table, as it's just a vessel to tick and
+        // ensure that the resultant table
         // is computed using the appropriate version.
-        final Table expected1 = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table.silent().byExternal("KeyColumn").merge().select());
-        final Table expected2 = LiveTableMonitor.DEFAULT.exclusiveLock().computeLocked(() -> table2.silent().byExternal("KeyColumn").merge().select());
+        final Table expected1 = LiveTableMonitor.DEFAULT.exclusiveLock()
+            .computeLocked(() -> table.silent().byExternal("KeyColumn").merge().select());
+        final Table expected2 = LiveTableMonitor.DEFAULT.exclusiveLock()
+            .computeLocked(() -> table2.silent().byExternal("KeyColumn").merge().select());
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
 
@@ -1311,7 +1427,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final Future<TableMap> future3 = pool.submit(callable);
         if (withReset) {
-            while (((QueryTable) slowed).getLastNotificationStep() != LogicalClock.DEFAULT.currentStep()) {
+            while (((QueryTable) slowed).getLastNotificationStep() != LogicalClock.DEFAULT
+                .currentStep()) {
                 LiveTableMonitor.DEFAULT.flushOneNotificationForUnitTests();
             }
         }
@@ -1340,28 +1457,35 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
     private QueryTable makeByConcurrentBaseTable(boolean haveBigNumerics) {
         final List<ColumnHolder> columnHolders = new ArrayList<>(Arrays.asList(
-        c("KeyColumn", "a", "b", "a", "c"),
-                intCol("IntCol", 1, 2, 3, 4),
-                doubleCol("DoubleCol", 100.1, 200.2, 300.3, 400.4),
-                floatCol("FloatCol", 10.1f, 20.2f, 30.3f, 40.4f),
-                shortCol("ShortCol", (short)10, (short)20, (short)30, (short)40),
-                byteCol("ByteCol", (byte)11, (byte)12, (byte)13, (byte)14),
-                charCol("CharCol", 'A', 'B', 'C', 'D'),
-                longCol("LongCol", 10_000_000_000L, 20_000_000_000L, 30_000_000_000L, 40_000_000_000L)));
+            c("KeyColumn", "a", "b", "a", "c"),
+            intCol("IntCol", 1, 2, 3, 4),
+            doubleCol("DoubleCol", 100.1, 200.2, 300.3, 400.4),
+            floatCol("FloatCol", 10.1f, 20.2f, 30.3f, 40.4f),
+            shortCol("ShortCol", (short) 10, (short) 20, (short) 30, (short) 40),
+            byteCol("ByteCol", (byte) 11, (byte) 12, (byte) 13, (byte) 14),
+            charCol("CharCol", 'A', 'B', 'C', 'D'),
+            longCol("LongCol", 10_000_000_000L, 20_000_000_000L, 30_000_000_000L,
+                40_000_000_000L)));
 
         if (haveBigNumerics) {
-            columnHolders.add(col("BigDecCol", BigDecimal.valueOf(10000.1), BigDecimal.valueOf(20000.2), BigDecimal.valueOf(40000.3), BigDecimal.valueOf(40000.4)));
-            columnHolders.add(col("BigIntCol", BigInteger.valueOf(100000), BigInteger.valueOf(200000), BigInteger.valueOf(300000), BigInteger.valueOf(400000)));
+            columnHolders
+                .add(col("BigDecCol", BigDecimal.valueOf(10000.1), BigDecimal.valueOf(20000.2),
+                    BigDecimal.valueOf(40000.3), BigDecimal.valueOf(40000.4)));
+            columnHolders
+                .add(col("BigIntCol", BigInteger.valueOf(100000), BigInteger.valueOf(200000),
+                    BigInteger.valueOf(300000), BigInteger.valueOf(400000)));
         }
 
 
-        return TstUtils.testRefreshingTable(i(2, 4, 6, 8), columnHolders.toArray(ColumnHolder.ZERO_LENGTH_COLUMN_HOLDER_ARRAY));
+        return TstUtils.testRefreshingTable(i(2, 4, 6, 8),
+            columnHolders.toArray(ColumnHolder.ZERO_LENGTH_COLUMN_HOLDER_ARRAY));
     }
 
-    private QueryTable makeByConcurrentStep2Table(boolean allowModifications, boolean haveBigNumerics) {
+    private QueryTable makeByConcurrentStep2Table(boolean allowModifications,
+        boolean haveBigNumerics) {
         final QueryTable table2 = makeByConcurrentBaseTable(haveBigNumerics);
         doByConcurrentAdditions(table2, haveBigNumerics);
-        if(allowModifications) {
+        if (allowModifications) {
             doByConcurrentModifications(table2, haveBigNumerics);
         }
         return table2;
@@ -1370,102 +1494,109 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
     private void doByConcurrentModifications(QueryTable table, boolean haveBigNumerics) {
         final List<ColumnHolder> columnHolders = new ArrayList<>(Arrays.asList(
-                c("KeyColumn", "b"),
-                intCol("IntCol", 7),
-                doubleCol("DoubleCol", 700.7),
-                floatCol("FloatCol", 70.7f),
-                shortCol("ShortCol", (short)70),
-                byteCol("ByteCol", (byte)17),
-                charCol("CharCol", 'E'),
-                longCol("LongCol", 70_000_000_000L)));
+            c("KeyColumn", "b"),
+            intCol("IntCol", 7),
+            doubleCol("DoubleCol", 700.7),
+            floatCol("FloatCol", 70.7f),
+            shortCol("ShortCol", (short) 70),
+            byteCol("ByteCol", (byte) 17),
+            charCol("CharCol", 'E'),
+            longCol("LongCol", 70_000_000_000L)));
         if (haveBigNumerics) {
             columnHolders.addAll(Arrays.asList(
-                    col("BigDecCol", BigDecimal.valueOf(70000.7)),
-                    col("BigIntCol", BigInteger.valueOf(700000))
-            ));
+                col("BigDecCol", BigDecimal.valueOf(70000.7)),
+                col("BigIntCol", BigInteger.valueOf(700000))));
         }
 
-        TstUtils.addToTable(table, i(8), columnHolders.toArray(ColumnHolder.ZERO_LENGTH_COLUMN_HOLDER_ARRAY));
+        TstUtils.addToTable(table, i(8),
+            columnHolders.toArray(ColumnHolder.ZERO_LENGTH_COLUMN_HOLDER_ARRAY));
     }
 
     private void doByConcurrentAdditions(QueryTable table, boolean haveBigNumerics) {
 
         final List<ColumnHolder> columnHolders = new ArrayList<>(Arrays.asList(
-                c("KeyColumn", "d", "a"),
-                intCol("IntCol", 5, 6),
-                doubleCol("DoubleCol", 505.5, 600.6),
-                floatCol("FloatCol", 50.5f, 60.6f),
-                shortCol("ShortCol", (short)50, (short)60),
-                byteCol("ByteCol", (byte)15, (byte)16),
-                charCol("CharCol", 'E', 'F'),
-                longCol("LongCol", 50_000_000_000L, 60_000_000_000L)));
+            c("KeyColumn", "d", "a"),
+            intCol("IntCol", 5, 6),
+            doubleCol("DoubleCol", 505.5, 600.6),
+            floatCol("FloatCol", 50.5f, 60.6f),
+            shortCol("ShortCol", (short) 50, (short) 60),
+            byteCol("ByteCol", (byte) 15, (byte) 16),
+            charCol("CharCol", 'E', 'F'),
+            longCol("LongCol", 50_000_000_000L, 60_000_000_000L)));
 
         if (haveBigNumerics) {
             columnHolders.addAll(Arrays.asList(
-                    col("BigDecCol", BigDecimal.valueOf(50000.5), BigDecimal.valueOf(60000.6)),
-                    col("BigIntCol", BigInteger.valueOf(500000), BigInteger.valueOf(600000))
-            ));
+                col("BigDecCol", BigDecimal.valueOf(50000.5), BigDecimal.valueOf(60000.6)),
+                col("BigIntCol", BigInteger.valueOf(500000), BigInteger.valueOf(600000))));
         }
 
-        TstUtils.addToTable(table, i(5, 9), columnHolders.toArray(ColumnHolder.ZERO_LENGTH_COLUMN_HOLDER_ARRAY));
+        TstUtils.addToTable(table, i(5, 9),
+            columnHolders.toArray(ColumnHolder.ZERO_LENGTH_COLUMN_HOLDER_ARRAY));
     }
 
     public void testConstructSnapshotException() throws ExecutionException, InterruptedException {
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6, 8), c("y", "a", "b", "c", "d"));
+        final QueryTable table =
+            TstUtils.testRefreshingTable(i(2, 4, 6, 8), c("y", "a", "b", "c", "d"));
 
 
         final Future<String[]> future = pool.submit(() -> {
             final MutableObject<String[]> result = new MutableObject<>();
-            ConstructSnapshot.callDataSnapshotFunction("testConstructSnapshotException", ConstructSnapshot.makeSnapshotControl(false, table), (usePrev, clock) -> {
-                Assert.eqFalse(usePrev, "usePrev");
-                final int size = table.intSize();
-                final String [] result1 = new String[size];
-                result.setValue(result1);
-                // on the first pass, we want to have an AAIOBE for the result1, which will occur, because 100ms
-                // into this sleep; the index size will increase by 1
-                SleepUtil.sleep(1000);
+            ConstructSnapshot.callDataSnapshotFunction("testConstructSnapshotException",
+                ConstructSnapshot.makeSnapshotControl(false, table), (usePrev, clock) -> {
+                    Assert.eqFalse(usePrev, "usePrev");
+                    final int size = table.intSize();
+                    final String[] result1 = new String[size];
+                    result.setValue(result1);
+                    // on the first pass, we want to have an AAIOBE for the result1, which will
+                    // occur, because 100ms
+                    // into this sleep; the index size will increase by 1
+                    SleepUtil.sleep(1000);
 
-                // and make sure the terrible thing has happened
-                if (result1.length == 4) {
-                    Assert.eq(table.getIndex().size(), "table.getIndex().size()", 5);
-                }
+                    // and make sure the terrible thing has happened
+                    if (result1.length == 4) {
+                        Assert.eq(table.getIndex().size(), "table.getIndex().size()", 5);
+                    }
 
-                //noinspection unchecked
-                final ColumnSource<String> cs = table.getColumnSource("y");
+                    // noinspection unchecked
+                    final ColumnSource<String> cs = table.getColumnSource("y");
 
-                int ii = 0;
-                for (final Index.Iterator it = table.getIndex().iterator(); it.hasNext(); ) {
-                    final long key = it.nextLong();
-                    result1[ii++] = cs.get(key);
-                }
+                    int ii = 0;
+                    for (final Index.Iterator it = table.getIndex().iterator(); it.hasNext();) {
+                        final long key = it.nextLong();
+                        result1[ii++] = cs.get(key);
+                    }
 
-                return true;
-            });
+                    return true;
+                });
             return result.getValue();
         });
 
-        // wait until we've had the future start, but before it's actually gotten completed, so we know that it is
+        // wait until we've had the future start, but before it's actually gotten completed, so we
+        // know that it is
         // going to be kicked off in the idle cycle
         SleepUtil.sleep(100);
 
         // add a row to the table
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
-        TstUtils.addToTable(table, i(10), c("y","e"));
+        TstUtils.addToTable(table, i(10), c("y", "e"));
         table.notifyListeners(i(10), i(), i());
         LiveTableMonitor.DEFAULT.completeCycleForUnitTests();
 
         // now get the answer
-        final String [] answer = future.get();
+        final String[] answer = future.get();
 
-        assertEquals(Arrays.asList("a", "b", "c", "d", "e"),  Arrays.asList(answer));
+        assertEquals(Arrays.asList("a", "b", "c", "d", "e"), Arrays.asList(answer));
     }
 
     public void testStaticSnapshot() throws ExecutionException, InterruptedException {
         final Table emptyTable = TableTools.emptyTable(0);
 
-        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", "a", "b", "c"), c("z", true, false, true));
-        final Table tableStart = TableTools.newTable(c("x", 1, 2, 3), c("y", "a", "b", "c"), c("z", true, false, true));
-        final Table tableUpdate = TableTools.newTable(c("x", 1, 4, 2, 3), c("y", "a", "d", "b", "c"), c("z", true, true, false, true));
+        final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3),
+            c("y", "a", "b", "c"), c("z", true, false, true));
+        final Table tableStart =
+            TableTools.newTable(c("x", 1, 2, 3), c("y", "a", "b", "c"), c("z", true, false, true));
+        final Table tableUpdate = TableTools.newTable(c("x", 1, 4, 2, 3),
+            c("y", "a", "d", "b", "c"), c("z", true, true, false, true));
 
         LiveTableMonitor.DEFAULT.startCycleForUnitTests();
 
@@ -1512,7 +1643,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(snap, right);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update(i(1), i(), i(),
+            final ShiftAwareListener.Update downstream =
+                new ShiftAwareListener.Update(i(1), i(), i(),
                     IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY);
             TstUtils.addToTable(right, downstream.added, c("x", 2));
             right.notifyListeners(downstream);
@@ -1520,7 +1652,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(snap, prevTable(right));
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final ShiftAwareListener.Update downstream = new ShiftAwareListener.Update(i(1), i(), i(),
+            final ShiftAwareListener.Update downstream =
+                new ShiftAwareListener.Update(i(1), i(), i(),
                     IndexShiftData.EMPTY, ModifiedColumnSet.EMPTY);
             TstUtils.addToTable(left, downstream.added);
             left.notifyListeners(downstream);

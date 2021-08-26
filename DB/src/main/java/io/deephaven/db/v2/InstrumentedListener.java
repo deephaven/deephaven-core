@@ -18,12 +18,14 @@ public abstract class InstrumentedListener extends InstrumentedListenerBase impl
         super(description, false);
     }
 
-    public InstrumentedListener(@Nullable final String description, final boolean terminalListener) {
+    public InstrumentedListener(@Nullable final String description,
+        final boolean terminalListener) {
         super(description, terminalListener);
     }
 
     @Override
-    public AbstractIndexUpdateNotification getNotification(final Index added, final Index removed, final Index modified) {
+    public AbstractIndexUpdateNotification getNotification(final Index added, final Index removed,
+        final Index modified) {
         return new Notification(added, removed, modified);
     }
 
@@ -34,16 +36,18 @@ public abstract class InstrumentedListener extends InstrumentedListenerBase impl
 
         Notification(final Index added, final Index removed, final Index modified) {
             super(new ShiftAwareListener.Update(added.clone(), removed.clone(), modified.clone(),
-                    IndexShiftData.EMPTY, ModifiedColumnSet.ALL));
+                IndexShiftData.EMPTY, ModifiedColumnSet.ALL));
             update.release(); // NotificationBase assumes it does not own the provided update.
         }
 
         @Override
         public void run() {
             doRun(() -> {
-                if (initialImage != null && (initialImage != update.added || update.removed.nonempty()
+                if (initialImage != null
+                    && (initialImage != update.added || update.removed.nonempty()
                         || update.modified.nonempty())) {
-                    onUpdate(update.added.minus(initialImageClone), update.removed, update.modified);
+                    onUpdate(update.added.minus(initialImageClone), update.removed,
+                        update.modified);
                 } else {
                     onUpdate(update.added, update.removed, update.modified);
                 }

@@ -8,8 +8,8 @@ import java.lang.ref.WeakReference;
 import java.util.function.Consumer;
 
 /**
- * An open-addressed identity hash set that only maintains weak references to its members.
- * Only supports {@link #add} and {@link #clear}. See {@link Synchronized} variant for concurrent usage.
+ * An open-addressed identity hash set that only maintains weak references to its members. Only
+ * supports {@link #add} and {@link #clear}. See {@link Synchronized} variant for concurrent usage.
  */
 public class WeakIdentityHashSet<TYPE> {
 
@@ -18,7 +18,8 @@ public class WeakIdentityHashSet<TYPE> {
     private static final WeakReference<?> DELETED_REFERENCE = new DeletedReference();
 
     private WeakReference<? extends TYPE>[] storage;
-    private int usedSlots; // The number of slots that *may* contain a valid reference (not exactly "size")
+    private int usedSlots; // The number of slots that *may* contain a valid reference (not exactly
+                           // "size")
     private int freeSlots;
     private int rehashThreshold;
 
@@ -35,12 +36,14 @@ public class WeakIdentityHashSet<TYPE> {
      * Initialize the set with the new capacity.
      *
      * @param capacity The new capacity
-     * @param exact    Whether the capacity is the exact requirement, or should be adjusted for load factor and primeness
+     * @param exact Whether the capacity is the exact requirement, or should be adjusted for load
+     *        factor and primeness
      */
     private void initialize(final int capacity, final boolean exact) {
         storage = null;
         usedSlots = 0;
-        freeSlots = exact ? capacity : PrimeFinder.nextPrime((int) Math.ceil(capacity / LOAD_FACTOR));
+        freeSlots =
+            exact ? capacity : PrimeFinder.nextPrime((int) Math.ceil(capacity / LOAD_FACTOR));
         rehashThreshold = Math.min(freeSlots - 1, (int) Math.floor(freeSlots * LOAD_FACTOR));
     }
 
@@ -52,19 +55,24 @@ public class WeakIdentityHashSet<TYPE> {
             --freeSlots;
         }
 
-        // Follows the same policies as io.deephaven.base.hash.KHash, as we may very well want to take advantage of the
+        // Follows the same policies as io.deephaven.base.hash.KHash, as we may very well want to
+        // take advantage of the
         // guarantees they provide in the future.
         if (++usedSlots > rehashThreshold || freeSlots == 1) {
             // If we've grown beyond our maximum usedSlots, double capacity.
-            // If we've exhausted the free spots, rehash to the same capacity, freeing up removed slots.
-            final int newCapacity = usedSlots > rehashThreshold ? PrimeFinder.nextPrime(storage.length << 1) : storage.length;
+            // If we've exhausted the free spots, rehash to the same capacity, freeing up removed
+            // slots.
+            final int newCapacity =
+                usedSlots > rehashThreshold ? PrimeFinder.nextPrime(storage.length << 1)
+                    : storage.length;
             rehash(newCapacity);
         }
     }
 
     /**
-     * Mark a slot deleted (either because we removed the value there, or because it was found to have a cleared
-     * reference). This allows us to update usedSlots in order to avoid rehash calls in some cases.
+     * Mark a slot deleted (either because we removed the value there, or because it was found to
+     * have a cleared reference). This allows us to update usedSlots in order to avoid rehash calls
+     * in some cases.
      *
      * @param slot The slot index to mark
      */
@@ -83,7 +91,8 @@ public class WeakIdentityHashSet<TYPE> {
         final WeakIdentityHashSet<TYPE> other = new WeakIdentityHashSet<>(newCapacity, true);
         for (WeakReference<? extends TYPE> valueReference : storage) {
             final TYPE value;
-            if (valueReference != null && valueReference != DELETED_REFERENCE && (value = valueReference.get()) != null) {
+            if (valueReference != null && valueReference != DELETED_REFERENCE
+                && (value = valueReference.get()) != null) {
                 other.add(value, valueReference);
             }
         }
@@ -113,13 +122,14 @@ public class WeakIdentityHashSet<TYPE> {
     /**
      * Add a value to the set if its not already present.
      *
-     * @param value          The value to add
+     * @param value The value to add
      * @param valueReference A re-usable WeakReference to value if already available, else null
      * @return True if the value was added to the set
      */
-    public boolean add(@NotNull final TYPE value, @Nullable final WeakReference<? extends TYPE> valueReference) {
+    public boolean add(@NotNull final TYPE value,
+        @Nullable final WeakReference<? extends TYPE> valueReference) {
         if (storage == null) {
-            //noinspection unchecked
+            // noinspection unchecked
             storage = new WeakReference[freeSlots]; // usedSlots == 0, freeSlots == capacity
         }
 
@@ -133,7 +143,8 @@ public class WeakIdentityHashSet<TYPE> {
         while (true) {
             final WeakReference<? extends TYPE> candidateReference = storage[candidateSlot];
             if (candidateReference == null) {
-                storage[foundDeletedSlot ? firstDeletedSlot : candidateSlot] = valueReference == null ? new WeakReference<>(value) : valueReference;
+                storage[foundDeletedSlot ? firstDeletedSlot : candidateSlot] =
+                    valueReference == null ? new WeakReference<>(value) : valueReference;
                 updateAccountingForInsert(!foundDeletedSlot);
                 return true;
             }
@@ -172,7 +183,8 @@ public class WeakIdentityHashSet<TYPE> {
         if (storage == null) {
             return;
         }
-        for (int slotIndex = 0, usedSlotsConsumed = 0; slotIndex < storage.length && usedSlotsConsumed < usedSlots; ++slotIndex) {
+        for (int slotIndex = 0, usedSlotsConsumed = 0; slotIndex < storage.length
+            && usedSlotsConsumed < usedSlots; ++slotIndex) {
             final WeakReference<? extends TYPE> memberReference = storage[slotIndex];
             if (memberReference == null || memberReference == DELETED_REFERENCE) {
                 continue;
@@ -204,7 +216,8 @@ public class WeakIdentityHashSet<TYPE> {
         }
 
         @Override
-        public synchronized boolean add(@NotNull final TYPE value, @Nullable final WeakReference<? extends TYPE> valueReference) {
+        public synchronized boolean add(@NotNull final TYPE value,
+            @Nullable final WeakReference<? extends TYPE> valueReference) {
             return super.add(value, valueReference);
         }
 

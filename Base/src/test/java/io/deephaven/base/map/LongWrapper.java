@@ -49,12 +49,15 @@ class LongWrapper implements Comparable<LongWrapper>, Externalizable, Copyable<L
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof LongWrapper)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof LongWrapper))
+            return false;
 
         LongWrapper that = (LongWrapper) o;
 
-        if (val != that.val) return false;
+        if (val != that.val)
+            return false;
 
         return true;
     }

@@ -72,17 +72,20 @@ public class TestCompressedString extends TestCase {
         assertEquals(cs.hashCode(), "dancing".hashCode());
         assertTrue(Arrays.equals(cs.getData(), "dancing".getBytes()));
 
-        assertTrue(CharSequenceUtils.contentEquals(cs = cs("dancing with the stars!".getBytes(), 17, 5), "stars"));
+        assertTrue(CharSequenceUtils
+            .contentEquals(cs = cs("dancing with the stars!".getBytes(), 17, 5), "stars"));
         assertEquals(cs.toString(), "stars");
         assertEquals(cs.hashCode(), "stars".hashCode());
         assertTrue(Arrays.equals(cs.getData(), "stars".getBytes()));
 
-        assertTrue(CharSequenceUtils.contentEquals(cs = cs(ByteBuffer.wrap("happy".getBytes())), "happy"));
+        assertTrue(
+            CharSequenceUtils.contentEquals(cs = cs(ByteBuffer.wrap("happy".getBytes())), "happy"));
         assertEquals(cs.toString(), "happy");
         assertEquals(cs.hashCode(), "happy".hashCode());
         assertTrue(Arrays.equals(cs.getData(), "happy".getBytes()));
 
-        assertTrue(CharSequenceUtils.contentEquals(cs = cs(ByteBuffer.wrap("hedgehog!".getBytes()), 5, 3), "hog"));
+        assertTrue(CharSequenceUtils
+            .contentEquals(cs = cs(ByteBuffer.wrap("hedgehog!".getBytes()), 5, 3), "hog"));
         assertEquals(cs.toString(), "hog");
         assertEquals(cs.hashCode(), "hog".hashCode());
         assertTrue(Arrays.equals(cs.getData(), "hog".getBytes()));
@@ -141,7 +144,8 @@ public class TestCompressedString extends TestCase {
         try {
             cs().charAt(0);
             fail("Expected exception");
-        } catch (IndexOutOfBoundsException ignored) {}
+        } catch (IndexOutOfBoundsException ignored) {
+        }
 
         assertEquals(cs("a").charAt(0), 'a');
         assertEquals(cs("abc").charAt(0), 'a');
@@ -158,7 +162,7 @@ public class TestCompressedString extends TestCase {
         assertEquals(cs("abc").codePointBefore(2), "abc".codePointBefore(2));
         assertEquals(cs("abc").codePointBefore(3), "abc".codePointBefore(3));
 
-        assertEquals(cs("a").codePointCount(0, 1), "a".codePointCount(0 ,1));
+        assertEquals(cs("a").codePointCount(0, 1), "a".codePointCount(0, 1));
         assertEquals(cs("abc").codePointCount(0, 3), "abc".codePointCount(0, 3));
         assertEquals(cs("abc").codePointCount(0, 2), "abc".codePointCount(0, 2));
         assertEquals(cs("abc").codePointCount(1, 2), "abc".codePointCount(1, 2));

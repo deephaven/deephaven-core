@@ -6,7 +6,8 @@ import javax.annotation.Nonnull;
 import java.math.BigDecimal;
 
 /**
- * Wrap BigDecimal values for use in JS. Provides text formatting for display and access to the underlying value.
+ * Wrap BigDecimal values for use in JS. Provides text formatting for display and access to the
+ * underlying value.
  */
 public class BigDecimalWrapper {
     private final BigDecimal value;

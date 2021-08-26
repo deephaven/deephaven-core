@@ -14,16 +14,16 @@ public class SmartKey implements Serializable, Comparable {
 
     private static final long serialVersionUID = -1543127380480080565L;
 
-    public static final SmartKey EMPTY=new SmartKey(CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+    public static final SmartKey EMPTY = new SmartKey(CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
 
     public Object[] values_;
 
     private int hashCode_;
 
-    public SmartKey(Object ... values){
-        values_=values;
+    public SmartKey(Object... values) {
+        values_ = values;
 
-        hashCode_= HashCodeUtil.createHashCode(values_);
+        hashCode_ = HashCodeUtil.createHashCode(values_);
     }
 
     @Override
@@ -33,30 +33,32 @@ public class SmartKey implements Serializable, Comparable {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof SmartKey)){ return false; }
-        SmartKey criteria = (SmartKey)obj;
+        if (!(obj instanceof SmartKey)) {
+            return false;
+        }
+        SmartKey criteria = (SmartKey) obj;
 
         return Arrays.equals(values_, criteria.values_);
     }
 
     @Override
     public String toString() {
-        return "{SmartKey: values:"+Arrays.toString(values_)+" hashCode:"+hashCode_+"}";
+        return "{SmartKey: values:" + Arrays.toString(values_) + " hashCode:" + hashCode_ + "}";
     }
 
     public int compareTo(@NotNull Object o) {
-        SmartKey otherKey = (SmartKey)o;
+        SmartKey otherKey = (SmartKey) o;
         int activeLengthIndex = Math.min(values_.length, otherKey.values_.length);
 
-        for (int i=0; i<activeLengthIndex; i++){
-            int ret= CompareUtils.compare(values_[i], otherKey.values_[i]);
-            if (ret!=0){
+        for (int i = 0; i < activeLengthIndex; i++) {
+            int ret = CompareUtils.compare(values_[i], otherKey.values_[i]);
+            if (ret != 0) {
                 return ret;
             }
         }
 
-        if (values_.length!=otherKey.values_.length) {
-            return values_.length<otherKey.values_.length?-1:1;
+        if (values_.length != otherKey.values_.length) {
+            return values_.length < otherKey.values_.length ? -1 : 1;
         }
 
         return 0;
@@ -64,7 +66,7 @@ public class SmartKey implements Serializable, Comparable {
 
     public SmartKey subKey(int... positions) {
         Object[] newValues = new Object[positions.length];
-        for (int ii = 0 ; ii < positions.length; ++ii) {
+        for (int ii = 0; ii < positions.length; ++ii) {
             newValues[ii] = values_[positions[ii]];
         }
         return new SmartKey(newValues);
@@ -78,7 +80,8 @@ public class SmartKey implements Serializable, Comparable {
         return values_[position];
     }
 
-    // A bit of nastiness and interface pollution so we can reuse the same key and array in a lower garbage way
+    // A bit of nastiness and interface pollution so we can reuse the same key and array in a lower
+    // garbage way
     public void updateHashCode() {
         hashCode_ = HashCodeUtil.createHashCode(values_);
     }

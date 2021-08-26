@@ -27,7 +27,8 @@ public abstract class QueryScope implements LogOutputAppendable {
     // -----------------------------------------------------------------------------------------------------------------
 
     private static volatile QueryScope defaultScope = null;
-    private static final ThreadLocal<QueryScope> currentScope = ThreadLocal.withInitial(QueryScope::getDefaultScope);
+    private static final ThreadLocal<QueryScope> currentScope =
+        ThreadLocal.withInitial(QueryScope::getDefaultScope);
 
     private static QueryScope getDefaultScope() {
         if (defaultScope == null) {
@@ -49,7 +50,8 @@ public abstract class QueryScope implements LogOutputAppendable {
      */
     public static synchronized void setDefaultScope(final QueryScope scope) {
         if (defaultScope != null) {
-            throw new IllegalStateException("It's too late to set default scope; it's already set to: " + defaultScope);
+            throw new IllegalStateException(
+                "It's too late to set default scope; it's already set to: " + defaultScope);
         }
         defaultScope = Objects.requireNonNull(scope);
     }
@@ -57,9 +59,11 @@ public abstract class QueryScope implements LogOutputAppendable {
     /**
      * Sets the default {@link QueryScope} to be used in the current context. By default there is a
      * {@link StandaloneImpl} created by the static initializer and set as the defaultInstance. The
-     * method allows the use of a new or separate instance as the default instance for static methods.
+     * method allows the use of a new or separate instance as the default instance for static
+     * methods.
      *
-     * @param queryScope {@link QueryScope} to set as the new default instance; null clears the scope.
+     * @param queryScope {@link QueryScope} to set as the new default instance; null clears the
+     *        scope.
      */
     public static synchronized void setScope(final QueryScope queryScope) {
         if (queryScope == null) {
@@ -123,8 +127,8 @@ public abstract class QueryScope implements LogOutputAppendable {
     private volatile String queryNameValue;
 
     /**
-     * A type of RuntimeException thrown when a variable referenced within the {@link QueryScope} is not defined or,
-     * more likely, has not been added to the scope.
+     * A type of RuntimeException thrown when a variable referenced within the {@link QueryScope} is
+     * not defined or, more likely, has not been added to the scope.
      */
     public static class MissingVariableException extends RuntimeException {
 
@@ -143,14 +147,16 @@ public abstract class QueryScope implements LogOutputAppendable {
 
     /**
      * Apply conversions to certain scope variable values.
+     * 
      * @param value value
      * @return value, or an appropriately converted substitute.
      */
     private static Object applyValueConversions(final Object value) {
         if (value instanceof String) {
-            final String stringValue = (String)value;
+            final String stringValue = (String) value;
 
-            if (stringValue.length() > 0 && stringValue.charAt(0) == '\'' && stringValue.charAt(stringValue.length() - 1) == '\'') {
+            if (stringValue.length() > 0 && stringValue.charAt(0) == '\''
+                && stringValue.charAt(stringValue.length() - 1) == '\'') {
                 final String datetimeString = stringValue.substring(1, stringValue.length() - 1);
 
                 final DBDateTime dateTime = DBTimeUtils.convertDateTimeQuiet(datetimeString);
@@ -180,11 +186,12 @@ public abstract class QueryScope implements LogOutputAppendable {
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * Get an array of Params by name.  See createParam(name) implementations for details.
+     * Get an array of Params by name. See createParam(name) implementations for details.
      *
      * @param names parameter names
      * @return A newly-constructed array of newly-constructed Params.
-     * @throws io.deephaven.db.tables.select.QueryScope.MissingVariableException If any of the named scope variables does not exist.
+     * @throws io.deephaven.db.tables.select.QueryScope.MissingVariableException If any of the named
+     *         scope variables does not exist.
      */
     public final Param[] getParams(final Collection<String> names) throws MissingVariableException {
         final Param[] result = new Param[names.size()];
@@ -216,9 +223,11 @@ public abstract class QueryScope implements LogOutputAppendable {
 
     /**
      * Get a Param by name.
+     * 
      * @param name parameter name
      * @return newly-constructed Param (name + value-snapshot pair).
-     * @throws io.deephaven.db.tables.select.QueryScope.MissingVariableException If any of the named scope variables does not exist.
+     * @throws io.deephaven.db.tables.select.QueryScope.MissingVariableException If any of the named
+     *         scope variables does not exist.
      */
     protected abstract <T> Param<T> createParam(final String name) throws MissingVariableException;
 
@@ -227,7 +236,8 @@ public abstract class QueryScope implements LogOutputAppendable {
      *
      * @param name parameter name.
      * @return parameter value.
-     * @throws io.deephaven.db.tables.select.QueryScope.MissingVariableException If no such scope parameter exists.
+     * @throws io.deephaven.db.tables.select.QueryScope.MissingVariableException If no such scope
+     *         parameter exists.
      */
     public abstract <T> T readParamValue(final String name) throws MissingVariableException;
 
@@ -249,8 +259,8 @@ public abstract class QueryScope implements LogOutputAppendable {
     public abstract <T> void putParam(final String name, final T value);
 
     /**
-     * Add an object's public members (referenced reflectively, not a shallow copy!) to this scope if supported.
-     * <b>Note:</b> This is an optional method.
+     * Add an object's public members (referenced reflectively, not a shallow copy!) to this scope
+     * if supported. <b>Note:</b> This is an optional method.
      *
      * @param object object to add public members from.
      */
@@ -275,7 +285,7 @@ public abstract class QueryScope implements LogOutputAppendable {
      * @param queryName query name.
      */
     public void setQueryName(String queryName) {
-        if(CompareUtils.equals(queryName, queryNameValue)) {
+        if (CompareUtils.equals(queryName, queryNameValue)) {
             return;
         }
         putParam(QUERY_NAME_PARAM_NAME, queryName);
@@ -293,9 +303,10 @@ public abstract class QueryScope implements LogOutputAppendable {
             final Object paramValue = readParamValue(paramName);
             logOutput.nl().append(paramName).append("=");
             if (paramValue == this) {
-                logOutput.append("this QueryScope (" + paramValue.getClass().getName() + ':' + System.identityHashCode(paramValue) + ')');
+                logOutput.append("this QueryScope (" + paramValue.getClass().getName() + ':'
+                    + System.identityHashCode(paramValue) + ')');
             } else if (paramValue instanceof LogOutputAppendable) {
-                logOutput.append((LogOutputAppendable)paramValue);
+                logOutput.append((LogOutputAppendable) paramValue);
             } else {
                 logOutput.append(Objects.toString(paramValue));
             }
@@ -309,10 +320,10 @@ public abstract class QueryScope implements LogOutputAppendable {
 
     public static class StandaloneImpl extends QueryScope {
 
-        private final KeyedObjectHashMap<String, ValueRetriever> valueRetrievers = new KeyedObjectHashMap<>(new ValueRetrieverNameKey());
+        private final KeyedObjectHashMap<String, ValueRetriever> valueRetrievers =
+            new KeyedObjectHashMap<>(new ValueRetrieverNameKey());
 
-        public StandaloneImpl() {
-        }
+        public StandaloneImpl() {}
 
         @Override
         public Set<String> getParamNames() {
@@ -326,7 +337,7 @@ public abstract class QueryScope implements LogOutputAppendable {
 
         @Override
         protected <T> Param<T> createParam(final String name) throws MissingVariableException {
-            //noinspection unchecked
+            // noinspection unchecked
             final ValueRetriever<T> valueRetriever = valueRetrievers.get(name);
             if (valueRetriever == null) {
                 throw new MissingVariableException("Missing variable " + name);
@@ -336,7 +347,7 @@ public abstract class QueryScope implements LogOutputAppendable {
 
         @Override
         public <T> T readParamValue(final String name) throws MissingVariableException {
-            //noinspection unchecked
+            // noinspection unchecked
             final ValueRetriever<T> valueRetriever = valueRetrievers.get(name);
             if (valueRetriever == null) {
                 throw new MissingVariableException("Missing variable " + name);
@@ -346,7 +357,7 @@ public abstract class QueryScope implements LogOutputAppendable {
 
         @Override
         public <T> T readParamValue(final String name, final T defaultValue) {
-            //noinspection unchecked
+            // noinspection unchecked
             final ValueRetriever<T> valueRetriever = valueRetrievers.get(name);
             if (valueRetriever == null) {
                 return defaultValue;
@@ -357,11 +368,13 @@ public abstract class QueryScope implements LogOutputAppendable {
         @Override
         public <T> void putParam(final String name, final T value) {
             NameValidator.validateQueryParameterName(name);
-            // TODO: Can I get rid of this applyValueConversions?  It's too inconsistent to feel safe.
-            valueRetrievers.put(name, new SimpleValueRetriever<>(name, applyValueConversions(value)));
+            // TODO: Can I get rid of this applyValueConversions? It's too inconsistent to feel
+            // safe.
+            valueRetrievers.put(name,
+                new SimpleValueRetriever<>(name, applyValueConversions(value)));
         }
 
-        public void putObjectFields(final Object object){
+        public void putObjectFields(final Object object) {
             for (final Field field : object.getClass().getDeclaredFields()) {
                 valueRetrievers.put(field.getName(), new ReflectiveValueRetriever(object, field));
             }
@@ -380,11 +393,14 @@ public abstract class QueryScope implements LogOutputAppendable {
             }
 
             public abstract T getValue();
+
             public abstract Class<T> getType();
+
             public abstract Param<T> createParam();
         }
 
-        private static class ValueRetrieverNameKey extends KeyedObjectKey.Basic<String, ValueRetriever> {
+        private static class ValueRetrieverNameKey
+            extends KeyedObjectKey.Basic<String, ValueRetriever> {
 
             @Override
             public String getKey(ValueRetriever valueRetriever) {
@@ -408,8 +424,8 @@ public abstract class QueryScope implements LogOutputAppendable {
 
             @Override
             public Class<T> getType() {
-                //noinspection unchecked
-                return (Class<T>)(value != null ? value.getClass() : Object.class);
+                // noinspection unchecked
+                return (Class<T>) (value != null ? value.getClass() : Object.class);
             }
 
             @Override
@@ -433,8 +449,8 @@ public abstract class QueryScope implements LogOutputAppendable {
             @Override
             public T getValue() {
                 try {
-                    //noinspection unchecked
-                    return (T)field.get(object);
+                    // noinspection unchecked
+                    return (T) field.get(object);
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException(e);
                 }
@@ -442,8 +458,8 @@ public abstract class QueryScope implements LogOutputAppendable {
 
             @Override
             public Class<T> getType() {
-                //noinspection unchecked
-                return (Class<T>)field.getType();
+                // noinspection unchecked
+                return (Class<T>) field.getType();
             }
 
             @Override
@@ -473,14 +489,16 @@ public abstract class QueryScope implements LogOutputAppendable {
         }
 
         @Override
-        protected synchronized <T> Param<T> createParam(final String name) throws MissingVariableException {
-            //noinspection unchecked
+        protected synchronized <T> Param<T> createParam(final String name)
+            throws MissingVariableException {
+            // noinspection unchecked
             return new Param<>(name, (T) scriptSession.getVariable(name));
         }
 
         @Override
-        public synchronized <T> T readParamValue(final String name) throws MissingVariableException {
-            //noinspection unchecked
+        public synchronized <T> T readParamValue(final String name)
+            throws MissingVariableException {
+            // noinspection unchecked
             return (T) scriptSession.getVariable(name);
         }
 
@@ -512,14 +530,14 @@ public abstract class QueryScope implements LogOutputAppendable {
 
         @Override
         protected <T> Param<T> createParam(final String name) throws MissingVariableException {
-            //noinspection unchecked
+            // noinspection unchecked
             return new Param<>(name, (T) scriptSession.getVariable(name));
         }
 
         @Override
         public <T> T readParamValue(final String name) throws MissingVariableException {
-          //noinspection unchecked
-          return (T) scriptSession.getVariable(name);
+            // noinspection unchecked
+            return (T) scriptSession.getVariable(name);
         }
 
         @Override

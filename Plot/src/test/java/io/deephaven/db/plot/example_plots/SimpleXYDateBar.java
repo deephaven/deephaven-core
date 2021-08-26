@@ -24,11 +24,11 @@ public class SimpleXYDateBar {
 
         Figure fig = FigureFactory.figure();
         Figure cht = fig.newChart(0)
-                .chartTitle("Chart Title");
+            .chartTitle("Chart Title");
         Figure axs = cht.newAxes()
-                .xLabel("X")
-                .yLabel("Y").plotStyle("BAR")
-                .plot("Test1", x1, y1).pointColor("red");
+            .xLabel("X")
+            .yLabel("Y").plotStyle("BAR")
+            .plot("Test1", x1, y1).pointColor("red");
 
         ExamplePlotUtils.display(axs);
     }

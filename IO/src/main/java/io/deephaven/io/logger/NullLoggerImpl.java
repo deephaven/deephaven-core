@@ -17,8 +17,8 @@ import java.nio.ByteBuffer;
 import java.util.TimeZone;
 
 /**
- * Logger implementation that calls Interceptors on log entries, but doesn't write them to anything. Note that this implementation
- * does not append the timestamp or level to the entries.
+ * Logger implementation that calls Interceptors on log entries, but doesn't write them to anything.
+ * Note that this implementation does not append the timestamp or level to the entries.
  */
 public class NullLoggerImpl extends LoggerImpl {
 
@@ -31,20 +31,24 @@ public class NullLoggerImpl extends LoggerImpl {
     }
 
     private NullLoggerImpl(@NotNull final LogEntryPool logEntryPool,
-                           @NotNull final LogLevel loggingLevel,
-                           @NotNull final LoggerTimeSource timeSource,
-                           final TimeZone tz) {
-        super(logEntryPool, new NullLoggerImpl.Sink(logEntryPool), null, loggingLevel, timeSource, tz, true, false);
+        @NotNull final LogLevel loggingLevel,
+        @NotNull final LoggerTimeSource timeSource,
+        final TimeZone tz) {
+        super(logEntryPool, new NullLoggerImpl.Sink(logEntryPool), null, loggingLevel, timeSource,
+            tz, true, false);
     }
 
     public NullLoggerImpl(@NotNull final LogLevel loggingLevel) {
         this(new LogEntryPoolImpl(1024, new LogBufferPoolImpl(2048, 1024)),
-                loggingLevel,
-                new NullLoggerTimeSource(),
-                null);
+            loggingLevel,
+            new NullLoggerTimeSource(),
+            null);
     }
 
-    /** Override to avoid writing timestamp and level to the entry, as it's assumed they'll be handled independently  */
+    /**
+     * Override to avoid writing timestamp and level to the entry, as it's assumed they'll be
+     * handled independently
+     */
     @Override
     public LogEntry getEntry(LogLevel level, long currentTimeMicros, @Nullable Throwable t) {
         if (!isLevelEnabled(level)) {
@@ -75,34 +79,32 @@ public class NullLoggerImpl extends LoggerImpl {
                     b.flip();
                 }
 
-                if ( interceptors != null ) {
+                if (interceptors != null) {
                     for (final LogSink.Interceptor interceptor : interceptors) {
                         try {
-                            //noinspection unchecked
+                            // noinspection unchecked
                             interceptor.element(entry, entry);
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
                         }
                     }
                 }
-            }
-            finally {
+            } finally {
                 entry.clear();
                 logEntryPool.give(entry);
             }
         }
 
         @Override
-        public void shutdown() {
-        }
+        public void shutdown() {}
 
         @Override
-        public void terminate() {
-        }
+        public void terminate() {}
 
         @Override
         public void addInterceptor(@NotNull final Interceptor<LogEntry> logEntryInterceptor) {
-            interceptors = ArrayUtil.pushArray(logEntryInterceptor, interceptors, ClassUtil.generify(Interceptor.class));
+            interceptors = ArrayUtil.pushArray(logEntryInterceptor, interceptors,
+                ClassUtil.generify(Interceptor.class));
         }
     }
 }

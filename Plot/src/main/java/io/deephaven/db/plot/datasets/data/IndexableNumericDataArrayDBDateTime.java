@@ -11,8 +11,8 @@ import io.deephaven.db.tables.utils.DBDateTime;
 /**
  * {@link IndexableNumericData} dataset comprised of an array of {@link DBDateTime}s.
  *
- * Date values are accessed as nanoseconds from epoch.
- * Data conversion to double means these values are accurate to about 250 nanoseconds.
+ * Date values are accessed as nanoseconds from epoch. Data conversion to double means these values
+ * are accurate to about 250 nanoseconds.
  */
 public class IndexableNumericDataArrayDBDateTime extends IndexableNumericData {
     private static final long serialVersionUID = 2006200987348909028L;
@@ -43,7 +43,7 @@ public class IndexableNumericDataArrayDBDateTime extends IndexableNumericData {
         }
         double result = Double.NaN;
         DBDateTime v = data[i];
-        if(v != null) {
+        if (v != null) {
             result = v.getNanos();
         }
 

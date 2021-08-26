@@ -10,9 +10,11 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * {@link TableLocationKeyFinder Location finder} that delivers a known set of {@link ImmutableTableLocationKey keys}.
+ * {@link TableLocationKeyFinder Location finder} that delivers a known set of
+ * {@link ImmutableTableLocationKey keys}.
  */
-public final class KnownLocationKeyFinder<TLK extends ImmutableTableLocationKey> implements TableLocationKeyFinder<TLK> {
+public final class KnownLocationKeyFinder<TLK extends ImmutableTableLocationKey>
+    implements TableLocationKeyFinder<TLK> {
 
     private final List<TLK> knownKeys;
 
@@ -20,11 +22,11 @@ public final class KnownLocationKeyFinder<TLK extends ImmutableTableLocationKey>
     public KnownLocationKeyFinder(@NotNull final TLK... knownKeys) {
         Require.elementsNeqNull(knownKeys, "knownKeys");
         this.knownKeys = knownKeys.length == 0
-                ? Collections.emptyList()
-                : Collections.unmodifiableList(
+            ? Collections.emptyList()
+            : Collections.unmodifiableList(
                 knownKeys.length == 1
-                        ? Collections.singletonList(knownKeys[0])
-                        : Arrays.asList(knownKeys));
+                    ? Collections.singletonList(knownKeys[0])
+                    : Arrays.asList(knownKeys));
     }
 
     /**

@@ -8,40 +8,49 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
-* Marker interface for CharSequences to be used in StringCache implementations.
-*/
+ * Marker interface for CharSequences to be used in StringCache implementations.
+ */
 public interface StringCompatible extends CharSequence, Comparable<CharSequence> {
 
     /**
-     * Convert this StringCompatible into a String.  Implementations should not cache result Strings, in order to
-     * avoid inadvertently allowing promotion of short-lived objects under generational garbage collection.
-     * @return A newly constructed String representing the same sequence of characters as this StringCompatible.
+     * Convert this StringCompatible into a String. Implementations should not cache result Strings,
+     * in order to avoid inadvertently allowing promotion of short-lived objects under generational
+     * garbage collection.
+     * 
+     * @return A newly constructed String representing the same sequence of characters as this
+     *         StringCompatible.
      */
     @Override
     @NotNull
     String toString();
 
     /**
-     * Convert this StringCompatible into a CompressedString.  Implementations should not cache result
-     * CompressedStrings, in order to avoid inadvertently allowing promotion of short-lived objects under generational
-     * garbage collection.
-     * @return A newly constructed CompressedString representing the same sequence of characters as this StringCompatible (or this object, if appropriate).
+     * Convert this StringCompatible into a CompressedString. Implementations should not cache
+     * result CompressedStrings, in order to avoid inadvertently allowing promotion of short-lived
+     * objects under generational garbage collection.
+     * 
+     * @return A newly constructed CompressedString representing the same sequence of characters as
+     *         this StringCompatible (or this object, if appropriate).
      */
     @NotNull
     CompressedString toCompressedString();
 
     /**
-     * Convert this StringCompatible into a MappedCompressedString.  Implementations should not cache result
-     * CompressedStrings, in order to avoid inadvertently allowing promotion of short-lived objects under generational
-     * garbage collection.
-     * @return A newly constructed MappedCompressedString representing the same sequence of characters as this StringCompatible (or this object, if appropriate).
+     * Convert this StringCompatible into a MappedCompressedString. Implementations should not cache
+     * result CompressedStrings, in order to avoid inadvertently allowing promotion of short-lived
+     * objects under generational garbage collection.
+     * 
+     * @return A newly constructed MappedCompressedString representing the same sequence of
+     *         characters as this StringCompatible (or this object, if appropriate).
      */
     @NotNull
     MappedCompressedString toMappedCompressedString();
 
     /**
      * Implementations MUST match the current implementation of String.hashCode().
-     * @return A hashcode value for this StringCompatible that matches the value a String of the same chars.
+     * 
+     * @return A hashcode value for this StringCompatible that matches the value a String of the
+     *         same chars.
      */
     @Override
     int hashCode();
@@ -54,6 +63,7 @@ public interface StringCompatible extends CharSequence, Comparable<CharSequence>
 
     /**
      * Implementations MUST compare StringCompatibles and Strings char-by-char.
+     * 
      * @return 0, <0, or >0 if that compares equal-to, less-than, or greater-than this.
      */
     @Override
@@ -69,8 +79,10 @@ public interface StringCompatible extends CharSequence, Comparable<CharSequence>
         if (cs == null) {
             return 0;
         }
-        // NB: For these classes/markers, we know we can trust their hashCode implementation to match
-        //     CharSequenceUtils.hashCode(CharSequence), so use hashCode() directly and allow for caching.
+        // NB: For these classes/markers, we know we can trust their hashCode implementation to
+        // match
+        // CharSequenceUtils.hashCode(CharSequence), so use hashCode() directly and allow for
+        // caching.
         if (cs instanceof String || cs instanceof StringCompatible) {
             return cs.hashCode();
         }

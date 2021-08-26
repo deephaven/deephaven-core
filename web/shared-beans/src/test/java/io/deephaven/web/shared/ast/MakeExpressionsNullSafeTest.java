@@ -10,24 +10,19 @@ public class MakeExpressionsNullSafeTest extends AbstractReplacingVisitorTest {
     @Test
     public void testMakeExpressionsNullSafe() {
         assertUnchanged("doesnt affect EQ",
-                node(FilterDescriptor.FilterOperation.EQ, reference("ColumnA"), literal("A"))
-        );
+            node(FilterDescriptor.FilterOperation.EQ, reference("ColumnA"), literal("A")));
 
         assertFilterEquals("add null checks when implicit invoke is needed",
-                node(FilterDescriptor.FilterOperation.EQ_ICASE, reference("ColumnA"), reference("ColumnB")),
-                or(
-                        and(
-                                node(FilterDescriptor.FilterOperation.IS_NULL, reference("ColumnA")),
-                                node(FilterDescriptor.FilterOperation.IS_NULL, reference("ColumnB"))
-                        ),
-                        and(
-                                not(
-                                        node(FilterDescriptor.FilterOperation.IS_NULL, reference("ColumnA"))
-                                ),
-                                invoke("equalsIgnoreCase", reference("ColumnA"), reference("ColumnB"))
-                        )
-                )
-        );
+            node(FilterDescriptor.FilterOperation.EQ_ICASE, reference("ColumnA"),
+                reference("ColumnB")),
+            or(
+                and(
+                    node(FilterDescriptor.FilterOperation.IS_NULL, reference("ColumnA")),
+                    node(FilterDescriptor.FilterOperation.IS_NULL, reference("ColumnB"))),
+                and(
+                    not(
+                        node(FilterDescriptor.FilterOperation.IS_NULL, reference("ColumnA"))),
+                    invoke("equalsIgnoreCase", reference("ColumnA"), reference("ColumnB")))));
     }
 
     @Override

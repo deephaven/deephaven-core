@@ -21,7 +21,8 @@ public class SortedFirstOrLastByAggregationFactory implements AggregationContext
     private final boolean isCombo;
     private final String[] sortColumns;
 
-    public SortedFirstOrLastByAggregationFactory(final boolean isFirst, final boolean isCombo, final String... sortColumns) {
+    public SortedFirstOrLastByAggregationFactory(final boolean isFirst, final boolean isCombo,
+        final String... sortColumns) {
         this.isFirst = isFirst;
         this.isCombo = isCombo;
         this.sortColumns = sortColumns;
@@ -33,39 +34,44 @@ public class SortedFirstOrLastByAggregationFactory implements AggregationContext
     }
 
     @Override
-    public AggregationContext makeAggregationContext(@NotNull final Table table, @NotNull final String... groupByColumns) {
+    public AggregationContext makeAggregationContext(@NotNull final Table table,
+        @NotNull final String... groupByColumns) {
         final Set<String> groupBySet = new HashSet<>(Arrays.asList(groupByColumns));
         return getAggregationContext(table, sortColumns, isFirst, isCombo,
-                table.getDefinition().getColumnNames().stream().filter(col -> !groupBySet.contains(col)).map(name -> new MatchPair(name, name)).toArray(MatchPair[]::new));
+            table.getDefinition().getColumnNames().stream().filter(col -> !groupBySet.contains(col))
+                .map(name -> new MatchPair(name, name)).toArray(MatchPair[]::new));
     }
 
     @NotNull
     static AggregationContext getAggregationContext(@NotNull final Table table,
-                                                    @NotNull final String[] sortColumns,
-                                                    final boolean isFirst,
-                                                    final boolean isCombo,
-                                                    @NotNull final MatchPair[] resultNames) {
-        //noinspection unchecked
+        @NotNull final String[] sortColumns,
+        final boolean isFirst,
+        final boolean isCombo,
+        @NotNull final MatchPair[] resultNames) {
+        // noinspection unchecked
         final ChunkSource.WithPrev<Values>[] inputSource = new ChunkSource.WithPrev[1];
-        final IterativeChunkedAggregationOperator[] operator = new IterativeChunkedAggregationOperator[1];
+        final IterativeChunkedAggregationOperator[] operator =
+            new IterativeChunkedAggregationOperator[1];
         final String[][] name = new String[1][];
 
         if (sortColumns.length == 1) {
             final ColumnSource columnSource = table.getColumnSource(sortColumns[0]);
-            //noinspection unchecked
+            // noinspection unchecked
             inputSource[0] = columnSource;
         } else {
-            // create a tuple source, because our underlying SSA does not handle multiple sort columns
+            // create a tuple source, because our underlying SSA does not handle multiple sort
+            // columns
             final ColumnSource[] sortColumnSources = new ColumnSource[sortColumns.length];
             for (int ii = 0; ii < sortColumnSources.length; ++ii) {
                 sortColumnSources[ii] = table.getColumnSource(sortColumns[ii]);
             }
-            //noinspection unchecked
+            // noinspection unchecked
             inputSource[0] = TupleSourceFactory.makeTupleSource(sortColumnSources);
         }
 
         name[0] = sortColumns;
-        operator[0] = makeOperator(inputSource[0].getChunkType(), isFirst, isCombo, resultNames, table);
+        operator[0] =
+            makeOperator(inputSource[0].getChunkType(), isFirst, isCombo, resultNames, table);
 
         return new AggregationContext(operator, name, inputSource);
     }
@@ -75,11 +81,12 @@ public class SortedFirstOrLastByAggregationFactory implements AggregationContext
         return (isFirst ? "SortedFirstBy" : "SortedLastBy") + Arrays.toString(sortColumns);
     }
 
-    private static IterativeChunkedAggregationOperator makeOperator(@NotNull final ChunkType chunkType,
-                                                                    final boolean isFirst,
-                                                                    final boolean isCombo,
-                                                                    @NotNull final MatchPair[] resultPairs,
-                                                                    @NotNull final Table sourceTable) {
+    private static IterativeChunkedAggregationOperator makeOperator(
+        @NotNull final ChunkType chunkType,
+        final boolean isFirst,
+        final boolean isCombo,
+        @NotNull final MatchPair[] resultPairs,
+        @NotNull final Table sourceTable) {
         final boolean isAddOnly = ((BaseTable) sourceTable).isAddOnly();
         final boolean isStream = StreamTableTools.isStream(sourceTable);
         if (isAddOnly) {

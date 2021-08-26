@@ -42,17 +42,20 @@ public interface ColumnSource<T>
         return ChunkType.fromElementType(dataType);
     }
 
-    Index match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, Index mapper, final Object... keys);
+    Index match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, Index mapper,
+        final Object... keys);
 
     Map<T, Index> getValuesMapping(Index subRange);
 
     /**
-     * ColumnSource implementations that track previous values have the option to not actually start tracking previous
-     * values until this method is called. This is an option, not an obligation: some simple ColumnSource
-     * implementations (like TSingleValueSource for various T) always track previous values; other implementations (like
-     * PrevColumnSource) never do; some (like TArrayColumnSource) only start tracking once this method is called.
+     * ColumnSource implementations that track previous values have the option to not actually start
+     * tracking previous values until this method is called. This is an option, not an obligation:
+     * some simple ColumnSource implementations (like TSingleValueSource for various T) always track
+     * previous values; other implementations (like PrevColumnSource) never do; some (like
+     * TArrayColumnSource) only start tracking once this method is called.
      *
-     * An immutable column source can not have distinct prev values; therefore it is implemented as a no-op.
+     * An immutable column source can not have distinct prev values; therefore it is implemented as
+     * a no-op.
      */
     default void startTrackingPrevValues() {
         if (!isImmutable()) {
@@ -76,15 +79,18 @@ public interface ColumnSource<T>
     Map<T, Index> getGroupToRange(Index index);
 
     /**
-     * Determine if this column source is immutable, meaning that the values at a given index key never change.
+     * Determine if this column source is immutable, meaning that the values at a given index key
+     * never change.
      *
-     * @return true if the values at a given index of the column source never change, false otherwise
+     * @return true if the values at a given index of the column source never change, false
+     *         otherwise
      */
     boolean isImmutable();
 
     /**
-     * Release any resources held for caching purposes. Implementations need not guarantee that concurrent accesses are
-     * correct, as the purpose of this method is to ensure cleanup for column sources that will no longer be used.
+     * Release any resources held for caching purposes. Implementations need not guarantee that
+     * concurrent accesses are correct, as the purpose of this method is to ensure cleanup for
+     * column sources that will no longer be used.
      */
     @Override
     @OverridingMethodsMustInvokeSuper
@@ -96,9 +102,11 @@ public interface ColumnSource<T>
      * Test if a reinterpret call will succeed.
      *
      * @param alternateDataType The alternative type to consider
-     * @return If a reinterpret on this column source with the supplied alternateDataType will succeed.
+     * @return If a reinterpret on this column source with the supplied alternateDataType will
+     *         succeed.
      */
-    <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType);
+    <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
+        @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType);
 
     /**
      * Provide an alternative view into the data underlying this column source.
@@ -159,8 +167,8 @@ public interface ColumnSource<T>
      * {@link #getType()}) can be cast to {@code clazz}. This is analogous to casting the objects provided by this
      * column source to {@code clazz}.
      * <p>
-     * For example, the following code will throw an exception if the "MyString" column does not actually contain
-     * {@code String} data:
+     * For example, the following code will throw an exception if the "MyString" column does not
+     * actually contain {@code String} data:
      *
      * <pre>
      *     ColumnSource&lt;String&gt; colSource = table.getColumnSource("MyString").getParameterized(String.class)

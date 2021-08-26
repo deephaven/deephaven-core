@@ -32,14 +32,14 @@ public class DataDrivenReplayer extends Replayer {
         long prevValue = -1;
         if (timestampSource.allowsReinterpret(long.class)) {
             ColumnSource<Long> longColumn = timestampSource.reinterpret(long.class);
-            for (Index.Iterator iterator = index.iterator(); iterator.hasNext(); ) {
+            for (Index.Iterator iterator = index.iterator(); iterator.hasNext();) {
                 long currentValue = longColumn.getLong(iterator.nextLong());
                 if (currentValue != prevValue) {
                     allTimestamp.add(prevValue = currentValue);
                 }
             }
         } else {
-            for (Index.Iterator iterator = index.iterator(); iterator.hasNext(); ) {
+            for (Index.Iterator iterator = index.iterator(); iterator.hasNext();) {
                 long currentValue = timestampSource.get(iterator.nextLong()).getNanos();
                 if (currentValue != prevValue) {
                     allTimestamp.add(prevValue = currentValue);
@@ -60,8 +60,8 @@ public class DataDrivenReplayer extends Replayer {
 
     @Override
     public void refresh() {
-        long currentTimeNanos  = -1;
-        while (pos < allTimestamp.size()){
+        long currentTimeNanos = -1;
+        while (pos < allTimestamp.size()) {
             currentTimeNanos = allTimestamp.get(pos);
             if (currentTimeNanos > lastTime || currentTimeNanos > endTime.getNanos()) {
                 break;
@@ -79,6 +79,6 @@ public class DataDrivenReplayer extends Replayer {
 
     @Override
     public void setTime(long updatedTime) {
-        currentTime = DBTimeUtils.millisToTime(Math.max(updatedTime,currentTime.getMillis()));
+        currentTime = DBTimeUtils.millisToTime(Math.max(updatedTime, currentTime.getMillis()));
     }
 }

@@ -13,38 +13,38 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.grpcWeb.unary.UnaryOutput",
     namespace = JsPackage.GLOBAL)
 public interface UnaryOutput<TResponse> {
-  @JsOverlay
-  static UnaryOutput create() {
-    return Js.uncheckedCast(JsPropertyMap.of());
-  }
+    @JsOverlay
+    static UnaryOutput create() {
+        return Js.uncheckedCast(JsPropertyMap.of());
+    }
 
-  @JsProperty
-  BrowserHeaders getHeaders();
+    @JsProperty
+    BrowserHeaders getHeaders();
 
-  @JsProperty
-  TResponse getMessage();
+    @JsProperty
+    TResponse getMessage();
 
-  @JsProperty
-  int getStatus();
+    @JsProperty
+    int getStatus();
 
-  @JsProperty
-  String getStatusMessage();
+    @JsProperty
+    String getStatusMessage();
 
-  @JsProperty
-  BrowserHeaders getTrailers();
+    @JsProperty
+    BrowserHeaders getTrailers();
 
-  @JsProperty
-  void setHeaders(BrowserHeaders headers);
+    @JsProperty
+    void setHeaders(BrowserHeaders headers);
 
-  @JsProperty
-  void setMessage(TResponse message);
+    @JsProperty
+    void setMessage(TResponse message);
 
-  @JsProperty
-  void setStatus(int status);
+    @JsProperty
+    void setStatus(int status);
 
-  @JsProperty
-  void setStatusMessage(String statusMessage);
+    @JsProperty
+    void setStatusMessage(String statusMessage);
 
-  @JsProperty
-  void setTrailers(BrowserHeaders trailers);
+    @JsProperty
+    void setTrailers(BrowserHeaders trailers);
 }

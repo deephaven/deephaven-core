@@ -22,53 +22,57 @@ public class FIFOMutex {
 
     public FIFOMutex(String debugName) {
         this.debugName = debugName;
-        this.threads = new LockFreeArrayQueue<Thread>(10);  // 1022 threads max
+        this.threads = new LockFreeArrayQueue<Thread>(10); // 1022 threads max
         this.leader = new AtomicReference<Thread>(null);
     }
 
     public void lock() {
         boolean wasInterrupted = false;
         Thread t, me = Thread.currentThread();
-        while ( !threads.enqueue(me) ) {
+        while (!threads.enqueue(me)) {
             // wait
         }
         long t0 = 0;
-        if ( debugName != null ) {
-            log.info("FIFOMutex: "+debugName+": thread "+me.getName()+" waiting");
+        if (debugName != null) {
+            log.info("FIFOMutex: " + debugName + ": thread " + me.getName() + " waiting");
             t0 = System.nanoTime();
         }
         int spins = 0;
         boolean peekNotMe = true;
-        while ( (peekNotMe && (peekNotMe = (threads.peek() != me))) || // once we've peeked ourselves once, we don't need to do it again!
-                !leader.compareAndSet(null, me) ) {
-            if ( (++spins % 1000) == 0 ) {
+        while ((peekNotMe && (peekNotMe = (threads.peek() != me))) || // once we've peeked ourselves
+                                                                      // once, we don't need to do
+                                                                      // it again!
+            !leader.compareAndSet(null, me)) {
+            if ((++spins % 1000) == 0) {
                 LockSupport.park(this);
 
                 // ignore interrupts while waiting
-                if ( Thread.interrupted() ) {
+                if (Thread.interrupted()) {
                     wasInterrupted = true;
                 }
             }
         }
-        if ( (t = threads.dequeue()) != me ) {
-            throw new IllegalStateException("Failed to dequeue myself, got "+t);
+        if ((t = threads.dequeue()) != me) {
+            throw new IllegalStateException("Failed to dequeue myself, got " + t);
         }
         // reassert interrupt status on exit
-        if ( wasInterrupted ) {
-           me.interrupt();
+        if (wasInterrupted) {
+            me.interrupt();
         }
-        if ( debugName != null ) {
+        if (debugName != null) {
             lastLeadChange = System.nanoTime();
-            log.info("FIFOMutex: "+debugName+": thread "+me.getName()+" leading after "+((lastLeadChange - t0 + 500) / 1000)+" micros");
+            log.info("FIFOMutex: " + debugName + ": thread " + me.getName() + " leading after "
+                + ((lastLeadChange - t0 + 500) / 1000) + " micros");
         }
     }
 
     public void unlock() {
         Thread me = Thread.currentThread();
-        if ( debugName != null ) {
-            log.info("FIFOMutex: "+debugName+": thread "+me.getName()+" handing off after "+((System.nanoTime() - lastLeadChange + 500) / 1000)+" micros");
+        if (debugName != null) {
+            log.info("FIFOMutex: " + debugName + ": thread " + me.getName() + " handing off after "
+                + ((System.nanoTime() - lastLeadChange + 500) / 1000) + " micros");
         }
-        if ( !leader.compareAndSet(me, null) ) {
+        if (!leader.compareAndSet(me, null)) {
             throw new IllegalStateException("wrong thread called handoff");
         }
         LockSupport.unpark(threads.peek());

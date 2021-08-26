@@ -5,13 +5,16 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * <p>Codec superinterface for Object translation from byte arrays for serialization and deserialization.
- * <p>Implementations must follow several rules to enable correct usage:
+ * <p>
+ * Codec superinterface for Object translation from byte arrays for serialization and
+ * deserialization.
+ * <p>
+ * Implementations must follow several rules to enable correct usage:
  * <ol>
- * <li>They must be stateless or designed for concurrent use (e.g. by using only ThreadLocal state), as they will
- * generally be cached and re-used.</li>
- * <li>They must not modify their inputs in any way, retain references to their inputs, or return results that retain
- * references to their inputs.</li>
+ * <li>They must be stateless or designed for concurrent use (e.g. by using only ThreadLocal state),
+ * as they will generally be cached and re-used.</li>
+ * <li>They must not modify their inputs in any way, retain references to their inputs, or return
+ * results that retain references to their inputs.</li>
  * </ol>
  */
 public interface ObjectDecoder<TYPE> {
@@ -23,7 +26,7 @@ public interface ObjectDecoder<TYPE> {
     /**
      * Decode an object from an array of bytes.
      *
-     * @param input  The input byte array containing bytes to decode
+     * @param input The input byte array containing bytes to decode
      * @param offset The offset into the byte array to start decoding from
      * @param length The length of the byte array to decode from, starting at the offset
      * @return The output object, possibly null
@@ -34,8 +37,8 @@ public interface ObjectDecoder<TYPE> {
     /**
      * What width byte array does this ObjectCodec expect to encode and decode?
      *
-     * @return VARIABLE_WIDTH_SENTINEL if the codec  must encode and decode variable width columns, otherwise the fixed
-     * size of byte array that must be decoded and encoded.
+     * @return VARIABLE_WIDTH_SENTINEL if the codec must encode and decode variable width columns,
+     *         otherwise the fixed size of byte array that must be decoded and encoded.
      */
     int expectedObjectWidth();
 

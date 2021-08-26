@@ -45,11 +45,12 @@ public class JsNumberFormat {
     public String format(Object number) {
         Objects.requireNonNull(number);
         if (number instanceof Double) {// aka typeof number, and non-null
-            return wrapped.format((double)(Double)number);
+            return wrapped.format((double) (Double) number);
         } else if (number instanceof LongWrapper) {
-            return wrapped.format((Long)((LongWrapper) number).getWrapped());
+            return wrapped.format((Long) ((LongWrapper) number).getWrapped());
         }
-        throw new IllegalStateException("Can't format non-number object of type " + Js.typeof(number));
+        throw new IllegalStateException(
+            "Can't format non-number object of type " + Js.typeof(number));
     }
 
     @Override

@@ -22,8 +22,7 @@ public class ClassGraphExtension {
     public static class Script implements InitScript {
 
         @Inject
-        public Script() {
-        }
+        public Script() {}
 
         @Override
         public String getScriptPath() {
@@ -105,7 +104,8 @@ public class ClassGraphExtension {
             TableTools.stringCol("Authority", authorities.toArray(new String[0])),
             TableTools.stringCol("UserInfo", userInfos.toArray(new String[0])),
             TableTools.stringCol("Host", hosts.toArray(new String[0])),
-            TableTools.intCol("Port", ports.stream().mapToInt(ClassGraphExtension::toDhInt).toArray()),
+            TableTools.intCol("Port",
+                ports.stream().mapToInt(ClassGraphExtension::toDhInt).toArray()),
             TableTools.stringCol("Path", paths.toArray(new String[0])),
             TableTools.stringCol("Query", queries.toArray(new String[0])),
             TableTools.stringCol("Fragment", fragments.toArray(new String[0])));

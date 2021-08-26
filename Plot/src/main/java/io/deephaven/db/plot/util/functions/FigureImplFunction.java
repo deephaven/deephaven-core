@@ -21,15 +21,21 @@ public class FigureImplFunction implements Function<FigureImpl, FigureImpl> {
     private final int axesIndex;
     private final int seriesIndex;
 
-    public FigureImplFunction(final Function<FigureImpl, FigureImpl> function, final MultiSeriesInternal multiSeriesInternal) {
-        this(function, multiSeriesInternal.chart().row(), multiSeriesInternal.chart().column(), multiSeriesInternal.axes().id(), multiSeriesInternal.id());
+    public FigureImplFunction(final Function<FigureImpl, FigureImpl> function,
+        final MultiSeriesInternal multiSeriesInternal) {
+        this(function, multiSeriesInternal.chart().row(), multiSeriesInternal.chart().column(),
+            multiSeriesInternal.axes().id(), multiSeriesInternal.id());
     }
 
-    public FigureImplFunction(final Function<FigureImpl, FigureImpl> function, final DataSeriesInternal dataSeriesInternal) {
-        this(function, dataSeriesInternal.chart().row(), dataSeriesInternal.chart().column(), dataSeriesInternal.axes().id(), dataSeriesInternal.id());
+    public FigureImplFunction(final Function<FigureImpl, FigureImpl> function,
+        final DataSeriesInternal dataSeriesInternal) {
+        this(function, dataSeriesInternal.chart().row(), dataSeriesInternal.chart().column(),
+            dataSeriesInternal.axes().id(), dataSeriesInternal.id());
     }
 
-    public FigureImplFunction(final Function<FigureImpl, FigureImpl> function, final int chartRowIndex, final int chartColumnIndex, final int axesIndex, final int seriesIndex) {
+    public FigureImplFunction(final Function<FigureImpl, FigureImpl> function,
+        final int chartRowIndex, final int chartColumnIndex, final int axesIndex,
+        final int seriesIndex) {
         this.function = function;
         this.chartRowIndex = chartRowIndex;
         this.chartColumnIndex = chartColumnIndex;
@@ -39,6 +45,7 @@ public class FigureImplFunction implements Function<FigureImpl, FigureImpl> {
 
     @Override
     public FigureImpl apply(FigureImpl figure) {
-        return function.apply(figure.chart(chartRowIndex, chartColumnIndex).axes(axesIndex).series(seriesIndex));
+        return function.apply(
+            figure.chart(chartRowIndex, chartColumnIndex).axes(axesIndex).series(seriesIndex));
     }
 }

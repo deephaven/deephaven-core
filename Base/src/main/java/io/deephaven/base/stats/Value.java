@@ -15,14 +15,32 @@ public abstract class Value {
 
     private boolean alwaysUpdated = false;
 
-    //NOTE: If you are looking in here to determine what the output data columns mean: n,sum,last,min,max,ave,sum2,stdev
+    // NOTE: If you are looking in here to determine what the output data columns mean:
+    // n,sum,last,min,max,ave,sum2,stdev
 
-    public long getN() { return n; }
-    public long getLast() { return last; }
-    public long getSum() { return sum; }
-    public long getSum2() { return sum2; }
-    public long getMax() { return max; }
-    public long getMin() { return min; }
+    public long getN() {
+        return n;
+    }
+
+    public long getLast() {
+        return last;
+    }
+
+    public long getSum() {
+        return sum;
+    }
+
+    public long getSum2() {
+        return sum2;
+    }
+
+    public long getMax() {
+        return max;
+    }
+
+    public long getMin() {
+        return min;
+    }
 
     protected final History history;
 
@@ -31,7 +49,7 @@ public abstract class Value {
     }
 
     protected Value(History history) {
-        this.history=history;
+        this.history = history;
     }
 
     public void sample(long x) {
@@ -39,10 +57,10 @@ public abstract class Value {
         last = x;
         sum += x;
         sum2 += x * x;
-        if ( x > max ) {
+        if (x > max) {
             max = x;
         }
-        if ( x < min ) {
+        if (x < min) {
             min = x;
         }
     }
@@ -68,14 +86,17 @@ public abstract class Value {
         min = Long.MAX_VALUE;
     }
 
-    public void update(Item item, ItemUpdateListener listener, long logInterval, long now, long appNow) {
+    public void update(Item item, ItemUpdateListener listener, long logInterval, long now,
+        long appNow) {
         int topInterval = history.update(this, now);
         reset();
-        if ( History.INTERVALS[topInterval] >= logInterval ) {
-            for ( int i = 0; i <= topInterval; ++i ) {
-                if ( History.INTERVALS[i] >= logInterval && history.getN(i, 1) > 0 || alwaysUpdated ) {
-                    if ( listener != null ) {
-                        listener.handleItemUpdated(item, now, appNow, i, History.INTERVALS[i], History.INTERVAL_NAMES[i]);
+        if (History.INTERVALS[topInterval] >= logInterval) {
+            for (int i = 0; i <= topInterval; ++i) {
+                if (History.INTERVALS[i] >= logInterval && history.getN(i, 1) > 0
+                    || alwaysUpdated) {
+                    if (listener != null) {
+                        listener.handleItemUpdated(item, now, appNow, i, History.INTERVALS[i],
+                            History.INTERVAL_NAMES[i]);
                     }
                 }
             }

@@ -22,35 +22,35 @@ public class SimpleXYPlot5b {
         Figure fig = FigureFactory.figure(2, 2);
 
         Figure cht = fig.newChart(0).rowSpan(2)
-                .chartTitle("My Chart 1")
-                .chartTitleFont("Courier", "PLAIN", 40);
+            .chartTitle("My Chart 1")
+            .chartTitleFont("Courier", "PLAIN", 40);
 
         Figure ax = cht.newAxes()
-                .xLabel("X1")
-                .yLabel("Y1")
-                .plot("Test1", x1, y1)
-                .linesVisible(false).pointsVisible(true);
+            .xLabel("X1")
+            .yLabel("Y1")
+            .plot("Test1", x1, y1)
+            .linesVisible(false).pointsVisible(true);
 
 
         Figure cht2 = ax.newChart()
-                .chartTitle("My Chart 2")
-                .chartTitleFont("Courier", "PLAIN", 40);
+            .chartTitle("My Chart 2")
+            .chartTitleFont("Courier", "PLAIN", 40);
 
         Figure ax2 = cht2.newAxes()
-                .xLabel("X2")
-                .yLabel("Y2")
-                .plot("Test1", x2, y2)
-                .linesVisible(false).pointsVisible(true);
+            .xLabel("X2")
+            .yLabel("Y2")
+            .plot("Test1", x2, y2)
+            .linesVisible(false).pointsVisible(true);
 
         Figure cht3 = ax2.newChart()
-                .chartTitle("My Chart 3")
-                .chartTitleFont("Courier", "PLAIN", 40);
+            .chartTitle("My Chart 3")
+            .chartTitleFont("Courier", "PLAIN", 40);
 
         Figure ax3 = cht3.newAxes()
-                .xLabel("X3")
-                .yLabel("Y3")
-                .plot("Test1", x3, y3).pointLabel(labels)
-                .linesVisible(false).pointsVisible(true);
+            .xLabel("X3")
+            .yLabel("Y3")
+            .plot("Test1", x3, y3).pointLabel(labels)
+            .linesVisible(false).pointsVisible(true);
 
 
         ExamplePlotUtils.display(ax3);

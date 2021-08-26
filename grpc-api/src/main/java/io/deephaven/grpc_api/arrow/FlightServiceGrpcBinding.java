@@ -59,19 +59,22 @@ public class FlightServiceGrpcBinding implements BindableService {
      * @return the client side method descriptor
      */
     public static <Options> MethodDescriptor<Flight.FlightData, BarrageMessage> getClientDoExchangeDescriptor(
-            final Options options,
-            final ChunkType[] columnChunkTypes,
-            final Class<?>[] columnTypes,
-            final Class<?>[] componentTypes,
-            final BarrageMessageConsumer.StreamReader<Options> streamReader) {
+        final Options options,
+        final ChunkType[] columnChunkTypes,
+        final Class<?>[] columnTypes,
+        final Class<?>[] componentTypes,
+        final BarrageMessageConsumer.StreamReader<Options> streamReader) {
         return GrpcServiceOverrideBuilder.descriptorFor(
-                MethodDescriptor.MethodType.BIDI_STREAMING, FlightServiceGrpc.SERVICE_NAME, "DoExchange",
-                ProtoUtils.marshaller(Flight.FlightData.getDefaultInstance()),
-                new BarrageDataMarshaller<>(options, columnChunkTypes, columnTypes, componentTypes, streamReader),
-                FlightServiceGrpc.getDoExchangeMethod());
+            MethodDescriptor.MethodType.BIDI_STREAMING, FlightServiceGrpc.SERVICE_NAME,
+            "DoExchange",
+            ProtoUtils.marshaller(Flight.FlightData.getDefaultInstance()),
+            new BarrageDataMarshaller<>(options, columnChunkTypes, columnTypes, componentTypes,
+                streamReader),
+            FlightServiceGrpc.getDoExchangeMethod());
     }
 
-    public static class BarrageDataMarshaller<Options> implements MethodDescriptor.Marshaller<BarrageMessage> {
+    public static class BarrageDataMarshaller<Options>
+        implements MethodDescriptor.Marshaller<BarrageMessage> {
         private final Options options;
         private final ChunkType[] columnChunkTypes;
         private final Class<?>[] columnTypes;
@@ -79,11 +82,11 @@ public class FlightServiceGrpcBinding implements BindableService {
         private final BarrageMessageConsumer.StreamReader<Options> streamReader;
 
         public BarrageDataMarshaller(
-                final Options options,
-                final ChunkType[] columnChunkTypes,
-                final Class<?>[] columnTypes,
-                final Class<?>[] componentTypes,
-                final BarrageMessageConsumer.StreamReader<Options> streamReader) {
+            final Options options,
+            final ChunkType[] columnChunkTypes,
+            final Class<?>[] columnTypes,
+            final Class<?>[] componentTypes,
+            final BarrageMessageConsumer.StreamReader<Options> streamReader) {
             this.options = options;
             this.columnChunkTypes = columnChunkTypes;
             this.columnTypes = columnTypes;
@@ -99,7 +102,8 @@ public class FlightServiceGrpcBinding implements BindableService {
 
         @Override
         public BarrageMessage parse(final InputStream stream) {
-            return streamReader.safelyParseFrom(options, columnChunkTypes, columnTypes, componentTypes, stream);
+            return streamReader.safelyParseFrom(options, columnChunkTypes, columnTypes,
+                componentTypes, stream);
         }
     }
 }

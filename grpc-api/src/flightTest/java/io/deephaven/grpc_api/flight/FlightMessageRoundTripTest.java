@@ -75,7 +75,8 @@ public class FlightMessageRoundTripTest {
 
         @Provides
         AbstractScriptSession createGlobalScriptSession(GlobalSessionProvider sessionProvider) {
-            final AbstractScriptSession scriptSession = new NoLanguageDeephavenSession("non-script-session");
+            final AbstractScriptSession scriptSession =
+                new NoLanguageDeephavenSession("non-script-session");
             sessionProvider.initializeGlobalScriptSession(scriptSession);
             return scriptSession;
         }
@@ -212,9 +213,10 @@ public class FlightMessageRoundTripTest {
     public void testSimpleEmptyTableDoGet() {
         Flight.Ticket simpleTableTicket = ExportTicketHelper.exportIdToArrowTicket(1);
         currentSession.newExport(simpleTableTicket)
-                .submit(() -> TableTools.emptyTable(10).update("I=i"));
+            .submit(() -> TableTools.emptyTable(10).update("I=i"));
 
-        FlightStream stream = client.getStream(new Ticket(simpleTableTicket.getTicket().toByteArray()));
+        FlightStream stream =
+            client.getStream(new Ticket(simpleTableTicket.getTicket().toByteArray()));
         assertTrue(stream.next());
         VectorSchemaRoot root = stream.getRoot();
         // row count should match what we expect
@@ -270,15 +272,17 @@ public class FlightMessageRoundTripTest {
         final Table table = TableTools.emptyTable(10).update("I = i");
 
         final Table tickingTable = LiveTableMonitor.DEFAULT.sharedLock()
-                .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
+            .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
 
         // stuff table into the scope
         scriptSession.setVariable(staticTableName, table);
         scriptSession.setVariable(tickingTableName, tickingTable);
 
         // test fetch info from scoped ticket
-        assertInfoMatchesTable(client.getInfo(arrowFlightDescriptorForName(staticTableName)), table);
-        assertInfoMatchesTable(client.getInfo(arrowFlightDescriptorForName(tickingTableName)), tickingTable);
+        assertInfoMatchesTable(client.getInfo(arrowFlightDescriptorForName(staticTableName)),
+            table);
+        assertInfoMatchesTable(client.getInfo(arrowFlightDescriptorForName(tickingTableName)),
+            tickingTable);
 
         // test list flights which runs through scoped tickets
         final MutableInt seenTables = new MutableInt();
@@ -301,7 +305,7 @@ public class FlightMessageRoundTripTest {
         final Table table = TableTools.emptyTable(10).update("I = i");
 
         final Table tickingTable = LiveTableMonitor.DEFAULT.sharedLock()
-                .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
+            .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession, false)) {
             // stuff table into the scope
@@ -335,8 +339,10 @@ public class FlightMessageRoundTripTest {
 
     @Test
     public void testExportTicketVisibility() {
-        // we have decided that if an api client creates export tickets, that they probably gain no value from
-        // seeing them via Flight's listFlights but we do want them to work with getFlightInfo (or anywhere else a
+        // we have decided that if an api client creates export tickets, that they probably gain no
+        // value from
+        // seeing them via Flight's listFlights but we do want them to work with getFlightInfo (or
+        // anywhere else a
         // flight ticket can be resolved).
         final Flight.Ticket ticket = ExportTicketHelper.exportIdToArrowTicket(1);
         final Table table = TableTools.emptyTable(10).update("I = i");
@@ -385,8 +391,10 @@ public class FlightMessageRoundTripTest {
 
         // start the DoPut and send the schema
         int flightDescriptorTicketValue = nextTicket++;
-        FlightDescriptor descriptor = FlightDescriptor.path("export", flightDescriptorTicketValue + "");
-        FlightClient.ClientStreamListener putStream = client.startPut(descriptor, root, new AsyncPutListener());
+        FlightDescriptor descriptor =
+            FlightDescriptor.path("export", flightDescriptorTicketValue + "");
+        FlightClient.ClientStreamListener putStream =
+            client.startPut(descriptor, root, new AsyncPutListener());
 
         // send the body of the table
         while (stream.next()) {
@@ -398,7 +406,8 @@ public class FlightMessageRoundTripTest {
 
         // get the table that was uploaded, and confirm it matches what we originally sent
         CompletableFuture<Table> tableFuture = new CompletableFuture<>();
-        SessionState.ExportObject<Table> tableExport = currentSession.getExport(flightDescriptorTicketValue);
+        SessionState.ExportObject<Table> tableExport =
+            currentSession.getExport(flightDescriptorTicketValue);
         currentSession.nonExport()
                 .onErrorHandler(exception -> tableFuture.cancel(true))
                 .require(tableExport)

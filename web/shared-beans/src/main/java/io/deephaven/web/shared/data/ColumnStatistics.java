@@ -4,14 +4,12 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
- * A DTO containing the result data from a call to GenerateComparableStatsFunction or GenerateNumericalStatsFunction
+ * A DTO containing the result data from a call to GenerateComparableStatsFunction or
+ * GenerateNumericalStatsFunction
  */
 public class ColumnStatistics implements Serializable {
     public enum ColumnType {
-        NUMERIC,
-        COMPARABLE,
-        DATETIME,
-        NON_COMPARABLE,
+        NUMERIC, COMPARABLE, DATETIME, NON_COMPARABLE,
     }
 
     private ColumnType type;
@@ -150,20 +148,20 @@ public class ColumnStatistics implements Serializable {
     @Override
     public String toString() {
         return "ColumnStatistics{" +
-                "type=" + type +
-                ", size=" + size +
-                ", count=" + count +
-                ", numUnique=" + numUnique +
-                ", uniqueKeys=" + Arrays.toString(uniqueKeys) +
-                ", uniqueValues=" + Arrays.toString(uniqueValues) +
-                ", sum=" + sum +
-                ", absSum=" + absSum +
-                ", min=" + min +
-                ", max=" + max +
-                ", absMin=" + absMin +
-                ", absMax=" + absMax +
-                ", minDateTime=" + minDateTime +
-                ", maxDateTime=" + maxDateTime +
-                '}';
+            "type=" + type +
+            ", size=" + size +
+            ", count=" + count +
+            ", numUnique=" + numUnique +
+            ", uniqueKeys=" + Arrays.toString(uniqueKeys) +
+            ", uniqueValues=" + Arrays.toString(uniqueValues) +
+            ", sum=" + sum +
+            ", absSum=" + absSum +
+            ", min=" + min +
+            ", max=" + max +
+            ", absMin=" + absMin +
+            ", absMax=" + absMax +
+            ", minDateTime=" + minDateTime +
+            ", maxDateTime=" + maxDateTime +
+            '}';
     }
 }

@@ -23,7 +23,7 @@ public class JpyModuleShortArrayTest extends JpyModuleArrayTestBase<short[]> {
     @Override
     void fillAsDesired(short[] array) {
         for (int i = 0; i < array.length; ++i) {
-            array[i] = (short)i;
+            array[i] = (short) i;
         }
     }
 }

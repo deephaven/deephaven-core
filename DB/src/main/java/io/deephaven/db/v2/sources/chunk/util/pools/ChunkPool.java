@@ -13,11 +13,12 @@ import org.jetbrains.annotations.NotNull;
 public interface ChunkPool {
 
     /**
-     * Take a {@link WritableChunk} of at least the specified {@code capacity}. The result belongs to the caller until
-     * released.
+     * Take a {@link WritableChunk} of at least the specified {@code capacity}. The result belongs
+     * to the caller until released.
      *
      * @param capacity The minimum capacity for the result
-     * @return A {@link WritableChunk} of at least the specified {@code capacity} that belongs to the caller until released
+     * @return A {@link WritableChunk} of at least the specified {@code capacity} that belongs to
+     *         the caller until released
      */
     <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(int capacity);
 
@@ -40,7 +41,8 @@ public interface ChunkPool {
      *
      * @param resettableChunk The chunk to give
      */
-    <ATTR extends Any> void giveResettableChunk(@NotNull ResettableReadOnlyChunk<ATTR> resettableChunk);
+    <ATTR extends Any> void giveResettableChunk(
+        @NotNull ResettableReadOnlyChunk<ATTR> resettableChunk);
 
     /**
      * Take a {@link ResettableWritableChunk}. The result belongs to the caller until released.
@@ -54,5 +56,6 @@ public interface ChunkPool {
      *
      * @param resettableWritableChunk The chunk to give
      */
-    <ATTR extends Any> void giveResettableWritableChunk(@NotNull ResettableWritableChunk<ATTR> resettableWritableChunk);
+    <ATTR extends Any> void giveResettableWritableChunk(
+        @NotNull ResettableWritableChunk<ATTR> resettableWritableChunk);
 }

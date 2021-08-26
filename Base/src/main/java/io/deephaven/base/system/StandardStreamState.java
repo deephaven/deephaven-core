@@ -22,7 +22,8 @@ public class StandardStreamState {
 
     public void setupRedirection() throws UnsupportedEncodingException {
         if (!initialized.compareAndSet(false, true)) {
-            throw new IllegalStateException("May only call StandardStreamState#setupRedirection once");
+            throw new IllegalStateException(
+                "May only call StandardStreamState#setupRedirection once");
         }
 
         // get all of the out sinks
@@ -56,12 +57,13 @@ public class StandardStreamState {
         }
     }
 
-    private static PrintStream adapt(List<OutputStream> outputStreams) throws UnsupportedEncodingException {
+    private static PrintStream adapt(List<OutputStream> outputStreams)
+        throws UnsupportedEncodingException {
         // TODO (core#88): Figure out appropriate stdout / LogBuffer encoding
         if (outputStreams.size() == 1) {
             OutputStream out = outputStreams.get(0);
             if (out instanceof PrintStream) {
-                return (PrintStream)out;
+                return (PrintStream) out;
             }
             return new PrintStream(out, true, "ISO-8859-1");
         }

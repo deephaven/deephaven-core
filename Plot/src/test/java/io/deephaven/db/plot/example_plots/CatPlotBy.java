@@ -18,15 +18,15 @@ public class CatPlotBy {
         final double[] values = {5, 4, 4, 3};
 
         Table t = TableTools.newTable(TableTools.col("USym", usym),
-                TableTools.col("Cats", cats),
-                TableTools.doubleCol("Values", values));
+            TableTools.col("Cats", cats),
+            TableTools.doubleCol("Values", values));
 
         t = t.update("Timestamp = DBDateTime.now() + (HOUR * i)");
         Figure fig = FigureFactory.figure();
         for (int i = 0; i < 1; i++) {
             fig = fig.newChart()
-                    .newAxes()
-                    .catPlot("Test1", t, "Timestamp", "Values");
+                .newAxes()
+                .catPlot("Test1", t, "Timestamp", "Values");
         }
 
         ExamplePlotUtils.display(fig);

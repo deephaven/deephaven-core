@@ -30,7 +30,7 @@ public class PrimitiveArrayBufferProtocolTest extends PythonTest {
         builtins = BuiltinsModule.create();
         noop = NoopModule.create(getCreateModule());
         jpy = JpyModule.create();
-        //jpy.setFlags(EnumSet.of(Flag.ALL));
+        // jpy.setFlags(EnumSet.of(Flag.ALL));
 
         // this tests fails in python 2, but I haven't spent time debugging
         assumePython3();
@@ -38,7 +38,7 @@ public class PrimitiveArrayBufferProtocolTest extends PythonTest {
 
     @After
     public void tearDown() {
-        //jpy.setFlags(EnumSet.of(Flag.OFF));
+        // jpy.setFlags(EnumSet.of(Flag.OFF));
         jpy.close();
         noop.close();
         builtins.close();

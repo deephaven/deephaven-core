@@ -60,7 +60,8 @@ public class IndexCoalescerTest {
 
         final Index origIndex = Index.CURRENT_FACTORY.getIndexByRange(10, 29);
         final ShiftAwareListener.Update agg = validateFinalIndex(origIndex, up);
-        Assert.equals(agg.modifiedColumnSet, "agg.modifiedColumnSet", ModifiedColumnSet.ALL, "ModifiedColumnSet.ALL");
+        Assert.equals(agg.modifiedColumnSet, "agg.modifiedColumnSet", ModifiedColumnSet.ALL,
+            "ModifiedColumnSet.ALL");
         Assert.equals(agg.modified, "agg.modified", i(4, 5, 6, 7));
     }
 
@@ -75,9 +76,11 @@ public class IndexCoalescerTest {
 
         final Index origIndex = Index.CURRENT_FACTORY.getIndexByRange(10, 29);
         final ShiftAwareListener.Update agg = validateFinalIndex(origIndex, up);
-        Assert.equals(agg.modifiedColumnSet, "agg.modifiedColumnSet", ModifiedColumnSet.ALL, "ModifiedColumnSet.ALL");
+        Assert.equals(agg.modifiedColumnSet, "agg.modifiedColumnSet", ModifiedColumnSet.ALL,
+            "ModifiedColumnSet.ALL");
         Assert.equals(agg.modified, "agg.modified", i(4, 5, 6, 7));
     }
+
     @Test
     public void testMergeMCSUnion() {
         final ShiftAwareListener.Update[] up = newEmptyUpdates(2);
@@ -93,7 +96,8 @@ public class IndexCoalescerTest {
         final ShiftAwareListener.Update agg = validateFinalIndex(origIndex, up);
         final ModifiedColumnSet expected = new ModifiedColumnSet(up[0].modifiedColumnSet);
         expected.setAll("B", "C");
-        Assert.eqTrue(agg.modifiedColumnSet.containsAll(expected), "agg.modifiedColumnSet.containsAll(expected)");
+        Assert.eqTrue(agg.modifiedColumnSet.containsAll(expected),
+            "agg.modifiedColumnSet.containsAll(expected)");
         Assert.equals(agg.modified, "agg.modified", i(4, 5, 6, 7));
     }
 
@@ -105,8 +109,10 @@ public class IndexCoalescerTest {
 
         final Index origIndex = i();
         final ShiftAwareListener.Update agg = validateFinalIndex(origIndex, up);
-        Assert.equals(agg.added, "agg.added", Index.CURRENT_FACTORY.getIndexByValues(10), "Index.CURRENT_FACTORY.getIndexByValues(10)");
-        Assert.equals(agg.modified, "agg.modified", Index.CURRENT_FACTORY.getEmptyIndex(), "Index.CURRENT_FACTORY.getEmptyIndex()");
+        Assert.equals(agg.added, "agg.added", Index.CURRENT_FACTORY.getIndexByValues(10),
+            "Index.CURRENT_FACTORY.getIndexByValues(10)");
+        Assert.equals(agg.modified, "agg.modified", Index.CURRENT_FACTORY.getEmptyIndex(),
+            "Index.CURRENT_FACTORY.getEmptyIndex()");
     }
 
     @Test
@@ -131,9 +137,12 @@ public class IndexCoalescerTest {
 
         final Index origIndex = i(2);
         final ShiftAwareListener.Update agg = validateFinalIndex(origIndex, up);
-        Assert.equals(agg.added, "agg.added", Index.CURRENT_FACTORY.getIndexByValues(2), "Index.CURRENT_FACTORY.getIndexByValues(2)");
-        Assert.equals(agg.removed, "agg.removed", Index.CURRENT_FACTORY.getIndexByValues(2), "Index.CURRENT_FACTORY.getIndexByValues(2)");
-        Assert.equals(agg.modified, "agg.modified", Index.CURRENT_FACTORY.getEmptyIndex(), "Index.CURRENT_FACTORY.getEmptyIndex()");
+        Assert.equals(agg.added, "agg.added", Index.CURRENT_FACTORY.getIndexByValues(2),
+            "Index.CURRENT_FACTORY.getIndexByValues(2)");
+        Assert.equals(agg.removed, "agg.removed", Index.CURRENT_FACTORY.getIndexByValues(2),
+            "Index.CURRENT_FACTORY.getIndexByValues(2)");
+        Assert.equals(agg.modified, "agg.modified", Index.CURRENT_FACTORY.getEmptyIndex(),
+            "Index.CURRENT_FACTORY.getEmptyIndex()");
     }
 
     @Test
@@ -146,9 +155,12 @@ public class IndexCoalescerTest {
 
         final Index origIndex = i();
         final ShiftAwareListener.Update agg = validateFinalIndex(origIndex, up);
-        Assert.equals(agg.added, "agg.added", Index.CURRENT_FACTORY.getEmptyIndex(), "Index.CURRENT_FACTORY.getEmptyIndex()");
-        Assert.equals(agg.removed, "agg.removed", Index.CURRENT_FACTORY.getEmptyIndex(), "Index.CURRENT_FACTORY.getEmptyIndex()");
-        Assert.equals(agg.modified, "agg.modified", Index.CURRENT_FACTORY.getEmptyIndex(), "Index.CURRENT_FACTORY.getEmptyIndex()");
+        Assert.equals(agg.added, "agg.added", Index.CURRENT_FACTORY.getEmptyIndex(),
+            "Index.CURRENT_FACTORY.getEmptyIndex()");
+        Assert.equals(agg.removed, "agg.removed", Index.CURRENT_FACTORY.getEmptyIndex(),
+            "Index.CURRENT_FACTORY.getEmptyIndex()");
+        Assert.equals(agg.modified, "agg.modified", Index.CURRENT_FACTORY.getEmptyIndex(),
+            "Index.CURRENT_FACTORY.getEmptyIndex()");
     }
 
     @Test
@@ -220,7 +232,8 @@ public class IndexCoalescerTest {
 
         Assert.equals(agg.modified, "agg.modified", i(1, 2, 3, 4));
         mcsTemplate.setAllDirty();
-        Assert.eqTrue(coalescer.modifiedColumnSet.containsAll(mcsTemplate), "coalescer.modifiedColumnSet.containsAll(mcsTemplate)");
+        Assert.eqTrue(coalescer.modifiedColumnSet.containsAll(mcsTemplate),
+            "coalescer.modifiedColumnSet.containsAll(mcsTemplate)");
     }
 
     @Test
@@ -248,7 +261,8 @@ public class IndexCoalescerTest {
 
         Assert.equals(agg.modified, "agg.modified", i(1, 4));
         mcsTemplate.setAllDirty();
-        Assert.eqTrue(coalescer.modifiedColumnSet.containsAll(mcsTemplate), "coalescer.modifiedColumnSet.containsAll(mcsTemplate)");
+        Assert.eqTrue(coalescer.modifiedColumnSet.containsAll(mcsTemplate),
+            "coalescer.modifiedColumnSet.containsAll(mcsTemplate)");
     }
 
     @Test
@@ -276,7 +290,8 @@ public class IndexCoalescerTest {
 
         Assert.equals(agg.modified, "agg.modified", i(4, 5, 6));
         mcsTemplate.setAllDirty();
-        Assert.eqTrue(coalescer.modifiedColumnSet.containsAll(mcsTemplate), "coalescer.modifiedColumnSet.containsAll(mcsTemplate)");
+        Assert.eqTrue(coalescer.modifiedColumnSet.containsAll(mcsTemplate),
+            "coalescer.modifiedColumnSet.containsAll(mcsTemplate)");
     }
 
     @Test
@@ -500,7 +515,8 @@ public class IndexCoalescerTest {
         agg.shifted.apply(index);
         index.insert(agg.added);
         Assert.eqTrue(index.isFlat(), "index.isFlat()");
-        // The remainder of the first shift conflicts with a now non-shifting element; so there should be no shifts.
+        // The remainder of the first shift conflicts with a now non-shifting element; so there
+        // should be no shifts.
         Assert.eq(agg.shifted.size(), "agg.shifted.size()", 0);
     }
 
@@ -529,22 +545,34 @@ public class IndexCoalescerTest {
     @Test
     public void testSortRegress1() {
         final ShiftAwareListener.Update[] up = newEmptyUpdates(4);
-        // {added={1073741825,1073741827-1073741828,1073741832-1073741833}, removed={1073741825-1073741827}, modified={1073741829,1073741831}, shifted={[1073741828,1073741828]-2}, modifiedColumnSet={Sym,doubleCol,Keys}}
-        up[0].added = i(1073741825,1073741827,1073741828,1073741832,1073741833);
-        up[0].removed = i(1073741825,1073741826,1073741827);
+        // {added={1073741825,1073741827-1073741828,1073741832-1073741833},
+        // removed={1073741825-1073741827}, modified={1073741829,1073741831},
+        // shifted={[1073741828,1073741828]-2}, modifiedColumnSet={Sym,doubleCol,Keys}}
+        up[0].added = i(1073741825, 1073741827, 1073741828, 1073741832, 1073741833);
+        up[0].removed = i(1073741825, 1073741826, 1073741827);
         up[0].shifted = newShiftDataByTriplets(1073741828, 1073741828, -2);
-        // {added={1073741827,1073741832}, removed={1073741825,1073741828,1073741832-1073741833}, modified={1073741825-1073741826,1073741829-1073741831}, shifted={[1073741826,1073741827]-1}, modifiedColumnSet={Sym}}
-        up[1].added = i(1073741827,1073741832);
-        up[1].removed = i(1073741825,1073741828,1073741832,1073741833);
+        // {added={1073741827,1073741832}, removed={1073741825,1073741828,1073741832-1073741833},
+        // modified={1073741825-1073741826,1073741829-1073741831},
+        // shifted={[1073741826,1073741827]-1}, modifiedColumnSet={Sym}}
+        up[1].added = i(1073741827, 1073741832);
+        up[1].removed = i(1073741825, 1073741828, 1073741832, 1073741833);
         up[1].shifted = newShiftDataByTriplets(1073741826, 1073741827, -1);
-        // {added={1073741823,1073741827,1073741832}, removed={1073741830}, modified={1073741824-1073741826,1073741829,1073741831,1073741833}, shifted={[1073741825,1073741827]-1,[1073741832,1073741832]+1}, modifiedColumnSet={Sym,intCol,Keys}}
-        up[2].added = i(1073741823,1073741827,1073741832);
+        // {added={1073741823,1073741827,1073741832}, removed={1073741830},
+        // modified={1073741824-1073741826,1073741829,1073741831,1073741833},
+        // shifted={[1073741825,1073741827]-1,[1073741832,1073741832]+1},
+        // modifiedColumnSet={Sym,intCol,Keys}}
+        up[2].added = i(1073741823, 1073741827, 1073741832);
         up[2].removed = i(1073741830);
-        up[2].shifted = newShiftDataByTriplets(1073741825, 1073741827, -1, 1073741832, 1073741832, +1);
-        // {added={1073741820-1073741823,1073741826,1073741830}, removed={1073741823,1073741827}, modified={1073741819,1073741824-1073741825,1073741829,1073741831-1073741833}, shifted={[1073741824,1073741824]-5,[1073741825,1073741826]-1}, modifiedColumnSet={intCol,Keys}}
-        up[3].added = i(1073741820,1073741821,1073741822,1073741823,1073741826,1073741830);
-        up[3].removed = i(1073741823,1073741827);
-        up[3].shifted = newShiftDataByTriplets(1073741824, 1073741824, -5, 1073741825, 1073741826, -1);
+        up[2].shifted =
+            newShiftDataByTriplets(1073741825, 1073741827, -1, 1073741832, 1073741832, +1);
+        // {added={1073741820-1073741823,1073741826,1073741830}, removed={1073741823,1073741827},
+        // modified={1073741819,1073741824-1073741825,1073741829,1073741831-1073741833},
+        // shifted={[1073741824,1073741824]-5,[1073741825,1073741826]-1},
+        // modifiedColumnSet={intCol,Keys}}
+        up[3].added = i(1073741820, 1073741821, 1073741822, 1073741823, 1073741826, 1073741830);
+        up[3].removed = i(1073741823, 1073741827);
+        up[3].shifted =
+            newShiftDataByTriplets(1073741824, 1073741824, -5, 1073741825, 1073741826, -1);
 
         final Index index = Index.CURRENT_FACTORY.getIndexByRange(1073741825, 1073741831);
         validateFinalIndex(index, up);
@@ -555,23 +583,25 @@ public class IndexCoalescerTest {
 
         final IndexShiftData.Builder builder = new IndexShiftData.Builder();
         for (int i = 0; i < values.length; i += 3) {
-            builder.shiftRange(values[i], values[i+1], values[i+2]);
+            builder.shiftRange(values[i], values[i + 1], values[i + 2]);
         }
 
         return builder.build();
     }
 
-    private ShiftAwareListener.Update validateFinalIndex(final Index index, final ShiftAwareListener.Update[] updates) {
-        final Index.IndexUpdateCoalescer coalescer = new Index.IndexUpdateCoalescer(index, updates[0]);
+    private ShiftAwareListener.Update validateFinalIndex(final Index index,
+        final ShiftAwareListener.Update[] updates) {
+        final Index.IndexUpdateCoalescer coalescer =
+            new Index.IndexUpdateCoalescer(index, updates[0]);
         for (int i = 1; i < updates.length; ++i) {
             coalescer.update(updates[i]);
         }
         final ShiftAwareListener.Update agg = coalescer.coalesce();
 
         try (final Index perUpdate = index.clone();
-             final Index aggUpdate = index.clone();
-             final Index perModify = Index.CURRENT_FACTORY.getEmptyIndex();
-             final Index perAdded = Index.CURRENT_FACTORY.getEmptyIndex()) {
+            final Index aggUpdate = index.clone();
+            final Index perModify = Index.CURRENT_FACTORY.getEmptyIndex();
+            final Index perAdded = Index.CURRENT_FACTORY.getEmptyIndex()) {
 
             for (ShiftAwareListener.Update up : updates) {
                 perAdded.remove(up.removed);
@@ -606,16 +636,18 @@ public class IndexCoalescerTest {
                     if (!iter.advance(beginRange + shiftDelta)) {
                         return;
                     }
-                    Assert.eqTrue(iter.currentValue() >= beginRange, "iter.currentValue() >= beginRange");
+                    Assert.eqTrue(iter.currentValue() >= beginRange,
+                        "iter.currentValue() >= beginRange");
                 } else {
                     final Index.SearchIterator iter = myindex.reverseIterator();
                     if (!iter.advance(endRange + shiftDelta)) {
                         return;
                     }
-                    Assert.eqTrue(iter.currentValue() <= endRange, "iter.currentValue() <= endRange");
+                    Assert.eqTrue(iter.currentValue() <= endRange,
+                        "iter.currentValue() <= endRange");
                 }
                 try (final Index sub = Index.CURRENT_FACTORY.getIndexByRange(beginRange, endRange);
-                     final Index moving = myindex.extract(sub)) {
+                    final Index moving = myindex.extract(sub)) {
                     moving.shiftInPlace(shiftDelta);
                     myindex.insert(moving);
                 }

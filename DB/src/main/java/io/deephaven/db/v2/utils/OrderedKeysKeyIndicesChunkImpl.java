@@ -23,15 +23,18 @@ public class OrderedKeysKeyIndicesChunkImpl implements OrderedKeys {
         this.toReleaseChunk = null;
     }
 
-    static OrderedKeysKeyIndicesChunkImpl makeByWrapping(final LongChunk<OrderedKeyIndices> backingChunk) {
+    static OrderedKeysKeyIndicesChunkImpl makeByWrapping(
+        final LongChunk<OrderedKeyIndices> backingChunk) {
         return new OrderedKeysKeyIndicesChunkImpl(backingChunk);
     }
 
-    private OrderedKeysKeyIndicesChunkImpl(final WritableLongChunk<OrderedKeyIndices> backingChunk) {
+    private OrderedKeysKeyIndicesChunkImpl(
+        final WritableLongChunk<OrderedKeyIndices> backingChunk) {
         this.backingChunk = this.toReleaseChunk = backingChunk;
     }
 
-    static OrderedKeysKeyIndicesChunkImpl makeByTaking(final WritableLongChunk<OrderedKeyIndices> backingChunkToOwn) {
+    static OrderedKeysKeyIndicesChunkImpl makeByTaking(
+        final WritableLongChunk<OrderedKeyIndices> backingChunkToOwn) {
         return new OrderedKeysKeyIndicesChunkImpl(backingChunkToOwn);
     }
 
@@ -71,7 +74,7 @@ public class OrderedKeysKeyIndicesChunkImpl implements OrderedKeys {
                 return OrderedKeys.EMPTY;
             }
             pendingClose =
-                    new OrderedKeysKeyIndicesChunkImpl(backingChunk.slice(iteratorOffset, newLen));
+                new OrderedKeysKeyIndicesChunkImpl(backingChunk.slice(iteratorOffset, newLen));
             iteratorOffset = newEndOffset;
             return pendingClose;
         }
@@ -79,12 +82,13 @@ public class OrderedKeysKeyIndicesChunkImpl implements OrderedKeys {
         @Override
         public final OrderedKeys getNextOrderedKeysWithLength(final long numberOfKeys) {
             tryClosePendingClose();
-            final int newLen = Math.toIntExact(Math.min(numberOfKeys, backingChunk.size() - iteratorOffset));
+            final int newLen =
+                Math.toIntExact(Math.min(numberOfKeys, backingChunk.size() - iteratorOffset));
             if (newLen == 0) {
                 return OrderedKeys.EMPTY;
             }
             pendingClose =
-                    new OrderedKeysKeyIndicesChunkImpl(backingChunk.slice(iteratorOffset, newLen));
+                new OrderedKeysKeyIndicesChunkImpl(backingChunk.slice(iteratorOffset, newLen));
             iteratorOffset += newLen;
             return pendingClose;
         }
@@ -107,8 +111,10 @@ public class OrderedKeysKeyIndicesChunkImpl implements OrderedKeys {
     }
 
     @Override
-    public final OrderedKeys getOrderedKeysByPosition(final long startPositionInclusive, final long length) {
-        final int newStartOffset = Math.toIntExact(Math.min(backingChunk.size(), startPositionInclusive));
+    public final OrderedKeys getOrderedKeysByPosition(final long startPositionInclusive,
+        final long length) {
+        final int newStartOffset =
+            Math.toIntExact(Math.min(backingChunk.size(), startPositionInclusive));
         final int newLen = Math.toIntExact(Math.min(backingChunk.size() - newStartOffset, length));
         if (newLen == 0) {
             return OrderedKeys.EMPTY;
@@ -117,7 +123,8 @@ public class OrderedKeysKeyIndicesChunkImpl implements OrderedKeys {
     }
 
     @Override
-    public final OrderedKeys getOrderedKeysByKeyRange(final long startKeyInclusive, final long endKeyInclusive) {
+    public final OrderedKeys getOrderedKeysByKeyRange(final long startKeyInclusive,
+        final long endKeyInclusive) {
         final int newStartOffset = findLowerBoundOfKey(startKeyInclusive, 0);
         final int newLen = findFirstIndexAfterKey(endKeyInclusive, newStartOffset) - newStartOffset;
         if (newLen == 0) {
@@ -155,10 +162,11 @@ public class OrderedKeysKeyIndicesChunkImpl implements OrderedKeys {
     }
 
     @Override
-    public final void fillKeyIndicesChunk(final WritableLongChunk<? extends KeyIndices> chunkToFill) {
+    public final void fillKeyIndicesChunk(
+        final WritableLongChunk<? extends KeyIndices> chunkToFill) {
         final int newSize = Math.toIntExact(size());
-        //noinspection unchecked
-        backingChunk.copyToChunk(0, (WritableLongChunk)chunkToFill, 0, newSize);
+        // noinspection unchecked
+        backingChunk.copyToChunk(0, (WritableLongChunk) chunkToFill, 0, newSize);
         chunkToFill.setSize(newSize);
     }
 
@@ -208,7 +216,8 @@ public class OrderedKeysKeyIndicesChunkImpl implements OrderedKeys {
         return true;
     }
 
-    @Override public boolean forEachLongRange(final LongRangeAbortableConsumer lc) {
+    @Override
+    public boolean forEachLongRange(final LongRangeAbortableConsumer lc) {
         long pendingStart = -2;
         long pendingEnd = -2;
         for (int i = 0; i < backingChunk.size(); ++i) {
@@ -248,7 +257,8 @@ public class OrderedKeysKeyIndicesChunkImpl implements OrderedKeys {
         return off;
     }
 
-    @Override public void close() {
+    @Override
+    public void close() {
         if (asRangesChunk != null) {
             asRangesChunk.close();
             asRangesChunk = null;

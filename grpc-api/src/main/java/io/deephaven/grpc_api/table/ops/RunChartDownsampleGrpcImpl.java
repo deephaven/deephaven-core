@@ -14,11 +14,13 @@ import java.util.List;
 public class RunChartDownsampleGrpcImpl extends GrpcTableOperation<RunChartDownsampleRequest> {
     @Inject
     protected RunChartDownsampleGrpcImpl() {
-        super(BatchTableRequest.Operation::getRunChartDownsample, RunChartDownsampleRequest::getResultId, RunChartDownsampleRequest::getSourceId);
+        super(BatchTableRequest.Operation::getRunChartDownsample,
+            RunChartDownsampleRequest::getResultId, RunChartDownsampleRequest::getSourceId);
     }
 
     @Override
-    public Table create(RunChartDownsampleRequest request, List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(RunChartDownsampleRequest request,
+        List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();
@@ -32,10 +34,9 @@ public class RunChartDownsampleGrpcImpl extends GrpcTableOperation<RunChartDowns
             zoomRange = null;
         }
         return parent.apply(new RunChartDownsample(
-                request.getPixelCount(),
-                zoomRange,
-                request.getXColumnName(),
-                request.getYColumnNamesList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)
-        ));
+            request.getPixelCount(),
+            zoomRange,
+            request.getXColumnName(),
+            request.getYColumnNamesList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
     }
 }

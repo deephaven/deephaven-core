@@ -55,13 +55,26 @@ public interface ChunkSsaStamp {
         }
     }
 
-    void processEntry(Chunk<Values> leftStampValues, Chunk<KeyIndices> leftStampKeys, SegmentedSortedArray ssa, WritableLongChunk<KeyIndices> rightKeysForLeft, boolean disallowExactMatch);
+    void processEntry(Chunk<Values> leftStampValues, Chunk<KeyIndices> leftStampKeys,
+        SegmentedSortedArray ssa, WritableLongChunk<KeyIndices> rightKeysForLeft,
+        boolean disallowExactMatch);
 
-    void processRemovals(Chunk<Values> leftStampValues, LongChunk<KeyIndices> leftStampKeys, Chunk<? extends Values> rightStampChunk, LongChunk<KeyIndices> rightKeys, WritableLongChunk<KeyIndices> priorRedirections, RedirectionIndex redirectionIndex, Index.RandomBuilder modifiedBuilder, boolean disallowExactMatch);
+    void processRemovals(Chunk<Values> leftStampValues, LongChunk<KeyIndices> leftStampKeys,
+        Chunk<? extends Values> rightStampChunk, LongChunk<KeyIndices> rightKeys,
+        WritableLongChunk<KeyIndices> priorRedirections, RedirectionIndex redirectionIndex,
+        Index.RandomBuilder modifiedBuilder, boolean disallowExactMatch);
 
-    void processInsertion(Chunk<Values> leftStampValues, LongChunk<KeyIndices> leftStampKeys, Chunk<? extends Values> rightStampChunk, LongChunk<KeyIndices> rightKeys, Chunk<Values> nextRightValue, RedirectionIndex redirectionIndex, Index.RandomBuilder modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch);
+    void processInsertion(Chunk<Values> leftStampValues, LongChunk<KeyIndices> leftStampKeys,
+        Chunk<? extends Values> rightStampChunk, LongChunk<KeyIndices> rightKeys,
+        Chunk<Values> nextRightValue, RedirectionIndex redirectionIndex,
+        Index.RandomBuilder modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch);
 
-    int findModified(int first, Chunk<Values> leftStampValues, LongChunk<KeyIndices> leftStampKeys, RedirectionIndex redirectionIndex, Chunk<? extends Values> rightStampChunk, LongChunk<KeyIndices> rightStampIndices, Index.RandomBuilder modifiedBuilder, boolean disallowExactMatch);
+    int findModified(int first, Chunk<Values> leftStampValues, LongChunk<KeyIndices> leftStampKeys,
+        RedirectionIndex redirectionIndex, Chunk<? extends Values> rightStampChunk,
+        LongChunk<KeyIndices> rightStampIndices, Index.RandomBuilder modifiedBuilder,
+        boolean disallowExactMatch);
 
-    void applyShift(Chunk<Values> leftStampValues, LongChunk<KeyIndices> leftStampKeys, Chunk<? extends Values> rightStampChunk, LongChunk<KeyIndices> rightStampKeys, long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch);
+    void applyShift(Chunk<Values> leftStampValues, LongChunk<KeyIndices> leftStampKeys,
+        Chunk<? extends Values> rightStampChunk, LongChunk<KeyIndices> rightStampKeys,
+        long shiftDelta, RedirectionIndex redirectionIndex, boolean disallowExactMatch);
 }

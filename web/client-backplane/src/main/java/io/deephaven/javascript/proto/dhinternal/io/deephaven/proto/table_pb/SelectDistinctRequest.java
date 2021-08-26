@@ -15,276 +15,272 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest",
     namespace = JsPackage.GLOBAL)
 public class SelectDistinctRequest {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultIdFieldType {
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetTicketUnionType {
-        @JsOverlay
-        static SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
-            Object o) {
-          return Js.cast(o);
+    public interface ToObjectReturnType {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ResultIdFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface GetTicketUnionType {
+                @JsOverlay
+                static SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType of(
+                    Object o) {
+                    return Js.cast(o);
+                }
+
+                @JsOverlay
+                default String asString() {
+                    return Js.asString(this);
+                }
+
+                @JsOverlay
+                default Uint8Array asUint8Array() {
+                    return Js.cast(this);
+                }
+
+                @JsOverlay
+                default boolean isString() {
+                    return (Object) this instanceof String;
+                }
+
+                @JsOverlay
+                default boolean isUint8Array() {
+                    return (Object) this instanceof Uint8Array;
+                }
+            }
+
+            @JsOverlay
+            static SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType getTicket();
+
+            @JsProperty
+            void setTicket(
+                SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
+
+            @JsOverlay
+            default void setTicket(String ticket) {
+                setTicket(
+                    Js.<SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
+
+            @JsOverlay
+            default void setTicket(Uint8Array ticket) {
+                setTicket(
+                    Js.<SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface SourceIdFieldType {
+            @JsOverlay
+            static SelectDistinctRequest.ToObjectReturnType.SourceIdFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getBatchOffset();
+
+            @JsProperty
+            Object getTicket();
+
+            @JsProperty
+            void setBatchOffset(double batchOffset);
+
+            @JsProperty
+            void setTicket(Object ticket);
         }
 
         @JsOverlay
-        default String asString() {
-          return Js.asString(this);
+        static SelectDistinctRequest.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
         }
+
+        @JsProperty
+        JsArray<String> getColumnNamesList();
+
+        @JsProperty
+        SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType getResultId();
+
+        @JsProperty
+        SelectDistinctRequest.ToObjectReturnType.SourceIdFieldType getSourceId();
+
+        @JsProperty
+        void setColumnNamesList(JsArray<String> columnNamesList);
 
         @JsOverlay
-        default Uint8Array asUint8Array() {
-          return Js.cast(this);
+        default void setColumnNamesList(String[] columnNamesList) {
+            setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
         }
 
-        @JsOverlay
-        default boolean isString() {
-          return (Object) this instanceof String;
-        }
+        @JsProperty
+        void setResultId(SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType resultId);
 
-        @JsOverlay
-        default boolean isUint8Array() {
-          return (Object) this instanceof Uint8Array;
-        }
-      }
-
-      @JsOverlay
-      static SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType getTicket();
-
-      @JsProperty
-      void setTicket(
-          SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType ticket);
-
-      @JsOverlay
-      default void setTicket(String ticket) {
-        setTicket(
-            Js
-                .<SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
-
-      @JsOverlay
-      default void setTicket(Uint8Array ticket) {
-        setTicket(
-            Js
-                .<SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType.GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
-    }
-
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface SourceIdFieldType {
-      @JsOverlay
-      static SelectDistinctRequest.ToObjectReturnType.SourceIdFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      double getBatchOffset();
-
-      @JsProperty
-      Object getTicket();
-
-      @JsProperty
-      void setBatchOffset(double batchOffset);
-
-      @JsProperty
-      void setTicket(Object ticket);
-    }
-
-    @JsOverlay
-    static SelectDistinctRequest.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
-    }
-
-    @JsProperty
-    JsArray<String> getColumnNamesList();
-
-    @JsProperty
-    SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType getResultId();
-
-    @JsProperty
-    SelectDistinctRequest.ToObjectReturnType.SourceIdFieldType getSourceId();
-
-    @JsProperty
-    void setColumnNamesList(JsArray<String> columnNamesList);
-
-    @JsOverlay
-    default void setColumnNamesList(String[] columnNamesList) {
-      setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
-    }
-
-    @JsProperty
-    void setResultId(SelectDistinctRequest.ToObjectReturnType.ResultIdFieldType resultId);
-
-    @JsProperty
-    void setSourceId(SelectDistinctRequest.ToObjectReturnType.SourceIdFieldType sourceId);
-  }
-
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface ResultIdFieldType {
-      @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-      public interface GetTicketUnionType {
-        @JsOverlay
-        static SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
-            Object o) {
-          return Js.cast(o);
-        }
-
-        @JsOverlay
-        default String asString() {
-          return Js.asString(this);
-        }
-
-        @JsOverlay
-        default Uint8Array asUint8Array() {
-          return Js.cast(this);
-        }
-
-        @JsOverlay
-        default boolean isString() {
-          return (Object) this instanceof String;
-        }
-
-        @JsOverlay
-        default boolean isUint8Array() {
-          return (Object) this instanceof Uint8Array;
-        }
-      }
-
-      @JsOverlay
-      static SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
-
-      @JsProperty
-      SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType getTicket();
-
-      @JsProperty
-      void setTicket(
-          SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
-
-      @JsOverlay
-      default void setTicket(String ticket) {
-        setTicket(
-            Js
-                .<SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
-
-      @JsOverlay
-      default void setTicket(Uint8Array ticket) {
-        setTicket(
-            Js
-                .<SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>
-                    uncheckedCast(ticket));
-      }
+        @JsProperty
+        void setSourceId(SelectDistinctRequest.ToObjectReturnType.SourceIdFieldType sourceId);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface SourceIdFieldType {
-      @JsOverlay
-      static SelectDistinctRequest.ToObjectReturnType0.SourceIdFieldType create() {
-        return Js.uncheckedCast(JsPropertyMap.of());
-      }
+    public interface ToObjectReturnType0 {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface ResultIdFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface GetTicketUnionType {
+                @JsOverlay
+                static SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType of(
+                    Object o) {
+                    return Js.cast(o);
+                }
 
-      @JsProperty
-      double getBatchOffset();
+                @JsOverlay
+                default String asString() {
+                    return Js.asString(this);
+                }
 
-      @JsProperty
-      Object getTicket();
+                @JsOverlay
+                default Uint8Array asUint8Array() {
+                    return Js.cast(this);
+                }
 
-      @JsProperty
-      void setBatchOffset(double batchOffset);
+                @JsOverlay
+                default boolean isString() {
+                    return (Object) this instanceof String;
+                }
 
-      @JsProperty
-      void setTicket(Object ticket);
+                @JsOverlay
+                default boolean isUint8Array() {
+                    return (Object) this instanceof Uint8Array;
+                }
+            }
+
+            @JsOverlay
+            static SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType getTicket();
+
+            @JsProperty
+            void setTicket(
+                SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType ticket);
+
+            @JsOverlay
+            default void setTicket(String ticket) {
+                setTicket(
+                    Js.<SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
+
+            @JsOverlay
+            default void setTicket(Uint8Array ticket) {
+                setTicket(
+                    Js.<SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType.GetTicketUnionType>uncheckedCast(
+                        ticket));
+            }
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface SourceIdFieldType {
+            @JsOverlay
+            static SelectDistinctRequest.ToObjectReturnType0.SourceIdFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getBatchOffset();
+
+            @JsProperty
+            Object getTicket();
+
+            @JsProperty
+            void setBatchOffset(double batchOffset);
+
+            @JsProperty
+            void setTicket(Object ticket);
+        }
+
+        @JsOverlay
+        static SelectDistinctRequest.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        JsArray<String> getColumnNamesList();
+
+        @JsProperty
+        SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
+
+        @JsProperty
+        SelectDistinctRequest.ToObjectReturnType0.SourceIdFieldType getSourceId();
+
+        @JsProperty
+        void setColumnNamesList(JsArray<String> columnNamesList);
+
+        @JsOverlay
+        default void setColumnNamesList(String[] columnNamesList) {
+            setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
+        }
+
+        @JsProperty
+        void setResultId(SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType resultId);
+
+        @JsProperty
+        void setSourceId(SelectDistinctRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
     }
+
+    public static native SelectDistinctRequest deserializeBinary(Uint8Array bytes);
+
+    public static native SelectDistinctRequest deserializeBinaryFromReader(
+        SelectDistinctRequest message, Object reader);
+
+    public static native void serializeBinaryToWriter(SelectDistinctRequest message, Object writer);
+
+    public static native SelectDistinctRequest.ToObjectReturnType toObject(
+        boolean includeInstance, SelectDistinctRequest msg);
+
+    public native String addColumnNames(String value, double index);
+
+    public native String addColumnNames(String value);
+
+    public native void clearColumnNamesList();
+
+    public native void clearResultId();
+
+    public native void clearSourceId();
+
+    public native JsArray<String> getColumnNamesList();
+
+    public native Ticket getResultId();
+
+    public native TableReference getSourceId();
+
+    public native boolean hasResultId();
+
+    public native boolean hasSourceId();
+
+    public native Uint8Array serializeBinary();
+
+    public native void setColumnNamesList(JsArray<String> value);
 
     @JsOverlay
-    static SelectDistinctRequest.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    public final void setColumnNamesList(String[] value) {
+        setColumnNamesList(Js.<JsArray<String>>uncheckedCast(value));
     }
 
-    @JsProperty
-    JsArray<String> getColumnNamesList();
+    public native void setResultId();
 
-    @JsProperty
-    SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType getResultId();
+    public native void setResultId(Ticket value);
 
-    @JsProperty
-    SelectDistinctRequest.ToObjectReturnType0.SourceIdFieldType getSourceId();
+    public native void setSourceId();
 
-    @JsProperty
-    void setColumnNamesList(JsArray<String> columnNamesList);
+    public native void setSourceId(TableReference value);
 
-    @JsOverlay
-    default void setColumnNamesList(String[] columnNamesList) {
-      setColumnNamesList(Js.<JsArray<String>>uncheckedCast(columnNamesList));
-    }
+    public native SelectDistinctRequest.ToObjectReturnType0 toObject();
 
-    @JsProperty
-    void setResultId(SelectDistinctRequest.ToObjectReturnType0.ResultIdFieldType resultId);
-
-    @JsProperty
-    void setSourceId(SelectDistinctRequest.ToObjectReturnType0.SourceIdFieldType sourceId);
-  }
-
-  public static native SelectDistinctRequest deserializeBinary(Uint8Array bytes);
-
-  public static native SelectDistinctRequest deserializeBinaryFromReader(
-      SelectDistinctRequest message, Object reader);
-
-  public static native void serializeBinaryToWriter(SelectDistinctRequest message, Object writer);
-
-  public static native SelectDistinctRequest.ToObjectReturnType toObject(
-      boolean includeInstance, SelectDistinctRequest msg);
-
-  public native String addColumnNames(String value, double index);
-
-  public native String addColumnNames(String value);
-
-  public native void clearColumnNamesList();
-
-  public native void clearResultId();
-
-  public native void clearSourceId();
-
-  public native JsArray<String> getColumnNamesList();
-
-  public native Ticket getResultId();
-
-  public native TableReference getSourceId();
-
-  public native boolean hasResultId();
-
-  public native boolean hasSourceId();
-
-  public native Uint8Array serializeBinary();
-
-  public native void setColumnNamesList(JsArray<String> value);
-
-  @JsOverlay
-  public final void setColumnNamesList(String[] value) {
-    setColumnNamesList(Js.<JsArray<String>>uncheckedCast(value));
-  }
-
-  public native void setResultId();
-
-  public native void setResultId(Ticket value);
-
-  public native void setSourceId();
-
-  public native void setSourceId(TableReference value);
-
-  public native SelectDistinctRequest.ToObjectReturnType0 toObject();
-
-  public native SelectDistinctRequest.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native SelectDistinctRequest.ToObjectReturnType0 toObject(boolean includeInstance);
 }

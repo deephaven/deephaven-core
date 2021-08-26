@@ -4,7 +4,7 @@
 
 package io.deephaven.base;
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 /**
  * Encapsulates an object reference so it can be passed and modified.
  */
@@ -12,11 +12,10 @@ public class Reference<T> {
 
     private T m_value;
 
-    public Reference() {
-    }
+    public Reference() {}
 
     public Reference(T value) {
-        m_value=value;
+        m_value = value;
     }
 
     public T getValue() {
@@ -24,6 +23,6 @@ public class Reference<T> {
     }
 
     public void setValue(T value) {
-        m_value=value;
+        m_value = value;
     }
 }

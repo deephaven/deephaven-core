@@ -10,8 +10,8 @@ import io.deephaven.db.plot.util.ArgumentValidations;
 import java.util.List;
 
 /**
- * {@link IndexableNumericData} dataset backed by a list of {@link Number}s.
- * When accessed, data values are converted to doubles before being returned.
+ * {@link IndexableNumericData} dataset backed by a list of {@link Number}s. When accessed, data
+ * values are converted to doubles before being returned.
  */
 public class IndexableNumericDataListNumber<T extends Number> extends IndexableNumericData {
     private static final long serialVersionUID = -382291808039710173L;

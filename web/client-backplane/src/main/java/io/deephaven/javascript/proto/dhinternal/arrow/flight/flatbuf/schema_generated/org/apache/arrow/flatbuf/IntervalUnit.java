@@ -8,6 +8,6 @@ import jsinterop.annotations.JsType;
     name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.IntervalUnit",
     namespace = JsPackage.GLOBAL)
 public class IntervalUnit {
-  public static int DAY_TIME,
-  YEAR_MONTH;
+    public static int DAY_TIME,
+        YEAR_MONTH;
 }

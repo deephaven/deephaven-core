@@ -13,50 +13,50 @@ import jsinterop.base.JsPropertyMap;
     name = "dhinternal.io.deephaven.proto.table_pb.Reference",
     namespace = JsPackage.GLOBAL)
 public class Reference {
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType {
-    @JsOverlay
-    static Reference.ToObjectReturnType create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType {
+        @JsOverlay
+        static Reference.ToObjectReturnType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getColumnName();
+
+        @JsProperty
+        void setColumnName(String columnName);
     }
 
-    @JsProperty
-    String getColumnName();
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface ToObjectReturnType0 {
+        @JsOverlay
+        static Reference.ToObjectReturnType0 create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
 
-    @JsProperty
-    void setColumnName(String columnName);
-  }
+        @JsProperty
+        String getColumnName();
 
-  @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-  public interface ToObjectReturnType0 {
-    @JsOverlay
-    static Reference.ToObjectReturnType0 create() {
-      return Js.uncheckedCast(JsPropertyMap.of());
+        @JsProperty
+        void setColumnName(String columnName);
     }
 
-    @JsProperty
-    String getColumnName();
+    public static native Reference deserializeBinary(Uint8Array bytes);
 
-    @JsProperty
-    void setColumnName(String columnName);
-  }
+    public static native Reference deserializeBinaryFromReader(Reference message, Object reader);
 
-  public static native Reference deserializeBinary(Uint8Array bytes);
+    public static native void serializeBinaryToWriter(Reference message, Object writer);
 
-  public static native Reference deserializeBinaryFromReader(Reference message, Object reader);
+    public static native Reference.ToObjectReturnType toObject(
+        boolean includeInstance, Reference msg);
 
-  public static native void serializeBinaryToWriter(Reference message, Object writer);
+    public native String getColumnName();
 
-  public static native Reference.ToObjectReturnType toObject(
-      boolean includeInstance, Reference msg);
+    public native Uint8Array serializeBinary();
 
-  public native String getColumnName();
+    public native void setColumnName(String value);
 
-  public native Uint8Array serializeBinary();
+    public native Reference.ToObjectReturnType0 toObject();
 
-  public native void setColumnName(String value);
-
-  public native Reference.ToObjectReturnType0 toObject();
-
-  public native Reference.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native Reference.ToObjectReturnType0 toObject(boolean includeInstance);
 }

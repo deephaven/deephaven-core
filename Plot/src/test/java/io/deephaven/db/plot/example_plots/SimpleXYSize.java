@@ -27,13 +27,13 @@ public class SimpleXYSize {
 
         Figure fig = FigureFactory.figure();
         Figure cht = fig.newChart(0)
-                .chartTitle("Chart Title");
+            .chartTitle("Chart Title");
         Figure axs = cht.newAxes()
-                .xLabel("X")
-                .yLabel("Y")
-                .plot("Test1", x1, y1).pointSize(s1).linesVisible(false)
-                .plot("Test2", x2, y2).pointSize(.5)
-                .plot("Test3", x3, y3);
+            .xLabel("X")
+            .yLabel("Y")
+            .plot("Test1", x1, y1).pointSize(s1).linesVisible(false)
+            .plot("Test2", x2, y2).pointSize(.5)
+            .plot("Test3", x3, y3);
 
         ExamplePlotUtils.display(axs);
     }

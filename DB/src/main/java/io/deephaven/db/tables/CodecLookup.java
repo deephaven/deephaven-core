@@ -54,7 +54,8 @@ public class CodecLookup {
         }
         if (DbArrayBase.class.isAssignableFrom(dataType)) {
             if (componentType == null) {
-                throw new IllegalArgumentException("Vector type " + dataType + " requires a component type");
+                throw new IllegalArgumentException(
+                    "Vector type " + dataType + " requires a component type");
             }
             if (DbArray.class.isAssignableFrom(dataType)) {
                 // DbArrays of basic types do not require codecs
@@ -79,8 +80,9 @@ public class CodecLookup {
     }
 
     /**
-     * Lookup an {@link ObjectCodec} for the supplied {@link ColumnDefinition}. Assumes that the data type is
-     * appropriate for use with a codec, i.e. that {@link #codecRequired(Class, Class)} will return false.
+     * Lookup an {@link ObjectCodec} for the supplied {@link ColumnDefinition}. Assumes that the
+     * data type is appropriate for use with a codec, i.e. that {@link #codecRequired(Class, Class)}
+     * will return false.
      *
      * @param columnDefinition The {@link ColumnDefinition}
      * @return The {@link ObjectCodec}
@@ -90,11 +92,12 @@ public class CodecLookup {
             @NotNull final ColumnToCodecMappings codecMappings) {
         final String colName = columnDefinition.getName();
         final ObjectCodec<TYPE> codec = lookup(
-                columnDefinition.getDataType(),
-                codecMappings.getCodecName(colName),
-                codecMappings.getCodecArgs(colName));
+            columnDefinition.getDataType(),
+            codecMappings.getCodecName(colName),
+            codecMappings.getCodecArgs(colName));
         if (codec == null) {
-            throw new UnsupportedOperationException("Failed to find a matching codec for " + columnDefinition);
+            throw new UnsupportedOperationException(
+                "Failed to find a matching codec for " + columnDefinition);
         }
         return codec;
     }
@@ -124,7 +127,8 @@ public class CodecLookup {
      */
     public static <TYPE> ObjectCodec<TYPE> getDefaultCodec(@NotNull final Class<TYPE> dataType) {
         if (Externalizable.class.isAssignableFrom(dataType)) {
-            return CodecCache.DEFAULT.getCodec(ExternalizableCodec.class.getName(), dataType.getName());
+            return CodecCache.DEFAULT.getCodec(ExternalizableCodec.class.getName(),
+                dataType.getName());
         }
         return SerializableCodec.create();
     }

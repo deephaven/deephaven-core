@@ -5,7 +5,8 @@ import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.v2.sources.AbstractColumnSource;
 import io.deephaven.db.v2.sources.ImmutableColumnSourceGetDefaults;
 
-public class ImmutableDateTimeArraySource extends AbstractColumnSource<DBDateTime> implements ImmutableColumnSourceGetDefaults.ForObject<DBDateTime> {
+public class ImmutableDateTimeArraySource extends AbstractColumnSource<DBDateTime>
+    implements ImmutableColumnSourceGetDefaults.ForObject<DBDateTime> {
     private final long[] data;
 
     public ImmutableDateTimeArraySource(long[] source) {
@@ -19,7 +20,7 @@ public class ImmutableDateTimeArraySource extends AbstractColumnSource<DBDateTim
             return null;
         }
 
-        return DBTimeUtils.nanosToTime(data[(int)index]);
+        return DBTimeUtils.nanosToTime(data[(int) index]);
     }
 
     @Override

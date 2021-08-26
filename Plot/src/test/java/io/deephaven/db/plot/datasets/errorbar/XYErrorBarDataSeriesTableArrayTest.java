@@ -53,12 +53,13 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
         dataX[10] = Double.NaN;
         dataX[100] = Double.NaN;
         Table t = TableTools.newTable(TableTools.doubleCol("x", dataX),
-                TableTools.doubleCol("y", dataY),
-                TableTools.doubleCol("yLow", dataYLow),
-                TableTools.doubleCol("yHigh", dataYHigh));
+            TableTools.doubleCol("y", dataY),
+            TableTools.doubleCol("yLow", dataYLow),
+            TableTools.doubleCol("yHigh", dataYHigh));
 
-        final TableHandle h = new TableHandle( t, "x", "y", "yLow", "yHigh");
-        final XYErrorBarDataSeriesTableArray series = new XYErrorBarDataSeriesTableArray(chart.newAxes(),1 , "Test", h, "x", null,null, "y", "yLow", "yHigh", false, true);
+        final TableHandle h = new TableHandle(t, "x", "y", "yLow", "yHigh");
+        final XYErrorBarDataSeriesTableArray series = new XYErrorBarDataSeriesTableArray(
+            chart.newAxes(), 1, "Test", h, "x", null, null, "y", "yLow", "yHigh", false, true);
 
         assertEquals(series.getX(0), 0.0);
         assertEquals(series.getX(5), 5.0);
@@ -85,16 +86,19 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
         final BaseFigureImpl figure = new BaseFigureImpl();
         final ChartImpl chart = figure.newChart();
 
-        final QueryTable liveTable = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y",  1, 2, 3), c("yLow",  0, 1, 2), c("yHigh",  11, 22, 33));
+        final QueryTable liveTable = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3),
+            c("y", 1, 2, 3), c("yLow", 0, 1, 2), c("yHigh", 11, 22, 33));
 
         final TableHandle h = new TableHandle(liveTable, "x", "y", "yLow", "yHigh");
-        final XYErrorBarDataSeriesTableArray series = new XYErrorBarDataSeriesTableArray(chart.newAxes(),1 , "Test", h, "x", null, null, "y", "yLow", "yHigh", false, true);
+        final XYErrorBarDataSeriesTableArray series = new XYErrorBarDataSeriesTableArray(
+            chart.newAxes(), 1, "Test", h, "x", null, null, "y", "yLow", "yHigh", false, true);
 
 
         assertEquals(series.getX(4), Double.NaN);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(liveTable, i(7, 9), c("x", 4, 5), c("y", 4, 5), c("yLow", 3, 4), c("yHigh", 5, 6));
+            addToTable(liveTable, i(7, 9), c("x", 4, 5), c("y", 4, 5), c("yLow", 3, 4),
+                c("yHigh", 5, 6));
             liveTable.notifyListeners(i(7, 9), i(), i());
         });
 
@@ -122,12 +126,13 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
         dataX[10] = Double.NaN;
         dataX[100] = Double.NaN;
         Table t = TableTools.newTable(TableTools.doubleCol("x", dataX),
-                TableTools.doubleCol("y", dataY),
-                TableTools.doubleCol("yLow", dataYLow),
-                TableTools.doubleCol("yHigh", dataYHigh));
+            TableTools.doubleCol("y", dataY),
+            TableTools.doubleCol("yLow", dataYLow),
+            TableTools.doubleCol("yHigh", dataYHigh));
 
-        final TableHandle h = new TableHandle( t, "x", "y", "yLow", "yHigh");
-        XYErrorBarDataSeriesTableArray series = new XYErrorBarDataSeriesTableArray(chart.newAxes(),1 , "Test", h, "x", null, null, "y", "yLow", "yHigh", false, true);
+        final TableHandle h = new TableHandle(t, "x", "y", "yLow", "yHigh");
+        XYErrorBarDataSeriesTableArray series = new XYErrorBarDataSeriesTableArray(chart.newAxes(),
+            1, "Test", h, "x", null, null, "y", "yLow", "yHigh", false, true);
         XYErrorBarDataSeriesTableArray copy = series.copy(chart.newAxes());
 
         series.size();
@@ -137,7 +142,8 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
 
     }
 
-    private void testCopy(final XYErrorBarDataSeriesTableArray series, final XYErrorBarDataSeriesInternal copy) {
+    private void testCopy(final XYErrorBarDataSeriesTableArray series,
+        final XYErrorBarDataSeriesInternal copy) {
         assertEquals(series.getX(0), copy.getX(0));
         assertEquals(series.getX(5), copy.getX(5));
         assertEquals(series.getX(10), copy.getX(10));

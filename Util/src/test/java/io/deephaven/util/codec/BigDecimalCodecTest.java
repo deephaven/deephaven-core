@@ -36,20 +36,21 @@ public class BigDecimalCodecTest extends TestCase {
         roundTripWithOffset(args, value, expected, 0);
     }
 
-    private void roundTripWithOffset(final String args, final BigDecimal value, final BigDecimal expected, final int offset) {
+    private void roundTripWithOffset(final String args, final BigDecimal value,
+        final BigDecimal expected, final int offset) {
         final BigDecimalCodec codec = new BigDecimalCodec(args);
         byte[] enc = codec.encode(value);
         // if we expect to be decoding from an offset, construct the input accordingly
-        if(offset > 0) {
-            final byte[] buffer = new byte[enc.length+offset];
+        if (offset > 0) {
+            final byte[] buffer = new byte[enc.length + offset];
             System.arraycopy(enc, 0, buffer, offset, enc.length);
             enc = buffer;
         }
         // when fixed width we expect every encoded value to be the same size
-        if(codec.expectedObjectWidth() > 0) {
-            assertEquals(codec.expectedObjectWidth(), enc.length-offset);
+        if (codec.expectedObjectWidth() > 0) {
+            assertEquals(codec.expectedObjectWidth(), enc.length - offset);
         }
-        final BigDecimal v1 = codec.decode(enc, offset, enc.length-offset);
+        final BigDecimal v1 = codec.decode(enc, offset, enc.length - offset);
         assertEquals(expected.stripTrailingZeros(), v1);
     }
 
@@ -58,7 +59,8 @@ public class BigDecimalCodecTest extends TestCase {
             final BigDecimalCodec codec = new BigDecimalCodec(args);
             codec.encode(new BigDecimal(value));
             Assert.fail("Encoding of " + value + " unexpectedly succeeded");
-        } catch(IllegalArgumentException ex) {}
+        } catch (IllegalArgumentException ex) {
+        }
     }
 
     private void expectNull(final String args) {
@@ -69,16 +71,16 @@ public class BigDecimalCodecTest extends TestCase {
         final BigDecimalCodec codec = new BigDecimalCodec(args);
         byte[] enc = codec.encode(null);
         // if we expect to be decoding from an offset, construct the input accordingly
-        if(offset > 0) {
-            final byte[] buffer = new byte[enc.length+offset];
+        if (offset > 0) {
+            final byte[] buffer = new byte[enc.length + offset];
             System.arraycopy(enc, 0, buffer, offset, enc.length);
             enc = buffer;
         }
         // when fixed width we expect every encoded value to be the same size
-        if(codec.expectedObjectWidth() > 0) {
-            assertEquals(codec.expectedObjectWidth(), enc.length-offset);
+        if (codec.expectedObjectWidth() > 0) {
+            assertEquals(codec.expectedObjectWidth(), enc.length - offset);
         }
-        final BigDecimal v1 = codec.decode(enc, offset, enc.length-offset);
+        final BigDecimal v1 = codec.decode(enc, offset, enc.length - offset);
         assertEquals(v1, null);
     }
 
@@ -146,11 +148,11 @@ public class BigDecimalCodecTest extends TestCase {
         roundTrip("2,1", 9.9);
 
         // for fun, some base 2 prices...
-        roundTrip("15,8", 1.0/256.0);
-        roundTrip("15,8", 2.0/256.0);
-        roundTrip("15,8", 3.0/256.0);
-        roundTrip("15,8", 4.0/256.0);
-        roundTrip("15,8", 5.0/256.0);
+        roundTrip("15,8", 1.0 / 256.0);
+        roundTrip("15,8", 2.0 / 256.0);
+        roundTrip("15,8", 3.0 / 256.0);
+        roundTrip("15,8", 4.0 / 256.0);
+        roundTrip("15,8", 5.0 / 256.0);
     }
 
     public void testFixedEncodeWhitspaceArg() {
@@ -176,11 +178,11 @@ public class BigDecimalCodecTest extends TestCase {
         roundTrip("2,1", -9.9);
 
         // for fun, some base 2 prices...
-        roundTrip("15,8", -1.0/256.0);
-        roundTrip("15,8", -2.0/256.0);
-        roundTrip("15,8", -3.0/256.0);
-        roundTrip("15,8", -4.0/256.0);
-        roundTrip("15,8", -5.0/256.0);
+        roundTrip("15,8", -1.0 / 256.0);
+        roundTrip("15,8", -2.0 / 256.0);
+        roundTrip("15,8", -3.0 / 256.0);
+        roundTrip("15,8", -4.0 / 256.0);
+        roundTrip("15,8", -5.0 / 256.0);
     }
 
 
@@ -206,7 +208,8 @@ public class BigDecimalCodecTest extends TestCase {
     }
 
     public void testFixedOverflow() {
-        // we should get overflow exceptions if the value is too large, regardless if we allow rounding
+        // we should get overflow exceptions if the value is too large, regardless if we allow
+        // rounding
         expectIllegalArgumentException("5,5,allowRounding", 1111111);
         expectIllegalArgumentException("5,5,noRounding", 1111111);
         expectIllegalArgumentException("10,3,noRounding", 9999999999L); // just one over
@@ -219,14 +222,17 @@ public class BigDecimalCodecTest extends TestCase {
     public void testFixedPrecisionLimit() {
 
         final int maxPrec = BigDecimalCodec.MAX_FIXED_PRECISION;
-        final BigDecimal hugeInt = BigDecimal.valueOf(10).pow(BigDecimalCodec.MAX_FIXED_PRECISION-1);
-        final BigDecimal hugeFrac = BigDecimal.valueOf(10).pow(BigDecimalCodec.MAX_FIXED_PRECISION-4).add(BigDecimal.valueOf(0.111));
-        final BigDecimal teenyNumber = BigDecimal.valueOf(0.1).pow(BigDecimalCodec.MAX_FIXED_PRECISION-1);
+        final BigDecimal hugeInt =
+            BigDecimal.valueOf(10).pow(BigDecimalCodec.MAX_FIXED_PRECISION - 1);
+        final BigDecimal hugeFrac = BigDecimal.valueOf(10)
+            .pow(BigDecimalCodec.MAX_FIXED_PRECISION - 4).add(BigDecimal.valueOf(0.111));
+        final BigDecimal teenyNumber =
+            BigDecimal.valueOf(0.1).pow(BigDecimalCodec.MAX_FIXED_PRECISION - 1);
 
         // 614 should be ok, that's how many decimal digits we can store in 255 bytes
         roundTrip(maxPrec + ",5", 12345);
         // but not 615
-        expectIllegalArgumentException((maxPrec+1) + ",5", 1111111);
+        expectIllegalArgumentException((maxPrec + 1) + ",5", 1111111);
 
         // prove that we can encode and decode a huge integer
         roundTrip(maxPrec + ",0", hugeInt);
@@ -300,53 +306,40 @@ public class BigDecimalCodecTest extends TestCase {
         roundTripWithOffset("2,1", 9.9, 3);
 
         // for fun, some base 2 prices...
-        roundTripWithOffset("15,8", 1.0/256.0, 3);
-        roundTripWithOffset("15,8", 2.0/256.0, 3);
-        roundTripWithOffset("15,8", 3.0/256.0, 3);
-        roundTripWithOffset("15,8", 4.0/256.0, 3);
-        roundTripWithOffset("15,8", 5.0/256.0, 3);
+        roundTripWithOffset("15,8", 1.0 / 256.0, 3);
+        roundTripWithOffset("15,8", 2.0 / 256.0, 3);
+        roundTripWithOffset("15,8", 3.0 / 256.0, 3);
+        roundTripWithOffset("15,8", 4.0 / 256.0, 3);
+        roundTripWithOffset("15,8", 5.0 / 256.0, 3);
     }
 
     // these commented out tests are fun to run manually
 
-    /*public void testSpeed() {
-        final Random random = new Random();
-        final long start = System.currentTimeMillis();
-        final int n = 10_000_000;
-
-        for(int i = 0; i < n; i++) {
-            BigDecimal bd = BigDecimal.valueOf(Math.round(random.nextDouble() * 10_000_000));
-            bd = bd.setScale(9).round(new MathContext(20));
-            if(random.nextDouble() >= 0.5) {
-                bd = bd.negate();
-            }
-            roundTrip("20,9,noRounding", bd);
-        }
-        final long end = System.currentTimeMillis();
-        System.out.println("Encoded & decoded " + n + " in " + (end-start) + "ms");
-    }
-
-    private void printEncoded(byte[] enc) {
-        for(int i = 0; i < enc.length; i++) {
-            System.out.print(" ");
-            int d = enc[i];
-            System.out.print(String.format("0x%02X",(int)(d & 0xff)));
-        }
-        System.out.println();
-    }
-
-    public void testOrdering() {
-        BigDecimalCodec codec = new BigDecimalCodec(10, 3, true);
-        printEncoded(codec.encode(BigDecimal.valueOf(-9999999.999)));
-        printEncoded(codec.encode(BigDecimal.valueOf(-10000.200)));
-        printEncoded(codec.encode(BigDecimal.valueOf(-0.1)));
-        printEncoded(codec.encode(BigDecimal.valueOf(-0.01)));
-        printEncoded(codec.encode(BigDecimal.valueOf(-0.001)));
-        printEncoded(codec.encode(BigDecimal.valueOf(0)));
-        printEncoded(codec.encode(BigDecimal.valueOf(0.001)));
-        printEncoded(codec.encode(BigDecimal.valueOf(0.01)));
-        printEncoded(codec.encode(BigDecimal.valueOf(0.1)));
-        printEncoded(codec.encode(BigDecimal.valueOf(100)));
-    }*/
+    /*
+     * public void testSpeed() { final Random random = new Random(); final long start =
+     * System.currentTimeMillis(); final int n = 10_000_000;
+     * 
+     * for(int i = 0; i < n; i++) { BigDecimal bd =
+     * BigDecimal.valueOf(Math.round(random.nextDouble() * 10_000_000)); bd =
+     * bd.setScale(9).round(new MathContext(20)); if(random.nextDouble() >= 0.5) { bd = bd.negate();
+     * } roundTrip("20,9,noRounding", bd); } final long end = System.currentTimeMillis();
+     * System.out.println("Encoded & decoded " + n + " in " + (end-start) + "ms"); }
+     * 
+     * private void printEncoded(byte[] enc) { for(int i = 0; i < enc.length; i++) {
+     * System.out.print(" "); int d = enc[i]; System.out.print(String.format("0x%02X",(int)(d &
+     * 0xff))); } System.out.println(); }
+     * 
+     * public void testOrdering() { BigDecimalCodec codec = new BigDecimalCodec(10, 3, true);
+     * printEncoded(codec.encode(BigDecimal.valueOf(-9999999.999)));
+     * printEncoded(codec.encode(BigDecimal.valueOf(-10000.200)));
+     * printEncoded(codec.encode(BigDecimal.valueOf(-0.1)));
+     * printEncoded(codec.encode(BigDecimal.valueOf(-0.01)));
+     * printEncoded(codec.encode(BigDecimal.valueOf(-0.001)));
+     * printEncoded(codec.encode(BigDecimal.valueOf(0)));
+     * printEncoded(codec.encode(BigDecimal.valueOf(0.001)));
+     * printEncoded(codec.encode(BigDecimal.valueOf(0.01)));
+     * printEncoded(codec.encode(BigDecimal.valueOf(0.1)));
+     * printEncoded(codec.encode(BigDecimal.valueOf(100))); }
+     */
 }
 

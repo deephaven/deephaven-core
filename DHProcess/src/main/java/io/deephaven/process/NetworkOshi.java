@@ -8,8 +8,7 @@ import org.immutables.value.Value;
 import oshi.software.os.NetworkParams;
 
 /**
- * NetworkParams presents network parameters of running OS, such as DNS, host
- * name etc.
+ * NetworkParams presents network parameters of running OS, such as DNS, host name etc.
  */
 @Value.Immutable
 @ProcessStyle
@@ -83,16 +82,13 @@ public abstract class NetworkOshi implements PropertySet {
     public static NetworkOshi from(NetworkParams network) {
         return ImmutableNetworkOshi.builder()
             .hostName(network.getHostName())
-            .domainName(network.getDomainName().isEmpty() ?
-                Optional.empty() :
-                Optional.of(network.getDomainName()))
+            .domainName(network.getDomainName().isEmpty() ? Optional.empty()
+                : Optional.of(network.getDomainName()))
             .dnsServers(DnsServers.of(Arrays.asList(network.getDnsServers())))
-            .ipv4DefaultGateway(network.getIpv4DefaultGateway().isEmpty() ?
-                Optional.empty() :
-                Optional.of(network.getIpv4DefaultGateway()))
-            .ipv6DefaultGateway(network.getIpv6DefaultGateway().isEmpty() ?
-                Optional.empty() :
-                Optional.of(network.getIpv6DefaultGateway()))
+            .ipv4DefaultGateway(network.getIpv4DefaultGateway().isEmpty() ? Optional.empty()
+                : Optional.of(network.getIpv4DefaultGateway()))
+            .ipv6DefaultGateway(network.getIpv6DefaultGateway().isEmpty() ? Optional.empty()
+                : Optional.of(network.getIpv6DefaultGateway()))
             .build();
     }
 }

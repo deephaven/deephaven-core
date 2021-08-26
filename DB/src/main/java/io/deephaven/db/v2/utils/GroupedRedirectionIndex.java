@@ -9,12 +9,13 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 
 /**
- * The GroupedRedirectionIndex is intended for situations where you have several Indices that represent contiguous rows
- * of your output table and a flat output index.
+ * The GroupedRedirectionIndex is intended for situations where you have several Indices that
+ * represent contiguous rows of your output table and a flat output index.
  *
- * When sorting a table by it's grouping column, instead of using a large contiguous RedirectionIndex, we simply store
- * the indices for each group and the accumulated cardinality.  We then binary search in the accumulated cardinality
- * for a given key; and fetch the corresponding offset from that group's Index.
+ * When sorting a table by it's grouping column, instead of using a large contiguous
+ * RedirectionIndex, we simply store the indices for each group and the accumulated cardinality. We
+ * then binary search in the accumulated cardinality for a given key; and fetch the corresponding
+ * offset from that group's Index.
  *
  * This RedirectionIndex does not support mutation.
  */
@@ -24,8 +25,8 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
      */
     private final long size;
     /**
-     * The accumulated size of each group.  Element 0 is the size of the first group. Element 1 is the size of the first
-     * and second group.  The final element will equal size.
+     * The accumulated size of each group. Element 0 is the size of the first group. Element 1 is
+     * the size of the first and second group. The final element will equal size.
      */
     private final long[] groupSizes;
     /**
@@ -34,11 +35,12 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
     private final Index[] groups;
 
     /**
-     * If you are doing repeated get calls, then we must redo the binary search from scratch each time.  To avoid this
-     * behavior, we cache the last slot that you found, so that repeated calls to get() skip the binary search if the
-     * key is within the same group as your last call.
+     * If you are doing repeated get calls, then we must redo the binary search from scratch each
+     * time. To avoid this behavior, we cache the last slot that you found, so that repeated calls
+     * to get() skip the binary search if the key is within the same group as your last call.
      */
-    private final ThreadLocal<SavedContext> threadContext = ThreadLocal.withInitial(SavedContext::new);
+    private final ThreadLocal<SavedContext> threadContext =
+        ThreadLocal.withInitial(SavedContext::new);
 
     public GroupedRedirectionIndex(long size, long[] groupSizes, Index[] groups) {
         this.size = size;
@@ -98,15 +100,19 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
     }
 
     @Override
-    public void fillChunk(@NotNull FillContext fillContext, @NotNull WritableLongChunk<Attributes.KeyIndices> mappedKeysOut, @NotNull OrderedKeys keysToMap) {
+    public void fillChunk(@NotNull FillContext fillContext,
+        @NotNull WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
+        @NotNull OrderedKeys keysToMap) {
         final MutableInt outputPosition = new MutableInt(0);
         final MutableInt lastSlot = new MutableInt(0);
         mappedKeysOut.setSize(keysToMap.intSize());
-        try (final ResettableWritableLongChunk<Attributes.KeyIndices> resettableKeys = ResettableWritableLongChunk.makeResettableChunk()) {
+        try (final ResettableWritableLongChunk<Attributes.KeyIndices> resettableKeys =
+            ResettableWritableLongChunk.makeResettableChunk()) {
             keysToMap.forAllLongRanges((begin, end) -> {
                 while (begin <= end) {
                     // figure out which group we belong to, based on the first key in the range
-                    int slot = Arrays.binarySearch(groupSizes, lastSlot.intValue(), groupSizes.length, begin);
+                    int slot = Arrays.binarySearch(groupSizes, lastSlot.intValue(),
+                        groupSizes.length, begin);
                     if (slot < 0) {
                         slot = ~slot;
                     } else {
@@ -116,15 +122,21 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
                     // for the next one we should not search the beginning of the array
                     lastSlot.setValue(slot);
 
-                    // for the first key, we have an offset of 0; for other keys we need to offset the key
-                    final long beginKeyWithOffset = slot == 0 ? begin : begin - groupSizes[slot - 1];
+                    // for the first key, we have an offset of 0; for other keys we need to offset
+                    // the key
+                    final long beginKeyWithOffset =
+                        slot == 0 ? begin : begin - groupSizes[slot - 1];
 
                     final long size = end - begin + 1;
                     final int groupSize;
 
-                    final WritableLongChunk<Attributes.KeyIndices> chunkToFill = resettableKeys.resetFromTypedChunk(mappedKeysOut, outputPosition.intValue(), mappedKeysOut.size() - outputPosition.intValue());
-                    if (beginKeyWithOffset > 0 || (beginKeyWithOffset + size < groups[slot].size())) {
-                        try (OrderedKeys orderedKeysByPosition = groups[slot].getOrderedKeysByPosition(beginKeyWithOffset, size)) {
+                    final WritableLongChunk<Attributes.KeyIndices> chunkToFill =
+                        resettableKeys.resetFromTypedChunk(mappedKeysOut, outputPosition.intValue(),
+                            mappedKeysOut.size() - outputPosition.intValue());
+                    if (beginKeyWithOffset > 0
+                        || (beginKeyWithOffset + size < groups[slot].size())) {
+                        try (OrderedKeys orderedKeysByPosition =
+                            groups[slot].getOrderedKeysByPosition(beginKeyWithOffset, size)) {
                             orderedKeysByPosition.fillKeyIndicesChunk(chunkToFill);
                             groupSize = orderedKeysByPosition.intSize();
                         }
@@ -141,7 +153,9 @@ public class GroupedRedirectionIndex implements RedirectionIndex {
     }
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext fillContext, @NotNull WritableLongChunk<Attributes.KeyIndices> mappedKeysOut, @NotNull OrderedKeys keysToMap) {
+    public void fillPrevChunk(@NotNull FillContext fillContext,
+        @NotNull WritableLongChunk<Attributes.KeyIndices> mappedKeysOut,
+        @NotNull OrderedKeys keysToMap) {
         fillChunk(fillContext, mappedKeysOut, keysToMap);
     }
 

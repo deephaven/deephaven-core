@@ -4,6 +4,7 @@ import io.deephaven.benchmarking.generator.random.ExtendedRandom;
 
 /**
  * A {@link ColumnGenerator} that generates numbers sequentially with specialized rollover behavior.
+ * 
  * @param <T>
  */
 public class SequentialNumColumnGenerator<T extends Number> extends AbstractNumColumnGenerator<T> {
@@ -29,7 +30,8 @@ public class SequentialNumColumnGenerator<T extends Number> extends AbstractNumC
         this(type, name, start, step, 0, Mode.NoLimit);
     }
 
-    public SequentialNumColumnGenerator(Class<T> type, String name, double start, double step, double max, Mode mode) {
+    public SequentialNumColumnGenerator(Class<T> type, String name, double start, double step,
+        double max, Mode mode) {
         super(type, name);
         this.start = start;
         this.current = start;
@@ -45,35 +47,45 @@ public class SequentialNumColumnGenerator<T extends Number> extends AbstractNumC
     }
 
     @Override
-    public byte getByte() { return (byte)getDouble(); }
+    public byte getByte() {
+        return (byte) getDouble();
+    }
 
     @Override
-    public short getShort() { return (short)getDouble(); }
+    public short getShort() {
+        return (short) getDouble();
+    }
 
     @Override
-    public int getInt() { return (int)getDouble(); }
+    public int getInt() {
+        return (int) getDouble();
+    }
 
     @Override
-    public long getLong() { return (long)getDouble(); }
+    public long getLong() {
+        return (long) getDouble();
+    }
 
     @Override
-    public float getFloat() { return (float)getDouble(); }
+    public float getFloat() {
+        return (float) getDouble();
+    }
 
     @Override
     public double getDouble() {
         final double localCurrent = current;
-        current += (direction*step);
+        current += (direction * step);
 
-        switch(mode) {
+        switch (mode) {
             case NoLimit:
                 break;
             case RollAtLimit:
-                if(current >= max) {
+                if (current >= max) {
                     current = start;
                 }
                 break;
             case ReverseAtLimit:
-                if( (current >= max && direction > 0) || (current <= step && direction < 0) ) {
+                if ((current >= max && direction > 0) || (current <= step && direction < 0)) {
                     direction *= -1;
                 }
                 break;

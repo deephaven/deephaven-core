@@ -64,10 +64,14 @@ public class ConsoleConfig implements Serializable {
     }
 
     @JsProperty
-    public String getJvmProfile() { return jvmProfile; }
+    public String getJvmProfile() {
+        return jvmProfile;
+    }
 
     @JsProperty
-    public void setJvmProfile(String jvmProfile) { this.jvmProfile = jvmProfile; }
+    public void setJvmProfile(String jvmProfile) {
+        this.jvmProfile = jvmProfile;
+    }
 
     @JsProperty
     public Object getClasspath() {
@@ -81,7 +85,7 @@ public class ConsoleConfig implements Serializable {
 
     @JsProperty
     public void setClasspath(Object classpath) {
-        setArray(classpath, cp->this.classpath = cp);
+        setArray(classpath, cp -> this.classpath = cp);
     }
 
     @JsIgnore
@@ -151,7 +155,7 @@ public class ConsoleConfig implements Serializable {
 
     @JsProperty
     public void setJvmArgs(Object args) {
-        setArray(args, a->this.jvmArgs=a);
+        setArray(args, a -> this.jvmArgs = a);
     }
 
 
@@ -167,26 +171,27 @@ public class ConsoleConfig implements Serializable {
 
     @JsIgnore
     public String[][] envVars_() {
-        return envVars == null?new String[0][] : envVars;
+        return envVars == null ? new String[0][] : envVars;
     }
 
     @JsProperty
     public void setEnvVars(Object envVars) {
         if (envVars == null || envVars instanceof String[][]) {
             this.envVars = (String[][]) envVars; // defensive copy?
-        } else if (envVars instanceof JavaScriptObject){
-            // this is actually javascript.  We can do terrible things here and it's ok
+        } else if (envVars instanceof JavaScriptObject) {
+            // this is actually javascript. We can do terrible things here and it's ok
             final int length = Array.getLength(envVars);
             this.envVars = new String[length][];
             for (int i = 0; i < length; i++) {
                 JsArrayLike<Object> jsPair = Js.asArrayLike(envVars).getAnyAt(i).asArrayLike();
                 if (jsPair.getLength() != 2) {
-                    throw new IllegalArgumentException("Argument set doesn't contain two items: " + Global.JSON.stringify(jsPair));
+                    throw new IllegalArgumentException(
+                        "Argument set doesn't contain two items: " + Global.JSON.stringify(jsPair));
                 }
                 String[] typed = new String[2];
                 typed[0] = jsPair.getAnyAt(0).asString();
                 typed[1] = jsPair.getAnyAt(1).asString();
-                JsObject.freeze(typed);//make this immutable
+                JsObject.freeze(typed);// make this immutable
                 this.envVars[i] = typed;
             }
             JsObject.freeze(this.envVars);
@@ -208,7 +213,8 @@ public class ConsoleConfig implements Serializable {
             return map;
         }
         for (String[] envVar : envVars) {
-            assert envVar.length == 2 : "env vars must be arrays of arrays of length 2: [ [key, val], [k, v] ]";
+            assert envVar.length == 2
+                : "env vars must be arrays of arrays of length 2: [ [key, val], [k, v] ]";
             map.put(envVar[0], envVar[1]);
         }
 

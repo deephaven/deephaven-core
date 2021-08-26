@@ -16,9 +16,11 @@ public class UncheckedDeephavenException extends RuntimeException {
         super(cause);
     }
 
-    public UncheckedDeephavenException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    public UncheckedDeephavenException(String message, Throwable cause, boolean enableSuppression,
+        boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
+
     public UncheckedDeephavenException() {
         super();
     }

@@ -10,29 +10,30 @@ import java.io.*;
 
 public class DbFileImplTest extends BaseArrayTestCase {
 
-    final private String file = Configuration.getInstance().getDevRootPath() + "/DbTypesImpl/src/test/resources/io/deephaven/dbtypes/white.jpg";
+    final private String file = Configuration.getInstance().getDevRootPath()
+        + "/DbTypesImpl/src/test/resources/io/deephaven/dbtypes/white.jpg";
     final private String tempdir = Configuration.getInstance().getTempPath("DBFiletest");
 
     public void testNullConstructors() throws IOException {
-        try{
+        try {
             new DbFileImpl((byte[]) null);
             fail("Should have thrown an exception.");
         } catch (RequirementFailure e) {
-            //pass
+            // pass
         }
 
-        try{
+        try {
             new DbFileImpl((String) null);
             fail("Should have thrown an exception.");
         } catch (NullPointerException e) {
-            //pass
+            // pass
         }
 
-        try{
+        try {
             new DbFileImpl((java.io.File) null);
             fail("Should have thrown an exception.");
         } catch (NullPointerException e) {
-            //pass
+            // pass
         }
     }
 
@@ -79,7 +80,8 @@ public class DbFileImplTest extends BaseArrayTestCase {
         final ObjectOutputStream oos = new ObjectOutputStream(bos);
         oos.writeObject(f);
         oos.close();
-        final ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray()));
+        final ObjectInputStream ois =
+            new ObjectInputStream(new ByteArrayInputStream(bos.toByteArray()));
         final DbFileImpl fout = (DbFileImpl) ois.readObject();
         assertEquals(f.getName(), fout.getName());
         assertEquals(f.getType(), fout.getType());

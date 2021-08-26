@@ -13,26 +13,29 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.nio.IntBuffer;
 
-public class ToStringSetPage<ATTR extends Attributes.Any, STRING_ARRAY> extends ToPage.Wrap<ATTR, STRING_ARRAY, StringSet[]> {
+public class ToStringSetPage<ATTR extends Attributes.Any, STRING_ARRAY>
+    extends ToPage.Wrap<ATTR, STRING_ARRAY, StringSet[]> {
 
-    public static <ATTR extends Attributes.Any>
-    ToPage<ATTR, StringSet[]> create(@NotNull Class<?> nativeType, @NotNull ToPage<ATTR, ?> toPage) {
+    public static <ATTR extends Attributes.Any> ToPage<ATTR, StringSet[]> create(
+        @NotNull Class<?> nativeType, @NotNull ToPage<ATTR, ?> toPage) {
         Class<?> columnComponentType = toPage.getNativeType();
 
         if (!StringSet.class.isAssignableFrom(nativeType)) {
-            throw new IllegalArgumentException("Native type " + nativeType + " is not a StringSet type.");
+            throw new IllegalArgumentException(
+                "Native type " + nativeType + " is not a StringSet type.");
         }
 
         if (!String.class.isAssignableFrom(columnComponentType)) {
-            throw new IllegalArgumentException("The column's component type " + columnComponentType +
+            throw new IllegalArgumentException(
+                "The column's component type " + columnComponentType +
                     "is not compatible with String");
         }
 
         Chunk<ATTR> dictionary = toPage.getDictionary();
 
-        return dictionary != null && dictionary.size() <= 64 ?
-                new ToStringSetPage.WithShortDictionary<>(toPage) :
-                new ToStringSetPage<>(toPage);
+        return dictionary != null && dictionary.size() <= 64
+            ? new ToStringSetPage.WithShortDictionary<>(toPage)
+            : new ToStringSetPage<>(toPage);
     }
 
     private ToStringSetPage(ToPage<ATTR, STRING_ARRAY> toPage) {
@@ -53,15 +56,15 @@ public class ToStringSetPage<ATTR extends Attributes.Any, STRING_ARRAY> extends 
 
     @Override
     @NotNull
-    public final StringSet [] convertResult(Object result) {
+    public final StringSet[] convertResult(Object result) {
         DataWithOffsets dataWithOffsets = (DataWithOffsets) result;
         String[] from = (String[]) toPage.convertResult(dataWithOffsets.materializeResult);
         IntBuffer offsets = dataWithOffsets.offsets;
 
-        StringSet[] to = new StringSet [offsets.remaining()];
+        StringSet[] to = new StringSet[offsets.remaining()];
 
         int lastOffset = 0;
-        for (int i = 0; offsets.hasRemaining(); ) {
+        for (int i = 0; offsets.hasRemaining();) {
             int nextOffset = offsets.get();
             if (nextOffset == DataWithOffsets.NULL_OFFSET) {
                 to[i++] = null;
@@ -74,7 +77,8 @@ public class ToStringSetPage<ATTR extends Attributes.Any, STRING_ARRAY> extends 
         return to;
     }
 
-    private static final class WithShortDictionary<ATTR extends Attributes.Any, STRING_ARRAY> extends ToPage.Wrap<ATTR, STRING_ARRAY, StringSet[]> {
+    private static final class WithShortDictionary<ATTR extends Attributes.Any, STRING_ARRAY>
+        extends ToPage.Wrap<ATTR, STRING_ARRAY, StringSet[]> {
 
         WithShortDictionary(ToPage<ATTR, STRING_ARRAY> toPage) {
             super(toPage);
@@ -100,12 +104,12 @@ public class ToStringSetPage<ATTR extends Attributes.Any, STRING_ARRAY> extends 
 
         @Override
         @NotNull
-        public final StringSet [] convertResult(Object result) {
+        public final StringSet[] convertResult(Object result) {
             DataWithOffsets dataWithOffsets = (DataWithOffsets) result;
-            int [] from = (int []) dataWithOffsets.materializeResult;
+            int[] from = (int[]) dataWithOffsets.materializeResult;
             IntBuffer offsets = dataWithOffsets.offsets;
 
-            StringSet [] to = new StringSet [offsets.remaining()];
+            StringSet[] to = new StringSet[offsets.remaining()];
             int toIndex = 0;
 
             int prevOffset = 0;
@@ -122,7 +126,7 @@ public class ToStringSetPage<ATTR extends Attributes.Any, STRING_ARRAY> extends 
                         valueBitMask |= (1L << from[prevOffset++]);
                     }
 
-                    //noinspection unchecked
+                    // noinspection unchecked
                     to[toIndex++] = new StringSetImpl(toPage.getReversibleLookup(), valueBitMask);
                 }
 

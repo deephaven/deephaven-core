@@ -9,13 +9,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Polling-driven {@link TableLocationProvider} implementation that delegates {@link TableLocationKey location key}
- * discovery to a {@link TableLocationKeyFinder} and {@link TableLocation location} creation to a
- * {@link TableLocationFactory}.
+ * Polling-driven {@link TableLocationProvider} implementation that delegates
+ * {@link TableLocationKey location key} discovery to a {@link TableLocationKeyFinder} and
+ * {@link TableLocation location} creation to a {@link TableLocationFactory}.
  */
-public class PollingTableLocationProvider<TK extends TableKey, TLK extends TableLocationKey> extends AbstractTableLocationProvider {
+public class PollingTableLocationProvider<TK extends TableKey, TLK extends TableLocationKey>
+    extends AbstractTableLocationProvider {
 
-    private static final String IMPLEMENTATION_NAME = PollingTableLocationProvider.class.getSimpleName();
+    private static final String IMPLEMENTATION_NAME =
+        PollingTableLocationProvider.class.getSimpleName();
 
     private final TableLocationKeyFinder<TLK> locationKeyFinder;
     private final TableLocationFactory<TK, TLK> locationFactory;
@@ -24,18 +26,18 @@ public class PollingTableLocationProvider<TK extends TableKey, TLK extends Table
     private TableDataRefreshService.CancellableSubscriptionToken subscriptionToken;
 
     public PollingTableLocationProvider(@NotNull final TK tableKey,
-                                        @NotNull final TableLocationKeyFinder<TLK> locationKeyFinder,
-                                        @NotNull final TableLocationFactory<TK, TLK> locationFactory,
-                                        @Nullable final TableDataRefreshService refreshService) {
+        @NotNull final TableLocationKeyFinder<TLK> locationKeyFinder,
+        @NotNull final TableLocationFactory<TK, TLK> locationFactory,
+        @Nullable final TableDataRefreshService refreshService) {
         super(tableKey, refreshService != null);
         this.locationKeyFinder = locationKeyFinder;
         this.locationFactory = locationFactory;
         this.refreshService = refreshService;
     }
 
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // AbstractTableLocationProvider implementation
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
     @Override
     public String getImplementationName() {
@@ -51,13 +53,13 @@ public class PollingTableLocationProvider<TK extends TableKey, TLK extends Table
     @Override
     @NotNull
     protected TableLocation makeTableLocation(@NotNull final TableLocationKey locationKey) {
-        //noinspection unchecked
+        // noinspection unchecked
         return locationFactory.makeLocation((TK) getKey(), (TLK) locationKey, refreshService);
     }
 
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
     // SubscriptionAggregator implementation
-    //------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------
 
     @Override
     protected final void activateUnderlyingDataSource() {

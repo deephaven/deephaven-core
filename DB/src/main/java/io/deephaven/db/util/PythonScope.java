@@ -90,33 +90,33 @@ public interface PythonScope<PyObj> {
      */
     default Optional<Object> getValue(String name) {
         return getValueRaw(name)
-                .map(this::convertValue);
+            .map(this::convertValue);
     }
 
     /**
      * Equivalent to {@link #getValue(String)}.map({@code clazz}.{@link Class#cast(Object)})
      *
-     * @param name  the name of the python variable
+     * @param name the name of the python variable
      * @param clazz the class to cast to
-     * @param <T>   the return type
+     * @param <T> the return type
      * @return the converted casted value, or empty
      */
     default <T> Optional<T> getValue(String name, Class<T> clazz) {
         return getValue(name)
-                .map(clazz::cast);
+            .map(clazz::cast);
     }
 
     /**
      * Equivalent to {@link #getValue(String)}.map(x -> (T)x);
      *
      * @param name the name of the python variable
-     * @param <T>  the return type
+     * @param <T> the return type
      * @return the converted casted value, or empty
      */
     default <T> Optional<T> getValueUnchecked(String name) {
-        //noinspection unchecked
+        // noinspection unchecked
         return getValue(name)
-                .map(x -> (T) x);
+            .map(x -> (T) x);
     }
 
     /**
@@ -126,7 +126,7 @@ public interface PythonScope<PyObj> {
      */
     default Stream<String> getKeys() {
         return getKeysRaw()
-                .map(this::convertStringKey);
+            .map(this::convertStringKey);
     }
 
     /**
@@ -137,7 +137,8 @@ public interface PythonScope<PyObj> {
      */
     default Stream<Entry<String, Object>> getEntries() {
         return getEntriesRaw()
-                .map(e -> new SimpleImmutableEntry<>(convertStringKey(e.getKey()), convertValue(e.getValue())));
+            .map(e -> new SimpleImmutableEntry<>(convertStringKey(e.getKey()),
+                convertValue(e.getValue())));
     }
 
     /**
@@ -147,7 +148,7 @@ public interface PythonScope<PyObj> {
      */
     default Collection<String> getKeysCollection() {
         return getKeys()
-                .collect(Collectors.toList());
+            .collect(Collectors.toList());
     }
 
     /**
@@ -157,18 +158,15 @@ public interface PythonScope<PyObj> {
      */
     default Map<String, Object> getEntriesMap() {
         return getEntries()
-                .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
         // we're currently making sure that we don't convert None to null...
-    /*
-    // workaround since the collector doesn't work w/ null values
-    // https://bugs.openjdk.java.net/browse/JDK-8148463
-    return getEntries()
-        .collect(
-            HashMap::new,
-            (map, entry) -> map.put(entry.getKey(), entry.getValue()),
-            HashMap::putAll);
-    */
+        /*
+         * // workaround since the collector doesn't work w/ null values //
+         * https://bugs.openjdk.java.net/browse/JDK-8148463 return getEntries() .collect(
+         * HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()),
+         * HashMap::putAll);
+         */
     }
 
     public PyDictWrapper globals();

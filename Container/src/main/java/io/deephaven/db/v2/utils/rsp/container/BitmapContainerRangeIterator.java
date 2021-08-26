@@ -3,11 +3,11 @@ package io.deephaven.db.v2.utils.rsp.container;
 final class BitmapContainerRangeIterator implements SearchRangeIterator {
     private final long[] bitmap;
 
-    private int x;       // position in the bitmap array, for our next value.
-    private long w;      // remaining bits not returned by the iterator yet from the word at position x.
-    private int start;   // start of the current range.
-    private int end;     // end of the current range, exclusive.
-    private int offset;  // bit offset in bitmap[x] where w begins.
+    private int x; // position in the bitmap array, for our next value.
+    private long w; // remaining bits not returned by the iterator yet from the word at position x.
+    private int start; // start of the current range.
+    private int end; // end of the current range, exclusive.
+    private int offset; // bit offset in bitmap[x] where w begins.
     private boolean hasNext;
 
     public BitmapContainerRangeIterator(final BitmapContainer p) {
@@ -103,7 +103,7 @@ final class BitmapContainerRangeIterator implements SearchRangeIterator {
     public void next() {
         // given invariants, at this point `(w & 1) != 0`.
         start = 64 * x + offset;
-        int oneBits = lowestBit(w ^ ~0L);  // oneBits is at least 1.
+        int oneBits = lowestBit(w ^ ~0L); // oneBits is at least 1.
         offset += oneBits;
         w = w >>> oneBits;
         if (offset == 64) {
@@ -140,8 +140,8 @@ final class BitmapContainerRangeIterator implements SearchRangeIterator {
             }
             return true;
         }
-        final int p = v >> 6;        // v / 64.
-        final int poffset = v & 63;  // v % 64.
+        final int p = v >> 6; // v / 64.
+        final int poffset = v & 63; // v % 64.
         x = p;
         if (x >= bitmap.length) {
             return false;
@@ -206,29 +206,33 @@ final class BitmapContainerRangeIterator implements SearchRangeIterator {
             return true;
         }
         // (i,ioffset) will be our cursor to the lower words with invariant directionToTarget >= 0.
-        int i = start >>> 6;       //  v / 64.
-        int ioffset = start & 63;  //  v % 64.
+        int i = start >>> 6; // v / 64.
+        int ioffset = start & 63; // v % 64.
         int iv = start;
         while (true) {
             int mv = (iv + jv) / 2;
-            int m = mv >>> 6;       // mv / 64.
-            int moffset = mv & 63;  // mv % 64.
+            int m = mv >>> 6; // mv / 64.
+            int moffset = mv & 63; // mv % 64.
             boolean tryLowerBits = false;
             final long mask = maskForAllBitsSetFromOffsetToHigher(moffset);
             long masked = bitmap[m] & mask;
             if (masked == 0) {
-                // We will try towards the higher words first. Don't clobber m as we may realize we need to go towards
+                // We will try towards the higher words first. Don't clobber m as we may realize we
+                // need to go towards
                 // lower words from m instead.
                 int m2 = m;
                 do {
                     ++m2;
-                    // by construction, bitmap[j] != 0 on entry, and m <= j, so this loop will end before
+                    // by construction, bitmap[j] != 0 on entry, and m <= j, so this loop will end
+                    // before
                     // mm > bitmap.length - 1.
                 } while (bitmap[m2] == 0);
-                // since we are moving towards higher words, the lowest bit is the one closer to the original (m,moffset) target.
+                // since we are moving towards higher words, the lowest bit is the one closer to the
+                // original (m,moffset) target.
                 int m2offset = lowestBit(bitmap[m2]);
                 if (m2 == j && m2offset == joffset) {
-                    // Going towards higher words we ended up in the same place we started, and there are no more lower bits.
+                    // Going towards higher words we ended up in the same place we started, and
+                    // there are no more lower bits.
                     // Try indexes from m towards the lower words instead.
                     tryLowerBits = true;
                 } else {
@@ -249,17 +253,20 @@ final class BitmapContainerRangeIterator implements SearchRangeIterator {
                 if (masked != 0) {
                     moffset = highestBit(masked);
                     mv = 64 * m + moffset;
-                    // We already found (j,joffset) to the highest words.  If this happens to be (i,ioffset)
-                    // we are done.  That check will happen a bit later.
+                    // We already found (j,joffset) to the highest words. If this happens to be
+                    // (i,ioffset)
+                    // we are done. That check will happen a bit later.
                 } else {
                     do {
                         --m;
-                        // by construction, bitmap[i] != 0 on entry, and i <= m, so this loop will end before m < 0.
+                        // by construction, bitmap[i] != 0 on entry, and i <= m, so this loop will
+                        // end before m < 0.
                     } while (bitmap[m] == 0);
                     moffset = highestBit(bitmap[m]);
                     mv = 64 * m + moffset;
-                    // We already found (j,joffset) to the highest words.  If this happens to be (i,ioffset)
-                    // we are done.  That check will happen a bit later.
+                    // We already found (j,joffset) to the highest words. If this happens to be
+                    // (i,ioffset)
+                    // we are done. That check will happen a bit later.
                 }
             }
             if (mv <= iv || mv >= jv) {

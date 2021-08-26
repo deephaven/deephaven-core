@@ -5,8 +5,7 @@ import java.util.Arrays;
 public class LongArrayColumnData extends ColumnData {
     private long[] data;
 
-    public LongArrayColumnData() {
-    }
+    public LongArrayColumnData() {}
 
     public LongArrayColumnData(long[] data) {
         this.data = data;
@@ -22,8 +21,10 @@ public class LongArrayColumnData extends ColumnData {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         LongArrayColumnData that = (LongArrayColumnData) o;
 

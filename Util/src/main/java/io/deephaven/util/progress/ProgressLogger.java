@@ -27,7 +27,8 @@ public class ProgressLogger implements StatusCallback {
     public void update(final int progress, final Supplier<String> status) {
         parent.update(progress, status);
         if (progress != lastProgress) {
-            log.info().append(status.get()).append(" - Progress: ").append(parent.getValue()).append("%").endl();
+            log.info().append(status.get()).append(" - Progress: ").append(parent.getValue())
+                .append("%").endl();
             lastProgress = progress;
         }
     }

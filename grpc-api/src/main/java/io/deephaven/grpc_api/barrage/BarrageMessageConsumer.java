@@ -19,17 +19,17 @@ public class BarrageMessageConsumer {
         /**
          * Converts an InputStream to a BarrageMessage in the context of the provided parameters.
          *
-         * @param options          the options related to parsing this message
+         * @param options the options related to parsing this message
          * @param columnChunkTypes the types to use for each column chunk
-         * @param columnTypes      the actual type for the column
-         * @param componentTypes   the actual component type for the column
-         * @param stream           the input stream that holds the message to be parsed
+         * @param columnTypes the actual type for the column
+         * @param componentTypes the actual component type for the column
+         * @param stream the input stream that holds the message to be parsed
          * @return a BarrageMessage filled out by the stream's payload
          */
         BarrageMessage safelyParseFrom(final Options options,
-                                       final ChunkType[] columnChunkTypes,
-                                       final Class<?>[] columnTypes,
-                                       final Class<?>[] componentTypes,
-                                       final InputStream stream);
+            final ChunkType[] columnChunkTypes,
+            final Class<?>[] columnTypes,
+            final Class<?>[] componentTypes,
+            final InputStream stream);
     }
 }

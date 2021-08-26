@@ -31,7 +31,8 @@ public class ReferenceCounting implements AutoCloseable {
     public void check(int logicalReferenceCount, Object obj) {
         final PyObject pyObject = PyObject.unwrapProxy(obj);
         if (pyObject != null) {
-            obj = pyObject; // todo: arguably, this is something that the the jpy should be doing itself
+            obj = pyObject; // todo: arguably, this is something that the the jpy should be doing
+                            // itself
         }
 
         // the extra ref b/c of the tuple ref-stealing (see PyLib_CallAndReturnObject)
@@ -57,7 +58,7 @@ public class ReferenceCounting implements AutoCloseable {
 
     private int getrefcount(Object o) {
         if (o instanceof PyObject) {
-            return sys.getrefcount((PyObject)o);
+            return sys.getrefcount((PyObject) o);
         }
         return sys.getrefcount(o);
     }
@@ -66,15 +67,14 @@ public class ReferenceCounting implements AutoCloseable {
      * This is a fragile method, meant to ensure that GC gets invoked. There are a couple of
      * shortcomings:
      *
-     * 1) There is no guarantee that GC will actually be invoked.
-     * 2) Even if our dummy object is collected, it doesn't guarantee that any other objects
-     * we care about have been GCd.
+     * 1) There is no guarantee that GC will actually be invoked. 2) Even if our dummy object is
+     * collected, it doesn't guarantee that any other objects we care about have been GCd.
      *
      * That said - this seems to work for at least some VM implementations.
      */
     public void gc() throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
-        //noinspection unused
+        // noinspection unused
         Object obj = new Object() {
             @Override
             protected void finalize() throws Throwable {
@@ -82,7 +82,7 @@ public class ReferenceCounting implements AutoCloseable {
                 latch.countDown();
             }
         };
-        //noinspection UnusedAssignment
+        // noinspection UnusedAssignment
         obj = null;
         System.gc();
         Assert.assertTrue("GC did not happen within 1 second", latch.await(1, TimeUnit.SECONDS));
@@ -91,8 +91,8 @@ public class ReferenceCounting implements AutoCloseable {
     }
 
     /**
-     * The blackhole ensures that java can't GC away our java objects early
-     * (which effects the python reference count)
+     * The blackhole ensures that java can't GC away our java objects early (which effects the
+     * python reference count)
      */
     public static void blackhole(Object... objects) {
         if (Objects.hash(objects) == Integer.MAX_VALUE) {

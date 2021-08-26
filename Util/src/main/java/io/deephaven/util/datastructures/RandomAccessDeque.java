@@ -15,7 +15,7 @@ import java.util.stream.StreamSupport;
 public class RandomAccessDeque<T> implements Collection<T> {
     private static final int DEQUE_EXPANSION = 100;
 
-    private Object [] array;
+    private Object[] array;
     private int expansion;
     private int start;
     private int end;
@@ -53,7 +53,7 @@ public class RandomAccessDeque<T> implements Collection<T> {
 
     @Override
     public boolean contains(Object o) {
-        return stream().anyMatch(x -> o == x || (o != null && o.equals(x)) );
+        return stream().anyMatch(x -> o == x || (o != null && o.equals(x)));
     }
 
     @NotNull
@@ -69,8 +69,8 @@ public class RandomAccessDeque<T> implements Collection<T> {
 
             @Override
             public T next() {
-                //noinspection unchecked
-                return (T)array[iStart++];
+                // noinspection unchecked
+                return (T) array[iStart++];
             }
 
             @Override
@@ -78,7 +78,7 @@ public class RandomAccessDeque<T> implements Collection<T> {
                 System.arraycopy(array, iStart, array, iStart - 1, end - iStart);
                 end--;
                 iStart--;
-                array[end+1] = null;
+                array[end + 1] = null;
             }
         };
     }
@@ -86,7 +86,7 @@ public class RandomAccessDeque<T> implements Collection<T> {
     @NotNull
     @Override
     public Object[] toArray() {
-        Object [] result = new Object[end - start];
+        Object[] result = new Object[end - start];
         System.arraycopy(array, start, result, 0, end - start);
         return result;
     }
@@ -95,10 +95,10 @@ public class RandomAccessDeque<T> implements Collection<T> {
     @Override
     public <T1> T1[] toArray(@NotNull T1[] a) {
         if (a.length < end - start) {
-            //noinspection unchecked
-            a = (T1[])Array.newInstance(a.getClass().getComponentType(), end - start);
+            // noinspection unchecked
+            a = (T1[]) Array.newInstance(a.getClass().getComponentType(), end - start);
         }
-        //noinspection SuspiciousSystemArraycopy
+        // noinspection SuspiciousSystemArraycopy
         System.arraycopy(array, start, a, 0, end - start);
         return a;
     }
@@ -147,7 +147,7 @@ public class RandomAccessDeque<T> implements Collection<T> {
     public void addFirst(T vv) {
         if (start == 0) {
             // we need to rebuffer the array
-            Object [] newArray = new Object[array.length + expansion];
+            Object[] newArray = new Object[array.length + expansion];
             Arrays.fill(newArray, 0, expansion, null);
             System.arraycopy(array, start, newArray, expansion, end - start);
             start = expansion;
@@ -172,8 +172,8 @@ public class RandomAccessDeque<T> implements Collection<T> {
         boolean modified = false;
         int jj = start;
         for (int ii = start; ii < end; ++ii) {
-            //noinspection unchecked
-            if (predicate.test((T)array[ii])) {
+            // noinspection unchecked
+            if (predicate.test((T) array[ii])) {
                 // we should remove this element
                 modified = true;
             } else {
@@ -197,10 +197,11 @@ public class RandomAccessDeque<T> implements Collection<T> {
 
     public T get(int index) {
         if (start + index >= end || index < 0 || (start + index < start)) {
-            throw new ArrayIndexOutOfBoundsException("index=" + index + ", end=" + end + ", start=" + start);
+            throw new ArrayIndexOutOfBoundsException(
+                "index=" + index + ", end=" + end + ", start=" + start);
         }
-        //noinspection unchecked
-        return (T)array[start + index];
+        // noinspection unchecked
+        return (T) array[start + index];
     }
 
     public Stream<T> stream() {
@@ -250,8 +251,8 @@ public class RandomAccessDeque<T> implements Collection<T> {
         @Override
         public boolean tryAdvance(Consumer<? super T> action) {
             if (spliterStart < spliterEnd) {
-                //noinspection unchecked
-                action.accept((T)array[spliterStart++]);
+                // noinspection unchecked
+                action.accept((T) array[spliterStart++]);
                 return true;
             }
             return false;
@@ -259,7 +260,7 @@ public class RandomAccessDeque<T> implements Collection<T> {
 
         @Override
         public void forEachRemaining(Consumer<? super T> action) {
-            //noinspection StatementWithEmptyBody
+            // noinspection StatementWithEmptyBody
             while (tryAdvance(action)) {
                 // this while body intentionally left blank
             }
