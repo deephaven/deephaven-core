@@ -25,9 +25,9 @@ public class Computer {
     /**
      * Creates a new Computer.
      *
-     * @param modelFunc     python function to call on the given inputs from a table.
-     * @param inputs        inputs to the model function.
-     * @param batchSize     maximum number of rows for each deferred computation.
+     * @param modelFunc python function to call on the given inputs from a table.
+     * @param inputs inputs to the model function.
+     * @param batchSize maximum number of rows for each deferred computation.
      */
     public Computer(Table table, PyObject modelFunc, Input[] inputs, int batchSize) {
         this(table, new PythonFunctionCaller(Require.neqNull(modelFunc, "modelFunc")), inputs, batchSize);
@@ -36,9 +36,9 @@ public class Computer {
     /**
      * Creates a new Computer.
      *
-     * @param modelFunc     python function to call on the given inputs from a table.
-     * @param inputs        inputs to the model function.
-     * @param batchSize     maximum number of rows for each deferred computation.
+     * @param modelFunc python function to call on the given inputs from a table.
+     * @param inputs inputs to the model function.
+     * @param batchSize maximum number of rows for each deferred computation.
      */
     public Computer(Table table, Function<Object[], Object> modelFunc, Input[] inputs, int batchSize) {
 
@@ -54,7 +54,7 @@ public class Computer {
 
         this.colSets = new ColumnSource[this.inputs.length][];
 
-        for (int i = 0 ; i < this.inputs.length ; i++) {
+        for (int i = 0; i < this.inputs.length; i++) {
             this.colSets[i] = inputs[i].createColumnSource(table);
         }
 
@@ -82,8 +82,8 @@ public class Computer {
     /**
      * Adds new row indices to be used in the deferred calculation.
      *
-     * @param k     index to be added to the current index set.
-     * @return      future offset that combines a future with the relevant row index to access result.
+     * @param k index to be added to the current index set.
+     * @return future offset that combines a future with the relevant row index to access result.
      */
     public FutureOffset compute(long k) {
 
@@ -106,5 +106,7 @@ public class Computer {
      *
      * @return the current future.
      */
-    Future getFuture() { return current; }
+    Future getFuture() {
+        return current;
+    }
 }

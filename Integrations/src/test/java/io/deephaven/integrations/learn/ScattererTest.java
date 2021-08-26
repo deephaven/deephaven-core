@@ -16,16 +16,17 @@ public class ScattererTest {
     @BeforeClass
     public static void setup() {
         table = new InMemoryTable(
-                new String[]{"Column1", "Column2", "Column3"},
-                new Object[]{
-                        new int[]{1, 2, 1, 2, 3, 1, 2, 3, 4},
-                        new long[]{2L, 4L, 2L, 4L, 6L, 2L, 4L, 6L, 8L},
-                        new double[]{5.1, 2.8, 5.7, 2.4, 7.5, 2.2, 6.4, 2.1, 7.8}
+                new String[] {"Column1", "Column2", "Column3"},
+                new Object[] {
+                        new int[] {1, 2, 1, 2, 3, 1, 2, 3, 4},
+                        new long[] {2L, 4L, 2L, 4L, 6L, 2L, 4L, 6L, 8L},
+                        new double[] {5.1, 2.8, 5.7, 2.4, 7.5, 2.2, 6.4, 2.1, 7.8}
                 });
     }
 
     private static Input[] createInputs(Function<Object[], Object>... gatherFuncs) {
-        return new Input[]{new Input(new String[]{"Column1","Column2"}, gatherFuncs[0]), new Input("Column3", gatherFuncs[1])};
+        return new Input[] {new Input(new String[] {"Column1", "Column2"}, gatherFuncs[0]),
+                new Input("Column3", gatherFuncs[1])};
     }
 
     private static Input[] createInputs(Function<Object[], Object> gatherFunc) {
@@ -33,7 +34,8 @@ public class ScattererTest {
     }
 
     private static Output[] createOutputs(Function<Object[], Object>... scatterFuncs) {
-        return new Output[]{new Output("OutCol1", scatterFuncs[0], "int"), new Output("OutCol2", scatterFuncs[1], null)};
+        return new Output[] {new Output("OutCol1", scatterFuncs[0], "int"),
+                new Output("OutCol2", scatterFuncs[1], null)};
     }
 
     private static Output[] createOutputs(Function<Object[], Object> scatterFunc) {
@@ -48,7 +50,7 @@ public class ScattererTest {
     @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
     public void nullOutputElementTest() {
         Output[] outputs = createOutputs(args -> args);
-        Scatterer scatterer = new Scatterer(new Output[]{outputs[0], null});
+        Scatterer scatterer = new Scatterer(new Output[] {outputs[0], null});
     }
 
     @Test
@@ -89,12 +91,12 @@ public class ScattererTest {
         FutureOffset[] futureOffsetColumn = new FutureOffset[9];
 
 
-        for (int i = 0 ; i < 9 ; i++) {
+        for (int i = 0; i < 9; i++) {
             futureOffsetColumn[i] = computer.compute(i);
         }
 
-        for (int i = 0 ; i < outputs.length ; i++) {
-            Assert.assertEquals((i==0) ? 3 : 4, scatterer.scatter(i, futureOffsetColumn[i]));
+        for (int i = 0; i < outputs.length; i++) {
+            Assert.assertEquals((i == 0) ? 3 : 4, scatterer.scatter(i, futureOffsetColumn[i]));
         }
     }
 
@@ -110,8 +112,8 @@ public class ScattererTest {
         Scatterer scatterer = new Scatterer(outputs);
 
         Assert.assertArrayEquals(
-                new String[]{"OutCol1 =  (__scatterer.scatter(0, __FutureOffset))",
-                             "OutCol2 =  (__scatterer.scatter(1, __FutureOffset))"},
+                new String[] {"OutCol1 =  (__scatterer.scatter(0, __FutureOffset))",
+                        "OutCol2 =  (__scatterer.scatter(1, __FutureOffset))"},
                 scatterer.generateQueryStrings("__FutureOffset"));
     }
 }

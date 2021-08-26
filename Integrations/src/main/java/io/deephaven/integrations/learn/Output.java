@@ -20,9 +20,9 @@ public class Output {
     /**
      * Creates a new Output.
      *
-     * @param colName       name of new column to store results.
-     * @param scatterFunc   function to scatter the results of a Python object into the table column.
-     * @param type          desired datatype of the new column.
+     * @param colName name of new column to store results.
+     * @param scatterFunc function to scatter the results of a Python object into the table column.
+     * @param type desired datatype of the new column.
      */
     public Output(String colName, PyObject scatterFunc, String type) {
         this(colName, new PythonFunctionCaller(Require.neqNull(scatterFunc, "scatterFunc")), type);
@@ -31,9 +31,9 @@ public class Output {
     /**
      * Creates a new Output.
      *
-     * @param colName       name of new column to store results.
-     * @param scatterFunc   function to scatter the results of a Python object into the table column.
-     * @param type          desired datatype of the new column.
+     * @param colName name of new column to store results.
+     * @param scatterFunc function to scatter the results of a Python object into the table column.
+     * @param type desired datatype of the new column.
      */
     public Output(String colName, Function<Object[], Object> scatterFunc, String type) {
 
@@ -52,21 +52,27 @@ public class Output {
      *
      * @return the output column name.
      */
-    public String getColName() { return colName; }
+    public String getColName() {
+        return colName;
+    }
 
     /**
      * Gets the scatter function.
      *
      * @return the scatter function.
      */
-    public Function<Object[], Object> getScatterFunc() { return scatterFunc; }
+    public Function<Object[], Object> getScatterFunc() {
+        return scatterFunc;
+    }
 
     /**
      * Gets the type of the output column.
      *
      * @return the output column datatype.
      */
-    public String getType() { return type; }
+    public String getType() {
+        return type;
+    }
 
     @Override
     public String toString() {

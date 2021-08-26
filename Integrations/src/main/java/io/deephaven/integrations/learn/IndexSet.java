@@ -31,7 +31,9 @@ class IndexSet implements Iterable<Long> {
      *
      * @return whether this index set has been filled.
      */
-    boolean isFull() { return getSize() >= idx.length; }
+    boolean isFull() {
+        return getSize() >= idx.length;
+    }
 
     /**
      * Adds an index to this index set.
@@ -58,7 +60,8 @@ class IndexSet implements Iterable<Long> {
             public long nextLong() {
 
                 if (!hasNext()) {
-                    throw new NoSuchElementException("There are no more elements in the index set."); }
+                    throw new NoSuchElementException("There are no more elements in the index set.");
+                }
 
                 i++;
                 return IndexSet.this.idx[i];
@@ -76,5 +79,7 @@ class IndexSet implements Iterable<Long> {
      *
      * @return number of elements in the index set.
      */
-    public int getSize() { return current + 1; }
+    public int getSize() {
+        return current + 1;
+    }
 }

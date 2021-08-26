@@ -20,16 +20,16 @@ public class PythonFunctionCaller implements Function<Object[], Object> {
     /**
      * Creates a {@link Function} which calls a Python function.
      *
-     * @param pyObjectIn the python object providing the function - must either be callable or
-     *                   have an `apply` attribute which is callable.
+     * @param pyObjectIn the python object providing the function - must either be callable or have an `apply` attribute
+     *        which is callable.
      */
-    public PythonFunctionCaller(final PyObject pyObjectIn){
+    public PythonFunctionCaller(final PyObject pyObjectIn) {
 
         pyCallable = pyApplyFunc(pyObjectIn);
     }
 
     @Override
-    public Object apply(Object ... args) {
+    public Object apply(Object... args) {
         return pyCallable.call("__call__", args);
     }
 }

@@ -23,18 +23,18 @@ public class Input {
     /**
      * Creates a new Input.
      *
-     * @param colName       column name to be used as input.
-     * @param gatherFunc    function that gathers data into a Python object.
+     * @param colName column name to be used as input.
+     * @param gatherFunc function that gathers data into a Python object.
      */
     public Input(String colName, PyObject gatherFunc) {
-        this(new String[]{colName}, new PythonFunctionCaller(Require.neqNull(gatherFunc, "gatherFunc")));
+        this(new String[] {colName}, new PythonFunctionCaller(Require.neqNull(gatherFunc, "gatherFunc")));
     }
 
     /**
      * Creates a new Input.
      *
-     * @param colNames      array of column names to be used as inputs.
-     * @param gatherFunc    function that gathers data into a Python object.
+     * @param colNames array of column names to be used as inputs.
+     * @param gatherFunc function that gathers data into a Python object.
      */
     public Input(String[] colNames, PyObject gatherFunc) {
         this(colNames, new PythonFunctionCaller(Require.neqNull(gatherFunc, "gatherFunc")));
@@ -43,25 +43,25 @@ public class Input {
     /**
      * Creates a new Input.
      *
-     * @param colName       column name to be used as inputs.
-     * @param gatherFunc    function that gathers data into a Python object.
+     * @param colName column name to be used as inputs.
+     * @param gatherFunc function that gathers data into a Python object.
      */
     public Input(String colName, Function<Object[], Object> gatherFunc) {
-        this(new String[]{colName}, gatherFunc);
+        this(new String[] {colName}, gatherFunc);
     }
 
     /**
      * Creates a new Input.
      *
-     * @param colNames      array of column names to be used as inputs.
-     * @param gatherFunc    function that gathers data into a Python object.
+     * @param colNames array of column names to be used as inputs.
+     * @param gatherFunc function that gathers data into a Python object.
      */
     public Input(String[] colNames, Function<Object[], Object> gatherFunc) {
 
         Require.neqNull(colNames, "colNames");
         Require.neqNull(gatherFunc, "gatherFunc");
 
-        for (int i = 0 ; i < colNames.length ; i++) {
+        for (int i = 0; i < colNames.length; i++) {
             NameValidator.validateColumnName(colNames[i]);
         }
 
@@ -78,7 +78,7 @@ public class Input {
 
         ColumnSource<?>[] colSet = new ColumnSource[colNames.length];
 
-        for (int i = 0 ; i < colNames.length ; i++) {
+        for (int i = 0; i < colNames.length; i++) {
             colSet[i] = table.getColumnSource(colNames[i]);
         }
 
@@ -90,7 +90,9 @@ public class Input {
      *
      * @return the gather function.
      */
-    Function<Object[], Object> getGatherFunc() { return gatherFunc; }
+    Function<Object[], Object> getGatherFunc() {
+        return gatherFunc;
+    }
 
     /**
      * Gets the column names.
@@ -98,7 +100,9 @@ public class Input {
      * @return the column names.
      */
     @ScriptApi
-    public String[] getColNames() { return colNames; }
+    public String[] getColNames() {
+        return colNames;
+    }
 
     @Override
     public String toString() {

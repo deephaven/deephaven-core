@@ -18,9 +18,9 @@ public class Future {
     /**
      * Creates a new Future.
      *
-     * @param func          function that performs computation on gathered data.
-     * @param inputs        inputs to the Future computation.
-     * @param batchSize     maximum number of rows for deferred computation.
+     * @param func function that performs computation on gathered data.
+     * @param inputs inputs to the Future computation.
+     * @param batchSize maximum number of rows for deferred computation.
      */
     Future(Function<Object[], Object> func, Input[] inputs, ColumnSource<?>[][] colSets, int batchSize) {
 
@@ -42,7 +42,7 @@ public class Future {
         if (!called) {
             Object[] gathered = new Object[inputs.length];
 
-            for (int i = 0; i < inputs.length ; i++) {
+            for (int i = 0; i < inputs.length; i++) {
                 gathered[i] = gather(inputs[i], colSets[i]);
             }
 
@@ -57,12 +57,12 @@ public class Future {
     /**
      * Computes the result of applying the gather function to the given input.
      *
-     * @param input     input that contains the gather function and the column names to gather.
-     * @param colSet    set of column sources from which to extract data.
+     * @param input input that contains the gather function and the column names to gather.
+     * @param colSet set of column sources from which to extract data.
      * @return gathered data
      */
     Object gather(Input input, ColumnSource<?>[] colSet) {
-        return input.getGatherFunc().apply(new Object[]{this.indexSet, colSet});
+        return input.getGatherFunc().apply(new Object[] {this.indexSet, colSet});
     }
 
     /**
@@ -70,5 +70,7 @@ public class Future {
      *
      * @return the current index set.
      */
-    IndexSet getIndexSet() { return indexSet; }
+    IndexSet getIndexSet() {
+        return indexSet;
+    }
 }

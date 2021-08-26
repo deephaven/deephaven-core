@@ -37,7 +37,7 @@ public class IndexSetTest {
     public void tooManyElementsTest() throws Exception {
         IndexSet indexSet = new IndexSet(5);
 
-        for (int i = 0 ; i < 6 ; i++) {
+        for (int i = 0; i < 6; i++) {
             indexSet.add(i);
         }
     }
@@ -51,7 +51,7 @@ public class IndexSetTest {
         indexSet.add(100000);
 
         PrimitiveIterator.OfLong itr = indexSet.iterator();
-        for (int i = 0 ; i < 4 ; i++) {
+        for (int i = 0; i < 4; i++) {
             itr.next();
         }
     }
