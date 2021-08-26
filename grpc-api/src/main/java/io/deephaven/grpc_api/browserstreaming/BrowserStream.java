@@ -74,7 +74,6 @@ public class BrowserStream<T> implements Closeable {
                     responseObserver.onError(canceled);
                 });
 
-                //TODO is this necessary or does the above result in this being called automatically?
                 GrpcUtil.safelyExecute(() -> {
                     requestObserver.onError(canceled);
                 });

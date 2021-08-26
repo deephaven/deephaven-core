@@ -5,6 +5,7 @@ import elemental2.core.JsArray;
 import elemental2.core.JsSet;
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
+import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
@@ -168,7 +169,7 @@ public class IdeSession extends HasEventHandling {
             changes.updated = copyVariables(response.getUpdatedList());
             changes.removed = copyVariables(response.getRemovedList());
             commandResult.setChanges(changes);
-            promise.succeEred(commandResult);
+            promise.succeed(commandResult);
             return null;
         }, err -> {
             promise.fail(err);
@@ -329,7 +330,12 @@ public class IdeSession extends HasEventHandling {
 
         return promise
                 .timeout(JsTable.MAX_BATCH_TIME)
-                .asPromise(() -> pendingAutocompleteCalls.remove(request.getRequestId()));
+                .asPromise()
+                .then(Promise::resolve, fail -> {
+                    pendingAutocompleteCalls.remove(request.getRequestId());
+                    //noinspection unchecked, rawtypes, rawtypes
+                    return (Promise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>>) (Promise) Promise.reject(fail);
+                });
     }
 
     private JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem> cleanupItems(final JsArray<CompletionItem> itemsList) {

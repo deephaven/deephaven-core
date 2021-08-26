@@ -300,7 +300,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                                         final VariableProvider vars = scriptSession.getVariableProvider();
                                         final CompletionLookups h = CompletionLookups.preload(scriptSession);
                                         // The only stateful part of a completer is the CompletionLookups, which are already once-per-session-cached
-                                        // so, we'll just create a new completer for each request. No need to hand onto these guys.
+                                        // so, we'll just create a new completer for each request. No need to hang onto these guys.
                                         final ChunkerCompleter completer = new ChunkerCompleter(log, vars, h);
 
                                         final ParsedDocument parsed;
