@@ -110,7 +110,7 @@ def _defineSymbols():
         string = DataType(_qst_type_.stringType())
         bigdecimal = _typeFromJavaClassName('java.math.BigDecimal')
         stringset =  _typeFromJavaClassName('io.deephaven.db.tables.libs.StringSet')
-        datetime = DataType(_qst_type_.instantType())
+        datetime = _typeFromJavaClassName('io.deephaven.db.tables.utils.DBDateTime')
 
         # Array types.
         byte_array = DataType(byte.arrayType())
