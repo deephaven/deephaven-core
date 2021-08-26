@@ -51,7 +51,7 @@ public enum ExportedObjectType {
         return this == Figure || this == OtherWidget || this == Pandas;
     }
 
-    public boolean isDisplayableInSwing() {
+    public boolean isDisplayable() {
         return this != NonDisplayable && this != TableMap;
     }
 }

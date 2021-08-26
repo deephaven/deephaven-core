@@ -123,7 +123,7 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
         for (final Map.Entry<String, Object> entry : newScope.entrySet()) {
             final Object value = entry.getValue();
             final ExportedObjectType type = ExportedObjectType.fromObject(value);
-            if (!type.isDisplayableInSwing()) {
+            if (!type.isDisplayable()) {
                 continue;
             }
             types.put(entry.getKey(), type);
@@ -143,7 +143,7 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
             final Object value = entry.getValue();
 
             final ExportedObjectType type = ExportedObjectType.fromObject(value);
-            if (type.isDisplayableInSwing()) {
+            if (type.isDisplayable()) {
                 if (type != types.get(name)) {
                     // either the name no longer exists, or it has a new type, and we mark it as removed (see above)
                     diff.removed.put(entry.getKey(), type);
