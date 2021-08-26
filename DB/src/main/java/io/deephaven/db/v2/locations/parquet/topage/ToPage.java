@@ -73,23 +73,23 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
      */
     @NotNull
     @FinalDefault
-    default ChunkPage<ATTR> toPage(long offset, ColumnPageReader columnPageReader, long mask) throws IOException {
+    default ChunkPage<ATTR> toPage(long offset, ColumnPageReader columnPageReader, long mask)
+            throws IOException {
         return getChunkType().pageWrap(offset, convertResult(getResult(columnPageReader)), mask);
-
     }
 
     /**
      * @return the dictionary stored for this column, if one exists, otherwise null.
      */
-    default Chunk<ATTR> getDictionary() {
+    default Chunk<ATTR> getDictionaryChunk() {
         return null;
     }
 
     /**
      * @return an object implementing ToChunk which will read the integral Dictionary Keys when there's a dictionary for
      *         this column (as opposed to the values, which this object's toChunk will return.). This will return null
-     *         iff getDictionary returns null.
-     * @apiNote null iff {@link #getDictionary()} is null.
+     *         iff {@link #getDictionaryChunk()} returns null.
+     * @apiNote null iff {@link #getDictionaryChunk()} is null.
      */
     default ToPage<Attributes.DictionaryKeys, long[]> getDictionaryKeysToPage() {
         return null;
@@ -97,13 +97,14 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
 
     /**
      * @return an reverse lookup map of the dictionary.
-     * @apiNote null iff {@link #getDictionary()} is null.
+     * @apiNote null iff {@link #getDictionaryChunk()} is null.
      */
     default StringSetImpl.ReversibleLookup getReversibleLookup() {
         return null;
     }
 
-    abstract class Wrap<ATTR extends Attributes.Any, INNER_RESULT, OUTER_RESULT> implements ToPage<ATTR, OUTER_RESULT> {
+    abstract class Wrap<ATTR extends Attributes.Any, INNER_RESULT, OUTER_RESULT>
+            implements ToPage<ATTR, OUTER_RESULT> {
 
         final ToPage<ATTR, INNER_RESULT> toPage;
 
@@ -126,8 +127,8 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
 
 
         @Override
-        public Chunk<ATTR> getDictionary() {
-            return toPage.getDictionary();
+        public Chunk<ATTR> getDictionaryChunk() {
+            return toPage.getDictionaryChunk();
         }
 
         @Override

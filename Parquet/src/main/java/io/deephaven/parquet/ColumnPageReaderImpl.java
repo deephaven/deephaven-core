@@ -21,6 +21,7 @@ import org.apache.parquet.io.ParquetDecodingException;
 import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -31,6 +32,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static io.deephaven.parquet.utils.Helpers.readFully;
 import static org.apache.parquet.column.ValuesType.VALUES;
@@ -39,58 +41,64 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     private static final int MAX_HEADER = 8192;
     private static final int START_HEADER = 128;
-    private static final int INITIAL_BUFFER_SIZE = 64;
     public static final int NULL_OFFSET = -1;
+
     private final SeekableChannelsProvider channelsProvider;
+    private final Supplier<CompressionCodecFactory.BytesInputDecompressor> decompressorSupplier;
+    private final Supplier<Dictionary> dictionarySupplier;
+    private final ColumnDescriptor path;
+    private final Path filePath;
     private final List<Type> fieldTypes;
+
     private long offset;
     private PageHeader pageHeader;
-    private final ThreadLocal<CompressionCodecFactory.BytesInputDecompressor> decompressor;
-
-    private final ColumnDescriptor path;
-    private final Dictionary dictionary;
-    private final Path filePath;
     private int numValues;
     private int rowCount = -1;
 
-    ColumnPageReaderImpl(SeekableChannelsProvider channelsProvider, long offset, PageHeader pageHeader,
-            ThreadLocal<CompressionCodecFactory.BytesInputDecompressor> decompressor, ColumnDescriptor path,
-            Dictionary dictionary, Path filePath, int numValues, List<Type> fieldTypes) {
+    ColumnPageReaderImpl(SeekableChannelsProvider channelsProvider,
+            Supplier<CompressionCodecFactory.BytesInputDecompressor> decompressorSupplier,
+            Supplier<Dictionary> dictionarySupplier,
+            ColumnDescriptor path,
+            Path filePath,
+            List<Type> fieldTypes,
+            long offset,
+            PageHeader pageHeader,
+            int numValues) {
         this.channelsProvider = channelsProvider;
+        this.decompressorSupplier = decompressorSupplier;
+        this.dictionarySupplier = dictionarySupplier;
+        this.path = path;
+        this.filePath = filePath;
+        this.fieldTypes = fieldTypes;
         this.offset = offset;
         this.pageHeader = pageHeader;
-        this.decompressor = decompressor;
-        this.path = path;
-        this.dictionary = dictionary;
-        this.filePath = filePath;
         this.numValues = numValues;
-        this.fieldTypes = fieldTypes;
     }
 
     @Override
     public Object materialize(Object nullValue) throws IOException {
-        try (SeekableByteChannel file = channelsProvider.getReadChannel(filePath)) {
-            file.position(offset);
-            ensurePageHeader(file);
-            return readDataPage(nullValue, file);
+        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
+            readChannel.position(offset);
+            ensurePageHeader(readChannel);
+            return readDataPage(nullValue, readChannel);
         }
     }
 
     public int readRowCount() throws IOException {
-        try (SeekableByteChannel file = channelsProvider.getReadChannel(filePath)) {
-            file.position(offset);
-            ensurePageHeader(file);
-            return readRowCountFromDataPage(file);
+        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
+            readChannel.position(offset);
+            ensurePageHeader(readChannel);
+            return readRowCountFromDataPage(readChannel);
         }
     }
 
 
     @Override
     public IntBuffer readKeyValues(IntBuffer keyDest, int nullPlaceholder) throws IOException {
-        try (SeekableByteChannel file = channelsProvider.getReadChannel(filePath)) {
-            file.position(offset);
-            ensurePageHeader(file);
-            return readKeyFromDataPage(keyDest, nullPlaceholder, file);
+        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
+            readChannel.position(offset);
+            ensurePageHeader(readChannel);
+            return readKeyFromDataPage(keyDest, nullPlaceholder, readChannel);
         }
     }
 
@@ -129,8 +137,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
             case DATA_PAGE:
                 ByteBuffer payload = readFully(file, compressedPageSize);
                 DataPageHeader dataHeaderV1 = pageHeader.getData_page_header();
-                BytesInput decompressedInput =
-                        decompressor.get().decompress(BytesInput.from(payload), pageHeader.getUncompressed_page_size());
+                BytesInput decompressedInput = decompressorSupplier.get()
+                        .decompress(BytesInput.from(payload), pageHeader.getUncompressed_page_size());
 
                 return readRowCountFromPageV1(new DataPageV1(
                         decompressedInput,
@@ -148,8 +156,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         }
     }
 
-    private IntBuffer readKeyFromDataPage(IntBuffer keyDest, int nullPlaceholder, SeekableByteChannel file)
-            throws IOException {
+    private IntBuffer readKeyFromDataPage(IntBuffer keyDest, int nullPlaceholder,
+            SeekableByteChannel file) throws IOException {
         int uncompressedPageSize = pageHeader.getUncompressed_page_size();
         int compressedPageSize = pageHeader.getCompressed_page_size();
 
@@ -157,8 +165,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
             case DATA_PAGE:
                 ByteBuffer payload = readFully(file, compressedPageSize);
                 DataPageHeader dataHeaderV1 = pageHeader.getData_page_header();
-                BytesInput decompressedInput =
-                        decompressor.get().decompress(BytesInput.from(payload), pageHeader.getUncompressed_page_size());
+                BytesInput decompressedInput = decompressorSupplier.get()
+                        .decompress(BytesInput.from(payload), pageHeader.getUncompressed_page_size());
 
                 return readKeysFromPageV1(new DataPageV1(
                         decompressedInput,
@@ -173,10 +181,14 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
                 DataPageHeaderV2 dataHeaderV2 = pageHeader.getData_page_header_v2();
                 int dataSize = compressedPageSize - dataHeaderV2.getRepetition_levels_byte_length()
                         - dataHeaderV2.getDefinition_levels_byte_length();
-                ByteBuffer repetitionLevels = readFully(file, dataHeaderV2.getRepetition_levels_byte_length());
-                ByteBuffer definitionLevels = readFully(file, dataHeaderV2.getDefinition_levels_byte_length());
-                BytesInput data = decompressor.get().decompress(BytesInput.from(readFully(file, dataSize)),
-                        pageHeader.getUncompressed_page_size() - dataHeaderV2.getRepetition_levels_byte_length()
+                ByteBuffer repetitionLevels =
+                        readFully(file, dataHeaderV2.getRepetition_levels_byte_length());
+                ByteBuffer definitionLevels =
+                        readFully(file, dataHeaderV2.getDefinition_levels_byte_length());
+                BytesInput data = decompressorSupplier.get().decompress(
+                        BytesInput.from(readFully(file, dataSize)),
+                        pageHeader.getUncompressed_page_size()
+                                - dataHeaderV2.getRepetition_levels_byte_length()
                                 - dataHeaderV2.getDefinition_levels_byte_length());
                 readKeysFromPageV2(new DataPageV2(
                         dataHeaderV2.getNum_rows(),
@@ -191,8 +203,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
                         false), keyDest, nullPlaceholder);
                 return null;
             default:
-                throw new IOException(String.format("Unexpecte page of type {} of size {}", pageHeader.getType(),
-                        compressedPageSize));
+                throw new IOException(String.format("Unexpecte page of type {} of size {}",
+                        pageHeader.getType(), compressedPageSize));
         }
     }
 
@@ -203,8 +215,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
             case DATA_PAGE:
                 ByteBuffer payload = readFully(file, compressedPageSize);
                 DataPageHeader dataHeaderV1 = pageHeader.getData_page_header();
-                BytesInput decompressedInput =
-                        decompressor.get().decompress(BytesInput.from(payload), pageHeader.getUncompressed_page_size());
+                BytesInput decompressedInput = decompressorSupplier.get()
+                        .decompress(BytesInput.from(payload), pageHeader.getUncompressed_page_size());
 
                 return readPageV1(new DataPageV1(
                         decompressedInput,
@@ -218,10 +230,14 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
                 DataPageHeaderV2 dataHeaderV2 = pageHeader.getData_page_header_v2();
                 int dataSize = compressedPageSize - dataHeaderV2.getRepetition_levels_byte_length()
                         - dataHeaderV2.getDefinition_levels_byte_length();
-                ByteBuffer repetitionLevels = readFully(file, dataHeaderV2.getRepetition_levels_byte_length());
-                ByteBuffer definitionLevels = readFully(file, dataHeaderV2.getDefinition_levels_byte_length());
-                BytesInput data = decompressor.get().decompress(BytesInput.from(readFully(file, dataSize)),
-                        pageHeader.getUncompressed_page_size() - dataHeaderV2.getRepetition_levels_byte_length()
+                ByteBuffer repetitionLevels =
+                        readFully(file, dataHeaderV2.getRepetition_levels_byte_length());
+                ByteBuffer definitionLevels =
+                        readFully(file, dataHeaderV2.getDefinition_levels_byte_length());
+                BytesInput data = decompressorSupplier.get().decompress(
+                        BytesInput.from(readFully(file, dataSize)),
+                        pageHeader.getUncompressed_page_size()
+                                - dataHeaderV2.getRepetition_levels_byte_length()
                                 - dataHeaderV2.getDefinition_levels_byte_length());
                 return readPageV2(new DataPageV2(
                         dataHeaderV2.getNum_rows(),
@@ -235,8 +251,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
                         null, // TODO in the future might want to pull in statistics,
                         false), nullValue);
             default:
-                throw new IOException(String.format("Unexpecte page of type {} of size {}", pageHeader.getType(),
-                        compressedPageSize));
+                throw new IOException(String.format("Unexpecte page of type {} of size {}",
+                        pageHeader.getType(), compressedPageSize));
         }
     }
 
@@ -247,8 +263,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     private int readRowCountFromPageV1(DataPageV1 page) {
         try {
-            ByteBuffer bytes = page.getBytes().toByteBuffer(); // TODO - move away from page and use ByteBuffers
-                                                               // directly
+            ByteBuffer bytes = page.getBytes().toByteBuffer(); // TODO - move away from page and use
+                                                               // ByteBuffers directly
             bytes.order(ByteOrder.LITTLE_ENDIAN);
             if (path.getMaxRepetitionLevel() != 0) {
                 int length = bytes.getInt();
@@ -258,7 +274,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
                 return page.getValueCount();
             }
         } catch (IOException e) {
-            throw new ParquetDecodingException("could not read page " + page + " in col " + path, e);
+            throw new ParquetDecodingException("could not read page " + page + " in col " + path,
+                    e);
         }
     }
 
@@ -266,8 +283,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         RunLenghBitPackingHybridBufferDecoder rlDecoder = null;
         RunLenghBitPackingHybridBufferDecoder dlDecoder = null;
         try {
-            ByteBuffer bytes = page.getBytes().toByteBuffer(); // TODO - move away from page and use ByteBuffers
-                                                               // directly
+            ByteBuffer bytes = page.getBytes().toByteBuffer(); // TODO - move away from page and use
+                                                               // ByteBuffers directly
             bytes.order(ByteOrder.LITTLE_ENDIAN);
             /*
              * IntBuffer offsets = null; if (path.getMaxRepetitionLevel() != 0) { int length = bytes.getInt(); offsets =
@@ -291,10 +308,11 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
                         (ByteBuffer) bytes.slice().limit(length));
                 bytes.position(bytes.position() + length);
             }
-            ValuesReader dataReader = new KeyIndexReader(
-                    (DictionaryValuesReader) getDataReader(page.getValueEncoding(), bytes, page.getValueCount()));
-            Object result = materialize(PrimitiveType.PrimitiveTypeName.INT32, dlDecoder, rlDecoder, dataReader,
-                    nullPlaceholder, numValues);
+            ValuesReader dataReader =
+                    new KeyIndexReader((DictionaryValuesReader) getDataReader(page.getValueEncoding(),
+                            bytes, page.getValueCount()));
+            Object result = materialize(PrimitiveType.PrimitiveTypeName.INT32, dlDecoder, rlDecoder,
+                    dataReader, nullPlaceholder, numValues);
             if (result instanceof DataWithOffsets) {
                 keyDest.put((int[]) ((DataWithOffsets) result).materializeResult);
                 return ((DataWithOffsets) result).offsets;
@@ -302,13 +320,15 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
             keyDest.put((int[]) result);
             return null;
         } catch (IOException e) {
-            throw new ParquetDecodingException("could not read page " + page + " in col " + path, e);
+            throw new ParquetDecodingException("could not read page " + page + " in col " + path,
+                    e);
         }
     }
 
     private void readRepetitionLevels(ByteBuffer byteBuffer) throws IOException {
         RunLenghBitPackingHybridBufferDecoder rlDecoder;
-        rlDecoder = new RunLenghBitPackingHybridBufferDecoder(path.getMaxRepetitionLevel(), byteBuffer);
+        rlDecoder =
+                new RunLenghBitPackingHybridBufferDecoder(path.getMaxRepetitionLevel(), byteBuffer);
         rowCount = 0;
         int totalCount = 0;
         while (rlDecoder.hasNext() && totalCount < numValues) {
@@ -328,8 +348,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     private Object readPageV1(DataPageV1 page, Object nullValue) {
         RunLenghBitPackingHybridBufferDecoder dlDecoder = null;
         try {
-            ByteBuffer bytes = page.getBytes().toByteBuffer(); // TODO - move away from page and use ByteBuffers
-                                                               // directly
+            ByteBuffer bytes = page.getBytes().toByteBuffer(); // TODO - move away from page and use
+                                                               // ByteBuffers directly
             bytes.order(ByteOrder.LITTLE_ENDIAN);
             RunLenghBitPackingHybridBufferDecoder rlDecoder = null;
             if (path.getMaxRepetitionLevel() != 0) {
@@ -344,25 +364,30 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
                         (ByteBuffer) bytes.slice().limit(length));
                 bytes.position(bytes.position() + length);
             }
-            ValuesReader dataReader = getDataReader(page.getValueEncoding(), bytes, page.getValueCount());
-            return materialize(path.getPrimitiveType().getPrimitiveTypeName(), dlDecoder, rlDecoder, dataReader,
-                    nullValue, numValues);
+            ValuesReader dataReader =
+                    getDataReader(page.getValueEncoding(), bytes, page.getValueCount());
+            return materialize(path.getPrimitiveType().getPrimitiveTypeName(), dlDecoder, rlDecoder,
+                    dataReader, nullValue, numValues);
         } catch (IOException e) {
-            throw new ParquetDecodingException("could not read page " + page + " in col " + path, e);
+            throw new ParquetDecodingException("could not read page " + page + " in col " + path,
+                    e);
         }
     }
 
     private Object materialize(PrimitiveType.PrimitiveTypeName primitiveTypeName,
-            RunLenghBitPackingHybridBufferDecoder dlDecoder, RunLenghBitPackingHybridBufferDecoder rlDecoder,
-            ValuesReader dataReader, Object nullValue, int numValues) throws IOException {
+            RunLenghBitPackingHybridBufferDecoder dlDecoder,
+            RunLenghBitPackingHybridBufferDecoder rlDecoder, ValuesReader dataReader, Object nullValue,
+            int numValues) throws IOException {
         if (dlDecoder == null) {
             return materializeNonNull(numValues, primitiveTypeName, dataReader);
         } else {
-            return materializeWithNulls(primitiveTypeName, dlDecoder, rlDecoder, dataReader, nullValue);
+            return materializeWithNulls(primitiveTypeName, dlDecoder, rlDecoder, dataReader,
+                    nullValue);
         }
     }
 
-    private void readKeysFromPageV2(DataPageV2 page, IntBuffer keyDest, int nullPlaceholder) throws IOException {
+    private void readKeysFromPageV2(DataPageV2 page, IntBuffer keyDest, int nullPlaceholder)
+            throws IOException {
         if (path.getMaxRepetitionLevel() > 0) {
             throw new RuntimeException("Repeating levels not supported");
         }
@@ -372,17 +397,19 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
             dlDecoder = new RunLenghBitPackingHybridBufferDecoder(path.getMaxDefinitionLevel(),
                     page.getDefinitionLevels().toByteBuffer());
         }
-        // LOG.debug("page data size {} bytes and {} records", page.getData().size(), page.getValueCount());
+        // LOG.debug("page data size {} bytes and {} records", page.getData().size(),
+        // page.getValueCount());
         try {
-            ValuesReader dataReader =
-                    getDataReader(page.getDataEncoding(), page.getData().toByteBuffer(), page.getValueCount());
+            ValuesReader dataReader = getDataReader(page.getDataEncoding(),
+                    page.getData().toByteBuffer(), page.getValueCount());
             if (dlDecoder != null) {
                 readKeysWithNulls(keyDest, nullPlaceholder, numValues(), dlDecoder, dataReader);
             } else {
                 readKeysNonNulls(keyDest, numValues, dataReader);
             }
         } catch (IOException e) {
-            throw new ParquetDecodingException("could not read page " + page + " in col " + path, e);
+            throw new ParquetDecodingException("could not read page " + page + " in col " + path,
+                    e);
         }
     }
 
@@ -392,7 +419,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     }
 
     private void readKeysWithNulls(IntBuffer keysBuffer, int nullPlaceholder, int numValues,
-            RunLenghBitPackingHybridBufferDecoder dlDecoder, ValuesReader dataReader) throws IOException {
+            RunLenghBitPackingHybridBufferDecoder dlDecoder, ValuesReader dataReader)
+            throws IOException {
         DictionaryValuesReader dictionaryValuesReader = (DictionaryValuesReader) dataReader;
         int startIndex = 0;
         while (dlDecoder.hasNext() && startIndex < numValues) {
@@ -413,7 +441,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         }
     }
 
-    private void readKeysNonNulls(IntBuffer keysBuffer, int numValues, ValuesReader dataReader) throws IOException {
+    private void readKeysNonNulls(IntBuffer keysBuffer, int numValues, ValuesReader dataReader)
+            throws IOException {
         DictionaryValuesReader dictionaryValuesReader = (DictionaryValuesReader) dataReader;
         for (int i = 0; i < numValues; i++) {
             keysBuffer.put(dictionaryValuesReader.readValueDictionaryId());
@@ -422,8 +451,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     interface MaterializerWithNulls {
 
-        static MaterializerWithNulls forType(PrimitiveType.PrimitiveTypeName primitiveTypeName, ValuesReader dataReader,
-                Object nullValue, int numValues) {
+        static MaterializerWithNulls forType(PrimitiveType.PrimitiveTypeName primitiveTypeName,
+                ValuesReader dataReader, Object nullValue, int numValues) {
             switch (primitiveTypeName) {
                 case INT32:
                     return new Int(dataReader, nullValue, numValues);
@@ -641,8 +670,9 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
     }
 
-    private Object materializeWithNulls(int numValues, PrimitiveType.PrimitiveTypeName primitiveTypeName,
-            IntBuffer nullOffsets, ValuesReader dataReader, Object nullValue) {
+    private Object materializeWithNulls(int numValues,
+            PrimitiveType.PrimitiveTypeName primitiveTypeName, IntBuffer nullOffsets,
+            ValuesReader dataReader, Object nullValue) {
         MaterializerWithNulls materializer =
                 MaterializerWithNulls.forType(primitiveTypeName, dataReader, nullValue, numValues);
         int startIndex = 0;
@@ -667,7 +697,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
      * @param repeatingRanges
      * @return
      */
-    private IntBuffer combineOptionalAndRepeating(IntBuffer nullOffsets, IntBuffer repeatingRanges, int nullValue) {
+    private IntBuffer combineOptionalAndRepeating(IntBuffer nullOffsets, IntBuffer repeatingRanges,
+            int nullValue) {
         IntBuffer result = IntBuffer.allocate(nullOffsets.limit() + repeatingRanges.limit());
         int startIndex = 0;
         int nextNullPos = nullOffsets.hasRemaining() ? nullOffsets.get() : result.capacity();
@@ -690,8 +721,9 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
     }
 
     private Object materializeWithNulls(PrimitiveType.PrimitiveTypeName primitiveTypeName,
-            RunLenghBitPackingHybridBufferDecoder dlDecoder, RunLenghBitPackingHybridBufferDecoder rlDecoder,
-            ValuesReader dataReader, Object nullValue) throws IOException {
+            RunLenghBitPackingHybridBufferDecoder dlDecoder,
+            RunLenghBitPackingHybridBufferDecoder rlDecoder, ValuesReader dataReader, Object nullValue)
+            throws IOException {
         Pair<Pair<Type.Repetition, IntBuffer>[], Integer> offsetsAndCount =
                 getOffsetsAndNulls(dlDecoder, rlDecoder, numValues);
         int numValues = offsetsAndCount.second;
@@ -706,8 +738,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
                 currentNullOffsets = offsetAndNull.second;
             } else {
                 if (currentNullOffsets != null) {
-                    offsetsWithNull
-                            .add(combineOptionalAndRepeating(currentNullOffsets, offsetAndNull.second, NULL_OFFSET));
+                    offsetsWithNull.add(combineOptionalAndRepeating(currentNullOffsets,
+                            offsetAndNull.second, NULL_OFFSET));
                     currentNullOffsets = null;
                 } else {
                     offsetsWithNull.add(offsetAndNull.second);
@@ -716,7 +748,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         }
         Object values;
         if (currentNullOffsets != null) {
-            values = materializeWithNulls(numValues, primitiveTypeName, currentNullOffsets, dataReader, nullValue);
+            values = materializeWithNulls(numValues, primitiveTypeName, currentNullOffsets,
+                    dataReader, nullValue);
         } else {
             values = materializeNonNull(numValues, primitiveTypeName, dataReader);
         }
@@ -729,9 +762,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         return new DataWithMultiLevelOffsets(offsetsWithNull.toArray(new IntBuffer[0]), values);
     }
 
-
-    private Object materializeNonNull(int numValues, PrimitiveType.PrimitiveTypeName primitiveTypeName,
-            ValuesReader dataReader) {
+    private Object materializeNonNull(int numValues,
+            PrimitiveType.PrimitiveTypeName primitiveTypeName, ValuesReader dataReader) {
         switch (primitiveTypeName) {
             case INT32:
                 int[] intData = new int[numValues];
@@ -776,17 +808,17 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         }
     }
 
-
     private ValuesReader getDataReader(Encoding dataEncoding, ByteBuffer in, int valueCount) {
         if (dataEncoding == Encoding.DELTA_BYTE_ARRAY) {
             throw new RuntimeException("DELTA_BYTE_ARRAY encoding not supported");
         }
         ValuesReader dataReader;
         if (dataEncoding.usesDictionary()) {
-            if (dictionary == null) {
+            final Dictionary dictionary = dictionarySupplier.get();
+            if (dictionary == ColumnChunkReader.NULL_DICTIONARY) {
                 throw new ParquetDecodingException(
-                        "could not read page in col " + path + " as the dictionary was missing for encoding "
-                                + dataEncoding);
+                        "Could not read page in col " + path
+                                + " as the dictionary was missing for encoding " + dataEncoding);
             }
             dataReader = new DictionaryValuesReader(dictionary);
         } else {
@@ -796,11 +828,10 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         try {
             dataReader.initFromPage(valueCount, ByteBufferInputStream.wrap(in));
         } catch (IOException e) {
-            throw new ParquetDecodingException("could not read page in col " + path, e);
+            throw new ParquetDecodingException("Could not read page in col " + path, e);
         }
         return dataReader;
     }
-
 
     @Override
     public int numValues() throws IOException {
@@ -813,13 +844,15 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
             case DATA_PAGE_V2:
                 return numValues = pageHeader.getData_page_header_v2().getNum_values();
             default:
-                throw new IOException(String.format("Unexpected page of type {%s}", pageHeader.getType()));
+                throw new IOException(
+                        String.format("Unexpected page of type {%s}", pageHeader.getType()));
         }
     }
 
+    @NotNull
     @Override
     public Dictionary getDictionary() {
-        return dictionary;
+        return dictionarySupplier.get();
     }
 
     @Override
@@ -841,8 +874,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
 
 
     private Pair<Pair<Type.Repetition, IntBuffer>[], Integer> getOffsetsAndNulls(
-            RunLenghBitPackingHybridBufferDecoder dlDecoder, RunLenghBitPackingHybridBufferDecoder rlDecoder,
-            int numValues) throws IOException {
+            RunLenghBitPackingHybridBufferDecoder dlDecoder,
+            RunLenghBitPackingHybridBufferDecoder rlDecoder, int numValues) throws IOException {
         dlDecoder.readNextRange();
         if (rlDecoder != null) {
             rlDecoder.readNextRange();
@@ -852,8 +885,8 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
         int rlRangeSize = rlDecoder == null ? numValues : rlDecoder.currentRangeCount();
         int currentRl = rlDecoder == null ? 0 : rlDecoder.currentValue();
 
-        LevelsController levelsController =
-                new LevelsController(fieldTypes.stream().map(Type::getRepetition).toArray(Type.Repetition[]::new));
+        LevelsController levelsController = new LevelsController(
+                fieldTypes.stream().map(Type::getRepetition).toArray(Type.Repetition[]::new));
         for (int valuesProcessed = 0; valuesProcessed < numValues;) {
             if (dlRangeSize == 0) {
                 dlDecoder.readNextRange();

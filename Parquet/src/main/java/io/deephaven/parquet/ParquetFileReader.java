@@ -1,6 +1,5 @@
 package io.deephaven.parquet;
 
-
 import io.deephaven.parquet.utils.SeekableChannelsProvider;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.parquet.format.*;
@@ -8,8 +7,6 @@ import org.apache.parquet.format.ColumnOrder;
 import org.apache.parquet.format.Type;
 import org.apache.parquet.hadoop.CodecFactory;
 import org.apache.parquet.schema.*;
-
-
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -22,7 +19,6 @@ import java.nio.file.Paths;
 import java.util.*;
 
 import static io.deephaven.parquet.utils.Helpers.readFully;
-
 
 /**
  * Top level accessor for a parquet file
@@ -37,40 +33,48 @@ public class ParquetFileReader {
     private final Path rootPath;
     private final MessageType type;
 
-    public ParquetFileReader(String filePath, SeekableChannelsProvider channelsProvider, int pageSizeHint)
-            throws IOException {
+    public ParquetFileReader(String filePath, SeekableChannelsProvider channelsProvider,
+            int pageSizeHint) throws IOException {
         this.channelsProvider = channelsProvider;
-        this.codecFactory = ThreadLocal.withInitial(() -> new CodecFactory(new Configuration(), pageSizeHint));
-        // Root path should be this file if a single file, else the parent directory for a metadata file
-        rootPath = filePath.endsWith(".parquet") ? Paths.get(filePath) : Paths.get(filePath).getParent();
+        this.codecFactory =
+                ThreadLocal.withInitial(() -> new CodecFactory(new Configuration(), pageSizeHint));
+        // Root path should be this file if a single file, else the parent directory for a metadata
+        // file
+        rootPath =
+                filePath.endsWith(".parquet") ? Paths.get(filePath) : Paths.get(filePath).getParent();
 
-        SeekableByteChannel f = channelsProvider.getReadChannel(filePath);
-        long fileLen = f.size();
+        final byte[] footer;
+        try (final SeekableByteChannel readChannel = channelsProvider.getReadChannel(filePath)) {
+            long fileLen = readChannel.size();
 
-        int FOOTER_LENGTH_SIZE = 4;
+            int FOOTER_LENGTH_SIZE = 4;
 
-        if (fileLen < MAGIC.length + FOOTER_LENGTH_SIZE + MAGIC.length) { // MAGIC + data + footer + footerIndex + MAGIC
-            throw new RuntimeException(filePath + " is not a Parquet file (too small length: " + fileLen + ")");
+            if (fileLen < MAGIC.length + FOOTER_LENGTH_SIZE + MAGIC.length) { // MAGIC + data + footer +
+                // footerIndex + MAGIC
+                throw new RuntimeException(
+                        filePath + " is not a Parquet file (too small length: " + fileLen + ")");
+            }
+            long footerLengthIndex = fileLen - FOOTER_LENGTH_SIZE - MAGIC.length;
+
+            readChannel.position(footerLengthIndex);
+
+            int footerLength = readIntLittleEndian(readChannel);
+            byte[] magic = new byte[MAGIC.length];
+            readFully(readChannel, magic);
+            if (!Arrays.equals(MAGIC, magic)) {
+                throw new RuntimeException(
+                        filePath + " is not a Parquet file. expected magic number at tail "
+                                + Arrays.toString(MAGIC) + " but found " + Arrays.toString(magic));
+            }
+            long footerIndex = footerLengthIndex - footerLength;
+            if (footerIndex < MAGIC.length || footerIndex >= footerLengthIndex) {
+                throw new RuntimeException(
+                        "corrupted file: the footer index is not within the file: " + footerIndex);
+            }
+            readChannel.position(footerIndex);
+            footer = new byte[footerLength];
+            readFully(readChannel, footer);
         }
-        long footerLengthIndex = fileLen - FOOTER_LENGTH_SIZE - MAGIC.length;
-
-        f.position(footerLengthIndex);
-
-        int footerLength = readIntLittleEndian(f);
-        byte[] magic = new byte[MAGIC.length];
-        readFully(f, magic);
-        if (!Arrays.equals(MAGIC, magic)) {
-            throw new RuntimeException(filePath + " is not a Parquet file. expected magic number at tail "
-                    + Arrays.toString(MAGIC) + " but found " + Arrays.toString(magic));
-        }
-        long footerIndex = footerLengthIndex - footerLength;
-        if (footerIndex < MAGIC.length || footerIndex >= footerLengthIndex) {
-            throw new RuntimeException("corrupted file: the footer index is not within the file: " + footerIndex);
-        }
-        f.position(footerIndex);
-        byte[] footer = new byte[footerLength];
-        readFully(f, footer);
-        f.close();
         fileMetaData = Util.readFileMetaData(new ByteArrayInputStream(footer));
         type = fromParquetSchema(fileMetaData.schema, fileMetaData.column_orders);
     }
@@ -93,7 +97,8 @@ public class ParquetFileReader {
     @SuppressWarnings("unused")
     public Set<String> getColumnsWithDictionaryUsedOnEveryDataPage() {
         if (columnsWithDictionaryUsedOnEveryDataPage == null) {
-            columnsWithDictionaryUsedOnEveryDataPage = calculateColumnsWithDictionaryUsedOnEveryDataPage();
+            columnsWithDictionaryUsedOnEveryDataPage =
+                    calculateColumnsWithDictionaryUsedOnEveryDataPage();
         }
         return columnsWithDictionaryUsedOnEveryDataPage;
     }
@@ -183,7 +188,8 @@ public class ParquetFileReader {
                 getSchema());
     }
 
-    private static MessageType fromParquetSchema(List<SchemaElement> schema, List<ColumnOrder> columnOrders) {
+    private static MessageType fromParquetSchema(List<SchemaElement> schema,
+            List<ColumnOrder> columnOrders) {
         Iterator<SchemaElement> iterator = schema.iterator();
         SchemaElement root = iterator.next();
         Types.MessageTypeBuilder builder = Types.buildMessage();
@@ -194,14 +200,15 @@ public class ParquetFileReader {
         return builder.named(root.name);
     }
 
-    private static void buildChildren(Types.GroupBuilder builder, Iterator<SchemaElement> schema, int childrenCount,
-            List<ColumnOrder> columnOrders, int columnCount) {
+    private static void buildChildren(Types.GroupBuilder builder, Iterator<SchemaElement> schema,
+            int childrenCount, List<ColumnOrder> columnOrders, int columnCount) {
         for (int i = 0; i < childrenCount; ++i) {
             SchemaElement schemaElement = schema.next();
             Object childBuilder;
             if (schemaElement.type != null) {
-                Types.PrimitiveBuilder primitiveBuilder = builder.primitive(getPrimitive(schemaElement.type),
-                        fromParquetRepetition(schemaElement.repetition_type));
+                Types.PrimitiveBuilder primitiveBuilder =
+                        builder.primitive(getPrimitive(schemaElement.type),
+                                fromParquetRepetition(schemaElement.repetition_type));
                 if (schemaElement.isSetType_length()) {
                     primitiveBuilder.length(schemaElement.type_length);
                 }
@@ -230,8 +237,8 @@ public class ParquetFileReader {
                 childBuilder = primitiveBuilder;
             } else {
                 childBuilder = builder.group(fromParquetRepetition(schemaElement.repetition_type));
-                buildChildren((Types.GroupBuilder) childBuilder, schema, schemaElement.num_children, columnOrders,
-                        columnCount);
+                buildChildren((Types.GroupBuilder) childBuilder, schema, schemaElement.num_children,
+                        columnOrders, columnCount);
             }
 
             if (schemaElement.isSetLogicalType()) {
@@ -242,8 +249,8 @@ public class ParquetFileReader {
             if (schemaElement.isSetConverted_type()) {
                 LogicalTypeAnnotation originalType =
                         getLogicalTypeAnnotation(schemaElement.converted_type, schemaElement);
-                LogicalTypeAnnotation newOriginalType =
-                        schemaElement.isSetLogicalType() && getLogicalTypeAnnotation(schemaElement.logicalType) != null
+                LogicalTypeAnnotation newOriginalType = schemaElement.isSetLogicalType()
+                        && getLogicalTypeAnnotation(schemaElement.logicalType) != null
                                 ? getLogicalTypeAnnotation(schemaElement.logicalType)
                                 : null;
                 if (!originalType.equals(newOriginalType)) {
@@ -261,7 +268,8 @@ public class ParquetFileReader {
 
     }
 
-    private static org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit convertTimeUnit(TimeUnit unit) {
+    private static org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit convertTimeUnit(
+            TimeUnit unit) {
         switch (unit.getSetField()) {
             case MICROS:
                 return org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit.MICROS;
@@ -292,7 +300,8 @@ public class ParquetFileReader {
                 return LogicalTypeAnnotation.listType();
             case TIME:
                 TimeType time = type.getTIME();
-                return LogicalTypeAnnotation.timeType(time.isAdjustedToUTC, convertTimeUnit(time.unit));
+                return LogicalTypeAnnotation.timeType(time.isAdjustedToUTC,
+                        convertTimeUnit(time.unit));
             case STRING:
                 return LogicalTypeAnnotation.stringType();
             case DECIMAL:
@@ -305,14 +314,16 @@ public class ParquetFileReader {
                 return null;
             case TIMESTAMP:
                 TimestampType timestamp = type.getTIMESTAMP();
-                return LogicalTypeAnnotation.timestampType(timestamp.isAdjustedToUTC, convertTimeUnit(timestamp.unit));
+                return LogicalTypeAnnotation.timestampType(timestamp.isAdjustedToUTC,
+                        convertTimeUnit(timestamp.unit));
             default:
                 throw new RuntimeException("Unknown logical type " + type);
         }
     }
 
 
-    private static org.apache.parquet.schema.Type.Repetition fromParquetRepetition(FieldRepetitionType repetition) {
+    private static org.apache.parquet.schema.Type.Repetition fromParquetRepetition(
+            FieldRepetitionType repetition) {
         return org.apache.parquet.schema.Type.Repetition.valueOf(repetition.name());
     }
 
@@ -339,7 +350,8 @@ public class ParquetFileReader {
         }
     }
 
-    private static org.apache.parquet.schema.ColumnOrder fromParquetColumnOrder(ColumnOrder columnOrder) {
+    private static org.apache.parquet.schema.ColumnOrder fromParquetColumnOrder(
+            ColumnOrder columnOrder) {
         if (columnOrder.isSetTYPE_ORDER()) {
             return org.apache.parquet.schema.ColumnOrder.typeDefined();
         }
@@ -347,7 +359,8 @@ public class ParquetFileReader {
         return org.apache.parquet.schema.ColumnOrder.undefined();
     }
 
-    private static LogicalTypeAnnotation getLogicalTypeAnnotation(ConvertedType type, SchemaElement schemaElement) {
+    private static LogicalTypeAnnotation getLogicalTypeAnnotation(ConvertedType type,
+            SchemaElement schemaElement) {
         switch (type) {
             case UTF8:
                 return LogicalTypeAnnotation.stringType();

@@ -86,7 +86,8 @@ public class ParquetTableReadWriteTest {
         Table result = t.by("groupKey = i % 100 + (int)(i/10)");
         result = result.select(result.getDefinition().getColumnNames().stream()
                 .map(name -> name.equals("groupKey") ? name
-                        : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subArray(0,0):" + name + ")"))
+                        : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subArray(0,0):" + name
+                                + ")"))
                 .toArray(String[]::new));
         return result;
     }
@@ -107,7 +108,8 @@ public class ParquetTableReadWriteTest {
         Table result = t.by("groupKey = i % 100 + (int)(i/10)");
         result = result.select(result.getDefinition().getColumnNames().stream()
                 .map(name -> name.equals("groupKey") ? name
-                        : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subArray(0,0):" + name + ")"))
+                        : (name + " = i % 5 == 0 ? null:(i%3 == 0?" + name + ".subArray(0,0):" + name
+                                + ")"))
                 .toArray(String[]::new));
         result = result.update(
                 "someStringSet = (StringSet)new StringSetArrayWrapper( ((Object)nonNullString) == null?new String[0]:(String[])nonNullString.toArray())");
@@ -188,8 +190,9 @@ public class ParquetTableReadWriteTest {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("someInt"),
                 ColumnDefinition.ofLong("someLong").withGrouping());
-        final Table testTable = ((QueryTable) TableTools.emptyTable(10).select("someInt = i", "someLong  = ii % 3")
-                .by("someLong").ungroup("someInt")).withDefinitionUnsafe(definition);
+        final Table testTable =
+                ((QueryTable) TableTools.emptyTable(10).select("someInt = i", "someLong  = ii % 3")
+                        .by("someLong").ungroup("someInt")).withDefinitionUnsafe(definition);
         final File dest = new File(rootFile, "ParquetTest_groupByLong_test.parquet");
         ParquetTools.writeTable(testTable, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
@@ -202,8 +205,10 @@ public class ParquetTableReadWriteTest {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("someInt"),
                 ColumnDefinition.ofString("someString").withGrouping());
-        final Table testTable = ((QueryTable) TableTools.emptyTable(10).select("someInt = i", "someString  = `foo`")
-                .where("i % 2 == 0").by("someString").ungroup("someInt")).withDefinitionUnsafe(definition);
+        final Table testTable =
+                ((QueryTable) TableTools.emptyTable(10).select("someInt = i", "someString  = `foo`")
+                        .where("i % 2 == 0").by("someString").ungroup("someInt"))
+                                .withDefinitionUnsafe(definition);
         final File dest = new File(rootFile, "ParquetTest_groupByString_test.parquet");
         ParquetTools.writeTable(testTable, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
@@ -218,8 +223,8 @@ public class ParquetTableReadWriteTest {
                 ColumnDefinition.ofInt("someInt"),
                 ColumnDefinition.fromGenericType("someBigInt", BigInteger.class).withGrouping());
         final Table testTable = ((QueryTable) TableTools.emptyTable(10)
-                .select("someInt = i", "someBigInt  =  BigInteger.valueOf(i % 3)").where("i % 2 == 0").by("someBigInt")
-                .ungroup("someInt")).withDefinitionUnsafe(definition);
+                .select("someInt = i", "someBigInt  =  BigInteger.valueOf(i % 3)").where("i % 2 == 0")
+                .by("someBigInt").ungroup("someInt")).withDefinitionUnsafe(definition);
         final File dest = new File(rootFile, "ParquetTest_groupByBigInt_test.parquet");
         ParquetTools.writeTable(testTable, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
@@ -264,5 +269,4 @@ public class ParquetTableReadWriteTest {
     public void testParquetGzipCompressionCodec() {
         compressionCodecTestHelper("GZIP");
     }
-
 }
