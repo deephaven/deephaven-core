@@ -20,10 +20,10 @@ public class TestTableValidator extends LiveTableTestCase {
             final TstUtils.ColumnInfo[] columnInfo;
             final int size = 50;
             final QueryTable queryTable = getTable(size, random,
-                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
-                    new TstUtils.SetGenerator<>("a", "b", "c", "d", "e"),
-                    new TstUtils.IntGenerator(10, 100),
-                    new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
+                    columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
+                            new TstUtils.SetGenerator<>("a", "b", "c", "d", "e"),
+                            new TstUtils.IntGenerator(10, 100),
+                            new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
 
             final EvalNugget[] en = new EvalNugget[] {
                     new EvalNugget() {

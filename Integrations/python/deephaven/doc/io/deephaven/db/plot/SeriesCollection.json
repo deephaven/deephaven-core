@@ -4,7 +4,7 @@
   "add": "Add a new Series.\n\n:param type: (io.deephaven.db.plot.SeriesCollection.SeriesType) - type of series\n:param isMultiSeries: (boolean) - true for multi-series; false for standard mono-series.\n:param series: (io.deephaven.db.plot.SeriesInternal) - series",
   "copy": "Creates a copy of this series collection on a new set of axes.\n\n:param axes: (io.deephaven.db.plot.AxesImpl) - axes to create a copy of this series on.\n:return: (io.deephaven.db.plot.SeriesCollection) copy of the series collection on the new set of axes.",
   "getPlotInfo": ":return: io.deephaven.db.plot.errors.PlotInfo",
-  "getSeriesDescriptions": "Gets the descriptions of the series in the collection.  The result is a map between series name and description.\n\n:return: (java.util.Map<java.lang.Comparable,io.deephaven.db.plot.SeriesCollection.SeriesDescription>) descriptions of the series in the collection",
+  "getSeriesDescriptions": "Gets the descriptions of the series in the collection. The result is a map between series name and description.\n\n:return: (java.util.Map<java.lang.Comparable,io.deephaven.db.plot.SeriesCollection.SeriesDescription>) descriptions of the series in the collection",
   "getSwappableTables": ":return: java.util.Set<io.deephaven.db.plot.util.tables.SwappableTable>",
   "remove": "Removes the series with the specified names.\n\n:param names: (java.lang.Comparable...) - series names",
   "series": "**Incompatible overloads text - text from the first overload:**\n\nGets the series with the given series ID.\n\n*Overload 1*  \n  :param id: (int) - series id\n  :return: (io.deephaven.db.plot.SeriesInternal) series\n  \n*Overload 2*  \n  :param name: (java.lang.Comparable) - series name\n  :return: (io.deephaven.db.plot.SeriesInternal) series"

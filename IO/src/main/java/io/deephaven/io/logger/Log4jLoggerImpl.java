@@ -23,13 +23,13 @@ public class Log4jLoggerImpl implements Logger {
      * Static buffer pool, shared among all log4j loggers
      */
     private static final Pool<ByteBuffer> buffers = new ThreadSafeLenientFixedSizePool<>(2048,
-        new Function.Nullary<ByteBuffer>() {
-            @Override
-            public ByteBuffer call() {
-                return ByteBuffer.allocate(512);
-            }
-        },
-        null);
+            new Function.Nullary<ByteBuffer>() {
+                @Override
+                public ByteBuffer call() {
+                    return ByteBuffer.allocate(512);
+                }
+            },
+            null);
 
     private static final LogBufferPool logBufferPool = new LogBufferPool() {
         @Override
@@ -59,13 +59,12 @@ public class Log4jLoggerImpl implements Logger {
             super(logBufferPool);
         }
 
-        public Entry start(LogSink sink, org.apache.log4j.Logger log4jLogger, LogLevel level,
-            long currentTime) {
+        public Entry start(LogSink sink, org.apache.log4j.Logger log4jLogger, LogLevel level, long currentTime) {
             return start(sink, log4jLogger, level, currentTime, null);
         }
 
-        public Entry start(LogSink sink, org.apache.log4j.Logger log4jLogger, LogLevel level,
-            long currentTime, Throwable t) {
+        public Entry start(LogSink sink, org.apache.log4j.Logger log4jLogger, LogLevel level, long currentTime,
+                Throwable t) {
             super.start(sink, level, currentTime, t);
             this.log4jLogger = log4jLogger;
             this.log4jLevel = getLog4jLevel(level);
@@ -86,13 +85,13 @@ public class Log4jLoggerImpl implements Logger {
      * Static pool shared among all loggers
      */
     private static final Pool<Entry> entries = new ThreadSafeLenientFixedSizePool<>(1024,
-        new Function.Nullary<Entry>() {
-            @Override
-            public Entry call() {
-                return new Entry(logBufferPool);
-            }
-        },
-        null);
+            new Function.Nullary<Entry>() {
+                @Override
+                public Entry call() {
+                    return new Entry(logBufferPool);
+                }
+            },
+            null);
 
     /**
      * Specialized sink for log4j loggers
@@ -161,14 +160,12 @@ public class Log4jLoggerImpl implements Logger {
 
     @Override
     public LogEntry getEntry(LogLevel level) {
-        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000)
-            : LogEntry.NULL;
+        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000) : LogEntry.NULL;
     }
 
     @Override
     public LogEntry getEntry(LogLevel level, Throwable t) {
-        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000, t)
-            : LogEntry.NULL;
+        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000, t) : LogEntry.NULL;
     }
 
     @Override

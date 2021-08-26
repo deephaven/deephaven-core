@@ -12,12 +12,9 @@ import junit.framework.TestCase;
 public class TestXYDataSeriesFunctionImpl extends BaseArrayTestCase {
 
     public void testXYDataSeriesFunction() {
-        final XYDataSeriesFunctionImpl f1 =
-            new BaseFigureImpl().newChart().newAxes().plot("Test", x -> x);
-        final XYDataSeriesFunctionImpl f2 =
-            new BaseFigureImpl().newChart().newAxes().plot("Test", Math::log);
-        final XYDataSeriesFunctionImpl f3 =
-            new BaseFigureImpl().newChart().newAxes().plot("Test", x -> Double.NaN);
+        final XYDataSeriesFunctionImpl f1 = new BaseFigureImpl().newChart().newAxes().plot("Test", x -> x);
+        final XYDataSeriesFunctionImpl f2 = new BaseFigureImpl().newChart().newAxes().plot("Test", Math::log);
+        final XYDataSeriesFunctionImpl f3 = new BaseFigureImpl().newChart().newAxes().plot("Test", x -> Double.NaN);
 
         assertEquals(f1.size(), 0);
         assertEquals(f2.size(), 0);
@@ -80,8 +77,7 @@ public class TestXYDataSeriesFunctionImpl extends BaseArrayTestCase {
 
 
         try {
-            new XYDataSeriesFunctionImpl(new BaseFigureImpl().newChart().newAxes(), 1, "Test",
-                null);
+            new XYDataSeriesFunctionImpl(new BaseFigureImpl().newChart().newAxes(), 1, "Test", null);
             TestCase.fail("Expected an exception");
         } catch (PlotIllegalArgumentException e) {
             assertTrue(e.getMessage().contains("Null"));
@@ -90,13 +86,11 @@ public class TestXYDataSeriesFunctionImpl extends BaseArrayTestCase {
     }
 
     public void testCopy() {
-        final XYDataSeriesFunctionImpl f1 =
-            new BaseFigureImpl().newChart().newAxes().plot("Test", x -> x);
+        final XYDataSeriesFunctionImpl f1 = new BaseFigureImpl().newChart().newAxes().plot("Test", x -> x);
         testFunction(f1, f1.copy(new BaseFigureImpl().newChart().newAxes()));
 
 
-        final XYDataSeriesFunctionImpl f2 =
-            new BaseFigureImpl().newChart().newAxes().plot("Test2", Math::log);
+        final XYDataSeriesFunctionImpl f2 = new BaseFigureImpl().newChart().newAxes().plot("Test2", Math::log);
         f2.pointsVisible(false);
         f2.linesVisible(true);
         f2.pointLabelFormat("{0}: {1}, {2}");
@@ -107,14 +101,12 @@ public class TestXYDataSeriesFunctionImpl extends BaseArrayTestCase {
         f2.pointSize(0.5, 4.2, 3.0);
         testFunction(f2, f2.copy(new BaseFigureImpl().newChart().newAxes()));
 
-        final XYDataSeriesFunctionImpl f3 =
-            new BaseFigureImpl().newChart().newAxes().plot("Test", x -> Double.NaN);
+        final XYDataSeriesFunctionImpl f3 = new BaseFigureImpl().newChart().newAxes().plot("Test", x -> Double.NaN);
         f3.funcNPoints(1);
         testFunction(f3, f3.copy(new BaseFigureImpl().newChart().newAxes()));
     }
 
-    private void testFunction(final XYDataSeriesFunctionImpl original,
-        final XYDataSeriesFunctionImpl copy) {
+    private void testFunction(final XYDataSeriesFunctionImpl original, final XYDataSeriesFunctionImpl copy) {
         TestAbstractXYDataSeries.testCopy(original, copy);
     }
 

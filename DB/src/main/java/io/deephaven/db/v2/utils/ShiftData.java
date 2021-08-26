@@ -35,14 +35,12 @@ public class ShiftData {
             addedIt.next();
             int startOffset = (int) addedIt.currentRangeStart();
             int endOffset = (int) addedIt.currentRangeEnd();
-            while (removedIndex < removedPositions.size()
-                && removedPositions.get(removedIndex) < startOffset) {
+            while (removedIndex < removedPositions.size() && removedPositions.get(removedIndex) < startOffset) {
                 removeRange(removedPositions.get(removedIndex), removedCount.get(removedIndex));
                 removedIndex++;
             }
             int deleteCount = 0;
-            while (removedIndex < removedPositions.size()
-                && removedPositions.get(removedIndex) <= endOffset) {
+            while (removedIndex < removedPositions.size() && removedPositions.get(removedIndex) <= endOffset) {
                 deleteCount += removedCount.get(removedIndex);
                 removedIndex++;
             }
@@ -53,10 +51,8 @@ public class ShiftData {
             removedIndex++;
         }
         if (runningSize > 0) {
-            if (startIndex
-                .get(runningSize - 1) <= (index.size() - added.size() + removed.size() - 1)) {
-                endIndex.set(runningSize - 1,
-                    (int) (index.size() - added.size() + removed.size() - 1));
+            if (startIndex.get(runningSize - 1) <= (index.size() - added.size() + removed.size() - 1)) {
+                endIndex.set(runningSize - 1, (int) (index.size() - added.size() + removed.size() - 1));
             } else {
                 runningSize--;
             }
@@ -77,7 +73,7 @@ public class ShiftData {
         runningOffset = lastIndex + runningOffset + 1 - (deletionCount + firstIndex);
 
         if (runningSize > 0 && ((newStartIndex + runningOffset) == (startIndex.get(runningSize - 1)
-            + offsets.get(runningSize - 1)))) {
+                + offsets.get(runningSize - 1)))) {
             startIndex.set(runningSize - 1, newStartIndex);
             offsets.set(runningSize - 1, runningOffset);
         } else {
@@ -96,8 +92,8 @@ public class ShiftData {
         long newStartIndex = firstIndex - runningOffset + count;
         runningOffset = runningOffset - count;
 
-        if (runningSize > 0 && (newStartIndex + runningOffset == startIndex.get(runningSize - 1)
-            + offsets.get(runningSize - 1))) {
+        if (runningSize > 0
+                && (newStartIndex + runningOffset == startIndex.get(runningSize - 1) + offsets.get(runningSize - 1))) {
             startIndex.set(runningSize - 1, newStartIndex);
             offsets.set(runningSize - 1, runningOffset);
         } else {

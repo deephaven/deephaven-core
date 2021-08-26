@@ -50,15 +50,13 @@ public class ChunkerCompleter implements CompletionHandler {
         this(log, variables, new CompletionLookups());
     }
 
-    public ChunkerCompleter(final Logger log, VariableProvider variables,
-        CompletionLookups lookups) {
+    public ChunkerCompleter(final Logger log, VariableProvider variables, CompletionLookups lookups) {
         this.log = log;
         this.variables = variables;
         this.lookups = lookups;
     }
 
-    public CompletableFuture<? extends Collection<CompletionFragment>> complete(String command,
-        int offset) {
+    public CompletableFuture<? extends Collection<CompletionFragment>> complete(String command, int offset) {
         final long start = System.nanoTime();
         CompletionParser parser = new CompletionParser();
         try {
@@ -83,8 +81,7 @@ public class ChunkerCompleter implements CompletionHandler {
                         .collect(Collectors.toList());
             });
         } catch (ParseException e) {
-            final CompletableFuture<? extends Collection<CompletionFragment>> future =
-                new CompletableFuture<>();
+            final CompletableFuture<? extends Collection<CompletionFragment>> future = new CompletableFuture<>();
             future.completeExceptionally(e);
             // TODO: better logging here; preferably writing to a system diagnostics table. IDS-1517-16
             log.info()
@@ -98,8 +95,7 @@ public class ChunkerCompleter implements CompletionHandler {
     }
 
     private CompletionFragment toFragment(CompletionItemOrBuilder item) {
-        return new CompletionFragment(item.getStart(), item.getLength(),
-            item.getTextEdit().getText(), item.getLabel());
+        return new CompletionFragment(item.getStart(), item.getLength(), item.getTextEdit().getText(), item.getLabel());
     }
 
     @Override
@@ -157,8 +153,7 @@ public class ChunkerCompleter implements CompletionHandler {
     }
 
     /**
-     * Part 1 of the V2 completion api; adapting our API to fit into existing CompletionHandler
-     * semantics.
+     * Part 1 of the V2 completion api; adapting our API to fit into existing CompletionHandler semantics.
      *
      * Right now we are just blindly re-parsing the whole document when using the old api, which is going to be
      * good-enough-for-now; this may also allow us to borrow the existing unit tests to some degree.
@@ -226,12 +221,12 @@ public class ChunkerCompleter implements CompletionHandler {
                 // adjust the text edit back, stopping at the cursor.
                 if (log.isTraceEnabled()) {
                     log.trace()
-                        .append("No extendStart support yet; result: ")
-                        .append(result.toString())
-                        .nl()
-                        .append("Requested: ")
-                        .append(requested.toString())
-                        .endl();
+                            .append("No extendStart support yet; result: ")
+                            .append(result.toString())
+                            .nl()
+                            .append("Requested: ")
+                            .append(requested.toString())
+                            .endl();
                 }
                 continue;
             } else if (LspTools.lessThan(result.getEnd(), requested)) {
@@ -265,12 +260,10 @@ public class ChunkerCompleter implements CompletionHandler {
 
     public TextEdit.Builder sliceBefore(CompletionItem.Builder item, Position requested, Node node) {
         final TextEdit.Builder edit = TextEdit.newBuilder();
-        final DocumentRange.Builder range =
-            DocumentRange.newBuilder(item.getTextEditBuilder().getRange());
+        final DocumentRange.Builder range = DocumentRange.newBuilder(item.getTextEditBuilder().getRange());
         Token tok = node.findToken(range.getStart());
         Position.Builder start = tok.positionStart();
-        if (start.getLine() != requested.getLine()
-            || range.getStart().getLine() != requested.getLine()) {
+        if (start.getLine() != requested.getLine() || range.getStart().getLine() != requested.getLine()) {
             // not going to worry about this highly unlikely and complex corner case just yet.
             return null;
         }
@@ -283,8 +276,7 @@ public class ChunkerCompleter implements CompletionHandler {
         range.setStart(start.build()).setEnd(requested);
         edit.setRange(range);
         StringBuilder b = new StringBuilder();
-        // now, from here, gobble up the token contents as we advance the position to the requested
-        // index.
+        // now, from here, gobble up the token contents as we advance the position to the requested index.
         while (LspTools.lessThan(start, requested)) {
             if (LspTools.lessOrEqual(tok.positionEnd(false), start)) {
                 // find next non-empty token
@@ -296,8 +288,7 @@ public class ChunkerCompleter implements CompletionHandler {
                     }
                 }
                 if (tok != startTok) {
-                    // shouldn't really happen, but this is way better than potential infinite loops
-                    // of doom
+                    // shouldn't really happen, but this is way better than potential infinite loops of doom
                     break;
                 }
                 imageInd = 0;
@@ -313,15 +304,12 @@ public class ChunkerCompleter implements CompletionHandler {
         return edit;
     }
 
-    private TextEdit.Builder extendEnd(final CompletionItem.Builder item, final Position requested,
-        final Node node) {
+    private TextEdit.Builder extendEnd(final CompletionItem.Builder item, final Position requested, final Node node) {
         final TextEdit.Builder edit = TextEdit.newBuilder();
-        final DocumentRange.Builder range =
-            DocumentRange.newBuilder(item.getTextEditBuilder().getRange());
+        final DocumentRange.Builder range = DocumentRange.newBuilder(item.getTextEditBuilder().getRange());
         Token tok = node.findToken(range.getStart());
         Position.Builder start = tok.positionStart();
-        if (start.getLine() != requested.getLine()
-            || range.getStart().getLine() != requested.getLine()) {
+        if (start.getLine() != requested.getLine() || range.getStart().getLine() != requested.getLine()) {
             // not going to worry about this highly unlikely and complex corner case just yet.
             return null;
         }
@@ -334,8 +322,7 @@ public class ChunkerCompleter implements CompletionHandler {
         range.setStart(start.build()).setEnd(requested);
         edit.setRange(range);
         StringBuilder b = new StringBuilder();
-        // now, from here, gobble up the token contents as we advance the position to the requested
-        // index.
+        // now, from here, gobble up the token contents as we advance the position to the requested index.
         while (LspTools.lessThan(start, requested)) {
             if (LspTools.lessOrEqual(tok.positionEnd(false), start)) {
                 // find next non-empty token
@@ -347,8 +334,7 @@ public class ChunkerCompleter implements CompletionHandler {
                     }
                 }
                 if (tok != startTok) {
-                    // shouldn't really happen, but this is way better than potential infinite loops
-                    // of doom
+                    // shouldn't really happen, but this is way better than potential infinite loops of doom
                     break;
                 }
                 imageInd = 0;
@@ -495,8 +481,7 @@ public class ChunkerCompleter implements CompletionHandler {
 
             @Override
             public Object visitChunkerClosure(ChunkerClosure node, Object data) {
-                // not supporting completion for closures just yet; can likely offer parameter
-                // suggestions later though.
+                // not supporting completion for closures just yet; can likely offer parameter suggestions later though.
                 return unsupported(node);
             }
 
@@ -561,20 +546,19 @@ public class ChunkerCompleter implements CompletionHandler {
                 parent = parent.jjtGetParent();
             }
             log.trace()
-                .append("Node type ")
-                .append(node.getClass().getCanonicalName())
-                .append(" not yet supported: ")
-                .append(node.toSource())
-                .nl()
-                .append("Parent source: ")
-                .append(parent.toSource())
-                .endl();
+                    .append("Node type ")
+                    .append(node.getClass().getCanonicalName())
+                    .append(" not yet supported: ")
+                    .append(node.toSource())
+                    .nl()
+                    .append("Parent source: ")
+                    .append(parent.toSource())
+                    .endl();
         }
         return null;
     }
 
-    private void numCompletion(Collection<CompletionItem.Builder> results, ChunkerNum node,
-        CompletionRequest offset) {
+    private void numCompletion(Collection<CompletionItem.Builder> results, ChunkerNum node, CompletionRequest offset) {
         // not really sure what, if anything, we'd want for numbers.
         // perhaps past history of number values entered / typed in?
     }
@@ -653,8 +637,7 @@ public class ChunkerCompleter implements CompletionHandler {
             String src = node.toSource();
             final Token tok = node.jjtGetFirstToken();
             src = src.substring(0, request.getCandidate() - tok.startIndex);
-            addMethodsAndVariables(results, node.jjtGetFirstToken(), request,
-                Collections.singletonList(node), src);
+            addMethodsAndVariables(results, node.jjtGetFirstToken(), request, Collections.singletonList(node), src);
         }
 
     }
@@ -684,15 +667,13 @@ public class ChunkerCompleter implements CompletionHandler {
             case LEFT:
                 Node left = findLeftOf(node);
                 if (left != null) {
-                    searchForResults(doc, results, left, req.candidate(left.getEndIndex()),
-                        SearchDirection.LEFT);
+                    searchForResults(doc, results, left, req.candidate(left.getEndIndex()), SearchDirection.LEFT);
                 }
                 break;
             case RIGHT:
                 Node right = findRightOf(node);
                 if (right != null) {
-                    searchForResults(doc, results, right, req.candidate(right.getStartIndex()),
-                        SearchDirection.RIGHT);
+                    searchForResults(doc, results, right, req.candidate(right.getStartIndex()), SearchDirection.RIGHT);
                 }
                 break;
             case BOTH:
@@ -701,28 +682,22 @@ public class ChunkerCompleter implements CompletionHandler {
                 right = findRightOf(node);
                 if (left == null) {
                     if (right != null) {
-                        searchForResults(doc, results, right, req.candidate(nextRight),
-                            SearchDirection.LEFT);
+                        searchForResults(doc, results, right, req.candidate(nextRight), SearchDirection.LEFT);
                     }
                 } else { // left is non-null
                     if (right == null) {
 
-                        searchForResults(doc, results, left, req.candidate(nextLeft),
-                            SearchDirection.LEFT);
+                        searchForResults(doc, results, left, req.candidate(nextLeft), SearchDirection.LEFT);
                     } else {
                         // both left and right are non-null. Pick the closest one first.
                         if (req.getCandidate() - nextLeft > nextRight - req.getCandidate()) {
                             // right pos is closer, so we'll start there.
-                            searchForResults(doc, results, right, req.candidate(nextRight),
-                                SearchDirection.RIGHT);
-                            searchForResults(doc, results, left, req.candidate(nextLeft),
-                                SearchDirection.LEFT);
+                            searchForResults(doc, results, right, req.candidate(nextRight), SearchDirection.RIGHT);
+                            searchForResults(doc, results, left, req.candidate(nextLeft), SearchDirection.LEFT);
                         } else {
                             // cursor is closer to left side, so start there.
-                            searchForResults(doc, results, left, req.candidate(nextLeft),
-                                SearchDirection.LEFT);
-                            searchForResults(doc, results, right, req.candidate(nextRight),
-                                SearchDirection.RIGHT);
+                            searchForResults(doc, results, left, req.candidate(nextLeft), SearchDirection.LEFT);
+                            searchForResults(doc, results, right, req.candidate(nextRight), SearchDirection.RIGHT);
                         }
                     }
                 }
@@ -801,8 +776,7 @@ public class ChunkerCompleter implements CompletionHandler {
         // invoke completions are one of the most important to consider.
         // for now, this will be a naive replacement, but later we'll want to look at _where_
         // in the invoke the cursor is; when on the ending paren, we'd likely want to look at
-        // whether we are the argument to something, and if so, do a type check, and suggest useful
-        // .coercions().
+        // whether we are the argument to something, and if so, do a type check, and suggest useful .coercions().
         String name = node.getName().trim();
 
         // Now, for our magic-named methods that we want to handle...
@@ -810,8 +784,7 @@ public class ChunkerCompleter implements CompletionHandler {
         boolean inMethodName = node.isCursorOnName(request.getCandidate());
         // when the cursor is between name(andParen, both of the above will trigger.
 
-        // Find or create a "string as first arg" that will only be used if we match a magic method
-        // name below.
+        // Find or create a "string as first arg" that will only be used if we match a magic method name below.
         if (inArguments) {
             Node firstArg = argNode(node, request);
             methodArgumentCompletion(name, results, node, firstArg, request, direction);
@@ -905,8 +878,7 @@ public class ChunkerCompleter implements CompletionHandler {
         FuzzyList<String> sorter = new FuzzyList<>(variablePrefix);
         for (String name : variables.getVariableNames()) {
             if (!name.equals(variablePrefix) && camelMatch(name, variablePrefix)) {
-                // only suggest names which are camel-case-matches (ignoring
-                // same-as-existing-variable names)
+                // only suggest names which are camel-case-matches (ignoring same-as-existing-variable names)
                 sorter.add(name, name);
             }
         }
@@ -979,8 +951,7 @@ public class ChunkerCompleter implements CompletionHandler {
             case "exactJoin":
             case "aj":
                 // TODO: joins will need special handling; IDS-1517-5 example from Charles:
-                // j=l.naturalJoin(r, "InBoth,AFromLeft=BFromRight,CInLeft=DFromRight",
-                // "EInOut=FromRight,FInOut")
+                // j=l.naturalJoin(r, "InBoth,AFromLeft=BFromRight,CInLeft=DFromRight", "EInOut=FromRight,FInOut")
                 // as you see, we need both the scope table l and the joined table r,
                 // then we also need to handle CSV-separated column expressions.
                 // To even try this using string inspection is foolish, as a `,` or `=` could easily appear inside the
@@ -1190,8 +1161,7 @@ public class ChunkerCompleter implements CompletionHandler {
         if (nextName.startsWith(prefix)) {
             return nextName;
         }
-        nextName = Character.toUpperCase(nextName.charAt(0))
-            + (nextName.length() == 1 ? "" : nextName.substring(1));
+        nextName = Character.toUpperCase(nextName.charAt(0)) + (nextName.length() == 1 ? "" : nextName.substring(1));
         return prefix + nextName;
     }
 
@@ -1206,8 +1176,7 @@ public class ChunkerCompleter implements CompletionHandler {
             parent = parent.jjtGetParent();
         }
         if (parent == null) {
-            // hm, a string that's not inside a method... there might be something we can do here
-            // later,
+            // hm, a string that's not inside a method... there might be something we can do here later,
             // but for now, let's just ignore...
         } else {
             ChunkerInvoke invoke = (ChunkerInvoke) parent;
@@ -1303,8 +1272,7 @@ public class ChunkerCompleter implements CompletionHandler {
 
         }
         if (doColumnExpressionCompletion) {
-            // Users already has ColumnName=bleh (where bleh may be any string, including empty
-            // string)
+            // Users already has ColumnName=bleh (where bleh may be any string, including empty string)
             Class<?> colType = guessColumnType(columnName, invoke.getScope(), offset);
             final int methodNameStarts = equal + 1;
             final int methodNameEnds = str.length();
@@ -1314,8 +1282,7 @@ public class ChunkerCompleter implements CompletionHandler {
             } else {
                 partialMatch = str.substring(methodNameStarts, methodNameEnds).trim();
             }
-            final CompleteColumnExpression completer =
-                new CompleteColumnExpression(this, node, invoke);
+            final CompleteColumnExpression completer = new CompleteColumnExpression(this, node, invoke);
             if (def != null) {
                 // There is a table definition. Lets try to suggest column names here.
                 for (String colName : def.getColumnNames()) {
@@ -1329,18 +1296,15 @@ public class ChunkerCompleter implements CompletionHandler {
                 }
 
             }
-            if (!partialMatch.isEmpty()
-                || !"false".equals(System.getProperty(PROP_SUGGEST_STATIC_METHODS))) {
+            if (!partialMatch.isEmpty() || !"false".equals(System.getProperty(PROP_SUGGEST_STATIC_METHODS))) {
                 // empty method name will generate MANY matches (lots of static method imports).
-                // We left a system property to remove these during testing, so we don't have 30+
-                // results,
+                // We left a system property to remove these during testing, so we don't have 30+ results,
                 // when we want to test only for column name matches (above)
                 for (Class cls : lookups.getStatics()) {
                     for (Method method : cls.getMethods()) {
                         // try to handle the column type here, to limit what we send...
                         // We may want to simply have this affect the score of the results,
-                        // so that we'd still send back something incorrect (at least, in cases like
-                        // update())
+                        // so that we'd still send back something incorrect (at least, in cases like update())
                         if (colType.isAssignableFrom(method.getReturnType())) {
 
                             // TODO: handle instance method calls if appropriate IDS-1517-19
@@ -1369,34 +1333,28 @@ public class ChunkerCompleter implements CompletionHandler {
         final IsScope previous = scope.get(scope.size() - 1);
         if (scope.size() == 1) {
             // previous is all we have; just lookup the table definition
-            final TableDefinition definition =
-                offset.getTableDefinition(this, doc, variables, previous.getName());
+            final TableDefinition definition = offset.getTableDefinition(this, doc, variables, previous.getName());
             if (definition == null) {
                 // log missing definition...
             }
             return definition;
         } else if (previous instanceof ChunkerInvoke) {
-            // recurse into each scope node and use the result of our parent's type to compute our
-            // own.
-            // This allows us to hack in special support for statically analyzing expressions which
-            // return tables.
+            // recurse into each scope node and use the result of our parent's type to compute our own.
+            // This allows us to hack in special support for statically analyzing expressions which return tables.
 
             return findTableDefinition(((ChunkerInvoke) previous).getScope(), offset);
         }
         return null;
     }
 
-    private Class<?> guessColumnType(String columnName, List<IsScope> scope,
-        CompletionRequest offset) {
+    private Class<?> guessColumnType(String columnName, List<IsScope> scope, CompletionRequest offset) {
         // When guessing column type, we'll prefer a perfect match against a known table-as-scope.
         // Failing that, we'll do a global lookup of all columns-by-types from all table definitions
-        // And, finally, failing that, we'll do some random guessing based on "well-known column
-        // names".
+        // And, finally, failing that, we'll do some random guessing based on "well-known column names".
 
 
         // guess table name from the scope; either a reference to a table, or a db.i|t call.
-        // for now, we are not going to do complex scope inspections to guess at not-yet-run update
-        // operations.
+        // for now, we are not going to do complex scope inspections to guess at not-yet-run update operations.
         if (scope != null && scope.size() > 0) {
             IsScope root = scope.get(0);
             if (root instanceof ChunkerIdent) {
@@ -1406,15 +1364,12 @@ public class ChunkerCompleter implements CompletionHandler {
                     }
                 } else {
                     // look for the table in binding
-                    final TableDefinition def =
-                        offset.getTableDefinition(this, doc, variables, root.getName());
+                    final TableDefinition def = offset.getTableDefinition(this, doc, variables, root.getName());
                     if (def != null) {
                         final ColumnDefinition col = def.getColumn(columnName);
                         if (col == null) {
-                            // might happen if user did
-                            // someTable.update("NewCol=123").update("NewCol=
-                            // we can handle this by inspecting the scope chain, but leaving edge
-                            // case out for now.
+                            // might happen if user did someTable.update("NewCol=123").update("NewCol=
+                            // we can handle this by inspecting the scope chain, but leaving edge case out for now.
                         } else {
                             return col.getDataType();
                         }

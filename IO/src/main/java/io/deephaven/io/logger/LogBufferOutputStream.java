@@ -17,8 +17,7 @@ class LogBufferOutputStream extends OutputStream {
     private LogBufferRecord next;
     private SimpleByteBufferSink buffer;
 
-    public LogBufferOutputStream(LogBuffer sink, LogLevel level, int initialBufferSize,
-        int maxBufferSize) {
+    public LogBufferOutputStream(LogBuffer sink, LogLevel level, int initialBufferSize, int maxBufferSize) {
         this.sink = Objects.requireNonNull(sink);
         this.level = Objects.requireNonNull(level);
         this.initialBufferSize = initialBufferSize;

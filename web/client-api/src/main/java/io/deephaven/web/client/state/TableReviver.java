@@ -82,8 +82,7 @@ public class TableReviver implements HasTableBinding {
         }
 
         if (!reviveLast.isEmpty()) {
-            // Instead of using RequestBatcher, we should just be rebuilding the SerializedTableOps
-            // directly.
+            // Instead of using RequestBatcher, we should just be rebuilding the SerializedTableOps directly.
             int cnt = 0, page = 6;
             BatchBuilder builder = new BatchBuilder();
             Map<TableTicket, ClientTableState> all = new LinkedHashMap<>();

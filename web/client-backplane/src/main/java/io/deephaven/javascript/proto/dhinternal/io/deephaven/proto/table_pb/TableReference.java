@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.TableReference",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.TableReference",
+        namespace = JsPackage.GLOBAL)
 public class TableReference {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -21,8 +21,7 @@ public class TableReference {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface GetTicketUnionType {
                 @JsOverlay
-                static TableReference.ToObjectReturnType.TicketFieldType.GetTicketUnionType of(
-                    Object o) {
+                static TableReference.ToObjectReturnType.TicketFieldType.GetTicketUnionType of(Object o) {
                     return Js.cast(o);
                 }
 
@@ -56,21 +55,20 @@ public class TableReference {
             TableReference.ToObjectReturnType.TicketFieldType.GetTicketUnionType getTicket();
 
             @JsProperty
-            void setTicket(
-                TableReference.ToObjectReturnType.TicketFieldType.GetTicketUnionType ticket);
+            void setTicket(TableReference.ToObjectReturnType.TicketFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<TableReference.ToObjectReturnType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<TableReference.ToObjectReturnType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<TableReference.ToObjectReturnType.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<TableReference.ToObjectReturnType.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -99,8 +97,7 @@ public class TableReference {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface GetTicketUnionType {
                 @JsOverlay
-                static TableReference.ToObjectReturnType0.TicketFieldType.GetTicketUnionType of(
-                    Object o) {
+                static TableReference.ToObjectReturnType0.TicketFieldType.GetTicketUnionType of(Object o) {
                     return Js.cast(o);
                 }
 
@@ -134,21 +131,20 @@ public class TableReference {
             TableReference.ToObjectReturnType0.TicketFieldType.GetTicketUnionType getTicket();
 
             @JsProperty
-            void setTicket(
-                TableReference.ToObjectReturnType0.TicketFieldType.GetTicketUnionType ticket);
+            void setTicket(TableReference.ToObjectReturnType0.TicketFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<TableReference.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<TableReference.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<TableReference.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<TableReference.ToObjectReturnType0.TicketFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -173,12 +169,12 @@ public class TableReference {
     public static native TableReference deserializeBinary(Uint8Array bytes);
 
     public static native TableReference deserializeBinaryFromReader(
-        TableReference message, Object reader);
+            TableReference message, Object reader);
 
     public static native void serializeBinaryToWriter(TableReference message, Object writer);
 
     public static native TableReference.ToObjectReturnType toObject(
-        boolean includeInstance, TableReference msg);
+            boolean includeInstance, TableReference msg);
 
     public native void clearBatchOffset();
 

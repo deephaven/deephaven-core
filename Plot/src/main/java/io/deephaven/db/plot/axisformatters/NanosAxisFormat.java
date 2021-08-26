@@ -16,8 +16,8 @@ import java.time.format.DateTimeFormatter;
 /**
  * A formatter for converting nanoseconds into formatted strings.
  *
- * For details on the supported patterns see the javadoc for <a href=
- * "https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html">DateTimeFormatter</a>
+ * For details on the supported patterns see the javadoc for
+ * <a href="https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html">DateTimeFormatter</a>
  */
 public class NanosAxisFormat implements AxisFormat, Serializable {
 
@@ -84,19 +84,16 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
 
         private void updateFormatter(String format) {
             format = format == null ? "yyyy-MM-dd" : format;
-            this.formatter = DateTimeFormatter.ofPattern(format)
-                .withZone(tz.getTimeZone().toTimeZone().toZoneId());
+            this.formatter = DateTimeFormatter.ofPattern(format).withZone(tz.getTimeZone().toTimeZone().toZoneId());
         }
 
         @Override
-        public StringBuffer format(final double number, final StringBuffer toAppendTo,
-            final FieldPosition pos) {
+        public StringBuffer format(final double number, final StringBuffer toAppendTo, final FieldPosition pos) {
             return format((long) number, toAppendTo, pos);
         }
 
         @Override
-        public StringBuffer format(final long number, final StringBuffer toAppendTo,
-            final FieldPosition pos) {
+        public StringBuffer format(final long number, final StringBuffer toAppendTo, final FieldPosition pos) {
             return toAppendTo.append(formatter.format(new DBDateTime(number).getInstant()));
         }
 

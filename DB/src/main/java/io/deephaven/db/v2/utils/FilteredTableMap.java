@@ -37,11 +37,8 @@ public class FilteredTableMap extends LocalTableMap {
      * @param filter the predicate for filtering the keys
      * @param keyTransformer a function that transforms the source's keys to our output's keys
      */
-    public FilteredTableMap(TableMap source, Predicate<Object> filter,
-        Function<Object, Object> keyTransformer) {
-        super(null,
-            (source instanceof LocalTableMap)
-                ? ((LocalTableMap) source).getConstituentDefinition().orElse(null)
+    public FilteredTableMap(TableMap source, Predicate<Object> filter, Function<Object, Object> keyTransformer) {
+        super(null, (source instanceof LocalTableMap) ? ((LocalTableMap) source).getConstituentDefinition().orElse(null)
                 : null);
         addParentReference(source);
         setDependency((NotificationQueue.Dependency) source);
@@ -55,8 +52,7 @@ public class FilteredTableMap extends LocalTableMap {
                 final Object newKey = keyTransformer.apply(key);
                 final Table oldTable = put(newKey, source.get(key));
                 if (oldTable != null) {
-                    throw new IllegalStateException(
-                        "Can not replace a table in a FilteredTableMap, new key=" + newKey
+                    throw new IllegalStateException("Can not replace a table in a FilteredTableMap, new key=" + newKey
                             + ", original key=" + key);
                 }
             }

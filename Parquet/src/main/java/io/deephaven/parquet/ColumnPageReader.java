@@ -2,6 +2,7 @@ package io.deephaven.parquet;
 
 
 import org.apache.parquet.column.Dictionary;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.IntBuffer;
@@ -22,8 +23,8 @@ public interface ColumnPageReader extends AutoCloseable {
      * Triggers the value decompression and decoding
      * 
      * @param nullValue The value to be stored under the null entries
-     * @return the data for that page in a format that makes sense for the given type - typically
-     *         array of something that makes sense
+     * @return the data for that page in a format that makes sense for the given type - typically array of something
+     *         that makes sense
      */
     Object materialize(Object nullValue) throws IOException;
 
@@ -42,6 +43,10 @@ public interface ColumnPageReader extends AutoCloseable {
      */
     int numValues() throws IOException;
 
+    /**
+     * @return Parquet dictionary for this column chunk
+     * @apiNote The result will never be {@code null}. It will instead be {@link ColumnChunkReader#NULL_DICTIONARY}.
+     */
+    @NotNull
     Dictionary getDictionary();
-
 }

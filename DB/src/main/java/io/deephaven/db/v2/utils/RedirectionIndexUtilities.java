@@ -3,9 +3,8 @@ package io.deephaven.db.v2.utils;
 public class RedirectionIndexUtilities {
     private static final long SEARCH_ITERATOR_THRESHOLD = 512;
 
-    static void applyRedirectionShift(final RedirectionIndex redirectionIndex,
-        final ReadOnlyIndex filterIndex,
-        final IndexShiftData shiftData) {
+    static void applyRedirectionShift(final RedirectionIndex redirectionIndex, final ReadOnlyIndex filterIndex,
+            final IndexShiftData shiftData) {
 
         final IndexShiftData.SingleElementShiftCallback applyOneShift = (key, delta) -> {
             final long oldKey = redirectionIndex.remove(key);

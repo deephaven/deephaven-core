@@ -56,8 +56,8 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     }
 
     /**
-     * Evaluates the script and manages liveness of objects that are exported to the user. This
-     * method should be called from the serial executor as it manipulates static state.
+     * Evaluates the script and manages liveness of objects that are exported to the user. This method should be called
+     * from the serial executor as it manipulates static state.
      *
      * @param script the code to execute
      * @return the changes made to the exportable objects
@@ -67,8 +67,8 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     }
 
     /**
-     * Evaluates the script and manages liveness of objects that are exported to the user. This
-     * method should be called from the serial executor as it manipulates static state.
+     * Evaluates the script and manages liveness of objects that are exported to the user. This method should be called
+     * from the serial executor as it manipulates static state.
      *
      * @param script the code to execute
      * @param scriptName an optional script name, which may be ignored by the implementation, or used improve error
@@ -78,8 +78,7 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     Changes evaluateScript(String script, @Nullable String scriptName);
 
     /**
-     * Retrieves all of the variables present in the session's scope (e.g., Groovy binding, Python
-     * globals()).
+     * Retrieves all of the variables present in the session's scope (e.g., Groovy binding, Python globals()).
      *
      * @return an unmodifiable map with variable names as the keys, and the Objects as the result
      */
@@ -114,8 +113,8 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     String scriptType();
 
     /**
-     * If this script session can throw unserializable exceptions, this method is responsible for
-     * turning those exceptions into something suitable for sending back to a client.
+     * If this script session can throw unserializable exceptions, this method is responsible for turning those
+     * exceptions into something suitable for sending back to a client.
      *
      * @param e the exception to (possibly) sanitize
      * @return the sanitized exception
@@ -125,8 +124,7 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     }
 
     /**
-     * Called before Application initialization, should setup sourcing from the controller (as
-     * required).
+     * Called before Application initialization, should setup sourcing from the controller (as required).
      */
     void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoader,
             ScriptPathLoaderState scriptLoaderState);
@@ -150,8 +148,7 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
     void clearScriptPathLoader();
 
     /**
-     * Informs the session whether or not we should be using the original ScriptLoaderState for
-     * source commands.
+     * Informs the session whether or not we should be using the original ScriptLoaderState for source commands.
      *
      * @param useOriginal whether to use the script loader state at persistent query initialization
      */

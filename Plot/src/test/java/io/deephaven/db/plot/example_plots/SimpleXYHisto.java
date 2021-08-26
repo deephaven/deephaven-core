@@ -15,11 +15,11 @@ public class SimpleXYHisto {
 
         Figure fig = FigureFactory.figure();
         Figure cht = fig.newChart(0)
-            .chartTitle("Chart Title");
+                .chartTitle("Chart Title");
         Figure axs = cht.newAxes()
-            .xLabel("X")
-            .yLabel("Y")
-            .histPlot("Test1", x1, 4).pointColor("green");
+                .xLabel("X")
+                .yLabel("Y")
+                .histPlot("Test1", x1, 4).pointColor("green");
 
         ExamplePlotUtils.display(axs);
     }

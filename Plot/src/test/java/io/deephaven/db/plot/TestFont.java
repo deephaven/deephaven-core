@@ -47,27 +47,22 @@ public class TestFont extends BaseArrayTestCase {
         assertEquals(Font.FontStyle.BOLD_ITALIC, Font.fontStyle("ib"));
 
         final Set<String> target = new HashSet<>();
-        target.addAll(
-            Arrays.asList("PLAIN", "BOLD", "ITALIC", "BOLD_ITALIC", "P", "B", "I", "BI", "IB"));
+        target.addAll(Arrays.asList("PLAIN", "BOLD", "ITALIC", "BOLD_ITALIC", "P", "B", "I", "BI", "IB"));
 
         assertEquals(target, new HashSet<String>(Arrays.asList(Font.fontStyleNames())));
     }
 
     public void testConstructors() {
         assertEquals(new Font("Ariel", Font.FontStyle.PLAIN, 10).javaFont(),
-            new java.awt.Font("Ariel", java.awt.Font.PLAIN, 10));
-        assertEquals(new Font("Ariel", "PLAIN", 10).javaFont(),
-            new java.awt.Font("Ariel", java.awt.Font.PLAIN, 10));
-        assertEquals(new Font("Ariel", "P", 10).javaFont(),
-            new java.awt.Font("Ariel", java.awt.Font.PLAIN, 10));
+                new java.awt.Font("Ariel", java.awt.Font.PLAIN, 10));
+        assertEquals(new Font("Ariel", "PLAIN", 10).javaFont(), new java.awt.Font("Ariel", java.awt.Font.PLAIN, 10));
+        assertEquals(new Font("Ariel", "P", 10).javaFont(), new java.awt.Font("Ariel", java.awt.Font.PLAIN, 10));
 
 
         assertEquals(Font.font("Ariel", Font.FontStyle.PLAIN, 10).javaFont(),
-            new java.awt.Font("Ariel", java.awt.Font.PLAIN, 10));
-        assertEquals(Font.font("Ariel", "PLAIN", 10).javaFont(),
-            new java.awt.Font("Ariel", java.awt.Font.PLAIN, 10));
-        assertEquals(Font.font("Ariel", "P", 10).javaFont(),
-            new java.awt.Font("Ariel", java.awt.Font.PLAIN, 10));
+                new java.awt.Font("Ariel", java.awt.Font.PLAIN, 10));
+        assertEquals(Font.font("Ariel", "PLAIN", 10).javaFont(), new java.awt.Font("Ariel", java.awt.Font.PLAIN, 10));
+        assertEquals(Font.font("Ariel", "P", 10).javaFont(), new java.awt.Font("Ariel", java.awt.Font.PLAIN, 10));
     }
 
     public void testTransforms() {

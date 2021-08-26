@@ -4,11 +4,11 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Feature",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Feature",
+        namespace = JsPackage.GLOBAL)
 public class Feature {
     public static int COMPRESSED_BODY,
-        DICTIONARY_REPLACEMENT,
-        UNUSED;
+            DICTIONARY_REPLACEMENT,
+            UNUSED;
 }

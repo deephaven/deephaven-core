@@ -17,7 +17,7 @@
   "remove": ":param key: java.lang.Object\n:return: ToMapListener.V",
   "size": ":return: int",
   "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: (io.deephaven.db.util.liveness.LivenessReferent) - The referent to add\n:return: (boolean) Whether the referent was in fact added",
-  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true.\n Otherwise, returns false rather than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise",
+  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true. Otherwise, returns false rather\n than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise",
   "values": ":return: java.util.Collection<ToMapListener.V>"
  },
  "path": "io.deephaven.db.util.ToMapListener",

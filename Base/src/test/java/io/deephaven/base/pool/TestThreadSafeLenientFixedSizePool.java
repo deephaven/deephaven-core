@@ -36,11 +36,10 @@ public class TestThreadSafeLenientFixedSizePool extends TestCase {
         for (Object object : OBJECTS) {
             m_mockObjectFactory.add(object);
         }
-        Pool<Object> pool = ThreadSafeLenientFixedSizePool.FACTORY.create(OBJECTS.length,
-            m_mockObjectFactory, m_mockClearingProcedure);
-        assertEquals(
-            "call()call()call()call()call()call()call()call()call()call()call()call()call()call()",
-            m_mockObjectFactory.getActivityRecordAndReset());
+        Pool<Object> pool = ThreadSafeLenientFixedSizePool.FACTORY.create(OBJECTS.length, m_mockObjectFactory,
+                m_mockClearingProcedure);
+        assertEquals("call()call()call()call()call()call()call()call()call()call()call()call()call()call()",
+                m_mockObjectFactory.getActivityRecordAndReset());
 
         // take
         Object alphaObject = OBJECTS[0];
@@ -82,8 +81,7 @@ public class TestThreadSafeLenientFixedSizePool extends TestCase {
         // give
         for (Object object : OBJECTS) {
             pool.give(object);
-            assertEquals("call(" + object + ")",
-                m_mockClearingProcedure.getActivityRecordAndReset());
+            assertEquals("call(" + object + ")", m_mockClearingProcedure.getActivityRecordAndReset());
             checkNoOtherActivity();
         }
 
@@ -101,11 +99,9 @@ public class TestThreadSafeLenientFixedSizePool extends TestCase {
         for (Object object : OBJECTS) {
             m_mockObjectFactory.add(object);
         }
-        Pool<Object> pool = ThreadSafeLenientFixedSizePool.FACTORY.create(OBJECTS.length,
-            m_mockObjectFactory, null);
-        assertEquals(
-            "call()call()call()call()call()call()call()call()call()call()call()call()call()call()",
-            m_mockObjectFactory.getActivityRecordAndReset());
+        Pool<Object> pool = ThreadSafeLenientFixedSizePool.FACTORY.create(OBJECTS.length, m_mockObjectFactory, null);
+        assertEquals("call()call()call()call()call()call()call()call()call()call()call()call()call()call()",
+                m_mockObjectFactory.getActivityRecordAndReset());
 
         // take
         Object alphaObject = OBJECTS[0];
@@ -135,8 +131,7 @@ public class TestThreadSafeLenientFixedSizePool extends TestCase {
         RequirementFailure failure = null;
         try {
             new ThreadSafeLenientFixedSizePool<Object>(OBJECTS.length,
-                (Function.Unary<Object, ThreadSafeLenientFixedSizePool<Object>>) null,
-                m_mockClearingProcedure);
+                    (Function.Unary<Object, ThreadSafeLenientFixedSizePool<Object>>) null, m_mockClearingProcedure);
         } catch (RequirementFailure requirementFailure) {
             failure = requirementFailure;
             // assertTrue(requirementFailure.isThisStackFrameCulprit(0));
@@ -146,8 +141,7 @@ public class TestThreadSafeLenientFixedSizePool extends TestCase {
 
         // too small
         try {
-            new ThreadSafeLenientFixedSizePool<Object>(6, m_mockObjectFactory,
-                m_mockClearingProcedure);
+            new ThreadSafeLenientFixedSizePool<Object>(6, m_mockObjectFactory, m_mockClearingProcedure);
         } catch (RequirementFailure requirementFailure) {
             assertTrue(requirementFailure.isThisStackFrameCulprit(0));
         }
@@ -157,21 +151,18 @@ public class TestThreadSafeLenientFixedSizePool extends TestCase {
             m_mockObjectFactory.add(object);
         }
         new ThreadSafeLenientFixedSizePool<Object>(7, m_mockObjectFactory, null);
-        assertEquals("call()call()call()call()call()call()call()",
-            m_mockObjectFactory.getActivityRecordAndReset());
+        assertEquals("call()call()call()call()call()call()call()", m_mockObjectFactory.getActivityRecordAndReset());
 
         // no factory
         try {
-            ThreadSafeLenientFixedSizePool.FACTORY.create(OBJECTS.length, null,
-                m_mockClearingProcedure);
+            ThreadSafeLenientFixedSizePool.FACTORY.create(OBJECTS.length, null, m_mockClearingProcedure);
         } catch (RequirementFailure requirementFailure) {
             assertTrue(requirementFailure.isThisStackFrameCulprit(0));
         }
 
         // too small
         try {
-            ThreadSafeLenientFixedSizePool.FACTORY.create(6, m_mockObjectFactory,
-                m_mockClearingProcedure);
+            ThreadSafeLenientFixedSizePool.FACTORY.create(6, m_mockObjectFactory, m_mockClearingProcedure);
         } catch (RequirementFailure requirementFailure) {
             assertTrue(requirementFailure.isThisStackFrameCulprit(0));
         }
@@ -181,8 +172,7 @@ public class TestThreadSafeLenientFixedSizePool extends TestCase {
             m_mockObjectFactory.add(object);
         }
         ThreadSafeLenientFixedSizePool.FACTORY.create(7, m_mockObjectFactory, null);
-        assertEquals("call()call()call()call()call()call()call()",
-            m_mockObjectFactory.getActivityRecordAndReset());
+        assertEquals("call()call()call()call()call()call()call()", m_mockObjectFactory.getActivityRecordAndReset());
     }
 
     // ----------------------------------------------------------------

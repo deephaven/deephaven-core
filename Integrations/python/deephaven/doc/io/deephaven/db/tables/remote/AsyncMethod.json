@@ -2,6 +2,6 @@
  "className": "io.deephaven.db.tables.remote.AsyncMethod",
  "methods": {},
  "path": "io.deephaven.db.tables.remote.AsyncMethod",
- "text": "Indicates that the annotated method should be executed asynchronously with respect to the LTM.\n Asynchronous execution will not acquire the LTM lock before invocation, and will be run concurrently with\n other asynchronous methods.",
+ "text": "Indicates that the annotated method should be executed asynchronously with respect to the LTM. Asynchronous execution\n will not acquire the LTM lock before invocation, and will be run concurrently with other asynchronous methods.",
  "typeName": "class"
 }

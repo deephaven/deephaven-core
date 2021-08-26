@@ -8,30 +8,27 @@ import io.deephaven.db.v2.utils.Index;
 
 public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
-    public static SliceLikeOperation slice(final QueryTable parent,
-        final long firstPositionInclusive,
-        final long lastPositionExclusive, final String op) {
+    public static SliceLikeOperation slice(final QueryTable parent, final long firstPositionInclusive,
+            final long lastPositionExclusive, final String op) {
 
         if (firstPositionInclusive < 0 && lastPositionExclusive > 0) {
-            throw new IllegalArgumentException(
-                "Can not slice with a negative first position (" + firstPositionInclusive
+            throw new IllegalArgumentException("Can not slice with a negative first position (" + firstPositionInclusive
                     + ") and positive last position (" + lastPositionExclusive + ")");
         }
         // note: first >= 0 && last < 0 is allowed, otherwise first must be less than last
         if ((firstPositionInclusive < 0 || lastPositionExclusive >= 0)
-            && lastPositionExclusive < firstPositionInclusive) {
-            throw new IllegalArgumentException("Can not slice with a first position ("
-                + firstPositionInclusive + ") after last position (" + lastPositionExclusive + ")");
+                && lastPositionExclusive < firstPositionInclusive) {
+            throw new IllegalArgumentException("Can not slice with a first position (" + firstPositionInclusive
+                    + ") after last position (" + lastPositionExclusive + ")");
         }
 
-        return new SliceLikeOperation(op,
-            op + "(" + firstPositionInclusive + ", " + lastPositionExclusive + ")",
-            parent, firstPositionInclusive, lastPositionExclusive, firstPositionInclusive == 0);
+        return new SliceLikeOperation(op, op + "(" + firstPositionInclusive + ", " + lastPositionExclusive + ")",
+                parent, firstPositionInclusive, lastPositionExclusive, firstPositionInclusive == 0);
     }
 
     public static SliceLikeOperation headPct(final QueryTable parent, final double percent) {
         return new SliceLikeOperation("headPct", "headPct(" + percent + ")", parent,
-            0, 0, true) {
+                0, 0, true) {
             @Override
             protected long getLastPositionExclusive() {
                 return (long) Math.ceil(percent * parent.size());
@@ -41,7 +38,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
     public static SliceLikeOperation tailPct(final QueryTable parent, final double percent) {
         return new SliceLikeOperation("tailPct", "tailPct(" + percent + ")", parent,
-            0, 0, false) {
+                0, 0, false) {
             @Override
             protected long getFirstPositionInclusive() {
                 return -(long) Math.ceil(percent * parent.size());
@@ -57,10 +54,9 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
     private final boolean isFlat;
     private QueryTable resultTable;
 
-    private SliceLikeOperation(final String operation, final String description,
-        final QueryTable parent,
-        final long firstPositionInclusive, final long lastPositionExclusive,
-        final boolean mayBeFlat) {
+    private SliceLikeOperation(final String operation, final String description, final QueryTable parent,
+            final long firstPositionInclusive, final long lastPositionExclusive,
+            final boolean mayBeFlat) {
         this.operation = operation;
         this.description = description;
         this.parent = parent;
@@ -90,11 +86,9 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
     @Override
     public Result initialize(boolean usePrev, long beforeClock) {
         final Index parentIndex = parent.getIndex();
-        final Index resultIndex =
-            computeSliceIndex(usePrev ? parentIndex.getPrevIndex() : parentIndex);
+        final Index resultIndex = computeSliceIndex(usePrev ? parentIndex.getPrevIndex() : parentIndex);
 
-        // result table must be a sub-table so we can pass ModifiedColumnSet to listeners when
-        // possible
+        // result table must be a sub-table so we can pass ModifiedColumnSet to listeners when possible
         resultTable = parent.getSubTable(resultIndex);
         if (isFlat) {
             resultTable.setFlat();
@@ -102,13 +96,12 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
         ShiftAwareListener resultListener = null;
         if (parent.isRefreshing()) {
-            resultListener =
-                new BaseTable.ShiftAwareListenerImpl(getDescription(), parent, resultTable) {
-                    @Override
-                    public void onUpdate(Update upstream) {
-                        SliceLikeOperation.this.onUpdate(upstream);
-                    }
-                };
+            resultListener = new BaseTable.ShiftAwareListenerImpl(getDescription(), parent, resultTable) {
+                @Override
+                public void onUpdate(Update upstream) {
+                    SliceLikeOperation.this.onUpdate(upstream);
+                }
+            };
         }
 
         return new Result(resultTable, resultListener);

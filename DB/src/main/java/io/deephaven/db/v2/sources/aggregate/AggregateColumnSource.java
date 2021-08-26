@@ -12,20 +12,19 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.BiFunction;
 
 /**
- * {@link ColumnSource} and {@link UngroupableColumnSource} interface for aggregation result
- * columns.
+ * {@link ColumnSource} and {@link UngroupableColumnSource} interface for aggregation result columns.
  */
 public interface AggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMPONENT_TYPE>
-    extends UngroupableColumnSource, MutableColumnSourceGetDefaults.ForObject<DB_ARRAY_TYPE> {
+        extends UngroupableColumnSource, MutableColumnSourceGetDefaults.ForObject<DB_ARRAY_TYPE> {
 
     UngroupedColumnSource<COMPONENT_TYPE> ungrouped();
 
     static <DB_ARRAY_TYPE extends DbArrayBase, DATA_TYPE> AggregateColumnSource<DB_ARRAY_TYPE, DATA_TYPE> make(
-        @NotNull final ColumnSource<DATA_TYPE> aggregatedSource,
-        @NotNull final ColumnSource<Index> indexSource) {
+            @NotNull final ColumnSource<DATA_TYPE> aggregatedSource,
+            @NotNull final ColumnSource<Index> indexSource) {
         // noinspection unchecked
         return (AggregateColumnSource<DB_ARRAY_TYPE, DATA_TYPE>) FactoryHelper.TYPE_TO_CONSTRUCTOR
-            .get(aggregatedSource.getType()).apply(aggregatedSource, indexSource);
+                .get(aggregatedSource.getType()).apply(aggregatedSource, indexSource);
     }
 
     final class FactoryHelper {
@@ -34,8 +33,8 @@ public interface AggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMPON
 
         @SuppressWarnings({"unchecked", "AutoUnboxing"})
         private static final SimpleTypeMap<BiFunction<ColumnSource<?>, ColumnSource<Index>, AggregateColumnSource<?, ?>>> TYPE_TO_CONSTRUCTOR =
-            SimpleTypeMap.create(
-            // @formatter:off
+                SimpleTypeMap.create(
+                // @formatter:off
                 (final ColumnSource<?> aggregatedSource, final ColumnSource<Index> indexSource) -> {
                     throw new UnsupportedOperationException("Cannot create a primitive boolean ColumnSource");
                 },
@@ -48,6 +47,6 @@ public interface AggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMPON
                 (final ColumnSource<?> aggregatedSource, final ColumnSource<Index> indexSource) -> new   DoubleAggregateColumnSource((ColumnSource<Double>   ) aggregatedSource, indexSource),
                 (final ColumnSource<?> aggregatedSource, final ColumnSource<Index> indexSource) -> new ObjectAggregateColumnSource<>((ColumnSource<?>        ) aggregatedSource, indexSource)
                 // @formatter:on
-            );
+                );
     }
 }

@@ -9,8 +9,8 @@ import io.deephaven.db.tables.TableDefinition;
 import java.util.Collection;
 
 /**
- * {@link TableMapHandle} with an underlying table. The purpose of this class is to allow
- * consolidation between constructed TableMaps in FigureWidget.
+ * {@link TableMapHandle} with an underlying table. The purpose of this class is to allow consolidation between
+ * constructed TableMaps in FigureWidget.
  */
 public class TableBackedTableMapHandle extends TableMapHandle {
 
@@ -18,12 +18,12 @@ public class TableBackedTableMapHandle extends TableMapHandle {
     private final TableDefinition tableDefinition;
 
     public TableBackedTableMapHandle(final TableHandle tableHandle, final String[] keyColumns,
-        final PlotInfo plotInfo) {
+            final PlotInfo plotInfo) {
         this(tableHandle.getTable(), tableHandle.getColumns(), keyColumns, plotInfo);
     }
 
-    public TableBackedTableMapHandle(final Table table, final Collection<String> columns,
-        final String[] keyColumns, final PlotInfo plotInfo) {
+    public TableBackedTableMapHandle(final Table table, final Collection<String> columns, final String[] keyColumns,
+            final PlotInfo plotInfo) {
         super(columns, keyColumns, plotInfo);
 
         ArgumentValidations.assertNotNull(table, "table", plotInfo);

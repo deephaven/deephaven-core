@@ -43,8 +43,7 @@ public class TrialClassA implements Externalizable, Copyable<TrialClassA> {
     }
 
     @Override
-    public synchronized void readExternal(ObjectInput in)
-        throws IOException, ClassNotFoundException {
+    public synchronized void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         int localVersionId = in.readInt();
         double1 = in.readDouble();
         int1 = in.readInt();
@@ -156,8 +155,7 @@ public class TrialClassA implements Externalizable, Copyable<TrialClassA> {
 
     private static class TestClassReader implements FastArray.ReadExternalFunction<TrialClassA> {
         @Override
-        public void readExternal(ObjectInput in, TrialClassA item)
-            throws IOException, ClassNotFoundException {
+        public void readExternal(ObjectInput in, TrialClassA item) throws IOException, ClassNotFoundException {
             TrialClassA readObject = (TrialClassA) in.readObject();
             item.copyValues(readObject);
         }
@@ -173,8 +171,7 @@ public class TrialClassA implements Externalizable, Copyable<TrialClassA> {
     // return new TestClassReaderF();
     // }
     //
-    // private static class TestClassWriterF implements
-    // FastArrayF.WriteExternalFunction<TrialClassA> {
+    // private static class TestClassWriterF implements FastArrayF.WriteExternalFunction<TrialClassA> {
     //
     // @Override
     // public void writeExternal(ObjectOutput out, TrialClassA item) throws IOException {
@@ -182,11 +179,9 @@ public class TrialClassA implements Externalizable, Copyable<TrialClassA> {
     // }
     // }
     //
-    // private static class TestClassReaderF implements FastArrayF.ReadExternalFunction<TrialClassA>
-    // {
+    // private static class TestClassReaderF implements FastArrayF.ReadExternalFunction<TrialClassA> {
     // @Override
-    // public void readExternal(ObjectInput in, TrialClassA item) throws IOException,
-    // ClassNotFoundException {
+    // public void readExternal(ObjectInput in, TrialClassA item) throws IOException, ClassNotFoundException {
     // TrialClassA readObject = (TrialClassA) in.readObject();
     // item.copyValues(readObject);
     // }

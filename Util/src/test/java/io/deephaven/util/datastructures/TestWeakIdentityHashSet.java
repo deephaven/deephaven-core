@@ -14,8 +14,7 @@ public class TestWeakIdentityHashSet {
 
     @Test
     public void testAdd() {
-        String[] values =
-            IntStream.range(0, 1000).mapToObj(Integer::toString).toArray(String[]::new);
+        String[] values = IntStream.range(0, 1000).mapToObj(Integer::toString).toArray(String[]::new);
         final WeakIdentityHashSet<String> set = new WeakIdentityHashSet<>();
         Stream.of(values).forEach(v -> TestCase.assertTrue(set.add(v)));
         Stream.of(values).forEach(v -> TestCase.assertFalse(set.add(v)));
@@ -28,8 +27,7 @@ public class TestWeakIdentityHashSet {
 
     @Test
     public void testClear() {
-        final String[] values =
-            IntStream.range(1000, 2000).mapToObj(Integer::toString).toArray(String[]::new);
+        final String[] values = IntStream.range(1000, 2000).mapToObj(Integer::toString).toArray(String[]::new);
         final WeakIdentityHashSet<String> set = new WeakIdentityHashSet<>();
         Stream.of(values).forEach(v -> TestCase.assertTrue(set.add(v)));
         Stream.of(values).forEach(v -> TestCase.assertFalse(set.add(v)));
@@ -40,8 +38,7 @@ public class TestWeakIdentityHashSet {
 
     @Test
     public void testForEach() {
-        final String[] values =
-            IntStream.range(1000, 2000).mapToObj(Integer::toString).toArray(String[]::new);
+        final String[] values = IntStream.range(1000, 2000).mapToObj(Integer::toString).toArray(String[]::new);
 
         final WeakIdentityHashSet<String> set = new WeakIdentityHashSet<>();
         final MutableInt counter = new MutableInt(0);

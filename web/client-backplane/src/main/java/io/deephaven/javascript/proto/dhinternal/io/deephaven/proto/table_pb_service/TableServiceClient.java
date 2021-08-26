@@ -35,9 +35,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient",
+        namespace = JsPackage.GLOBAL)
 public class TableServiceClient {
     @JsFunction
     public interface AsOfJoinTablesCallbackFn {
@@ -68,8 +68,7 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.AsOfJoinTablesCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.AsOfJoinTablesCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -101,8 +100,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.AsOfJoinTablesMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.AsOfJoinTablesMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -162,8 +161,7 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.ComboAggregateCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.ComboAggregateCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -195,8 +193,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.ComboAggregateMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.ComboAggregateMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -256,8 +254,7 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.CrossJoinTablesCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.CrossJoinTablesCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -289,8 +286,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.CrossJoinTablesMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.CrossJoinTablesMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -350,7 +347,7 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.DropColumnsCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
+                TableServiceClient.DropColumnsCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -382,8 +379,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.DropColumnsMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.DropColumnsMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -443,7 +440,7 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.EmptyTableCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
+                TableServiceClient.EmptyTableCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -475,8 +472,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.EmptyTableMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.EmptyTableMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -536,8 +533,7 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.ExactJoinTablesCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.ExactJoinTablesCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -569,8 +565,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.ExactJoinTablesMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.ExactJoinTablesMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -629,8 +625,7 @@ public class TableServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(TableServiceClient.FilterCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+        void onInvoke(TableServiceClient.FilterCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -662,8 +657,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.FilterMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.FilterMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -722,8 +717,7 @@ public class TableServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(TableServiceClient.FlattenCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+        void onInvoke(TableServiceClient.FlattenCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -755,8 +749,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.FlattenMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.FlattenMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -815,8 +809,7 @@ public class TableServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(TableServiceClient.HeadByCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+        void onInvoke(TableServiceClient.HeadByCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -848,8 +841,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.HeadByMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.HeadByMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -908,8 +901,7 @@ public class TableServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(TableServiceClient.HeadCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+        void onInvoke(TableServiceClient.HeadCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -941,8 +933,7 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.HeadMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.HeadMetadata_or_callbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1002,7 +993,7 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.LazyUpdateCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
+                TableServiceClient.LazyUpdateCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -1034,8 +1025,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.LazyUpdateMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.LazyUpdateMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1095,8 +1086,7 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.LeftJoinTablesCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.LeftJoinTablesCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -1128,8 +1118,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.LeftJoinTablesMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.LeftJoinTablesMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1189,7 +1179,7 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.MergeTablesCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
+                TableServiceClient.MergeTablesCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -1221,8 +1211,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.MergeTablesMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.MergeTablesMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1282,8 +1272,7 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.NaturalJoinTablesCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.NaturalJoinTablesCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -1315,8 +1304,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.NaturalJoinTablesMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.NaturalJoinTablesMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1376,8 +1365,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.RunChartDownsampleCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.RunChartDownsampleCallbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -1409,8 +1398,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.RunChartDownsampleMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.RunChartDownsampleMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1469,8 +1458,7 @@ public class TableServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(TableServiceClient.SelectCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+        void onInvoke(TableServiceClient.SelectCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -1502,8 +1490,7 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.SelectDistinctCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.SelectDistinctCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -1535,8 +1522,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.SelectDistinctMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.SelectDistinctMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1596,8 +1583,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.SelectMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.SelectMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1657,7 +1644,7 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.SnapshotCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
+                TableServiceClient.SnapshotCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -1689,8 +1676,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.SnapshotMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.SnapshotMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1749,8 +1736,7 @@ public class TableServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(TableServiceClient.SortCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+        void onInvoke(TableServiceClient.SortCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -1782,8 +1768,7 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.SortMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.SortMetadata_or_callbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1842,8 +1827,7 @@ public class TableServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(TableServiceClient.TailByCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+        void onInvoke(TableServiceClient.TailByCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -1875,8 +1859,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.TailByMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.TailByMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1935,8 +1919,7 @@ public class TableServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(TableServiceClient.TailCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+        void onInvoke(TableServiceClient.TailCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -1968,8 +1951,7 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.TailMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.TailMetadata_or_callbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2029,7 +2011,7 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.TimeTableCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
+                TableServiceClient.TimeTableCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -2061,8 +2043,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.TimeTableMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.TimeTableMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2121,8 +2103,7 @@ public class TableServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(TableServiceClient.UngroupCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+        void onInvoke(TableServiceClient.UngroupCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -2154,8 +2135,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.UngroupMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.UngroupMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2215,8 +2196,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.UnstructuredFilterCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.UnstructuredFilterCallbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -2248,8 +2229,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.UnstructuredFilterMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.UnstructuredFilterMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2308,8 +2289,7 @@ public class TableServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(TableServiceClient.UpdateCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+        void onInvoke(TableServiceClient.UpdateCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -2341,8 +2321,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.UpdateMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.UpdateMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2402,7 +2382,7 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.UpdateViewCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
+                TableServiceClient.UpdateViewCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -2434,8 +2414,8 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.UpdateViewMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.UpdateViewMetadata_or_callbackFn.P0Type p0,
+                ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2494,8 +2474,7 @@ public class TableServiceClient {
             void setMetadata(BrowserHeaders metadata);
         }
 
-        void onInvoke(TableServiceClient.ViewCallbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+        void onInvoke(TableServiceClient.ViewCallbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsFunction
@@ -2527,8 +2506,7 @@ public class TableServiceClient {
         }
 
         void onInvoke(
-            TableServiceClient.ViewMetadata_or_callbackFn.P0Type p0,
-            ExportedTableCreationResponse p1);
+                TableServiceClient.ViewMetadata_or_callbackFn.P0Type p0, ExportedTableCreationResponse p1);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2567,1417 +2545,1417 @@ public class TableServiceClient {
 
     @JsOverlay
     public final UnaryResponse asOfJoinTables(
-        AsOfJoinTablesRequest requestMessage,
-        TableServiceClient.AsOfJoinTablesMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.AsOfJoinTablesCallbackFn callback) {
+            AsOfJoinTablesRequest requestMessage,
+            TableServiceClient.AsOfJoinTablesMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.AsOfJoinTablesCallbackFn callback) {
         return asOfJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.AsOfJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.AsOfJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse asOfJoinTables(
-        AsOfJoinTablesRequest requestMessage,
-        TableServiceClient.AsOfJoinTablesMetadata_or_callbackFn metadata_or_callback) {
+            AsOfJoinTablesRequest requestMessage,
+            TableServiceClient.AsOfJoinTablesMetadata_or_callbackFn metadata_or_callback) {
         return asOfJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.AsOfJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.AsOfJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse asOfJoinTables(
-        AsOfJoinTablesRequest requestMessage,
-        TableServiceClient.AsOfJoinTablesMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.AsOfJoinTablesCallbackFn callback);
+            AsOfJoinTablesRequest requestMessage,
+            TableServiceClient.AsOfJoinTablesMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.AsOfJoinTablesCallbackFn callback);
 
     public native UnaryResponse asOfJoinTables(
-        AsOfJoinTablesRequest requestMessage,
-        TableServiceClient.AsOfJoinTablesMetadata_or_callbackUnionType metadata_or_callback);
+            AsOfJoinTablesRequest requestMessage,
+            TableServiceClient.AsOfJoinTablesMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse asOfJoinTables(
-        AsOfJoinTablesRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.AsOfJoinTablesCallbackFn callback) {
+            AsOfJoinTablesRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.AsOfJoinTablesCallbackFn callback) {
         return asOfJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.AsOfJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.AsOfJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse asOfJoinTables(
-        AsOfJoinTablesRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            AsOfJoinTablesRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return asOfJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.AsOfJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.AsOfJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native ResponseStream<ExportedTableCreationResponse> batch(
-        BatchTableRequest requestMessage, BrowserHeaders metadata);
+            BatchTableRequest requestMessage, BrowserHeaders metadata);
 
     public native ResponseStream<ExportedTableCreationResponse> batch(
-        BatchTableRequest requestMessage);
+            BatchTableRequest requestMessage);
 
     @JsOverlay
     public final UnaryResponse comboAggregate(
-        ComboAggregateRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.ComboAggregateCallbackFn callback) {
+            ComboAggregateRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.ComboAggregateCallbackFn callback) {
         return comboAggregate(
-            requestMessage,
-            Js.<TableServiceClient.ComboAggregateMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.ComboAggregateMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse comboAggregate(
-        ComboAggregateRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            ComboAggregateRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return comboAggregate(
-            requestMessage,
-            Js.<TableServiceClient.ComboAggregateMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.ComboAggregateMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse comboAggregate(
-        ComboAggregateRequest requestMessage,
-        TableServiceClient.ComboAggregateMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.ComboAggregateCallbackFn callback) {
+            ComboAggregateRequest requestMessage,
+            TableServiceClient.ComboAggregateMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.ComboAggregateCallbackFn callback) {
         return comboAggregate(
-            requestMessage,
-            Js.<TableServiceClient.ComboAggregateMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.ComboAggregateMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse comboAggregate(
-        ComboAggregateRequest requestMessage,
-        TableServiceClient.ComboAggregateMetadata_or_callbackFn metadata_or_callback) {
+            ComboAggregateRequest requestMessage,
+            TableServiceClient.ComboAggregateMetadata_or_callbackFn metadata_or_callback) {
         return comboAggregate(
-            requestMessage,
-            Js.<TableServiceClient.ComboAggregateMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.ComboAggregateMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse comboAggregate(
-        ComboAggregateRequest requestMessage,
-        TableServiceClient.ComboAggregateMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.ComboAggregateCallbackFn callback);
+            ComboAggregateRequest requestMessage,
+            TableServiceClient.ComboAggregateMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.ComboAggregateCallbackFn callback);
 
     public native UnaryResponse comboAggregate(
-        ComboAggregateRequest requestMessage,
-        TableServiceClient.ComboAggregateMetadata_or_callbackUnionType metadata_or_callback);
+            ComboAggregateRequest requestMessage,
+            TableServiceClient.ComboAggregateMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse crossJoinTables(
-        CrossJoinTablesRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.CrossJoinTablesCallbackFn callback) {
+            CrossJoinTablesRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.CrossJoinTablesCallbackFn callback) {
         return crossJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.CrossJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.CrossJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse crossJoinTables(
-        CrossJoinTablesRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            CrossJoinTablesRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return crossJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.CrossJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.CrossJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse crossJoinTables(
-        CrossJoinTablesRequest requestMessage,
-        TableServiceClient.CrossJoinTablesMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.CrossJoinTablesCallbackFn callback) {
+            CrossJoinTablesRequest requestMessage,
+            TableServiceClient.CrossJoinTablesMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.CrossJoinTablesCallbackFn callback) {
         return crossJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.CrossJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.CrossJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse crossJoinTables(
-        CrossJoinTablesRequest requestMessage,
-        TableServiceClient.CrossJoinTablesMetadata_or_callbackFn metadata_or_callback) {
+            CrossJoinTablesRequest requestMessage,
+            TableServiceClient.CrossJoinTablesMetadata_or_callbackFn metadata_or_callback) {
         return crossJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.CrossJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.CrossJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse crossJoinTables(
-        CrossJoinTablesRequest requestMessage,
-        TableServiceClient.CrossJoinTablesMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.CrossJoinTablesCallbackFn callback);
+            CrossJoinTablesRequest requestMessage,
+            TableServiceClient.CrossJoinTablesMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.CrossJoinTablesCallbackFn callback);
 
     public native UnaryResponse crossJoinTables(
-        CrossJoinTablesRequest requestMessage,
-        TableServiceClient.CrossJoinTablesMetadata_or_callbackUnionType metadata_or_callback);
+            CrossJoinTablesRequest requestMessage,
+            TableServiceClient.CrossJoinTablesMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse dropColumns(
-        DropColumnsRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.DropColumnsCallbackFn callback) {
+            DropColumnsRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.DropColumnsCallbackFn callback) {
         return dropColumns(
-            requestMessage,
-            Js.<TableServiceClient.DropColumnsMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.DropColumnsMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse dropColumns(
-        DropColumnsRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            DropColumnsRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return dropColumns(
-            requestMessage,
-            Js.<TableServiceClient.DropColumnsMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.DropColumnsMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse dropColumns(
-        DropColumnsRequest requestMessage,
-        TableServiceClient.DropColumnsMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.DropColumnsCallbackFn callback) {
+            DropColumnsRequest requestMessage,
+            TableServiceClient.DropColumnsMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.DropColumnsCallbackFn callback) {
         return dropColumns(
-            requestMessage,
-            Js.<TableServiceClient.DropColumnsMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.DropColumnsMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse dropColumns(
-        DropColumnsRequest requestMessage,
-        TableServiceClient.DropColumnsMetadata_or_callbackFn metadata_or_callback) {
+            DropColumnsRequest requestMessage,
+            TableServiceClient.DropColumnsMetadata_or_callbackFn metadata_or_callback) {
         return dropColumns(
-            requestMessage,
-            Js.<TableServiceClient.DropColumnsMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.DropColumnsMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse dropColumns(
-        DropColumnsRequest requestMessage,
-        TableServiceClient.DropColumnsMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.DropColumnsCallbackFn callback);
+            DropColumnsRequest requestMessage,
+            TableServiceClient.DropColumnsMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.DropColumnsCallbackFn callback);
 
     public native UnaryResponse dropColumns(
-        DropColumnsRequest requestMessage,
-        TableServiceClient.DropColumnsMetadata_or_callbackUnionType metadata_or_callback);
+            DropColumnsRequest requestMessage,
+            TableServiceClient.DropColumnsMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse emptyTable(
-        EmptyTableRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.EmptyTableCallbackFn callback) {
+            EmptyTableRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.EmptyTableCallbackFn callback) {
         return emptyTable(
-            requestMessage,
-            Js.<TableServiceClient.EmptyTableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.EmptyTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse emptyTable(
-        EmptyTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            EmptyTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return emptyTable(
-            requestMessage,
-            Js.<TableServiceClient.EmptyTableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.EmptyTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse emptyTable(
-        EmptyTableRequest requestMessage,
-        TableServiceClient.EmptyTableMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.EmptyTableCallbackFn callback) {
+            EmptyTableRequest requestMessage,
+            TableServiceClient.EmptyTableMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.EmptyTableCallbackFn callback) {
         return emptyTable(
-            requestMessage,
-            Js.<TableServiceClient.EmptyTableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.EmptyTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse emptyTable(
-        EmptyTableRequest requestMessage,
-        TableServiceClient.EmptyTableMetadata_or_callbackFn metadata_or_callback) {
+            EmptyTableRequest requestMessage,
+            TableServiceClient.EmptyTableMetadata_or_callbackFn metadata_or_callback) {
         return emptyTable(
-            requestMessage,
-            Js.<TableServiceClient.EmptyTableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.EmptyTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse emptyTable(
-        EmptyTableRequest requestMessage,
-        TableServiceClient.EmptyTableMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.EmptyTableCallbackFn callback);
+            EmptyTableRequest requestMessage,
+            TableServiceClient.EmptyTableMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.EmptyTableCallbackFn callback);
 
     public native UnaryResponse emptyTable(
-        EmptyTableRequest requestMessage,
-        TableServiceClient.EmptyTableMetadata_or_callbackUnionType metadata_or_callback);
+            EmptyTableRequest requestMessage,
+            TableServiceClient.EmptyTableMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse exactJoinTables(
-        ExactJoinTablesRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.ExactJoinTablesCallbackFn callback) {
+            ExactJoinTablesRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.ExactJoinTablesCallbackFn callback) {
         return exactJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.ExactJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.ExactJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse exactJoinTables(
-        ExactJoinTablesRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            ExactJoinTablesRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return exactJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.ExactJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.ExactJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse exactJoinTables(
-        ExactJoinTablesRequest requestMessage,
-        TableServiceClient.ExactJoinTablesMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.ExactJoinTablesCallbackFn callback) {
+            ExactJoinTablesRequest requestMessage,
+            TableServiceClient.ExactJoinTablesMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.ExactJoinTablesCallbackFn callback) {
         return exactJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.ExactJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.ExactJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse exactJoinTables(
-        ExactJoinTablesRequest requestMessage,
-        TableServiceClient.ExactJoinTablesMetadata_or_callbackFn metadata_or_callback) {
+            ExactJoinTablesRequest requestMessage,
+            TableServiceClient.ExactJoinTablesMetadata_or_callbackFn metadata_or_callback) {
         return exactJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.ExactJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.ExactJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse exactJoinTables(
-        ExactJoinTablesRequest requestMessage,
-        TableServiceClient.ExactJoinTablesMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.ExactJoinTablesCallbackFn callback);
+            ExactJoinTablesRequest requestMessage,
+            TableServiceClient.ExactJoinTablesMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.ExactJoinTablesCallbackFn callback);
 
     public native UnaryResponse exactJoinTables(
-        ExactJoinTablesRequest requestMessage,
-        TableServiceClient.ExactJoinTablesMetadata_or_callbackUnionType metadata_or_callback);
+            ExactJoinTablesRequest requestMessage,
+            TableServiceClient.ExactJoinTablesMetadata_or_callbackUnionType metadata_or_callback);
 
     public native ResponseStream<ExportedTableUpdateMessage> exportedTableUpdates(
-        ExportedTableUpdatesRequest requestMessage, BrowserHeaders metadata);
+            ExportedTableUpdatesRequest requestMessage, BrowserHeaders metadata);
 
     public native ResponseStream<ExportedTableUpdateMessage> exportedTableUpdates(
-        ExportedTableUpdatesRequest requestMessage);
+            ExportedTableUpdatesRequest requestMessage);
 
     @JsOverlay
     public final UnaryResponse filter(
-        FilterTableRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.FilterCallbackFn callback) {
+            FilterTableRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.FilterCallbackFn callback) {
         return filter(
-            requestMessage,
-            Js.<TableServiceClient.FilterMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.FilterMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse filter(
-        FilterTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            FilterTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return filter(
-            requestMessage,
-            Js.<TableServiceClient.FilterMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.FilterMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse filter(
-        FilterTableRequest requestMessage,
-        TableServiceClient.FilterMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.FilterCallbackFn callback) {
+            FilterTableRequest requestMessage,
+            TableServiceClient.FilterMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.FilterCallbackFn callback) {
         return filter(
-            requestMessage,
-            Js.<TableServiceClient.FilterMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.FilterMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse filter(
-        FilterTableRequest requestMessage,
-        TableServiceClient.FilterMetadata_or_callbackFn metadata_or_callback) {
+            FilterTableRequest requestMessage,
+            TableServiceClient.FilterMetadata_or_callbackFn metadata_or_callback) {
         return filter(
-            requestMessage,
-            Js.<TableServiceClient.FilterMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.FilterMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse filter(
-        FilterTableRequest requestMessage,
-        TableServiceClient.FilterMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.FilterCallbackFn callback);
+            FilterTableRequest requestMessage,
+            TableServiceClient.FilterMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.FilterCallbackFn callback);
 
     public native UnaryResponse filter(
-        FilterTableRequest requestMessage,
-        TableServiceClient.FilterMetadata_or_callbackUnionType metadata_or_callback);
+            FilterTableRequest requestMessage,
+            TableServiceClient.FilterMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse flatten(
-        FlattenRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.FlattenCallbackFn callback) {
+            FlattenRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.FlattenCallbackFn callback) {
         return flatten(
-            requestMessage,
-            Js.<TableServiceClient.FlattenMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.FlattenMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse flatten(
-        FlattenRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            FlattenRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return flatten(
-            requestMessage,
-            Js.<TableServiceClient.FlattenMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.FlattenMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse flatten(
-        FlattenRequest requestMessage,
-        TableServiceClient.FlattenMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.FlattenCallbackFn callback) {
+            FlattenRequest requestMessage,
+            TableServiceClient.FlattenMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.FlattenCallbackFn callback) {
         return flatten(
-            requestMessage,
-            Js.<TableServiceClient.FlattenMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.FlattenMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse flatten(
-        FlattenRequest requestMessage,
-        TableServiceClient.FlattenMetadata_or_callbackFn metadata_or_callback) {
+            FlattenRequest requestMessage,
+            TableServiceClient.FlattenMetadata_or_callbackFn metadata_or_callback) {
         return flatten(
-            requestMessage,
-            Js.<TableServiceClient.FlattenMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.FlattenMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse flatten(
-        FlattenRequest requestMessage,
-        TableServiceClient.FlattenMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.FlattenCallbackFn callback);
+            FlattenRequest requestMessage,
+            TableServiceClient.FlattenMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.FlattenCallbackFn callback);
 
     public native UnaryResponse flatten(
-        FlattenRequest requestMessage,
-        TableServiceClient.FlattenMetadata_or_callbackUnionType metadata_or_callback);
+            FlattenRequest requestMessage,
+            TableServiceClient.FlattenMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse head(
-        HeadOrTailRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.HeadCallbackFn callback) {
+            HeadOrTailRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.HeadCallbackFn callback) {
         return head(
-            requestMessage,
-            Js.<TableServiceClient.HeadMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.HeadMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse head(
-        HeadOrTailRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            HeadOrTailRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return head(
-            requestMessage,
-            Js.<TableServiceClient.HeadMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.HeadMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse head(
-        HeadOrTailRequest requestMessage,
-        TableServiceClient.HeadMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.HeadCallbackFn callback) {
+            HeadOrTailRequest requestMessage,
+            TableServiceClient.HeadMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.HeadCallbackFn callback) {
         return head(
-            requestMessage,
-            Js.<TableServiceClient.HeadMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.HeadMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse head(
-        HeadOrTailRequest requestMessage,
-        TableServiceClient.HeadMetadata_or_callbackFn metadata_or_callback) {
+            HeadOrTailRequest requestMessage,
+            TableServiceClient.HeadMetadata_or_callbackFn metadata_or_callback) {
         return head(
-            requestMessage,
-            Js.<TableServiceClient.HeadMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.HeadMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse head(
-        HeadOrTailRequest requestMessage,
-        TableServiceClient.HeadMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.HeadCallbackFn callback);
+            HeadOrTailRequest requestMessage,
+            TableServiceClient.HeadMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.HeadCallbackFn callback);
 
     public native UnaryResponse head(
-        HeadOrTailRequest requestMessage,
-        TableServiceClient.HeadMetadata_or_callbackUnionType metadata_or_callback);
+            HeadOrTailRequest requestMessage,
+            TableServiceClient.HeadMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse headBy(
-        HeadOrTailByRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.HeadByCallbackFn callback) {
+            HeadOrTailByRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.HeadByCallbackFn callback) {
         return headBy(
-            requestMessage,
-            Js.<TableServiceClient.HeadByMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.HeadByMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse headBy(
-        HeadOrTailByRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            HeadOrTailByRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return headBy(
-            requestMessage,
-            Js.<TableServiceClient.HeadByMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.HeadByMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse headBy(
-        HeadOrTailByRequest requestMessage,
-        TableServiceClient.HeadByMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.HeadByCallbackFn callback) {
+            HeadOrTailByRequest requestMessage,
+            TableServiceClient.HeadByMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.HeadByCallbackFn callback) {
         return headBy(
-            requestMessage,
-            Js.<TableServiceClient.HeadByMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.HeadByMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse headBy(
-        HeadOrTailByRequest requestMessage,
-        TableServiceClient.HeadByMetadata_or_callbackFn metadata_or_callback) {
+            HeadOrTailByRequest requestMessage,
+            TableServiceClient.HeadByMetadata_or_callbackFn metadata_or_callback) {
         return headBy(
-            requestMessage,
-            Js.<TableServiceClient.HeadByMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.HeadByMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse headBy(
-        HeadOrTailByRequest requestMessage,
-        TableServiceClient.HeadByMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.HeadByCallbackFn callback);
+            HeadOrTailByRequest requestMessage,
+            TableServiceClient.HeadByMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.HeadByCallbackFn callback);
 
     public native UnaryResponse headBy(
-        HeadOrTailByRequest requestMessage,
-        TableServiceClient.HeadByMetadata_or_callbackUnionType metadata_or_callback);
+            HeadOrTailByRequest requestMessage,
+            TableServiceClient.HeadByMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse lazyUpdate(
-        SelectOrUpdateRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.LazyUpdateCallbackFn callback) {
+            SelectOrUpdateRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.LazyUpdateCallbackFn callback) {
         return lazyUpdate(
-            requestMessage,
-            Js.<TableServiceClient.LazyUpdateMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.LazyUpdateMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse lazyUpdate(
-        SelectOrUpdateRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            SelectOrUpdateRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return lazyUpdate(
-            requestMessage,
-            Js.<TableServiceClient.LazyUpdateMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.LazyUpdateMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse lazyUpdate(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.LazyUpdateMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.LazyUpdateCallbackFn callback) {
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.LazyUpdateMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.LazyUpdateCallbackFn callback) {
         return lazyUpdate(
-            requestMessage,
-            Js.<TableServiceClient.LazyUpdateMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.LazyUpdateMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse lazyUpdate(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.LazyUpdateMetadata_or_callbackFn metadata_or_callback) {
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.LazyUpdateMetadata_or_callbackFn metadata_or_callback) {
         return lazyUpdate(
-            requestMessage,
-            Js.<TableServiceClient.LazyUpdateMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.LazyUpdateMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse lazyUpdate(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.LazyUpdateMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.LazyUpdateCallbackFn callback);
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.LazyUpdateMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.LazyUpdateCallbackFn callback);
 
     public native UnaryResponse lazyUpdate(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.LazyUpdateMetadata_or_callbackUnionType metadata_or_callback);
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.LazyUpdateMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse leftJoinTables(
-        LeftJoinTablesRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.LeftJoinTablesCallbackFn callback) {
+            LeftJoinTablesRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.LeftJoinTablesCallbackFn callback) {
         return leftJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.LeftJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.LeftJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse leftJoinTables(
-        LeftJoinTablesRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            LeftJoinTablesRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return leftJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.LeftJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.LeftJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse leftJoinTables(
-        LeftJoinTablesRequest requestMessage,
-        TableServiceClient.LeftJoinTablesMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.LeftJoinTablesCallbackFn callback) {
+            LeftJoinTablesRequest requestMessage,
+            TableServiceClient.LeftJoinTablesMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.LeftJoinTablesCallbackFn callback) {
         return leftJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.LeftJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.LeftJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse leftJoinTables(
-        LeftJoinTablesRequest requestMessage,
-        TableServiceClient.LeftJoinTablesMetadata_or_callbackFn metadata_or_callback) {
+            LeftJoinTablesRequest requestMessage,
+            TableServiceClient.LeftJoinTablesMetadata_or_callbackFn metadata_or_callback) {
         return leftJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.LeftJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.LeftJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse leftJoinTables(
-        LeftJoinTablesRequest requestMessage,
-        TableServiceClient.LeftJoinTablesMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.LeftJoinTablesCallbackFn callback);
+            LeftJoinTablesRequest requestMessage,
+            TableServiceClient.LeftJoinTablesMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.LeftJoinTablesCallbackFn callback);
 
     public native UnaryResponse leftJoinTables(
-        LeftJoinTablesRequest requestMessage,
-        TableServiceClient.LeftJoinTablesMetadata_or_callbackUnionType metadata_or_callback);
+            LeftJoinTablesRequest requestMessage,
+            TableServiceClient.LeftJoinTablesMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse mergeTables(
-        MergeTablesRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.MergeTablesCallbackFn callback) {
+            MergeTablesRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.MergeTablesCallbackFn callback) {
         return mergeTables(
-            requestMessage,
-            Js.<TableServiceClient.MergeTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.MergeTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse mergeTables(
-        MergeTablesRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            MergeTablesRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return mergeTables(
-            requestMessage,
-            Js.<TableServiceClient.MergeTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.MergeTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse mergeTables(
-        MergeTablesRequest requestMessage,
-        TableServiceClient.MergeTablesMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.MergeTablesCallbackFn callback) {
+            MergeTablesRequest requestMessage,
+            TableServiceClient.MergeTablesMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.MergeTablesCallbackFn callback) {
         return mergeTables(
-            requestMessage,
-            Js.<TableServiceClient.MergeTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.MergeTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse mergeTables(
-        MergeTablesRequest requestMessage,
-        TableServiceClient.MergeTablesMetadata_or_callbackFn metadata_or_callback) {
+            MergeTablesRequest requestMessage,
+            TableServiceClient.MergeTablesMetadata_or_callbackFn metadata_or_callback) {
         return mergeTables(
-            requestMessage,
-            Js.<TableServiceClient.MergeTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.MergeTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse mergeTables(
-        MergeTablesRequest requestMessage,
-        TableServiceClient.MergeTablesMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.MergeTablesCallbackFn callback);
+            MergeTablesRequest requestMessage,
+            TableServiceClient.MergeTablesMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.MergeTablesCallbackFn callback);
 
     public native UnaryResponse mergeTables(
-        MergeTablesRequest requestMessage,
-        TableServiceClient.MergeTablesMetadata_or_callbackUnionType metadata_or_callback);
+            MergeTablesRequest requestMessage,
+            TableServiceClient.MergeTablesMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse naturalJoinTables(
-        NaturalJoinTablesRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.NaturalJoinTablesCallbackFn callback) {
+            NaturalJoinTablesRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.NaturalJoinTablesCallbackFn callback) {
         return naturalJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.NaturalJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.NaturalJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse naturalJoinTables(
-        NaturalJoinTablesRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            NaturalJoinTablesRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return naturalJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.NaturalJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.NaturalJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse naturalJoinTables(
-        NaturalJoinTablesRequest requestMessage,
-        TableServiceClient.NaturalJoinTablesMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.NaturalJoinTablesCallbackFn callback) {
+            NaturalJoinTablesRequest requestMessage,
+            TableServiceClient.NaturalJoinTablesMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.NaturalJoinTablesCallbackFn callback) {
         return naturalJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.NaturalJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.NaturalJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse naturalJoinTables(
-        NaturalJoinTablesRequest requestMessage,
-        TableServiceClient.NaturalJoinTablesMetadata_or_callbackFn metadata_or_callback) {
+            NaturalJoinTablesRequest requestMessage,
+            TableServiceClient.NaturalJoinTablesMetadata_or_callbackFn metadata_or_callback) {
         return naturalJoinTables(
-            requestMessage,
-            Js.<TableServiceClient.NaturalJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.NaturalJoinTablesMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse naturalJoinTables(
-        NaturalJoinTablesRequest requestMessage,
-        TableServiceClient.NaturalJoinTablesMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.NaturalJoinTablesCallbackFn callback);
+            NaturalJoinTablesRequest requestMessage,
+            TableServiceClient.NaturalJoinTablesMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.NaturalJoinTablesCallbackFn callback);
 
     public native UnaryResponse naturalJoinTables(
-        NaturalJoinTablesRequest requestMessage,
-        TableServiceClient.NaturalJoinTablesMetadata_or_callbackUnionType metadata_or_callback);
+            NaturalJoinTablesRequest requestMessage,
+            TableServiceClient.NaturalJoinTablesMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse runChartDownsample(
-        RunChartDownsampleRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.RunChartDownsampleCallbackFn callback) {
+            RunChartDownsampleRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.RunChartDownsampleCallbackFn callback) {
         return runChartDownsample(
-            requestMessage,
-            Js.<TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse runChartDownsample(
-        RunChartDownsampleRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            RunChartDownsampleRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return runChartDownsample(
-            requestMessage,
-            Js.<TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse runChartDownsample(
-        RunChartDownsampleRequest requestMessage,
-        TableServiceClient.RunChartDownsampleMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.RunChartDownsampleCallbackFn callback) {
+            RunChartDownsampleRequest requestMessage,
+            TableServiceClient.RunChartDownsampleMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.RunChartDownsampleCallbackFn callback) {
         return runChartDownsample(
-            requestMessage,
-            Js.<TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse runChartDownsample(
-        RunChartDownsampleRequest requestMessage,
-        TableServiceClient.RunChartDownsampleMetadata_or_callbackFn metadata_or_callback) {
+            RunChartDownsampleRequest requestMessage,
+            TableServiceClient.RunChartDownsampleMetadata_or_callbackFn metadata_or_callback) {
         return runChartDownsample(
-            requestMessage,
-            Js.<TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse runChartDownsample(
-        RunChartDownsampleRequest requestMessage,
-        TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.RunChartDownsampleCallbackFn callback);
+            RunChartDownsampleRequest requestMessage,
+            TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.RunChartDownsampleCallbackFn callback);
 
     public native UnaryResponse runChartDownsample(
-        RunChartDownsampleRequest requestMessage,
-        TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType metadata_or_callback);
+            RunChartDownsampleRequest requestMessage,
+            TableServiceClient.RunChartDownsampleMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse select(
-        SelectOrUpdateRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.SelectCallbackFn callback) {
+            SelectOrUpdateRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.SelectCallbackFn callback) {
         return select(
-            requestMessage,
-            Js.<TableServiceClient.SelectMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.SelectMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse select(
-        SelectOrUpdateRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            SelectOrUpdateRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return select(
-            requestMessage,
-            Js.<TableServiceClient.SelectMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.SelectMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse select(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.SelectMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.SelectCallbackFn callback) {
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.SelectMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.SelectCallbackFn callback) {
         return select(
-            requestMessage,
-            Js.<TableServiceClient.SelectMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.SelectMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse select(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.SelectMetadata_or_callbackFn metadata_or_callback) {
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.SelectMetadata_or_callbackFn metadata_or_callback) {
         return select(
-            requestMessage,
-            Js.<TableServiceClient.SelectMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.SelectMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse select(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.SelectMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.SelectCallbackFn callback);
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.SelectMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.SelectCallbackFn callback);
 
     public native UnaryResponse select(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.SelectMetadata_or_callbackUnionType metadata_or_callback);
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.SelectMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse selectDistinct(
-        SelectDistinctRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.SelectDistinctCallbackFn callback) {
+            SelectDistinctRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.SelectDistinctCallbackFn callback) {
         return selectDistinct(
-            requestMessage,
-            Js.<TableServiceClient.SelectDistinctMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.SelectDistinctMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse selectDistinct(
-        SelectDistinctRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            SelectDistinctRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return selectDistinct(
-            requestMessage,
-            Js.<TableServiceClient.SelectDistinctMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.SelectDistinctMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse selectDistinct(
-        SelectDistinctRequest requestMessage,
-        TableServiceClient.SelectDistinctMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.SelectDistinctCallbackFn callback) {
+            SelectDistinctRequest requestMessage,
+            TableServiceClient.SelectDistinctMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.SelectDistinctCallbackFn callback) {
         return selectDistinct(
-            requestMessage,
-            Js.<TableServiceClient.SelectDistinctMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.SelectDistinctMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse selectDistinct(
-        SelectDistinctRequest requestMessage,
-        TableServiceClient.SelectDistinctMetadata_or_callbackFn metadata_or_callback) {
+            SelectDistinctRequest requestMessage,
+            TableServiceClient.SelectDistinctMetadata_or_callbackFn metadata_or_callback) {
         return selectDistinct(
-            requestMessage,
-            Js.<TableServiceClient.SelectDistinctMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.SelectDistinctMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse selectDistinct(
-        SelectDistinctRequest requestMessage,
-        TableServiceClient.SelectDistinctMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.SelectDistinctCallbackFn callback);
+            SelectDistinctRequest requestMessage,
+            TableServiceClient.SelectDistinctMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.SelectDistinctCallbackFn callback);
 
     public native UnaryResponse selectDistinct(
-        SelectDistinctRequest requestMessage,
-        TableServiceClient.SelectDistinctMetadata_or_callbackUnionType metadata_or_callback);
+            SelectDistinctRequest requestMessage,
+            TableServiceClient.SelectDistinctMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse snapshot(
-        SnapshotTableRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.SnapshotCallbackFn callback) {
+            SnapshotTableRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.SnapshotCallbackFn callback) {
         return snapshot(
-            requestMessage,
-            Js.<TableServiceClient.SnapshotMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.SnapshotMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse snapshot(
-        SnapshotTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            SnapshotTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return snapshot(
-            requestMessage,
-            Js.<TableServiceClient.SnapshotMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.SnapshotMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse snapshot(
-        SnapshotTableRequest requestMessage,
-        TableServiceClient.SnapshotMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.SnapshotCallbackFn callback) {
+            SnapshotTableRequest requestMessage,
+            TableServiceClient.SnapshotMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.SnapshotCallbackFn callback) {
         return snapshot(
-            requestMessage,
-            Js.<TableServiceClient.SnapshotMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.SnapshotMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse snapshot(
-        SnapshotTableRequest requestMessage,
-        TableServiceClient.SnapshotMetadata_or_callbackFn metadata_or_callback) {
+            SnapshotTableRequest requestMessage,
+            TableServiceClient.SnapshotMetadata_or_callbackFn metadata_or_callback) {
         return snapshot(
-            requestMessage,
-            Js.<TableServiceClient.SnapshotMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.SnapshotMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse snapshot(
-        SnapshotTableRequest requestMessage,
-        TableServiceClient.SnapshotMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.SnapshotCallbackFn callback);
+            SnapshotTableRequest requestMessage,
+            TableServiceClient.SnapshotMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.SnapshotCallbackFn callback);
 
     public native UnaryResponse snapshot(
-        SnapshotTableRequest requestMessage,
-        TableServiceClient.SnapshotMetadata_or_callbackUnionType metadata_or_callback);
+            SnapshotTableRequest requestMessage,
+            TableServiceClient.SnapshotMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse sort(
-        SortTableRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.SortCallbackFn callback) {
+            SortTableRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.SortCallbackFn callback) {
         return sort(
-            requestMessage,
-            Js.<TableServiceClient.SortMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.SortMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse sort(
-        SortTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            SortTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return sort(
-            requestMessage,
-            Js.<TableServiceClient.SortMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.SortMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse sort(
-        SortTableRequest requestMessage,
-        TableServiceClient.SortMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.SortCallbackFn callback) {
+            SortTableRequest requestMessage,
+            TableServiceClient.SortMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.SortCallbackFn callback) {
         return sort(
-            requestMessage,
-            Js.<TableServiceClient.SortMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.SortMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse sort(
-        SortTableRequest requestMessage,
-        TableServiceClient.SortMetadata_or_callbackFn metadata_or_callback) {
+            SortTableRequest requestMessage,
+            TableServiceClient.SortMetadata_or_callbackFn metadata_or_callback) {
         return sort(
-            requestMessage,
-            Js.<TableServiceClient.SortMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.SortMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse sort(
-        SortTableRequest requestMessage,
-        TableServiceClient.SortMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.SortCallbackFn callback);
+            SortTableRequest requestMessage,
+            TableServiceClient.SortMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.SortCallbackFn callback);
 
     public native UnaryResponse sort(
-        SortTableRequest requestMessage,
-        TableServiceClient.SortMetadata_or_callbackUnionType metadata_or_callback);
+            SortTableRequest requestMessage,
+            TableServiceClient.SortMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse tail(
-        HeadOrTailRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.TailCallbackFn callback) {
+            HeadOrTailRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.TailCallbackFn callback) {
         return tail(
-            requestMessage,
-            Js.<TableServiceClient.TailMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.TailMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse tail(
-        HeadOrTailRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            HeadOrTailRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return tail(
-            requestMessage,
-            Js.<TableServiceClient.TailMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.TailMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse tail(
-        HeadOrTailRequest requestMessage,
-        TableServiceClient.TailMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.TailCallbackFn callback) {
+            HeadOrTailRequest requestMessage,
+            TableServiceClient.TailMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.TailCallbackFn callback) {
         return tail(
-            requestMessage,
-            Js.<TableServiceClient.TailMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.TailMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse tail(
-        HeadOrTailRequest requestMessage,
-        TableServiceClient.TailMetadata_or_callbackFn metadata_or_callback) {
+            HeadOrTailRequest requestMessage,
+            TableServiceClient.TailMetadata_or_callbackFn metadata_or_callback) {
         return tail(
-            requestMessage,
-            Js.<TableServiceClient.TailMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.TailMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse tail(
-        HeadOrTailRequest requestMessage,
-        TableServiceClient.TailMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.TailCallbackFn callback);
+            HeadOrTailRequest requestMessage,
+            TableServiceClient.TailMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.TailCallbackFn callback);
 
     public native UnaryResponse tail(
-        HeadOrTailRequest requestMessage,
-        TableServiceClient.TailMetadata_or_callbackUnionType metadata_or_callback);
+            HeadOrTailRequest requestMessage,
+            TableServiceClient.TailMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse tailBy(
-        HeadOrTailByRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.TailByCallbackFn callback) {
+            HeadOrTailByRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.TailByCallbackFn callback) {
         return tailBy(
-            requestMessage,
-            Js.<TableServiceClient.TailByMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.TailByMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse tailBy(
-        HeadOrTailByRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            HeadOrTailByRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return tailBy(
-            requestMessage,
-            Js.<TableServiceClient.TailByMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.TailByMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse tailBy(
-        HeadOrTailByRequest requestMessage,
-        TableServiceClient.TailByMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.TailByCallbackFn callback) {
+            HeadOrTailByRequest requestMessage,
+            TableServiceClient.TailByMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.TailByCallbackFn callback) {
         return tailBy(
-            requestMessage,
-            Js.<TableServiceClient.TailByMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.TailByMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse tailBy(
-        HeadOrTailByRequest requestMessage,
-        TableServiceClient.TailByMetadata_or_callbackFn metadata_or_callback) {
+            HeadOrTailByRequest requestMessage,
+            TableServiceClient.TailByMetadata_or_callbackFn metadata_or_callback) {
         return tailBy(
-            requestMessage,
-            Js.<TableServiceClient.TailByMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.TailByMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse tailBy(
-        HeadOrTailByRequest requestMessage,
-        TableServiceClient.TailByMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.TailByCallbackFn callback);
+            HeadOrTailByRequest requestMessage,
+            TableServiceClient.TailByMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.TailByCallbackFn callback);
 
     public native UnaryResponse tailBy(
-        HeadOrTailByRequest requestMessage,
-        TableServiceClient.TailByMetadata_or_callbackUnionType metadata_or_callback);
+            HeadOrTailByRequest requestMessage,
+            TableServiceClient.TailByMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse timeTable(
-        TimeTableRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.TimeTableCallbackFn callback) {
+            TimeTableRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.TimeTableCallbackFn callback) {
         return timeTable(
-            requestMessage,
-            Js.<TableServiceClient.TimeTableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.TimeTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse timeTable(
-        TimeTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            TimeTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return timeTable(
-            requestMessage,
-            Js.<TableServiceClient.TimeTableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.TimeTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse timeTable(
-        TimeTableRequest requestMessage,
-        TableServiceClient.TimeTableMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.TimeTableCallbackFn callback) {
+            TimeTableRequest requestMessage,
+            TableServiceClient.TimeTableMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.TimeTableCallbackFn callback) {
         return timeTable(
-            requestMessage,
-            Js.<TableServiceClient.TimeTableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.TimeTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse timeTable(
-        TimeTableRequest requestMessage,
-        TableServiceClient.TimeTableMetadata_or_callbackFn metadata_or_callback) {
+            TimeTableRequest requestMessage,
+            TableServiceClient.TimeTableMetadata_or_callbackFn metadata_or_callback) {
         return timeTable(
-            requestMessage,
-            Js.<TableServiceClient.TimeTableMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.TimeTableMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse timeTable(
-        TimeTableRequest requestMessage,
-        TableServiceClient.TimeTableMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.TimeTableCallbackFn callback);
+            TimeTableRequest requestMessage,
+            TableServiceClient.TimeTableMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.TimeTableCallbackFn callback);
 
     public native UnaryResponse timeTable(
-        TimeTableRequest requestMessage,
-        TableServiceClient.TimeTableMetadata_or_callbackUnionType metadata_or_callback);
+            TimeTableRequest requestMessage,
+            TableServiceClient.TimeTableMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse ungroup(
-        UngroupRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.UngroupCallbackFn callback) {
+            UngroupRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.UngroupCallbackFn callback) {
         return ungroup(
-            requestMessage,
-            Js.<TableServiceClient.UngroupMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.UngroupMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse ungroup(
-        UngroupRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            UngroupRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return ungroup(
-            requestMessage,
-            Js.<TableServiceClient.UngroupMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.UngroupMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse ungroup(
-        UngroupRequest requestMessage,
-        TableServiceClient.UngroupMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.UngroupCallbackFn callback) {
+            UngroupRequest requestMessage,
+            TableServiceClient.UngroupMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.UngroupCallbackFn callback) {
         return ungroup(
-            requestMessage,
-            Js.<TableServiceClient.UngroupMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.UngroupMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse ungroup(
-        UngroupRequest requestMessage,
-        TableServiceClient.UngroupMetadata_or_callbackFn metadata_or_callback) {
+            UngroupRequest requestMessage,
+            TableServiceClient.UngroupMetadata_or_callbackFn metadata_or_callback) {
         return ungroup(
-            requestMessage,
-            Js.<TableServiceClient.UngroupMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.UngroupMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse ungroup(
-        UngroupRequest requestMessage,
-        TableServiceClient.UngroupMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.UngroupCallbackFn callback);
+            UngroupRequest requestMessage,
+            TableServiceClient.UngroupMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.UngroupCallbackFn callback);
 
     public native UnaryResponse ungroup(
-        UngroupRequest requestMessage,
-        TableServiceClient.UngroupMetadata_or_callbackUnionType metadata_or_callback);
+            UngroupRequest requestMessage,
+            TableServiceClient.UngroupMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse unstructuredFilter(
-        UnstructuredFilterTableRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.UnstructuredFilterCallbackFn callback) {
+            UnstructuredFilterTableRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.UnstructuredFilterCallbackFn callback) {
         return unstructuredFilter(
-            requestMessage,
-            Js.<TableServiceClient.UnstructuredFilterMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.UnstructuredFilterMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse unstructuredFilter(
-        UnstructuredFilterTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            UnstructuredFilterTableRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return unstructuredFilter(
-            requestMessage,
-            Js.<TableServiceClient.UnstructuredFilterMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.UnstructuredFilterMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse unstructuredFilter(
-        UnstructuredFilterTableRequest requestMessage,
-        TableServiceClient.UnstructuredFilterMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.UnstructuredFilterCallbackFn callback) {
+            UnstructuredFilterTableRequest requestMessage,
+            TableServiceClient.UnstructuredFilterMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.UnstructuredFilterCallbackFn callback) {
         return unstructuredFilter(
-            requestMessage,
-            Js.<TableServiceClient.UnstructuredFilterMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.UnstructuredFilterMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse unstructuredFilter(
-        UnstructuredFilterTableRequest requestMessage,
-        TableServiceClient.UnstructuredFilterMetadata_or_callbackFn metadata_or_callback) {
+            UnstructuredFilterTableRequest requestMessage,
+            TableServiceClient.UnstructuredFilterMetadata_or_callbackFn metadata_or_callback) {
         return unstructuredFilter(
-            requestMessage,
-            Js.<TableServiceClient.UnstructuredFilterMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.UnstructuredFilterMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse unstructuredFilter(
-        UnstructuredFilterTableRequest requestMessage,
-        TableServiceClient.UnstructuredFilterMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.UnstructuredFilterCallbackFn callback);
+            UnstructuredFilterTableRequest requestMessage,
+            TableServiceClient.UnstructuredFilterMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.UnstructuredFilterCallbackFn callback);
 
     public native UnaryResponse unstructuredFilter(
-        UnstructuredFilterTableRequest requestMessage,
-        TableServiceClient.UnstructuredFilterMetadata_or_callbackUnionType metadata_or_callback);
+            UnstructuredFilterTableRequest requestMessage,
+            TableServiceClient.UnstructuredFilterMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse update(
-        SelectOrUpdateRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.UpdateCallbackFn callback) {
+            SelectOrUpdateRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.UpdateCallbackFn callback) {
         return update(
-            requestMessage,
-            Js.<TableServiceClient.UpdateMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.UpdateMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse update(
-        SelectOrUpdateRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            SelectOrUpdateRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return update(
-            requestMessage,
-            Js.<TableServiceClient.UpdateMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.UpdateMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse update(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.UpdateMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.UpdateCallbackFn callback) {
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.UpdateMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.UpdateCallbackFn callback) {
         return update(
-            requestMessage,
-            Js.<TableServiceClient.UpdateMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.UpdateMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse update(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.UpdateMetadata_or_callbackFn metadata_or_callback) {
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.UpdateMetadata_or_callbackFn metadata_or_callback) {
         return update(
-            requestMessage,
-            Js.<TableServiceClient.UpdateMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.UpdateMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse update(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.UpdateMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.UpdateCallbackFn callback);
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.UpdateMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.UpdateCallbackFn callback);
 
     public native UnaryResponse update(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.UpdateMetadata_or_callbackUnionType metadata_or_callback);
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.UpdateMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse updateView(
-        SelectOrUpdateRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.UpdateViewCallbackFn callback) {
+            SelectOrUpdateRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.UpdateViewCallbackFn callback) {
         return updateView(
-            requestMessage,
-            Js.<TableServiceClient.UpdateViewMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.UpdateViewMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse updateView(
-        SelectOrUpdateRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            SelectOrUpdateRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return updateView(
-            requestMessage,
-            Js.<TableServiceClient.UpdateViewMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.UpdateViewMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse updateView(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.UpdateViewMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.UpdateViewCallbackFn callback) {
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.UpdateViewMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.UpdateViewCallbackFn callback) {
         return updateView(
-            requestMessage,
-            Js.<TableServiceClient.UpdateViewMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.UpdateViewMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse updateView(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.UpdateViewMetadata_or_callbackFn metadata_or_callback) {
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.UpdateViewMetadata_or_callbackFn metadata_or_callback) {
         return updateView(
-            requestMessage,
-            Js.<TableServiceClient.UpdateViewMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.UpdateViewMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse updateView(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.UpdateViewMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.UpdateViewCallbackFn callback);
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.UpdateViewMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.UpdateViewCallbackFn callback);
 
     public native UnaryResponse updateView(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.UpdateViewMetadata_or_callbackUnionType metadata_or_callback);
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.UpdateViewMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse view(
-        SelectOrUpdateRequest requestMessage,
-        BrowserHeaders metadata_or_callback,
-        TableServiceClient.ViewCallbackFn callback) {
+            SelectOrUpdateRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            TableServiceClient.ViewCallbackFn callback) {
         return view(
-            requestMessage,
-            Js.<TableServiceClient.ViewMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.ViewMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse view(
-        SelectOrUpdateRequest requestMessage, BrowserHeaders metadata_or_callback) {
+            SelectOrUpdateRequest requestMessage, BrowserHeaders metadata_or_callback) {
         return view(
-            requestMessage,
-            Js.<TableServiceClient.ViewMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.ViewMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     @JsOverlay
     public final UnaryResponse view(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.ViewMetadata_or_callbackFn metadata_or_callback,
-        TableServiceClient.ViewCallbackFn callback) {
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.ViewMetadata_or_callbackFn metadata_or_callback,
+            TableServiceClient.ViewCallbackFn callback) {
         return view(
-            requestMessage,
-            Js.<TableServiceClient.ViewMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback),
-            callback);
+                requestMessage,
+                Js.<TableServiceClient.ViewMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
     }
 
     @JsOverlay
     public final UnaryResponse view(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.ViewMetadata_or_callbackFn metadata_or_callback) {
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.ViewMetadata_or_callbackFn metadata_or_callback) {
         return view(
-            requestMessage,
-            Js.<TableServiceClient.ViewMetadata_or_callbackUnionType>uncheckedCast(
-                metadata_or_callback));
+                requestMessage,
+                Js.<TableServiceClient.ViewMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
     }
 
     public native UnaryResponse view(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.ViewMetadata_or_callbackUnionType metadata_or_callback,
-        TableServiceClient.ViewCallbackFn callback);
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.ViewMetadata_or_callbackUnionType metadata_or_callback,
+            TableServiceClient.ViewCallbackFn callback);
 
     public native UnaryResponse view(
-        SelectOrUpdateRequest requestMessage,
-        TableServiceClient.ViewMetadata_or_callbackUnionType metadata_or_callback);
+            SelectOrUpdateRequest requestMessage,
+            TableServiceClient.ViewMetadata_or_callbackUnionType metadata_or_callback);
 }

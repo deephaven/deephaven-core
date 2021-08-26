@@ -44,9 +44,9 @@ public class TextDocumentContentChangeEvent implements Serializable {
     @JsIgnore
     public String toString() {
         return "TextDocumentContentChangeEvent{" +
-            "range=" + range +
-            ", rangeLength=" + rangeLength +
-            ", text='" + text + '\'' +
-            '}';
+                "range=" + range +
+                ", rangeLength=" + rangeLength +
+                ", text='" + text + '\'' +
+                '}';
     }
 }

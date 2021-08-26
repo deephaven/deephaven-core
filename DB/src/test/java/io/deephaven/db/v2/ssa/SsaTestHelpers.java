@@ -9,8 +9,7 @@ import org.jetbrains.annotations.NotNull;
 public class SsaTestHelpers {
     @NotNull
     public static TstUtils.SortedIntGenerator getGeneratorForChar() {
-        return new TstUtils.SortedIntGenerator((int) Character.MIN_VALUE + 1,
-            (int) Character.MAX_VALUE - 1);
+        return new TstUtils.SortedIntGenerator((int) Character.MIN_VALUE + 1, (int) Character.MAX_VALUE - 1);
     }
 
     public static Table prepareTestTableForChar(QueryTable table) {
@@ -77,10 +76,9 @@ public class SsaTestHelpers {
     }
 
     public static Table prepareTestTableForObject(QueryTable table) {
-        // an update might be faster, but updateView ensures we break when object equality is not
-        // the same as ==
+        // an update might be faster, but updateView ensures we break when object equality is not the same as ==
         return LiveTableMonitor.DEFAULT.sharedLock()
-            .computeLocked(() -> table.updateView("Value=String.format(`%06d`, Value)"));
+                .computeLocked(() -> table.updateView("Value=String.format(`%06d`, Value)"));
     }
 
     public static final class TestDescriptor {
@@ -108,8 +106,7 @@ public class SsaTestHelpers {
 
         @Override
         public String toString() {
-            return "seed = " + seed + ", tableSize=" + tableSize + ", nodeSize=" + nodeSize
-                + ", step = " + step;
+            return "seed = " + seed + ", tableSize=" + tableSize + ", nodeSize=" + nodeSize + ", step = " + step;
         }
 
         public int seed() {

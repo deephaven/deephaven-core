@@ -37,8 +37,7 @@ public class TreeTableClientTableManagerTest extends QueryTableTestBase {
         }
 
         @Override
-        public Object invoke(Object proxy, Method method, Object[] args)
-            throws InterruptedException {
+        public Object invoke(Object proxy, Method method, Object[] args) throws InterruptedException {
             if (method.equals(RELEASE_METHOD)) {
                 // Sleep for a bit so we can generate CMEs
                 Thread.sleep(250);
@@ -54,8 +53,8 @@ public class TreeTableClientTableManagerTest extends QueryTableTestBase {
     }
 
     private Table makeProxy() {
-        return (Table) Proxy.newProxyInstance(getClass().getClassLoader(),
-            new Class[] {Table.class}, new DelayingReleaseProxy());
+        return (Table) Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {Table.class},
+                new DelayingReleaseProxy());
     }
 
     @Override
@@ -78,19 +77,15 @@ public class TreeTableClientTableManagerTest extends QueryTableTestBase {
     }
 
     /**
-     * This method tests for regression of the ConcurrentModificationException documented by
-     * IDS-5134
+     * This method tests for regression of the ConcurrentModificationException documented by IDS-5134
      */
     public void testIds5134CME() throws ExecutionException, InterruptedException {
-        final TreeTableClientTableManager.ClientState stateObj =
-            TreeTableClientTableManager.DEFAULT.get(clients[0]);
-        final TreeTableClientTableManager.TreeState treeState00 =
-            stateObj.getTreeState(0, () -> mockSnapshotState);
+        final TreeTableClientTableManager.ClientState stateObj = TreeTableClientTableManager.DEFAULT.get(clients[0]);
+        final TreeTableClientTableManager.TreeState treeState00 = stateObj.getTreeState(0, () -> mockSnapshotState);
         assertSame(mockSnapshotState, treeState00.getUserState());
 
         // Retain a few tables
-        final Table[] proxies =
-            IntStream.range(0, 10).mapToObj((i) -> makeProxy()).toArray(Table[]::new);
+        final Table[] proxies = IntStream.range(0, 10).mapToObj((i) -> makeProxy()).toArray(Table[]::new);
         for (int i = 0; i < 5; i++) {
             treeState00.retain(i, proxies[i]);
         }

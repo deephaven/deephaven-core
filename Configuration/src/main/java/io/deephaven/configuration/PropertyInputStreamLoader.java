@@ -10,8 +10,8 @@ import java.util.ServiceLoader;
  * The default implementation is {@link PropertyInputStreamLoaderTraditional}.
  *
  * <p>
- * To override the default, additional {@link PropertyInputStreamLoader} implementations can be
- * added to the classpath and referenced via the {@link ServiceLoader} mechanism.
+ * To override the default, additional {@link PropertyInputStreamLoader} implementations can be added to the classpath
+ * and referenced via the {@link ServiceLoader} mechanism.
  */
 public interface PropertyInputStreamLoader {
 

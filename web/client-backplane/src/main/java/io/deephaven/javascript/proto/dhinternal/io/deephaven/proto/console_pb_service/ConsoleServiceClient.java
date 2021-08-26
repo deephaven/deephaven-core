@@ -1316,13 +1316,13 @@ public class ConsoleServiceClient {
     }
 
     public native UnaryResponse fetchTableMap(
-        FetchTableMapRequest requestMessage,
-        ConsoleServiceClient.FetchTableMapMetadata_or_callbackUnionType metadata_or_callback,
-        ConsoleServiceClient.FetchTableMapCallbackFn callback);
+            FetchTableMapRequest requestMessage,
+            ConsoleServiceClient.FetchTableMapMetadata_or_callbackUnionType metadata_or_callback,
+            ConsoleServiceClient.FetchTableMapCallbackFn callback);
 
     public native UnaryResponse fetchTableMap(
-        FetchTableMapRequest requestMessage,
-        ConsoleServiceClient.FetchTableMapMetadata_or_callbackUnionType metadata_or_callback);
+            FetchTableMapRequest requestMessage,
+            ConsoleServiceClient.FetchTableMapMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse fetchTableMap(

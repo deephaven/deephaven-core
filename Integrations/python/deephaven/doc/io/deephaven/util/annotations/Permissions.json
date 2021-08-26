@@ -2,6 +2,6 @@
  "className": "io.deephaven.util.annotations.Permissions",
  "methods": {},
  "path": "io.deephaven.util.annotations.Permissions",
- "text": "This annotation indicates that a class or method is created by the Java Security Manager.\nClasses and methods with this annotation should be public",
+ "text": "This annotation indicates that a class or method is created by the Java Security Manager.\n \n\n Classes and methods with this annotation should be public",
  "typeName": "class"
 }

@@ -8,5 +8,5 @@ import jsinterop.annotations.JsType;
 @JsType(isNative = true, name = "dhinternal.grpcWeb.unary", namespace = JsPackage.GLOBAL)
 public class Unary {
     public static native <TRequest, TResponse, M> Request unary(
-        M methodDescriptor, UnaryRpcOptions<TRequest, TResponse> props);
+            M methodDescriptor, UnaryRpcOptions<TRequest, TResponse> props);
 }

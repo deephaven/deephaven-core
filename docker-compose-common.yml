@@ -34,6 +34,10 @@ services:
     # Allows the querying of this process jinfo/jmap
     # docker-compose exec grpc-api jmap -heap 1
     # docker-compose exec grpc-api jinfo 1
+    #
+    # Add NET_ADMIN to allow throttling network speeds
+    # $ docker exec -it core_grpc-api_1 apt-get install iproute2
+    # $ docker exec core_grpc-api_1 tc qdisc add dev eth0 root netem delay 10ms
     cap_add:
       - SYS_PTRACE
 

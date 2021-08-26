@@ -16,7 +16,7 @@ import java.io.ObjectOutput;
 import java.util.Arrays;
 
 public class FastArrayMap<K extends Comparable<K> & Externalizable & Copyable<K>, V extends Externalizable & Copyable<V>>
-    implements Copyable<FastArrayMap<K, V>> {
+        implements Copyable<FastArrayMap<K, V>> {
 
     private FastArray<KeyValuePair<K, V>> array;
 
@@ -118,12 +118,10 @@ public class FastArrayMap<K extends Comparable<K> & Externalizable & Copyable<K>
     }
 
     public static <K extends Externalizable & Comparable<K> & Copyable<K>, V extends Externalizable & Copyable<V>> void writeExternal(
-        final FastArrayMap<K, V> THIS, ObjectOutput out,
-        FastArray.WriteExternalFunction<KeyValuePair<K, V>> writeExternalFunction)
-        throws IOException {
+            final FastArrayMap<K, V> THIS, ObjectOutput out,
+            FastArray.WriteExternalFunction<KeyValuePair<K, V>> writeExternalFunction) throws IOException {
         if (THIS == null) {
-            throw new IllegalArgumentException(
-                "FastArray.writeExternal(): THIS was null and is not supported");
+            throw new IllegalArgumentException("FastArray.writeExternal(): THIS was null and is not supported");
         }
         out.writeInt(THIS.array.getLength());
         for (int i = 0; i < THIS.array.getLength(); ++i) {
@@ -132,12 +130,11 @@ public class FastArrayMap<K extends Comparable<K> & Externalizable & Copyable<K>
     }
 
     public static <K extends Externalizable & Comparable<K> & Copyable<K>, V extends Externalizable & Copyable<V>> void readExternal(
-        final FastArrayMap<K, V> THIS, ObjectInput in,
-        FastArray.ReadExternalFunction<KeyValuePair<K, V>> readExternalFunction)
-        throws IOException, ClassNotFoundException {
+            final FastArrayMap<K, V> THIS, ObjectInput in,
+            FastArray.ReadExternalFunction<KeyValuePair<K, V>> readExternalFunction)
+            throws IOException, ClassNotFoundException {
         if (THIS == null) {
-            throw new IllegalArgumentException(
-                "FastArray.readExternal(): THIS was null and is not supported");
+            throw new IllegalArgumentException("FastArray.readExternal(): THIS was null and is not supported");
         }
         THIS.array.quickReset();
         final int len = in.readInt();

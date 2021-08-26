@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.db.plot.datasets.data.IndexableNumericDataArrayDouble",
+ "methods": {
+  "get": "Gets the value at the specified index as a double.\n\n:param i: (int) - index\n:return: (double) value at index as a double",
+  "size": "Gets the size of this dataset.\n\n:return: (int) size of this dataset"
+ },
+ "path": "io.deephaven.db.plot.datasets.data.IndexableNumericDataArrayDouble",
+ "text": "IndexableNumericData dataset backed by an array of doubles.",
+ "typeName": "class"
+}

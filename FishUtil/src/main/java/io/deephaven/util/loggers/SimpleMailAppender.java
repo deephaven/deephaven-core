@@ -45,18 +45,15 @@ public class SimpleMailAppender extends AppenderSkeleton {
 
             final StringBuilder subjectB = new StringBuilder();
             if (Configuration.getInstance().hasProperty("system.type")) {
-                subjectB.append("[").append(Configuration.getInstance().getProperty("system.type"))
-                    .append("] ");
+                subjectB.append("[").append(Configuration.getInstance().getProperty("system.type")).append("] ");
             }
-            subjectB.append(level).append(" ")
-                .append(loggingEvent.getMessage().toString().replaceFirst(".*FATAL", ""));
+            subjectB.append(level).append(" ").append(loggingEvent.getMessage().toString().replaceFirst(".*FATAL", ""));
 
             final StringBuilder message = new StringBuilder();
 
             message.append("/*----------------------------------------*/\n");
             message.append("Host: ").append(hostname).append("\n");
-            message.append("Config: ").append(Configuration.getConfFileNameFromProperties())
-                .append("\n");
+            message.append("Config: ").append(Configuration.getConfFileNameFromProperties()).append("\n");
             message.append("Date: ").append(new Date()).append("\n");
             message.append("User: ").append(System.getProperty("user.name")).append("\n");
             message.append("Process: ").append(System.getProperty("process.name")).append("\n");

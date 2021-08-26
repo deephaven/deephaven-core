@@ -4,8 +4,7 @@ import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.sources.chunk.Attributes.Values;
 import io.deephaven.db.v2.utils.LongAbortableConsumer;
 
-public abstract class SinkFiller
-    implements WritableChunkSink.FillFromContext, LongAbortableConsumer {
+public abstract class SinkFiller implements WritableChunkSink.FillFromContext, LongAbortableConsumer {
     public static SinkFiller create(final ChunkType chunkType) {
         switch (chunkType) {
             case Byte:
@@ -25,8 +24,7 @@ public abstract class SinkFiller
             case Object:
                 return ObjectFiller.INSTANCE;
 
-            // Boolean Chunks will be passing in chunkType = Object, so there is no use case for
-            // passing in
+            // Boolean Chunks will be passing in chunkType = Object, so there is no use case for passing in
             // ChunkType.Boolean.
             case Boolean:
             default:

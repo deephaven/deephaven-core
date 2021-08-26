@@ -8,9 +8,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.Flight_pb.FlightDescriptor.DescriptorTypeMap",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.Flight_pb.FlightDescriptor.DescriptorTypeMap",
+        namespace = JsPackage.GLOBAL)
 public interface DescriptorTypeMap {
     @JsOverlay
     static DescriptorTypeMap create() {

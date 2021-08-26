@@ -186,7 +186,7 @@ public class ConsoleConfig implements Serializable {
                 JsArrayLike<Object> jsPair = Js.asArrayLike(envVars).getAnyAt(i).asArrayLike();
                 if (jsPair.getLength() != 2) {
                     throw new IllegalArgumentException(
-                        "Argument set doesn't contain two items: " + Global.JSON.stringify(jsPair));
+                            "Argument set doesn't contain two items: " + Global.JSON.stringify(jsPair));
                 }
                 String[] typed = new String[2];
                 typed[0] = jsPair.getAnyAt(0).asString();
@@ -213,8 +213,7 @@ public class ConsoleConfig implements Serializable {
             return map;
         }
         for (String[] envVar : envVars) {
-            assert envVar.length == 2
-                : "env vars must be arrays of arrays of length 2: [ [key, val], [k, v] ]";
+            assert envVar.length == 2 : "env vars must be arrays of arrays of length 2: [ [key, val], [k, v] ]";
             map.put(envVar[0], envVar[1]);
         }
 
@@ -224,17 +223,17 @@ public class ConsoleConfig implements Serializable {
     @Override
     public String toString() {
         return "ConsoleConfig{" +
-            "dispatcherHost='" + dispatcherHost + '\'' +
-            ", dispatcherPort=" + dispatcherPort +
-            ", classpath=" + Arrays.toString(classpath) +
-            ", maxHeapMb=" + maxHeapMb +
-            ", queryDescription='" + queryDescription + '\'' +
-            ", debug=" + debug +
-            ", detailedGCLogging=" + detailedGCLogging +
-            ", omitDefaultGcParameters=" + omitDefaultGcParameters +
-            ", classpath=" + Arrays.toString(classpath_()) +
-            ", jvmArgs=" + Arrays.toString(jvmArgs_()) +
-            ", environmentVars=" + getEnvironmentVars() +
-            '}';
+                "dispatcherHost='" + dispatcherHost + '\'' +
+                ", dispatcherPort=" + dispatcherPort +
+                ", classpath=" + Arrays.toString(classpath) +
+                ", maxHeapMb=" + maxHeapMb +
+                ", queryDescription='" + queryDescription + '\'' +
+                ", debug=" + debug +
+                ", detailedGCLogging=" + detailedGCLogging +
+                ", omitDefaultGcParameters=" + omitDefaultGcParameters +
+                ", classpath=" + Arrays.toString(classpath_()) +
+                ", jvmArgs=" + Arrays.toString(jvmArgs_()) +
+                ", environmentVars=" + getEnvironmentVars() +
+                '}';
     }
 }

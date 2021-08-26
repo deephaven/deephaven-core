@@ -94,8 +94,7 @@ public class WorkerConnection {
 
     private String sessionToken;
 
-    // All calls to the server should share this metadata instance, or copy from it if they need
-    // something custom
+    // All calls to the server should share this metadata instance, or copy from it if they need something custom
     private BrowserHeaders metadata = new BrowserHeaders();
 
     /**
@@ -113,8 +112,7 @@ public class WorkerConnection {
     private enum State {
         Connecting, Connected,
         /**
-         * Indicates that this worker was deliberately disconnected, should be reconnected again if
-         * needed.
+         * Indicates that this worker was deliberately disconnected, should be reconnected again if needed.
          */
         Disconnected, Failed, Reconnecting
     }
@@ -137,8 +135,7 @@ public class WorkerConnection {
     private final StateCache cache = new StateCache();
     private final JsWeakMap<HasTableBinding, RequestBatcher> batchers = new JsWeakMap<>();
     private JsWeakMap<TableTicket, JsConsumer<TableTicket>> handleCallbacks = new JsWeakMap<>();
-    private JsWeakMap<TableTicket, JsConsumer<InitialTableDefinition>> definitionCallbacks =
-        new JsWeakMap<>();
+    private JsWeakMap<TableTicket, JsConsumer<InitialTableDefinition>> definitionCallbacks = new JsWeakMap<>();
     private final Set<ClientTableState> flushable = new HashSet<>();
     private final JsSet<JsConsumer<LogItem>> logCallbacks = new JsSet<>();
 
@@ -153,8 +150,7 @@ public class WorkerConnection {
     private JsConsumer<LogItem> recordLog = pastLogs::add;
     private ResponseStreamWrapper<LogSubscriptionData> logStream;
 
-    public WorkerConnection(QueryConnectable<?> info,
-        Supplier<Promise<ConnectToken>> authTokenPromiseSupplier) {
+    public WorkerConnection(QueryConnectable<?> info, Supplier<Promise<ConnectToken>> authTokenPromiseSupplier) {
         this.info = info;
         this.config = new ClientConfiguration();
         state = State.Connecting;
@@ -385,8 +381,7 @@ public class WorkerConnection {
             // notify table that it has individual row updates
             final Optional<ClientTableState> cts = cache.get(tableHandle);
             if (!cts.isPresent()) {
-                JsLog.debug("Discarding delta for disconnected state ", tableHandle, " : ",
-                    updates);
+                JsLog.debug("Discarding delta for disconnected state ", tableHandle, " : ", updates);
             }
             JsLog.debug("Delta received", tableHandle, updates);
             cts.ifPresent(s -> {
@@ -418,8 +413,7 @@ public class WorkerConnection {
 
     // @Override
     public void onOpen() {
-        // never actually called - this instance isn't configured to be the "client" in the
-        // connection until auth
+        // never actually called - this instance isn't configured to be the "client" in the connection until auth
         // has succeeded.
         assert false
                 : "WorkerConnection.onOpen() should not be invoked directly, check the stack trace to see how this was triggered";
@@ -620,11 +614,9 @@ public class WorkerConnection {
                 // deliberate fall-through
             case Connecting:
             case Reconnecting:
-                // Create a new promise around a callback, add that to the list of callbacks to
-                // complete when
+                // Create a new promise around a callback, add that to the list of callbacks to complete when
                 // connection is complete
-                return Callbacks.<Void, String>promise(info, c -> onOpen.add(c))
-                    .then(ignore -> Promise.resolve(this));
+                return Callbacks.<Void, String>promise(info, c -> onOpen.add(c)).then(ignore -> Promise.resolve(this));
             case Connected:
                 // Already connected, continue
                 return Promise.resolve(this);
@@ -651,8 +643,7 @@ public class WorkerConnection {
 
     public Promise<JsTreeTable> getTreeTable(String tableName, Ticket script) {
         return getTable(tableName, script).then(t -> {
-            Promise<JsTreeTable> result =
-                Promise.resolve(new JsTreeTable(t.state(), this).finishFetch());
+            Promise<JsTreeTable> result = Promise.resolve(new JsTreeTable(t.state(), this).finishFetch());
             t.close();
             return result;
         });
@@ -664,12 +655,12 @@ public class WorkerConnection {
 
     public Promise<JsFigure> getFigure(String figureName, Ticket script) {
         return whenServerReady("get a figure")
-            .then(server -> new JsFigure(this, c -> {
-                FetchFigureRequest request = new FetchFigureRequest();
-                request.setConsoleId(script);
-                request.setFigureName(figureName);
-                consoleServiceClient().fetchFigure(request, metadata(), c::apply);
-            }).refetch());
+                .then(server -> new JsFigure(this, c -> {
+                    FetchFigureRequest request = new FetchFigureRequest();
+                    request.setConsoleId(script);
+                    request.setFigureName(figureName);
+                    consoleServiceClient().fetchFigure(request, metadata(), c::apply);
+                }).refetch());
     }
 
     public void registerFigure(JsFigure figure) {
@@ -764,8 +755,7 @@ public class WorkerConnection {
             schemaMessage.setAppMetadata(BarrageUtils.barrageMessage(rpcTicket, 0, false));
             schemaMessage.setFlightDescriptor(cts.getHandle().makeFlightDescriptor());
 
-            // we wait for any errors in this response to pass to the caller, but success is
-            // determined by the eventual
+            // we wait for any errors in this response to pass to the caller, but success is determined by the eventual
             // table's creation, which can race this
             BiDiStream<FlightData, FlightData> stream = this.<FlightData, FlightData>streamFactory().create(
                     headers -> flightServiceClient.doPut(headers),
@@ -795,8 +785,7 @@ public class WorkerConnection {
 
             Builder bodyData = new Builder(1024);
 
-            // iterate each column, building buffers and fieldnodes, as well as building the actual
-            // payload
+            // iterate each column, building buffers and fieldnodes, as well as building the actual payload
             List<Uint8Array> buffers = new ArrayList<>();
             List<CsvTypeParser.Node> nodes = new ArrayList<>();
             for (int i = 0; i < data.length; i++) {
@@ -805,8 +794,7 @@ public class WorkerConnection {
 
             // write down the buffers for the RecordBatch
             RecordBatch.startBuffersVector(bodyData, buffers.size());
-            int length = 0;// record the size, we need to be sure all buffers are padded to full
-                           // width
+            int length = 0;// record the size, we need to be sure all buffers are padded to full width
             for (Uint8Array arr : buffers) {
                 assert arr.byteLength % 8 == 0;
                 length += arr.byteLength;
@@ -815,8 +803,7 @@ public class WorkerConnection {
             for (int i = buffers.size() - 1; i >= 0; i--) {
                 Uint8Array buffer = buffers.get(i);
                 cumulativeOffset -= buffer.byteLength;
-                Buffer.createBuffer(bodyData, Long.create(cumulativeOffset, 0),
-                    Long.create(buffer.byteLength, 0));
+                Buffer.createBuffer(bodyData, Long.create(cumulativeOffset, 0), Long.create(buffer.byteLength, 0));
             }
             assert cumulativeOffset == 0;
             double buffersOffset = bodyData.endVector();
@@ -824,8 +811,7 @@ public class WorkerConnection {
             RecordBatch.startNodesVector(bodyData, nodes.size());
             for (int i = nodes.size() - 1; i >= 0; i--) {
                 CsvTypeParser.Node node = nodes.get(i);
-                FieldNode.createFieldNode(bodyData, Long.create(node.length(), 0),
-                    Long.create(node.nullCount(), 0));
+                FieldNode.createFieldNode(bodyData, Long.create(node.length(), 0), Long.create(node.nullCount(), 0));
             }
             double nodesOffset = bodyData.endVector();
 
@@ -836,8 +822,7 @@ public class WorkerConnection {
             RecordBatch.addLength(bodyData, Long.create(data[0].length, 0));
 
             double recordBatchOffset = RecordBatch.endRecordBatch(bodyData);
-            bodyMessage.setDataHeader(
-                createMessage(bodyData, MessageHeader.RecordBatch, recordBatchOffset, length, 0));
+            bodyMessage.setDataHeader(createMessage(bodyData, MessageHeader.RecordBatch, recordBatchOffset, length, 0));
             bodyMessage.setDataBody(padAndConcat(buffers, length));
 
             stream.send(bodyMessage);
@@ -870,8 +855,7 @@ public class WorkerConnection {
             for (int i = 0; i < tables.length; i++) {
                 final JsTable table = tables[i];
                 if (!table.getConnection().equals(this)) {
-                    throw new IllegalStateException(
-                        "Table in merge is not on the worker for this connection");
+                    throw new IllegalStateException("Table in merge is not on the worker for this connection");
                 }
                 tableHandles[i] = new TableReference();
                 tableHandles[i].setTicket(tables[i].getHandle().makeTicket());
@@ -962,20 +946,17 @@ public class WorkerConnection {
     }
 
     public ClientTableState newState(JsTableFetch fetcher, String fetchSummary) {
-        return cache.create(newHandle(),
-            handle -> new ClientTableState(this, handle, fetcher, fetchSummary));
+        return cache.create(newHandle(), handle -> new ClientTableState(this, handle, fetcher, fetchSummary));
     }
 
     /**
      *
      * @param fetcher The lambda to perform the fetch of the table's definition.
-     * @return A promise that will resolve when the ClientTableState is RUNNING (and fail if
-     *         anything goes awry).
+     * @return A promise that will resolve when the ClientTableState is RUNNING (and fail if anything goes awry).
      *
      *         TODO: consider a fetch timeout.
      */
-    public Promise<ClientTableState> newState(HasEventHandling failHandler, JsTableFetch fetcher,
-        String fetchSummary) {
+    public Promise<ClientTableState> newState(HasEventHandling failHandler, JsTableFetch fetcher, String fetchSummary) {
         final TableTicket handle = newHandle();
         final ClientTableState s = cache.create(handle, h -> new ClientTableState(this, h, fetcher, fetchSummary));
         return s.refetch(failHandler, metadata);
@@ -994,8 +975,7 @@ public class WorkerConnection {
     }
 
     /**
-     * Schedules a deferred command to check the given state for active tables and adjust viewports
-     * accordingly.
+     * Schedules a deferred command to check the given state for active tables and adjust viewports accordingly.
      */
     public void scheduleCheck(ClientTableState state) {
         if (flushable.isEmpty()) {
@@ -1054,8 +1034,7 @@ public class WorkerConnection {
                         cache.release(state);
 
                         JsLog.debug("Releasing state", state, LazyString.of(state.getHandle()));
-                        // don't send a release message to the server if the table isn't really
-                        // there
+                        // don't send a release message to the server if the table isn't really there
                         if (state.getHandle().isConnected()) {
                             releaseHandle(state.getHandle());
                         }
@@ -1096,8 +1075,8 @@ public class WorkerConnection {
                     return result;
                 }).orElseThrow(() -> new IllegalStateException("Cannot call subscribe with zero subscriptions"));
                 String[] columnTypes = Arrays.stream(state.getAllColumns())
-                    .map(Column::getType)
-                    .toArray(String[]::new);
+                        .map(Column::getType)
+                        .toArray(String[]::new);
 
                 state.setSubscribed(true);
 
@@ -1120,8 +1099,7 @@ public class WorkerConnection {
                 // BarrageSubscriptionRequest.addUpdateIntervalMs();//TODO #188 support this
                 BarrageSubscriptionRequest.addViewport(subscriptionReq, viewportOffset);
                 BarrageSubscriptionRequest.addTicket(subscriptionReq, tableTicketOffset);
-                subscriptionReq.finish(
-                    BarrageSubscriptionRequest.endBarrageSubscriptionRequest(subscriptionReq));
+                subscriptionReq.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(subscriptionReq));
 
                 FlightData request = new FlightData();
                 request.setAppMetadata(BarrageUtils.barrageMessage(subscriptionReq,
@@ -1211,10 +1189,8 @@ public class WorkerConnection {
         switch (state) {
             case Connected:
             case Connecting:
-                // Ignore Reconnecting, this is here for tree tables to decide whether to poll or
-                // not;
-                // if we really are disconnected, tree tables should wait until we are reconnected
-                // to poll again.
+                // Ignore Reconnecting, this is here for tree tables to decide whether to poll or not;
+                // if we really are disconnected, tree tables should wait until we are reconnected to poll again.
                 return true;
 
         }
@@ -1285,8 +1261,7 @@ public class WorkerConnection {
         graph.append("  null [label=\"fetch from server\" shape=plaintext]\n");
 
         // collect the parent/child relationships
-        Map<ClientTableState, List<ClientTableState>> statesAndParents =
-            cache.getAllStates().stream()
+        Map<ClientTableState, List<ClientTableState>> statesAndParents = cache.getAllStates().stream()
                 .collect(Collectors.groupingBy(ClientTableState::getPrevious));
 
         // append all handles, operations, and how they were performed
@@ -1329,13 +1304,12 @@ public class WorkerConnection {
     }
 
     public Promise<JsTable> emptyTable(double size) {
-        return whenServerReady("create emptyTable")
-            .then(server -> newState(info, (c, cts, metadata) -> {
-                EmptyTableRequest emptyTableRequest = new EmptyTableRequest();
-                emptyTableRequest.setResultId(cts.getHandle().makeTicket());
-                emptyTableRequest.setSize(size + "");
-                tableServiceClient.emptyTable(emptyTableRequest, metadata, c::apply);
-            }, "emptyTable(" + size + ")")).then(cts -> Promise.resolve(new JsTable(this, cts)));
+        return whenServerReady("create emptyTable").then(server -> newState(info, (c, cts, metadata) -> {
+            EmptyTableRequest emptyTableRequest = new EmptyTableRequest();
+            emptyTableRequest.setResultId(cts.getHandle().makeTicket());
+            emptyTableRequest.setSize(size + "");
+            tableServiceClient.emptyTable(emptyTableRequest, metadata, c::apply);
+        }, "emptyTable(" + size + ")")).then(cts -> Promise.resolve(new JsTable(this, cts)));
     }
 
     public Promise<JsTable> timeTable(double periodNanos, DateWrapper startTime) {

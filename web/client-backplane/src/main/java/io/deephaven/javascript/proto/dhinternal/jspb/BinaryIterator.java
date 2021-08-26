@@ -251,36 +251,35 @@ public class BinaryIterator {
 
     @JsOverlay
     public static final BinaryIterator alloc(
-        BinaryDecoder decoder,
-        BinaryIterator.AllocNextFn next,
-        BinaryIterator.AllocElementsArrayUnionType[] elements) {
+            BinaryDecoder decoder,
+            BinaryIterator.AllocNextFn next,
+            BinaryIterator.AllocElementsArrayUnionType[] elements) {
         return alloc(
-            decoder,
-            next,
-            Js.<JsArray<BinaryIterator.AllocElementsArrayUnionType>>uncheckedCast(elements));
+                decoder,
+                next,
+                Js.<JsArray<BinaryIterator.AllocElementsArrayUnionType>>uncheckedCast(elements));
     }
 
     public static native BinaryIterator alloc(
-        BinaryDecoder decoder,
-        BinaryIterator.AllocNextFn next,
-        JsArray<BinaryIterator.AllocElementsArrayUnionType> elements);
+            BinaryDecoder decoder,
+            BinaryIterator.AllocNextFn next,
+            JsArray<BinaryIterator.AllocElementsArrayUnionType> elements);
 
-    public static native BinaryIterator alloc(BinaryDecoder decoder,
-        BinaryIterator.AllocNextFn next);
+    public static native BinaryIterator alloc(BinaryDecoder decoder, BinaryIterator.AllocNextFn next);
 
     public static native BinaryIterator alloc(BinaryDecoder decoder);
 
     public BinaryIterator() {}
 
     public BinaryIterator(
-        BinaryDecoder decoder,
-        BinaryIterator.BinaryIteratorNextFn next,
-        BinaryIterator.ConstructorElementsArrayUnionType[] elements) {}
+            BinaryDecoder decoder,
+            BinaryIterator.BinaryIteratorNextFn next,
+            BinaryIterator.ConstructorElementsArrayUnionType[] elements) {}
 
     public BinaryIterator(
-        BinaryDecoder decoder,
-        BinaryIterator.BinaryIteratorNextFn next,
-        JsArray<BinaryIterator.ConstructorElementsArrayUnionType> elements) {}
+            BinaryDecoder decoder,
+            BinaryIterator.BinaryIteratorNextFn next,
+            JsArray<BinaryIterator.ConstructorElementsArrayUnionType> elements) {}
 
     public BinaryIterator(BinaryDecoder decoder, BinaryIterator.BinaryIteratorNextFn next) {}
 

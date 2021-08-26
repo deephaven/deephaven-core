@@ -9,14 +9,14 @@ package io.deephaven.base.queue;
  */
 public interface ProducerConsumer<T> {
     /**
-     * This method should never block (but it may spin for a finite amount of time) Returns true
-     * when t was successfully produced, else false
+     * This method should never block (but it may spin for a finite amount of time) Returns true when t was successfully
+     * produced, else false
      */
     boolean produce(T t);
 
     /**
-     * This method should never block (but it may spin for a finite amount of time) Returns null
-     * when there is nothing to consume [may create new objects on the fly if necessary]
+     * This method should never block (but it may spin for a finite amount of time) Returns null when there is nothing
+     * to consume [may create new objects on the fly if necessary]
      */
     T consume();
 
@@ -39,8 +39,7 @@ public interface ProducerConsumer<T> {
     }
 
     /**
-     * Must implement at least: Multiple threads may call produce(), multiple threads may call
-     * consume()
+     * Must implement at least: Multiple threads may call produce(), multiple threads may call consume()
      */
     public static interface MultiProducerConsumer<T> extends MultiProducer<T>, MultiConsumer<T> {
     }

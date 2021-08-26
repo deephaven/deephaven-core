@@ -2,7 +2,7 @@
  "className": "io.deephaven.db.plot.util.tables.TableMapBackedTableMapHandle",
  "methods": {
   "applyFunction": ":param function: java.util.function.Function<io.deephaven.db.tables.Table,io.deephaven.db.tables.Table>",
-  "getFetchViewColumns": "Get the set of columns to .view() when the table is fetched.  Typically this is identical to TableMapHandle.getColumns()\n however, there are situations where the transformations applied to a TableMap result in columns that are not\n present in the base tableMap.  (for example catHistPlot).\n\n:return: java.util.Set<java.lang.String>",
+  "getFetchViewColumns": "Get the set of columns to .view() when the table is fetched. Typically this is identical to TableMapHandle.getColumns()\n however, there are situations where the transformations applied to a TableMap result in columns that are not\n present in the base tableMap. (for example catHistPlot).\n\n:return: java.util.Set<java.lang.String>",
   "getTableDefinition": ":return: io.deephaven.db.tables.TableDefinition"
  },
  "path": "io.deephaven.db.plot.util.tables.TableMapBackedTableMapHandle",

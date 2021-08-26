@@ -18,15 +18,14 @@ import static io.deephaven.util.QueryConstants.*;
  * Base {@link ColumnSource} implementation for aggregation result columns.
  */
 abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMPONENT_TYPE>
-    extends AbstractColumnSource<DB_ARRAY_TYPE>
-    implements AggregateColumnSource<DB_ARRAY_TYPE, COMPONENT_TYPE> {
+        extends AbstractColumnSource<DB_ARRAY_TYPE> implements AggregateColumnSource<DB_ARRAY_TYPE, COMPONENT_TYPE> {
 
     final ColumnSource<COMPONENT_TYPE> aggregatedSource;
     final ColumnSource<Index> indexSource;
 
     BaseAggregateColumnSource(@NotNull final Class<DB_ARRAY_TYPE> dbArrayType,
-        @NotNull final ColumnSource<COMPONENT_TYPE> aggregatedSource,
-        @NotNull final ColumnSource<Index> indexSource) {
+            @NotNull final ColumnSource<COMPONENT_TYPE> aggregatedSource,
+            @NotNull final ColumnSource<Index> indexSource) {
         super(dbArrayType, aggregatedSource.getType());
         this.aggregatedSource = aggregatedSource;
         this.indexSource = indexSource;
@@ -44,14 +43,11 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
 
         final GetContext indexGetContext;
 
-        private AggregateFillContext(@NotNull final ColumnSource<Index> indexSource,
-            final int chunkCapacity, final SharedContext sharedContext) {
-            // TODO: Implement a proper shareable context to use with other instances that share an
-            // index source.
-            // Current usage is "safe" because index sources are only exposed through this wrapper,
-            // and all
-            // sources at a given level will pass through their ordered keys to the index source
-            // unchanged.
+        private AggregateFillContext(@NotNull final ColumnSource<Index> indexSource, final int chunkCapacity,
+                final SharedContext sharedContext) {
+            // TODO: Implement a proper shareable context to use with other instances that share an index source.
+            // Current usage is "safe" because index sources are only exposed through this wrapper, and all
+            // sources at a given level will pass through their ordered keys to the index source unchanged.
             indexGetContext = indexSource.makeGetContext(chunkCapacity, sharedContext);
         }
 
@@ -62,8 +58,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
     }
 
     @Override
-    public final FillContext makeFillContext(final int chunkCapacity,
-        final SharedContext sharedContext) {
+    public final FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
         return new AggregateFillContext(indexSource, chunkCapacity, sharedContext);
     }
 
@@ -101,8 +96,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
         if (groupIndexKey == Index.NULL_KEY) {
             return null;
         }
-        return aggregatedSource
-            .getPrev(indexSource.getPrev(groupIndexKey).getPrevIndex().get(offsetInGroup));
+        return aggregatedSource.getPrev(indexSource.getPrev(groupIndexKey).getPrevIndex().get(offsetInGroup));
     }
 
     @Override
@@ -114,13 +108,11 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
     }
 
     @Override
-    public final Boolean getUngroupedPrevBoolean(final long groupIndexKey,
-        final int offsetInGroup) {
+    public final Boolean getUngroupedPrevBoolean(final long groupIndexKey, final int offsetInGroup) {
         if (groupIndexKey == Index.NULL_KEY) {
             return NULL_BOOLEAN;
         }
-        return aggregatedSource
-            .getPrevBoolean(indexSource.getPrev(groupIndexKey).getPrevIndex().get(offsetInGroup));
+        return aggregatedSource.getPrevBoolean(indexSource.getPrev(groupIndexKey).getPrevIndex().get(offsetInGroup));
     }
 
     @Override
@@ -136,8 +128,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
         if (groupIndexKey == Index.NULL_KEY) {
             return NULL_DOUBLE;
         }
-        return aggregatedSource
-            .getPrevDouble(indexSource.getPrev(groupIndexKey).getPrevIndex().get(offsetInGroup));
+        return aggregatedSource.getPrevDouble(indexSource.getPrev(groupIndexKey).getPrevIndex().get(offsetInGroup));
     }
 
     @Override
@@ -153,8 +144,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
         if (groupIndexKey == Index.NULL_KEY) {
             return NULL_FLOAT;
         }
-        return aggregatedSource
-            .getPrevFloat(indexSource.getPrev(groupIndexKey).getPrevIndex().get(offsetInGroup));
+        return aggregatedSource.getPrevFloat(indexSource.getPrev(groupIndexKey).getPrevIndex().get(offsetInGroup));
     }
 
     @Override
@@ -170,8 +160,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
         if (groupIndexKey == Index.NULL_KEY) {
             return NULL_BYTE;
         }
-        return aggregatedSource
-            .getPrevByte(indexSource.getPrev(groupIndexKey).getPrevIndex().get(offsetInGroup));
+        return aggregatedSource.getPrevByte(indexSource.getPrev(groupIndexKey).getPrevIndex().get(offsetInGroup));
     }
 
     @Override
@@ -187,8 +176,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
         if (groupIndexKey == Index.NULL_KEY) {
             return NULL_CHAR;
         }
-        return aggregatedSource
-            .getPrevChar(indexSource.getPrev(groupIndexKey).getPrevIndex().get(offsetInGroup));
+        return aggregatedSource.getPrevChar(indexSource.getPrev(groupIndexKey).getPrevIndex().get(offsetInGroup));
     }
 
     @Override
@@ -204,8 +192,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
         if (groupIndexKey == Index.NULL_KEY) {
             return NULL_SHORT;
         }
-        return aggregatedSource
-            .getPrevShort(indexSource.getPrev(groupIndexKey).getPrevIndex().get(offsetInGroup));
+        return aggregatedSource.getPrevShort(indexSource.getPrev(groupIndexKey).getPrevIndex().get(offsetInGroup));
     }
 
     @Override
@@ -221,8 +208,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
         if (groupIndexKey == Index.NULL_KEY) {
             return NULL_INT;
         }
-        return aggregatedSource
-            .getPrevInt(indexSource.getPrev(groupIndexKey).getPrevIndex().get(offsetInGroup));
+        return aggregatedSource.getPrevInt(indexSource.getPrev(groupIndexKey).getPrevIndex().get(offsetInGroup));
     }
 
     @Override
@@ -238,7 +224,6 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends DbArrayBase, COMP
         if (groupIndexKey == Index.NULL_KEY) {
             return NULL_LONG;
         }
-        return aggregatedSource
-            .getPrevLong(indexSource.getPrev(groupIndexKey).getPrevIndex().get(offsetInGroup));
+        return aggregatedSource.getPrevLong(indexSource.getPrev(groupIndexKey).getPrevIndex().get(offsetInGroup));
     }
 }

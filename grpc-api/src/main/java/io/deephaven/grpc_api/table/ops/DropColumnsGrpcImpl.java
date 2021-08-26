@@ -16,12 +16,11 @@ public class DropColumnsGrpcImpl extends GrpcTableOperation<DropColumnsRequest> 
     @Inject
     public DropColumnsGrpcImpl() {
         super(BatchTableRequest.Operation::getDropColumns, DropColumnsRequest::getResultId,
-            DropColumnsRequest::getSourceId);
+                DropColumnsRequest::getSourceId);
     }
 
     @Override
-    public Table create(final DropColumnsRequest request,
-        final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final DropColumnsRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
         return sourceTables.get(0).get().dropColumns(request.getColumnNamesList());
     }

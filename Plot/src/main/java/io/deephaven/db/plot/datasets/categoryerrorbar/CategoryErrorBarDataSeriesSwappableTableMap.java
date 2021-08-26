@@ -17,9 +17,8 @@ import java.util.Collection;
 /**
  * A dataset for {@link SwappableTable} based categorical data.
  */
-public class CategoryErrorBarDataSeriesSwappableTableMap extends
-    AbstractSwappableTableBasedCategoryDataSeries implements CategoryErrorBarDataSeriesInternal,
-    CategorySwappableTableDataSeriesInternal, TableSnapshotSeries {
+public class CategoryErrorBarDataSeriesSwappableTableMap extends AbstractSwappableTableBasedCategoryDataSeries
+        implements CategoryErrorBarDataSeriesInternal, CategorySwappableTableDataSeriesInternal, TableSnapshotSeries {
     private static final long serialVersionUID = 2L;
 
     private transient Table localTable;
@@ -42,33 +41,30 @@ public class CategoryErrorBarDataSeriesSwappableTableMap extends
      * @param categories discrete data column in {@code swappableTable}
      * @param valueCol continuous data column in {@code swappableTable}
      * @param <T> type of the categorical data
-     * @throws io.deephaven.db.plot.errors.PlotIllegalArgumentException {@code chart},
-     *         {@code swappableTable}, {@code categories}, and {@code values} may not be null.
-     * @throws RuntimeException {@code categories} column must be {@link Comparable} {@code values}
-     *         column must be numeric
+     * @throws io.deephaven.db.plot.errors.PlotIllegalArgumentException {@code chart}, {@code swappableTable},
+     *         {@code categories}, and {@code values} may not be null.
+     * @throws RuntimeException {@code categories} column must be {@link Comparable} {@code values} column must be
+     *         numeric
      */
     public <T extends Comparable> CategoryErrorBarDataSeriesSwappableTableMap(final AxesImpl axes,
-        final int id,
-        final Comparable name,
-        final SwappableTable swappableTable,
-        final String categories,
-        final String valueCol,
-        final String errorBarLowCol,
-        final String errorBarHighCol) {
+            final int id,
+            final Comparable name,
+            final SwappableTable swappableTable,
+            final String categories,
+            final String valueCol,
+            final String errorBarLowCol,
+            final String errorBarHighCol) {
         super(axes, id, name);
         ArgumentValidations.assertNotNull(axes, "axes", getPlotInfo());
         ArgumentValidations.assertNotNull(swappableTable, "swappableTable", getPlotInfo());
-        ArgumentValidations.assertInstance(swappableTable.getTableDefinition(), categories,
-            Comparable.class, "Invalid data type in category column: column=" + categories,
-            getPlotInfo());
+        ArgumentValidations.assertInstance(swappableTable.getTableDefinition(), categories, Comparable.class,
+                "Invalid data type in category column: column=" + categories, getPlotInfo());
         ArgumentValidations.assertIsNumericOrTime(swappableTable.getTableDefinition(), valueCol,
-            "Invalid data type in data column: column=" + valueCol, getPlotInfo());
-        ArgumentValidations.assertIsNumericOrTime(swappableTable.getTableDefinition(),
-            errorBarLowCol, "Invalid data type in data column: column=" + errorBarLowCol,
-            getPlotInfo());
-        ArgumentValidations.assertIsNumericOrTime(swappableTable.getTableDefinition(),
-            errorBarHighCol, "Invalid data type in data column: column=" + errorBarHighCol,
-            getPlotInfo());
+                "Invalid data type in data column: column=" + valueCol, getPlotInfo());
+        ArgumentValidations.assertIsNumericOrTime(swappableTable.getTableDefinition(), errorBarLowCol,
+                "Invalid data type in data column: column=" + errorBarLowCol, getPlotInfo());
+        ArgumentValidations.assertIsNumericOrTime(swappableTable.getTableDefinition(), errorBarHighCol,
+                "Invalid data type in data column: column=" + errorBarHighCol, getPlotInfo());
 
         this.swappableTable = swappableTable;
         this.categoryCol = categories;
@@ -76,8 +72,8 @@ public class CategoryErrorBarDataSeriesSwappableTableMap extends
         this.errorBarLowCol = errorBarLowCol;
         this.errorBarHighCol = errorBarHighCol;
 
-        this.kernel = new CategoryErrorBarDataSeriesKernel(categories, valueCol, errorBarLowCol,
-            errorBarHighCol, getPlotInfo());
+        this.kernel = new CategoryErrorBarDataSeriesKernel(categories, valueCol, errorBarLowCol, errorBarHighCol,
+                getPlotInfo());
     }
 
     /**
@@ -86,8 +82,8 @@ public class CategoryErrorBarDataSeriesSwappableTableMap extends
      * @param series series to copy.
      * @param axes new axes to use.
      */
-    private CategoryErrorBarDataSeriesSwappableTableMap(
-        final CategoryErrorBarDataSeriesSwappableTableMap series, final AxesImpl axes) {
+    private CategoryErrorBarDataSeriesSwappableTableMap(final CategoryErrorBarDataSeriesSwappableTableMap series,
+            final AxesImpl axes) {
         super(series, axes);
 
         this.swappableTable = series.swappableTable;
@@ -95,8 +91,8 @@ public class CategoryErrorBarDataSeriesSwappableTableMap extends
         this.valueCol = series.valueCol;
         this.errorBarLowCol = series.errorBarLowCol;
         this.errorBarHighCol = series.errorBarHighCol;
-        this.kernel = new CategoryErrorBarDataSeriesKernel(categoryCol, valueCol, errorBarLowCol,
-            errorBarHighCol, getPlotInfo());
+        this.kernel = new CategoryErrorBarDataSeriesKernel(categoryCol, valueCol, errorBarLowCol, errorBarHighCol,
+                getPlotInfo());
     }
 
     @Override

@@ -4,7 +4,7 @@
   "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
   "compareTo": ":param other: io.deephaven.db.v2.locations.TableLocationKey\n:return: int",
   "equals": ":param other: java.lang.Object\n:return: boolean",
-  "getImplementationName": "Get a name for the implementing class.  Useful for abstract classes that implement\n LogOutputAppendable or override\n toString.\n The default implementation is correct, but not suitable for high-frequency usage.\n\n:return: (java.lang.String) A name for the implementing class",
+  "getImplementationName": "Get a name for the implementing class. Useful for abstract classes that implement\n LogOutputAppendable or override toString.\n \n The default implementation is correct, but not suitable for high-frequency usage.\n\n:return: (java.lang.String) A name for the implementing class",
   "getInstance": ":return: io.deephaven.db.v2.locations.TableLocationKey",
   "getPartitionKeys": "Get the set of available partition keys.\n\n:return: (java.util.Set<java.lang.String>) The set of available partition keys",
   "getPartitionValue": "Lookup the value of one of the table partitions enclosing the location keyed by this.\n\n:param partitionKey: (java.lang.String) - The name of the partition\n:return: (PARTITION_VALUE_TYPE) The partition value",

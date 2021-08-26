@@ -8,6 +8,6 @@
   "parse": ":param x: java.lang.String\n:return: io.deephaven.api.JoinAddition"
  },
  "path": "io.deephaven.api.JoinAddition",
- "text": "A join addition represents a new column that should be added as the result\n of a join, brought over from an existing column.",
+ "text": "A join addition represents a new column that should be added as the result of a join, brought\n over from an existing column.",
  "typeName": "interface"
 }

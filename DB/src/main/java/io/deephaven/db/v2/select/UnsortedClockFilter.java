@@ -15,12 +15,11 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 
 /**
- * This will filter a table on a DBDateTime column for all rows greater than "now" according to a
- * supplied clock. It does not require any pre-sorting of the input table, instead preserving
- * relative order in the initial output and each subsequent refresh. Relative to SortedClockFilter,
- * this implementation may require less overall storage and do less overall work for tables with
- * relatively few monotonically nondecreasing ranges (that is, m (number of ranges) &lt;&lt;&lt; n
- * (size in rows)), but it will do more work on refresh().
+ * This will filter a table on a DBDateTime column for all rows greater than "now" according to a supplied clock. It
+ * does not require any pre-sorting of the input table, instead preserving relative order in the initial output and each
+ * subsequent refresh. Relative to SortedClockFilter, this implementation may require less overall storage and do less
+ * overall work for tables with relatively few monotonically nondecreasing ranges (that is, m (number of ranges)
+ * &lt;&lt;&lt; n (size in rows)), but it will do more work on refresh().
  */
 public class UnsortedClockFilter extends ClockFilter {
 
@@ -29,8 +28,8 @@ public class UnsortedClockFilter extends ClockFilter {
     private Queue<Range> rangesByNextTime;
 
     public UnsortedClockFilter(@NotNull final String columnName,
-        @NotNull final Clock clock,
-        final boolean live) {
+            @NotNull final Clock clock,
+            final boolean live) {
         super(columnName, clock, live);
     }
 
@@ -59,13 +58,13 @@ public class UnsortedClockFilter extends ClockFilter {
             Assert.assertion(!r1.isEmpty(), "!r1.isEmpty()");
             Assert.assertion(!r2.isEmpty(), "!r2.isEmpty()");
             return DBLanguageFunctionUtil.compareTo(nanosColumnSource.getLong(r1.nextKey),
-                nanosColumnSource.getLong(r2.nextKey));
+                    nanosColumnSource.getLong(r2.nextKey));
         }
     }
 
     @Override
-    protected @Nullable Index initializeAndGetInitialIndex(@NotNull final Index selection,
-        @NotNull final Index fullSet, @NotNull final Table table) {
+    protected @Nullable Index initializeAndGetInitialIndex(@NotNull final Index selection, @NotNull final Index fullSet,
+            @NotNull final Table table) {
         rangesByNextTime = new PriorityQueue<>(INITIAL_RANGE_QUEUE_CAPACITY, new RangeComparator());
 
         if (selection.empty()) {
@@ -77,8 +76,7 @@ public class UnsortedClockFilter extends ClockFilter {
         final long nowNanos = clock.currentTimeMicros() * 1000L;
         final Index.Iterator selectionIterator = selection.iterator();
 
-        // Initial current range begins and ends at the first key in the selection (which must exist
-        // because we've
+        // Initial current range begins and ends at the first key in the selection (which must exist because we've
         // already tested non-emptiness).
         long activeRangeFirstKey = selectionIterator.nextLong();
         long activeRangeLastKey = activeRangeFirstKey;
@@ -88,13 +86,12 @@ public class UnsortedClockFilter extends ClockFilter {
         while (selectionIterator.hasNext()) {
             final long currentKey = selectionIterator.nextLong();
             final long currentValue = nanosColumnSource.getLong(currentKey);
-            final boolean currentIsDeferred =
-                DBLanguageFunctionUtil.greater(currentValue, nowNanos);
+            final boolean currentIsDeferred = DBLanguageFunctionUtil.greater(currentValue, nowNanos);
 
-            // If we observe a change in deferral status, a discontinuity in the keys, or a decrease
-            // in the values, we have entered a new range
+            // If we observe a change in deferral status, a discontinuity in the keys, or a decrease in the values, we
+            // have entered a new range
             if (currentIsDeferred != activeRangeIsDeferred || currentKey != activeRangeLastKey + 1
-                || DBLanguageFunctionUtil.less(currentValue, previousValue)) {
+                    || DBLanguageFunctionUtil.less(currentValue, previousValue)) {
                 // Add the current range, as appropriate
                 if (activeRangeIsDeferred) {
                     rangesByNextTime.add(new Range(activeRangeFirstKey, activeRangeLastKey));
@@ -129,11 +126,10 @@ public class UnsortedClockFilter extends ClockFilter {
         Index.RandomBuilder addedBuilder = null;
         Range nextRange;
         Index.RandomBuilder resultBuilder;
-        while ((nextRange = rangesByNextTime.peek()) != null && (resultBuilder = nextRange
-            .consumeKeysAndAppendAdded(nanosColumnSource, nowNanos, addedBuilder)) != null) {
+        while ((nextRange = rangesByNextTime.peek()) != null && (resultBuilder =
+                nextRange.consumeKeysAndAppendAdded(nanosColumnSource, nowNanos, addedBuilder)) != null) {
             addedBuilder = resultBuilder;
-            Assert.eq(nextRange, "nextRange", rangesByNextTime.remove(),
-                "rangesByNextTime.remove()");
+            Assert.eq(nextRange, "nextRange", rangesByNextTime.remove(), "rangesByNextTime.remove()");
             if (!nextRange.isEmpty()) {
                 rangesByNextTime.add(nextRange);
             }

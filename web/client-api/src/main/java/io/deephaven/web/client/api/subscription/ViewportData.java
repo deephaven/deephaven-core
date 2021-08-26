@@ -45,8 +45,8 @@ public class ViewportData implements TableData {
 
     private final int rowFormatColumn;
 
-    public ViewportData(RangeSet includedRows, Object[] dataColumns, JsArray<Column> columns,
-        int rowFormatColumn, long maxLength) {
+    public ViewportData(RangeSet includedRows, Object[] dataColumns, JsArray<Column> columns, int rowFormatColumn,
+            long maxLength) {
         assert maxLength <= Integer.MAX_VALUE;
         this.maxLength = (int) maxLength;
 
@@ -376,8 +376,7 @@ public class ViewportData implements TableData {
 
                     final long internalOffsetAsLong = (j + shiftDelta);
                     if (internalOffsetAsLong >= 0 && internalOffsetAsLong < maxLength) {
-                        // because internalOffsetAsLong is less than maxLen; we know it must be fit
-                        // in an int
+                        // because internalOffsetAsLong is less than maxLen; we know it must be fit in an int
                         final int internalOffset = (int) internalOffsetAsLong;
                         updated.added.add(internalOffset);
                         Any toMove = existingColumnData.getAt(j);
@@ -399,15 +398,13 @@ public class ViewportData implements TableData {
                 }
 
                 final long begin = Math.max(shiftedRange.getRange().getFirst() - offset, 0);
-                final int end =
-                    (int) Math.min(shiftedRange.getRange().getLast() - offset, length - 1);
+                final int end = (int) Math.min(shiftedRange.getRange().getLast() - offset, length - 1);
                 if (end < begin) {
                     // this range is out of our viewport
                     continue;
                 }
 
-                // iterate forward and move them backward (note: since begin is <= end, we now know
-                // it fits in an int)
+                // iterate forward and move them backward (note: since begin is <= end, we now know it fits in an int)
                 for (int j = (int) begin; j <= end; ++j) {
                     for (int i = 0; i < data.length; ++i) {
                         final JsArray<Any> existingColumnData = Js.uncheckedCast(data[i]);
@@ -417,8 +414,7 @@ public class ViewportData implements TableData {
 
                         final long internalOffsetAsLong = j + shiftDelta;
                         if (internalOffsetAsLong >= 0 && internalOffsetAsLong < maxLength) {
-                            // because internalOffsetAsLong is less than maxLen; we know it must be
-                            // fit in an int
+                            // because internalOffsetAsLong is less than maxLen; we know it must be fit in an int
                             final int internalOffset = (int) internalOffsetAsLong;
                             updated.added.add(internalOffset);
                             existingColumnData.setAt(internalOffset, existingColumnData.getAt(j));
@@ -431,26 +427,20 @@ public class ViewportData implements TableData {
             }
         }
 
-        DeltaUpdates.ColumnModifications[] serializedModifications =
-            updates.getSerializedModifications();
-        for (int modifiedColIndex =
-            0; modifiedColIndex < serializedModifications.length; modifiedColIndex++) {
-            final DeltaUpdates.ColumnModifications modifiedColumn =
-                serializedModifications[modifiedColIndex];
-            final OfLong it =
-                modifiedColumn == null ? null : modifiedColumn.getRowsIncluded().indexIterator();
+        DeltaUpdates.ColumnModifications[] serializedModifications = updates.getSerializedModifications();
+        for (int modifiedColIndex = 0; modifiedColIndex < serializedModifications.length; modifiedColIndex++) {
+            final DeltaUpdates.ColumnModifications modifiedColumn = serializedModifications[modifiedColIndex];
+            final OfLong it = modifiedColumn == null ? null : modifiedColumn.getRowsIncluded().indexIterator();
 
             if (it == null || !it.hasNext()) {
                 continue;
             }
 
             // look for a local Column which matches this index so we know how to clean it
-            final Column column =
-                columns.find((c, i1, i2) -> c.getIndex() == modifiedColumn.getColumnIndex());
+            final Column column = columns.find((c, i1, i2) -> c.getIndex() == modifiedColumn.getColumnIndex());
             final JsArray<Any> updatedColumnData =
-                Js.uncheckedCast(cleanData(modifiedColumn.getValues().getData(), column));
-            final JsArray<Any> existingColumnData =
-                Js.uncheckedCast(data[modifiedColumn.getColumnIndex()]);
+                    Js.uncheckedCast(cleanData(modifiedColumn.getValues().getData(), column));
+            final JsArray<Any> existingColumnData = Js.uncheckedCast(data[modifiedColumn.getColumnIndex()]);
             if (updatedColumnData.length == 0) {
                 continue;
             }
@@ -462,8 +452,8 @@ public class ViewportData implements TableData {
                 long internalOffset = (modifiedOffset - offset);
                 if (internalOffset < 0 || internalOffset >= maxLength) {
                     i++;
-                    continue;// data we don't need to see, either meant for another table, or we
-                             // just sent a viewport update
+                    continue;// data we don't need to see, either meant for another table, or we just sent a viewport
+                             // update
                 }
                 existingColumnData.setAt((int) internalOffset, updatedColumnData.getAnyAt(i));
                 updated.modified.add((int) internalOffset);
@@ -473,16 +463,13 @@ public class ViewportData implements TableData {
 
         if (!updates.getIncludedAdditions().isEmpty()) {
             DeltaUpdates.ColumnAdditions[] serializedAdditions = updates.getSerializedAdditions();
-            for (int addedColIndex =
-                0; addedColIndex < serializedAdditions.length; addedColIndex++) {
+            for (int addedColIndex = 0; addedColIndex < serializedAdditions.length; addedColIndex++) {
                 DeltaUpdates.ColumnAdditions addedColumn = serializedAdditions[addedColIndex];
 
-                Column column =
-                    columns.find((c, i1, i2) -> c.getIndex() == addedColumn.getColumnIndex());
+                Column column = columns.find((c, i1, i2) -> c.getIndex() == addedColumn.getColumnIndex());
                 final JsArray<Any> addedColumnData =
-                    Js.uncheckedCast(cleanData(addedColumn.getValues().getData(), column));
-                final JsArray<Any> existingColumnData =
-                    Js.uncheckedCast(data[addedColumn.getColumnIndex()]);
+                        Js.uncheckedCast(cleanData(addedColumn.getValues().getData(), column));
+                final JsArray<Any> existingColumnData = Js.uncheckedCast(data[addedColumn.getColumnIndex()]);
                 if (addedColumnData.length == 0) {
                     continue;
                 }
@@ -494,8 +481,8 @@ public class ViewportData implements TableData {
                     int internalOffset = (int) (addedOffset - offset);
                     if (internalOffset < 0 || internalOffset >= maxLength) {
                         i++;
-                        continue;// data we don't need to see, either meant for another table, or we
-                                 // just sent a viewport update
+                        continue;// data we don't need to see, either meant for another table, or we just sent a
+                                 // viewport update
                     }
                     assert internalOffset < existingColumnData.length;
                     existingColumnData.setAt(internalOffset, addedColumnData.getAnyAt(i));
@@ -521,8 +508,8 @@ public class ViewportData implements TableData {
         length = length + updated.added.size() - updated.removed.size();
         assert 0 <= length && length <= maxLength;
 
-        // Viewport footprint should be small enough that we can afford to see if this update
-        // corrupted our view of the world:
+        // Viewport footprint should be small enough that we can afford to see if this update corrupted our view of the
+        // world:
         assert !dataContainsNullSentinels();
 
         return updated;

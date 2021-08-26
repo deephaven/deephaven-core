@@ -9,8 +9,7 @@ public class SortDirective implements Serializable {
 
     private static final long serialVersionUID = 2L;
 
-    public static final SortDirective EMPTY_DIRECTIVE =
-        new SortDirective(null, SortDirective.NOT_SORTED, false);
+    public static final SortDirective EMPTY_DIRECTIVE = new SortDirective(null, SortDirective.NOT_SORTED, false);
 
     public static final int DESCENDING = -1;
     public static final int NOT_SORTED = 0;
@@ -41,9 +40,9 @@ public class SortDirective implements Serializable {
     @Override
     public String toString() {
         return "SortDirective{" +
-            "direction=" + direction +
-            ", isAbsolute=" + isAbsolute +
-            ", columnName='" + columnName + '\'' +
-            '}';
+                "direction=" + direction +
+                ", isAbsolute=" + isAbsolute +
+                ", columnName='" + columnName + '\'' +
+                '}';
     }
 }

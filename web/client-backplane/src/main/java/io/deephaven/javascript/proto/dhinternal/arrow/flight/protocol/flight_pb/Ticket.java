@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.Flight_pb.Ticket",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.Flight_pb.Ticket",
+        namespace = JsPackage.GLOBAL)
 public class Ticket {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface GetTicketUnionType {

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.qst.LabeledValues$Builder",
+ "methods": {
+  "add": "*Overload 1*  \n  :param value: io.deephaven.qst.LabeledValue<LabeledValues.Builder.T>\n  :return: io.deephaven.qst.LabeledValues.Builder<LabeledValues.Builder.T>\n  \n*Overload 2*  \n  :param name: java.lang.String\n  :param value: LabeledValues.Builder.T\n  :return: io.deephaven.qst.LabeledValues.Builder<LabeledValues.Builder.T>",
+  "addPrefixed": ":param prefix: java.lang.String\n:param values: io.deephaven.qst.LabeledValues<LabeledValues.Builder.T>\n:return: io.deephaven.qst.LabeledValues.Builder<LabeledValues.Builder.T>",
+  "build": ":return: io.deephaven.qst.LabeledValues<LabeledValues.Builder.T>",
+  "putMap": ":param key: java.lang.String\n:param value: io.deephaven.qst.LabeledValue<LabeledValues.Builder.T>\n:return: io.deephaven.qst.LabeledValues.Builder<LabeledValues.Builder.T>"
+ },
+ "path": "io.deephaven.qst.LabeledValues.Builder",
+ "typeName": "interface"
+}

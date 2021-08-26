@@ -89,7 +89,7 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
     }
 
     public static class Builder extends PrimitiveArrayHelper<long[]>
-        implements ArrayBuilder<Long, LongArray, Builder> {
+            implements ArrayBuilder<Long, LongArray, Builder> {
 
         private Builder(int initialCapacity) {
             super(new long[initialCapacity]);

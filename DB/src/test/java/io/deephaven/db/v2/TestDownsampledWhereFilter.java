@@ -26,15 +26,14 @@ public class TestDownsampledWhereFilter {
 
         int size = 1000;
 
-        final QueryTable table = getTable(false, size, random,
-            initColumnInfos(new String[] {"Timestamp", "doubleCol"},
+        final QueryTable table = getTable(false, size, random, initColumnInfos(new String[] {"Timestamp", "doubleCol"},
                 new SortedDateTimeGenerator(DBTimeUtils.convertDateTime("2015-09-11T09:30:00 NY"),
-                    DBTimeUtils.convertDateTime("2015-09-11T10:00:00 NY")),
+                        DBTimeUtils.convertDateTime("2015-09-11T10:00:00 NY")),
                 new DoubleGenerator(0, 100)));
 
         Table downsampled = table.where(new DownsampledWhereFilter("Timestamp", 60_000_000_000L));
-        Table standardWay = table.updateView("TimeBin=upperBin(Timestamp, 60000000000)")
-            .lastBy("TimeBin").dropColumns("TimeBin");
+        Table standardWay =
+                table.updateView("TimeBin=upperBin(Timestamp, 60000000000)").lastBy("TimeBin").dropColumns("TimeBin");
 
         TableTools.showWithIndex(downsampled);
         TableTools.showWithIndex(standardWay);
@@ -50,16 +49,15 @@ public class TestDownsampledWhereFilter {
 
         int size = 1000;
 
-        final QueryTable table = getTable(false, size, random,
-            initColumnInfos(new String[] {"Timestamp", "doubleCol"},
+        final QueryTable table = getTable(false, size, random, initColumnInfos(new String[] {"Timestamp", "doubleCol"},
                 new SortedDateTimeGenerator(DBTimeUtils.convertDateTime("2015-09-11T09:30:00 NY"),
-                    DBTimeUtils.convertDateTime("2015-09-11T10:00:00 NY")),
+                        DBTimeUtils.convertDateTime("2015-09-11T10:00:00 NY")),
                 new DoubleGenerator(0, 100)));
 
         Table downsampled = table.where(new DownsampledWhereFilter("Timestamp", 60_000_000_000L,
-            DownsampledWhereFilter.SampleOrder.LOWERFIRST));
-        Table standardWay = table.updateView("TimeBin=lowerBin(Timestamp, 60000000000)")
-            .firstBy("TimeBin").dropColumns("TimeBin");
+                DownsampledWhereFilter.SampleOrder.LOWERFIRST));
+        Table standardWay =
+                table.updateView("TimeBin=lowerBin(Timestamp, 60000000000)").firstBy("TimeBin").dropColumns("TimeBin");
 
         TableTools.showWithIndex(downsampled);
         TableTools.showWithIndex(standardWay);

@@ -19,8 +19,7 @@ import java.util.function.Function;
 public class TestColorMap extends BaseArrayTestCase {
 
     public void testHeatMap() {
-        Function<Double, Color> map =
-            ColorMaps.heatMap(0, 100, new Color(254, 0, 0), new Color(0, 0, 254));
+        Function<Double, Color> map = ColorMaps.heatMap(0, 100, new Color(254, 0, 0), new Color(0, 0, 254));
         Color c = map.apply(0.0);
         assertEquals(new Color(254, 0, 0), c);
         c = map.apply(50.0);

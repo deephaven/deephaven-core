@@ -10,8 +10,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * A time table adds rows at a fixed {@link #interval() interval} with a
- * {@link io.deephaven.qst.type.InstantType Timestamp} column.
+ * A time table adds rows at a fixed {@link #interval() interval} with a {@link io.deephaven.qst.type.InstantType
+ * Timestamp} column.
  */
 @Immutable
 @LeafStyle
@@ -37,7 +37,7 @@ public abstract class TimeTable extends TableBase {
      */
     public static TimeTable of(Duration interval) {
         return builder().timeProvider(TimeProviderSystem.INSTANCE).interval(interval)
-            .id(UUID.randomUUID()).build();
+                .id(UUID.randomUUID()).build();
     }
 
     /**
@@ -49,7 +49,7 @@ public abstract class TimeTable extends TableBase {
      */
     public static TimeTable of(Duration interval, Instant startTime) {
         return builder().timeProvider(TimeProviderSystem.INSTANCE).interval(interval)
-            .startTime(startTime).id(ZERO_UUID).build();
+                .startTime(startTime).id(ZERO_UUID).build();
     }
 
     // Note: if new "of(...)" static methods are added here, they should likely be added to

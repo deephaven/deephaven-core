@@ -5,6 +5,6 @@
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.kafka.ingest.KafkaIngester",
- "text": "An ingester that replicates a Apache Kafka topic to a Deephaven Table Writer.\n\n Each KafkaIngester is assigned a topic and a subset of Kafka partitions.  Each Kafka\n partition is mapped to a Deephaven internal partition.  The column partition can be set through the constructor,\n or defaults to DBTimeUtils.currentDateNy().\nAutomatic partition assignment and rebalancing are not supported. Each Kafka ingester instance must uniquely control its\n checkpoint record, which is incompatible with rebalancing.",
+ "text": "An ingester that replicates a Apache Kafka topic to a Deephaven Table Writer.\n\n \n Each KafkaIngester is assigned a topic and a subset of Kafka partitions. Each Kafka partition is mapped to a\n Deephaven internal partition. The column partition can be set through the constructor, or defaults to\n DBTimeUtils.currentDateNy().\n \n\n Automatic partition assignment and rebalancing are not supported. Each Kafka ingester instance must uniquely control\n its checkpoint record, which is incompatible with rebalancing.",
  "typeName": "class"
 }

@@ -10,9 +10,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 
 /**
- * The core of the Error Bar Category date series update and indexing. This is used by the regular
- * category data series to both update the values of existing categories as well as to ensure that
- * new categories are maintained in order of the original table.
+ * The core of the Error Bar Category date series update and indexing. This is used by the regular category data series
+ * to both update the values of existing categories as well as to ensure that new categories are maintained in order of
+ * the original table.
  */
 @SuppressWarnings("rawtypes")
 public class CategoryErrorBarDataSeriesKernel {
@@ -53,10 +53,10 @@ public class CategoryErrorBarDataSeriesKernel {
     private double yMax;
 
     public CategoryErrorBarDataSeriesKernel(@NotNull String categoryCol,
-        @NotNull String valueColumn,
-        @NotNull String errorBarLowColumn,
-        @NotNull String errorBarHighColumn,
-        @NotNull PlotInfo plotInfo) {
+            @NotNull String valueColumn,
+            @NotNull String errorBarLowColumn,
+            @NotNull String errorBarHighColumn,
+            @NotNull PlotInfo plotInfo) {
         ArgumentValidations.assertNotNull(categories, "categories", plotInfo);
         ArgumentValidations.assertNotNull(valueColumn, "values", plotInfo);
         ArgumentValidations.assertNotNull(errorBarLowColumn, "yLow", plotInfo);
@@ -108,8 +108,8 @@ public class CategoryErrorBarDataSeriesKernel {
     }
 
     /**
-     * Get the index key of the category within the original dataset. This can be used to enforce a
-     * global ordering of a MultiSeries cat plot.
+     * Get the index key of the category within the original dataset. This can be used to enforce a global ordering of a
+     * MultiSeries cat plot.
      *
      * @param category The category to locate.
      * @return the key of the specified category within the original data set. or -1 if not present.

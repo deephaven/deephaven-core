@@ -13,8 +13,8 @@ import java.util.Set;
 public interface ScriptPathLoader {
 
     /**
-     * Acquire a read lock. Use before invoking any of the get* methods, and hold for as long as
-     * consistency is required for this loader.
+     * Acquire a read lock. Use before invoking any of the get* methods, and hold for as long as consistency is required
+     * for this loader.
      */
     void lock();
 
@@ -53,8 +53,8 @@ public interface ScriptPathLoader {
     String getScriptBodyByRelativePath(final String relativePath) throws IOException;
 
     /**
-     * Gets the display paths available from this loader when it was in the specified
-     * {@link ScriptPathLoaderState state}.
+     * Gets the display paths available from this loader when it was in the specified {@link ScriptPathLoaderState
+     * state}.
      *
      * @param state The state of the loader to use when retrieving the list.
      *
@@ -62,8 +62,7 @@ public interface ScriptPathLoader {
      *
      * @throws IOException If a problem occurred loading the script.
      */
-    default Set<String> getAvailableScriptDisplayPaths(final ScriptPathLoaderState state)
-        throws IOException {
+    default Set<String> getAvailableScriptDisplayPaths(final ScriptPathLoaderState state) throws IOException {
         return getAvailableScriptDisplayPaths();
     }
 
@@ -77,8 +76,8 @@ public interface ScriptPathLoader {
      *
      * @throws IOException If a problem occurred loading the script.
      */
-    default String getScriptBodyByDisplayPath(final String displayPath,
-        final ScriptPathLoaderState state) throws IOException {
+    default String getScriptBodyByDisplayPath(final String displayPath, final ScriptPathLoaderState state)
+            throws IOException {
         return getScriptBodyByDisplayPath(displayPath);
     }
 
@@ -92,8 +91,8 @@ public interface ScriptPathLoader {
      *
      * @throws IOException If a problem occurred loading the script.
      */
-    default String getScriptBodyByRelativePath(final String relativePath,
-        final ScriptPathLoaderState state) throws IOException {
+    default String getScriptBodyByRelativePath(final String relativePath, final ScriptPathLoaderState state)
+            throws IOException {
         return getScriptBodyByRelativePath(relativePath);
     }
 

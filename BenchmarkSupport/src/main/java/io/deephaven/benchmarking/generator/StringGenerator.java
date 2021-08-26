@@ -33,12 +33,12 @@ public class StringGenerator implements DataGenerator<String> {
 
     public StringGenerator(int minLen, int maxLen, ExtendedRandom random) {
         if (minLen <= 0 || maxLen <= 0) {
-            throw new IllegalArgumentException("minLen and maxLen must be positive! (minLen="
-                + minLen + ", maxLen-" + maxLen + ')');
+            throw new IllegalArgumentException(
+                    "minLen and maxLen must be positive! (minLen=" + minLen + ", maxLen-" + maxLen + ')');
         }
         if (minLen > maxLen) {
-            throw new IllegalArgumentException("minLen cannot be greater than maxLen (minLen="
-                + minLen + ", maxLen-" + maxLen + ')');
+            throw new IllegalArgumentException(
+                    "minLen cannot be greater than maxLen (minLen=" + minLen + ", maxLen-" + maxLen + ')');
         }
         if (maxLen == Integer.MAX_VALUE) {
             throw new IllegalArgumentException("maxLen must be less than Integer.MAX_VALUE");

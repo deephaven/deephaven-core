@@ -40,12 +40,11 @@ public class SevenZipInputStream extends InputStream {
     public static final long UINT_TO_LONG = 0xFFFFFFFFL;
 
     // 7zHeader.cpp
-    private static final byte[] SIGNATURE =
-        {0x37, 0x7A, (byte) 0xBC, (byte) 0xAF, (byte) 0x27, (byte) 0x1C};
+    private static final byte[] SIGNATURE = {0x37, 0x7A, (byte) 0xBC, (byte) 0xAF, (byte) 0x27, (byte) 0x1C};
     public static final long SIGNATURE_AS_LONG =
-        (SIGNATURE[0] & UBYTE_TO_LONG) | ((SIGNATURE[1] & UBYTE_TO_LONG) << 8)
-            | ((SIGNATURE[2] & UBYTE_TO_LONG) << 16) | ((SIGNATURE[3] & UBYTE_TO_LONG) << 24)
-            | ((SIGNATURE[4] & UBYTE_TO_LONG) << 32) | ((SIGNATURE[5] & UBYTE_TO_LONG) << 40);
+            (SIGNATURE[0] & UBYTE_TO_LONG) | ((SIGNATURE[1] & UBYTE_TO_LONG) << 8)
+                    | ((SIGNATURE[2] & UBYTE_TO_LONG) << 16) | ((SIGNATURE[3] & UBYTE_TO_LONG) << 24)
+                    | ((SIGNATURE[4] & UBYTE_TO_LONG) << 32) | ((SIGNATURE[5] & UBYTE_TO_LONG) << 40);
     private static final int SIGNATURE_LENGTH = SIGNATURE.length; // 7zHeader.h
 
     private static final byte ARCHIVE_VER_MAJOR = 0; // 7zHeader.h
@@ -93,13 +92,11 @@ public class SevenZipInputStream extends InputStream {
      * An archive consists of:
      * <OL>
      * <LI>A list of packed streams.
-     * <LI>A list of folders, each of which consumes one or more of the packed streams (in order)
-     * and produces one output unpacked stream.
-     * <LI>A list of substream counts and lengths. Each unpacked stream (in order) is split into one
-     * or more substreams.
-     * <LI>A list of files. Each file (in order) may or may not consume one substream. (Directories
-     * and anit-files do not consume a stream.) Files have things like names, timestamps,
-     * attributes, etc.
+     * <LI>A list of folders, each of which consumes one or more of the packed streams (in order) and produces one
+     * output unpacked stream.
+     * <LI>A list of substream counts and lengths. Each unpacked stream (in order) is split into one or more substreams.
+     * <LI>A list of files. Each file (in order) may or may not consume one substream. (Directories and anit-files do
+     * not consume a stream.) Files have things like names, timestamps, attributes, etc.
      * </OL>
      */
     // 7zItem.h
@@ -210,8 +207,8 @@ public class SevenZipInputStream extends InputStream {
         }
 
         public long getFolderStreamPos(int folderIndex, int indexInFolder) {
-            return ArchiveInfo.DataStartPosition + PackStreamStartPositions
-                .get(FolderStartPackStreamIndex.get(folderIndex) + indexInFolder);
+            return ArchiveInfo.DataStartPosition
+                    + PackStreamStartPositions.get(FolderStartPackStreamIndex.get(folderIndex) + indexInFolder);
         }
 
         public long getFolderFullPackSize(int folderIndex) {
@@ -260,40 +257,36 @@ public class SevenZipInputStream extends InputStream {
     }
 
     /**
-     * A Folder is one compressed chunk of data. A folder has one codec and the cyphertext is a
-     * small number of packed streams (usually one). Since the plaintext is one stream, a folder has
-     * one CRC. The folder's plaintext stream will often be the concatenation of a bunch of files,
-     * but the Folder knows nothing of this.
+     * A Folder is one compressed chunk of data. A folder has one codec and the cyphertext is a small number of packed
+     * streams (usually one). Since the plaintext is one stream, a folder has one CRC. The folder's plaintext stream
+     * will often be the concatenation of a bunch of files, but the Folder knows nothing of this.
      * <P>
-     * A <U>codec</U> (my term) is a small graph of coders. A <U>coder</U> does a transform from n
-     * input streams to m output streams. <U>Bind pairs</U> attach the output stream of one coder to
-     * the input stream of another coder. A codec always has one (unbound) output stream, but can
-     * have many (unboud) input streams. The most common codec consists of one coder with one input
-     * stream, one output stream, and no bind pairs.
+     * A <U>codec</U> (my term) is a small graph of coders. A <U>coder</U> does a transform from n input streams to m
+     * output streams. <U>Bind pairs</U> attach the output stream of one coder to the input stream of another coder. A
+     * codec always has one (unbound) output stream, but can have many (unboud) input streams. The most common codec
+     * consists of one coder with one input stream, one output stream, and no bind pairs.
      * 
      * <P>
-     * Input streams and output streams are numbered in the order the coders are listed. PackStreams
-     * is used to map from the (implied) list of packed (input) streams in the archive to the input
-     * streams of the coders.
+     * Input streams and output streams are numbered in the order the coders are listed. PackStreams is used to map from
+     * the (implied) list of packed (input) streams in the archive to the input streams of the coders.
      */
     // 7zItem.h
     private static class Folder {
 
         /**
-         * List of coders. Input and output stream indices (as referenced by the BindPairs) are
-         * defined by the order of this list.
+         * List of coders. Input and output stream indices (as referenced by the BindPairs) are defined by the order of
+         * this list.
          */
         List<CoderInfo> Coders = new LinkedList<CoderInfo>();
 
         /**
-         * List of BindPairs. Bind pairs attach the output stream of one coder to the input stream
-         * of another coder. Stream indices are defined by the coders list.
+         * List of BindPairs. Bind pairs attach the output stream of one coder to the input stream of another coder.
+         * Stream indices are defined by the coders list.
          */
         List<BindPair> BindPairs = new LinkedList<BindPair>();
 
         /**
-         * Map [ packed stream index (in this folder) -&gt; input stream index (in the list of
-         * coders) ]
+         * Map [ packed stream index (in this folder) -&gt; input stream index (in the list of coders) ]
          */
         List<Integer> PackStreams = new LinkedList<Integer>();
 
@@ -458,7 +451,7 @@ public class SevenZipInputStream extends InputStream {
 
         // 7zIn.cpp
         public void readDatabase(InputStream inputStream, ArchiveDatabaseEx database,
-            InputStreamFactory inputStreamFactory, int nBeginStreamPosition) throws IOException {
+                InputStreamFactory inputStreamFactory, int nBeginStreamPosition) throws IOException {
             database.clear();
             database.ArchiveInfo.StartPosition = nBeginStreamPosition;
 
@@ -479,8 +472,8 @@ public class SevenZipInputStream extends InputStream {
             long nNextHeaderSize = byteBuffer.getLong();
             int nNextHeaderCrc = byteBuffer.getInt();
 
-            database.ArchiveInfo.StartPositionAfterHeader = database.ArchiveInfo.StartPosition
-                + VERSION_INFO_LENGTH + START_HEADER_CRC_LENGTH + START_HEADER_LENGTH;
+            database.ArchiveInfo.StartPositionAfterHeader = database.ArchiveInfo.StartPosition + VERSION_INFO_LENGTH
+                    + START_HEADER_CRC_LENGTH + START_HEADER_LENGTH;
 
             if (nStartHeaderCrc != crc.GetDigest()) {
                 throw new ZipException("Header CRC mismatch.");
@@ -516,13 +509,11 @@ public class SevenZipInputStream extends InputStream {
                     throw new ZipException("Bad block type in header.");
                 }
                 Reference<Long> startPositionAfterHeaderRef =
-                    new Reference<Long>(database.ArchiveInfo.StartPositionAfterHeader);
-                Reference<Long> dataStartPosition2Ref =
-                    new Reference<Long>(database.ArchiveInfo.DataStartPosition2);
-                readAndDecodePackedStreams(byteBuffer, startPositionAfterHeaderRef,
-                    dataStartPosition2Ref, dataVector, inputStreamFactory);
-                database.ArchiveInfo.StartPositionAfterHeader =
-                    startPositionAfterHeaderRef.getValue();
+                        new Reference<Long>(database.ArchiveInfo.StartPositionAfterHeader);
+                Reference<Long> dataStartPosition2Ref = new Reference<Long>(database.ArchiveInfo.DataStartPosition2);
+                readAndDecodePackedStreams(byteBuffer, startPositionAfterHeaderRef, dataStartPosition2Ref, dataVector,
+                        inputStreamFactory);
+                database.ArchiveInfo.StartPositionAfterHeader = startPositionAfterHeaderRef.getValue();
                 database.ArchiveInfo.DataStartPosition2 = dataStartPosition2Ref.getValue();
                 if (dataVector.isEmpty()) {
                     return;
@@ -538,7 +529,7 @@ public class SevenZipInputStream extends InputStream {
 
         // 7zIn.cpp
         private void readHeader(ByteBuffer byteBuffer, ArchiveDatabaseEx database,
-            InputStreamFactory inputStreamFactory) throws IOException {
+                InputStreamFactory inputStreamFactory) throws IOException {
             long nBlockType = readId(byteBuffer);
 
             if (BlockType.ARCHIVE_PROPERTIES == nBlockType) {
@@ -550,16 +541,13 @@ public class SevenZipInputStream extends InputStream {
 
             if (BlockType.ADDITIONAL_STREAMS_INFO == nBlockType) {
                 Reference<Long> startPositionAfterHeaderRef =
-                    new Reference<Long>(database.ArchiveInfo.StartPositionAfterHeader);
-                Reference<Long> dataStartPosition2Ref =
-                    new Reference<Long>(database.ArchiveInfo.DataStartPosition2);
-                readAndDecodePackedStreams(byteBuffer, startPositionAfterHeaderRef,
-                    dataStartPosition2Ref, dataVector, inputStreamFactory);
-                database.ArchiveInfo.StartPositionAfterHeader =
-                    startPositionAfterHeaderRef.getValue();
+                        new Reference<Long>(database.ArchiveInfo.StartPositionAfterHeader);
+                Reference<Long> dataStartPosition2Ref = new Reference<Long>(database.ArchiveInfo.DataStartPosition2);
+                readAndDecodePackedStreams(byteBuffer, startPositionAfterHeaderRef, dataStartPosition2Ref, dataVector,
+                        inputStreamFactory);
+                database.ArchiveInfo.StartPositionAfterHeader = startPositionAfterHeaderRef.getValue();
                 database.ArchiveInfo.DataStartPosition2 = dataStartPosition2Ref.getValue();
-                database.ArchiveInfo.DataStartPosition2 +=
-                    database.ArchiveInfo.StartPositionAfterHeader;
+                database.ArchiveInfo.DataStartPosition2 += database.ArchiveInfo.StartPositionAfterHeader;
                 nBlockType = readId(byteBuffer);
             }
 
@@ -567,11 +555,9 @@ public class SevenZipInputStream extends InputStream {
             List<Integer> digests = new LinkedList<Integer>();
 
             if (BlockType.MAIN_STREAMS_INFO == nBlockType) {
-                Reference<Long> dataStartPositionRef =
-                    new Reference<Long>(database.ArchiveInfo.DataStartPosition);
-                readStreamsInfo(byteBuffer, dataVector, dataStartPositionRef, database.PackSizes,
-                    database.PackCRCs, database.Folders, database.NumUnpackStreamsVector,
-                    unPackSizes, digests);
+                Reference<Long> dataStartPositionRef = new Reference<Long>(database.ArchiveInfo.DataStartPosition);
+                readStreamsInfo(byteBuffer, dataVector, dataStartPositionRef, database.PackSizes, database.PackCRCs,
+                        database.Folders, database.NumUnpackStreamsVector, unPackSizes, digests);
                 database.ArchiveInfo.DataStartPosition = dataStartPositionRef.getValue();
                 nBlockType = readId(byteBuffer);
             } else {
@@ -681,8 +667,7 @@ public class SevenZipInputStream extends InputStream {
                         break;
                     }
                     default: {
-                        database.ArchiveInfo.FileInfoPopIDs
-                            .remove(database.ArchiveInfo.FileInfoPopIDs.size() - 1);
+                        database.ArchiveInfo.FileInfoPopIDs.remove(database.ArchiveInfo.FileInfoPopIDs.size() - 1);
                         skipData(byteBuffer, size);
                     }
                 }
@@ -710,8 +695,8 @@ public class SevenZipInputStream extends InputStream {
         }
 
         // 7zIn.cpp
-        private void readTime(ByteBuffer byteBuffer, List<ByteBuffer> alternateByteBuffers,
-            List<FileItem> files, long type) throws ZipException {
+        private void readTime(ByteBuffer byteBuffer, List<ByteBuffer> alternateByteBuffers, List<FileItem> files,
+                long type) throws ZipException {
             List<Boolean> boolVector = new ArrayList<Boolean>(files.size());
             readBoolVector2(byteBuffer, files.size(), boolVector);
 
@@ -764,8 +749,8 @@ public class SevenZipInputStream extends InputStream {
 
         // 7zIn.cpp
         private void readAndDecodePackedStreams(ByteBuffer byteBuffer, Reference<Long> baseOffset,
-            Reference<Long> dataOffset, List<ByteBuffer> dataVector,
-            InputStreamFactory inputStreamFactory) throws IOException {
+                Reference<Long> dataOffset, List<ByteBuffer> dataVector, InputStreamFactory inputStreamFactory)
+                throws IOException {
             List<Long> packSizes = new LinkedList<Long>();
             List<Integer> packCRCs = new LinkedList<Integer>();
             List<Folder> folders = new LinkedList<Folder>();
@@ -774,8 +759,8 @@ public class SevenZipInputStream extends InputStream {
             List<Long> unPackSizes = new LinkedList<Long>();
             List<Integer> digests = new LinkedList<Integer>();
 
-            readStreamsInfo(byteBuffer, null, dataOffset, packSizes, packCRCs, folders,
-                numUnPackStreamsInFolders, unPackSizes, digests);
+            readStreamsInfo(byteBuffer, null, dataOffset, packSizes, packCRCs, folders, numUnPackStreamsInFolders,
+                    unPackSizes, digests);
 
             int packIndex = 0;
             Decoder decoder = new Decoder();
@@ -793,8 +778,8 @@ public class SevenZipInputStream extends InputStream {
                 ByteArrayOutputStream outStream = new ByteArrayOutputStream((int) unPackSize);
 
                 decoder.Decode(inputStreamFactory, dataStartPos,
-                    packSizes.subList(packIndex, packSizes.size()), folder,
-                    new SequentialOutStreamWrapper(outStream), null);
+                        packSizes.subList(packIndex, packSizes.size()), folder,
+                        new SequentialOutStreamWrapper(outStream), null);
 
                 byte[] bytes = outStream.toByteArray();
                 if (null != folder.UnpackCRC) {
@@ -825,10 +810,10 @@ public class SevenZipInputStream extends InputStream {
 
         // 7zIn.cpp
         private void readStreamsInfo(ByteBuffer byteBuffer, List<ByteBuffer> alternateByteBuffers,
-            Reference<Long> dataOffsetRef,
-            List<Long> packedStreamSizes, List<Integer> packedStreamDigests, List<Folder> folders,
-            List<Integer> numUnpackStreamsInFolders, List<Long> unpackedStreamSizes,
-            List<Integer> digests) throws ZipException {
+                Reference<Long> dataOffsetRef,
+                List<Long> packedStreamSizes, List<Integer> packedStreamDigests, List<Folder> folders,
+                List<Integer> numUnpackStreamsInFolders, List<Long> unpackedStreamSizes, List<Integer> digests)
+                throws ZipException {
             while (true) {
                 long nBlockType = readId(byteBuffer);
                 if (BlockType.END == nBlockType) {
@@ -838,8 +823,7 @@ public class SevenZipInputStream extends InputStream {
                 } else if (BlockType.UNPACK_INFO == nBlockType) {
                     readUnpackInfo(byteBuffer, alternateByteBuffers, folders);
                 } else if (BlockType.SUBSTREAMS_INFO == nBlockType) {
-                    readSubstreamsInfo(byteBuffer, folders, numUnpackStreamsInFolders,
-                        unpackedStreamSizes, digests);
+                    readSubstreamsInfo(byteBuffer, folders, numUnpackStreamsInFolders, unpackedStreamSizes, digests);
                 } else {
                     throw new ZipException("Bad block type in header.");
                 }
@@ -848,8 +832,8 @@ public class SevenZipInputStream extends InputStream {
 
         // 7zIn.cpp
         private void readSubstreamsInfo(ByteBuffer byteBuffer, List<Folder> folders,
-            List<Integer> numUnpackStreamsInFolders, List<Long> unpackedStreamSizes,
-            List<Integer> digests) throws ZipException {
+                List<Integer> numUnpackStreamsInFolders, List<Long> unpackedStreamSizes, List<Integer> digests)
+                throws ZipException {
             numUnpackStreamsInFolders.clear();
             digests.clear(); // (not in original code)
             long type;
@@ -940,8 +924,8 @@ public class SevenZipInputStream extends InputStream {
         }
 
         // 7zIn.cpp
-        private void readUnpackInfo(ByteBuffer byteBuffer, List<ByteBuffer> alternateByteBuffers,
-            List<Folder> folders) throws ZipException {
+        private void readUnpackInfo(ByteBuffer byteBuffer, List<ByteBuffer> alternateByteBuffers, List<Folder> folders)
+                throws ZipException {
             skipToBlockType(byteBuffer, BlockType.FOLDER);
             int numFolders = readNum(byteBuffer);
 
@@ -1048,8 +1032,8 @@ public class SevenZipInputStream extends InputStream {
         }
 
         // 7zIn.cpp (CStreamSwitch::Set(CInArchive *, const CObjectVector<CByteBuffer> *)
-        private ByteBuffer chooseStream(ByteBuffer byteBuffer,
-            List<ByteBuffer> alternateByteBuffers) throws ZipException {
+        private ByteBuffer chooseStream(ByteBuffer byteBuffer, List<ByteBuffer> alternateByteBuffers)
+                throws ZipException {
             if (0 == byteBuffer.get()) {
                 return byteBuffer;
             } else {
@@ -1058,8 +1042,8 @@ public class SevenZipInputStream extends InputStream {
         }
 
         // 7zIn.cpp
-        private void readPackInfo(ByteBuffer byteBuffer, Reference<Long> dataOffsetRef,
-            List<Long> packSizes, List<Integer> packCRCs) throws ZipException {
+        private void readPackInfo(ByteBuffer byteBuffer, Reference<Long> dataOffsetRef, List<Long> packSizes,
+                List<Integer> packCRCs) throws ZipException {
             dataOffsetRef.setValue(readNumber(byteBuffer));
             int numPackStreams = readNum(byteBuffer);
             skipToBlockType(byteBuffer, BlockType.SIZE);
@@ -1195,8 +1179,7 @@ public class SevenZipInputStream extends InputStream {
     private interface ISequentialOutStream {
     }
 
-    private static class SequentialOutStreamWrapper extends Reference<OutputStream>
-        implements ISequentialOutStream {
+    private static class SequentialOutStreamWrapper extends Reference<OutputStream> implements ISequentialOutStream {
         public SequentialOutStreamWrapper(OutputStream value) {
             super(value);
         }
@@ -1205,8 +1188,7 @@ public class SevenZipInputStream extends InputStream {
     private interface ISequentialInStream {
     }
 
-    private static class SequentialInStreamWrapper extends Reference<InputStream>
-        implements ISequentialInStream {
+    private static class SequentialInStreamWrapper extends Reference<InputStream> implements ISequentialInStream {
         public SequentialInStreamWrapper(InputStream value) {
             super(value);
         }
@@ -1237,8 +1219,7 @@ public class SevenZipInputStream extends InputStream {
             m_compressCoders.add(decoder);
         }
 
-        public void SetCoderInfo(int nCoderIndex, List<List<Long>> packSizes,
-            List<List<Long>> unpackSizes) {
+        public void SetCoderInfo(int nCoderIndex, List<List<Long>> packSizes, List<List<Long>> unpackSizes) {
             Assert.eq(nCoderIndex, "nCoderIndex", m_packSizes.size(), "m_packSizes.size()");
             Assert.eq(packSizes.size(), "packSizes.size()", 1);
             Assert.eq(unpackSizes.size(), "unpackSizes.size()", 1);
@@ -1250,21 +1231,19 @@ public class SevenZipInputStream extends InputStream {
             m_unpackSizes.add(unpackSizesInner.get(0));
         }
 
-        public void Code(ISequentialInStream inStream, ISequentialOutStream outStream, long inSize,
-            long outSize, ICompressProgressInfo progress) {
+        public void Code(ISequentialInStream inStream, ISequentialOutStream outStream, long inSize, long outSize,
+                ICompressProgressInfo progress) {
             Assert.statementNeverExecuted();
         }
 
-        public void Code(List<ISequentialInStream> inStreams, List<List<Long>> inSizes,
-            int nInStreams, List<ISequentialOutStream> outStreams, List<List<Long>> outSizes,
-            int nOutStreams, ICompressProgressInfo progress) throws IOException {
+        public void Code(List<ISequentialInStream> inStreams, List<List<Long>> inSizes, int nInStreams,
+                List<ISequentialOutStream> outStreams, List<List<Long>> outSizes, int nOutStreams,
+                ICompressProgressInfo progress) throws IOException {
             Assert.eq(inStreams.size(), "inStreams.size()", nInStreams, "nInStreams");
             Assert.eq(outStreams.size(), "outStreams.size()", nOutStreams, "nOutStreams");
-            Assert.eq(nOutStreams, "nOutStreams", m_compressCoders.size(),
-                "m_compressCoders.size()");
+            Assert.eq(nOutStreams, "nOutStreams", m_compressCoders.size(), "m_compressCoders.size()");
             Assert.eq(nOutStreams, "nOutStreams", nInStreams, "nInStreams");
-            Assert.eq(m_compressCoders.size(), "m_compressCoders.size()", m_packSizes.size(),
-                "m_packSizes.size()");
+            Assert.eq(m_compressCoders.size(), "m_compressCoders.size()", m_packSizes.size(), "m_packSizes.size()");
 
             Iterator<ICompressCoder> compressCodersItr = m_compressCoders.iterator();
             Iterator<ISequentialInStream> inStreamsItr = inStreams.iterator();
@@ -1273,16 +1252,15 @@ public class SevenZipInputStream extends InputStream {
             Iterator<Long> unpackSizesItr = m_unpackSizes.iterator();
 
             while (compressCodersItr.hasNext()) {
-                compressCodersItr.next().Code(inStreamsItr.next(), outStreamsItr.next(),
-                    packSizesItr.next(), unpackSizesItr.next(), progress);
+                compressCodersItr.next().Code(inStreamsItr.next(), outStreamsItr.next(), packSizesItr.next(),
+                        unpackSizesItr.next(), progress);
             }
         }
     }
 
     private static class LzmaWrapper implements ICompressCoder, ICompressSetDecoderProperties2 {
 
-        private final SevenZip.Compression.LZMA.Decoder decoder =
-            new SevenZip.Compression.LZMA.Decoder();
+        private final SevenZip.Compression.LZMA.Decoder decoder = new SevenZip.Compression.LZMA.Decoder();
 
         public void setDecoderProperties(byte[] properties) throws ZipException {
             if (false == decoder.SetDecoderProperties(properties)) {
@@ -1290,10 +1268,10 @@ public class SevenZipInputStream extends InputStream {
             }
         }
 
-        public void Code(ISequentialInStream inStream, ISequentialOutStream outStream, long inSize,
-            long outSize, ICompressProgressInfo progress) throws IOException {
+        public void Code(ISequentialInStream inStream, ISequentialOutStream outStream, long inSize, long outSize,
+                ICompressProgressInfo progress) throws IOException {
             if (false == decoder.Code(((Reference<InputStream>) inStream).getValue(),
-                ((Reference<OutputStream>) outStream).getValue(), outSize)) {
+                    ((Reference<OutputStream>) outStream).getValue(), outSize)) {
                 throw new ZipException("Bad compressed data.");
             }
         }
@@ -1311,15 +1289,15 @@ public class SevenZipInputStream extends InputStream {
 
     // ICoder.h
     private interface ICompressCoder {
-        void Code(ISequentialInStream inStream, ISequentialOutStream outStream, long inSize,
-            long outSize, ICompressProgressInfo progress) throws IOException;
+        void Code(ISequentialInStream inStream, ISequentialOutStream outStream, long inSize, long outSize,
+                ICompressProgressInfo progress) throws IOException;
     }
 
     // ICoder.h
     private interface ICompressCoder2 extends ICompressCoder {
         void Code(List<ISequentialInStream> inStreams, List<List<Long>> inSizes, int nInStreams,
-            List<ISequentialOutStream> outStreams, List<List<Long>> outSizes, int nOutStreams,
-            ICompressProgressInfo progress) throws IOException;
+                List<ISequentialOutStream> outStreams, List<List<Long>> outSizes, int nOutStreams,
+                ICompressProgressInfo progress) throws IOException;
     }
 
     // 7zDecode.cpp
@@ -1338,8 +1316,7 @@ public class SevenZipInputStream extends InputStream {
         List<Integer> InStreams = new LinkedList<Integer>();
         List<Integer> OutStreams = new LinkedList<Integer>();
 
-        void getNumStreams(Reference<Integer> numInStreamsRef,
-            Reference<Integer> numOutStreamsRef) {
+        void getNumStreams(Reference<Integer> numInStreamsRef, Reference<Integer> numOutStreamsRef) {
             int numInStreams = 0;
             int numOutStreams = 0;
             for (CoderStreamsInfo coderStreamsInfo : Coders) {
@@ -1384,8 +1361,8 @@ public class SevenZipInputStream extends InputStream {
             return streamIndex;
         }
 
-        void findInStream(int streamIndex, Reference<Integer> coderIndexRef,
-            Reference<Integer> coderStreamIndexRef) throws ZipException {
+        void findInStream(int streamIndex, Reference<Integer> coderIndexRef, Reference<Integer> coderStreamIndexRef)
+                throws ZipException {
             int coderIndex;
             int coderStreamIndex;
             for (coderIndex = 0; coderIndex < (int) Coders.size(); coderIndex++) {
@@ -1401,8 +1378,8 @@ public class SevenZipInputStream extends InputStream {
             throw new ZipException();
         }
 
-        void findOutStream(int streamIndex, Reference<Integer> coderIndexRef,
-            Reference<Integer> coderStreamIndexRef) throws ZipException {
+        void findOutStream(int streamIndex, Reference<Integer> coderIndexRef, Reference<Integer> coderStreamIndexRef)
+                throws ZipException {
             int coderIndex;
             int coderStreamIndex;
             for (coderIndex = 0; coderIndex < (int) Coders.size(); coderIndex++) {
@@ -1436,9 +1413,9 @@ public class SevenZipInputStream extends InputStream {
         List<Object> _decoders = new LinkedList<Object>();
 
         // 7zDecode.cpp
-        public void Decode(InputStreamFactory inputStreamFactory, long startPos,
-            List<Long> packSizes, Folder folderInfo, ISequentialOutStream outStream,
-            ICompressProgressInfo compressProgress) throws IOException {
+        public void Decode(InputStreamFactory inputStreamFactory, long startPos, List<Long> packSizes,
+                Folder folderInfo, ISequentialOutStream outStream, ICompressProgressInfo compressProgress)
+                throws IOException {
             List<ISequentialInStream> inStreams = new LinkedList<ISequentialInStream>();
 
             try {
@@ -1447,8 +1424,7 @@ public class SevenZipInputStream extends InputStream {
                     skipFully(inputStream, startPos);
                     startPos += packSizes.get(j);
 
-                    LimitedInputStream streamSpec =
-                        new LimitedInputStream(inputStream, packSizes.get(j));
+                    LimitedInputStream streamSpec = new LimitedInputStream(inputStream, packSizes.get(j));
                     inStreams.add(new SequentialInStreamWrapper(streamSpec));
                 }
 
@@ -1514,8 +1490,7 @@ public class SevenZipInputStream extends InputStream {
                     Object decoder = _decoders.get(coderIndex);
 
                     if (decoder instanceof ICompressSetDecoderProperties2) {
-                        ICompressSetDecoderProperties2 setDecoderProperties =
-                            (ICompressSetDecoderProperties2) decoder;
+                        ICompressSetDecoderProperties2 setDecoderProperties = (ICompressSetDecoderProperties2) decoder;
 
                         byte[] properties = altCoderInfo.Properties;
                         if (null != properties && properties.length > 0) {
@@ -1531,16 +1506,15 @@ public class SevenZipInputStream extends InputStream {
                     List<List<Long>> unPackSizesPointers = new ArrayList<List<Long>>(numOutStreams);
                     int j;
                     for (j = 0; j < numOutStreams; j++, unPackStreamIndex++) {
-                        unPackSizesPointers.add(folderInfo.UnpackSizes.subList(unPackStreamIndex,
-                            folderInfo.UnpackSizes.size()));
+                        unPackSizesPointers
+                                .add(folderInfo.UnpackSizes.subList(unPackStreamIndex, folderInfo.UnpackSizes.size()));
                     }
 
                     for (j = 0; j < numInStreams; j++, packStreamIndex++) {
                         int bindPairIndex = folderInfo.findBindPairForInStream(packStreamIndex);
                         if (bindPairIndex >= 0) {
                             packSizesPointers.add(folderInfo.UnpackSizes.subList(
-                                folderInfo.BindPairs.get(bindPairIndex).OutIndex,
-                                folderInfo.UnpackSizes.size()));
+                                    folderInfo.BindPairs.get(bindPairIndex).OutIndex, folderInfo.UnpackSizes.size()));
                         } else {
                             int index = folderInfo.findPackStreamArrayIndex(packStreamIndex);
                             if (index < 0) {
@@ -1557,20 +1531,18 @@ public class SevenZipInputStream extends InputStream {
                 // bindInfo.findOutStream(bindInfo.OutStreams.get(0), mainCoderRef, tempRef);
                 // int mainCoder=mainCoderRef.getValue();
                 // int temp=tempRef.getValue();
-                // _mixerCoderMTSpec.SetProgressCoderIndex(mainCoder); // set which coder in the
-                // graph best represents the actual progress of the entire
+                // _mixerCoderMTSpec.SetProgressCoderIndex(mainCoder); // set which coder in the graph best represents
+                // the actual progress of the entire
 
                 if (numCoders == 0) {
                     return;
                 }
-                List<ISequentialInStream> inStreamPointers =
-                    new ArrayList<ISequentialInStream>(inStreams.size());
+                List<ISequentialInStream> inStreamPointers = new ArrayList<ISequentialInStream>(inStreams.size());
                 for (i = 0; i < inStreams.size(); i++) {
                     inStreamPointers.add(inStreams.get(i));
                 }
                 List<ISequentialOutStream> outStreamPointer = Collections.singletonList(outStream);
-                _mixerCoder.Code(inStreamPointers, null, inStreams.size(), outStreamPointer, null,
-                    1, compressProgress);
+                _mixerCoder.Code(inStreamPointers, null, inStreams.size(), outStreamPointer, null, 1, compressProgress);
 
             } finally {
                 for (ISequentialInStream sequentialInStream : inStreams) {
@@ -1672,8 +1644,8 @@ public class SevenZipInputStream extends InputStream {
     // 7zFolderOutStream.h,.cpp
     private static class FolderOutStream implements ISequentialOutStream {
 
-        public void Init(ArchiveDatabaseEx database, int nUnderlyingId, int startIndex,
-            List<Boolean> extractStatuses, boolean testMode) {}
+        public void Init(ArchiveDatabaseEx database, int nUnderlyingId, int startIndex, List<Boolean> extractStatuses,
+                boolean testMode) {}
     }
 
     // 7zHandler.h (ported for educational purposes, not used)
@@ -1703,8 +1675,7 @@ public class SevenZipInputStream extends InputStream {
                 return;
             }
 
-            // build up the list of which folders and which streams (files) in those folders to
-            // extract
+            // build up the list of which folders and which streams (files) in those folders to extract
             List<ExtractFolderInfo> extractFolderInfoVector = new LinkedList<ExtractFolderInfo>();
             for (int i = 0; i < numItems; i++) {
                 int fileIndex = allFilesMode ? i : indices[i];
@@ -1713,21 +1684,18 @@ public class SevenZipInputStream extends InputStream {
                     extractFolderInfoVector.add(new ExtractFolderInfo(fileIndex, NUM_NO_INDEX));
                     continue;
                 }
-                if (extractFolderInfoVector.isEmpty() || folderIndex != extractFolderInfoVector
-                    .get(extractFolderInfoVector.size() - 1).FolderIndex) {
+                if (extractFolderInfoVector.isEmpty()
+                        || folderIndex != extractFolderInfoVector.get(extractFolderInfoVector.size() - 1).FolderIndex) {
                     extractFolderInfoVector.add(new ExtractFolderInfo(NUM_NO_INDEX, folderIndex));
                     Folder folderInfo = m_database.Folders.get(folderIndex);
                     long unPackSize = folderInfo.getUnpackSize();
-                    extractFolderInfoVector.get(extractFolderInfoVector.size() - 1).UnPackSize =
-                        unPackSize;
+                    extractFolderInfoVector.get(extractFolderInfoVector.size() - 1).UnPackSize = unPackSize;
                 }
 
-                ExtractFolderInfo efi =
-                    extractFolderInfoVector.get(extractFolderInfoVector.size() - 1);
+                ExtractFolderInfo efi = extractFolderInfoVector.get(extractFolderInfoVector.size() - 1);
 
                 int startIndex = m_database.FolderStartFileIndex.get(folderIndex);
-                for (int index = efi.ExtractStatuses.size(); index <= fileIndex
-                    - startIndex; index++) {
+                for (int index = efi.ExtractStatuses.size(); index <= fileIndex - startIndex; index++) {
                     efi.ExtractStatuses.add(index == fileIndex - startIndex);
                 }
             }
@@ -1737,8 +1705,8 @@ public class SevenZipInputStream extends InputStream {
             long currentImportantTotalUnPacked = 0;
             long totalFolderUnPacked;
 
-            for (int i = 0; i < extractFolderInfoVector
-                .size(); i++, currentImportantTotalUnPacked += totalFolderUnPacked) {
+            for (int i = 0; i < extractFolderInfoVector.size(); i++, currentImportantTotalUnPacked +=
+                    totalFolderUnPacked) {
                 ExtractFolderInfo efi = extractFolderInfoVector.get(i);
                 totalFolderUnPacked = efi.UnPackSize;
 
@@ -1766,12 +1734,12 @@ public class SevenZipInputStream extends InputStream {
                 long folderStartPackPos = database.getFolderStreamPos(folderIndex, 0);
 
                 decoder.Decode(
-                    m_inputStreamFactory,
-                    folderStartPackPos,
-                    database.PackSizes.subList(packStreamIndex, database.PackSizes.size()),
-                    folderInfo,
-                    folderOutStream,
-                    null);
+                        m_inputStreamFactory,
+                        folderStartPackPos,
+                        database.PackSizes.subList(packStreamIndex, database.PackSizes.size()),
+                        folderInfo,
+                        folderOutStream,
+                        null);
             }
         }
     }
@@ -1780,8 +1748,7 @@ public class SevenZipInputStream extends InputStream {
     // input stream helper routines
 
     // ----------------------------------------------------------------
-    private static ByteBuffer readToByteBuffer(InputStream inputStream, int nLength)
-        throws IOException {
+    private static ByteBuffer readToByteBuffer(InputStream inputStream, int nLength) throws IOException {
         byte[] bytes = new byte[nLength];
         int nOffset = 0;
         while (nLength > 0) {
@@ -1800,8 +1767,7 @@ public class SevenZipInputStream extends InputStream {
     private static void skipFully(InputStream inputStream, long nLength) throws IOException {
         while (nLength > 0) {
             long nSkipped = inputStream.skip(nLength);
-            // note: postcodition of skip is wider than that of read! 0 means eof or ...? Let's
-            // assume EOF or worse.
+            // note: postcodition of skip is wider than that of read! 0 means eof or ...? Let's assume EOF or worse.
             if (nSkipped < 1) {
                 throw new EOFException();
             }
@@ -1852,8 +1818,7 @@ public class SevenZipInputStream extends InputStream {
                 m_HighCoder.Init();
             }
 
-            public int Decode(SevenZip.Compression.RangeCoder.Decoder rangeDecoder, int posState)
-                throws IOException {
+            public int Decode(SevenZip.Compression.RangeCoder.Decoder rangeDecoder, int posState) throws IOException {
                 if (rangeDecoder.DecodeBit(m_Choice, 0) == 0) {
                     return m_LowCoder[posState].Decode(rangeDecoder);
                 }
@@ -1877,8 +1842,7 @@ public class SevenZipInputStream extends InputStream {
                     SevenZip.Compression.RangeCoder.Decoder.InitBitModels(m_Decoders);
                 }
 
-                public byte DecodeNormal(SevenZip.Compression.RangeCoder.Decoder rangeDecoder)
-                    throws IOException {
+                public byte DecodeNormal(SevenZip.Compression.RangeCoder.Decoder rangeDecoder) throws IOException {
                     int symbol = 1;
                     do {
                         symbol = (symbol << 1) | rangeDecoder.DecodeBit(m_Decoders, symbol);
@@ -1886,15 +1850,13 @@ public class SevenZipInputStream extends InputStream {
                     return (byte) symbol;
                 }
 
-                public byte DecodeWithMatchByte(
-                    SevenZip.Compression.RangeCoder.Decoder rangeDecoder, byte matchByte)
-                    throws IOException {
+                public byte DecodeWithMatchByte(SevenZip.Compression.RangeCoder.Decoder rangeDecoder, byte matchByte)
+                        throws IOException {
                     int symbol = 1;
                     do {
                         int matchBit = (matchByte >> 7) & 1;
                         matchByte <<= 1;
-                        int bit =
-                            rangeDecoder.DecodeBit(m_Decoders, ((1 + matchBit) << 8) + symbol);
+                        int bit = rangeDecoder.DecodeBit(m_Decoders, ((1 + matchBit) << 8) + symbol);
                         symbol = (symbol << 1) | bit;
                         if (matchBit != bit) {
                             while (symbol < 0x100) {
@@ -1913,8 +1875,7 @@ public class SevenZipInputStream extends InputStream {
             private int m_PosMask;
 
             public void Create(int numPosBits, int numPrevBits) {
-                if (m_Coders != null && m_NumPrevBits == numPrevBits
-                    && m_NumPosBits == numPosBits) {
+                if (m_Coders != null && m_NumPrevBits == numPrevBits && m_NumPosBits == numPosBits) {
                     return;
                 }
                 m_NumPosBits = numPosBits;
@@ -1935,43 +1896,37 @@ public class SevenZipInputStream extends InputStream {
             }
 
             LzmaIncrementalDecoder.LiteralDecoder.Decoder2 GetDecoder(int pos, byte prevByte) {
-                return m_Coders[((pos & m_PosMask) << m_NumPrevBits)
-                    + ((prevByte & 0xFF) >>> (8 - m_NumPrevBits))];
+                return m_Coders[((pos & m_PosMask) << m_NumPrevBits) + ((prevByte & 0xFF) >>> (8 - m_NumPrevBits))];
             }
         }
 
         private OutWindow m_OutWindow = new OutWindow();
-        private SevenZip.Compression.RangeCoder.Decoder m_RangeDecoder =
-            new SevenZip.Compression.RangeCoder.Decoder();
+        private SevenZip.Compression.RangeCoder.Decoder m_RangeDecoder = new SevenZip.Compression.RangeCoder.Decoder();
 
         private short[] m_IsMatchDecoders = new short[Base.kNumStates << Base.kNumPosStatesBitsMax];
         private short[] m_IsRepDecoders = new short[Base.kNumStates];
         private short[] m_IsRepG0Decoders = new short[Base.kNumStates];
         private short[] m_IsRepG1Decoders = new short[Base.kNumStates];
         private short[] m_IsRepG2Decoders = new short[Base.kNumStates];
-        private short[] m_IsRep0LongDecoders =
-            new short[Base.kNumStates << Base.kNumPosStatesBitsMax];
+        private short[] m_IsRep0LongDecoders = new short[Base.kNumStates << Base.kNumPosStatesBitsMax];
 
         private BitTreeDecoder[] m_PosSlotDecoder = new BitTreeDecoder[Base.kNumLenToPosStates];
         private short[] m_PosDecoders = new short[Base.kNumFullDistances - Base.kEndPosModelIndex];
 
         private BitTreeDecoder m_PosAlignDecoder = new BitTreeDecoder(Base.kNumAlignBits);
 
-        private LzmaIncrementalDecoder.LenDecoder m_LenDecoder =
-            new LzmaIncrementalDecoder.LenDecoder();
-        private LzmaIncrementalDecoder.LenDecoder m_RepLenDecoder =
-            new LzmaIncrementalDecoder.LenDecoder();
+        private LzmaIncrementalDecoder.LenDecoder m_LenDecoder = new LzmaIncrementalDecoder.LenDecoder();
+        private LzmaIncrementalDecoder.LenDecoder m_RepLenDecoder = new LzmaIncrementalDecoder.LenDecoder();
 
-        private LzmaIncrementalDecoder.LiteralDecoder m_LiteralDecoder =
-            new LzmaIncrementalDecoder.LiteralDecoder();
+        private LzmaIncrementalDecoder.LiteralDecoder m_LiteralDecoder = new LzmaIncrementalDecoder.LiteralDecoder();
 
         private int m_DictionarySize = -1;
         private int m_DictionarySizeCheck = -1;
 
         private int m_PosStateMask;
 
-        public LzmaIncrementalDecoder(byte[] properties, InputStream inStream,
-            OutputStream outStream, long outSize) throws IOException {
+        public LzmaIncrementalDecoder(byte[] properties, InputStream inStream, OutputStream outStream, long outSize)
+                throws IOException {
             for (int i = 0; i < Base.kNumLenToPosStates; i++) {
                 m_PosSlotDecoder[i] = new BitTreeDecoder(Base.kNumPosSlotBits);
             }
@@ -2067,12 +2022,11 @@ public class SevenZipInputStream extends InputStream {
             if (m_outSize < 0 || m_nowPos64 < m_outSize) {
                 int posState = (int) m_nowPos64 & m_PosStateMask;
                 if (m_RangeDecoder.DecodeBit(m_IsMatchDecoders,
-                    (m_state << Base.kNumPosStatesBitsMax) + posState) == 0) {
+                        (m_state << Base.kNumPosStatesBitsMax) + posState) == 0) {
                     LzmaIncrementalDecoder.LiteralDecoder.Decoder2 decoder2 =
-                        m_LiteralDecoder.GetDecoder((int) m_nowPos64, m_prevByte);
+                            m_LiteralDecoder.GetDecoder((int) m_nowPos64, m_prevByte);
                     if (!Base.StateIsCharState(m_state)) {
-                        m_prevByte = decoder2.DecodeWithMatchByte(m_RangeDecoder,
-                            m_OutWindow.GetByte(m_rep0));
+                        m_prevByte = decoder2.DecodeWithMatchByte(m_RangeDecoder, m_OutWindow.GetByte(m_rep0));
                     } else {
                         m_prevByte = decoder2.DecodeNormal(m_RangeDecoder);
                     }
@@ -2085,7 +2039,7 @@ public class SevenZipInputStream extends InputStream {
                         len = 0;
                         if (m_RangeDecoder.DecodeBit(m_IsRepG0Decoders, m_state) == 0) {
                             if (m_RangeDecoder.DecodeBit(m_IsRep0LongDecoders,
-                                (m_state << Base.kNumPosStatesBitsMax) + posState) == 0) {
+                                    (m_state << Base.kNumPosStatesBitsMax) + posState) == 0) {
                                 m_state = Base.StateUpdateShortRep(m_state);
                                 len = 1;
                             }
@@ -2106,8 +2060,7 @@ public class SevenZipInputStream extends InputStream {
                             m_rep0 = distance;
                         }
                         if (len == 0) {
-                            len = m_RepLenDecoder.Decode(m_RangeDecoder, posState)
-                                + Base.kMatchMinLen;
+                            len = m_RepLenDecoder.Decode(m_RangeDecoder, posState) + Base.kMatchMinLen;
                             m_state = Base.StateUpdateRep(m_state);
                         }
                     } else {
@@ -2116,17 +2069,16 @@ public class SevenZipInputStream extends InputStream {
                         m_rep1 = m_rep0;
                         len = Base.kMatchMinLen + m_LenDecoder.Decode(m_RangeDecoder, posState);
                         m_state = Base.StateUpdateMatch(m_state);
-                        int posSlot =
-                            m_PosSlotDecoder[Base.GetLenToPosState(len)].Decode(m_RangeDecoder);
+                        int posSlot = m_PosSlotDecoder[Base.GetLenToPosState(len)].Decode(m_RangeDecoder);
                         if (posSlot >= Base.kStartPosModelIndex) {
                             int numDirectBits = (posSlot >> 1) - 1;
                             m_rep0 = ((2 | (posSlot & 1)) << numDirectBits);
                             if (posSlot < Base.kEndPosModelIndex) {
-                                m_rep0 += BitTreeDecoder.ReverseDecode(m_PosDecoders,
-                                    m_rep0 - posSlot - 1, m_RangeDecoder, numDirectBits);
+                                m_rep0 += BitTreeDecoder.ReverseDecode(m_PosDecoders, m_rep0 - posSlot - 1,
+                                        m_RangeDecoder, numDirectBits);
                             } else {
-                                m_rep0 += (m_RangeDecoder.DecodeDirectBits(
-                                    numDirectBits - Base.kNumAlignBits) << Base.kNumAlignBits);
+                                m_rep0 += (m_RangeDecoder
+                                        .DecodeDirectBits(numDirectBits - Base.kNumAlignBits) << Base.kNumAlignBits);
                                 m_rep0 += m_PosAlignDecoder.ReverseDecode(m_RangeDecoder);
                                 if (m_rep0 < 0) {
                                     if (m_rep0 == -1) {
@@ -2174,15 +2126,13 @@ public class SevenZipInputStream extends InputStream {
         private boolean m_bEof;
         private byte[] m_singleByteBuf = new byte[1];
 
-        public LzmaDecompressingInputStream(InputStreamFactory inputStreamFactory,
-            long nOffsetIntoArchive, long nPackedSize, long nUnpackedSize, byte[] properties)
-            throws IOException {
+        public LzmaDecompressingInputStream(InputStreamFactory inputStreamFactory, long nOffsetIntoArchive,
+                long nPackedSize, long nUnpackedSize, byte[] properties) throws IOException {
             InputStream inputStream = inputStreamFactory.createInputStream();
             skipFully(inputStream, nOffsetIntoArchive);
             m_inputStream = new LimitedInputStream(inputStream, nPackedSize);
             m_byteArrayOutputStream = new ByteArrayOutputStream();
-            m_decoder = new LzmaIncrementalDecoder(properties, m_inputStream,
-                m_byteArrayOutputStream, nUnpackedSize);
+            m_decoder = new LzmaIncrementalDecoder(properties, m_inputStream, m_byteArrayOutputStream, nUnpackedSize);
         }
 
         // skip, available, markSupported, mark, reset - all stubbed out by base class
@@ -2227,8 +2177,7 @@ public class SevenZipInputStream extends InputStream {
                 if (null != m_bytes) {
                     // return what we've got
                     nLength = Math.min(nLength, m_nBytesRemaining);
-                    System.arraycopy(m_bytes, m_bytes.length - m_nBytesRemaining, bytes, nOffset,
-                        nLength);
+                    System.arraycopy(m_bytes, m_bytes.length - m_nBytesRemaining, bytes, nOffset, nLength);
                     m_nBytesRemaining -= nLength;
                     if (0 == m_nBytesRemaining) {
                         m_bytes = null;
@@ -2261,8 +2210,7 @@ public class SevenZipInputStream extends InputStream {
             this(inputStream, nBytes, CloseUnderlyingOnClose.YES);
         }
 
-        public LimitedInputStream(InputStream inputStream, long nBytes,
-            CloseUnderlyingOnClose closeUnderlyingOnClose) {
+        public LimitedInputStream(InputStream inputStream, long nBytes, CloseUnderlyingOnClose closeUnderlyingOnClose) {
             m_inputStream = inputStream;
             m_nBytesRemaining = nBytes;
             m_closeUnderlyingOnClose = closeUnderlyingOnClose;
@@ -2357,7 +2305,7 @@ public class SevenZipInputStream extends InputStream {
             m_unpackStreamsForFolderItr = archiveDatabaseEx.NumUnpackStreamsVector.iterator();
             m_packStreamSizesItr = archiveDatabaseEx.PackSizes.iterator();
             m_nOffsetIntoArchive = archiveDatabaseEx.ArchiveInfo.DataStartPosition
-                + archiveDatabaseEx.ArchiveInfo.StartPositionAfterHeader;
+                    + archiveDatabaseEx.ArchiveInfo.StartPositionAfterHeader;
         }
     }
 
@@ -2438,19 +2386,18 @@ public class SevenZipInputStream extends InputStream {
             }
 
             if (0 == m_archiveIterator.m_nStreamsRemainingInFolder) {
-                closeAllStreams(); // throw out whatever we've got because we will start with new
-                                   // streams
+                closeAllStreams(); // throw out whatever we've got because we will start with new streams
 
                 // open next folder-stream
                 Folder folder;
                 do {
                     if (false == m_archiveIterator.m_folderItr.hasNext()
-                        || false == m_archiveIterator.m_unpackStreamsForFolderItr.hasNext()) {
+                            || false == m_archiveIterator.m_unpackStreamsForFolderItr.hasNext()) {
                         throw new ZipException("Bad header.");
                     }
                     folder = m_archiveIterator.m_folderItr.next();
                     m_archiveIterator.m_nStreamsRemainingInFolder =
-                        m_archiveIterator.m_unpackStreamsForFolderItr.next();
+                            m_archiveIterator.m_unpackStreamsForFolderItr.next();
                 } while (0 == m_archiveIterator.m_nStreamsRemainingInFolder);
 
                 if (folder.Coders.isEmpty()) {
@@ -2476,8 +2423,8 @@ public class SevenZipInputStream extends InputStream {
                 long nOffsetIntoArchive = m_archiveIterator.m_nOffsetIntoArchive;
                 m_archiveIterator.m_nOffsetIntoArchive += nPackedSize;
 
-                m_currentFolderStream = new LzmaDecompressingInputStream(m_inputStreamFactory,
-                    nOffsetIntoArchive, nPackedSize, nUnpackedSize, properties);
+                m_currentFolderStream = new LzmaDecompressingInputStream(m_inputStreamFactory, nOffsetIntoArchive,
+                        nPackedSize, nUnpackedSize, properties);
             }
 
             // if we are in the middle of a folder-stream, skip to the end
@@ -2491,7 +2438,7 @@ public class SevenZipInputStream extends InputStream {
             // get next file-stream from folder-stream
             m_archiveIterator.m_nStreamsRemainingInFolder--;
             m_currentFileStream = new LimitedInputStream(m_currentFolderStream, fileItem.UnPackSize,
-                LimitedInputStream.CloseUnderlyingOnClose.NO);
+                    LimitedInputStream.CloseUnderlyingOnClose.NO);
             return new Entry(fileItem);
 
         } catch (IOException e) {
@@ -2517,8 +2464,7 @@ public class SevenZipInputStream extends InputStream {
             }
 
             // read the rest
-            new InArchive().readDatabase(inputStream, archiveDatabaseEx, m_inputStreamFactory,
-                SIGNATURE_LENGTH);
+            new InArchive().readDatabase(inputStream, archiveDatabaseEx, m_inputStreamFactory, SIGNATURE_LENGTH);
         } finally {
             inputStream.close();
         }

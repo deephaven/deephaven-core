@@ -11,8 +11,8 @@ import io.deephaven.db.plot.util.ArgumentValidations;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
 /**
- * {@link IndexableNumericData} dataset backed by an array of ints. When accessed, data values are
- * converted to doubles before being returned.
+ * {@link IndexableNumericData} dataset backed by an array of ints. When accessed, data values are converted to doubles
+ * before being returned.
  */
 public class IndexableNumericDataArrayInt extends IndexableNumericData {
     private static final long serialVersionUID = -980842236353746501L;

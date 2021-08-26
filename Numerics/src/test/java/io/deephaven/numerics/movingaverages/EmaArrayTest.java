@@ -75,15 +75,13 @@ public class EmaArrayTest extends TestCase {
         emas.processDouble(2, x2);
         assertEquals(2, emas.getLastTimestamp());
         assertEquals(2, emas.getCurrent().length);
-        assertEquals(x1 * alphas[0] * (1 - alphas[0]) + x2 * (1 - alphas[0]), emas.getCurrent()[0],
-            tol);
-        assertEquals(x1 * alphas[1] * (1 - alphas[1]) + x2 * (1 - alphas[1]), emas.getCurrent()[1],
-            tol);
+        assertEquals(x1 * alphas[0] * (1 - alphas[0]) + x2 * (1 - alphas[0]), emas.getCurrent()[0], tol);
+        assertEquals(x1 * alphas[1] * (1 - alphas[1]) + x2 * (1 - alphas[1]), emas.getCurrent()[1], tol);
     }
 
     /**
-     * Make sure that smaller timescales correspond to faster moving averages. The smallest double
-     * should correspond to no averaging.
+     * Make sure that smaller timescales correspond to faster moving averages. The smallest double should correspond to
+     * no averaging.
      */
     public void testTimescales() {
         double[] timeScales = {Double.MIN_VALUE};

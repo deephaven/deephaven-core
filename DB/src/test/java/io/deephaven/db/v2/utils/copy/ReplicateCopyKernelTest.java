@@ -14,15 +14,15 @@ public class ReplicateCopyKernelTest {
     public static void main(String[] args) throws IOException {
         ReplicateCopyKernel.main(args);
         ReplicatePrimitiveCode.charToAll(TestCharCopyKernel.class, ReplicatePrimitiveCode.TEST_SRC);
-        fixupObjectCopyKernelTest(ReplicatePrimitiveCode.charToObject(TestCharCopyKernel.class,
-            ReplicatePrimitiveCode.TEST_SRC));
+        fixupObjectCopyKernelTest(
+                ReplicatePrimitiveCode.charToObject(TestCharCopyKernel.class, ReplicatePrimitiveCode.TEST_SRC));
     }
 
     private static void fixupObjectCopyKernelTest(String path) throws IOException {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
         lines = globalReplacements(lines,
-            "ObjectChunk<Values>", "ObjectChunk<Object, Values>");
+                "ObjectChunk<Values>", "ObjectChunk<Object, Values>");
         FileUtils.writeLines(file, lines);
     }
 }

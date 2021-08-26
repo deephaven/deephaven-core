@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.SearchCondition",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.SearchCondition",
+        namespace = JsPackage.GLOBAL)
 public class SearchCondition {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -43,14 +43,14 @@ public class SearchCondition {
 
         @JsProperty
         void setOptionalReferencesList(
-            JsArray<SearchCondition.ToObjectReturnType.OptionalReferencesListFieldType> optionalReferencesList);
+                JsArray<SearchCondition.ToObjectReturnType.OptionalReferencesListFieldType> optionalReferencesList);
 
         @JsOverlay
         default void setOptionalReferencesList(
-            SearchCondition.ToObjectReturnType.OptionalReferencesListFieldType[] optionalReferencesList) {
+                SearchCondition.ToObjectReturnType.OptionalReferencesListFieldType[] optionalReferencesList) {
             setOptionalReferencesList(
-                Js.<JsArray<SearchCondition.ToObjectReturnType.OptionalReferencesListFieldType>>uncheckedCast(
-                    optionalReferencesList));
+                    Js.<JsArray<SearchCondition.ToObjectReturnType.OptionalReferencesListFieldType>>uncheckedCast(
+                            optionalReferencesList));
         }
 
         @JsProperty
@@ -86,14 +86,14 @@ public class SearchCondition {
 
         @JsProperty
         void setOptionalReferencesList(
-            JsArray<SearchCondition.ToObjectReturnType0.OptionalReferencesListFieldType> optionalReferencesList);
+                JsArray<SearchCondition.ToObjectReturnType0.OptionalReferencesListFieldType> optionalReferencesList);
 
         @JsOverlay
         default void setOptionalReferencesList(
-            SearchCondition.ToObjectReturnType0.OptionalReferencesListFieldType[] optionalReferencesList) {
+                SearchCondition.ToObjectReturnType0.OptionalReferencesListFieldType[] optionalReferencesList) {
             setOptionalReferencesList(
-                Js.<JsArray<SearchCondition.ToObjectReturnType0.OptionalReferencesListFieldType>>uncheckedCast(
-                    optionalReferencesList));
+                    Js.<JsArray<SearchCondition.ToObjectReturnType0.OptionalReferencesListFieldType>>uncheckedCast(
+                            optionalReferencesList));
         }
 
         @JsProperty
@@ -103,12 +103,12 @@ public class SearchCondition {
     public static native SearchCondition deserializeBinary(Uint8Array bytes);
 
     public static native SearchCondition deserializeBinaryFromReader(
-        SearchCondition message, Object reader);
+            SearchCondition message, Object reader);
 
     public static native void serializeBinaryToWriter(SearchCondition message, Object writer);
 
     public static native SearchCondition.ToObjectReturnType toObject(
-        boolean includeInstance, SearchCondition msg);
+            boolean includeInstance, SearchCondition msg);
 
     public native Reference addOptionalReferences();
 

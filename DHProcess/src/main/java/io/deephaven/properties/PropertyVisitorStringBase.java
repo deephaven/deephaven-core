@@ -4,8 +4,7 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 
 /**
- * An {@link PropertyVisitor} base which converts the non-String valued calls into
- * {@link #visit(String, String)}.
+ * An {@link PropertyVisitor} base which converts the non-String valued calls into {@link #visit(String, String)}.
  */
 public abstract class PropertyVisitorStringBase implements PropertyVisitor {
 
@@ -43,8 +42,7 @@ public abstract class PropertyVisitorStringBase implements PropertyVisitor {
     }
 
     /**
-     * Adapts a String {@link BiConsumer} into a {@link PropertyVisitor} via
-     * {@link PropertyVisitorStringBase}.
+     * Adapts a String {@link BiConsumer} into a {@link PropertyVisitor} via {@link PropertyVisitorStringBase}.
      */
     public static class BiConsumerStringImpl extends PropertyVisitorStringBase {
         private final BiConsumer<String, String> consumer;

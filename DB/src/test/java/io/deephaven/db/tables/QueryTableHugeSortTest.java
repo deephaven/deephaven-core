@@ -25,16 +25,14 @@ public class QueryTableHugeSortTest {
         final int megaSortSize = SortHelpers.megaSortSize;
         final int sortChunkSize = SortHelpers.sortChunkSize;
         try {
-            // ideally we would sort something that is bigger than Integer.MAX_VALUE, but the test
-            // VMs can not handle that.
-            // So instead we adjust the mega sort parameters so that we'll exercise the code path
-            // anyway.
+            // ideally we would sort something that is bigger than Integer.MAX_VALUE, but the test VMs can not handle
+            // that.
+            // So instead we adjust the mega sort parameters so that we'll exercise the code path anyway.
             SortHelpers.megaSortSize = 1 << 24; // 16 Million
             SortHelpers.sortChunkSize = 1 << 21; // 2 Million
 
             final long tableSize = (long) SortHelpers.megaSortSize * 2L;
-            final Table bigTable =
-                TableTools.emptyTable(tableSize).updateView("SortCol=(byte)(ii%100)", "Sentinel=k");
+            final Table bigTable = TableTools.emptyTable(tableSize).updateView("SortCol=(byte)(ii%100)", "Sentinel=k");
             TableTools.show(bigTable);
 
             final long runSize1 = (tableSize + 99) / 100;
@@ -42,7 +40,7 @@ public class QueryTableHugeSortTest {
             final long firstSmallRun = tableSize % 100;
             final long runSizePivot = (firstSmallRun) * runSize1;
             System.out.println("RunSize: " + runSize1 + ", " + runSize2 + ", pivot: " + runSizePivot
-                + ", firstSmallRun: " + firstSmallRun);
+                    + ", firstSmallRun: " + firstSmallRun);
 
             final long startTime = System.currentTimeMillis();
             final Table sorted = bigTable.sort("SortCol");
@@ -58,8 +56,8 @@ public class QueryTableHugeSortTest {
             QueryScope.addParam("firstSmallRun", firstSmallRun);
 
             final Table expected = TableTools.emptyTable(tableSize).updateView(
-                "SortCol=(byte)(ii < runSizePivot ? ii/runSize1 : ((ii - runSizePivot) / runSize2) + firstSmallRun)",
-                "Sentinel=(ii < runSizePivot) ? ((100 * (ii % runSize1)) + SortCol) : 100 * ((ii - runSizePivot) % runSize2) + SortCol");
+                    "SortCol=(byte)(ii < runSizePivot ? ii/runSize1 : ((ii - runSizePivot) / runSize2) + firstSmallRun)",
+                    "Sentinel=(ii < runSizePivot) ? ((100 * (ii % runSize1)) + SortCol) : 100 * ((ii - runSizePivot) % runSize2) + SortCol");
             TableTools.showWithIndex(expected);
 
             TstUtils.assertTableEquals(expected, sorted);
@@ -78,12 +76,11 @@ public class QueryTableHugeSortTest {
 
         QueryScope.addParam("captains", captains);
         QueryScope.addParam("segSize", segSize);
-        final Table grouped = TableTools.emptyTable(tableSize)
-            .updateView("Captain=captains[(int)(ii / segSize)]", "Sentinel=ii");
+        final Table grouped =
+                TableTools.emptyTable(tableSize).updateView("Captain=captains[(int)(ii / segSize)]", "Sentinel=ii");
         final Map<String, Index> gtr = new LinkedHashMap<>();
         for (int ii = 0; ii < captains.length; ++ii) {
-            gtr.put(captains[ii],
-                Index.FACTORY.getIndexByRange(ii * segSize, (ii + 1) * segSize - 1));
+            gtr.put(captains[ii], Index.FACTORY.getIndexByRange(ii * segSize, (ii + 1) * segSize - 1));
         }
         System.out.println(gtr);
         ((AbstractColumnSource) (grouped.getColumnSource("Captain"))).setGroupToRange(gtr);
@@ -99,7 +96,7 @@ public class QueryTableHugeSortTest {
         Arrays.sort(sortedCaptains, Comparator.reverseOrder());
         QueryScope.addParam("sortedCaptains", sortedCaptains);
         final Table sortedValues = TableTools.emptyTable(tableSize)
-            .updateView("Captain=sortedCaptains[(int)(ii / segSize)]", "Sentinel=ii");
+                .updateView("Captain=sortedCaptains[(int)(ii / segSize)]", "Sentinel=ii");
 
         System.out.println("Comparing tables:");
         final long compareStart = System.currentTimeMillis();

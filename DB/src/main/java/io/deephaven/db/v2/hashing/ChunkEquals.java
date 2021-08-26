@@ -6,8 +6,7 @@ import io.deephaven.db.v2.sources.chunk.Attributes.ChunkPositions;
 
 public interface ChunkEquals {
     /**
-     * Returns true iff the chunks have the same size() and each corresponding element of the chunk
-     * compares equal.
+     * Returns true iff the chunks have the same size() and each corresponding element of the chunk compares equal.
      *
      * @param lhs the left-hand side of the comparison
      * @param rhs the right-hand side of the comparison
@@ -15,19 +14,18 @@ public interface ChunkEquals {
     boolean equalReduce(Chunk<? extends Any> lhs, Chunk<? extends Any> rhs);
 
     /**
-     * Called for the first (or only) pair of chunks, sets the corresponding destination entry to
-     * true if the values are equal, or false otherwise
+     * Called for the first (or only) pair of chunks, sets the corresponding destination entry to true if the values are
+     * equal, or false otherwise
      *
      * @param lhs the left-hand side of the comparison
      * @param rhs the right-hand side of the comparison
      * @param destination the chunk to write equality values into
      */
-    void equal(Chunk<? extends Any> lhs, Chunk<? extends Any> rhs,
-        WritableBooleanChunk destination);
+    void equal(Chunk<? extends Any> lhs, Chunk<? extends Any> rhs, WritableBooleanChunk destination);
 
     /**
-     * For each pair of indices i and i + 1 in chunk; write true to destination[i] if they are
-     * equal, otherwise write false.
+     * For each pair of indices i and i + 1 in chunk; write true to destination[i] if they are equal, otherwise write
+     * false.
      *
      * @param chunk the chunk to compare subsequent values in
      * @param destination the chunk to write equality values into, size is chunk.size() - 1
@@ -35,8 +33,8 @@ public interface ChunkEquals {
     void equalNext(Chunk<? extends Any> chunk, WritableBooleanChunk destination);
 
     /**
-     * Called for the first (or only) pair of chunks, sets the corresponding destination entry to
-     * true if lhs[lhsPositions] == rhs[rhsPositions].
+     * Called for the first (or only) pair of chunks, sets the corresponding destination entry to true if
+     * lhs[lhsPositions] == rhs[rhsPositions].
      *
      * @param lhsPositions the positions within left-hand side of the comparison
      * @param rhsPositions the positions within the right-hand side of the comparison
@@ -45,34 +43,33 @@ public interface ChunkEquals {
      * @param destination the chunk to write equality values into
      */
     void equalPermuted(IntChunk<ChunkPositions> lhsPositions, IntChunk<ChunkPositions> rhsPositions,
-        Chunk<? extends Any> lhs, Chunk<? extends Any> rhs, WritableBooleanChunk destination);
+            Chunk<? extends Any> lhs, Chunk<? extends Any> rhs, WritableBooleanChunk destination);
 
     /**
-     * Called for the first (or only) pair of chunks, sets the corresponding destination entry to
-     * true if lhs[lhsPositions] == rhs.
+     * Called for the first (or only) pair of chunks, sets the corresponding destination entry to true if
+     * lhs[lhsPositions] == rhs.
      *
      * @param lhsPositions the positions within left-hand side of the comparison
      * @param lhs the left-hand side of the comparison
      * @param rhs the right-hand side of the comparison
      * @param destination the chunk to write equality values into
      */
-    void equalLhsPermuted(IntChunk<ChunkPositions> lhsPositions, Chunk<? extends Any> lhs,
-        Chunk<? extends Any> rhs, WritableBooleanChunk destination);
+    void equalLhsPermuted(IntChunk<ChunkPositions> lhsPositions, Chunk<? extends Any> lhs, Chunk<? extends Any> rhs,
+            WritableBooleanChunk destination);
 
     /**
-     * Called for subsequent pair of chunks, if the corresponding destination entry is false, do
-     * nothing. If true, then set to false if the corresponding values are not equal.
+     * Called for subsequent pair of chunks, if the corresponding destination entry is false, do nothing. If true, then
+     * set to false if the corresponding values are not equal.
      *
      * @param lhs the left-hand side of the comparison
      * @param rhs the right-hand side of the comparison
      * @param destination the chunk to write equality values into
      */
-    void andEqual(Chunk<? extends Any> lhs, Chunk<? extends Any> rhs,
-        WritableBooleanChunk destination);
+    void andEqual(Chunk<? extends Any> lhs, Chunk<? extends Any> rhs, WritableBooleanChunk destination);
 
     /**
-     * For each pair of indices i and i + 1 in chunk; if destination[i] is false do nothing,
-     * otherwise write true to destination[i] if they are equal.
+     * For each pair of indices i and i + 1 in chunk; if destination[i] is false do nothing, otherwise write true to
+     * destination[i] if they are equal.
      *
      * @param chunk the chunk to compare subsequent values in
      * @param destination the chunk to write equality values into, size is chunk.size() - 1
@@ -80,8 +77,8 @@ public interface ChunkEquals {
     void andEqualNext(Chunk<? extends Any> chunk, WritableBooleanChunk destination);
 
     /**
-     * If destination[i] is false do nothing, otherwise, sets the corresponding destination entry to
-     * true if lhs[lhsPositions] == rhs[rhsPositions].
+     * If destination[i] is false do nothing, otherwise, sets the corresponding destination entry to true if
+     * lhs[lhsPositions] == rhs[rhsPositions].
      *
      * @param lhsPositions the positions within left-hand side of the comparison
      * @param rhsPositions the positions within the right-hand side of the comparison
@@ -89,43 +86,40 @@ public interface ChunkEquals {
      * @param rhs the right-hand side of the comparison
      * @param destination the chunk to write equality values into
      */
-    void andEqualPermuted(IntChunk<ChunkPositions> lhsPositions,
-        IntChunk<ChunkPositions> rhsPositions, Chunk<? extends Any> lhs, Chunk<? extends Any> rhs,
-        WritableBooleanChunk destination);
+    void andEqualPermuted(IntChunk<ChunkPositions> lhsPositions, IntChunk<ChunkPositions> rhsPositions,
+            Chunk<? extends Any> lhs, Chunk<? extends Any> rhs, WritableBooleanChunk destination);
 
     /**
-     * If destination[i] is false do nothing, otherwise, sets the corresponding destination entry to
-     * true if lhs[lhsPositions] == rhs.
+     * If destination[i] is false do nothing, otherwise, sets the corresponding destination entry to true if
+     * lhs[lhsPositions] == rhs.
      *
      * @param lhsPositions the positions within left-hand side of the comparison
      * @param lhs the left-hand side of the comparison
      * @param rhs the right-hand side of the comparison
      * @param destination the chunk to write equality values into
      */
-    void andEqualLhsPermuted(IntChunk<ChunkPositions> lhsPositions, Chunk<? extends Any> lhs,
-        Chunk<? extends Any> rhs, WritableBooleanChunk destination);
+    void andEqualLhsPermuted(IntChunk<ChunkPositions> lhsPositions, Chunk<? extends Any> lhs, Chunk<? extends Any> rhs,
+            WritableBooleanChunk destination);
 
     /**
-     * Called for the first (or only) pair of chunks, sets the corresponding destination entry to
-     * true if the values are not equal, or false otherwise
+     * Called for the first (or only) pair of chunks, sets the corresponding destination entry to true if the values are
+     * not equal, or false otherwise
      *
      * @param lhs the left-hand side of the comparison
      * @param rhs the right-hand side of the comparison
      * @param destination the chunk to write equality values into
      */
-    void notEqual(Chunk<? extends Any> lhs, Chunk<? extends Any> rhs,
-        WritableBooleanChunk destination);
+    void notEqual(Chunk<? extends Any> lhs, Chunk<? extends Any> rhs, WritableBooleanChunk destination);
 
     /**
-     * Called for subsequent pair of chunks, if the corresponding destination entry is false, do
-     * nothing. If true, then set to false if the corresponding values are equal.
+     * Called for subsequent pair of chunks, if the corresponding destination entry is false, do nothing. If true, then
+     * set to false if the corresponding values are equal.
      *
      * @param lhs the left-hand side of the comparison
      * @param rhs the right-hand side of the comparison
      * @param destination the chunk to write equality values into
      */
-    void andNotEqual(Chunk<? extends Any> lhs, Chunk<? extends Any> rhs,
-        WritableBooleanChunk destination);
+    void andNotEqual(Chunk<? extends Any> lhs, Chunk<? extends Any> rhs, WritableBooleanChunk destination);
 
 
     /**
@@ -137,8 +131,8 @@ public interface ChunkEquals {
      * @param valuesChunk the chunk of values we are interested in
      * @param destinations the destination chunk to write equality values into
      */
-    void equalPairs(IntChunk<ChunkPositions> chunkPositionsToCheckForEquality,
-        Chunk<? extends Any> valuesChunk, WritableBooleanChunk destinations);
+    void equalPairs(IntChunk<ChunkPositions> chunkPositionsToCheckForEquality, Chunk<? extends Any> valuesChunk,
+            WritableBooleanChunk destinations);
 
     /**
      * Compares valuesChunk[chunkPositionsToCheckForEquality[pp * 2]] and
@@ -149,8 +143,8 @@ public interface ChunkEquals {
      * @param valuesChunk the chunk of values we are interested in
      * @param destinations the destination chunk to write equality values into
      */
-    void andEqualPairs(IntChunk<ChunkPositions> chunkPositionsToCheckForEquality,
-        Chunk<? extends Any> valuesChunk, WritableBooleanChunk destinations);
+    void andEqualPairs(IntChunk<ChunkPositions> chunkPositionsToCheckForEquality, Chunk<? extends Any> valuesChunk,
+            WritableBooleanChunk destinations);
 
     static ChunkEquals makeEqual(ChunkType chunkType) {
         switch (chunkType) {

@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.InCondition",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.InCondition",
+        namespace = JsPackage.GLOBAL)
 public class InCondition {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -82,12 +82,11 @@ public class InCondition {
             InCondition.ToObjectReturnType.TargetFieldType.ReferenceFieldType getReference();
 
             @JsProperty
-            void setLiteral(
-                InCondition.ToObjectReturnType.TargetFieldType.LiteralFieldType literal);
+            void setLiteral(InCondition.ToObjectReturnType.TargetFieldType.LiteralFieldType literal);
 
             @JsProperty
             void setReference(
-                InCondition.ToObjectReturnType.TargetFieldType.ReferenceFieldType reference);
+                    InCondition.ToObjectReturnType.TargetFieldType.ReferenceFieldType reference);
         }
 
         @JsOverlay
@@ -193,12 +192,11 @@ public class InCondition {
             InCondition.ToObjectReturnType0.TargetFieldType.ReferenceFieldType getReference();
 
             @JsProperty
-            void setLiteral(
-                InCondition.ToObjectReturnType0.TargetFieldType.LiteralFieldType literal);
+            void setLiteral(InCondition.ToObjectReturnType0.TargetFieldType.LiteralFieldType literal);
 
             @JsProperty
             void setReference(
-                InCondition.ToObjectReturnType0.TargetFieldType.ReferenceFieldType reference);
+                    InCondition.ToObjectReturnType0.TargetFieldType.ReferenceFieldType reference);
         }
 
         @JsOverlay
@@ -238,13 +236,12 @@ public class InCondition {
 
     public static native InCondition deserializeBinary(Uint8Array bytes);
 
-    public static native InCondition deserializeBinaryFromReader(InCondition message,
-        Object reader);
+    public static native InCondition deserializeBinaryFromReader(InCondition message, Object reader);
 
     public static native void serializeBinaryToWriter(InCondition message, Object writer);
 
     public static native InCondition.ToObjectReturnType toObject(
-        boolean includeInstance, InCondition msg);
+            boolean includeInstance, InCondition msg);
 
     public native Value addCandidates();
 

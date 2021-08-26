@@ -254,8 +254,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
 
             // step 1: initialize exports
             final List<BatchExportBuilder> exportBuilders = request.getOpsList().stream()
-                .map(op -> new BatchExportBuilder(session, op))
-                .collect(Collectors.toList());
+                    .map(op -> new BatchExportBuilder(session, op))
+                    .collect(Collectors.toList());
 
             // step 2: resolve dependencies
             final Function<TableReference, SessionState.ExportObject<Table>> resolver = ref -> {
@@ -275,14 +275,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                         }
                         return exportBuilders.get(offset).exportBuilder.getExport();
                     default:
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                            "invalid table reference: " + ref);
+                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "invalid table reference: " + ref);
                 }
             };
             exportBuilders.forEach(export -> export.resolveDependencies(resolver));
 
-            // step 3: check for cyclical dependencies; this is our only opportunity to check
-            // non-export cycles
+            // step 3: check for cyclical dependencies; this is our only opportunity to check non-export cycles
             // TODO: check for cycles
 
             // step 4: submit the batched operations
@@ -331,25 +329,23 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             final StreamObserver<ExportedTableUpdateMessage> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
-            final ExportedTableUpdateListener listener =
-                new ExportedTableUpdateListener(session, responseObserver);
+            final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, responseObserver);
             session.addExportListener(listener);
-            ((ServerCallStreamObserver<ExportedTableUpdateMessage>) responseObserver)
-                .setOnCancelHandler(() -> {
-                    session.removeExportListener(listener);
-                });
+            ((ServerCallStreamObserver<ExportedTableUpdateMessage>) responseObserver).setOnCancelHandler(() -> {
+                session.removeExportListener(listener);
+            });
         });
     }
 
     public static ExportedTableCreationResponse buildTableCreationResponse(final TableReference tableRef,
             final Table table) {
         return ExportedTableCreationResponse.newBuilder()
-            .setSuccess(true)
-            .setResultId(tableRef)
-            .setIsStatic(!table.isLive())
-            .setSize(table.size())
-            .setSchemaHeader(BarrageSchemaUtil.schemaBytesFromTable(table))
-            .build();
+                .setSuccess(true)
+                .setResultId(tableRef)
+                .setIsStatic(!table.isLive())
+                .setSize(table.size())
+                .setSchemaHeader(BarrageSchemaUtil.schemaBytesFromTable(table))
+                .build();
     }
 
     /**
@@ -368,11 +364,9 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             operation.validateRequest(request);
 
             final Ticket resultId = operation.getResultTicket(request);
-            final TableReference resultRef =
-                TableReference.newBuilder().setTicket(resultId).build();
+            final TableReference resultRef = TableReference.newBuilder().setTicket(resultId).build();
 
-            final List<SessionState.ExportObject<Table>> dependencies =
-                operation.getTableReferences(request).stream()
+            final List<SessionState.ExportObject<Table>> dependencies = operation.getTableReferences(request).stream()
                     .map(TableReference::getTicket)
                     .map((ticket) -> ticketRouter.<Table>resolve(session, ticket))
                     .collect(Collectors.toList());
@@ -388,8 +382,6 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                         });
                         return result;
                     });
-                    return result;
-                });
         });
     }
 
@@ -404,15 +396,13 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             operation = getOp(op.getOpCase()); // get operation from op code
             request = operation.getRequestFromOperation(op);
             final Ticket resultId = operation.getResultTicket(request);
-            exportBuilder = resultId.getTicket().size() == 0 ? session.nonExport()
-                : session.newExport(resultId);
+            exportBuilder = resultId.getTicket().size() == 0 ? session.nonExport() : session.newExport(resultId);
         }
 
-        void resolveDependencies(
-            final Function<TableReference, SessionState.ExportObject<Table>> resolveReference) {
+        void resolveDependencies(final Function<TableReference, SessionState.ExportObject<Table>> resolveReference) {
             dependencies = operation.getTableReferences(request).stream()
-                .map(resolveReference)
-                .collect(Collectors.toList());
+                    .map(resolveReference)
+                    .collect(Collectors.toList());
             exportBuilder.require(dependencies);
         }
 

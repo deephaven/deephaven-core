@@ -7,9 +7,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Message_generated.org.apache.arrow.flatbuf.FieldNode",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Message_generated.org.apache.arrow.flatbuf.FieldNode",
+        namespace = JsPackage.GLOBAL)
 public class FieldNode {
     public static native double createFieldNode(Builder builder, Long length, Long null_count);
 

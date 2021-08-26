@@ -62,8 +62,7 @@ public interface StatusCallback {
     /**
      * Get a new status callback representing a sub range of this one.
      *
-     * TODO: it's iffy whether this belongs in the interface, but is pretty handy. Could easily be a
-     * factory.
+     * TODO: it's iffy whether this belongs in the interface, but is pretty handy. Could easily be a factory.
      * 
      * @param min 0% in the subrange corresponds to min in the parent
      * @param max 100% in the subrange corresponds to max in the parent

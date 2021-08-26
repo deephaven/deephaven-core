@@ -20,9 +20,9 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public void addChunk(BucketedContext context, Chunk<? extends Values> values,
-        LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
-        IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-        WritableBooleanChunk<Values> stateModified) {
+            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
@@ -35,9 +35,9 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
-        LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
-        IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-        WritableBooleanChunk<Values> stateModified) {
+            LongChunk<? extends KeyIndices> inputIndices, IntChunk<KeyIndices> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
@@ -50,16 +50,15 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-        LongChunk<? extends KeyIndices> inputIndices, long destination) {
+            LongChunk<? extends KeyIndices> inputIndices, long destination) {
         final long oldCount = countColumnSource.getUnsafe(destination);
         countColumnSource.set(destination, NullSafeAddition.plusLong(oldCount, chunkSize));
         return true;
     }
 
     @Override
-    public boolean removeChunk(SingletonContext context, int chunkSize,
-        Chunk<? extends Values> values, LongChunk<? extends KeyIndices> inputIndices,
-        long destination) {
+    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends KeyIndices> inputIndices, long destination) {
         final long oldCount = countColumnSource.getUnsafe(destination);
         countColumnSource.set(destination, NullSafeAddition.minusLong(oldCount, chunkSize));
         return true;
@@ -67,16 +66,15 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues,
-        Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices,
-        IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions,
-        IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+            Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices,
+            IntChunk<KeyIndices> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         stateModified.fillWithValue(0, startPositions.size(), false);
     }
 
     @Override
-    public boolean modifyChunk(SingletonContext context, int chunkSize,
-        Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues,
-        LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
+    public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues,
+            Chunk<? extends Values> newValues, LongChunk<? extends KeyIndices> postShiftIndices, long destination) {
         return false;
     }
 

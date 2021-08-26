@@ -3,6 +3,7 @@ package io.deephaven.qst.table;
 import io.deephaven.api.TableOperations;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.annotations.NodeStyle;
+import io.deephaven.api.filter.FilterHasRaw;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Collection;
@@ -22,6 +23,15 @@ public abstract class WhereTable extends TableBase implements SingleParentTable 
     public abstract TableSpec parent();
 
     public abstract List<Filter> filters();
+
+    /**
+     * Checks if any of the filters is, or contains, a {@linkplain io.deephaven.api.RawString raw-string} filter.
+     *
+     * @return true if there are any raw-string filters
+     */
+    public final boolean hasRawFilter() {
+        return filters().stream().anyMatch(FilterHasRaw::of);
+    }
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {

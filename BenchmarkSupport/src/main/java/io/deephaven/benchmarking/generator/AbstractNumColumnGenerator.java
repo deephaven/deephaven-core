@@ -21,8 +21,7 @@ public abstract class AbstractNumColumnGenerator<T extends Number> implements Co
 
     @Override
     public String getUpdateString(String varName) {
-        return def.getName() + "=(" + def.getDataType().getSimpleName() + ")" + varName
-            + chooseGetter();
+        return def.getName() + "=(" + def.getDataType().getSimpleName() + ")" + varName + chooseGetter();
     }
 
     public abstract byte getByte();

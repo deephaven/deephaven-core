@@ -24,7 +24,7 @@ public interface PrimitiveArray<T> extends Array<T> {
     }
 
     static <T> ArrayBuilder<T, ? extends PrimitiveArray<T>, ?> builder(PrimitiveType<T> type,
-        int initialCapacity) {
+            int initialCapacity) {
         return TypeToArrayBuilder.of(type, initialCapacity);
     }
 

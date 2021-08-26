@@ -58,15 +58,13 @@ public class IndexableDataWithDefault<T> extends IndexableData<T> {
     /**
      * Sets this datasets indexed values.
      *
-     * If infinite is true, null values are returned for out-of-bounds indices. If not, an exception
-     * will be thrown.
+     * If infinite is true, null values are returned for out-of-bounds indices. If not, an exception will be thrown.
      *
      * @param specificValues data
      * @param infinite if this dataset should return nulls for out-of-bounds indices.
      * @param <TT> type of the data in {@code specificValues}
      */
-    public <TT extends T> void setSpecific(final IndexableData<TT> specificValues,
-        final boolean infinite) {
+    public <TT extends T> void setSpecific(final IndexableData<TT> specificValues, final boolean infinite) {
         if (infinite) {
             this.specificValues = new IndexableDataInfinite<>(specificValues);
         } else {

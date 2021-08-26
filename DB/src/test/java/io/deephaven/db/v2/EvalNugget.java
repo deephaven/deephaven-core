@@ -60,8 +60,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
         }
 
         @Override
-        public void onFailureInternal(Throwable originalException,
-            UpdatePerformanceTracker.Entry sourceEntry) {
+        public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
             exception = originalException;
             final StringWriter errors = new StringWriter();
             if (description != null) {
@@ -120,8 +119,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
     }
 
     void checkDifferences(String msg, Table recomputed) {
-        TstUtils.assertTableEquals(msg, forComparison(recomputed), forComparison(originalValue),
-            diffItems());
+        TstUtils.assertTableEquals(msg, forComparison(recomputed), forComparison(originalValue), diffItems());
     }
 
     @NotNull
@@ -139,20 +137,20 @@ public abstract class EvalNugget implements EvalNuggetInterface {
         final Table originalForComparison = forComparison(originalValue);
 
         final int maxLines = 100;
-        final Pair<String, Long> diffPair = TableTools.diffPair(originalForComparison,
-            recomputedForComparison, maxLines, diffItems());
+        final Pair<String, Long> diffPair =
+                TableTools.diffPair(originalForComparison, recomputedForComparison, maxLines, diffItems());
 
         if (diffPair.getFirst().equals("")) {
             showResult("Recomputed Table:", recomputedTable);
         } else if (!diffPair.getFirst().equals("")) {
-            final long numTableRows = Math.min(maxLines,
-                Math.max(originalForComparison.size(), recomputedForComparison.size()));
+            final long numTableRows =
+                    Math.min(maxLines, Math.max(originalForComparison.size(), recomputedForComparison.size()));
             final long firstRow = Math.max(0, diffPair.getSecond() - 5);
-            final long lastRow = Math.min(firstRow + numTableRows,
-                Math.min(firstRow + maxLines, diffPair.getSecond() + 5));
+            final long lastRow =
+                    Math.min(firstRow + numTableRows, Math.min(firstRow + maxLines, diffPair.getSecond() + 5));
 
-            System.out.println("Recomputed Table Differs:\n" + diffPair.getFirst()
-                + "\nRecomputed Table Rows [" + firstRow + ", " + lastRow + "]:");
+            System.out.println("Recomputed Table Differs:\n" + diffPair.getFirst() + "\nRecomputed Table Rows ["
+                    + firstRow + ", " + lastRow + "]:");
             TableTools.showWithIndex(recomputedForComparison, firstRow, lastRow + 1);
             System.out.println("Incremental Table Rows [" + firstRow + ", " + lastRow + "]:");
             TableTools.showWithIndex(originalForComparison, firstRow, lastRow + 1);

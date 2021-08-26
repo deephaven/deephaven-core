@@ -44,9 +44,9 @@ public class ColumnHolder implements Serializable {
     @Override
     public String toString() {
         return "ColumnHolder{" +
-            "name='" + name + '\'' +
-            ", type='" + type + '\'' +
-            ", columnData=" + columnData +
-            '}';
+                "name='" + name + '\'' +
+                ", type='" + type + '\'' +
+                ", columnData=" + columnData +
+                '}';
     }
 }

@@ -26,13 +26,11 @@ import java.util.function.LongFunction;
  * @param <K> the key type
  * @param <V> the value type
  */
-public class ToMapListener<K, V> extends InstrumentedShiftAwareListenerAdapter
-    implements Map<K, V> {
+public class ToMapListener<K, V> extends InstrumentedShiftAwareListenerAdapter implements Map<K, V> {
     private static final long NO_ENTRY_VALUE = -2;
     private static final long DELETED_ENTRY_VALUE = -1;
 
-    private final TObjectLongHashMap<Object> baselineMap =
-        new TObjectLongHashMap<>(8, 0.5f, NO_ENTRY_VALUE);
+    private final TObjectLongHashMap<Object> baselineMap = new TObjectLongHashMap<>(8, 0.5f, NO_ENTRY_VALUE);
     private volatile TObjectLongHashMap<Object> currentMap;
 
     private final LongFunction<K> keyProducer;
@@ -42,46 +40,39 @@ public class ToMapListener<K, V> extends InstrumentedShiftAwareListenerAdapter
 
     public static ToMapListener make(DynamicTable source, String keySourceName) {
         return QueryPerformanceRecorder.withNugget("ToMapListener(" + keySourceName + ")",
-            () -> new ToMapListener(source, keySourceName, keySourceName));
+                () -> new ToMapListener(source, keySourceName, keySourceName));
     }
 
-    public static ToMapListener make(DynamicTable source, String keySourceName,
-        String valueSourceName) {
-        return QueryPerformanceRecorder.withNugget(
-            "ToMapListener(" + keySourceName + ", " + valueSourceName + ")",
-            () -> new ToMapListener(source, keySourceName, valueSourceName));
+    public static ToMapListener make(DynamicTable source, String keySourceName, String valueSourceName) {
+        return QueryPerformanceRecorder.withNugget("ToMapListener(" + keySourceName + ", " + valueSourceName + ")",
+                () -> new ToMapListener(source, keySourceName, valueSourceName));
     }
 
-    public static <K1, V1> ToMapListener<K1, V1> make(DynamicTable source,
-        ColumnSource<K1> keySource, ColumnSource<V1> valueSource) {
+    public static <K1, V1> ToMapListener<K1, V1> make(DynamicTable source, ColumnSource<K1> keySource,
+            ColumnSource<V1> valueSource) {
         // noinspection unchecked
         return QueryPerformanceRecorder.withNugget("ToMapListener",
-            () -> new ToMapListener<>(source, keySource, valueSource));
+                () -> new ToMapListener<>(source, keySource, valueSource));
     }
 
-    public static <K1, V1> ToMapListener<K1, V1> make(DynamicTable source,
-        LongFunction<K1> keyProducer, LongFunction<K1> prevKeyProducer,
-        LongFunction<V1> valueProducer, LongFunction<V1> prevValueProducer) {
+    public static <K1, V1> ToMapListener<K1, V1> make(DynamicTable source, LongFunction<K1> keyProducer,
+            LongFunction<K1> prevKeyProducer, LongFunction<V1> valueProducer, LongFunction<V1> prevValueProducer) {
         // noinspection unchecked
         return QueryPerformanceRecorder.withNugget("ToMapListener",
-            () -> new ToMapListener<>(source, keyProducer, prevKeyProducer, valueProducer,
-                prevValueProducer));
+                () -> new ToMapListener<>(source, keyProducer, prevKeyProducer, valueProducer, prevValueProducer));
     }
 
     private ToMapListener(DynamicTable source, String keySourceName, String valueSourceName) {
         // noinspection unchecked
-        this(source, source.getColumnSource(keySourceName),
-            source.getColumnSource(valueSourceName));
+        this(source, source.getColumnSource(keySourceName), source.getColumnSource(valueSourceName));
     }
 
-    private ToMapListener(DynamicTable source, ColumnSource<K> keySource,
-        ColumnSource<V> valueSource) {
+    private ToMapListener(DynamicTable source, ColumnSource<K> keySource, ColumnSource<V> valueSource) {
         this(source, keySource::get, keySource::getPrev, valueSource::get, valueSource::getPrev);
     }
 
-    private ToMapListener(DynamicTable source, LongFunction<K> keyProducer,
-        LongFunction<K> prevKeyProducer, LongFunction<V> valueProducer,
-        LongFunction<V> prevValueProducer) {
+    private ToMapListener(DynamicTable source, LongFunction<K> keyProducer, LongFunction<K> prevKeyProducer,
+            LongFunction<V> valueProducer, LongFunction<V> prevValueProducer) {
         super(source, false);
         this.keyProducer = keyProducer;
         this.prevKeyProducer = prevKeyProducer;
@@ -96,10 +87,8 @@ public class ToMapListener<K, V> extends InstrumentedShiftAwareListenerAdapter
 
     @Override
     public void onUpdate(final Update upstream) {
-        final int cap =
-            upstream.added.intSize() + upstream.removed.intSize() + upstream.modified.intSize();
-        final TObjectLongHashMap<Object> newMap =
-            new TObjectLongHashMap<>(cap, 0.5f, NO_ENTRY_VALUE);
+        final int cap = upstream.added.intSize() + upstream.removed.intSize() + upstream.modified.intSize();
+        final TObjectLongHashMap<Object> newMap = new TObjectLongHashMap<>(cap, 0.5f, NO_ENTRY_VALUE);
 
         final LongConsumer remover = (final long key) -> {
             newMap.put(prevKeyProducer.apply(key), DELETED_ENTRY_VALUE);
@@ -143,10 +132,8 @@ public class ToMapListener<K, V> extends InstrumentedShiftAwareListenerAdapter
         return get((K) key, valueProducer, prevValueProducer);
     }
 
-    public <T> T get(K key, groovy.lang.Closure<T> valueProducer,
-        groovy.lang.Closure<T> prevValueProducer) {
-        return get(key, (long row) -> (T) valueProducer.call(row),
-            (long row) -> (T) prevValueProducer.call(row));
+    public <T> T get(K key, groovy.lang.Closure<T> valueProducer, groovy.lang.Closure<T> prevValueProducer) {
+        return get(key, (long row) -> (T) valueProducer.call(row), (long row) -> (T) prevValueProducer.call(row));
     }
 
     public <T> T get(K key, ColumnSource<T> cs) {
@@ -156,8 +143,8 @@ public class ToMapListener<K, V> extends InstrumentedShiftAwareListenerAdapter
     /**
      * Get but instead of applying the default value producer, use a custom value producer.
      *
-     * The intention is that you can wrap the map up with several different value producers, e.g.
-     * one for bid and another for ask.
+     * The intention is that you can wrap the map up with several different value producers, e.g. one for bid and
+     * another for ask.
      *
      * @param key the key to retrieve
      * @param valueProducer retrieve the current value out of the table
@@ -186,8 +173,7 @@ public class ToMapListener<K, V> extends InstrumentedShiftAwareListenerAdapter
                 return null;
             }
         }
-        return state == LogicalClock.State.Updating ? prevValueProducer.apply(row)
-            : valueProducer.apply(row);
+        return state == LogicalClock.State.Updating ? prevValueProducer.apply(row) : valueProducer.apply(row);
     }
 
     @Nullable

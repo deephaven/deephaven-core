@@ -30,14 +30,13 @@ import static io.deephaven.db.tables.Table.PREPARED_RLL_ATTRIBUTE;
 /**
  * Apply filters, preserving parents.
  *
- * The TreeTableFilter takes a TreeTable and SelectFilters as input. The original source table is
- * filtered and any matching rows are included; as well as their ancestors. The result table is then
- * converted into a tree table using the original parameters.
+ * The TreeTableFilter takes a TreeTable and SelectFilters as input. The original source table is filtered and any
+ * matching rows are included; as well as their ancestors. The result table is then converted into a tree table using
+ * the original parameters.
  */
-public class TreeTableFilter
-    implements Function.Unary<Table, Table>, MemoizedOperationKey.Provider {
+public class TreeTableFilter implements Function.Unary<Table, Table>, MemoizedOperationKey.Provider {
     private static final boolean DEBUG = io.deephaven.configuration.Configuration.getInstance()
-        .getBooleanWithDefault("TreeTableFilter.debug", false);
+            .getBooleanWithDefault("TreeTableFilter.debug", false);
 
     private static final Logger log = LoggerFactory.getLogger(TreeTableFilter.class);
 
@@ -113,14 +112,13 @@ public class TreeTableFilter
                 throw new IllegalArgumentException("Table is not a treeTable");
             }
             treeTableInfo = (TreeTableInfo) sourceInfo;
-            reverseLookupListener = Objects.requireNonNull(
-                (ReverseLookupListener) table.getAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE));
+            reverseLookupListener =
+                    Objects.requireNonNull((ReverseLookupListener) table.getAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE));
 
             filters = TreeTableFilter.this.filters;
 
             // The filters have already been inited by here.
-            Assert.eq(table.getDefinition(), "Applied table.definition", origTableDefinition,
-                "Original definition");
+            Assert.eq(table.getDefinition(), "Applied table.definition", origTableDefinition, "Original definition");
 
             parentSource = source.getColumnSource(treeTableInfo.parentColumn);
             idSource = source.getColumnSource(treeTableInfo.idColumn);
@@ -129,11 +127,11 @@ public class TreeTableFilter
                 swapListener = new SwapListenerWithRLL(source, reverseLookupListener);
                 source.listenForUpdates(swapListener);
                 ConstructSnapshot.callDataSnapshotFunction(System.identityHashCode(source) + ": ",
-                    swapListener.makeSnapshotControl(),
-                    (usePrev, beforeClockValue) -> {
-                        doInitialFilter(usePrev);
-                        return true;
-                    });
+                        swapListener.makeSnapshotControl(),
+                        (usePrev, beforeClockValue) -> {
+                            doInitialFilter(usePrev);
+                            return true;
+                        });
             } else {
                 swapListener = null;
                 doInitialFilter(false);
@@ -158,10 +156,8 @@ public class TreeTableFilter
                 filteredRaw.addParentReference(treeListener);
             }
 
-            // We can re-use the RLL when filtering as long as we are sure to check for existence in
-            // the
-            // sub table indices. Sticking this annotation here will let QueryTable know it can
-            // re-use it.
+            // We can re-use the RLL when filtering as long as we are sure to check for existence in the
+            // sub table indices. Sticking this annotation here will let QueryTable know it can re-use it.
             filteredRaw.setAttribute(PREPARED_RLL_ATTRIBUTE, reverseLookupListener);
         }
 
@@ -191,35 +187,31 @@ public class TreeTableFilter
             if (!expectedIndex.equals(valuesIndex)) {
                 final Index missing = expectedIndex.minus(valuesIndex);
                 final Index extraValues = valuesIndex.minus(expectedIndex);
-                throw new IllegalStateException(
-                    "Inconsistent included Values: missing=" + missing + ", extra=" + extraValues
-                        + ", expected=" + expectedIndex + ", valuesIndex=" + valuesIndex);
+                throw new IllegalStateException("Inconsistent included Values: missing=" + missing + ", extra="
+                        + extraValues + ", expected=" + expectedIndex + ", valuesIndex=" + valuesIndex);
             }
 
             TLongArrayList parentsToProcess = new TLongArrayList();
             expectedIndex.forEach(parentsToProcess::add);
 
-            final Index sourceIndex =
-                usePrev ? source.getIndex().getPrevIndex() : source.getIndex();
+            final Index sourceIndex = usePrev ? source.getIndex().getPrevIndex() : source.getIndex();
             do {
                 final TLongArrayList newParentKeys = new TLongArrayList();
                 for (final TLongIterator it = parentsToProcess.iterator(); it.hasNext();) {
                     final long row = it.next();
-                    final Object parent =
-                        usePrev ? parentSource.getPrev(row) : parentSource.get(row);
+                    final Object parent = usePrev ? parentSource.getPrev(row) : parentSource.get(row);
                     if (parent == null) {
                         continue;
                     }
                     expectedParents.computeIfAbsent(parent, x -> new TLongHashSet()).add(row);
-                    final long parentRow = usePrev ? reverseLookupListener.getPrev(parent)
-                        : reverseLookupListener.get(parent);
+                    final long parentRow =
+                            usePrev ? reverseLookupListener.getPrev(parent) : reverseLookupListener.get(parent);
                     if (parentRow == reverseLookupListener.getNoEntryValue()) {
                         continue;
                     }
                     if (sourceIndex.find(parentRow) < 0) {
-                        throw new IllegalStateException(
-                            "Reverse Lookup Listener points at row " + parentRow + " for " + parent
-                                + ", but the row is not in the index=" + source.getIndex());
+                        throw new IllegalStateException("Reverse Lookup Listener points at row " + parentRow + " for "
+                                + parent + ", but the row is not in the index=" + source.getIndex());
                     }
                     newParentKeys.add(parentRow);
                 }
@@ -232,19 +224,19 @@ public class TreeTableFilter
                 final TLongSet actualSet = parentReferences.get(parentValue);
                 final TLongSet expectedSet = expectedParents.get(parentValue);
                 if (!actualSet.equals(expectedSet)) {
-                    throw new IllegalStateException("Parent set mismatch " + parentValue
-                        + ", expected=" + expectedSet + ", actual=" + actualSet);
+                    throw new IllegalStateException("Parent set mismatch " + parentValue + ", expected=" + expectedSet
+                            + ", actual=" + actualSet);
                 }
 
-                final long parentKey = usePrev ? reverseLookupListener.getPrev(parentValue)
-                    : reverseLookupListener.get(parentValue);
+                final long parentKey =
+                        usePrev ? reverseLookupListener.getPrev(parentValue) : reverseLookupListener.get(parentValue);
                 if (parentKey != reverseLookupListener.getNoEntryValue()) {
                     // then we should have it in our index
                     builder.addKey(parentKey);
                     final long position = parentIndex.find(parentKey);
                     if (position < 0) {
-                        throw new IllegalStateException("Could not find parent in our result: "
-                            + parentValue + ", key=" + parentKey);
+                        throw new IllegalStateException(
+                                "Could not find parent in our result: " + parentValue + ", key=" + parentKey);
                     }
                 }
             });
@@ -261,13 +253,11 @@ public class TreeTableFilter
         }
 
         private void removeParents(Index rowsToRemove) {
-            final Map<Object, TLongSet> parents =
-                generateParentReferenceMap(rowsToRemove, parentSource::getPrev);
+            final Map<Object, TLongSet> parents = generateParentReferenceMap(rowsToRemove, parentSource::getPrev);
 
             final IndexBuilder builder = Index.FACTORY.getRandomBuilder();
             while (!parents.isEmpty()) {
-                final Iterator<Map.Entry<Object, TLongSet>> iterator =
-                    parents.entrySet().iterator();
+                final Iterator<Map.Entry<Object, TLongSet>> iterator = parents.entrySet().iterator();
                 final Map.Entry<Object, TLongSet> entry = iterator.next();
                 final Object parent = entry.getKey();
                 final TLongSet references = entry.getValue();
@@ -287,8 +277,7 @@ public class TreeTableFilter
                             if (valuesIndex.find(parentKey) < 0) {
                                 final Object grandParentId = parentSource.getPrev(parentKey);
                                 if (grandParentId != null) {
-                                    parents.computeIfAbsent(grandParentId, x -> new TLongHashSet())
-                                        .add(parentKey);
+                                    parents.computeIfAbsent(grandParentId, x -> new TLongHashSet()).add(parentKey);
                                 }
                             }
                         }
@@ -323,40 +312,36 @@ public class TreeTableFilter
         }
 
         private Index computeParents(final boolean usePrev, @NotNull final Index rowsToParent) {
-            final Map<Object, TLongSet> parents = generateParentReferenceMap(rowsToParent,
-                usePrev ? parentSource::getPrev : parentSource::get);
+            final Map<Object, TLongSet> parents =
+                    generateParentReferenceMap(rowsToParent, usePrev ? parentSource::getPrev : parentSource::get);
 
             final IndexBuilder builder = Index.FACTORY.getRandomBuilder();
             while (!parents.isEmpty()) {
-                final Iterator<Map.Entry<Object, TLongSet>> iterator =
-                    parents.entrySet().iterator();
+                final Iterator<Map.Entry<Object, TLongSet>> iterator = parents.entrySet().iterator();
                 final Map.Entry<Object, TLongSet> entry = iterator.next();
                 final Object parent = entry.getKey();
                 final TLongSet references = entry.getValue();
                 iterator.remove();
 
-                final long parentKey = usePrev ? reverseLookupListener.getPrev(parent)
-                    : reverseLookupListener.get(parent);
+                final long parentKey =
+                        usePrev ? reverseLookupListener.getPrev(parent) : reverseLookupListener.get(parent);
                 if (parentKey != reverseLookupListener.getNoEntryValue()) {
                     builder.addKey(parentKey);
                     final Object grandParentId =
-                        usePrev ? parentSource.getPrev(parentKey) : parentSource.get(parentKey);
+                            usePrev ? parentSource.getPrev(parentKey) : parentSource.get(parentKey);
                     if (grandParentId != null) {
-                        parents.computeIfAbsent(grandParentId, x -> new TLongHashSet())
-                            .add(parentKey);
+                        parents.computeIfAbsent(grandParentId, x -> new TLongHashSet()).add(parentKey);
                     }
                 }
 
-                parentReferences.computeIfAbsent(parent, x -> new TLongHashSet())
-                    .addAll(references);
+                parentReferences.computeIfAbsent(parent, x -> new TLongHashSet()).addAll(references);
             }
 
             return builder.getIndex();
         }
 
         @NotNull
-        private Map<Object, TLongSet> generateParentReferenceMap(Index rowsToParent,
-            LongFunction<Object> getValue) {
+        private Map<Object, TLongSet> generateParentReferenceMap(Index rowsToParent, LongFunction<Object> getValue) {
             final Map<Object, TLongSet> parents = new LinkedHashMap<>(rowsToParent.intSize());
             for (final Index.Iterator it = rowsToParent.iterator(); it.hasNext();) {
                 final long row = it.nextLong();
@@ -373,8 +358,7 @@ public class TreeTableFilter
 
             TreeTableFilterListener(String description, DynamicTable parent, QueryTable dependent) {
                 super(description, parent, dependent);
-                inputColumns =
-                    source.newModifiedColumnSet(treeTableInfo.idColumn, treeTableInfo.parentColumn);
+                inputColumns = source.newModifiedColumnSet(treeTableInfo.idColumn, treeTableInfo.parentColumn);
                 Arrays.stream(filters).forEach(filter -> {
                     for (final String column : filter.getColumns()) {
                         inputColumns.setAll(column);
@@ -392,24 +376,22 @@ public class TreeTableFilter
                 final long sourceLastStep = source.getLastNotificationStep();
 
                 if (rllLastStep != sourceLastStep) {
-                    throw new IllegalStateException("RLL was updated in a different cycle! Rll: "
-                        + rllLastStep + " source: " + sourceLastStep);
+                    throw new IllegalStateException(
+                            "RLL was updated in a different cycle! Rll: " + rllLastStep + " source: " + sourceLastStep);
                 }
 
                 // We can ignore modified while updating if columns we care about were not touched.
                 final boolean useModified = upstream.modifiedColumnSet.containsAny(inputColumns);
 
-                // Must take care of removed here, because these rows are not valid in post shift
-                // space.
+                // Must take care of removed here, because these rows are not valid in post shift space.
                 downstream.removed = resultIndex.extract(upstream.removed);
 
-                try (
-                    final Index allRemoved =
+                try (final Index allRemoved =
                         useModified ? upstream.removed.union(upstream.getModifiedPreShift()) : null;
-                    final Index valuesToRemove =
-                        (useModified ? allRemoved : upstream.removed).intersect(valuesIndex);
-                    final Index removedParents =
-                        (useModified ? allRemoved : upstream.removed).intersect(parentIndex)) {
+                        final Index valuesToRemove =
+                                (useModified ? allRemoved : upstream.removed).intersect(valuesIndex);
+                        final Index removedParents =
+                                (useModified ? allRemoved : upstream.removed).intersect(parentIndex)) {
 
                     removeValues(valuesToRemove);
                     parentIndex.remove(removedParents);
@@ -436,10 +418,10 @@ public class TreeTableFilter
 
                 // Finally handle added sets.
                 try (final Index addedAndModified = upstream.added.union(upstream.modified);
-                    final Index newFiltered = doValueFilter(false, addedAndModified);
-                    final Index resurrectedParents = checkForResurrectedParent(addedAndModified);
-                    final Index newParents = computeParents(false, newFiltered);
-                    final Index newResurrectedParents = computeParents(false, resurrectedParents)) {
+                        final Index newFiltered = doValueFilter(false, addedAndModified);
+                        final Index resurrectedParents = checkForResurrectedParent(addedAndModified);
+                        final Index newParents = computeParents(false, newFiltered);
+                        final Index newResurrectedParents = computeParents(false, resurrectedParents)) {
 
 
                     valuesIndex.insert(newFiltered);
@@ -450,22 +432,20 @@ public class TreeTableFilter
 
                 // Compute expected results and the sets we will propagate to child listeners.
                 try (final Index result = valuesIndex.union(parentIndex);
-                    final Index resultRemovals = resultIndex.minus(result)) {
+                        final Index resultRemovals = resultIndex.minus(result)) {
                     downstream.added = result.minus(resultIndex);
                     resultIndex.update(downstream.added, resultRemovals);
 
                     downstream.modified = upstream.modified.intersect(resultIndex);
                     downstream.modified.remove(downstream.added);
 
-                    // convert post filter removals into pre-shift space -- note these rows must
-                    // have previously existed
+                    // convert post filter removals into pre-shift space -- note these rows must have previously existed
                     upstream.shifted.unapply(resultRemovals);
                     downstream.removed.insert(resultRemovals);
                 }
 
                 downstream.shifted = upstream.shifted;
-                downstream.modifiedColumnSet = upstream.modifiedColumnSet; // note that dependent is
-                                                                           // a subTable
+                downstream.modifiedColumnSet = upstream.modifiedColumnSet; // note that dependent is a subTable
 
                 filteredRaw.notifyListeners(downstream);
 
@@ -515,13 +495,12 @@ public class TreeTableFilter
         @Override
         public ConstructSnapshot.SnapshotControl makeSnapshotControl() {
             return ConstructSnapshot.makeSnapshotControl(
-                this::startWithRLL,
-                (final long currentClockValue,
-                    final boolean usingPreviousValues) -> rll
-                        .getLastNotificationStep() == rllLastNotificationStep
-                        && isInInitialNotificationWindow(),
-                (final long afterClockValue,
-                    final boolean usedPreviousValues) -> end(afterClockValue));
+                    this::startWithRLL,
+                    (final long currentClockValue,
+                            final boolean usingPreviousValues) -> rll
+                                    .getLastNotificationStep() == rllLastNotificationStep
+                                    && isInInitialNotificationWindow(),
+                    (final long afterClockValue, final boolean usedPreviousValues) -> end(afterClockValue));
         }
 
         @SuppressWarnings("AutoBoxing")
@@ -562,15 +541,14 @@ public class TreeTableFilter
             }
             if (DEBUG) {
                 log.info().append("SwapListenerWithRLL start() source=")
-                    .append(System.identityHashCode(sourceTable))
-                    .append(". swap=")
-                    .append(System.identityHashCode(this))
-                    .append(", start={").append(beforeStep).append(",")
-                    .append(beforeState.toString())
-                    .append("}, last=").append(lastNotificationStep)
-                    .append(", rllLast=").append(rllLastNotificationStep)
-                    .append(", result=").append(result)
-                    .endl();
+                        .append(System.identityHashCode(sourceTable))
+                        .append(". swap=")
+                        .append(System.identityHashCode(this))
+                        .append(", start={").append(beforeStep).append(",").append(beforeState.toString())
+                        .append("}, last=").append(lastNotificationStep)
+                        .append(", rllLast=").append(rllLastNotificationStep)
+                        .append(", result=").append(result)
+                        .endl();
             }
             return result;
         }
@@ -583,26 +561,23 @@ public class TreeTableFilter
         @Override
         public synchronized boolean end(final long afterClockValue) {
             if (SwapListener.DEBUG) {
-                log.info().append("SwapListenerWithRLL end() swap=")
-                    .append(System.identityHashCode(this))
-                    .append(", end={").append(LogicalClock.getStep(afterClockValue)).append(",")
-                    .append(LogicalClock.getState(afterClockValue).toString())
-                    .append("}, last=").append(sourceTable.getLastNotificationStep())
-                    .append(", rllLast=").append(rll.getLastNotificationStep())
-                    .endl();
+                log.info().append("SwapListenerWithRLL end() swap=").append(System.identityHashCode(this))
+                        .append(", end={").append(LogicalClock.getStep(afterClockValue)).append(",")
+                        .append(LogicalClock.getState(afterClockValue).toString())
+                        .append("}, last=").append(sourceTable.getLastNotificationStep())
+                        .append(", rllLast=").append(rll.getLastNotificationStep())
+                        .endl();
             }
-            return rll.getLastNotificationStep() == rllLastNotificationStep
-                && super.end(afterClockValue);
+            return rll.getLastNotificationStep() == rllLastNotificationStep && super.end(afterClockValue);
         }
 
         @Override
         public synchronized void setListenerAndResult(@NotNull final ShiftAwareListener listener,
-            @NotNull final NotificationStepReceiver resultTable) {
+                @NotNull final NotificationStepReceiver resultTable) {
             super.setListenerAndResult(listener, resultTable);
             if (SwapListener.DEBUG) {
-                log.info().append("SwapListenerWithRLL swap=")
-                    .append(System.identityHashCode(SwapListenerWithRLL.this)).append(", result=")
-                    .append(System.identityHashCode(resultTable)).endl();
+                log.info().append("SwapListenerWithRLL swap=").append(System.identityHashCode(SwapListenerWithRLL.this))
+                        .append(", result=").append(System.identityHashCode(resultTable)).endl();
             }
         }
     }

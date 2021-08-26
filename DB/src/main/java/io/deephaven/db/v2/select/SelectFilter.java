@@ -51,8 +51,7 @@ public interface SelectFilter {
     }
 
     /**
-     * Users of SelectFilter may implement this interface if they must react to the filter
-     * fundamentally changing.
+     * Users of SelectFilter may implement this interface if they must react to the filter fundamentally changing.
      *
      * @see DynamicWhereFilter
      */
@@ -63,14 +62,14 @@ public interface SelectFilter {
         void requestRecompute();
 
         /**
-         * Notify the something about the filters has changed such that all unmatched rows of the
-         * source table should be re-evaluated.
+         * Notify the something about the filters has changed such that all unmatched rows of the source table should be
+         * re-evaluated.
          */
         void requestRecomputeUnmatched();
 
         /**
-         * Notify the something about the filters has changed such that all matched rows of the
-         * source table should be re-evaluated.
+         * Notify the something about the filters has changed such that all matched rows of the source table should be
+         * re-evaluated.
          */
         void requestRecomputeMatched();
 
@@ -114,24 +113,22 @@ public interface SelectFilter {
     /**
      * Filter selection to only matching rows.
      *
-     * @param selection the indices that should be filtered. The selection must be a subset of
-     *        fullSet; and may not include rows that the engine determines need not be evaluated to
-     *        produce the result.
-     * @param fullSet the complete Index of the table to filter. The fullSet is used for calculating
-     *        variables like "i" or "ii".
+     * @param selection the indices that should be filtered. The selection must be a subset of fullSet; and may not
+     *        include rows that the engine determines need not be evaluated to produce the result.
+     * @param fullSet the complete Index of the table to filter. The fullSet is used for calculating variables like "i"
+     *        or "ii".
      * @param table the table to filter
-     * @param usePrev true if previous values should be used. Implementing previous value filtering
-     *        is optional, and a {@link PreviousFilteringNotSupported} exception may be thrown. If a
-     *        PreviousFiltering exception is thrown, then the caller must acquire the
-     *        LiveTableMonitor lock.
+     * @param usePrev true if previous values should be used. Implementing previous value filtering is optional, and a
+     *        {@link PreviousFilteringNotSupported} exception may be thrown. If a PreviousFiltering exception is thrown,
+     *        then the caller must acquire the LiveTableMonitor lock.
      *
      * @return the subset of selection accepted by this filter
      */
     Index filter(Index selection, Index fullSet, Table table, boolean usePrev);
 
     /**
-     * @return true if this is a filter that does not require any code execution, but rather is
-     *         handled entirely within the database engine.
+     * @return true if this is a filter that does not require any code execution, but rather is handled entirely within
+     *         the database engine.
      */
     boolean isSimpleFilter();
 
@@ -152,24 +149,22 @@ public interface SelectFilter {
     void setRecomputeListener(RecomputeListener result);
 
     /**
-     * The database system may automatically generate a filter, for example, when applying an ACL to
-     * a table. There are certain operations which may bypass these filters.
+     * The database system may automatically generate a filter, for example, when applying an ACL to a table. There are
+     * certain operations which may bypass these filters.
      *
      * This function returns whether or not this filter is automated.
      *
-     * @return true if this filter was automatically applied by the database system. False
-     *         otherwise.
+     * @return true if this filter was automatically applied by the database system. False otherwise.
      */
     boolean isAutomatedFilter();
 
     /**
-     * The database system may automatically generate a filter, for example, when applying an ACL to
-     * a table. There are certain operations which may bypass these filters.
+     * The database system may automatically generate a filter, for example, when applying an ACL to a table. There are
+     * certain operations which may bypass these filters.
      *
      * This function indicates that this filter is automated.
      *
-     * @param value true if this filter was automatically applied by the database system. False
-     *        otherwise.
+     * @param value true if this filter was automatically applied by the database system. False otherwise.
      */
     void setAutomatedFilter(boolean value);
 
@@ -190,8 +185,8 @@ public interface SelectFilter {
     SelectFilter copy();
 
     /**
-     * This exception is thrown when a where() filter is incapable of handling previous values, and
-     * thus needs to be executed while under the LTM lock.
+     * This exception is thrown when a where() filter is incapable of handling previous values, and thus needs to be
+     * executed while under the LTM lock.
      */
     class PreviousFilteringNotSupported extends ConstructSnapshot.NoSnapshotAllowedException {
         public PreviousFilteringNotSupported() {
@@ -286,8 +281,7 @@ public interface SelectFilter {
 
             public static SelectFilter of(FilterCondition condition) {
                 FilterCondition preferred = condition.maybeTranspose();
-                return preferred.lhs().walk(new FilterConditionAdapter(condition, preferred))
-                    .getOut();
+                return preferred.lhs().walk(new FilterConditionAdapter(condition, preferred)).getOut();
             }
 
             private final FilterCondition original;
@@ -316,20 +310,16 @@ public interface SelectFilter {
                     public void visit(long rhs) {
                         switch (preferred.operator()) {
                             case LESS_THAN:
-                                out = new LongRangeFilter(lhs.name(), Long.MIN_VALUE, rhs, true,
-                                    false);
+                                out = new LongRangeFilter(lhs.name(), Long.MIN_VALUE, rhs, true, false);
                                 break;
                             case LESS_THAN_OR_EQUAL:
-                                out = new LongRangeFilter(lhs.name(), Long.MIN_VALUE, rhs, true,
-                                    true);
+                                out = new LongRangeFilter(lhs.name(), Long.MIN_VALUE, rhs, true, true);
                                 break;
                             case GREATER_THAN:
-                                out = new LongRangeFilter(lhs.name(), rhs, Long.MAX_VALUE, false,
-                                    true);
+                                out = new LongRangeFilter(lhs.name(), rhs, Long.MAX_VALUE, false, true);
                                 break;
                             case GREATER_THAN_OR_EQUAL:
-                                out = new LongRangeFilter(lhs.name(), rhs, Long.MAX_VALUE, true,
-                                    true);
+                                out = new LongRangeFilter(lhs.name(), rhs, Long.MAX_VALUE, true, true);
                                 break;
                             case EQUALS:
                                 out = new MatchFilter(lhs.name(), rhs);
@@ -338,15 +328,13 @@ public interface SelectFilter {
                                 out = new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
                                 break;
                             default:
-                                throw new IllegalStateException(
-                                    "Unexpected operator " + original.operator());
+                                throw new IllegalStateException("Unexpected operator " + original.operator());
                         }
                     }
                 });
             }
 
-            // Note for all remaining cases: since we are walking the preferred object, we know we
-            // don't have to handle
+            // Note for all remaining cases: since we are walking the preferred object, we know we don't have to handle
             // the case where rhs is column name.
 
             @Override

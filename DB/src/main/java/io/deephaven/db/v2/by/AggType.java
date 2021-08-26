@@ -32,8 +32,8 @@ public enum AggType {
     /** Collect the distinct items from the column */
     Distinct,
     /**
-     * Display the singular value from the column if it is unique, or a default value if none are
-     * present, or it is not unique
+     * Display the singular value from the column if it is unique, or a default value if none are present, or it is not
+     * unique
      */
     Unique,
     /** Only valid in a TotalsTableBuilder to indicate we should not perform any aggregation. */

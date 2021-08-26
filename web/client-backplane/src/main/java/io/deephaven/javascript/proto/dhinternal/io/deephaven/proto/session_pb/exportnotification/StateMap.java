@@ -8,9 +8,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.session_pb.ExportNotification.StateMap",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.session_pb.ExportNotification.StateMap",
+        namespace = JsPackage.GLOBAL)
 public interface StateMap {
     @JsOverlay
     static StateMap create() {

@@ -4,6 +4,6 @@
   "mergeSortedHelper": ":param keyColumn: java.lang.String\n:param tables: java.util.Collection<io.deephaven.db.tables.Table>\n:return: io.deephaven.db.tables.Table"
  },
  "path": "io.deephaven.db.v2.utils.MergeSortedHelper",
- "text": "Utility to take a set of tables, each of which is sorted; and merge them together into a single table, which will\n also be sorted.  For now we do not support refreshing tables, just zipping together tables that are already sorted\n and will not tick.\n\n To handle ticking tables; the data structures would need to be changed, we're storing everything in parallel arrays\n and to tick we would need to shift those around.  Handling append only could work; but there would be a lot of\n shifting if the data arrives particularly out of order.",
+ "text": "Utility to take a set of tables, each of which is sorted; and merge them together into a single table, which will\n also be sorted. For now we do not support refreshing tables, just zipping together tables that are already sorted and\n will not tick.\n\n To handle ticking tables; the data structures would need to be changed, we're storing everything in parallel arrays\n and to tick we would need to shift those around. Handling append only could work; but there would be a lot of\n shifting if the data arrives particularly out of order.",
  "typeName": "class"
 }

@@ -36,8 +36,7 @@ class AxesLocation implements Serializable {
 
         if (id != that.id)
             return false;
-        return chartLocation != null ? chartLocation.equals(that.chartLocation)
-            : that.chartLocation == null;
+        return chartLocation != null ? chartLocation.equals(that.chartLocation) : that.chartLocation == null;
     }
 
     @Override

@@ -13,7 +13,7 @@ public class AbsSumStateFactory extends IterativeOperatorStateFactory {
 
     @Override
     public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name,
-        boolean exposeInternalColumns) {
+            boolean exposeInternalColumns) {
         return getAbsSumChunked(type, name);
     }
 

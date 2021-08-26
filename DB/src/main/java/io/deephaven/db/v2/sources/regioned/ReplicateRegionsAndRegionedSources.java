@@ -5,8 +5,8 @@ import io.deephaven.compilertools.ReplicatePrimitiveCode;
 import java.io.IOException;
 
 /**
- * Code generation for basic {@link RegionedColumnSource} implementations as well as well as the
- * primary region interfaces for some primitive types.
+ * Code generation for basic {@link RegionedColumnSource} implementations as well as well as the primary region
+ * interfaces for some primitive types.
  */
 public class ReplicateRegionsAndRegionedSources extends ReplicatePrimitiveCode {
 

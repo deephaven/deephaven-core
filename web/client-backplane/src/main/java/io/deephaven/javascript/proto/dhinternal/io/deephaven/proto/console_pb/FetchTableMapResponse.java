@@ -5,14 +5,14 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FetchTableMapResponse",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.FetchTableMapResponse",
+        namespace = JsPackage.GLOBAL)
 public class FetchTableMapResponse {
     public static native FetchTableMapResponse deserializeBinary(Uint8Array bytes);
 
     public static native FetchTableMapResponse deserializeBinaryFromReader(
-        FetchTableMapResponse message, Object reader);
+            FetchTableMapResponse message, Object reader);
 
     public static native void serializeBinaryToWriter(FetchTableMapResponse message, Object writer);
 

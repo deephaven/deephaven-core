@@ -28,20 +28,20 @@ class TypeHelper {
 
     static Stream<PrimitiveType<?>> primitiveTypes() {
         return Stream.of(BooleanType.instance(), ByteType.instance(), CharType.instance(),
-            ShortType.instance(), IntType.instance(), LongType.instance(), FloatType.instance(),
-            DoubleType.instance());
+                ShortType.instance(), IntType.instance(), LongType.instance(), FloatType.instance(),
+                DoubleType.instance());
     }
 
     static Stream<GenericType<?>> genericTypes() {
         return Stream.concat(Stream.of(StringType.instance(), InstantType.instance()),
-            dbPrimitiveArrayTypes());
+                dbPrimitiveArrayTypes());
     }
 
     static Stream<DbPrimitiveArrayType<?, ?>> dbPrimitiveArrayTypes() {
         try {
             return DbPrimitiveArrayType.types().stream();
         } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException
-            | IllegalAccessException e) {
+                | IllegalAccessException e) {
             return Stream.empty();
         }
     }
@@ -141,7 +141,7 @@ class TypeHelper {
                 @Override
                 public void visit(NativeArrayType<?, ?> nativeArrayType) {
                     throw new IllegalArgumentException(
-                        "Native array types should not be created statically, they will be found dynamically");
+                            "Native array types should not be created statically, they will be found dynamically");
                 }
 
                 @Override
@@ -153,7 +153,7 @@ class TypeHelper {
                 public void visit(DbGenericArrayType<?, ?> dbGenericArrayType) {
                     // The db array type by itself is not specific enough
                     throw new IllegalStateException(
-                        "Should not be adding DbGenericArrayType as static mapping");
+                            "Should not be adding DbGenericArrayType as static mapping");
                 }
             });
         }

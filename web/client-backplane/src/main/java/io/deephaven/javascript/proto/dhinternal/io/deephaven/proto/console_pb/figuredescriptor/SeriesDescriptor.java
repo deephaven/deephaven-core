@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.SeriesDescriptor",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.SeriesDescriptor",
+        namespace = JsPackage.GLOBAL)
 public class SeriesDescriptor {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -91,7 +91,7 @@ public class SeriesDescriptor {
 
             @JsProperty
             void setOneClick(
-                SeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType.OneClickFieldType oneClick);
+                    SeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType.OneClickFieldType oneClick);
 
             @JsProperty
             void setTableId(double tableId);
@@ -152,15 +152,15 @@ public class SeriesDescriptor {
 
         @JsOverlay
         default void setDataSourcesList(
-            SeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType[] dataSourcesList) {
+                SeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType[] dataSourcesList) {
             setDataSourcesList(
-                Js.<JsArray<SeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType>>uncheckedCast(
-                    dataSourcesList));
+                    Js.<JsArray<SeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType>>uncheckedCast(
+                            dataSourcesList));
         }
 
         @JsProperty
         void setDataSourcesList(
-            JsArray<SeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType> dataSourcesList);
+                JsArray<SeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType> dataSourcesList);
 
         @JsProperty
         void setGradientVisible(boolean gradientVisible);
@@ -279,7 +279,7 @@ public class SeriesDescriptor {
 
             @JsProperty
             void setOneClick(
-                SeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType.OneClickFieldType oneClick);
+                    SeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType.OneClickFieldType oneClick);
 
             @JsProperty
             void setTableId(double tableId);
@@ -340,15 +340,15 @@ public class SeriesDescriptor {
 
         @JsOverlay
         default void setDataSourcesList(
-            SeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType[] dataSourcesList) {
+                SeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType[] dataSourcesList) {
             setDataSourcesList(
-                Js.<JsArray<SeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType>>uncheckedCast(
-                    dataSourcesList));
+                    Js.<JsArray<SeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType>>uncheckedCast(
+                            dataSourcesList));
         }
 
         @JsProperty
         void setDataSourcesList(
-            JsArray<SeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType> dataSourcesList);
+                JsArray<SeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType> dataSourcesList);
 
         @JsProperty
         void setGradientVisible(boolean gradientVisible);
@@ -393,12 +393,12 @@ public class SeriesDescriptor {
     public static native SeriesDescriptor deserializeBinary(Uint8Array bytes);
 
     public static native SeriesDescriptor deserializeBinaryFromReader(
-        SeriesDescriptor message, Object reader);
+            SeriesDescriptor message, Object reader);
 
     public static native void serializeBinaryToWriter(SeriesDescriptor message, Object writer);
 
     public static native SeriesDescriptor.ToObjectReturnType toObject(
-        boolean includeInstance, SeriesDescriptor msg);
+            boolean includeInstance, SeriesDescriptor msg);
 
     public native SourceDescriptor addDataSources();
 

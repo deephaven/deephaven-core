@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.protocol.Flight_pb.HandshakeResponse",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.protocol.Flight_pb.HandshakeResponse",
+        namespace = JsPackage.GLOBAL)
 public class HandshakeResponse {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface GetPayloadUnionType {
@@ -116,15 +116,13 @@ public class HandshakeResponse {
         @JsOverlay
         default void setPayload(String payload) {
             setPayload(
-                Js.<HandshakeResponse.ToObjectReturnType.GetPayloadUnionType>uncheckedCast(
-                    payload));
+                    Js.<HandshakeResponse.ToObjectReturnType.GetPayloadUnionType>uncheckedCast(payload));
         }
 
         @JsOverlay
         default void setPayload(Uint8Array payload) {
             setPayload(
-                Js.<HandshakeResponse.ToObjectReturnType.GetPayloadUnionType>uncheckedCast(
-                    payload));
+                    Js.<HandshakeResponse.ToObjectReturnType.GetPayloadUnionType>uncheckedCast(payload));
         }
 
         @JsProperty
@@ -178,15 +176,13 @@ public class HandshakeResponse {
         @JsOverlay
         default void setPayload(String payload) {
             setPayload(
-                Js.<HandshakeResponse.ToObjectReturnType0.GetPayloadUnionType>uncheckedCast(
-                    payload));
+                    Js.<HandshakeResponse.ToObjectReturnType0.GetPayloadUnionType>uncheckedCast(payload));
         }
 
         @JsOverlay
         default void setPayload(Uint8Array payload) {
             setPayload(
-                Js.<HandshakeResponse.ToObjectReturnType0.GetPayloadUnionType>uncheckedCast(
-                    payload));
+                    Js.<HandshakeResponse.ToObjectReturnType0.GetPayloadUnionType>uncheckedCast(payload));
         }
 
         @JsProperty
@@ -196,12 +192,12 @@ public class HandshakeResponse {
     public static native HandshakeResponse deserializeBinary(Uint8Array bytes);
 
     public static native HandshakeResponse deserializeBinaryFromReader(
-        HandshakeResponse message, Object reader);
+            HandshakeResponse message, Object reader);
 
     public static native void serializeBinaryToWriter(HandshakeResponse message, Object writer);
 
     public static native HandshakeResponse.ToObjectReturnType toObject(
-        boolean includeInstance, HandshakeResponse msg);
+            boolean includeInstance, HandshakeResponse msg);
 
     public native HandshakeResponse.GetPayloadUnionType getPayload();
 

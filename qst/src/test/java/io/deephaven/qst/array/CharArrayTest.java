@@ -14,6 +14,6 @@ public class CharArrayTest {
     @Test
     void rawInRawOut() {
         assertThat(CharArray.ofUnsafe('1', Util.NULL_CHAR, '3').values()).containsExactly('1',
-            Util.NULL_CHAR, '3');
+                Util.NULL_CHAR, '3');
     }
 }

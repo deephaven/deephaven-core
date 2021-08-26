@@ -9,8 +9,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Implement optional subscription support suitable for multiple TableDataService components.
  *
- * @param <LISTENER_TYPE> A bound on the type of listener supported by this aggregator's
- *        subscriptions
+ * @param <LISTENER_TYPE> A bound on the type of listener supported by this aggregator's subscriptions
  */
 public abstract class SubscriptionAggregator<LISTENER_TYPE extends BasicTableDataListener> {
 
@@ -95,9 +94,9 @@ public abstract class SubscriptionAggregator<LISTENER_TYPE extends BasicTableDat
     }
 
     /**
-     * Check if this subscription aggregator still has any valid subscribers - useful if there may
-     * have been no notifications delivered for some time, as a test to determine whether work
-     * should be done to maintain the underlying subscription.
+     * Check if this subscription aggregator still has any valid subscribers - useful if there may have been no
+     * notifications delivered for some time, as a test to determine whether work should be done to maintain the
+     * underlying subscription.
      *
      * @return true if there are valid subscribers, else false
      */
@@ -116,17 +115,16 @@ public abstract class SubscriptionAggregator<LISTENER_TYPE extends BasicTableDat
      * <p>
      * Refresh and activate update pushing from the implementing class.
      * <p>
-     * If the implementation will deliver notifications in a different thread than the one that
-     * calls this method, then this method must be asynchronous - that is, it must not block pending
-     * delivery of results. <em>This requirement holds even if that other thread has nothing to do
-     * with the initial activation request!</em>
+     * If the implementation will deliver notifications in a different thread than the one that calls this method, then
+     * this method must be asynchronous - that is, it must not block pending delivery of results. <em>This requirement
+     * holds even if that other thread has nothing to do with the initial activation request!</em>
      *
      * <p>
-     * Listeners should guard against duplicate notifications, especially if the implementation
-     * delivers synchronous notifications.
+     * Listeners should guard against duplicate notifications, especially if the implementation delivers synchronous
+     * notifications.
      * <p>
-     * The implementation should call activationSuccessful() when done activating and delivering
-     * initial refresh results, unless activationFailed() was called instead.
+     * The implementation should call activationSuccessful() when done activating and delivering initial refresh
+     * results, unless activationFailed() was called instead.
      * <p>
      * Must be called under the subscription lock.
      */
@@ -135,16 +133,16 @@ public abstract class SubscriptionAggregator<LISTENER_TYPE extends BasicTableDat
     }
 
     /**
-     * Notify the implementation that activation has completed. This may be invoked upon
-     * "re-activation" of an existing subscription, in which case it is effectively a no-op. This is
-     * public because it is called externally by services implementing subscriptions.
+     * Notify the implementation that activation has completed. This may be invoked upon "re-activation" of an existing
+     * subscription, in which case it is effectively a no-op. This is public because it is called externally by services
+     * implementing subscriptions.
      *
      * @param token A subscription-related object that the subclass can use to match a notification
      */
     public final <T> void activationSuccessful(@Nullable final T token) {
         if (!supportsSubscriptions()) {
-            throw new IllegalStateException(this
-                + ": completed activations are unexpected when subscriptions aren't supported");
+            throw new IllegalStateException(
+                    this + ": completed activations are unexpected when subscriptions aren't supported");
         }
         synchronized (subscriptions) {
             if (!matchSubscriptionToken(token)) {
@@ -158,31 +156,27 @@ public abstract class SubscriptionAggregator<LISTENER_TYPE extends BasicTableDat
     }
 
     /**
-     * Deliver an exception triggered while activating or maintaining the underlying data source.
-     * The underlying data source is implicitly deactivated. This is public because it is called
-     * externally by services implementing subscriptions.
+     * Deliver an exception triggered while activating or maintaining the underlying data source. The underlying data
+     * source is implicitly deactivated. This is public because it is called externally by services implementing
+     * subscriptions.
      *
      * @param token A subscription-related object that the subclass can use to match a notification
      * @param exception The exception
      */
-    public final <T> void activationFailed(@Nullable final T token,
-        @NotNull final TableDataException exception) {
+    public final <T> void activationFailed(@Nullable final T token, @NotNull final TableDataException exception) {
         if (!supportsSubscriptions()) {
-            throw new IllegalStateException(this
-                + ": asynchronous exceptions are unexpected when subscriptions aren't supported",
-                exception);
+            throw new IllegalStateException(
+                    this + ": asynchronous exceptions are unexpected when subscriptions aren't supported", exception);
         }
         synchronized (subscriptions) {
             if (!matchSubscriptionToken(token)) {
                 return;
             }
             if (activationState == ActivationState.PENDING) {
-                onActivationDone(ActivationState.FAILED); // NB: This can be done before or after
-                                                          // the notification delivery, since we're
-                                                          // holding the lock.
+                onActivationDone(ActivationState.FAILED); // NB: This can be done before or after the notification
+                                                          // delivery, since we're holding the lock.
             }
-            subscriptions.deliverNotification(BasicTableDataListener::handleException, exception,
-                false);
+            subscriptions.deliverNotification(BasicTableDataListener::handleException, exception, false);
             if (!subscriptions.isEmpty()) {
                 subscriptions.clear();
             }
@@ -190,16 +184,15 @@ public abstract class SubscriptionAggregator<LISTENER_TYPE extends BasicTableDat
     }
 
     /**
-     * Deactivate pushed updates from the implementing class. Must be called under the subscription
-     * lock.
+     * Deactivate pushed updates from the implementing class. Must be called under the subscription lock.
      */
     protected void deactivateUnderlyingDataSource() {
         throw new UnsupportedOperationException();
     }
 
     /**
-     * Verify that a notification pertains to a currently-active subscription. Must be called under
-     * the subscription lock.
+     * Verify that a notification pertains to a currently-active subscription. Must be called under the subscription
+     * lock.
      *
      * @param token A subscription-related object that the subclass can use to match a notification
      * @return True iff notification delivery should proceed

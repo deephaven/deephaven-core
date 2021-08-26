@@ -4,10 +4,10 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Message_generated.org.apache.arrow.flatbuf.CompressionType",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Message_generated.org.apache.arrow.flatbuf.CompressionType",
+        namespace = JsPackage.GLOBAL)
 public class CompressionType {
     public static int LZ4_FRAME,
-        ZSTD;
+            ZSTD;
 }

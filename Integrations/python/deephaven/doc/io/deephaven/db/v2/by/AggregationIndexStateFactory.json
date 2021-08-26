@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.by.AggregationIndexStateFactory",
  "methods": {
-  "getMemoKey": "Produces a MemoKey for this aggregation state factory.\n\n If two AggregationStateFactories have equal memoKeys, then Table.by(io.deephaven.db.v2.by.AggregationStateFactory, io.deephaven.db.v2.select.SelectColumn...) operations that have the same\n group by columns may be memoized.  In that case instead of recomputing the result; the original result will be\n used.\nIf null is returned, the operation will not be memoized.\n\n:return: (io.deephaven.db.v2.by.AggregationMemoKey) an AggregationMemoKey, null if this operation can not be memoized."
+  "getMemoKey": "Produces a MemoKey for this aggregation state factory.\n\n \n If two AggregationStateFactories have equal memoKeys, then Table.by(io.deephaven.db.v2.by.AggregationStateFactory, io.deephaven.db.v2.select.SelectColumn...) operations that have the same group\n by columns may be memoized. In that case instead of recomputing the result; the original result will be used.\n \n\n If null is returned, the operation will not be memoized.\n \n\n:return: (io.deephaven.db.v2.by.AggregationMemoKey) an AggregationMemoKey, null if this operation can not be memoized."
  },
  "path": "io.deephaven.db.v2.by.AggregationIndexStateFactory",
  "typeName": "class"

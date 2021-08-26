@@ -52,8 +52,8 @@ public interface DataSeries extends Series, Serializable {
 
 
     /**
-     * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the
-     * default size. Unspecified points use the default size.
+     * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
+     * Unspecified points use the default size.
      *
      * @param factor point size
      * @return this data series.
@@ -61,8 +61,8 @@ public interface DataSeries extends Series, Serializable {
     DataSeries pointSize(int factor);
 
     /**
-     * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the
-     * default size. Unspecified points use the default size.
+     * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
+     * Unspecified points use the default size.
      *
      * @param factor point size
      * @return this data series.
@@ -70,8 +70,8 @@ public interface DataSeries extends Series, Serializable {
     DataSeries pointSize(long factor);
 
     /**
-     * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the
-     * default size. Unspecified points use the default size.
+     * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
+     * Unspecified points use the default size.
      *
      * @param factor point size
      * @return this data series.
@@ -79,8 +79,8 @@ public interface DataSeries extends Series, Serializable {
     DataSeries pointSize(double factor);
 
     /**
-     * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the
-     * default size. Unspecified points use the default size.
+     * Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.
+     * Unspecified points use the default size.
      *
      * @param factor point size
      * @return this data series.
@@ -202,8 +202,8 @@ public interface DataSeries extends Series, Serializable {
 
 
     /**
-     * Sets the point label for data point i from index i of the input labels. Points outside of
-     * these indices are unlabeled.
+     * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
+     * unlabeled.
      *
      * @param label label
      * @return this XYDataSeries
@@ -215,8 +215,8 @@ public interface DataSeries extends Series, Serializable {
 
 
     /**
-     * Sets the point shapes for data point i from index i of the input labels. Points outside of
-     * these indices use default shapes.
+     * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
+     * default shapes.
      *
      * @param shape shape
      * @return this DataSeries
@@ -224,8 +224,8 @@ public interface DataSeries extends Series, Serializable {
     DataSeries pointShape(final String shape);
 
     /**
-     * Sets the point shapes for data point i from index i of the input labels. Points outside of
-     * these indices use default shapes.
+     * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
+     * default shapes.
      *
      * @param shape shape
      * @return this DataSeries
@@ -279,8 +279,8 @@ public interface DataSeries extends Series, Serializable {
     /**
      * Sets the point label format.
      * <p>
-     * Use {0} where the data series name should be inserted, {1} for the x-value and {2} y-value
-     * e.g. "{0}: ({1}, {2})" will display as Series1: (2.0, 5.5).
+     * Use {0} where the data series name should be inserted, {1} for the x-value and {2} y-value e.g. "{0}: ({1}, {2})"
+     * will display as Series1: (2.0, 5.5).
      *
      * @param format format
      * @return this data series.

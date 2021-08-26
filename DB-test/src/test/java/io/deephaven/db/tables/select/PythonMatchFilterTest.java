@@ -31,8 +31,7 @@ public class PythonMatchFilterTest extends PythonTest {
     public void setUp() {
         if (ProcessEnvironment.tryGet() == null) {
             ProcessEnvironment.basicInteractiveProcessInitialization(Configuration.getInstance(),
-                PythonMatchFilterTest.class.getCanonicalName(),
-                new StreamLoggerImpl(System.out, LogLevel.INFO));
+                    PythonMatchFilterTest.class.getCanonicalName(), new StreamLoggerImpl(System.out, LogLevel.INFO));
         }
     }
 
@@ -45,8 +44,8 @@ public class PythonMatchFilterTest extends PythonTest {
         SelectFilter filter = SelectFilterFactory.getExpression("ival in iii");
         assertEquals(MatchFilter.class, filter.getClass());
 
-        TableDefinition tableDef = new TableDefinition(Collections.singletonList(int.class),
-            Collections.singletonList("ival"));
+        TableDefinition tableDef =
+                new TableDefinition(Collections.singletonList(int.class), Collections.singletonList("ival"));
         filter.init(tableDef);
         Object[] values = ((MatchFilter) filter).getValues();
         // System.out.println(Arrays.toString(values));
@@ -64,8 +63,8 @@ public class PythonMatchFilterTest extends PythonTest {
         SelectFilter filter = SelectFilterFactory.getExpression("sval in ss");
         assertEquals(MatchFilter.class, filter.getClass());
 
-        TableDefinition tableDef = new TableDefinition(Collections.singletonList(String.class),
-            Collections.singletonList("sval"));
+        TableDefinition tableDef =
+                new TableDefinition(Collections.singletonList(String.class), Collections.singletonList("sval"));
         filter.init(tableDef);
         Object[] values = ((MatchFilter) filter).getValues();
         // System.out.println(Arrays.toString(values));

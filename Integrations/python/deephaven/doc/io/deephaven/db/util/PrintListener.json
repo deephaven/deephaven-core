@@ -8,9 +8,9 @@
   "onUpdate": "Process notification of table changes.\n\n:param upstream: (io.deephaven.db.v2.ShiftAwareListener.Update) - The set of upstream table updates.",
   "stop": "Remove this listener from the table.",
   "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: (io.deephaven.db.util.liveness.LivenessReferent) - The referent to add\n:return: (boolean) Whether the referent was in fact added",
-  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true.\n Otherwise, returns false rather than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
+  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true. Otherwise, returns false rather\n than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
  },
  "path": "io.deephaven.db.util.PrintListener",
- "text": "A simple listener that prints out each update received from a table.\n\n This can be used to debug the performance of a query by attaching to various tables in an effort to understand\n the update pattern.  Optionally, you can also print out the head of the table.\nOutput is directed to stdout, thus this should not be enabled in production queries.\nAfter you are finished, call the stop() method to remove this listener from the source table.",
+ "text": "A simple listener that prints out each update received from a table.\n\n \n This can be used to debug the performance of a query by attaching to various tables in an effort to understand the\n update pattern. Optionally, you can also print out the head of the table.\n \n\n Output is directed to stdout, thus this should not be enabled in production queries.\n \n\n After you are finished, call the stop() method to remove this listener from the source table.",
  "typeName": "class"
 }

@@ -7,9 +7,9 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Message_generated.org.apache.arrow.flatbuf.DictionaryBatch",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Message_generated.org.apache.arrow.flatbuf.DictionaryBatch",
+        namespace = JsPackage.GLOBAL)
 public class DictionaryBatch {
     public static native void addData(Builder builder, double dataOffset);
 
@@ -19,13 +19,12 @@ public class DictionaryBatch {
 
     public static native double endDictionaryBatch(Builder builder);
 
-    public static native DictionaryBatch getRootAsDictionaryBatch(ByteBuffer bb,
-        DictionaryBatch obj);
+    public static native DictionaryBatch getRootAsDictionaryBatch(ByteBuffer bb, DictionaryBatch obj);
 
     public static native DictionaryBatch getRootAsDictionaryBatch(ByteBuffer bb);
 
     public static native DictionaryBatch getSizePrefixedRootAsDictionaryBatch(
-        ByteBuffer bb, DictionaryBatch obj);
+            ByteBuffer bb, DictionaryBatch obj);
 
     public static native DictionaryBatch getSizePrefixedRootAsDictionaryBatch(ByteBuffer bb);
 

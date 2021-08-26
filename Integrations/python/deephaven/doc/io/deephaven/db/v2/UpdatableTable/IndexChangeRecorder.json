@@ -2,7 +2,7 @@
  "className": "io.deephaven.db.v2.UpdatableTable$IndexChangeRecorder",
  "methods": {
   "addIndex": "Flag key as an addition (or a modification if previously removed in this cycle). Must only be called in an\n updater function.\n\n:param key: (long) - The key",
-  "modifyIndex": "Flag key as an modification (unless it was added this cycle). Must only be called in an  updater function.\n\n:param key: (long) - The key",
+  "modifyIndex": "Flag key as an modification (unless it was added this cycle). Must only be called in an updater function.\n\n:param key: (long) - The key",
   "removeIndex": "Flag key as a removal (if it wasn't added on this cycle). Must only be called in an updater function.\n\n:param key: (long) - The key"
  },
  "path": "io.deephaven.db.v2.UpdatableTable.IndexChangeRecorder",

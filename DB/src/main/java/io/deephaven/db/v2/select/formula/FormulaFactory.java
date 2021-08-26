@@ -8,7 +8,6 @@ import io.deephaven.db.v2.utils.Index;
 import java.util.Map;
 
 public interface FormulaFactory {
-    Formula createFormula(Index index, boolean initLazyMap,
-        Map<String, ? extends ColumnSource> columnsToData,
-        Param... params);
+    Formula createFormula(Index index, boolean initLazyMap, Map<String, ? extends ColumnSource> columnsToData,
+            Param... params);
 }

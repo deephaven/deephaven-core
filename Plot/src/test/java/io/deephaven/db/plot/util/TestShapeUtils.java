@@ -13,8 +13,7 @@ import java.util.Arrays;
 
 public class TestShapeUtils extends BaseArrayTestCase {
 
-    private final Polygon polygon =
-        new Polygon(new int[] {-1, -1, 1, 1}, new int[] {-1, 1, 1, -1}, 4);
+    private final Polygon polygon = new Polygon(new int[] {-1, -1, 1, 1}, new int[] {-1, 1, 1, -1}, 4);
     private final double polygonCenterX = Arrays.stream(polygon.xpoints).sum();
     private final double polygonCenterY = Arrays.stream(polygon.ypoints).sum();
     private final RectangularShape rectangle = new Rectangle2D.Double(0, 0, 1, 1);

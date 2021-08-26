@@ -11,9 +11,9 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Message_generated.org.apache.arrow.flatbuf.Message",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Message_generated.org.apache.arrow.flatbuf.Message",
+        namespace = JsPackage.GLOBAL)
 public class Message {
     public static native void addBodyLength(Builder builder, Long bodyLength);
 
@@ -33,12 +33,12 @@ public class Message {
     }
 
     public static native double createMessage(
-        Builder builder,
-        int version,
-        int headerType,
-        double headerOffset,
-        Long bodyLength,
-        double customMetadataOffset);
+            Builder builder,
+            int version,
+            int headerType,
+            double headerOffset,
+            Long bodyLength,
+            double customMetadataOffset);
 
     public static native double endMessage(Builder builder);
 

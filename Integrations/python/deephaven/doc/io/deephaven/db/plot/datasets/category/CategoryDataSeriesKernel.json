@@ -2,12 +2,12 @@
  "className": "io.deephaven.db.plot.datasets.category.CategoryDataSeriesKernel",
  "methods": {
   "categories": "Get an ordered list of the categories in the data.\n\n:return: (java.util.Collection<java.lang.Comparable>) the ordered categories of the data",
-  "getCategoryKey": "Get the index key of the category within the original dataset.  This can be used to enforce a global ordering\n of a MultiSeries cat plot.\n\n:param category: (java.lang.Comparable<?>) - The category to locate.\n:return: (long) the key of the specified category within the original data set. or -1 if not present.",
+  "getCategoryKey": "Get the index key of the category within the original dataset. This can be used to enforce a global ordering of a\n MultiSeries cat plot.\n\n:param category: (java.lang.Comparable<?>) - The category to locate.\n:return: (long) the key of the specified category within the original data set. or -1 if not present.",
   "getValue": "Get the value of the specified category, or null if there was none.\n\n:param category: (java.lang.Comparable<?>) - The category to get the value of\n:return: (java.lang.Number) the value of the specified category",
   "initMinMax": "Reinitialize the min and max values to Nan in preparation for reinitialization",
   "size": "Get the size of the dataset (the number of categories)\n\n:return: (int) the number of categories in the dataset."
  },
  "path": "io.deephaven.db.plot.datasets.category.CategoryDataSeriesKernel",
- "text": "The core of the Category data series update and indexing.  This is used by the regular category data series to\n both update the values of existing categories as well as to ensure that new categories are maintained in order\n of the original table.",
+ "text": "The core of the Category data series update and indexing. This is used by the regular category data series to both\n update the values of existing categories as well as to ensure that new categories are maintained in order of the\n original table.",
  "typeName": "class"
 }

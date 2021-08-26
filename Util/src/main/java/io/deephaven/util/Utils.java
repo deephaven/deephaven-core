@@ -81,8 +81,8 @@ public class Utils {
      * @param thing the thing to run despite interruptions.
      * @param name what to call the thing - for logging
      */
-    public static void runWithoutInterruption(Logger log,
-        Procedure.ThrowingNullary<InterruptedException> thing, String name) {
+    public static void runWithoutInterruption(Logger log, Procedure.ThrowingNullary<InterruptedException> thing,
+            String name) {
         do {
             try {
                 thing.call();
@@ -114,15 +114,13 @@ public class Utils {
     }
 
     /**
-     * Checks if an {@link Element} is empty, ignoring the specified set of attributes. An empty
-     * element contains no content and no attributes aside from those indicated in ignoredAttrs
+     * Checks if an {@link Element} is empty, ignoring the specified set of attributes. An empty element contains no
+     * content and no attributes aside from those indicated in ignoredAttrs
      *
      * @param elem The element to check
-     * @param ignoredAttrs A set of attributes that can be present while this element is still
-     *        considered empty.
+     * @param ignoredAttrs A set of attributes that can be present while this element is still considered empty.
      *
-     * @return true if the element contained no content or attributes excluding those indicated in
-     *         ignoredAttrs
+     * @return true if the element contained no content or attributes excluding those indicated in ignoredAttrs
      */
     public static boolean isEmptyElement(Element elem, String... ignoredAttrs) {
         final List<Attribute> attrs = elem.getAttributes();
@@ -149,8 +147,7 @@ public class Utils {
     }
 
     /**
-     * Get the single element that was wrapped by a previous call to
-     * {@link #wrapElement(String, Element)}
+     * Get the single element that was wrapped by a previous call to {@link #wrapElement(String, Element)}
      *
      * @param wrapperName The name of the wrapper
      * @param parentElem The element containing the wrapper
@@ -167,13 +164,12 @@ public class Utils {
     }
 
     public static LocalDateTime getLastModifiedTime(File f) {
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(f.lastModified()),
-            ZoneId.systemDefault());
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(f.lastModified()), ZoneId.systemDefault());
     }
 
     /**
-     * Get a {@code Comparator<String>} that treats its inputs as file names in the same directory
-     * basePath, and compares each file by its modified time
+     * Get a {@code Comparator<String>} that treats its inputs as file names in the same directory basePath, and
+     * compares each file by its modified time
      *
      * @param dir The root path in which both files reside.
      * @return A new {@link Comparator<String>}.
@@ -195,8 +191,8 @@ public class Utils {
     }
 
     /**
-     * Get a {@link Comparator<File>} that treats its inputs as file names in the same directory
-     * basePath, and compares each file by its modified time
+     * Get a {@link Comparator<File>} that treats its inputs as file names in the same directory basePath, and compares
+     * each file by its modified time
      *
      * @return A new comparator.
      */
@@ -240,21 +236,18 @@ public class Utils {
             }
             cl = cl.getParent();
         }
-        // We should be able to create this class loader even if this is invoked from external code
-        // that lacks that permission.
+        // We should be able to create this class loader even if this is invoked from external code that lacks that
+        // permission.
         return AccessController.doPrivileged(
-            (PrivilegedAction<URLClassLoader>) () -> new URLClassLoader(all.toArray(new URL[0]),
-                null));
+                (PrivilegedAction<URLClassLoader>) () -> new URLClassLoader(all.toArray(new URL[0]), null));
     }
 
     /**
      * Close an {@link AutoCloseable} object and discard any exceptions. <br>
-     * NB: Per {@link AutoCloseable#close()}, <i>Note that unlike the close method of
-     * java.io.Closeable, this close method is not required to be idempotent. In other words,
-     * <b>calling this close method more than once may have some visible side effect,</b> unlike
-     * Closeable.close which is required to have no effect if called more than once. However,
-     * implementers of this interface are strongly encouraged to make their close methods
-     * idempotent.</i>
+     * NB: Per {@link AutoCloseable#close()}, <i>Note that unlike the close method of java.io.Closeable, this close
+     * method is not required to be idempotent. In other words, <b>calling this close method more than once may have
+     * some visible side effect,</b> unlike Closeable.close which is required to have no effect if called more than
+     * once. However, implementers of this interface are strongly encouraged to make their close methods idempotent.</i>
      * 
      * @param autoCloseable The resource to close.
      */
@@ -278,8 +271,8 @@ public class Utils {
         }
 
         if (start < 0 || end > array.length - 1) {
-            throw new IllegalArgumentException("Invalid indices to reverse array: (" + start + ", "
-                + end + ") allowed " + "(0, " + (array.length - 1) + ")");
+            throw new IllegalArgumentException("Invalid indices to reverse array: (" + start + ", " + end + ") allowed "
+                    + "(0, " + (array.length - 1) + ")");
         }
 
         int i = start;
@@ -296,8 +289,7 @@ public class Utils {
     }
 
     /**
-     * Does a line by line comparison of two files to check if they are the same. Can skip the first
-     * N lines.
+     * Does a line by line comparison of two files to check if they are the same. Can skip the first N lines.
      *
      * @param fileA the first file
      * @param fileB the second file
@@ -306,7 +298,7 @@ public class Utils {
      */
     public static boolean areFileLinesEqual(Path fileA, Path fileB, int skipLines) {
         try (BufferedReader readerA = Files.newBufferedReader(fileA);
-            BufferedReader readerB = Files.newBufferedReader(fileB)) {
+                BufferedReader readerB = Files.newBufferedReader(fileB)) {
 
             String lineA = readerA.readLine();
             String lineB = readerB.readLine();
@@ -353,8 +345,8 @@ public class Utils {
     }
 
     /**
-     * Anonymous inner classes return "" as simple name. In most cases, we want the SimpleName to
-     * reflect the class being overridden.
+     * Anonymous inner classes return "" as simple name. In most cases, we want the SimpleName to reflect the class
+     * being overridden.
      * <p>
      * For example, <code>
      *     x = new SomeClass() { @Override ... };
@@ -371,8 +363,8 @@ public class Utils {
     }
 
     /**
-     * Anonymous inner classes return "" as simple name. In most cases, we want the SimpleName to
-     * reflect the class being overridden.
+     * Anonymous inner classes return "" as simple name. In most cases, we want the SimpleName to reflect the class
+     * being overridden.
      *
      * @param objectClass the class for which to return the SimpleName
      * @return The SimpleName of the class, or of its superclass
@@ -380,8 +372,7 @@ public class Utils {
     @SuppressWarnings("WeakerAccess")
     public static String getSimpleNameFor(@NotNull Class<?> objectClass) {
         String simpleName = objectClass.getSimpleName();
-        // noinspection ConstantConditions // objectClass could hypothetically be null as result of
-        // getSuperClass
+        // noinspection ConstantConditions // objectClass could hypothetically be null as result of getSuperClass
         while (simpleName.isEmpty() && objectClass != null) {
             objectClass = objectClass.getSuperclass();
             simpleName = objectClass.getSimpleName();
@@ -406,8 +397,8 @@ public class Utils {
     }
 
     /**
-     * Describe the object in a standardized format without accessing its fields or otherwise
-     * risking interacting with partially-initialized state.
+     * Describe the object in a standardized format without accessing its fields or otherwise risking interacting with
+     * partially-initialized state.
      *
      * @param object The object
      * @return The description
@@ -419,13 +410,12 @@ public class Utils {
     /**
      * Append the non-null argument in the same format as {@link #makeReferentDescription(Object)}.
      */
-    public static LogOutput.ObjFormatter<Object> REFERENT_FORMATTER =
-        (logOutput, object) -> logOutput.append(getSimpleNameFor(object)).append('-')
-            .append(System.identityHashCode(object));
+    public static LogOutput.ObjFormatter<Object> REFERENT_FORMATTER = (logOutput, object) -> logOutput
+            .append(getSimpleNameFor(object)).append('-').append(System.identityHashCode(object));
 
     /**
-     * Get the major Java version (e.g. 8, 11). Throw an exception if it can't be determined, or if
-     * it isn't a Deephaven-supported version. Currently supported versions include:
+     * Get the major Java version (e.g. 8, 11). Throw an exception if it can't be determined, or if it isn't a
+     * Deephaven-supported version. Currently supported versions include:
      * <ul>
      * <li>1.8 (returned as 8)</li>
      * <li>11</li>
@@ -484,16 +474,14 @@ public class Utils {
      * @return same as File.isDirectory
      */
     public static boolean fileIsDirectoryPrivileged(final Path path, final LinkOption... options) {
-        return AccessController
-            .doPrivileged((PrivilegedAction<Boolean>) () -> Files.isDirectory(path, options));
+        return AccessController.doPrivileged((PrivilegedAction<Boolean>) () -> Files.isDirectory(path, options));
     }
 
     public static DirectoryStream<Path> fileGetDirectoryStream(Path dir,
-        DirectoryStream.Filter<? super Path> filter) throws IOException {
+            DirectoryStream.Filter<? super Path> filter) throws IOException {
         try {
-            return AccessController
-                .doPrivileged((PrivilegedExceptionAction<DirectoryStream<Path>>) () -> Files
-                    .newDirectoryStream(dir, filter));
+            return AccessController.doPrivileged(
+                    (PrivilegedExceptionAction<DirectoryStream<Path>>) () -> Files.newDirectoryStream(dir, filter));
         } catch (final PrivilegedActionException pae) {
             if (pae.getException() instanceof IOException) {
                 throw (IOException) pae.getException();
@@ -525,8 +513,7 @@ public class Utils {
     }
 
     /**
-     * Create the directory specified by this File, excluding parent directories, in a privileged
-     * context.
+     * Create the directory specified by this File, excluding parent directories, in a privileged context.
      *
      * @param file The directory to create
      * @return same as File.mkdir

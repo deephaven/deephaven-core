@@ -21,8 +21,8 @@ import java.util.function.Consumer;
 /**
  * A tracker for modified cross join hash table slots.
  *
- * After adding an entry, you get back a cookie, which must be passed in on future modification
- * operations for that slot.
+ * After adding an entry, you get back a cookie, which must be passed in on future modification operations for that
+ * slot.
  */
 class CrossJoinModifiedSlotTracker {
     static final long NULL_COOKIE = 0;
@@ -62,8 +62,7 @@ class CrossJoinModifiedSlotTracker {
         final SizedLongChunk<KeyIndices> keyChunk = new SizedLongChunk<>();
         Index.RandomBuilder indexBuilder = Index.FACTORY.getRandomBuilder();
 
-        long lastIndex = 0; // if added/removed/modified have been shifted then this is the
-                            // left-index for the shift
+        long lastIndex = 0; // if added/removed/modified have been shifted then this is the left-index for the shift
         Index rightAdded;
         Index rightRemoved;
         Index rightModified;
@@ -108,8 +107,7 @@ class CrossJoinModifiedSlotTracker {
             }
 
             final int originalCapacity = chunkCapacity;
-            chunkCapacity =
-                (chunkCapacity >= CHUNK_SIZE) ? chunkCapacity + CHUNK_SIZE : 2 * chunkCapacity;
+            chunkCapacity = (chunkCapacity >= CHUNK_SIZE) ? chunkCapacity + CHUNK_SIZE : 2 * chunkCapacity;
             maxSlotChunkCapacity = Math.max(maxSlotChunkCapacity, chunkCapacity);
             keyChunk.ensureCapacityPreserve(chunkCapacity);
             flagChunk.ensureCapacityPreserve(chunkCapacity);
@@ -172,7 +170,7 @@ class CrossJoinModifiedSlotTracker {
             // make our right index be what it needs to be
             final long oldRightSize = rightIndex.size();
             try (final Index added = innerAdded.getIndex();
-                final Index removed = innerRemoved.getIndex()) {
+                    final Index removed = innerRemoved.getIndex()) {
                 rightIndex.remove(removed);
 
                 // then we shift
@@ -185,9 +183,8 @@ class CrossJoinModifiedSlotTracker {
                     jsm.onRightGroupInsertion(rightIndex, added, slotLocation);
                 }
 
-                Assert.eq(oldRightSize + added.size() - removed.size(),
-                    "oldRightSize + added.size() - removed.size()", rightIndex.size(),
-                    "rightIndex.size()");
+                Assert.eq(oldRightSize + added.size() - removed.size(), "oldRightSize + added.size() - removed.size()",
+                        rightIndex.size(), "rightIndex.size()");
             }
 
             // now translate added && modified; accumulate them too
@@ -215,8 +212,7 @@ class CrossJoinModifiedSlotTracker {
                         modifiedBuilder.appendKey(downstreamOffset);
                     } else {
                         throw new IllegalStateException(
-                            "CrossJoinModifiedSlotTracker encountered unexpected flag value: "
-                                + flag);
+                                "CrossJoinModifiedSlotTracker encountered unexpected flag value: " + flag);
                     }
                 }
             }
@@ -236,10 +232,8 @@ class CrossJoinModifiedSlotTracker {
 
             final long newRightSize = rightIndex.size();
             while (postOff < newRightSize && preOff < oldRightSize) {
-                final long preNextOff =
-                    (preIdx == keyChunk.size()) ? oldRightSize : keyChunk.get(preIdx);
-                final long postNextOff =
-                    (postIdx == keyChunk.size()) ? newRightSize : keyChunk.get(postIdx);
+                final long preNextOff = (preIdx == keyChunk.size()) ? oldRightSize : keyChunk.get(preIdx);
+                final long postNextOff = (postIdx == keyChunk.size()) ? newRightSize : keyChunk.get(postIdx);
 
                 final long canShift = Math.min(preNextOff - preOff, postNextOff - postOff);
                 if (canShift > 0) {
@@ -283,27 +277,23 @@ class CrossJoinModifiedSlotTracker {
         }
     }
 
-    private final ObjectArraySource<SlotState> modifiedSlots =
-        new ObjectArraySource<>(SlotState.class);
+    private final ObjectArraySource<SlotState> modifiedSlots = new ObjectArraySource<>(SlotState.class);
     private LongSortKernel<KeyIndices, KeyIndices> sortKernel;
 
     private void ensureSortKernel() {
         if (sortKernel == null) {
-            sortKernel = LongSortKernel.makeContext(ChunkType.Long, SortingOrder.Ascending,
-                maxSlotChunkCapacity, true);
+            sortKernel = LongSortKernel.makeContext(ChunkType.Long, SortingOrder.Ascending, maxSlotChunkCapacity, true);
         }
     }
 
     /**
-     * the location that we must write to in modified slots; also if we have a pointer that falls
-     * outside the range [0, pointer); then we know it is invalid
+     * the location that we must write to in modified slots; also if we have a pointer that falls outside the range [0,
+     * pointer); then we know it is invalid
      */
     private long pointer;
     /** how many slots we have allocated */
     private long allocated;
-    /**
-     * Each time we clear, we add an offset to our cookies, this prevents us from reading old values
-     */
+    /** Each time we clear, we add an offset to our cookies, this prevents us from reading old values */
     private long cookieGeneration = 128;
 
     private static final byte FLAG_ADD = 0x1;
@@ -338,8 +328,7 @@ class CrossJoinModifiedSlotTracker {
         leftShifted = null;
         rightShifted = null;
 
-        // leftAdded/leftRemoved/leftModified are used by the downstream update; so we do not free
-        // them
+        // leftAdded/leftRemoved/leftModified are used by the downstream update; so we do not free them
         leftAdded = null;
         leftRemoved = null;
         leftModified = null;
@@ -352,13 +341,12 @@ class CrossJoinModifiedSlotTracker {
     }
 
     /**
-     * Is this cookie within our valid range (greater than or equal to our generation, but less than
-     * the pointer after adjustment?
+     * Is this cookie within our valid range (greater than or equal to our generation, but less than the pointer after
+     * adjustment?
      *
      * @param cookie the cookie to check for validity
      *
-     * @return true if the cookie is from the current generation, and references a valid slot in our
-     *         table
+     * @return true if the cookie is from the current generation, and references a valid slot in our table
      */
     private boolean isValidCookie(long cookie) {
         return cookie >= cookieGeneration && getPointerFromCookie(cookie) < pointer;
@@ -401,8 +389,7 @@ class CrossJoinModifiedSlotTracker {
 
             if (finishedRightProcessing) {
                 state.finalizedRight = true;
-                state.rightAdded =
-                    state.rightRemoved = state.rightModified = Index.FACTORY.getEmptyIndex();
+                state.rightAdded = state.rightRemoved = state.rightModified = Index.FACTORY.getEmptyIndex();
                 state.innerShifted = IndexShiftData.EMPTY;
             }
         } else {
@@ -441,15 +428,13 @@ class CrossJoinModifiedSlotTracker {
         return getSlotState(cookie, slot).appendToBuilder(leftIndex).cookie;
     }
 
-    // Right shifts cannot be applied until after the removes are applied to the slot's right index.
-    // So, we ensure that
+    // Right shifts cannot be applied until after the removes are applied to the slot's right index. So, we ensure that
     // a tracker-slot is allocated for each slot affected by a shift, and apply the shifts later.
     long needsRightShift(final long cookie, final long slot) {
         return getSlotState(cookie, slot).needsRightShift().cookie;
     }
 
-    // Left shifts can actually be applied immediately (removes are already rm'd), but we need to be
-    // careful to only
+    // Left shifts can actually be applied immediately (removes are already rm'd), but we need to be careful to only
     // shift the leftIndex once.
     long needsLeftShift(final long cookie, final long slot) {
         return getSlotState(cookie, slot).applyLeftShift().cookie;

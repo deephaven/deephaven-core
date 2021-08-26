@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.ticket_pb.Ticket",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.ticket_pb.Ticket",
+        namespace = JsPackage.GLOBAL)
 public class Ticket {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface GetTicketUnionType {

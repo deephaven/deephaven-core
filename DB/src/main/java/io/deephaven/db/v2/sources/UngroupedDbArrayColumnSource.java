@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.db.tables.dbarrays.*;
 
 public class UngroupedDbArrayColumnSource<T> extends UngroupedColumnSource<T>
-    implements MutableColumnSourceGetDefaults.ForObject<T> {
+        implements MutableColumnSourceGetDefaults.ForObject<T> {
     private final ColumnSource<DbArray<T>> innerSource;
     private final boolean isUngroupable;
 
@@ -22,7 +22,7 @@ public class UngroupedDbArrayColumnSource<T> extends UngroupedColumnSource<T>
         super((Class<T>) innerSource.getComponentType());
         this.innerSource = innerSource;
         this.isUngroupable = innerSource instanceof UngroupableColumnSource
-            && ((UngroupableColumnSource) innerSource).isUngroupable();
+                && ((UngroupableColumnSource) innerSource).isUngroupable();
     }
 
     @Override
@@ -50,8 +50,7 @@ public class UngroupedDbArrayColumnSource<T> extends UngroupedColumnSource<T>
 
         if (isUngroupable) {
             // noinspection unchecked
-            return (T) ((UngroupableColumnSource) innerSource).getUngroupedPrev(segment,
-                (int) offset);
+            return (T) ((UngroupableColumnSource) innerSource).getUngroupedPrev(segment, (int) offset);
         } else {
             Assert.neqNull(innerSource, "innerSource");
             DbArray<T> prevArray = innerSource.getPrev(segment);

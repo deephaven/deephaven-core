@@ -99,8 +99,7 @@ public class ArrowFlightUtil {
             switch (tag) {
                 case DATA_HEADER_TAG:
                     size = decoder.readRawVarint32();
-                    mi.header =
-                        Message.getRootAsMessage(ByteBuffer.wrap(decoder.readRawBytes(size)));
+                    mi.header = Message.getRootAsMessage(ByteBuffer.wrap(decoder.readRawBytes(size)));
                     break;
                 case APP_METADATA_TAG:
                     size = decoder.readRawVarint32();
@@ -162,17 +161,16 @@ public class ArrowFlightUtil {
         private ChunkInputStreamGenerator.Options options = DEFAULT_SER_OPTIONS;
 
         public DoPutObserver(
-            final SessionState session,
-            final TicketRouter ticketRouter,
-            final StreamObserver<Flight.PutResult> observer) {
+                final SessionState session,
+                final TicketRouter ticketRouter,
+                final StreamObserver<Flight.PutResult> observer) {
             this.session = session;
             this.ticketRouter = ticketRouter;
             this.observer = observer;
 
             this.session.addOnCloseCallback(this);
             if (observer instanceof ServerCallStreamObserver) {
-                ((ServerCallStreamObserver<Flight.PutResult>) observer)
-                    .setOnCancelHandler(this::onCancel);
+                ((ServerCallStreamObserver<Flight.PutResult>) observer).setOnCancelHandler(this::onCancel);
             }
         }
 
@@ -307,8 +305,7 @@ public class ArrowFlightUtil {
                             "Result flight descriptor never provided");
                 }
                 if (resultTable == null) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        "Result flight schema never provided");
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Result flight schema never provided");
                 }
 
                 // no more changes allowed; this is officially static content
@@ -318,8 +315,7 @@ public class ArrowFlightUtil {
                     resultTable.dropReference();
                     GrpcUtil.safelyExecuteLocked(observer, observer::onCompleted);
                     return resultTable;
-                }), () -> GrpcUtil.safelyError(observer, Code.DATA_LOSS,
-                    "Do put could not be sealed"));
+                }), () -> GrpcUtil.safelyError(observer, Code.DATA_LOSS, "Do put could not be sealed"));
             });
         }
 
@@ -332,11 +328,9 @@ public class ArrowFlightUtil {
 
         private void parseSchema(final Schema header) {
             if (resultTable != null) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                    "Schema evolution not supported");
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Schema evolution not supported");
             }
-            resultTable =
-                BarrageTable.make(BarrageSchemaUtil.schemaToTableDefinition(header), false);
+            resultTable = BarrageTable.make(BarrageSchemaUtil.schemaToTableDefinition(header), false);
             columnChunkTypes = resultTable.getWireChunkTypes();
             columnTypes = resultTable.getWireTypes();
             componentTypes = resultTable.getWireComponentTypes();
@@ -347,11 +341,10 @@ public class ArrowFlightUtil {
     }
 
     /**
-     * Helper class that maintains a subscription whether it was created by a bi-directional stream
-     * request or the no-client-streaming request. If the SubscriptionRequest sets the sequence,
-     * then it treats sequence as a watermark and will not send out-of-order requests (due to
-     * out-of-band requests). The client should already anticipate subscription changes may be
-     * coalesced by the BarrageMessageProducer.
+     * Helper class that maintains a subscription whether it was created by a bi-directional stream request or the
+     * no-client-streaming request. If the SubscriptionRequest sets the sequence, then it treats sequence as a watermark
+     * and will not send out-of-order requests (due to out-of-band requests). The client should already anticipate
+     * subscription changes may be coalesced by the BarrageMessageProducer.
      */
     public static class DoExchangeMarshaller extends SingletonLivenessManager
             implements StreamObserver<InputStream>, Closeable {
@@ -453,8 +446,7 @@ public class ArrowFlightUtil {
                 return;
             }
 
-            // we know there is at least one request; it was put there when we knew which parent to
-            // wait on
+            // we know there is at least one request; it was put there when we knew which parent to wait on
             final BarrageSubscriptionRequest subscriptionRequest = preExportSubscriptions.remove();
 
             final Object export = parent.get();
@@ -470,8 +462,8 @@ public class ArrowFlightUtil {
                 }
             } else {
                 GrpcUtil.safelyError(listener, Code.FAILED_PRECONDITION, "Ticket ("
-                    + ExportTicketHelper.toReadableString(subscriptionRequest.ticketAsByteBuffer())
-                    + ") is not a subscribable table.");
+                        + ExportTicketHelper.toReadableString(subscriptionRequest.ticketAsByteBuffer())
+                        + ") is not a subscribable table.");
                 return;
             }
 
@@ -485,8 +477,7 @@ public class ArrowFlightUtil {
             final Index viewport =
                     isViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer()) : null;
 
-            if (!bmp.addSubscription(listener, optionsAdapter.adapt(subscriptionRequest), columns,
-                viewport)) {
+            if (!bmp.addSubscription(listener, optionsAdapter.adapt(subscriptionRequest), columns, viewport)) {
                 throw new IllegalStateException("listener is already a subscriber!");
             }
 
@@ -524,8 +515,7 @@ public class ArrowFlightUtil {
             }
 
             if (!subscriptionFound) {
-                throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
-                    "Subscription was not found.");
+                throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND, "Subscription was not found.");
             }
         }
 

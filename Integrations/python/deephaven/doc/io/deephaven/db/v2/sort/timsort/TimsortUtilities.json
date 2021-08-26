@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.sort.timsort.TimsortUtilities",
  "methods": {
-  "getRunLength": "Given a length of our input, we should pick a number that is between 32 and 64; ideally such that\n (length / run) is just under 2^n < length, but only by a little bit.\n\n Take the six most significant bits of length; if the remaining bits have any ones, then add one.\n\n:param length: (int) - the length of the values within a chunk to sort\n:return: (int) the run length"
+  "getRunLength": "Given a length of our input, we should pick a number that is between 32 and 64; ideally such that (length / run)\n is just under 2^n < length, but only by a little bit.\n\n Take the six most significant bits of length; if the remaining bits have any ones, then add one.\n\n:param length: (int) - the length of the values within a chunk to sort\n:return: (int) the run length"
  },
  "path": "io.deephaven.db.v2.sort.timsort.TimsortUtilities",
  "typeName": "class"

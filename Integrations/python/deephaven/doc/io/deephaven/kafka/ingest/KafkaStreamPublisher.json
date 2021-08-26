@@ -5,6 +5,6 @@
   "make": ":param publisher: io.deephaven.kafka.StreamPublisherImpl\n:param kafkaPartitionColumnIndex: int\n:param offsetColumnIndex: int\n:param timestampColumnIndex: int\n:param keyProcessorArg: io.deephaven.kafka.ingest.KeyOrValueProcessor\n:param valueProcessorArg: io.deephaven.kafka.ingest.KeyOrValueProcessor\n:param simpleKeyColumnIndexArg: int\n:param simpleValueColumnIndexArg: int\n:param keyToChunkObjectMapper: java.util.function.Function<java.lang.Object,java.lang.Object>\n:param valueToChunkObjectMapper: java.util.function.Function<java.lang.Object,java.lang.Object>\n:return: io.deephaven.kafka.ingest.ConsumerRecordToStreamPublisherAdapter"
  },
  "path": "io.deephaven.kafka.ingest.KafkaStreamPublisher",
- "text": "An adapter that maps keys and values, possibly each with multiple fields, to single Deephaven columns.  Each Kafka record produces one Deephaven row.",
+ "text": "An adapter that maps keys and values, possibly each with multiple fields, to single Deephaven columns. Each Kafka\n record produces one Deephaven row.",
  "typeName": "class"
 }

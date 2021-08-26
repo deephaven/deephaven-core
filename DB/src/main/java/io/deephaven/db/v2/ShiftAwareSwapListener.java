@@ -2,8 +2,7 @@ package io.deephaven.db.v2;
 
 import io.deephaven.db.tables.live.NotificationQueue;
 
-public class ShiftAwareSwapListener extends SwapListenerBase<ShiftAwareListener>
-    implements ShiftAwareListener {
+public class ShiftAwareSwapListener extends SwapListenerBase<ShiftAwareListener> implements ShiftAwareListener {
 
     public ShiftAwareSwapListener(final BaseTable sourceTable) {
         super(sourceTable);
@@ -16,8 +15,7 @@ public class ShiftAwareSwapListener extends SwapListenerBase<ShiftAwareListener>
     }
 
     @Override
-    public synchronized NotificationQueue.IndexUpdateNotification getNotification(
-        final Update update) {
+    public synchronized NotificationQueue.IndexUpdateNotification getNotification(final Update update) {
         return doGetNotification(() -> eventualListener.getNotification(update));
     }
 

@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.ShiftAwareSwapListener",
  "methods": {
-  "destroy": "Attempt to release (destructively when necessary) resources held by this object.  This may render the object\n unusable for subsequent operations.  Implementations should be sure to call super.destroy().\n This is intended to only ever be used as a side effect of decreasing the reference count to 0.",
+  "destroy": "Attempt to release (destructively when necessary) resources held by this object. This may render the object\n unusable for subsequent operations. Implementations should be sure to call super.destroy().\n \n This is intended to only ever be used as a side effect of decreasing the reference count to 0.",
   "dropReference": "Drop a previously-retained reference to this referent.",
   "getNotification": "Creates a notification for the table changes.\n\n:param update: (io.deephaven.db.v2.ShiftAwareListener.Update) - The set of upstream table updates.\n:return: (io.deephaven.db.tables.live.NotificationQueue.IndexUpdateNotification) table change notification",
   "getWeakReference": "Get a WeakReference to this referent. This may be cached, or newly created.\n\n:return: (java.lang.ref.WeakReference<? extends io.deephaven.db.util.liveness.LivenessReferent>) A new or cached reference to this referent",
@@ -9,7 +9,7 @@
   "onUpdate": "Process notification of table changes.\n\n:param upstream: (io.deephaven.db.v2.ShiftAwareListener.Update) - The set of upstream table updates.",
   "subscribeForUpdates": "Invoke DynamicTable.listenForUpdates(Listener) for the appropriate subclass of SwapListenerBase.",
   "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: (io.deephaven.db.util.liveness.LivenessReferent) - The referent to add\n:return: (boolean) Whether the referent was in fact added",
-  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true.\n Otherwise, returns false rather than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
+  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true. Otherwise, returns false rather\n than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
  },
  "path": "io.deephaven.db.v2.ShiftAwareSwapListener",
  "typeName": "class"

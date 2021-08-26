@@ -123,8 +123,7 @@ public abstract class IntrusiveDoublyLinkedStructureBase<VALUE_TYPE> {
      * @param other The node to insert before
      * @return node
      */
-    protected @NotNull final VALUE_TYPE linkBefore(@NotNull final VALUE_TYPE node,
-        @NotNull final VALUE_TYPE other) {
+    protected @NotNull final VALUE_TYPE linkBefore(@NotNull final VALUE_TYPE node, @NotNull final VALUE_TYPE other) {
         setNext(node, other);
         setPrev(node, getPrev(other));
         setNext(getPrev(other), node);
@@ -139,8 +138,7 @@ public abstract class IntrusiveDoublyLinkedStructureBase<VALUE_TYPE> {
      * @param other The node to insert after
      * @return node
      */
-    protected @NotNull final VALUE_TYPE linkAfter(@NotNull final VALUE_TYPE node,
-        @NotNull final VALUE_TYPE other) {
+    protected @NotNull final VALUE_TYPE linkAfter(@NotNull final VALUE_TYPE node, @NotNull final VALUE_TYPE other) {
         setPrev(node, other);
         setNext(node, getNext(other));
         setPrev(getNext(other), node);
@@ -163,14 +161,13 @@ public abstract class IntrusiveDoublyLinkedStructureBase<VALUE_TYPE> {
     }
 
     /**
-     * Is the other data structure compatible with this one? This is true if and only if it's the
-     * same class, with the same adapter instance.
+     * Is the other data structure compatible with this one? This is true if and only if it's the same class, with the
+     * same adapter instance.
      *
      * @param other The other data structure
      * @return Whether other is compatible
      */
-    protected final boolean compatible(
-        @NotNull final IntrusiveDoublyLinkedStructureBase<VALUE_TYPE> other) {
+    protected final boolean compatible(@NotNull final IntrusiveDoublyLinkedStructureBase<VALUE_TYPE> other) {
         return getClass() == other.getClass() && adapter == other.adapter;
     }
 }

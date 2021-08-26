@@ -11,8 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * An instance of this object is sent to our parser, so that as it runs into invalid syntax, it can
- * report useful errors, and allow handler code to inspect the jjtree parser when it occurs.
+ * An instance of this object is sent to our parser, so that as it runs into invalid syntax, it can report useful
+ * errors, and allow handler code to inspect the jjtree parser when it occurs.
  *
  */
 public class Messenger {

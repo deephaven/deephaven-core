@@ -89,8 +89,8 @@ public class StringsLoggerImpl<E extends LogEntry> implements Logger {
 
     private LogLevel loggingLevel;
 
-    public StringsLoggerImpl(Function.Nullary<E> entryFactory, int entryPoolSize,
-        LogOutput outputBuffer, LogLevel loggingLevel) {
+    public StringsLoggerImpl(Function.Nullary<E> entryFactory, int entryPoolSize, LogOutput outputBuffer,
+            LogLevel loggingLevel) {
         this.loggingLevel = loggingLevel;
         this.entries = new ThreadSafeLenientFixedSizePool<E>(entryPoolSize, entryFactory, null);
         this.outputBuffer = outputBuffer;
@@ -117,14 +117,12 @@ public class StringsLoggerImpl<E extends LogEntry> implements Logger {
 
     @Override
     public LogEntry getEntry(LogLevel level) {
-        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000)
-            : LogEntry.NULL;
+        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000) : LogEntry.NULL;
     }
 
     @Override
     public LogEntry getEntry(LogLevel level, Throwable t) {
-        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000, t)
-            : LogEntry.NULL;
+        return isLevelEnabled(level) ? startEntry(level, System.currentTimeMillis() * 1000, t) : LogEntry.NULL;
     }
 
     @Override

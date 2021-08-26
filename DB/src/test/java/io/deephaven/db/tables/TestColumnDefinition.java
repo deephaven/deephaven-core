@@ -19,8 +19,7 @@ public class TestColumnDefinition extends TestCase {
         out.writeUTF("\0");
         out.flush();
 
-        final ObjectInputStream in =
-            new ObjectInputStream(new ByteArrayInputStream(outBytes.toByteArray()));
+        final ObjectInputStream in = new ObjectInputStream(new ByteArrayInputStream(outBytes.toByteArray()));
         TestCase.assertEquals(4, in.available());
         final String bad = in.readUTF();
         TestCase.assertEquals(1, bad.length());
@@ -40,16 +39,14 @@ public class TestColumnDefinition extends TestCase {
         out.writeByte(1);
         out.flush();
 
-        final ObjectInputStream in1 =
-            new ObjectInputStream(new ByteArrayInputStream(outBytes.toByteArray()));
+        final ObjectInputStream in1 = new ObjectInputStream(new ByteArrayInputStream(outBytes.toByteArray()));
         TestCase.assertEquals(4, in1.available());
         TestCase.assertEquals(2, in1.readUnsignedShort());
         TestCase.assertEquals(MAGIC_NUMBER, in1.readByte());
         TestCase.assertEquals(1, in1.readByte());
         TestCase.assertEquals(0, in1.available());
 
-        final ObjectInputStream in2 =
-            new ObjectInputStream(new ByteArrayInputStream(outBytes.toByteArray()));
+        final ObjectInputStream in2 = new ObjectInputStream(new ByteArrayInputStream(outBytes.toByteArray()));
         TestCase.assertEquals(4, in2.available());
         try {
             in2.readUTF();

@@ -5,17 +5,16 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.GetConsoleTypesRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.GetConsoleTypesRequest",
+        namespace = JsPackage.GLOBAL)
 public class GetConsoleTypesRequest {
     public static native GetConsoleTypesRequest deserializeBinary(Uint8Array bytes);
 
     public static native GetConsoleTypesRequest deserializeBinaryFromReader(
-        GetConsoleTypesRequest message, Object reader);
+            GetConsoleTypesRequest message, Object reader);
 
-    public static native void serializeBinaryToWriter(GetConsoleTypesRequest message,
-        Object writer);
+    public static native void serializeBinaryToWriter(GetConsoleTypesRequest message, Object writer);
 
     public static native Object toObject(boolean includeInstance, GetConsoleTypesRequest msg);
 

@@ -42,8 +42,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     }
 
     @Override
-    public void newSession(final HandshakeRequest request,
-        final StreamObserver<HandshakeResponse> responseObserver) {
+    public void newSession(final HandshakeRequest request, final StreamObserver<HandshakeResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             if (!authProvider.supportsProtocol(request.getAuthProtocol())) {
                 responseObserver.onError(
@@ -51,8 +50,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 return;
             }
 
-            final AuthContext authContext =
-                authProvider.authenticate(request.getAuthProtocol(), request.getPayload());
+            final AuthContext authContext = authProvider.authenticate(request.getAuthProtocol(), request.getPayload());
             if (authContext == null) {
                 responseObserver
                         .onError(GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "Authentication failed."));
@@ -61,11 +59,11 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
 
             final SessionState session = service.newSession(authContext);
             responseObserver.onNext(HandshakeResponse.newBuilder()
-                .setMetadataHeader(ByteString.copyFromUtf8(DEEPHAVEN_SESSION_ID))
-                .setSessionToken(session.getExpiration().getTokenAsByteString())
-                .setTokenDeadlineTimeMillis(session.getExpiration().deadline.getMillis())
-                .setTokenExpirationDelayMillis(service.getExpirationDelayMs())
-                .build());
+                    .setMetadataHeader(ByteString.copyFromUtf8(DEEPHAVEN_SESSION_ID))
+                    .setSessionToken(session.getExpiration().getTokenAsByteString())
+                    .setTokenDeadlineTimeMillis(session.getExpiration().deadline.getMillis())
+                    .setTokenExpirationDelayMillis(service.getExpirationDelayMs())
+                    .build());
 
             responseObserver.onCompleted();
         });
@@ -91,19 +89,18 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             final SessionService.TokenExpiration expiration = service.refreshToken(session);
 
             responseObserver.onNext(HandshakeResponse.newBuilder()
-                .setMetadataHeader(ByteString.copyFromUtf8(DEEPHAVEN_SESSION_ID))
-                .setSessionToken(expiration.getTokenAsByteString())
-                .setTokenDeadlineTimeMillis(expiration.deadline.getMillis())
-                .setTokenExpirationDelayMillis(service.getExpirationDelayMs())
-                .build());
+                    .setMetadataHeader(ByteString.copyFromUtf8(DEEPHAVEN_SESSION_ID))
+                    .setSessionToken(expiration.getTokenAsByteString())
+                    .setTokenDeadlineTimeMillis(expiration.deadline.getMillis())
+                    .setTokenExpirationDelayMillis(service.getExpirationDelayMs())
+                    .build());
 
             responseObserver.onCompleted();
         });
     }
 
     @Override
-    public void closeSession(final HandshakeRequest request,
-        final StreamObserver<ReleaseResponse> responseObserver) {
+    public void closeSession(final HandshakeRequest request, final StreamObserver<ReleaseResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             if (request.getAuthProtocol() != 0) {
                 responseObserver.onError(
@@ -125,8 +122,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     }
 
     @Override
-    public void release(final Ticket request,
-        final StreamObserver<ReleaseResponse> responseObserver) {
+    public void release(final Ticket request, final StreamObserver<ReleaseResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState.ExportObject<?> export = service.getCurrentSession().getExportIfExists(request);
             final ExportNotification.State currState =
@@ -147,10 +143,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             final SessionState session = service.getCurrentSession();
 
             session.addExportListener(responseObserver);
-            ((ServerCallStreamObserver<ExportNotification>) responseObserver)
-                .setOnCancelHandler(() -> {
-                    session.removeExportListener(responseObserver);
-                });
+            ((ServerCallStreamObserver<ExportNotification>) responseObserver).setOnCancelHandler(() -> {
+                session.removeExportListener(responseObserver);
+            });
         });
     }
 
@@ -168,8 +163,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 final Metadata metadata,
                 final ServerCallHandler<ReqT, RespT> serverCallHandler) {
             SessionState session = null;
-            final Optional<String> tokenBytes =
-                Optional.ofNullable(metadata.get(SESSION_HEADER_KEY));
+            final Optional<String> tokenBytes = Optional.ofNullable(metadata.get(SESSION_HEADER_KEY));
             if (tokenBytes.isPresent()) {
                 UUID token = UuidCreator.fromString(tokenBytes.get());
                 session = service.getSessionForToken(token);

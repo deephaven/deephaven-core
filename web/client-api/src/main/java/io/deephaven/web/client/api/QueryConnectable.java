@@ -163,8 +163,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
             StartConsoleRequest request = new StartConsoleRequest();
             request.setSessionType(type);
             request.setResultId(ticket);
-            connection.get().consoleServiceClient().startConsole(request,
-                connection.get().metadata(), callback::apply);
+            connection.get().consoleServiceClient().startConsole(request, connection.get().metadata(), callback::apply);
         })).then(result -> {
             promise.succeed(ticket);
             return null;

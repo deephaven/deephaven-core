@@ -31,12 +31,10 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
      *
      * @param chunkType the type of chunk
      * @param dataType the datatype for the newly created column source
-     * @param componentType the component type for the newly created column source (only applies to
-     *        Objects)
+     * @param componentType the component type for the newly created column source (only applies to Objects)
      * @return an empty ChunkColumnSource
      */
-    static ChunkColumnSource<?> make(ChunkType chunkType, Class<?> dataType,
-        Class<?> componentType) {
+    static ChunkColumnSource<?> make(ChunkType chunkType, Class<?> dataType, Class<?> componentType) {
         switch (chunkType) {
             case Char:
                 return new CharChunkColumnSource();
@@ -55,8 +53,7 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
             case Object:
                 return new ObjectChunkColumnSource<>(dataType, componentType);
             default:
-                throw new IllegalArgumentException(
-                    "Can not make ChunkColumnSource of type " + chunkType);
+                throw new IllegalArgumentException("Can not make ChunkColumnSource of type " + chunkType);
         }
     }
 
@@ -65,12 +62,11 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
      *
      * @param chunkType the type of chunk
      * @param dataType the datatype for the newly created column source
-     * @param sharedOffsetForData an array list representing the shared offsets for data across
-     *        several ChunkColumnSources
+     * @param sharedOffsetForData an array list representing the shared offsets for data across several
+     *        ChunkColumnSources
      * @return an empty ChunkColumnSource
      */
-    static ChunkColumnSource<?> make(ChunkType chunkType, Class<?> dataType,
-        TLongArrayList sharedOffsetForData) {
+    static ChunkColumnSource<?> make(ChunkType chunkType, Class<?> dataType, TLongArrayList sharedOffsetForData) {
         return make(chunkType, dataType, null, sharedOffsetForData);
     }
 
@@ -79,14 +75,13 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
      *
      * @param chunkType the type of chunk
      * @param dataType the datatype for the newly created column source
-     * @param componentType the component type for the newly created column source (only applies to
-     *        Objects)
-     * @param sharedOffsetForData an array list representing the shared offsets for data across
-     *        several ChunkColumnSources
+     * @param componentType the component type for the newly created column source (only applies to Objects)
+     * @param sharedOffsetForData an array list representing the shared offsets for data across several
+     *        ChunkColumnSources
      * @return an empty ChunkColumnSource
      */
     static ChunkColumnSource<?> make(ChunkType chunkType, Class<?> dataType, Class<?> componentType,
-        TLongArrayList sharedOffsetForData) {
+            TLongArrayList sharedOffsetForData) {
         switch (chunkType) {
             case Char:
                 return new CharChunkColumnSource(sharedOffsetForData);
@@ -105,8 +100,7 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
             case Object:
                 return new ObjectChunkColumnSource<>(dataType, componentType, sharedOffsetForData);
             default:
-                throw new IllegalArgumentException(
-                    "Can not make ChunkColumnSource of type " + chunkType);
+                throw new IllegalArgumentException("Can not make ChunkColumnSource of type " + chunkType);
         }
     }
 
@@ -122,8 +116,8 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
     /**
      * Reset the column source to be ready for reuse.
      * <p>
-     * Clear will discard the currently held chunks. This should not be called if a table will
-     * continue to reference the column source; as it violates the immutability contract.
+     * Clear will discard the currently held chunks. This should not be called if a table will continue to reference the
+     * column source; as it violates the immutability contract.
      */
     void clear();
 

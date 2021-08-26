@@ -13,8 +13,8 @@ import java.util.Collection;
 import java.util.Set;
 
 /**
- * A class specifically for completing column names; to be called after the completer has discovered
- * the name of the column to match.
+ * A class specifically for completing column names; to be called after the completer has discovered the name of the
+ * column to match.
  *
  */
 public class CompleteColumnName extends CompletionBuilder {
@@ -23,18 +23,18 @@ public class CompleteColumnName extends CompletionBuilder {
     private final ChunkerInvoke invoke;
 
     public CompleteColumnName(
-        ChunkerCompleter completer,
-        Node node,
-        ChunkerInvoke invoke) {
+            ChunkerCompleter completer,
+            Node node,
+            ChunkerInvoke invoke) {
         super(completer);
         this.node = node;
         this.invoke = invoke;
     }
 
     public void doCompletion(
-        Collection<CompletionItem.Builder> results,
-        CompletionRequest request,
-        String colName) {
+            Collection<CompletionItem.Builder> results,
+            CompletionRequest request,
+            String colName) {
         final String src;
         final DocumentRange.Builder range;
         src = node == null ? "" : node.toSource();
@@ -54,8 +54,7 @@ public class CompleteColumnName extends CompletionBuilder {
         StringBuilder b = new StringBuilder();
         b.append(qt);
         b.append(colName);
-        // Instead of addTokens, we need to use raw strings, since we don't tokenize inside strings
-        // (yet).
+        // Instead of addTokens, we need to use raw strings, since we don't tokenize inside strings (yet).
         int ind = src.indexOf('=');
         if (ind == -1) {
             b.append(" = ");
@@ -83,11 +82,11 @@ public class CompleteColumnName extends CompletionBuilder {
         final CompletionItem.Builder result = CompletionItem.newBuilder();
         String item = b.toString();
         result.setStart(start)
-            .setLength(len)
-            .setLabel(item)
-            .getTextEditBuilder()
-            .setText(item)
-            .setRange(range);
+                .setLength(len)
+                .setLabel(item)
+                .getTextEditBuilder()
+                .setText(item)
+                .setRange(range);
         results.add(result);
     }
 }

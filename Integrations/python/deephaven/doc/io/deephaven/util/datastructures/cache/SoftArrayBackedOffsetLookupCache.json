@@ -5,6 +5,6 @@
   "get": "Lookup the value for index.\n\n:param index: (int) - The offset (must be >= 0)\n:param extra: SoftArrayBackedOffsetLookupCache.EXTRA_INPUT_TYPE\n:return: (SoftArrayBackedOffsetLookupCache.VALUE_TYPE) The result of calling the lookup function for index, possibly from cache"
  },
  "path": "io.deephaven.util.datastructures.cache.SoftArrayBackedOffsetLookupCache",
- "text": "Caching data structure for caching int (offset) to Object mappings.\n For use when lookup is expensive but idempotent, and the range of offset indexes is relatively contiguous.\n This is only suitable for lookup functions that return fully-initialized, immutable objects (or null).\n \n This implementation stores data in an array of softly-reachable arrays, to enable unused regions to be\n reclaimed under memory pressure.",
+ "text": "Caching data structure for caching int (offset) to Object mappings. For use when lookup is expensive but idempotent,\n and the range of offset indexes is relatively contiguous. This is only suitable for lookup functions that return\n fully-initialized, immutable objects (or null).\n \n This implementation stores data in an array of softly-reachable arrays, to enable unused regions to be reclaimed\n under memory pressure.",
  "typeName": "class"
 }

@@ -118,7 +118,7 @@ public interface Client<TRequest, TResponse> {
 
     @JsOverlay
     default void start(
-        JsPropertyMap<Client.StartMetadataJsPropertyMapTypeParameterUnionType> metadata) {
+            JsPropertyMap<Client.StartMetadataJsPropertyMapTypeParameterUnionType> metadata) {
         start(Js.<Client.StartMetadataUnionType>uncheckedCast(metadata));
     }
 

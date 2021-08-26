@@ -21,16 +21,15 @@ public abstract class FatalErrorReporterBase implements FatalErrorReporter {
     }
 
     /**
-     * Report a fatal error in an implementation specific way. Implementations should invoke
-     * appropriate shutdown tasks and initiate process shutdown (e.g. via {@link System#exit(int)}).
+     * Report a fatal error in an implementation specific way. Implementations should invoke appropriate shutdown tasks
+     * and initiate process shutdown (e.g. via {@link System#exit(int)}).
      *
      * @param message the message
      * @param throwable the throwable
      * @param isFromUncaught true iff called from
      *        {@link java.lang.Thread.UncaughtExceptionHandler#uncaughtException(Thread, Throwable)}.
      */
-    protected abstract void reportImpl(@NotNull String message, @NotNull Throwable throwable,
-        boolean isFromUncaught);
+    protected abstract void reportImpl(@NotNull String message, @NotNull Throwable throwable, boolean isFromUncaught);
 
     @Override
     public final void report(@NotNull final String message, @NotNull final Throwable throwable) {
@@ -44,10 +43,9 @@ public abstract class FatalErrorReporterBase implements FatalErrorReporter {
     }
 
     @Override
-    public final void reportAsync(@NotNull final String message,
-        @NotNull final Throwable throwable) {
-        new Thread(() -> report(message, throwable),
-            Thread.currentThread().getName() + "-AsyncFatalErrorSignaller").start();
+    public final void reportAsync(@NotNull final String message, @NotNull final Throwable throwable) {
+        new Thread(() -> report(message, throwable), Thread.currentThread().getName() + "-AsyncFatalErrorSignaller")
+                .start();
     }
 
     @Override
@@ -56,8 +54,7 @@ public abstract class FatalErrorReporterBase implements FatalErrorReporter {
     }
 
     @Override
-    public final void uncaughtException(@NotNull final Thread thread,
-        @NotNull final Throwable throwable) {
+    public final void uncaughtException(@NotNull final Thread thread, @NotNull final Throwable throwable) {
         final String message = "Uncaught exception in thread " + thread.getName();
         interceptors.forEach(interceptor -> interceptor.intercept(message, throwable));
         reportImpl(message, throwable, true);

@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.table_pb.ContainsCondition",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.table_pb.ContainsCondition",
+        namespace = JsPackage.GLOBAL)
 public class ContainsCondition {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -108,12 +108,12 @@ public class ContainsCondition {
     public static native ContainsCondition deserializeBinary(Uint8Array bytes);
 
     public static native ContainsCondition deserializeBinaryFromReader(
-        ContainsCondition message, Object reader);
+            ContainsCondition message, Object reader);
 
     public static native void serializeBinaryToWriter(ContainsCondition message, Object writer);
 
     public static native ContainsCondition.ToObjectReturnType toObject(
-        boolean includeInstance, ContainsCondition msg);
+            boolean includeInstance, ContainsCondition msg);
 
     public native void clearReference();
 

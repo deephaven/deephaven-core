@@ -26,8 +26,7 @@ public class FormatBitSet {
                     logOutput.append(runStart);
                     int runEnd;
                     // noinspection StatementWithEmptyBody
-                    for (runEnd = runStart + 1; runEnd < bitSet.size()
-                        && bitSet.get(runEnd); runEnd++);
+                    for (runEnd = runStart + 1; runEnd < bitSet.size() && bitSet.get(runEnd); runEnd++);
                     if (runEnd > runStart + 1) {
                         logOutput.append("-").append(runEnd - 1);
                     }

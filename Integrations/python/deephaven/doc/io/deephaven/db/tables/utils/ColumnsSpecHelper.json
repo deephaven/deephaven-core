@@ -6,6 +6,6 @@
   "getDbTypes": ":return: java.lang.Class[]"
  },
  "path": "io.deephaven.db.tables.utils.ColumnsSpecHelper",
- "text": "Helper class to support easier to read in-line column definitions.  You can obtain the array arguments to feed\n the buildWriter methods in TableWriterFactory.",
+ "text": "Helper class to support easier to read in-line column definitions. You can obtain the array arguments to feed the\n buildWriter methods in TableWriterFactory.",
  "typeName": "class"
 }

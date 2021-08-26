@@ -87,8 +87,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     }
 
     public void initializeGlobalScriptSession() {
-        globalSessionProvider
-            .initializeGlobalScriptSession(scriptTypes.get(WORKER_CONSOLE_TYPE).get());
+        globalSessionProvider.initializeGlobalScriptSession(scriptTypes.get(WORKER_CONSOLE_TYPE).get());
     }
 
     @Override
@@ -98,15 +97,14 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             // TODO (#702): initially show all console types; the first console determines the global console type
             // thereafter
             responseObserver.onNext(GetConsoleTypesResponse.newBuilder()
-                .addConsoleTypes(WORKER_CONSOLE_TYPE)
-                .build());
+                    .addConsoleTypes(WORKER_CONSOLE_TYPE)
+                    .build());
             responseObserver.onCompleted();
         });
     }
 
     @Override
-    public void startConsole(StartConsoleRequest request,
-        StreamObserver<StartConsoleResponse> responseObserver) {
+    public void startConsole(StartConsoleRequest request, StreamObserver<StartConsoleResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             SessionState session = sessionService.getCurrentSession();
             // TODO auth hook, ensure the user can do this (owner of worker or admin)
@@ -141,15 +139,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
                         return scriptSession;
                     });
-
-                    return scriptSession;
-                });
         });
     }
 
     @Override
-    public void subscribeToLogs(LogSubscriptionRequest request,
-        StreamObserver<LogSubscriptionData> responseObserver) {
+    public void subscribeToLogs(LogSubscriptionRequest request, StreamObserver<LogSubscriptionData> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             SessionState session = sessionService.getCurrentSession();
             // if that didn't fail, we at least are authenticated, but possibly not authorized
@@ -161,8 +155,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     }
 
     @Override
-    public void executeCommand(ExecuteCommandRequest request,
-        StreamObserver<ExecuteCommandResponse> responseObserver) {
+    public void executeCommand(ExecuteCommandRequest request, StreamObserver<ExecuteCommandResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
 
@@ -193,15 +186,12 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         });
     }
 
-    private static VariableDefinition makeVariableDefinition(
-        Map.Entry<String, ExportedObjectType> entry) {
-        return VariableDefinition.newBuilder().setName(entry.getKey())
-            .setType(entry.getValue().name()).build();
+    private static VariableDefinition makeVariableDefinition(Map.Entry<String, ExportedObjectType> entry) {
+        return VariableDefinition.newBuilder().setName(entry.getKey()).setType(entry.getValue().name()).build();
     }
 
     @Override
-    public void cancelCommand(CancelCommandRequest request,
-        StreamObserver<CancelCommandResponse> responseObserver) {
+    public void cancelCommand(CancelCommandRequest request, StreamObserver<CancelCommandResponse> responseObserver) {
         // TODO not yet implemented, need a way to handle stopping a command in a consistent way
         super.cancelCommand(request, responseObserver);
     }
@@ -211,8 +201,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             StreamObserver<BindTableToVariableResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
-            final SessionState.ExportObject<Table> exportedTable =
-                ticketRouter.resolve(session, request.getTableId());
+            final SessionState.ExportObject<Table> exportedTable = ticketRouter.resolve(session, request.getTableId());
             final SessionState.ExportObject<ScriptSession> exportedConsole;
 
             ExportBuilder<?> exportBuilder = session.nonExport()
@@ -239,11 +228,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         });
     }
 
-    // TODO will be moved to a more general place, serve as a general "Fetch from scope" and this
-    // will be deprecated
+    // TODO will be moved to a more general place, serve as a general "Fetch from scope" and this will be deprecated
     @Override
-    public void fetchTable(FetchTableRequest request,
-        StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void fetchTable(FetchTableRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
 
@@ -404,13 +391,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     }
 
     @Override
-    public void fetchFigure(FetchFigureRequest request,
-        StreamObserver<FetchFigureResponse> responseObserver) {
+    public void fetchFigure(FetchFigureRequest request, StreamObserver<FetchFigureResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
 
-            SessionState.ExportObject<ScriptSession> exportedConsole =
-                session.getExport(request.getConsoleId());
+            SessionState.ExportObject<ScriptSession> exportedConsole = session.getExport(request.getConsoleId());
 
             session.nonExport()
                     .require(exportedConsole)
@@ -447,15 +432,14 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         private boolean isClosed = false;
 
         public LogBufferStreamAdapter(
-            final SessionState session,
-            final LogSubscriptionRequest request,
-            final StreamObserver<LogSubscriptionData> responseObserver) {
+                final SessionState session,
+                final LogSubscriptionRequest request,
+                final StreamObserver<LogSubscriptionData> responseObserver) {
             this.session = session;
             this.request = request;
             this.responseObserver = responseObserver;
             session.addOnCloseCallback(this);
-            ((ServerCallStreamObserver<LogSubscriptionData>) responseObserver)
-                .setOnCancelHandler(this::tryClose);
+            ((ServerCallStreamObserver<LogSubscriptionData>) responseObserver).setOnCancelHandler(this::tryClose);
         }
 
         @Override
@@ -480,8 +464,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         @Override
         public void record(LogBufferRecord record) {
             // only pass levels the client wants
-            if (request.getLevelsCount() != 0
-                && !request.getLevelsList().contains(record.getLevel().getName())) {
+            if (request.getLevelsCount() != 0 && !request.getLevelsList().contains(record.getLevel().getName())) {
                 return;
             }
 

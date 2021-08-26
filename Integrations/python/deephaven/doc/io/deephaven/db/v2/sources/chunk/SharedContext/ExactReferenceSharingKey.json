@@ -5,6 +5,6 @@
   "hashCode": ":return: int"
  },
  "path": "io.deephaven.db.v2.sources.chunk.SharedContext.ExactReferenceSharingKey",
- "text": "Abstract SharedContext.Key implementation for use when a simple Object reference coupled with sub-class identity\n can determine equality for sharing purposes.",
+ "text": "Abstract SharedContext.Key implementation for use when a simple Object reference coupled with sub-class identity can\n determine equality for sharing purposes.",
  "typeName": "class"
 }

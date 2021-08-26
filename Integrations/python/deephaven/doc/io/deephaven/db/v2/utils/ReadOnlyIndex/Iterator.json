@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.utils.ReadOnlyIndex$Iterator",
  "methods": {
-  "forEachLong": "Starting from the current next iterator position,\n provide each value to the consumer,\n until either the iterator is exhausted or a call to lc.accept returns false;\n ie, if the consumer returns false for a value, stops after that value (does not provide any\n values after that).\n\n:param lc: (io.deephaven.db.v2.utils.LongAbortableConsumer) - the consumer.\n:return: (boolean) false if the consumer ever returned false, true otherwise."
+  "forEachLong": "Starting from the current next iterator position, provide each value to the consumer, until either the\n iterator is exhausted or a call to lc.accept returns false; ie, if the consumer returns false for a value,\n stops after that value (does not provide any values after that).\n\n:param lc: (io.deephaven.db.v2.utils.LongAbortableConsumer) - the consumer.\n:return: (boolean) false if the consumer ever returned false, true otherwise."
  },
  "path": "io.deephaven.db.v2.utils.ReadOnlyIndex.Iterator",
  "typeName": "interface"

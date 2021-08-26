@@ -19,48 +19,45 @@ import java.nio.channels.SeekableByteChannel;
 
 /**
  * <p>
- * A representation of an open file. Designed to ensure predictable cleanup for open file
- * descriptors.
+ * A representation of an open file. Designed to ensure predictable cleanup for open file descriptors.
  *
  * <p>
- * This class is basically just a wrapper around a {@link FileChannel} that only exposes some of its
- * methods. It serves two purposes:
+ * This class is basically just a wrapper around a {@link FileChannel} that only exposes some of its methods. It serves
+ * two purposes:
  * <ol>
- * <li>It creates an extra layer of indirection between the FileChannel and application code, to
- * allow for reachability-sensitive cleanup.</li>
- * <li>It's a convenient place to add instrumentation and/or modified implementations when
- * necessary.</li>
+ * <li>It creates an extra layer of indirection between the FileChannel and application code, to allow for
+ * reachability-sensitive cleanup.</li>
+ * <li>It's a convenient place to add instrumentation and/or modified implementations when necessary.</li>
  * </ol>
  *
  * <p>
- * The current implementation adds a post-close procedure for integration with caches/trackers, and
- * stats for all operations.
+ * The current implementation adds a post-close procedure for integration with caches/trackers, and stats for all
+ * operations.
  *
  * <p>
- * Note that positional methods, e.g. {@link #position()}, {@link #position(long)},
- * {@link #read(ByteBuffer)}, and {@link #write(ByteBuffer)} may require external synchronization if
- * used concurrently by more than one thread.
+ * Note that positional methods, e.g. {@link #position()}, {@link #position(long)}, {@link #read(ByteBuffer)}, and
+ * {@link #write(ByteBuffer)} may require external synchronization if used concurrently by more than one thread.
  */
 public final class FileHandle implements SeekableByteChannel {
 
     private static final Value SIZE_DURATION_NANOS =
-        Stats.makeItem("FileHandle", "sizeDurationNanos", State.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "sizeDurationNanos", State.FACTORY).getValue();
     private static final Value GET_POSITION_DURATION_NANOS =
-        Stats.makeItem("FileHandle", "getPositionDurationNanos", State.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "getPositionDurationNanos", State.FACTORY).getValue();
     private static final Value SET_POSITION_DURATION_NANOS =
-        Stats.makeItem("FileHandle", "setPositionDurationNanos", State.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "setPositionDurationNanos", State.FACTORY).getValue();
     private static final Value READ_DURATION_NANOS =
-        Stats.makeItem("FileHandle", "readDurationNanos", State.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "readDurationNanos", State.FACTORY).getValue();
     private static final Value READ_SIZE_BYTES =
-        Stats.makeItem("FileHandle", "readSizeBytes", State.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "readSizeBytes", State.FACTORY).getValue();
     private static final Value WRITE_DURATION_NANOS =
-        Stats.makeItem("FileHandle", "writeDurationNanos", State.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "writeDurationNanos", State.FACTORY).getValue();
     private static final Value WRITE_SIZE_BYTES =
-        Stats.makeItem("FileHandle", "writeSizeBytes", State.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "writeSizeBytes", State.FACTORY).getValue();
     private static final Value TRUNCATE_DURATION_NANOS =
-        Stats.makeItem("FileHandle", "truncateDurationNanos", State.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "truncateDurationNanos", State.FACTORY).getValue();
     private static final Value FORCE_DURATION_NANOS =
-        Stats.makeItem("FileHandle", "forceDurationNanos", State.FACTORY).getValue();
+            Stats.makeItem("FileHandle", "forceDurationNanos", State.FACTORY).getValue();
 
     private final FileChannel fileChannel;
     private final Procedure.Nullary postCloseProcedure;
@@ -73,11 +70,10 @@ public final class FileHandle implements SeekableByteChannel {
      * {@link ClosedChannelException}s that trigger {@code postCloseProcedure} invocation.
      *
      * @param fileChannel The {@link FileChannel}
-     * @param postCloseProcedure A procedure to invoke if its detected that the {@link FileChannel}
-     *        is closed - must be idempotent
+     * @param postCloseProcedure A procedure to invoke if its detected that the {@link FileChannel} is closed - must be
+     *        idempotent
      */
-    public FileHandle(@NotNull final FileChannel fileChannel,
-        @NotNull final Procedure.Nullary postCloseProcedure) {
+    public FileHandle(@NotNull final FileChannel fileChannel, @NotNull final Procedure.Nullary postCloseProcedure) {
         this.fileChannel = Require.neqNull(fileChannel, "fileChannel");
         this.postCloseProcedure = Require.neqNull(postCloseProcedure, "postCloseProcedure");
     }
@@ -156,8 +152,7 @@ public final class FileHandle implements SeekableByteChannel {
 
     /**
      * <p>
-     * Attempt to read {@code destination.remaining()} bytes, starting from {@code position}
-     * (0-indexed) in the file.
+     * Attempt to read {@code destination.remaining()} bytes, starting from {@code position} (0-indexed) in the file.
      * <p>
      * See {@link FileChannel#read(ByteBuffer, long)}.
      *
@@ -165,8 +160,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @param position The position in the file to start reading from
      * @return The number of bytes read, or -1 if end of file is reached
      */
-    public final int read(@NotNull final ByteBuffer destination, final long position)
-        throws IOException {
+    public final int read(@NotNull final ByteBuffer destination, final long position) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             final int sizeBytes = destination.remaining();
@@ -184,8 +178,8 @@ public final class FileHandle implements SeekableByteChannel {
 
     /**
      * <p>
-     * Attempt to read {@code destination.remaining()} bytes, beginning at the handle's current
-     * position and updating that position by the number of bytes read.
+     * Attempt to read {@code destination.remaining()} bytes, beginning at the handle's current position and updating
+     * that position by the number of bytes read.
      * <p>
      * See {@link FileChannel#read(ByteBuffer)}.
      *
@@ -211,8 +205,7 @@ public final class FileHandle implements SeekableByteChannel {
 
     /**
      * <p>
-     * Attempt to write {@code source.remaining(){} bytes, starting from {@code position}
-     * (0-indexed) in the file.
+     * Attempt to write {@code source.remaining(){} bytes, starting from {@code position} (0-indexed) in the file.
      * <p>
      * See {@link FileChannel#write(ByteBuffer, long)}.
      *
@@ -221,8 +214,7 @@ public final class FileHandle implements SeekableByteChannel {
      * @param position The position in the file to start writing at
      * @return The number of bytes written
      */
-    public final int write(@NotNull final ByteBuffer source, final long position)
-        throws IOException {
+    public final int write(@NotNull final ByteBuffer source, final long position) throws IOException {
         try {
             final long startTimeNanos = System.nanoTime();
             final int sizeBytes = source.remaining();
@@ -240,10 +232,9 @@ public final class FileHandle implements SeekableByteChannel {
 
     /**
      * <p>
-     * Attempt to write {@code source.remaining()} bytes to this file handle, beginning at the
-     * handle's current position (which is first advanced to the end of the file, if the underlying
-     * {@link FileChannel} was opened with {@link java.nio.file.StandardOpenOption#APPEND}), and
-     * updating that position by the number of bytes written.
+     * Attempt to write {@code source.remaining()} bytes to this file handle, beginning at the handle's current position
+     * (which is first advanced to the end of the file, if the underlying {@link FileChannel} was opened with
+     * {@link java.nio.file.StandardOpenOption#APPEND}), and updating that position by the number of bytes written.
      * <p>
      * See {@link FileChannel#write(ByteBuffer)}.
      *

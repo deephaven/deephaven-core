@@ -5,9 +5,8 @@
 package io.deephaven.db.v2.by;
 
 /**
- * If you've got a table that is grow only, this will do a min/max calculation without requiring any
- * state. The limitation is that if you modify or remove a row it will throw an
- * UnsupportedOperationException.
+ * If you've got a table that is grow only, this will do a min/max calculation without requiring any state. The
+ * limitation is that if you modify or remove a row it will throw an UnsupportedOperationException.
  */
 public class AddOnlyMinMaxByStateFactoryImpl extends MinMaxByStateFactoryImpl {
     public AddOnlyMinMaxByStateFactoryImpl(boolean minimum) {

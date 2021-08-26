@@ -3,8 +3,8 @@ package io.deephaven.db.v2.sources;
 import io.deephaven.db.tables.utils.DBDateTime;
 
 /**
- * Defaulted interfaces for various immutable {@link ColumnSource} types, in order to avoid having
- * defaults at higher levels in the class hierarchy.
+ * Defaulted interfaces for various immutable {@link ColumnSource} types, in order to avoid having defaults at higher
+ * levels in the class hierarchy.
  */
 public final class ImmutableColumnSourceGetDefaults {
 
@@ -12,14 +12,13 @@ public final class ImmutableColumnSourceGetDefaults {
      * Default interface for immutable Object {@link ColumnSource} implementations.
      */
     public interface ForObject<DATA_TYPE>
-        extends ColumnSourceGetDefaults.ForObject<DATA_TYPE>, ImmutableColumnSource<DATA_TYPE> {
+            extends ColumnSourceGetDefaults.ForObject<DATA_TYPE>, ImmutableColumnSource<DATA_TYPE> {
     }
 
     /**
      * Default interface for immutable Boolean {@link ColumnSource} implementations.
      */
-    public interface ForBoolean
-        extends ColumnSourceGetDefaults.ForBoolean, ImmutableColumnSource<Boolean> {
+    public interface ForBoolean extends ColumnSourceGetDefaults.ForBoolean, ImmutableColumnSource<Boolean> {
     }
 
     /**
@@ -31,22 +30,19 @@ public final class ImmutableColumnSourceGetDefaults {
     /**
      * Default interface for immutable char {@link ColumnSource} implementations.
      */
-    public interface ForChar
-        extends ColumnSourceGetDefaults.ForChar, ImmutableColumnSource<Character> {
+    public interface ForChar extends ColumnSourceGetDefaults.ForChar, ImmutableColumnSource<Character> {
     }
 
     /**
      * Default interface for immutable double {@link ColumnSource} implementations.
      */
-    public interface ForDouble
-        extends ColumnSourceGetDefaults.ForDouble, ImmutableColumnSource<Double> {
+    public interface ForDouble extends ColumnSourceGetDefaults.ForDouble, ImmutableColumnSource<Double> {
     }
 
     /**
      * Default interface for immutable float {@link ColumnSource} implementations.
      */
-    public interface ForFloat
-        extends ColumnSourceGetDefaults.ForFloat, ImmutableColumnSource<Float> {
+    public interface ForFloat extends ColumnSourceGetDefaults.ForFloat, ImmutableColumnSource<Float> {
     }
 
     /**
@@ -59,7 +55,7 @@ public final class ImmutableColumnSourceGetDefaults {
      * Default interface for immutable long-backed {@link ColumnSource} implementations.
      */
     public interface LongBacked<DATA_TYPE>
-        extends ColumnSourceGetDefaults.LongBacked<DATA_TYPE>, ImmutableColumnSource<DATA_TYPE> {
+            extends ColumnSourceGetDefaults.LongBacked<DATA_TYPE>, ImmutableColumnSource<DATA_TYPE> {
     }
 
     /**
@@ -72,13 +68,12 @@ public final class ImmutableColumnSourceGetDefaults {
      * Default interface for immutable {@link DBDateTime} {@link ColumnSource} implementations.
      */
     public interface ForLongAsDateTime
-        extends ColumnSourceGetDefaults.ForLongAsDateTime, ImmutableColumnSource<DBDateTime> {
+            extends ColumnSourceGetDefaults.ForLongAsDateTime, ImmutableColumnSource<DBDateTime> {
     }
 
     /**
      * Default interface for immutable short {@link ColumnSource} implementations.
      */
-    public interface ForShort
-        extends ColumnSourceGetDefaults.ForShort, ImmutableColumnSource<Short> {
+    public interface ForShort extends ColumnSourceGetDefaults.ForShort, ImmutableColumnSource<Short> {
     }
 }

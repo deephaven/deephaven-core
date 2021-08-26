@@ -14,6 +14,6 @@
   "getShortChunkPool": ":return: io.deephaven.db.v2.sources.chunk.util.pools.ShortChunkPool"
  },
  "path": "io.deephaven.db.v2.sources.chunk.util.pools.MultiChunkPool",
- "text": "Provides a set of per-type ChunkPools. Normally accessed via a ThreadLocal, to allow some threads\n to share a common pool and others to allocate their own.",
+ "text": "Provides a set of per-type ChunkPools. Normally accessed via a ThreadLocal, to allow some threads to\n share a common pool and others to allocate their own.",
  "typeName": "class"
 }

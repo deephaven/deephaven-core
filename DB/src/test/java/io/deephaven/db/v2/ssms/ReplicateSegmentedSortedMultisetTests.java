@@ -16,13 +16,13 @@ public class ReplicateSegmentedSortedMultisetTests {
         ReplicateSegmentedSortedMultiset.main(args);
 
         ReplicatePrimitiveCode.charToAllButBooleanAndFloats(TestCharSegmentedSortedMultiset.class,
-            ReplicatePrimitiveCode.TEST_SRC);
+                ReplicatePrimitiveCode.TEST_SRC);
         fixupFloatTests(ReplicatePrimitiveCode.charToFloat(TestCharSegmentedSortedMultiset.class,
-            ReplicatePrimitiveCode.TEST_SRC, null));
+                ReplicatePrimitiveCode.TEST_SRC, null));
         fixupFloatTests(ReplicatePrimitiveCode.charToDouble(TestCharSegmentedSortedMultiset.class,
-            ReplicatePrimitiveCode.TEST_SRC, null));
-        final String objectSsaTest = ReplicatePrimitiveCode
-            .charToObject(TestCharSegmentedSortedMultiset.class, ReplicatePrimitiveCode.TEST_SRC);
+                ReplicatePrimitiveCode.TEST_SRC, null));
+        final String objectSsaTest = ReplicatePrimitiveCode.charToObject(TestCharSegmentedSortedMultiset.class,
+                ReplicatePrimitiveCode.TEST_SRC);
         fixupObjectSsaTest(objectSsaTest);
     }
 
@@ -37,10 +37,10 @@ public class ReplicateSegmentedSortedMultisetTests {
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = globalReplacements(lines, "NULL_OBJECT", "null",
-            "new ObjectSegmentedSortedMultiset\\(nodeSize\\)",
-            "new ObjectSegmentedSortedMultiset(nodeSize, Object.class)",
-            "new ObjectSegmentedSortedMultiset\\(desc.nodeSize\\(\\)\\)",
-            "new ObjectSegmentedSortedMultiset(desc.nodeSize(), Object.class)");
+                "new ObjectSegmentedSortedMultiset\\(nodeSize\\)",
+                "new ObjectSegmentedSortedMultiset(nodeSize, Object.class)",
+                "new ObjectSegmentedSortedMultiset\\(desc.nodeSize\\(\\)\\)",
+                "new ObjectSegmentedSortedMultiset(desc.nodeSize(), Object.class)");
         lines = removeImport(lines, "\\s*import static.*QueryConstants.*;");
         lines = removeRegion(lines, "SortFixupSanityCheck");
         FileUtils.writeLines(objectFile, ReplicateUtilities.fixupChunkAttributes(lines));

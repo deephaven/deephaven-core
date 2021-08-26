@@ -21,7 +21,7 @@ public class ShiftedOrderedKeys extends OrderedKeysAsChunkImpl implements Ordere
 
     private ShiftedOrderedKeys(final OrderedKeys wrappedOK, final long shiftAmount) {
         Assert.assertion(!(wrappedOK instanceof ShiftedOrderedKeys),
-            "Wrapped Ordered Keys must not be a ShiftedOrderedKeys");
+                "Wrapped Ordered Keys must not be a ShiftedOrderedKeys");
         this.shiftAmount = shiftAmount;
         this.wrappedOK = wrappedOK;
     }
@@ -75,8 +75,7 @@ public class ShiftedOrderedKeys extends OrderedKeysAsChunkImpl implements Ordere
 
         @Override
         public OrderedKeys getNextOrderedKeysThrough(long maxKeyInclusive) {
-            reusableOK.reset(wrappedIt.getNextOrderedKeysThrough(maxKeyInclusive - shiftAmount),
-                shiftAmount);
+            reusableOK.reset(wrappedIt.getNextOrderedKeysThrough(maxKeyInclusive - shiftAmount), shiftAmount);
             return reusableOK;
         }
 
@@ -104,14 +103,13 @@ public class ShiftedOrderedKeys extends OrderedKeysAsChunkImpl implements Ordere
 
     @Override
     public OrderedKeys getOrderedKeysByPosition(long startPositionInclusive, long length) {
-        return wrap(wrappedOK.getOrderedKeysByPosition(startPositionInclusive, length),
-            shiftAmount);
+        return wrap(wrappedOK.getOrderedKeysByPosition(startPositionInclusive, length), shiftAmount);
     }
 
     @Override
     public OrderedKeys getOrderedKeysByKeyRange(long startKeyInclusive, long endKeyInclusive) {
-        return wrap(wrappedOK.getOrderedKeysByKeyRange(startKeyInclusive - shiftAmount,
-            endKeyInclusive - shiftAmount), shiftAmount);
+        return wrap(wrappedOK.getOrderedKeysByKeyRange(startKeyInclusive - shiftAmount, endKeyInclusive - shiftAmount),
+                shiftAmount);
     }
 
     @Override
@@ -163,8 +161,7 @@ public class ShiftedOrderedKeys extends OrderedKeysAsChunkImpl implements Ordere
 
     @Override
     public boolean forEachLongRange(LongRangeAbortableConsumer consumer) {
-        return wrappedOK
-            .forEachLongRange((s, e) -> consumer.accept(s + shiftAmount, e + shiftAmount));
+        return wrappedOK.forEachLongRange((s, e) -> consumer.accept(s + shiftAmount, e + shiftAmount));
     }
 
     @Override

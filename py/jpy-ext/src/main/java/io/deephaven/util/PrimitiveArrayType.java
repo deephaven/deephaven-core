@@ -41,14 +41,14 @@ public interface PrimitiveArrayType<T> extends ArrayType<T> {
 
     static List<PrimitiveArrayType<?>> types() {
         return Arrays.asList(
-            booleans(),
-            bytes(),
-            chars(),
-            shorts(),
-            ints(),
-            longs(),
-            floats(),
-            doubles());
+                booleans(),
+                bytes(),
+                chars(),
+                shorts(),
+                ints(),
+                longs(),
+                floats(),
+                doubles());
     }
 
     static Booleans booleans() {

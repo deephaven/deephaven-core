@@ -8,7 +8,7 @@
   "onFailureInternal": "Called when the source table produces an error\n\n:param originalException: (java.lang.Throwable) - the original throwable that caused this error\n:param sourceEntry: (io.deephaven.db.v2.utils.UpdatePerformanceTracker.Entry) - the performance tracker entry that was active when the error occurred",
   "onUpdate": "Process notification of table changes.\n\n:param added: (io.deephaven.db.v2.utils.Index) - rows added\n:param removed: (io.deephaven.db.v2.utils.Index) - rows removed\n:param modified: (io.deephaven.db.v2.utils.Index) - rows modified",
   "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: (io.deephaven.db.util.liveness.LivenessReferent) - The referent to add\n:return: (boolean) Whether the referent was in fact added",
-  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true.\n Otherwise, returns false rather than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
+  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true. Otherwise, returns false rather\n than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
  },
  "path": "io.deephaven.db.v2.InstrumentedListenerAdapter",
  "text": "This class is used for Listeners that represent \"leaf\" nodes in the update propagation tree.\n\n It provides an optional retention cache, to prevent listeners from being garbage collected.\n\n For creating internally ticking table nodes, instead use BaseTable.ListenerImpl",

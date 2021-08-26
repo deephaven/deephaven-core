@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.ExecuteCommandResponse",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.ExecuteCommandResponse",
+        namespace = JsPackage.GLOBAL)
 public class ExecuteCommandResponse {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -55,15 +55,15 @@ public class ExecuteCommandResponse {
 
         @JsOverlay
         default void setCreatedList(
-            ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType[] createdList) {
+                ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType[] createdList) {
             setCreatedList(
-                Js.<JsArray<ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType>>uncheckedCast(
-                    createdList));
+                    Js.<JsArray<ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType>>uncheckedCast(
+                            createdList));
         }
 
         @JsProperty
         void setCreatedList(
-            JsArray<ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType> createdList);
+                JsArray<ExecuteCommandResponse.ToObjectReturnType.CreatedListFieldType> createdList);
 
         @JsProperty
         void setErrorMessage(String errorMessage);
@@ -126,15 +126,15 @@ public class ExecuteCommandResponse {
 
         @JsOverlay
         default void setCreatedList(
-            ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType[] createdList) {
+                ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType[] createdList) {
             setCreatedList(
-                Js.<JsArray<ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType>>uncheckedCast(
-                    createdList));
+                    Js.<JsArray<ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType>>uncheckedCast(
+                            createdList));
         }
 
         @JsProperty
         void setCreatedList(
-            JsArray<ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType> createdList);
+                JsArray<ExecuteCommandResponse.ToObjectReturnType0.CreatedListFieldType> createdList);
 
         @JsProperty
         void setErrorMessage(String errorMessage);
@@ -159,13 +159,12 @@ public class ExecuteCommandResponse {
     public static native ExecuteCommandResponse deserializeBinary(Uint8Array bytes);
 
     public static native ExecuteCommandResponse deserializeBinaryFromReader(
-        ExecuteCommandResponse message, Object reader);
+            ExecuteCommandResponse message, Object reader);
 
-    public static native void serializeBinaryToWriter(ExecuteCommandResponse message,
-        Object writer);
+    public static native void serializeBinaryToWriter(ExecuteCommandResponse message, Object writer);
 
     public static native ExecuteCommandResponse.ToObjectReturnType toObject(
-        boolean includeInstance, ExecuteCommandResponse msg);
+            boolean includeInstance, ExecuteCommandResponse msg);
 
     public native VariableDefinition addCreated();
 

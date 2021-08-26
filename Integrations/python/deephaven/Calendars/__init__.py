@@ -71,7 +71,7 @@ def calendar(*args):
       :return: (io.deephaven.util.calendar.BusinessCalendar) business calendar
       
     *Overload 2*  
-      :return: (io.deephaven.util.calendar.BusinessCalendar) default business calendar.  The deault is specified by the Calendar.default property.
+      :return: (io.deephaven.util.calendar.BusinessCalendar) default business calendar. The deault is specified by the Calendar.default property.
     """
     
     return _java_type_.calendar(*args)

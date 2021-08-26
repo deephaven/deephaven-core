@@ -2,7 +2,7 @@
  "className": "io.deephaven.util.calendar.Calendars",
  "methods": {
   "addCalendarFromFile": "**Incompatible overloads text - text from the first overload:**\n\nAdds a calendar to the collection from the file\n\n*Overload 1*  \n  :param filePath: (java.lang.String) - must be xml format\n  \n*Overload 2*  \n  :param file: (java.io.File) - must be xml format",
-  "calendar": "Returns a business calendar.\n\n*Overload 1*  \n  :param name: (java.lang.String) - name of the calendar\n  :return: (io.deephaven.util.calendar.BusinessCalendar) business calendar\n  \n*Overload 2*  \n  :return: (io.deephaven.util.calendar.BusinessCalendar) default business calendar.  The deault is specified by the Calendar.default property.",
+  "calendar": "Returns a business calendar.\n\n*Overload 1*  \n  :param name: (java.lang.String) - name of the calendar\n  :return: (io.deephaven.util.calendar.BusinessCalendar) business calendar\n  \n*Overload 2*  \n  :return: (io.deephaven.util.calendar.BusinessCalendar) default business calendar. The deault is specified by the Calendar.default property.",
   "calendarNames": "Returns the names of all available calendars\n\n:return: (java.lang.String[]) names of all available calendars",
   "containsKey": ":param key: java.lang.Object\n:return: boolean",
   "containsValue": ":param value: java.lang.Object\n:return: boolean",

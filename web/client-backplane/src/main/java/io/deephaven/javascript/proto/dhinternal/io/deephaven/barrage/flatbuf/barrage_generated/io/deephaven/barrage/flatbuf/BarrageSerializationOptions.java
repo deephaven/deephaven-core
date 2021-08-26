@@ -6,31 +6,31 @@ import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.barrage.flatbuf.Barrage_generated.io.deephaven.barrage.flatbuf.BarrageSerializationOptions",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.barrage.flatbuf.Barrage_generated.io.deephaven.barrage.flatbuf.BarrageSerializationOptions",
+        namespace = JsPackage.GLOBAL)
 public class BarrageSerializationOptions {
     public static native void addColumnConversionMode(
-        Builder builder, int columnConversionMode);
+            Builder builder, int columnConversionMode);
 
     public static native void addUseDeephavenNulls(Builder builder, boolean useDeephavenNulls);
 
     public static native double createBarrageSerializationOptions(
-        Builder builder, int columnConversionMode, boolean useDeephavenNulls);
+            Builder builder, int columnConversionMode, boolean useDeephavenNulls);
 
     public static native double endBarrageSerializationOptions(Builder builder);
 
     public static native BarrageSerializationOptions getRootAsBarrageSerializationOptions(
-        ByteBuffer bb, BarrageSerializationOptions obj);
+            ByteBuffer bb, BarrageSerializationOptions obj);
 
     public static native BarrageSerializationOptions getRootAsBarrageSerializationOptions(
-        ByteBuffer bb);
+            ByteBuffer bb);
 
     public static native BarrageSerializationOptions getSizePrefixedRootAsBarrageSerializationOptions(
-        ByteBuffer bb, BarrageSerializationOptions obj);
+            ByteBuffer bb, BarrageSerializationOptions obj);
 
     public static native BarrageSerializationOptions getSizePrefixedRootAsBarrageSerializationOptions(
-        ByteBuffer bb);
+            ByteBuffer bb);
 
     public static native void startBarrageSerializationOptions(Builder builder);
 

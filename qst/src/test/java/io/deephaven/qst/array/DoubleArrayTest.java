@@ -14,7 +14,7 @@ public class DoubleArrayTest {
     @Test
     void rawInRawOut() {
         assertThat(DoubleArray.ofUnsafe(1d, Util.NULL_DOUBLE, 3d).values()).containsExactly(1d,
-            Util.NULL_DOUBLE, 3d);
+                Util.NULL_DOUBLE, 3d);
     }
 
 }

@@ -25,12 +25,11 @@ public class FreezeByAggregationFactory implements AggregationContextFactory {
 
     @Override
     public AggregationContext makeAggregationContext(@NotNull final Table table,
-        @NotNull final String... groupByColumns) {
+            @NotNull final String... groupByColumns) {
         return getAllColumnOperators(table, groupByColumns);
     }
 
-    private static AggregationContext getAllColumnOperators(Table withView,
-        String[] groupByNameArray) {
+    private static AggregationContext getAllColumnOperators(Table withView, String[] groupByNameArray) {
         final Set<String> groupByNames = new HashSet<>(Arrays.asList(groupByNameArray));
         final int operatorCount = withView.getColumnSourceMap().size() - groupByNames.size() + 1;
 
@@ -49,11 +48,11 @@ public class FreezeByAggregationFactory implements AggregationContextFactory {
 
             final Class<?> type = columnSource.getType();
 
-            // For DBDateTime columns, the in-memory source uses longs internally, and all supported
-            // aggregations (i.e. min and max) work correctly against longs.
-            final ColumnSource inputSource = columnSource.getType() == DBDateTime.class
-                ? ReinterpretUtilities.dateTimeToLongSource(columnSource)
-                : columnSource;
+            // For DBDateTime columns, the in-memory source uses longs internally, and all supported aggregations (i.e.
+            // min and max) work correctly against longs.
+            final ColumnSource inputSource =
+                    columnSource.getType() == DBDateTime.class ? ReinterpretUtilities.dateTimeToLongSource(columnSource)
+                            : columnSource;
 
             // noinspection unchecked
             inputColumns.add(inputSource);
@@ -68,10 +67,11 @@ public class FreezeByAggregationFactory implements AggregationContextFactory {
         }
 
         // noinspection unchecked
-        return new AggregationContext(operators.toArray(
-            IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY),
-            inputNameArray,
-            inputColumns.toArray(ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY));
+        return new AggregationContext(
+                operators.toArray(
+                        IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY),
+                inputNameArray,
+                inputColumns.toArray(ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY));
     }
 
     @Override

@@ -27,13 +27,13 @@ public class JpyConfigLoaderTest {
         JpyConfig config = load("jpy-config-defaults.prop");
 
         JpyConfig jpyConfig = new JpyConfig(
-            DEFAULT_PROGRAM_NAME,
-            DEFAULT_PYTHON_HOME,
-            DEFAULT_PYTHON_LIB,
-            DEFAULT_JPY_LIB,
-            DEFAULT_JDL_LIB,
-            DEFAULT_EXTRA_PATHS,
-            DEFAULT_FLAGS);
+                DEFAULT_PROGRAM_NAME,
+                DEFAULT_PYTHON_HOME,
+                DEFAULT_PYTHON_LIB,
+                DEFAULT_JPY_LIB,
+                DEFAULT_JDL_LIB,
+                DEFAULT_EXTRA_PATHS,
+                DEFAULT_FLAGS);
 
         Assert.assertEquals(jpyConfig, config);
     }
@@ -53,13 +53,13 @@ public class JpyConfigLoaderTest {
         JpyConfig config = load("jpy-config-null-jdlLib.prop");
 
         JpyConfig jpyConfig = new JpyConfig(
-            DEFAULT_PROGRAM_NAME,
-            DEFAULT_PYTHON_HOME,
-            DEFAULT_PYTHON_LIB,
-            DEFAULT_JPY_LIB,
-            null,
-            DEFAULT_EXTRA_PATHS,
-            DEFAULT_FLAGS);
+                DEFAULT_PROGRAM_NAME,
+                DEFAULT_PYTHON_HOME,
+                DEFAULT_PYTHON_LIB,
+                DEFAULT_JPY_LIB,
+                null,
+                DEFAULT_EXTRA_PATHS,
+                DEFAULT_FLAGS);
 
         Assert.assertEquals(jpyConfig, config);
     }
@@ -69,13 +69,13 @@ public class JpyConfigLoaderTest {
         JpyConfig config = load("jpy-config-null-jpyLib.prop");
 
         JpyConfig jpyConfig = new JpyConfig(
-            DEFAULT_PROGRAM_NAME,
-            DEFAULT_PYTHON_HOME,
-            DEFAULT_PYTHON_LIB,
-            null,
-            DEFAULT_JDL_LIB,
-            DEFAULT_EXTRA_PATHS,
-            DEFAULT_FLAGS);
+                DEFAULT_PROGRAM_NAME,
+                DEFAULT_PYTHON_HOME,
+                DEFAULT_PYTHON_LIB,
+                null,
+                DEFAULT_JDL_LIB,
+                DEFAULT_EXTRA_PATHS,
+                DEFAULT_FLAGS);
 
         Assert.assertEquals(jpyConfig, config);
     }
@@ -85,13 +85,13 @@ public class JpyConfigLoaderTest {
         JpyConfig config = load("jpy-config-null-pythonLib.prop");
 
         JpyConfig jpyConfig = new JpyConfig(
-            DEFAULT_PROGRAM_NAME,
-            DEFAULT_PYTHON_HOME,
-            null,
-            DEFAULT_JPY_LIB,
-            DEFAULT_JDL_LIB,
-            DEFAULT_EXTRA_PATHS,
-            DEFAULT_FLAGS);
+                DEFAULT_PROGRAM_NAME,
+                DEFAULT_PYTHON_HOME,
+                null,
+                DEFAULT_JPY_LIB,
+                DEFAULT_JDL_LIB,
+                DEFAULT_EXTRA_PATHS,
+                DEFAULT_FLAGS);
 
         Assert.assertEquals(jpyConfig, config);
     }
@@ -101,13 +101,13 @@ public class JpyConfigLoaderTest {
         JpyConfig config = load("jpy-config-null-pythonHome.prop");
 
         JpyConfig jpyConfig = new JpyConfig(
-            DEFAULT_PROGRAM_NAME,
-            null,
-            DEFAULT_PYTHON_LIB,
-            DEFAULT_JPY_LIB,
-            DEFAULT_JDL_LIB,
-            DEFAULT_EXTRA_PATHS,
-            DEFAULT_FLAGS);
+                DEFAULT_PROGRAM_NAME,
+                null,
+                DEFAULT_PYTHON_LIB,
+                DEFAULT_JPY_LIB,
+                DEFAULT_JDL_LIB,
+                DEFAULT_EXTRA_PATHS,
+                DEFAULT_FLAGS);
 
         Assert.assertEquals(jpyConfig, config);
     }
@@ -117,13 +117,13 @@ public class JpyConfigLoaderTest {
         JpyConfig config = load("jpy-config-null-programName.prop");
 
         JpyConfig jpyConfig = new JpyConfig(
-            null,
-            DEFAULT_PYTHON_HOME,
-            DEFAULT_PYTHON_LIB,
-            DEFAULT_JPY_LIB,
-            DEFAULT_JDL_LIB,
-            DEFAULT_EXTRA_PATHS,
-            DEFAULT_FLAGS);
+                null,
+                DEFAULT_PYTHON_HOME,
+                DEFAULT_PYTHON_LIB,
+                DEFAULT_JPY_LIB,
+                DEFAULT_JDL_LIB,
+                DEFAULT_EXTRA_PATHS,
+                DEFAULT_FLAGS);
 
         Assert.assertEquals(jpyConfig, config);
     }
@@ -133,13 +133,13 @@ public class JpyConfigLoaderTest {
         JpyConfig config = load("jpy-config-extra-paths.prop");
 
         JpyConfig jpyConfig = new JpyConfig(
-            DEFAULT_PROGRAM_NAME,
-            DEFAULT_PYTHON_HOME,
-            DEFAULT_PYTHON_LIB,
-            DEFAULT_JPY_LIB,
-            DEFAULT_JDL_LIB,
-            Arrays.asList(Paths.get("/e1"), Paths.get("/e2"), Paths.get("/e3")),
-            DEFAULT_FLAGS);
+                DEFAULT_PROGRAM_NAME,
+                DEFAULT_PYTHON_HOME,
+                DEFAULT_PYTHON_LIB,
+                DEFAULT_JPY_LIB,
+                DEFAULT_JDL_LIB,
+                Arrays.asList(Paths.get("/e1"), Paths.get("/e2"), Paths.get("/e3")),
+                DEFAULT_FLAGS);
 
         Assert.assertEquals(jpyConfig, config);
     }
@@ -149,13 +149,13 @@ public class JpyConfigLoaderTest {
         JpyConfig config = load("jpy-config-flags.prop");
 
         JpyConfig jpyConfig = new JpyConfig(
-            DEFAULT_PROGRAM_NAME,
-            DEFAULT_PYTHON_HOME,
-            DEFAULT_PYTHON_LIB,
-            DEFAULT_JPY_LIB,
-            DEFAULT_JDL_LIB,
-            DEFAULT_EXTRA_PATHS,
-            EnumSet.of(Flag.MEM, Flag.EXEC, Flag.JVM));
+                DEFAULT_PROGRAM_NAME,
+                DEFAULT_PYTHON_HOME,
+                DEFAULT_PYTHON_LIB,
+                DEFAULT_JPY_LIB,
+                DEFAULT_JDL_LIB,
+                DEFAULT_EXTRA_PATHS,
+                EnumSet.of(Flag.MEM, Flag.EXEC, Flag.JVM));
 
         Assert.assertEquals(jpyConfig, config);
     }
@@ -211,17 +211,15 @@ public class JpyConfigLoaderTest {
     }
 
     private static JpyConfig load(String resource) {
-        // a bit hacky that we can't just pass resource as is, but we aren't allowed to pass our own
-        // class
+        // a bit hacky that we can't just pass resource as is, but we aren't allowed to pass our own class
         // context for configuration loading...
         Configuration configuration = loadConfig(
-            String.format("io/deephaven/db/util/jpy/%s", resource));
+                String.format("io/deephaven/db/util/jpy/%s", resource));
         return new JpyConfigLoader(configuration).asJpyConfig();
     }
 
     private static Configuration loadConfig(String configFile) {
-        // todo: there should be a MUCH easier way to do this - very ugly b/c dependent on system
-        // props,
+        // todo: there should be a MUCH easier way to do this - very ugly b/c dependent on system props,
         // and Configuration not an interface...
         String existingValue = System.getProperty("Configuration.rootFile");
         System.setProperty("Configuration.rootFile", configFile);

@@ -6,8 +6,8 @@
   "getScriptBodyByDisplayPath": "Get the specified script at the specified state.\n\n*Overload 1*  \n  :param displayPath: (java.lang.String) - The display path to load a script for.\n  :return: (java.lang.String) The body of the requested script.\n  \n*Overload 2*  \n  :param displayPath: (java.lang.String) - The display path to the script.\n  :param state: (io.deephaven.db.util.scripts.ScriptPathLoaderState) - The state of the loader.\n  :return: (java.lang.String) The script at displayPath at the specified state.",
   "getScriptBodyByRelativePath": "Get the specified script at the specified state.\n\n*Overload 1*  \n  :param relativePath: (java.lang.String) - The relative path to load a script for.\n  :return: (java.lang.String) The body of the requested script.\n  \n*Overload 2*  \n  :param relativePath: (java.lang.String) - The relative path to the script.\n  :param state: (io.deephaven.db.util.scripts.ScriptPathLoaderState) - The state of the loader.\n  :return: (java.lang.String) The script at relativePath at the specified state.",
   "getState": "Get the current state of this ScriptPathLoader.\n\n:return: (io.deephaven.db.util.scripts.ScriptPathLoaderState) A ScriptPathLoaderState or null if this loader is stateless.",
-  "lock": "Acquire a read lock.  Use before invoking any of the get* methods, and hold for as long as consistency is\n required for this loader.",
-  "refresh": "Refresh the loader internally.  Will respect existing read locks.",
+  "lock": "Acquire a read lock. Use before invoking any of the get* methods, and hold for as long as consistency is required\n for this loader.",
+  "refresh": "Refresh the loader internally. Will respect existing read locks.",
   "unlock": "Release a previously acquired read lock."
  },
  "path": "io.deephaven.db.util.scripts.ScriptPathLoader",

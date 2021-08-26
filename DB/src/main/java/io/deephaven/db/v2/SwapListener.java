@@ -10,24 +10,21 @@ public class SwapListener extends SwapListenerBase<Listener> implements Listener
     }
 
     @Override
-    public synchronized void onUpdate(final Index added, final Index removed,
-        final Index modified) {
+    public synchronized void onUpdate(final Index added, final Index removed, final Index modified) {
         // not a direct listener
         throw new UnsupportedOperationException();
     }
 
     @Override
     public synchronized NotificationQueue.IndexUpdateNotification getNotification(
-        final Index added, final Index removed, final Index modified) {
+            final Index added, final Index removed, final Index modified) {
         return doGetNotification(() -> eventualListener.getNotification(added, removed, modified));
     }
 
     @Override
     public void setInitialImage(Index initialImage) {
-        // we should never use an initialImage, because the swapListener listens to the table before
-        // we are confident
-        // that we'll get a good snapshot, and if we get a bad snapshot, it will never get updated
-        // appropriately
+        // we should never use an initialImage, because the swapListener listens to the table before we are confident
+        // that we'll get a good snapshot, and if we get a bad snapshot, it will never get updated appropriately
         throw new IllegalStateException();
     }
 

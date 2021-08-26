@@ -22,7 +22,7 @@ import java.lang.reflect.Method;
 @Immutable
 @SimpleStyle
 public abstract class DbPrimitiveArrayType<T, ComponentType>
-    extends ArrayTypeBase<T, ComponentType> {
+        extends ArrayTypeBase<T, ComponentType> {
 
     private static final String DB_BOOLEAN_ARRAY = "io.deephaven.db.tables.dbarrays.DbBooleanArray";
     private static final String DB_BYTE_ARRAY = "io.deephaven.db.tables.dbarrays.DbByteArray";
@@ -33,16 +33,16 @@ public abstract class DbPrimitiveArrayType<T, ComponentType>
     private static final String DB_FLOAT_ARRAY = "io.deephaven.db.tables.dbarrays.DbFloatArray";
     private static final String DB_DOUBLE_ARRAY = "io.deephaven.db.tables.dbarrays.DbDoubleArray";
     private static final Set<String> VALID_CLASSES =
-        Stream.of(DB_BOOLEAN_ARRAY, DB_BYTE_ARRAY, DB_CHAR_ARRAY, DB_SHORT_ARRAY, DB_INT_ARRAY,
-            DB_LONG_ARRAY, DB_FLOAT_ARRAY, DB_DOUBLE_ARRAY).collect(Collectors.toSet());
+            Stream.of(DB_BOOLEAN_ARRAY, DB_BYTE_ARRAY, DB_CHAR_ARRAY, DB_SHORT_ARRAY, DB_INT_ARRAY,
+                    DB_LONG_ARRAY, DB_FLOAT_ARRAY, DB_DOUBLE_ARRAY).collect(Collectors.toSet());
 
     public static <T, ComponentType> DbPrimitiveArrayType<T, ComponentType> of(Class<T> clazz,
-        PrimitiveType<ComponentType> primitiveType) {
+            PrimitiveType<ComponentType> primitiveType) {
         return ImmutableDbPrimitiveArrayType.of(clazz, primitiveType);
     }
 
     static List<DbPrimitiveArrayType<?, ?>> types() throws ClassNotFoundException,
-        NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+            NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         List<DbPrimitiveArrayType<?, ?>> out = new ArrayList<>(VALID_CLASSES.size());
         for (String className : VALID_CLASSES) {
             out.add(invokeTypeMethod(className));
@@ -51,8 +51,8 @@ public abstract class DbPrimitiveArrayType<T, ComponentType>
     }
 
     private static <ComponentType> DbPrimitiveArrayType<?, ComponentType> invokeTypeMethod(
-        String className) throws ClassNotFoundException, NoSuchMethodException,
-        InvocationTargetException, IllegalAccessException {
+            String className) throws ClassNotFoundException, NoSuchMethodException,
+            InvocationTargetException, IllegalAccessException {
         final Class<?> clazz = Class.forName(className);
         final Method method = clazz.getDeclaredMethod("type");
         // noinspection rawtypes,unchecked
@@ -75,7 +75,7 @@ public abstract class DbPrimitiveArrayType<T, ComponentType>
     final void checkClazz() {
         if (!VALID_CLASSES.contains(clazz().getName())) {
             throw new IllegalArgumentException(String.format("Class '%s' is not a valid '%s'",
-                clazz(), DbPrimitiveArrayType.class));
+                    clazz(), DbPrimitiveArrayType.class));
         }
     }
 }

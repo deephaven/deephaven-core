@@ -8,6 +8,6 @@
   "right": "The column name from the right table.\n\n:return: (io.deephaven.api.ColumnName) the right column name"
  },
  "path": "io.deephaven.api.JoinMatch",
- "text": "A join match represents one column from a left table and one column from a\n right table. The exact semantics of the match depend on context. For example, a\n natural-join has equal-to matches; where-not-in has not-equal-to matches; and as-of-join's last\n match has less-than or less-than-or-equal-to matches.",
+ "text": "A join match represents one column from a left table and one column from a right\n table. The exact semantics of the match depend on context. For example, a natural-join has equal-to matches;\n where-not-in has not-equal-to matches; and as-of-join's last match has less-than or less-than-or-equal-to matches.",
  "typeName": "interface"
 }

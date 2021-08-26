@@ -9,6 +9,6 @@ import io.deephaven.web.shared.fu.JsBiConsumer;
  * Describe how to perform initial fetch for a table
  */
 public interface JsTableFetch {
-    void fetch(JsBiConsumer<Object, ExportedTableCreationResponse> callback,
-        ClientTableState newState, BrowserHeaders metadata);
+    void fetch(JsBiConsumer<Object, ExportedTableCreationResponse> callback, ClientTableState newState,
+            BrowserHeaders metadata);
 }

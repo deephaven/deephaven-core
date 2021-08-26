@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.qst.TableAdapterResults$Output$Visitor",
+ "methods": {
+  "visit": "*Overload 1*  \n  :param tops: TableAdapterResults.Output.Visitor.TOPS\n  \n*Overload 2*  \n  :param table: TableAdapterResults.Output.Visitor.TABLE"
+ },
+ "path": "io.deephaven.qst.TableAdapterResults.Output.Visitor",
+ "typeName": "interface"
+}

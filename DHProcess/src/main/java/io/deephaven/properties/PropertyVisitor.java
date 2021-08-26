@@ -12,8 +12,7 @@ import java.util.function.BiConsumer;
 // todo: should we implement this interface w/ KeyPath or KeyPath-like keys instead?
 
 /**
- * A property visitor is the generic interface for reading property keys and values from a
- * {@link PropertySet}.
+ * A property visitor is the generic interface for reading property keys and values from a {@link PropertySet}.
  *
  * @see PropertySet
  */
@@ -75,9 +74,8 @@ public interface PropertyVisitor {
     void visit(String key, boolean value);
 
     /**
-     * By default, is equivalent to {@code properties.traverse(this)}. Implementations may choose to
-     * override this method, provided the property set is traversed, and this visitor receives all
-     * of the updates.
+     * By default, is equivalent to {@code properties.traverse(this)}. Implementations may choose to override this
+     * method, provided the property set is traversed, and this visitor receives all of the updates.
      *
      * @param properties the property set
      */
@@ -86,66 +84,63 @@ public interface PropertyVisitor {
     }
 
     /**
-     * A helper method that recursively builds up the keys based on the provided key, and the keys
-     * of the property set. The majority of implementations should <b>not</b> override this.
+     * A helper method that recursively builds up the keys based on the provided key, and the keys of the property set.
+     * The majority of implementations should <b>not</b> override this.
      *
      * @param key the key
      * @param properties the property set
      */
     default void visitProperties(String key, PropertySet properties) {
         new PropertyVisitorPrefixed(key + SEPARATOR, this)
-            .visitProperties(properties);
+                .visitProperties(properties);
     }
 
     // note: the following helper methods exhibit poor coding from a traditional sense - but it
     // makes traverse implementations much cleaner.
 
     /**
-     * A helper method that makes {@link PropertySet#traverse(PropertyVisitor)} implementations
-     * cleaner. Equivalent to {@code value.ifPresent(x -> visit(key, x))}. Must not be overridden.
+     * A helper method that makes {@link PropertySet#traverse(PropertyVisitor)} implementations cleaner. Equivalent to
+     * {@code value.ifPresent(x -> visit(key, x))}. Must not be overridden.
      *
      * @param key the key
      * @param value the optional value
      */
     default void maybeVisit(String key,
-        @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<String> value) {
+            @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<String> value) {
         value.ifPresent(x -> visit(key, x));
     }
 
     /**
-     * A helper method that makes {@link PropertySet#traverse(PropertyVisitor)} implementations
-     * cleaner. Equivalent to {@code value.ifPresent(x -> visit(key, x))}. Must not be overridden.
+     * A helper method that makes {@link PropertySet#traverse(PropertyVisitor)} implementations cleaner. Equivalent to
+     * {@code value.ifPresent(x -> visit(key, x))}. Must not be overridden.
      *
      * @param key the key
      * @param value the optional value
      */
-    default void maybeVisit(String key,
-        @SuppressWarnings("OptionalUsedAsFieldOrParameterType") OptionalInt value) {
+    default void maybeVisit(String key, @SuppressWarnings("OptionalUsedAsFieldOrParameterType") OptionalInt value) {
         value.ifPresent(x -> visit(key, x));
     }
 
     /**
-     * A helper method that makes {@link PropertySet#traverse(PropertyVisitor)} implementations
-     * cleaner. Equivalent to {@code value.ifPresent(x -> visit(key, x))}. Must not be overridden.
+     * A helper method that makes {@link PropertySet#traverse(PropertyVisitor)} implementations cleaner. Equivalent to
+     * {@code value.ifPresent(x -> visit(key, x))}. Must not be overridden.
      *
      * @param key the key
      * @param value the optional value
      */
-    default void maybeVisit(String key,
-        @SuppressWarnings("OptionalUsedAsFieldOrParameterType") OptionalLong value) {
+    default void maybeVisit(String key, @SuppressWarnings("OptionalUsedAsFieldOrParameterType") OptionalLong value) {
         value.ifPresent(x -> visit(key, x));
     }
 
     /**
-     * A helper method that makes {@link PropertySet#traverse(PropertyVisitor)} implementations
-     * cleaner. Equivalent to {@code properties.ifPresent(x -> visitProperties(key, x))}. Must not
-     * be overridden.
+     * A helper method that makes {@link PropertySet#traverse(PropertyVisitor)} implementations cleaner. Equivalent to
+     * {@code properties.ifPresent(x -> visitProperties(key, x))}. Must not be overridden.
      *
      * @param key the key
      * @param properties the optional value
      */
     default void maybeVisitProperties(String key,
-        @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<? extends PropertySet> properties) {
+            @SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<? extends PropertySet> properties) {
         properties.ifPresent(x -> visitProperties(key, x));
     }
 }

@@ -21,8 +21,7 @@ public enum NamedShape implements Shape {
         try {
             return shape == null ? null : NamedShape.valueOf(shape.toUpperCase());
         } catch (final IllegalArgumentException iae) {
-            throw new IllegalArgumentException(
-                "Not a valid shape: `" + shape + "`; valid shapes: " + shapes);
+            throw new IllegalArgumentException("Not a valid shape: `" + shape + "`; valid shapes: " + shapes);
         }
     }
 

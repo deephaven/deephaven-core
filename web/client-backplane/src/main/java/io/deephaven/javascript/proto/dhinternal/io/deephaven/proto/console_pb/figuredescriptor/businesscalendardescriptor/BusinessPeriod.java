@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.BusinessCalendarDescriptor.BusinessPeriod",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.BusinessCalendarDescriptor.BusinessPeriod",
+        namespace = JsPackage.GLOBAL)
 public class BusinessPeriod {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -56,12 +56,12 @@ public class BusinessPeriod {
     public static native BusinessPeriod deserializeBinary(Uint8Array bytes);
 
     public static native BusinessPeriod deserializeBinaryFromReader(
-        BusinessPeriod message, Object reader);
+            BusinessPeriod message, Object reader);
 
     public static native void serializeBinaryToWriter(BusinessPeriod message, Object writer);
 
     public static native BusinessPeriod.ToObjectReturnType toObject(
-        boolean includeInstance, BusinessPeriod msg);
+            boolean includeInstance, BusinessPeriod msg);
 
     public native String getClose();
 

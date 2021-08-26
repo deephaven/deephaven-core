@@ -11,9 +11,7 @@ import java.io.IOException;
 public class ReplicateDbArrayColumnWrappers {
 
     public static void main(String[] args) throws IOException {
-        ReplicatePrimitiveCode.charToAllButBoolean(DbCharArrayColumnWrapper.class,
-            ReplicatePrimitiveCode.MAIN_SRC);
-        ReplicatePrimitiveCode.charToAllButBoolean(DbPrevCharArrayColumnWrapper.class,
-            ReplicatePrimitiveCode.MAIN_SRC);
+        ReplicatePrimitiveCode.charToAllButBoolean(DbCharArrayColumnWrapper.class, ReplicatePrimitiveCode.MAIN_SRC);
+        ReplicatePrimitiveCode.charToAllButBoolean(DbPrevCharArrayColumnWrapper.class, ReplicatePrimitiveCode.MAIN_SRC);
     }
 }

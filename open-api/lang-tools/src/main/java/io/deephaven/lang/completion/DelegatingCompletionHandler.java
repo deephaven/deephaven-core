@@ -51,12 +51,11 @@ public class DelegatingCompletionHandler implements CompletionHandler {
                 break;
             } catch (ExecutionException e) {
                 LOGGER.trace()
-                    .append("Unknown error running autocomplete. ")
-                    .append(e.getCause())
-                    .endl();
+                        .append("Unknown error running autocomplete. ")
+                        .append(e.getCause())
+                        .endl();
             } catch (TimeoutException e) {
-                // yikes, more than 5 seconds? no human alive wants to wait 5 seconds to get
-                // autocomplete popup!
+                // yikes, more than 5 seconds? no human alive wants to wait 5 seconds to get autocomplete popup!
                 continue;
             }
         }

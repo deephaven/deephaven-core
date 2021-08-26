@@ -19,11 +19,13 @@ class FixedPageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPag
     private final int pageFixedSize;
     private volatile int numPages = 0;
     private final ColumnPageReader[] columnPageReaders;
-    private final WeakReference<IntrusivePage<ATTR>>[] pages;
+    private final WeakReference<PageCache.IntrusivePage<ATTR>>[] pages;
 
-    FixedPageSizeColumnChunkPageStore(@NotNull final ColumnChunkReader columnChunkReader,
-        final long mask, @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
-        super(columnChunkReader, mask, toPage);
+    FixedPageSizeColumnChunkPageStore(@NotNull final PageCache<ATTR> pageCache,
+            @NotNull final ColumnChunkReader columnChunkReader,
+            final long mask,
+            @NotNull final ToPage<ATTR, ?> toPage) throws IOException {
+        super(pageCache, columnChunkReader, mask, toPage);
 
         this.pageFixedSize = columnChunkReader.getPageFixedSize();
 
@@ -33,8 +35,8 @@ class FixedPageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPag
         this.columnPageReaders = new ColumnPageReader[numPages];
 
         // noinspection unchecked
-        this.pages = (WeakReference<IntrusivePage<ATTR>>[]) new WeakReference[numPages];
-        Arrays.fill(pages, getNullPage());
+        this.pages = (WeakReference<PageCache.IntrusivePage<ATTR>>[]) new WeakReference[numPages];
+        Arrays.fill(pages, PageCache.getNullPage());
     }
 
     private void fillToPage(final int pageNum) {
@@ -43,8 +45,8 @@ class FixedPageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPag
             synchronized (this) {
                 if (numPages <= pageNum) {
                     Assert.assertion(columnPageReaderIterator.hasNext(),
-                        "columnPageReaderIterator.hasNext()",
-                        "Parquet fixed page size and page iterator don't match, not enough pages.");
+                            "columnPageReaderIterator.hasNext()",
+                            "Parquet fixed page size and page iterator don't match, not enough pages.");
                     columnPageReaders[numPages++] = columnPageReaderIterator.next();
                 }
             }
@@ -52,7 +54,7 @@ class FixedPageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPag
     }
 
     private ChunkPage<ATTR> getPage(final int pageNum) {
-        IntrusivePage<ATTR> page = pages[pageNum].get();
+        PageCache.IntrusivePage<ATTR> page = pages[pageNum].get();
 
         if (page == null) {
             synchronized (columnPageReaders[pageNum]) {
@@ -60,8 +62,8 @@ class FixedPageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPag
 
                 if (page == null) {
                     try {
-                        page = new IntrusivePage<>(
-                            toPage((long) pageNum * pageFixedSize, columnPageReaders[pageNum]));
+                        page = new PageCache.IntrusivePage<>(
+                                toPage((long) pageNum * pageFixedSize, columnPageReaders[pageNum]));
                     } catch (IOException except) {
                         throw new UncheckedIOException(except);
                     }
@@ -71,13 +73,13 @@ class FixedPageSizeColumnChunkPageStore<ATTR extends Any> extends ColumnChunkPag
             }
         }
 
-        intrusiveSoftLRU.touch(page);
+        pageCache.touch(page);
         return page.getPage();
     }
 
     @Override
     public @NotNull ChunkPage<ATTR> getPageContaining(FillContext fillContext,
-        final long elementIndex) {
+            final long elementIndex) {
         final long row = elementIndex & mask();
         Require.inRange(row, "row", size(), "numRows");
 

@@ -5,6 +5,6 @@
   "parse": ":param source: java.lang.String\n:param parsePosition: java.text.ParsePosition\n:return: java.lang.Number"
  },
  "path": "io.deephaven.db.plot.axisformatters.ScientificNumberFormatter",
- "text": "NumberFormat which formats numbers in scientific notation\n if they are outside the given range.",
+ "text": "NumberFormat which formats numbers in scientific notation if they are outside the given range.",
  "typeName": "class"
 }

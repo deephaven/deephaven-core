@@ -14,8 +14,8 @@ import java.util.NoSuchElementException;
 
 // --------------------------------------------------------------------
 /**
- * This is a special version of {@link ArrayList} that can be substituted for a regular Array list
- * but produces no garbage. It only has one iterator, which is reused. It is not thread safe.
+ * This is a special version of {@link ArrayList} that can be substituted for a regular Array list but produces no
+ * garbage. It only has one iterator, which is reused. It is not thread safe.
  */
 public class LowGarbageArrayList<E> extends ArrayList<E> {
 
@@ -49,14 +49,14 @@ public class LowGarbageArrayList<E> extends ArrayList<E> {
         int cursor;
 
         /**
-         * Index of element returned by most recent call to next or previous. Reset to -1 if this
-         * element is deleted by a call to remove.
+         * Index of element returned by most recent call to next or previous. Reset to -1 if this element is deleted by
+         * a call to remove.
          */
         int lastRet;
 
         /**
-         * The modCount value that the iterator believes that the backing List should have. If this
-         * expectation is violated, the iterator has detected concurrent modification.
+         * The modCount value that the iterator believes that the backing List should have. If this expectation is
+         * violated, the iterator has detected concurrent modification.
          */
         int expectedModCount;
 

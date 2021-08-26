@@ -13,15 +13,15 @@ public class AsyncAppender extends org.apache.log4j.AsyncAppender {
 
         if (!(message instanceof String)) {
             event = new LoggingEvent(event.getFQNOfLoggerClass(),
-                event.getLogger(),
-                event.getTimeStamp(),
-                event.getLevel(),
-                message.toString(),
-                event.getThreadName(),
-                event.getThrowableInformation(),
-                event.getNDC(),
-                event.getLocationInformation(),
-                event.getProperties());
+                    event.getLogger(),
+                    event.getTimeStamp(),
+                    event.getLevel(),
+                    message.toString(),
+                    event.getThreadName(),
+                    event.getThrowableInformation(),
+                    event.getNDC(),
+                    event.getLocationInformation(),
+                    event.getProperties());
         }
 
         super.append(event);

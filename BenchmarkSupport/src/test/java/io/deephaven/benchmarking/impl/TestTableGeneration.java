@@ -10,18 +10,17 @@ import io.deephaven.benchmarking.BenchmarkTools;
 public class TestTableGeneration extends QueryTableTestBase {
 
     public void testCreateHistorical() {
-        final PersistentBenchmarkTableBuilder builder =
-            BenchmarkTools.persistentTableBuilder("Carlos", 2000);
+        final PersistentBenchmarkTableBuilder builder = BenchmarkTools.persistentTableBuilder("Carlos", 2000);
         final BenchmarkTable bt = builder.setSeed(0xDEADBEEF)
-            .addColumn(BenchmarkTools.stringCol("Stringy", 1, 10))
-            .addColumn(BenchmarkTools.numberCol("C2", int.class))
-            .addColumn(BenchmarkTools.numberCol("C3", double.class))
-            .addColumn(BenchmarkTools.stringCol("C4", 10, 5, 7, 0xFEEDBEEF))
-            .addColumn(BenchmarkTools.stringCol("Thingy", 30, 6, 6, 0xB00FB00F))
-            .addGroupingColumns("Thingy")
-            .setPartitioningFormula("${autobalance_single}")
-            .setPartitionCount(10)
-            .build();
+                .addColumn(BenchmarkTools.stringCol("Stringy", 1, 10))
+                .addColumn(BenchmarkTools.numberCol("C2", int.class))
+                .addColumn(BenchmarkTools.numberCol("C3", double.class))
+                .addColumn(BenchmarkTools.stringCol("C4", 10, 5, 7, 0xFEEDBEEF))
+                .addColumn(BenchmarkTools.stringCol("Thingy", 30, 6, 6, 0xB00FB00F))
+                .addGroupingColumns("Thingy")
+                .setPartitioningFormula("${autobalance_single}")
+                .setPartitionCount(10)
+                .build();
 
         final Table historicalTable = bt.getTable();
         Table selected = historicalTable.select();
@@ -42,12 +41,12 @@ public class TestTableGeneration extends QueryTableTestBase {
     public void testCreateIntraday() {
         final BenchmarkTableBuilder builder = BenchmarkTools.persistentTableBuilder("Carlos", 2000);
         final BenchmarkTable bt = builder.setSeed(0xDEADBEEF)
-            .addColumn(BenchmarkTools.stringCol("Stringy", 1, 10))
-            .addColumn(BenchmarkTools.numberCol("C2", int.class))
-            .addColumn(BenchmarkTools.numberCol("C3", double.class))
-            .addColumn(BenchmarkTools.stringCol("C4", 10, 5, 7, 0xFEEDBEEF))
-            .addColumn(BenchmarkTools.stringCol("Thingy", 30, 6, 6, 0xB00FB00F))
-            .build();
+                .addColumn(BenchmarkTools.stringCol("Stringy", 1, 10))
+                .addColumn(BenchmarkTools.numberCol("C2", int.class))
+                .addColumn(BenchmarkTools.numberCol("C3", double.class))
+                .addColumn(BenchmarkTools.stringCol("C4", 10, 5, 7, 0xFEEDBEEF))
+                .addColumn(BenchmarkTools.stringCol("Thingy", 30, 6, 6, 0xB00FB00F))
+                .build();
 
         final Table intradayTable = bt.getTable();
 
@@ -66,12 +65,12 @@ public class TestTableGeneration extends QueryTableTestBase {
     public void testCreateSparseInMemory() {
         final BenchmarkTableBuilder builder = BenchmarkTools.inMemoryTableBuilder("Carlos", 200000);
         final BenchmarkTable bt = builder.setSeed(0xDEADBEEF)
-            .addColumn(BenchmarkTools.stringCol("Stringy", 1, 10))
-            .addColumn(BenchmarkTools.numberCol("C2", int.class))
-            .addColumn(BenchmarkTools.numberCol("C3", double.class))
-            .addColumn(BenchmarkTools.stringCol("C4", 10, 5, 7, 0xFEEDBEEF))
-            .addColumn(BenchmarkTools.stringCol("Thingy", 30, 6, 6, 0xB00FB00F))
-            .build();
+                .addColumn(BenchmarkTools.stringCol("Stringy", 1, 10))
+                .addColumn(BenchmarkTools.numberCol("C2", int.class))
+                .addColumn(BenchmarkTools.numberCol("C3", double.class))
+                .addColumn(BenchmarkTools.stringCol("C4", 10, 5, 7, 0xFEEDBEEF))
+                .addColumn(BenchmarkTools.stringCol("Thingy", 30, 6, 6, 0xB00FB00F))
+                .build();
 
         final Table resultTable = BenchmarkTools.applySparsity(bt.getTable(), 2000, 1, 0);
 

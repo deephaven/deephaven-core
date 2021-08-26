@@ -13,8 +13,8 @@ import java.util.Optional;
 public interface Type<T> {
 
     /**
-     * Finds the {@link #knownTypes() known type}, or else creates the relevant
-     * {@link NativeArrayType native array type} or {@link CustomType custom type}.
+     * Finds the {@link #knownTypes() known type}, or else creates the relevant {@link NativeArrayType native array
+     * type} or {@link CustomType custom type}.
      *
      * @param clazz the class
      * @param <T> the generic type of {@code clazz}
@@ -32,9 +32,8 @@ public interface Type<T> {
     }
 
     /**
-     * The list of known types. Includes the universe of {@link PrimitiveType primitive types} and
-     * {@link GenericType generic types} minus {@link CustomType custom types} and {@link ArrayType
-     * array types}.
+     * The list of known types. Includes the universe of {@link PrimitiveType primitive types} and {@link GenericType
+     * generic types} minus {@link CustomType custom types} and {@link ArrayType array types}.
      *
      * @return the list of known types
      */

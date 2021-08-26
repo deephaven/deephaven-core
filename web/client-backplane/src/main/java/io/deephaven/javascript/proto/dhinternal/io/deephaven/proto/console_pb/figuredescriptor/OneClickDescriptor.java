@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.OneClickDescriptor",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.OneClickDescriptor",
+        namespace = JsPackage.GLOBAL)
 public class OneClickDescriptor {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -89,12 +89,12 @@ public class OneClickDescriptor {
     public static native OneClickDescriptor deserializeBinary(Uint8Array bytes);
 
     public static native OneClickDescriptor deserializeBinaryFromReader(
-        OneClickDescriptor message, Object reader);
+            OneClickDescriptor message, Object reader);
 
     public static native void serializeBinaryToWriter(OneClickDescriptor message, Object writer);
 
     public static native OneClickDescriptor.ToObjectReturnType toObject(
-        boolean includeInstance, OneClickDescriptor msg);
+            boolean includeInstance, OneClickDescriptor msg);
 
     public native String addColumnTypes(String value, double index);
 

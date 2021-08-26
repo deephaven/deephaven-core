@@ -2,9 +2,9 @@
  "className": "io.deephaven.db.util.PythonScope",
  "methods": {
   "containsKey": "Finds out if a variable is in scope\n\n:param name: (java.lang.String) - the name of the python variable\n:return: (boolean) true iff the scope contains the variable",
-  "convertStringKey": "The helper method to turn a raw key into a string key.\n \n Note: this assumes that all the keys are strings, which is not always true. Keys can also be\n tuples. TODO: revise interface as appropriate if this becomes an issue.\n\n:param key: (PythonScope.PyObj) - the raw key\n:return: (java.lang.String) the string key",
-  "convertValue": "The helper method to turn a raw value into an implementation specific object.\n \n This method should NOT convert PyObj of None type to null - we need to preserve the None\n object so it works with other Optional return values.\n\n:param value: (PythonScope.PyObj) - the raw value\n:return: (java.lang.Object) the converted object value",
-  "getEntries": "Equivalent to getEntriesRaw(), where the keys have been converted via\n convertStringKey(PyObj) and the values via convertValue(PyObj)\n\n:return: (java.util.stream.Stream<java.util.Map.Entry<java.lang.String,java.lang.Object>>) the string keys and converted values",
+  "convertStringKey": "The helper method to turn a raw key into a string key.\n \n Note: this assumes that all the keys are strings, which is not always true. Keys can also be tuples. TODO: revise\n interface as appropriate if this becomes an issue.\n\n:param key: (PythonScope.PyObj) - the raw key\n:return: (java.lang.String) the string key",
+  "convertValue": "The helper method to turn a raw value into an implementation specific object.\n \n This method should NOT convert PyObj of None type to null - we need to preserve the None object so it works with\n other Optional return values.\n\n:param value: (PythonScope.PyObj) - the raw value\n:return: (java.lang.Object) the converted object value",
+  "getEntries": "Equivalent to getEntriesRaw(), where the keys have been converted via convertStringKey(PyObj)\n and the values via convertValue(PyObj)\n\n:return: (java.util.stream.Stream<java.util.Map.Entry<java.lang.String,java.lang.Object>>) the string keys and converted values",
   "getEntriesMap": "Equivalent to getEntries().collect(someMapCollector)\n\n:return: (java.util.Map<java.lang.String,java.lang.Object>) the string keys and converted values, as a map",
   "getEntriesRaw": "Retrieves all keys and values from the given scope.\n \n No conversion is done.\n\n:return: (java.util.stream.Stream<java.util.Map.Entry<PythonScope.PyObj,PythonScope.PyObj>>) the keys and values",
   "getKeys": "Equivalent to getKeysRaw().map(convertStringKey(PyObj))\n\n:return: (java.util.stream.Stream<java.lang.String>) the string keys",
@@ -16,6 +16,6 @@
   "globals": ":return: org.jpy.PyDictWrapper"
  },
  "path": "io.deephaven.db.util.PythonScope",
- "text": "A collection of methods around retrieving objects from the given Python scope.\n \n The scope is likely coming from some sort of Python dictionary. The scope might be local, global,\n or other.",
+ "text": "A collection of methods around retrieving objects from the given Python scope.\n \n The scope is likely coming from some sort of Python dictionary. The scope might be local, global, or other.",
  "typeName": "interface"
 }

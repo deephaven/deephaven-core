@@ -12,7 +12,7 @@ import io.deephaven.db.tables.ColumnDefinition;
 public interface SourceTableComponentFactory {
 
     ColumnSourceManager createColumnSourceManager(
-        boolean isRefreshing,
-        ColumnToCodecMappings codecMappings,
-        ColumnDefinition<?>... columnDefinitions);
+            boolean isRefreshing,
+            ColumnToCodecMappings codecMappings,
+            ColumnDefinition<?>... columnDefinitions);
 }

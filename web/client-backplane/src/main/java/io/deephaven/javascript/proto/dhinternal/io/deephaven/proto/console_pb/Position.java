@@ -9,9 +9,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.Position",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.Position",
+        namespace = JsPackage.GLOBAL)
 public class Position {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -59,8 +59,7 @@ public class Position {
 
     public static native void serializeBinaryToWriter(Position message, Object writer);
 
-    public static native Position.ToObjectReturnType toObject(boolean includeInstance,
-        Position msg);
+    public static native Position.ToObjectReturnType toObject(boolean includeInstance, Position msg);
 
     public native double getCharacter();
 

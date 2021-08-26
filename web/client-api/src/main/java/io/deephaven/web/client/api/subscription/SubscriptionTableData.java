@@ -42,18 +42,15 @@ public class SubscriptionTableData {
     // array of data columns, cast each to a jsarray to read rows
     private Object[] data;
 
-    public SubscriptionTableData(JsArray<Column> columns, Integer rowStyleColumn,
-        HasEventHandling evented) {
+    public SubscriptionTableData(JsArray<Column> columns, Integer rowStyleColumn, HasEventHandling evented) {
         this.columns = columns;
         this.rowStyleColumn = rowStyleColumn;
         this.evented = evented;
     }
 
-    // TODO support this being called multiple times so we can keep viewports going without clearing
-    // the data
+    // TODO support this being called multiple times so we can keep viewports going without clearing the data
     public TableData handleSnapshot(TableSnapshot snapshot) {
-        // when changing snapshots we should actually rewrite the columns, possibly emulate
-        // ViewportData more?
+        // when changing snapshots we should actually rewrite the columns, possibly emulate ViewportData more?
         ColumnData[] dataColumns = snapshot.getDataColumns();
         data = new Object[dataColumns.length];
         reusableDestinations = RangeSet.empty();
@@ -93,9 +90,9 @@ public class SubscriptionTableData {
     }
 
     /**
-     * Helper to avoid appending many times when modifying indexes. The append() method should be
-     * called for each key _in order_ to ensure that RangeSet.addRange isn't called excessively.
-     * When no more items will be added, flush() must be called.
+     * Helper to avoid appending many times when modifying indexes. The append() method should be called for each key
+     * _in order_ to ensure that RangeSet.addRange isn't called excessively. When no more items will be added, flush()
+     * must be called.
      */
     private static class RangeSetAppendHelper {
         private final RangeSet rangeSet;
@@ -125,8 +122,7 @@ public class SubscriptionTableData {
                 // key appends to our current range
                 currentFirst = key;
             } else {
-                // existing range doesn't match the new item, finish the old range and start a new
-                // one
+                // existing range doesn't match the new item, finish the old range and start a new one
                 rangeSet.addRange(new Range(currentFirst, currentLast));
                 currentFirst = key;
                 currentLast = key;
@@ -142,14 +138,12 @@ public class SubscriptionTableData {
     }
 
     public TableData handleDelta(DeltaUpdates delta) {
-        // delete old data, track slots freed up. we do this by row since they might be
-        // non-contiguous or out of order
+        // delete old data, track slots freed up. we do this by row since they might be non-contiguous or out of order
         RangeSetAppendHelper reusableHelper = new RangeSetAppendHelper(reusableDestinations);
         delta.getRemoved().indexIterator().forEachRemaining((long index) -> {
             long dest = redirectedIndexes.remove(index);
             reusableHelper.append(dest);
-            // TODO consider trimming the columns down too, and truncating the reusable slots at the
-            // end
+            // TODO consider trimming the columns down too, and truncating the reusable slots at the end
         });
         reusableHelper.flush();
         // clean up index by ranges, not by row
@@ -168,8 +162,7 @@ public class SubscriptionTableData {
             }
             index.removeRange(shiftedRange.getRange());
             final NavigableSet<Long> toMove = redirectedIndexes.navigableKeySet()
-                .subSet(shiftedRange.getRange().getFirst(), true, shiftedRange.getRange().getLast(),
-                    true);
+                    .subSet(shiftedRange.getRange().getFirst(), true, shiftedRange.getRange().getLast(), true);
             // iterate backward and move them forward
             for (Long key : toMove.descendingSet()) {
                 long shiftedKey = key + offset;
@@ -187,13 +180,11 @@ public class SubscriptionTableData {
                 }
                 index.removeRange(shiftedRange.getRange());
                 final NavigableSet<Long> toMove = redirectedIndexes.navigableKeySet()
-                    .subSet(shiftedRange.getRange().getFirst(), true,
-                        shiftedRange.getRange().getLast(), true);
+                        .subSet(shiftedRange.getRange().getFirst(), true, shiftedRange.getRange().getLast(), true);
                 // iterate forward and move them backward
                 for (Long key : toMove) {
                     long shiftedKey = key + offset;
-                    Long oldValue =
-                        redirectedIndexes.put(shiftedKey, redirectedIndexes.remove(key));
+                    Long oldValue = redirectedIndexes.put(shiftedKey, redirectedIndexes.remove(key));
                     assert oldValue == null : shiftedKey + " already has a value, " + oldValue;
                     shifter.append(shiftedKey);
                 }
@@ -201,16 +192,14 @@ public class SubscriptionTableData {
         }
         shifter.flush();
 
-        // Find space for the rows we're about to add. We must not adjust the index until this is
-        // done, it is used
+        // Find space for the rows we're about to add. We must not adjust the index until this is done, it is used
         // to see where the end of the data is
         RangeSet addedDestination = freeRows(delta.getAdded().size());
         // Within each column, append additions
         DeltaUpdates.ColumnAdditions[] additions = delta.getSerializedAdditions();
         for (int i = 0; i < additions.length; i++) {
             DeltaUpdates.ColumnAdditions addedColumn = delta.getSerializedAdditions()[i];
-            Column column =
-                columns.find((c, i1, i2) -> c.getIndex() == addedColumn.getColumnIndex());
+            Column column = columns.find((c, i1, i2) -> c.getIndex() == addedColumn.getColumnIndex());
 
             ArrayCopy arrayCopy = arrayCopyFuncForColumn(column);
 
@@ -224,8 +213,7 @@ public class SubscriptionTableData {
                 long dest = destIter.nextLong();
                 Long old = redirectedIndexes.put(origIndex, dest);
                 assert old == null || old == dest;
-                arrayCopy.copyTo(data[addedColumn.getColumnIndex()], dest,
-                    addedColumn.getValues().getData(), j++);
+                arrayCopy.copyTo(data[addedColumn.getColumnIndex()], dest, addedColumn.getValues().getData(), j++);
             }
         }
 
@@ -241,27 +229,23 @@ public class SubscriptionTableData {
                 continue;
             }
 
-            modifiedColumn.getRowsIncluded().rangeIterator()
-                .forEachRemaining(allModified::addRange);
-            Column column =
-                columns.find((c, i1, i2) -> c.getIndex() == modifiedColumn.getColumnIndex());
+            modifiedColumn.getRowsIncluded().rangeIterator().forEachRemaining(allModified::addRange);
+            Column column = columns.find((c, i1, i2) -> c.getIndex() == modifiedColumn.getColumnIndex());
 
             ArrayCopy arrayCopy = arrayCopyFuncForColumn(column);
 
-            PrimitiveIterator.OfLong modifiedIndexes =
-                modifiedColumn.getRowsIncluded().indexIterator();
+            PrimitiveIterator.OfLong modifiedIndexes = modifiedColumn.getRowsIncluded().indexIterator();
             int j = 0;
             while (modifiedIndexes.hasNext()) {
                 long origIndex = modifiedIndexes.nextLong();
-                arrayCopy.copyTo(data[modifiedColumn.getColumnIndex()],
-                    redirectedIndexes.get(origIndex), modifiedColumn.getValues().getData(), j++);
+                arrayCopy.copyTo(data[modifiedColumn.getColumnIndex()], redirectedIndexes.get(origIndex),
+                        modifiedColumn.getValues().getData(), j++);
             }
         }
 
         // Check that the index sizes make sense
         assert redirectedIndexes.size() == index.size();
-        // Note that we can't do this assert, since we don't truncate arrays, we just leave nulls at
-        // the end
+        // Note that we can't do this assert, since we don't truncate arrays, we just leave nulls at the end
         // assert Js.asArrayLike(data[0]).getLength() == redirectedIndexes.size();
 
         return notifyUpdates(delta.getAdded(), delta.getRemoved(), allModified);
@@ -304,8 +288,7 @@ public class SubscriptionTableData {
                     if (value == null) {
                         Js.asArrayLike(destArray).setAt((int) destPos, null);
                     } else {
-                        Js.asArrayLike(destArray).setAt((int) destPos,
-                            new BigDecimalWrapper(value));
+                        Js.asArrayLike(destArray).setAt((int) destPos, new BigDecimalWrapper(value));
                     }
                 };
             case "java.math.BigInteger":
@@ -314,8 +297,7 @@ public class SubscriptionTableData {
                     if (value == null) {
                         Js.asArrayLike(destArray).setAt((int) destPos, null);
                     } else {
-                        Js.asArrayLike(destArray).setAt((int) destPos,
-                            new BigIntegerWrapper(value));
+                        Js.asArrayLike(destArray).setAt((int) destPos, new BigIntegerWrapper(value));
                     }
                 };
             case "java.time.LocalDate":
@@ -420,8 +402,7 @@ public class SubscriptionTableData {
             RangeSet reused = RangeSet.empty();
             long taken = 0;
             RangeSet stillUnused = RangeSet.empty();
-            // TODO this could be more efficient, iterating entire ranges until we only need a
-            // partial range
+            // TODO this could be more efficient, iterating entire ranges until we only need a partial range
             PrimitiveIterator.OfLong iterator = reusableDestinations.indexIterator();
             while (taken < required) {
                 assert iterator.hasNext();
@@ -507,8 +488,7 @@ public class SubscriptionTableData {
                 numberFormat = formatStrings.getAnyAt(redirectedIndex).asString();
             }
             if (column.getFormatStringColumnIndex() != null) {
-                JsArray<Any> formatStrings =
-                    Js.uncheckedCast(data[column.getFormatStringColumnIndex()]);
+                JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatStringColumnIndex()]);
                 formatString = formatStrings.getAnyAt(redirectedIndex).asString();
             }
             return new Format(cellColors, rowColors, numberFormat, formatString);
@@ -517,8 +497,8 @@ public class SubscriptionTableData {
 
 
     /**
-     * Event data, describing the indexes that were added/removed/updated, and providing access to
-     * Rows (and thus data in columns) either by index, or scanning the complete present index.
+     * Event data, describing the indexes that were added/removed/updated, and providing access to Rows (and thus data
+     * in columns) either by index, or scanning the complete present index.
      */
     public class UpdateEventData implements TableData {
         private JsRangeSet added;
@@ -596,8 +576,7 @@ public class SubscriptionTableData {
                 numberFormat = formatStrings.getAnyAt(redirectedIndex).asString();
             }
             if (column.getFormatStringColumnIndex() != null) {
-                JsArray<Any> formatStrings =
-                    Js.uncheckedCast(data[column.getFormatStringColumnIndex()]);
+                JsArray<Any> formatStrings = Js.uncheckedCast(data[column.getFormatStringColumnIndex()]);
                 formatString = formatStrings.getAnyAt(redirectedIndex).asString();
             }
             return new Format(cellColors, rowColors, numberFormat, formatString);

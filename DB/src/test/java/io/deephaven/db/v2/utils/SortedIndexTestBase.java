@@ -108,8 +108,7 @@ public abstract class SortedIndexTestBase extends TestCase {
             final long[] fullKeys = generateFullKeys(maxSize, generator);
             final Index fullIndex = getSortedIndex(fullKeys);
 
-            final Pair<Index, TLongList> pp =
-                generateSubset(fullKeys, fullIndex, Integer.MAX_VALUE, generator);
+            final Pair<Index, TLongList> pp = generateSubset(fullKeys, fullIndex, Integer.MAX_VALUE, generator);
             final Index subsetIndex = pp.first;
             final TLongList expected = pp.second;
             TestCase.assertEquals(subsetIndex.size(), expected.size());
@@ -143,8 +142,7 @@ public abstract class SortedIndexTestBase extends TestCase {
             final long[] fullKeys = generateFullKeys(maxSize, generator);
             final Index fullIndex = getSortedIndex(fullKeys);
             final int maxPosition = generator.nextInt(fullIndex.intSize());
-            final Pair<Index, TLongList> pp =
-                generateSubset(fullKeys, fullIndex, maxPosition, generator);
+            final Pair<Index, TLongList> pp = generateSubset(fullKeys, fullIndex, maxPosition, generator);
             final Index subsetIndex = pp.first;
             final TLongList expected = pp.second;
 
@@ -160,8 +158,7 @@ public abstract class SortedIndexTestBase extends TestCase {
         }
     }
 
-    private long[] generateFullKeys(@SuppressWarnings("SameParameterValue") int maxSize,
-        Random generator) {
+    private long[] generateFullKeys(@SuppressWarnings("SameParameterValue") int maxSize, Random generator) {
         final long[] fullKeys;
         switch (generator.nextInt(2)) {
             case 0:
@@ -217,12 +214,10 @@ public abstract class SortedIndexTestBase extends TestCase {
     }
 
     /**
-     * Generate a subset of the keys in fullKeys up to maxPosition positions in using generator.
-     * Returns a pair containing the subset of fullKeys as an Index and the expected positions as a
-     * TLongList.
+     * Generate a subset of the keys in fullKeys up to maxPosition positions in using generator. Returns a pair
+     * containing the subset of fullKeys as an Index and the expected positions as a TLongList.
      */
-    private Pair<Index, TLongList> generateSubset(long[] fullKeys, Index fullIndex, int maxPosition,
-        Random generator) {
+    private Pair<Index, TLongList> generateSubset(long[] fullKeys, Index fullIndex, int maxPosition, Random generator) {
         switch (generator.nextInt(2)) {
             case 0:
                 return generateSubsetMethod1(fullKeys, fullIndex, maxPosition, generator);
@@ -236,8 +231,8 @@ public abstract class SortedIndexTestBase extends TestCase {
     /**
      * For each key, randomly flip a count as to whether it belongs in the output.
      */
-    private Pair<Index, TLongList> generateSubsetMethod1(long[] fullKeys,
-        @SuppressWarnings("unused") Index fullIndex, int maxPosition, Random generator) {
+    private Pair<Index, TLongList> generateSubsetMethod1(long[] fullKeys, @SuppressWarnings("unused") Index fullIndex,
+            int maxPosition, Random generator) {
         final boolean subset[] = new boolean[(int) fullIndex.lastKey() + 1];
 
         final double density = generator.nextDouble();
@@ -273,12 +268,11 @@ public abstract class SortedIndexTestBase extends TestCase {
     }
 
     /**
-     * For each run of the index, flip a coin to determine if it is included; then randomly select a
-     * start and end within each range.
+     * For each run of the index, flip a coin to determine if it is included; then randomly select a start and end
+     * within each range.
      */
-    private Pair<Index, TLongList> generateSubsetMethod2(
-        @SuppressWarnings("unused") long[] fullKeys, Index fullIndex, int maxPosition,
-        Random generator) {
+    private Pair<Index, TLongList> generateSubsetMethod2(@SuppressWarnings("unused") long[] fullKeys, Index fullIndex,
+            int maxPosition, Random generator) {
         final boolean subset[] = new boolean[(int) fullKeys[fullKeys.length - 1] + 1];
 
         final TLongList expected = new TLongArrayList();
@@ -402,14 +396,12 @@ public abstract class SortedIndexTestBase extends TestCase {
         for (int i = 0; i < keys.length + 2; i++) {
             for (int j = i; j < keys.length + 3; j++) {
                 final int start = min(i, keys.length);
-                final long[] range =
-                    Arrays.copyOfRange(keys, start, max(start, min(j, keys.length)));
+                final long[] range = Arrays.copyOfRange(keys, start, max(start, min(j, keys.length)));
                 final Index subIndex = index.subindexByPos(i, j);
                 try {
                     compareIndexAndKeyValues(subIndex, range);
                 } catch (AssertionError assertionError) {
-                    System.err.println(
-                        "index=" + index + ", subIndex=" + subIndex + ", i=" + i + ", j=" + j);
+                    System.err.println("index=" + index + ", subIndex=" + subIndex + ", i=" + i + ", j=" + j);
                     throw assertionError;
                 }
             }
@@ -453,7 +445,7 @@ public abstract class SortedIndexTestBase extends TestCase {
         compareIndexAndKeyValues(result, doMinusSimple(allKeys, subKeys));
 
         subKeys = stringToKeys(
-            "0-12159,12162-12163,12166-12167,12172-12175,12178-12179,12182-12325,12368-33805,33918-33977,33980-34109,34168-34169,34192-34193,34309-34312,34314,34317-34323,34356-34491,34494-34495,34502-34503,34506-34509,34512-34515,34520-34521,34524-34525,34528-34529,34540-34541,34544-34545,34548-34549,34552-34553,34574-34589,34602-34675,34678-34679,34688-34689,34694-34695,34700-34705,34716-34717,34722-34723,34732-34733,34738-34739,34774,34785,34791-34794,34796-34799,34801-34803,34807-34808,34813,34816,34828-34829,34856-34857,34869,34875-34884,34892-34899,34902-34925,34930-34932,34934-34938,34958-34959,34966-34973,35038-35065,35068-35075,35212-35363,35496-35511,35542-44097,44104-54271,54291,54304,54308-54310,54373-54749,54751-54756,54758-55040,55112,55114-55115,55117,55120-55213,55321-55322,55325-55326,55627,55630-55631,55634-55635,55638,55640-55643,55646-55647,55650-55651,55654-55655,55658-55659,55661-55690,55692-55698,55702-55710,55712-55713,55716-55717,55719-55960,56059-56134,56185-56186,56255-56257,56259,56341-56628,56695-56866,56878-56880,56882-57082,57105-65108,64977-66622,66625-66658,66661-66662,66665-66668,66671-66834,66837-66840");
+                "0-12159,12162-12163,12166-12167,12172-12175,12178-12179,12182-12325,12368-33805,33918-33977,33980-34109,34168-34169,34192-34193,34309-34312,34314,34317-34323,34356-34491,34494-34495,34502-34503,34506-34509,34512-34515,34520-34521,34524-34525,34528-34529,34540-34541,34544-34545,34548-34549,34552-34553,34574-34589,34602-34675,34678-34679,34688-34689,34694-34695,34700-34705,34716-34717,34722-34723,34732-34733,34738-34739,34774,34785,34791-34794,34796-34799,34801-34803,34807-34808,34813,34816,34828-34829,34856-34857,34869,34875-34884,34892-34899,34902-34925,34930-34932,34934-34938,34958-34959,34966-34973,35038-35065,35068-35075,35212-35363,35496-35511,35542-44097,44104-54271,54291,54304,54308-54310,54373-54749,54751-54756,54758-55040,55112,55114-55115,55117,55120-55213,55321-55322,55325-55326,55627,55630-55631,55634-55635,55638,55640-55643,55646-55647,55650-55651,55654-55655,55658-55659,55661-55690,55692-55698,55702-55710,55712-55713,55716-55717,55719-55960,56059-56134,56185-56186,56255-56257,56259,56341-56628,56695-56866,56878-56880,56882-57082,57105-65108,64977-66622,66625-66658,66661-66662,66665-66668,66671-66834,66837-66840");
         subIndex = getSortedIndex(subKeys);
         result = index.minus(subIndex);
         compareIndexAndKeyValues(result, doMinusSimple(allKeys, subKeys));
@@ -471,8 +463,7 @@ public abstract class SortedIndexTestBase extends TestCase {
             indexBuilder1.addRange(start + ii * 3, start + ii * 3 + 1);
         }
 
-        // This, actually forces the split. We'll have short nodes (rather than ints) with the
-        // packing, because this
+        // This, actually forces the split. We'll have short nodes (rather than ints) with the packing, because this
         // range is less than 2^15.
         indexBuilder1.addRange(32000, 32001);
 
@@ -509,7 +500,7 @@ public abstract class SortedIndexTestBase extends TestCase {
     public void testFunnyOverLap() {
         // doTestFunnyOverlap("0-12159,12162-12163,12166-12167,12172-12175,12178-12179,12182-12325,12368-33805,33918-33977,33980-34109,34168-34169,34192-34193,34309-34312,34314,34317-34323,34356-34491,34494-34495,34502-34503,34506-34509,34512-34515,34520-34521,34524-34525,34528-34529,34540-34541,34544-34545,34548-34549,34552-34553,34574-34589,34602-34675,34678-34679,34688-34689,34694-34695,34700-34705,34716-34717,34722-34723,34732-34733,34738-34739,34774,34785,34791-34794,34796-34799,34801-34803,34807-34808,34813,34816,34828-34829,34856-34857,34869,34875-34884,34892-34899,34902-34925,34930-34932,34934-34938,34958-34959,34966-34973,35038-35065,35068-35075,35212-35363,35496-35511,35542-44097,44104-54271,54291,54304,54308-54310,54373-54749,54751-54756,54758-55040,55112,55114-55115,55117,55120-55213,55321-55322,55325-55326,55627,55630-55631,55634-55635,55638,55640-55643,55646-55647,55650-55651,55654-55655,55658-55659,55661-55690,55692-55698,55702-55710,55712-55713,55716-55717,55719-55960,56059-56134,56185-56186,56255-56257,56259,56341-56628,56695-56866,56878-56880,56882-57082,57105-65108,64977-66622,66625-66658,66661-66662,66665-66668,66671-66834,66837-66840");
         doTestFunnyOverlap(
-            "0-6509,6510-6619,6620-17383,17384-18031,18158-47065,47082-47099,47104-47593,47616-56079,56080-71737,71858-83613,83616-83701,83719,83721-83749,83752-83761,83764,83769-86307,86308-87746,87762-87770,87774-87841,87845-87847,87853-87878,87880,87882-87933,87936-87950,87954-87956,87958-87967,87972-87980,87982,87984-87988,87991-88137,88139-88140,88167-88198,88228,88231-88289,88293,88299-88362,88364,88378-88381,88388-88389,88394-88395,88398-88399,88402-88405,88408-88415,88420-88427,88430-88437,88440-88441,88519,88521-88588,88597-92547,92672-93207,93224-95745,95630-102119,102284-106111,106124-106125,106134-106135,106137-106141,106157-106173,106323-106326,106330-106377,106379-106380,106382-106384,106386,106390-106395,106454-106665,106788-106855,106932-108809,108830-113235,113420-113547,113580-113587,113596-113643,113646-113771");
+                "0-6509,6510-6619,6620-17383,17384-18031,18158-47065,47082-47099,47104-47593,47616-56079,56080-71737,71858-83613,83616-83701,83719,83721-83749,83752-83761,83764,83769-86307,86308-87746,87762-87770,87774-87841,87845-87847,87853-87878,87880,87882-87933,87936-87950,87954-87956,87958-87967,87972-87980,87982,87984-87988,87991-88137,88139-88140,88167-88198,88228,88231-88289,88293,88299-88362,88364,88378-88381,88388-88389,88394-88395,88398-88399,88402-88405,88408-88415,88420-88427,88430-88437,88440-88441,88519,88521-88588,88597-92547,92672-93207,93224-95745,95630-102119,102284-106111,106124-106125,106134-106135,106137-106141,106157-106173,106323-106326,106330-106377,106379-106380,106382-106384,106386,106390-106395,106454-106665,106788-106855,106932-108809,108830-113235,113420-113547,113580-113587,113596-113643,113646-113771");
     }
 
     private void doTestFunnyOverlap(@SuppressWarnings("SameParameterValue") String input) {
@@ -735,8 +726,7 @@ public abstract class SortedIndexTestBase extends TestCase {
 
             final Index result = fullIndex.minus(subIndex);
 
-            compareIndexAndKeyValues(m2, result,
-                doMinusSimple(booleanSetToKeys(fullSet), booleanSetToKeys(subSet)));
+            compareIndexAndKeyValues(m2, result, doMinusSimple(booleanSetToKeys(fullSet), booleanSetToKeys(subSet)));
         }
     }
 
@@ -784,9 +774,7 @@ public abstract class SortedIndexTestBase extends TestCase {
 
     private void testRangeByKey(final String m, long... keys) {
         final Index index = getSortedIndex(keys);
-        for (long i =
-            (keys.length > 0 ? keys[0] - 2 : 1); i < (keys.length > 0 ? keys[keys.length - 1] : 0)
-                + 3; i++) {
+        for (long i = (keys.length > 0 ? keys[0] - 2 : 1); i < (keys.length > 0 ? keys[keys.length - 1] : 0) + 3; i++) {
             for (long j = i; j < (keys.length > 0 ? keys[keys.length - 1] : 0) + 3; j++) {
                 final TLongArrayList data = new TLongArrayList();
                 for (int k = 0; k < keys.length; k++) {
@@ -800,8 +788,7 @@ public abstract class SortedIndexTestBase extends TestCase {
                 try {
                     compareIndexAndKeyValues(m, subIndex, range);
                 } catch (AssertionError assertionError) {
-                    System.err.println(
-                        "index=" + index + ", subIndex=" + subIndex + ", i=" + i + ", j=" + j);
+                    System.err.println("index=" + index + ", subIndex=" + subIndex + ", i=" + i + ", j=" + j);
                     throw assertionError;
                 }
             }
@@ -838,8 +825,8 @@ public abstract class SortedIndexTestBase extends TestCase {
     }
 
     private void compareIndexAndKeyValues(final String pfx, final Index index, final long[] keys) {
-        final String m = ((pfx != null && pfx.length() > 0) ? pfx + " " : "") + "index=" + index
-            + ", keys=" + a2s(keys);
+        final String m =
+                ((pfx != null && pfx.length() > 0) ? pfx + " " : "") + "index=" + index + ", keys=" + a2s(keys);
         final SortedIndex.SearchIterator iterator = index.searchIterator();
         for (int i = 0; i < keys.length; i++) {
             assertTrue(m + " iterator shouldbn't be empty", iterator.hasNext());
@@ -889,8 +876,7 @@ public abstract class SortedIndexTestBase extends TestCase {
 
         for (int ii = 0; ii < 500; ++ii) {
             if (ii % printInterval == printInterval - 1) {
-                System.out
-                    .println(ii + ": " + (System.currentTimeMillis() - startTime) + "ms: " + check);
+                System.out.println(ii + ": " + (System.currentTimeMillis() - startTime) + "ms: " + check);
             }
 
             final IndexBuilder builder = getFactory().getRandomBuilder();
@@ -931,8 +917,7 @@ public abstract class SortedIndexTestBase extends TestCase {
             checkB.validate(m);
             checkA.insert(checkB);
             checkA.validate(m);
-            Assert.assertion(checkA.equals(check), "checkA.equals(check)", check, "check", checkA,
-                "checkA");
+            Assert.assertion(checkA.equals(check), "checkA.equals(check)", check, "check", checkA, "checkA");
         }
     }
 
@@ -941,43 +926,33 @@ public abstract class SortedIndexTestBase extends TestCase {
         final Supplier<TreeIndexImpl>[] suppliers = new Supplier[] {
                 () -> TreeIndexImpl.EMPTY
 
-                , () -> SingleRange.make(0, 0),
-                () -> SingleRange.make(4_000_000_000L, 4_000_000_000L),
+                , () -> SingleRange.make(0, 0), () -> SingleRange.make(4_000_000_000L, 4_000_000_000L),
                 () -> SingleRange.make(RspArray.BLOCK_SIZE, 2 * RspArray.BLOCK_SIZE - 1),
                 () -> SingleRange.make(RspArray.BLOCK_SIZE, 4 * RspArray.BLOCK_SIZE - 1),
-                () -> SingleRange.make(0, 9_999),
-                () -> SingleRange.make(4_000_000_000L, 4_000_009_999L)
+                () -> SingleRange.make(0, 9_999), () -> SingleRange.make(4_000_000_000L, 4_000_009_999L)
 
                 , SortedRanges::makeEmpty, () -> SortedRanges.makeSingleElement(0),
                 () -> SortedRanges.makeSingleElement(4_000_000_000L),
-                () -> SortedRanges.makeSingleRange(RspArray.BLOCK_SIZE,
-                    2 * RspArray.BLOCK_SIZE - 1),
-                () -> SortedRanges.makeSingleRange(RspArray.BLOCK_SIZE,
-                    2 * RspArray.BLOCK_SIZE - 100),
-                () -> SortedRanges.makeSingleRange(2 * RspArray.BLOCK_SIZE - 100,
-                    2 * RspArray.BLOCK_SIZE),
-                () -> SortedRanges.makeSingleRange(RspArray.BLOCK_SIZE,
-                    4 * RspArray.BLOCK_SIZE - 1),
+                () -> SortedRanges.makeSingleRange(RspArray.BLOCK_SIZE, 2 * RspArray.BLOCK_SIZE - 1),
+                () -> SortedRanges.makeSingleRange(RspArray.BLOCK_SIZE, 2 * RspArray.BLOCK_SIZE - 100),
+                () -> SortedRanges.makeSingleRange(2 * RspArray.BLOCK_SIZE - 100, 2 * RspArray.BLOCK_SIZE),
+                () -> SortedRanges.makeSingleRange(RspArray.BLOCK_SIZE, 4 * RspArray.BLOCK_SIZE - 1),
                 () -> SortedRanges.makeSingleRange(0, 9_999),
                 () -> SortedRanges.makeSingleRange(4_000_000_000L, 4_000_009_999L), () -> {
-                    final TreeIndexImpl r =
-                        SortedRanges.tryMakeForKnownRangeKnownCount(100, 10, 10_010);
+                    final TreeIndexImpl r = SortedRanges.tryMakeForKnownRangeKnownCount(100, 10, 10_010);
                     r.ixInsertRange(0, 100);
                     r.ixInsert(256);
                     r.ixInsertRange(1024, 9000);
                     return r;
                 }, () -> TreeIndexImpl.fromChunk(LongChunk.chunkWrap(new long[] {}), 0, 0, true),
-                () -> TreeIndexImpl.fromChunk(LongChunk.chunkWrap(new long[] {0, 1, 2, 3}), 0, 4,
-                    true),
-                () -> TreeIndexImpl.fromChunk(LongChunk.chunkWrap(new long[] {0, 1, 2, 3, 4, 5, 6}),
-                    2, 3, true)
+                () -> TreeIndexImpl.fromChunk(LongChunk.chunkWrap(new long[] {0, 1, 2, 3}), 0, 4, true),
+                () -> TreeIndexImpl.fromChunk(LongChunk.chunkWrap(new long[] {0, 1, 2, 3, 4, 5, 6}), 2, 3, true)
 
                 , RspBitmap::makeEmpty, () -> RspBitmap.makeSingleRange(0, 0),
                 () -> RspBitmap.makeSingleRange(4_000_000_000L, 4_000_000_000L),
                 () -> RspBitmap.makeSingleRange(RspArray.BLOCK_SIZE, 2 * RspArray.BLOCK_SIZE - 1),
                 () -> RspBitmap.makeSingleRange(RspArray.BLOCK_SIZE, 2 * RspArray.BLOCK_SIZE - 100),
-                () -> RspBitmap.makeSingleRange(2 * RspArray.BLOCK_SIZE - 100,
-                    2 * RspArray.BLOCK_SIZE),
+                () -> RspBitmap.makeSingleRange(2 * RspArray.BLOCK_SIZE - 100, 2 * RspArray.BLOCK_SIZE),
                 () -> RspBitmap.makeSingleRange(RspArray.BLOCK_SIZE, 4 * RspArray.BLOCK_SIZE - 1),
                 () -> RspBitmap.makeEmpty().ixInsert(4_000_000_000L).ixInsert(4_000_000_002L),
                 () -> RspBitmap.makeSingleRange(0, 9_999),
@@ -996,10 +971,9 @@ public abstract class SortedIndexTestBase extends TestCase {
                 }, () -> {
                     final TreeIndexImpl r = RspBitmap.makeEmpty();
                     LongStream
-                        .rangeClosed(RspArray.BLOCK_SIZE * 4,
-                            RspArray.BLOCK_SIZE * 4
-                                + ArrayContainer.SWITCH_CONTAINER_CARDINALITY_THRESHOLD * 2)
-                        .filter(l -> (l & 1) == 0).forEach(r::ixInsert);
+                            .rangeClosed(RspArray.BLOCK_SIZE * 4,
+                                    RspArray.BLOCK_SIZE * 4 + ArrayContainer.SWITCH_CONTAINER_CARDINALITY_THRESHOLD * 2)
+                            .filter(l -> (l & 1) == 0).forEach(r::ixInsert);
                     return r;
                 }
         };
@@ -1024,7 +998,7 @@ public abstract class SortedIndexTestBase extends TestCase {
 
                 final Index actualAfterInsert2 = fromTreeIndexImpl(lhs.get());
                 try (final WritableLongChunk<OrderedKeyIndices> toBeSliced =
-                    WritableLongChunk.makeWritableChunk(asKeyIndicesChunk.size() + 2048)) {
+                        WritableLongChunk.makeWritableChunk(asKeyIndicesChunk.size() + 2048)) {
                     toBeSliced.copyFromChunk(asKeyIndicesChunk, 0, 1024, asKeyIndicesChunk.size());
                     actualAfterInsert2.insert(toBeSliced, 1024, asKeyIndicesChunk.size());
                 }
@@ -1042,7 +1016,7 @@ public abstract class SortedIndexTestBase extends TestCase {
 
                 final Index actualAfterRemove2 = fromTreeIndexImpl(lhs.get());
                 try (final WritableLongChunk<OrderedKeyIndices> toBeSliced =
-                    WritableLongChunk.makeWritableChunk(asKeyIndicesChunk.size() + 2048)) {
+                        WritableLongChunk.makeWritableChunk(asKeyIndicesChunk.size() + 2048)) {
                     toBeSliced.copyFromChunk(asKeyIndicesChunk, 0, 1024, asKeyIndicesChunk.size());
                     actualAfterRemove2.remove(toBeSliced, 1024, asKeyIndicesChunk.size());
                 }
@@ -1058,8 +1032,7 @@ public abstract class SortedIndexTestBase extends TestCase {
                     final Index rhsIndex = fromTreeIndexImpl(rhs.get());
 
                     lhsIndex.insert(rhsIndex);
-                    lhsTreeIndexImpl.ixInsertSecondHalf(rhsIndex.asKeyIndicesChunk(), 0,
-                        rhsIndex.intSize());
+                    lhsTreeIndexImpl.ixInsertSecondHalf(rhsIndex.asKeyIndicesChunk(), 0, rhsIndex.intSize());
 
                     assertEquals(lhsIndex, fromTreeIndexImpl(lhsTreeIndexImpl));
                 }

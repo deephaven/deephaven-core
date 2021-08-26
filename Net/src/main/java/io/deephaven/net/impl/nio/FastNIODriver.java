@@ -39,8 +39,7 @@ public final class FastNIODriver implements Runnable {
         return createSchedulers(name, property, log, Configuration.getInstance());
     }
 
-    public static Scheduler[] createSchedulers(String name, String property, Logger log,
-        Configuration config) {
+    public static Scheduler[] createSchedulers(String name, String property, Logger log, Configuration config) {
         final String[] values = config.getProperty(property).split(",");
         if (values.length != 6)
             return null;
@@ -53,34 +52,30 @@ public final class FastNIODriver implements Runnable {
         final boolean doSpinSelect = Boolean.parseBoolean(values[5]);
         final Scheduler[] schedulers = new Scheduler[numSchedulers];
         for (int i = 0; i < numSchedulers; ++i) {
-            schedulers[i] =
-                createDrivers(name + "-" + i, log, threadsPerScheduler, threadsPerScheduler,
-                    timeoutsOrSpins, spinsUntilPark, false, doTimingStats, doSpinSelect)
-                        .getScheduler();
+            schedulers[i] = createDrivers(name + "-" + i, log, threadsPerScheduler, threadsPerScheduler,
+                    timeoutsOrSpins, spinsUntilPark, false, doTimingStats, doSpinSelect).getScheduler();
         }
         return schedulers;
     }
 
-    public static FastNIODriver createDrivers(String name, Logger log, int initialThreads,
-        int maxThreads, long workTimeout, int spinsUntilPark, boolean crashOnMax) {
-        return createDrivers(name, log, initialThreads, maxThreads, workTimeout, spinsUntilPark,
-            crashOnMax, true, false);
+    public static FastNIODriver createDrivers(String name, Logger log, int initialThreads, int maxThreads,
+            long workTimeout, int spinsUntilPark, boolean crashOnMax) {
+        return createDrivers(name, log, initialThreads, maxThreads, workTimeout, spinsUntilPark, crashOnMax, true,
+                false);
     }
 
-    public static FastNIODriver createDrivers(String name, Logger log, int initialThreads,
-        int maxThreads, long workTimeout, int spinsUntilPark, boolean crashOnMax,
-        boolean doTimingStats, boolean doSpinSelect) {
+    public static FastNIODriver createDrivers(String name, Logger log, int initialThreads, int maxThreads,
+            long workTimeout, int spinsUntilPark, boolean crashOnMax, boolean doTimingStats, boolean doSpinSelect) {
         FastNIODriver.log = log;
-        log.info().append(name).append(": Starting FastNIODriver Scheduler: threads: ")
-            .append(initialThreads)
-            .append(", maxThreads: ").append(maxThreads)
-            .append(", workTimeout/spinsOnSelect: ").append(workTimeout)
-            .append(", spinsUntilPark: ").append(spinsUntilPark)
-            .append(", doSpinSelect: ").append(doSpinSelect)
-            .endl();
+        log.info().append(name).append(": Starting FastNIODriver Scheduler: threads: ").append(initialThreads)
+                .append(", maxThreads: ").append(maxThreads)
+                .append(", workTimeout/spinsOnSelect: ").append(workTimeout)
+                .append(", spinsUntilPark: ").append(spinsUntilPark)
+                .append(", doSpinSelect: ").append(doSpinSelect)
+                .endl();
         try {
-            final Scheduler scheduler = new YASchedulerImpl(name,
-                NioUtil.reduceSelectorGarbage(Selector.open()), log, doTimingStats, doSpinSelect);
+            final Scheduler scheduler = new YASchedulerImpl(name, NioUtil.reduceSelectorGarbage(Selector.open()), log,
+                    doTimingStats, doSpinSelect);
 
             final UnfairMutex mutex = new UnfairMutex(spinsUntilPark, maxThreads);
             final AtomicBoolean shutdown = new AtomicBoolean(false);
@@ -90,8 +85,8 @@ public final class FastNIODriver implements Runnable {
             final InternalThread[] threads = new InternalThread[initialThreads];
             // separate the creation and start so the created / available values are setup
             for (int i = 0; i < initialThreads; ++i) {
-                threads[i] = createNewThread(name, scheduler, mutex, shutdown, workTimeout, created,
-                    destroyed, available, maxThreads, crashOnMax);
+                threads[i] = createNewThread(name, scheduler, mutex, shutdown, workTimeout, created, destroyed,
+                        available, maxThreads, crashOnMax);
             }
             for (int i = 0; i < initialThreads; ++i) {
                 threads[i].start();
@@ -113,17 +108,16 @@ public final class FastNIODriver implements Runnable {
         }
     }
 
-    private static InternalThread createNewThread(final String name, final Scheduler scheduler,
-        final UnfairMutex mutex, final AtomicBoolean shutdown, final long workTimeout,
-        final AtomicInteger created, final AtomicInteger destroyed, final AtomicInteger available,
-        final int maxThreads, final boolean crashOnMax) {
-        InternalThread t = new InternalThread(new FastNIODriver(name, scheduler, mutex, shutdown,
-            workTimeout, created, destroyed, available, maxThreads, crashOnMax));
+    private static InternalThread createNewThread(final String name, final Scheduler scheduler, final UnfairMutex mutex,
+            final AtomicBoolean shutdown, final long workTimeout, final AtomicInteger created,
+            final AtomicInteger destroyed, final AtomicInteger available, final int maxThreads,
+            final boolean crashOnMax) {
+        InternalThread t = new InternalThread(new FastNIODriver(name, scheduler, mutex, shutdown, workTimeout, created,
+                destroyed, available, maxThreads, crashOnMax));
         t.setDaemon(true);
         t.setName(name + "-FastNIODriver-" + created.getAndIncrement());
         int a = available.incrementAndGet();
-        log.info().append("Creating thread ").append(t.getName()).append(". available: ").append(a)
-            .endl();
+        log.info().append("Creating thread ").append(t.getName()).append(". available: ").append(a).endl();
         return t;
     }
 
@@ -141,9 +135,9 @@ public final class FastNIODriver implements Runnable {
     private final boolean crashOnMax;
 
     private FastNIODriver(final String name, final Scheduler scheduler, final UnfairMutex mutex,
-        final AtomicBoolean shutdown, final long workTimeout, final AtomicInteger created,
-        final AtomicInteger destroyed, final AtomicInteger available, final int maxThreads,
-        final boolean crashOnMax) {
+            final AtomicBoolean shutdown, final long workTimeout, final AtomicInteger created,
+            final AtomicInteger destroyed, final AtomicInteger available, final int maxThreads,
+            final boolean crashOnMax) {
         this.scheduler = scheduler;
         this.mutex = mutex;
         this.shutdown = shutdown;
@@ -160,8 +154,8 @@ public final class FastNIODriver implements Runnable {
                 if (!alreadyHandedOff) {
                     if (shouldCreate()) {
                         // nobody to handoff too! let's create a new driver
-                        createNewThread(name, scheduler, mutex, shutdown, workTimeout, created,
-                            destroyed, available, maxThreads, crashOnMax).start();
+                        createNewThread(name, scheduler, mutex, shutdown, workTimeout, created, destroyed, available,
+                                maxThreads, crashOnMax).start();
                     }
                     mutex.unlock();
                     alreadyHandedOff = true;
@@ -176,12 +170,10 @@ public final class FastNIODriver implements Runnable {
             // don't need to worry about races w/ index b/c we have lock
             if (created.get() == maxThreads) {
                 if (crashOnMax) {
-                    log.fatal().append("FastNIODriver: exceeded maximum thread pool limit: ")
-                        .append(summary()).endl();
+                    log.fatal().append("FastNIODriver: exceeded maximum thread pool limit: ").append(summary()).endl();
                     LogCrashDump.logCrashDump(log);
-                    CommBase.signalFatalError(
-                        "FastNIODriver: exceeded maximum thread pool limit: " + summary(),
-                        new Throwable());
+                    CommBase.signalFatalError("FastNIODriver: exceeded maximum thread pool limit: " + summary(),
+                            new Throwable());
                 }
                 return false;
             }
@@ -191,8 +183,8 @@ public final class FastNIODriver implements Runnable {
     }
 
     public String summary() {
-        return "(available: " + available.get() + ", created: " + created.get() + ", destroyed: "
-            + destroyed.get() + ")";
+        return "(available: " + available.get() + ", created: " + created.get() + ", destroyed: " + destroyed.get()
+                + ")";
     }
 
     @Override
@@ -224,9 +216,8 @@ public final class FastNIODriver implements Runnable {
                 scheduler.installJob(new TimedJob() {
                     public void timedOut() {}
                 }, 0); // wake us up yo
-                mutexUnlockHandoff.call(); // we aren't sure whether the scheduler.work has already
-                                           // called the handoff or not yet, so go ahead and call it
-                                           // (it won't double release it)
+                mutexUnlockHandoff.call(); // we aren't sure whether the scheduler.work has already called the handoff
+                                           // or not yet, so go ahead and call it (it won't double release it)
                 long deadline = System.currentTimeMillis() + 5000;
                 // b/c we haven't destroyed ourself yet...
                 // meh spinning :/
@@ -246,16 +237,14 @@ public final class FastNIODriver implements Runnable {
         }
 
         if (throwable == null) {
-            log.error().append("Thread ").append(me.getName()).append(" is terminating: ")
-                .append(summary()).endl();
+            log.error().append("Thread ").append(me.getName()).append(" is terminating: ").append(summary()).endl();
         } else {
-            log.fatal(throwable).append("Thread ").append(me.getName())
-                .append(" is terminating on a fatal exception: ").append(summary()).endl();
+            log.fatal(throwable).append("Thread ").append(me.getName()).append(" is terminating on a fatal exception: ")
+                    .append(summary()).endl();
         }
 
         if (throwable != null)
-            CommBase.signalFatalError("Unhandled throwable from FastNIODriver scheduler",
-                throwable);
+            CommBase.signalFatalError("Unhandled throwable from FastNIODriver scheduler", throwable);
     }
 
     public boolean isShutdown() {

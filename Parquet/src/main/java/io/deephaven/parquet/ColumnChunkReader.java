@@ -5,11 +5,11 @@ import org.apache.parquet.schema.PrimitiveType;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.function.Supplier;
 
 public interface ColumnChunkReader {
     /**
-     * @return -1 if the current column doesn't guarantee fixed page size, otherwise the fixed page
-     *         size
+     * @return -1 if the current column doesn't guarantee fixed page size, otherwise the fixed page size
      */
     int getPageFixedSize();
 
@@ -24,8 +24,8 @@ public interface ColumnChunkReader {
     long numValues();
 
     /**
-     * @return The depth of the number of nested repeated fields this column is a part of. 0 means
-     *         this is a simple (non-repeating) field, 1 means this is a flat array.
+     * @return The depth of the number of nested repeated fields this column is a part of. 0 means this is a simple
+     *         (non-repeating) field, 1 means this is a flat array.
      */
     int getMaxRl();
 
@@ -45,10 +45,25 @@ public interface ColumnChunkReader {
     boolean usesDictionaryOnEveryPage();
 
     /**
-     * @return Reference to the parquet dictionary for that page if available
-     * @throws IOException if problem encountered with underlying storage
+     * @return Supplier for a Parquet dictionary for this column chunk
+     * @apiNote The result will never return {@code null}. It will instead supply {@link #NULL_DICTIONARY}.
      */
-    Dictionary getDictionary() throws IOException;
+    Supplier<Dictionary> getDictionarySupplier();
+
+    Dictionary NULL_DICTIONARY = new NullDictionary();
+
+    final class NullDictionary extends Dictionary {
+
+        private NullDictionary() {
+            super(null);
+        }
+
+        @Override
+        public int getMaxId() {
+            // Note that this will cause the "size" of the dictionary to be 0.
+            return -1;
+        }
+    }
 
     PrimitiveType getType();
 }

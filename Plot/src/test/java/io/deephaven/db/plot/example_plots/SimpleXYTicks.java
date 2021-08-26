@@ -19,19 +19,19 @@ public class SimpleXYTicks {
 
         Figure fig = FigureFactory.figure();
         Figure cht = fig.newChart(0)
-            .chartTitle("Chart Title");
+                .chartTitle("Chart Title");
         Figure axs = cht.newAxes()
-            .xTicks(5)
-            .xMinorTicks(3)
-            .yTicksVisible(false)
-            .yMinorTicks(3)
-            .xLabel("X")
-            .yLabel("Y")
-            .plot("Test1", x1, y1)
-            .plot("Test2", x2, y2)
-            .plot("TestF", x -> x * x / 5).funcRange(5, 10) // .npoints(5); //.range(-10,10);
-            .xAxis().axisColor(new Color(0, 255, 255))
-            .axis(0).axisLabelFont("Courier", "BOLD_ITALIC", 25);
+                .xTicks(5)
+                .xMinorTicks(3)
+                .yTicksVisible(false)
+                .yMinorTicks(3)
+                .xLabel("X")
+                .yLabel("Y")
+                .plot("Test1", x1, y1)
+                .plot("Test2", x2, y2)
+                .plot("TestF", x -> x * x / 5).funcRange(5, 10) // .npoints(5); //.range(-10,10);
+                .xAxis().axisColor(new Color(0, 255, 255))
+                .axis(0).axisLabelFont("Courier", "BOLD_ITALIC", 25);
 
         ExamplePlotUtils.display(axs);
     }

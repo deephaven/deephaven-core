@@ -15,7 +15,7 @@ final class ChunkPoolConstants {
     @VisibleForTesting
     static final int LARGEST_POOLED_CHUNK_LOG2_CAPACITY = 16;
     static final int NUM_POOLED_CHUNK_CAPACITIES =
-        LARGEST_POOLED_CHUNK_LOG2_CAPACITY - SMALLEST_POOLED_CHUNK_LOG2_CAPACITY + 1;
+            LARGEST_POOLED_CHUNK_LOG2_CAPACITY - SMALLEST_POOLED_CHUNK_LOG2_CAPACITY + 1;
 
     static int checkCapacityBounds(final int chunkCapacity) {
         return Require.geqZero(chunkCapacity, "chunkCapacity");
@@ -32,7 +32,7 @@ final class ChunkPoolConstants {
             return 0;
         }
         final int roundedChunkLog2Capacity =
-            Math.max(MathUtil.ceilLog2(minimumChunkCapacity), SMALLEST_POOLED_CHUNK_LOG2_CAPACITY);
+                Math.max(MathUtil.ceilLog2(minimumChunkCapacity), SMALLEST_POOLED_CHUNK_LOG2_CAPACITY);
         if (roundedChunkLog2Capacity > LARGEST_POOLED_CHUNK_LOG2_CAPACITY) {
             return -1;
         }
@@ -51,7 +51,7 @@ final class ChunkPoolConstants {
         }
         final int chunkLog2Capacity = MathUtil.ceilLog2(actualChunkCapacity);
         if (chunkLog2Capacity < SMALLEST_POOLED_CHUNK_LOG2_CAPACITY
-            || chunkLog2Capacity > LARGEST_POOLED_CHUNK_LOG2_CAPACITY) {
+                || chunkLog2Capacity > LARGEST_POOLED_CHUNK_LOG2_CAPACITY) {
             return -1;
         }
         return getChunkLog2CapacityOffset(chunkLog2Capacity);

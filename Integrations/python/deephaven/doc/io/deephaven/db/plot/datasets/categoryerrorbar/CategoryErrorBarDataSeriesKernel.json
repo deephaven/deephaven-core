@@ -2,7 +2,7 @@
  "className": "io.deephaven.db.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeriesKernel",
  "methods": {
   "categories": "Get an ordered list of the categories in the data.\n\n:return: (java.util.Collection<java.lang.Comparable>) the ordered categories of the data",
-  "getCategoryKey": "Get the index key of the category within the original dataset.  This can be used to enforce a global ordering\n of a MultiSeries cat plot.\n\n:param category: (java.lang.Comparable<?>) - The category to locate.\n:return: (long) the key of the specified category within the original data set. or -1 if not present.",
+  "getCategoryKey": "Get the index key of the category within the original dataset. This can be used to enforce a global ordering of a\n MultiSeries cat plot.\n\n:param category: (java.lang.Comparable<?>) - The category to locate.\n:return: (long) the key of the specified category within the original data set. or -1 if not present.",
   "getEndY": ":param category: java.lang.Comparable<?>\n:return: java.lang.Number",
   "getStartY": ":param category: java.lang.Comparable<?>\n:return: java.lang.Number",
   "getValue": "Get the value of the specified category, or null if there was none.\n\n:param category: (java.lang.Comparable<?>) - The category to get the value of\n:return: (java.lang.Number) the value of the specified category",
@@ -10,6 +10,6 @@
   "size": "Get the size of the dataset (the number of categories)\n\n:return: (int) the number of categories in the dataset."
  },
  "path": "io.deephaven.db.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeriesKernel",
- "text": "The core of the Error Bar Category date series update and indexing.  This is used by the regular category data series to\n both update the values of existing categories as well as to ensure that new categories are maintained in order\n of the original table.",
+ "text": "The core of the Error Bar Category date series update and indexing. This is used by the regular category data series\n to both update the values of existing categories as well as to ensure that new categories are maintained in order of\n the original table.",
  "typeName": "class"
 }

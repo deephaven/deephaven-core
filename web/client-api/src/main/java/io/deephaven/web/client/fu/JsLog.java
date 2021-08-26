@@ -5,8 +5,7 @@ import io.deephaven.web.shared.fu.JsProvider;
 import jsinterop.annotations.JsProperty;
 
 /**
- * A place where we can shuffle off things we want to log for development, but not necessarily in
- * production.
+ * A place where we can shuffle off things we want to log for development, but not necessarily in production.
  *
  */
 public class JsLog {

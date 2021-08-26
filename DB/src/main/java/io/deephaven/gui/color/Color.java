@@ -27,9 +27,8 @@ public class Color implements Paint, Serializable {
      *
      * Colors are specified by name or hex value.
      *
-     * Hex values are parsed as follows: first two digits set the Red component of the color; second
-     * two digits set the Green component; third two the Blue. Hex values must have a "#" in front,
-     * e.g. "#001122"
+     * Hex values are parsed as follows: first two digits set the Red component of the color; second two digits set the
+     * Green component; third two the Blue. Hex values must have a "#" in front, e.g. "#001122"
      *
      * For available names, see {@link Color} and {@link #colorNames}.
      *
@@ -54,11 +53,10 @@ public class Color implements Paint, Serializable {
     }
 
     /**
-     * Creates a Color with the specified red, green, and blue values in the range (0 - 255). Alpha
-     * is defaulted to 255.
+     * Creates a Color with the specified red, green, and blue values in the range (0 - 255). Alpha is defaulted to 255.
      *
-     * @throws IllegalArgumentException if {@code r}, {@code g} or {@code b} values are outside of
-     *         the range 0 to 255, inclusive
+     * @throws IllegalArgumentException if {@code r}, {@code g} or {@code b} values are outside of the range 0 to 255,
+     *         inclusive
      * @param r the red component
      * @param g the green component
      * @param b the blue component
@@ -68,11 +66,11 @@ public class Color implements Paint, Serializable {
     }
 
     /**
-     * Creates a Color with the specified red, green, blue, and alpha values in the range (0 - 255).
-     * The lower the alpha, the more transparent the color.
+     * Creates a Color with the specified red, green, blue, and alpha values in the range (0 - 255). The lower the
+     * alpha, the more transparent the color.
      *
-     * @throws IllegalArgumentException if {@code r}, {@code g} {@code b}, or {@code a} values are
-     *         outside of the range 0 to 255, inclusive
+     * @throws IllegalArgumentException if {@code r}, {@code g} {@code b}, or {@code a} values are outside of the range
+     *         0 to 255, inclusive
      * @param r the red component
      * @param g the green component
      * @param b the blue component
@@ -83,9 +81,8 @@ public class Color implements Paint, Serializable {
     }
 
     /**
-     * Creates a Color with the specified combined {@code rgb} value consisting of the red component
-     * in bits 16-23, the green component in bits 8-15, and the blue component in bits 0-7. Alpha is
-     * defaulted to 255.
+     * Creates a Color with the specified combined {@code rgb} value consisting of the red component in bits 16-23, the
+     * green component in bits 8-15, and the blue component in bits 0-7. Alpha is defaulted to 255.
      *
      * @param rgb the combined RGB components
      */
@@ -94,24 +91,23 @@ public class Color implements Paint, Serializable {
     }
 
     /**
-     * Creates a Color with the specified combined {@code rgba} value consisting of the alpha
-     * component in bits 24-31, the red component in bits 16-23, the green component in bits 8-15,
-     * and the blue component in bits 0-7. If {@code hasAlpha} is false, alpha is defaulted to 255.
+     * Creates a Color with the specified combined {@code rgba} value consisting of the alpha component in bits 24-31,
+     * the red component in bits 16-23, the green component in bits 8-15, and the blue component in bits 0-7. If
+     * {@code hasAlpha} is false, alpha is defaulted to 255.
      *
      * @param rgba the combined rbga components
-     * @param hasAlpha if true, {@code rgba} is parsed with an alpha component. Otherwise, alpha
-     *        defaults to 255
+     * @param hasAlpha if true, {@code rgba} is parsed with an alpha component. Otherwise, alpha defaults to 255
      */
     public Color(final int rgba, final boolean hasAlpha) {
         color = new java.awt.Color(rgba, hasAlpha);
     }
 
     /**
-     * Creates a Color with the specified red, green, and blue values in the range (0.0 - 1.0).
-     * Alpha is defaulted to 1.0. The lower the alpha, the more transparent the color.
+     * Creates a Color with the specified red, green, and blue values in the range (0.0 - 1.0). Alpha is defaulted to
+     * 1.0. The lower the alpha, the more transparent the color.
      *
-     * @throws IllegalArgumentException if {@code r}, {@code g} or {@code b} values are outside of
-     *         the range 0.0 to 1.0, inclusive
+     * @throws IllegalArgumentException if {@code r}, {@code g} or {@code b} values are outside of the range 0.0 to 1.0,
+     *         inclusive
      * @param r the red component
      * @param g the green component
      * @param b the blue component
@@ -121,11 +117,11 @@ public class Color implements Paint, Serializable {
     }
 
     /**
-     * Creates a Color with the specified red, green, blue, and alpha values in the range (0.0 -
-     * 1.0). The lower the alpha, the more transparent the color.
+     * Creates a Color with the specified red, green, blue, and alpha values in the range (0.0 - 1.0). The lower the
+     * alpha, the more transparent the color.
      *
-     * @throws IllegalArgumentException if {@code r}, {@code g}, {@code b}, {@code a} values are
-     *         outside of the range 0.0 to 1.0, inclusive
+     * @throws IllegalArgumentException if {@code r}, {@code g}, {@code b}, {@code a} values are outside of the range
+     *         0.0 to 1.0, inclusive
      * @param r the red component
      * @param g the green component
      * @param b the blue component
@@ -141,8 +137,8 @@ public class Color implements Paint, Serializable {
 
     @Override
     public String toString() {
-        return "Color{" + color.getRed() + "," + color.getGreen() + "," + color.getBlue() + ","
-            + color.getAlpha() + "}";
+        return "Color{" + color.getRed() + "," + color.getGreen() + "," + color.getBlue() + "," + color.getAlpha()
+                + "}";
     }
 
 
@@ -153,9 +149,8 @@ public class Color implements Paint, Serializable {
      *
      * Colors are specified by name or hex value.
      *
-     * Hex values are parsed as follows: first two digits set the Red component of the color; second
-     * two digits set the Green component; third two the Blue. Hex values must have a "#" in front,
-     * e.g. "#001122"
+     * Hex values are parsed as follows: first two digits set the Red component of the color; second two digits set the
+     * Green component; third two the Blue. Hex values must have a "#" in front, e.g. "#001122"
      *
      * For available names, see {@link Color} and {@link #colorNames}
      *
@@ -170,8 +165,8 @@ public class Color implements Paint, Serializable {
     /**
      * Creates a Color with the specified red, green, blue, and alpha values.
      *
-     * @throws IllegalArgumentException if {@code r}, {@code g} or {@code b} values are outside of
-     *         the range 0 to 255, inclusive
+     * @throws IllegalArgumentException if {@code r}, {@code g} or {@code b} values are outside of the range 0 to 255,
+     *         inclusive
      * @param r the red component in the range (0 - 255).
      * @param g the green component in the range (0 - 255).
      * @param b the blue component in the range (0 - 255).
@@ -184,8 +179,8 @@ public class Color implements Paint, Serializable {
     /**
      * Creates a Color with the specified red, green, blue, and alpha values.
      *
-     * @throws IllegalArgumentException if {@code r}, {@code g} or {@code b} values are outside of
-     *         the range 0 to 255, inclusive
+     * @throws IllegalArgumentException if {@code r}, {@code g} or {@code b} values are outside of the range 0 to 255,
+     *         inclusive
      * @param r the red component in the range (0 - 255).
      * @param g the green component in the range (0 - 255).
      * @param b the blue component in the range (0 - 255).
@@ -199,9 +194,9 @@ public class Color implements Paint, Serializable {
     /**
      * Creates a Color with the specified red, green, blue, and alpha values.
      *
-     * @param rgb the combined rbga components consisting of the alpha component in bits 24-31, the
-     *        red component in bits 16-23, the green component in bits 8-15, and the blue component
-     *        in bits 0-7. Alpha is defaulted to 255.
+     * @param rgb the combined rbga components consisting of the alpha component in bits 24-31, the red component in
+     *        bits 16-23, the green component in bits 8-15, and the blue component in bits 0-7. Alpha is defaulted to
+     *        255.
      * @return Color with the specified RGB value
      */
     public static Color colorRGB(final int rgb) {
@@ -211,11 +206,10 @@ public class Color implements Paint, Serializable {
     /**
      * Creates a Color with the specified red, green, blue, and alpha values.
      *
-     * @param rgba the combined rbga components consisting of the alpha component in bits 24-31, the
-     *        red component in bits 16-23, the green component in bits 8-15, and the blue component
-     *        in bits 0-7. If {@code hasAlpha} is false, alpha is set to 255.
-     * @param hasAlpha if true, {@code rgba} is parsed with an alpha component. Otherwise, alpha
-     *        defaults to 255
+     * @param rgba the combined rbga components consisting of the alpha component in bits 24-31, the red component in
+     *        bits 16-23, the green component in bits 8-15, and the blue component in bits 0-7. If {@code hasAlpha} is
+     *        false, alpha is set to 255.
+     * @param hasAlpha if true, {@code rgba} is parsed with an alpha component. Otherwise, alpha defaults to 255
      * @return Color with the specified RGBA value
      */
     public static Color colorRGB(final int rgba, final boolean hasAlpha) {
@@ -225,8 +219,8 @@ public class Color implements Paint, Serializable {
     /**
      * Creates a Color with the specified red, green, blue, and alpha values.
      *
-     * @throws IllegalArgumentException if {@code r}, {@code g} or {@code b} values are outside of
-     *         the range 0.0 to 1.0, inclusive
+     * @throws IllegalArgumentException if {@code r}, {@code g} or {@code b} values are outside of the range 0.0 to 1.0,
+     *         inclusive
      * @param r the red component in the range (0.0 - 1.0).
      * @param g the green component in the range (0.0 - 1.0).
      * @param b the blue component in the range (0.0 - 1.0).
@@ -239,13 +233,12 @@ public class Color implements Paint, Serializable {
     /**
      * Creates a Color with the specified red, green, blue, and alpha values.
      *
-     * @throws IllegalArgumentException if {@code r}, {@code g}, {@code b}, {@code a} values are
-     *         outside of the range 0.0 to 1.0, inclusive
+     * @throws IllegalArgumentException if {@code r}, {@code g}, {@code b}, {@code a} values are outside of the range
+     *         0.0 to 1.0, inclusive
      * @param r the red component in the range (0.0 - 1.0).
      * @param g the green component in the range (0.0 - 1.0).
      * @param b the blue component in the range (0.0 - 1.0).
-     * @param a the alpha component in the range (0.0-1.0). The lower the alpha, the more
-     *        transparent the color.
+     * @param a the alpha component in the range (0.0-1.0). The lower the alpha, the more transparent the color.
      * @return Color with the specified RGBA values
      */
     public static Color colorRGB(final float r, final float g, final float b, final float a) {
@@ -253,11 +246,11 @@ public class Color implements Paint, Serializable {
     }
 
     /**
-     * Creates a Color with the specified hue, saturation, lightness, and alpha. The lower the
-     * alpha, the more transparent the color.
+     * Creates a Color with the specified hue, saturation, lightness, and alpha. The lower the alpha, the more
+     * transparent the color.
      *
-     * @throws IllegalArgumentException if {@code s} or {@code l} values are outside of the range
-     *         0.0 to 100.0, inclusive
+     * @throws IllegalArgumentException if {@code s} or {@code l} values are outside of the range 0.0 to 100.0,
+     *         inclusive
      * @param h the hue component, as a degree on the color wheel
      * @param s the saturation component, as a percentage
      * @param l the lightness component, as a percentage
@@ -268,11 +261,11 @@ public class Color implements Paint, Serializable {
     }
 
     /**
-     * Creates a Color with the specified hue, saturation, lightness, and alpha. The lower the
-     * alpha, the more transparent the color.
+     * Creates a Color with the specified hue, saturation, lightness, and alpha. The lower the alpha, the more
+     * transparent the color.
      *
-     * @throws IllegalArgumentException if {@code s} or {@code l} values are outside of the range
-     *         0.0 to 100.0, inclusive or if {@code a} is outside of the range 0.0 to 1.0, inclusive
+     * @throws IllegalArgumentException if {@code s} or {@code l} values are outside of the range 0.0 to 100.0,
+     *         inclusive or if {@code a} is outside of the range 0.0 to 1.0, inclusive
      * @param h the hue component, as a degree on the color wheel
      * @param s the saturation component, as a percentage
      * @param l the lightness component, as a percentage

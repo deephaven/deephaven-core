@@ -7,6 +7,6 @@
   "withColumnFormats": "Sets the column formats for the table info.\n\n:param columnFormats: (java.lang.String[]) - the column formats to set.\n:return: (io.deephaven.db.v2.HierarchicalTableInfo) a copy of this HierarchicalTableInfo with column formats"
  },
  "path": "io.deephaven.db.v2.HierarchicalTableInfo",
- "text": "A class that contains information required for a particular Hierarchical table type.\n (i.e tree tables or\n  rollups)",
+ "text": "A class that contains information required for a particular Hierarchical table type. (i.e\n tree tables or\n rollups)",
  "typeName": "interface"
 }

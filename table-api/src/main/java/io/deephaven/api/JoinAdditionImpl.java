@@ -25,7 +25,7 @@ abstract class JoinAdditionImpl implements JoinAddition {
             // To make sure that JoinAddition#equals() works as we would expect, we should always
             // use canonical ColumnName when applicable.
             throw new IllegalArgumentException(
-                "Should not construct JoinAdditionImpl with equal columns, use the ColumnName directly");
+                    "Should not construct JoinAdditionImpl with equal columns, use the ColumnName directly");
         }
     }
 }

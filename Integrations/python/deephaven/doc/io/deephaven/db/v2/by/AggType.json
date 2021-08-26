@@ -5,6 +5,6 @@
   "values": "Returns an array containing the constants of this enum type, in\nthe order they are declared.\n\n:return: (io.deephaven.db.v2.by.AggType[]) an array containing the constants of this enum type, in the order they are declared"
  },
  "path": "io.deephaven.db.v2.by.AggType",
- "text": "Enumeration representing valid aggregation types for ComboAggregateFactory or TotalsTableBuilder.",
+ "text": "Enumeration representing valid aggregation types for ComboAggregateFactory or\n TotalsTableBuilder.",
  "typeName": "enum"
 }

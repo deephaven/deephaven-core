@@ -13,12 +13,11 @@ import org.jetbrains.annotations.Nullable;
 import java.util.function.Supplier;
 
 /**
- * Base class for all {@link RegionedColumnSource} implementations with column regions stored in an
- * array.
+ * Base class for all {@link RegionedColumnSource} implementations with column regions stored in an array.
  */
 abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Attributes.Values, REGION_TYPE extends ColumnRegion<ATTR>>
-    extends RegionedColumnSourceBase<DATA_TYPE, ATTR, REGION_TYPE>
-    implements MakeRegion<ATTR, REGION_TYPE> {
+        extends RegionedColumnSourceBase<DATA_TYPE, ATTR, REGION_TYPE>
+        implements MakeRegion<ATTR, REGION_TYPE> {
 
     @FunctionalInterface
     interface MakeDeferred<ATTR extends Attributes.Values, REGION_TYPE extends ColumnRegion<ATTR>> {
@@ -40,8 +39,7 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Attributes.Valu
     }
 
     /**
-     * Construct a {@code RegionedColumnSource} which is an array of references to
-     * {@code ColumnRegion}s.
+     * Construct a {@code RegionedColumnSource} which is an array of references to {@code ColumnRegion}s.
      *
      * @param nullRegion A ColumnRegion to be used when the actual region doesn't exist, which returns the correct null
      *        values for that region.
@@ -118,16 +116,15 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Attributes.Valu
             throw new IllegalStateException("Cannot add another region to " + this + ", maximum region count "
                     + MAXIMUM_REGION_COUNT + " reached");
         }
-        final int newLength =
-            Math.min(Math.max(regions.length * 2, regionCount + 1), MAXIMUM_REGION_COUNT);
+        final int newLength = Math.min(Math.max(regions.length * 2, regionCount + 1), MAXIMUM_REGION_COUNT);
         final REGION_TYPE[] newRegions = allocateRegionArray(newLength);
         System.arraycopy(regions, 0, newRegions, 0, regionCount);
         regions = newRegions;
     }
 
     /**
-     * Update the region at a given index in this regioned column source. This is intended to be
-     * used by the region suppliers in DeferredColumnRegion implementations.
+     * Update the region at a given index in this regioned column source. This is intended to be used by the region
+     * suppliers in DeferredColumnRegion implementations.
      *
      * @param regionIndex The region index
      * @param region The new column region

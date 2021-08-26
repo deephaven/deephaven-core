@@ -81,13 +81,12 @@ public class PrimitiveArrayTest extends PythonTest {
     }
 
     enum PrimitiveArrayType {
-        BOOLEAN(new boolean[] {true, false, true}, Booleans.INSTANCE), CHAR(
-            new char[] {'a', 'b', 'c'},
-            Chars.INSTANCE), BYTE(new byte[] {(byte) 'd', (byte) 'e', (byte) 'a', (byte) 'd'},
-                Bytes.INSTANCE), SHORT(new short[] {1, 42, 31, 15, -5},
-                    Shorts.INSTANCE), INT(new int[] {1, 42, 31, 15, -5}, Ints.INSTANCE), LONG(
-                        new long[] {1, 42, 31, 15, -5}, Longs.INSTANCE), FLOAT(new float[] {42.0f},
-                            Floats.INSTANCE), DOUBLE(new double[] {42.0}, Doubles.INSTANCE);
+        BOOLEAN(new boolean[] {true, false, true}, Booleans.INSTANCE), CHAR(new char[] {'a', 'b', 'c'},
+                Chars.INSTANCE), BYTE(new byte[] {(byte) 'd', (byte) 'e', (byte) 'a', (byte) 'd'},
+                        Bytes.INSTANCE), SHORT(new short[] {1, 42, 31, 15, -5}, Shorts.INSTANCE), INT(
+                                new int[] {1, 42, 31, 15, -5}, Ints.INSTANCE), LONG(new long[] {1, 42, 31, 15, -5},
+                                        Longs.INSTANCE), FLOAT(new float[] {42.0f},
+                                                Floats.INSTANCE), DOUBLE(new double[] {42.0}, Doubles.INSTANCE);
 
         private final Object o;
         private final io.deephaven.util.PrimitiveArrayType type;
@@ -175,8 +174,8 @@ public class PrimitiveArrayTest extends PythonTest {
     public void setUp() {
         PyObject.executeCode(readResource("primitive_array_test.py"), PyInputMode.SCRIPT);
         SUT = PyObject
-            .executeCode("ArrayTest()", PyInputMode.EXPRESSION)
-            .createProxy(ArrayProxy.class);
+                .executeCode("ArrayTest()", PyInputMode.EXPRESSION)
+                .createProxy(ArrayProxy.class);
         builtins = BuiltinsModule.create();
         jpy = JpyModule.create();
     }
@@ -239,8 +238,8 @@ public class PrimitiveArrayTest extends PythonTest {
     private static String readResource(String name) {
         try {
             return new String(
-                Files.readAllBytes(Paths.get(PrimitiveArrayTest.class.getResource(name).toURI())),
-                StandardCharsets.UTF_8);
+                    Files.readAllBytes(Paths.get(PrimitiveArrayTest.class.getResource(name).toURI())),
+                    StandardCharsets.UTF_8);
         } catch (IOException | URISyntaxException e) {
             throw new RuntimeException(e);
         }

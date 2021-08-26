@@ -54,7 +54,7 @@ public class IntegerOutTest extends PythonTest {
     @Test
     public void explicitIntegerToInteger() {
         Assert.assertEquals(Integer.valueOf(UNIQ_INT), out
-            .identity(Integer.valueOf(UNIQ_INT)));
+                .identity(Integer.valueOf(UNIQ_INT)));
     }
 
     @Test

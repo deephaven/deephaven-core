@@ -10,9 +10,9 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Timestamp",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.arrow.flight.flatbuf.Schema_generated.org.apache.arrow.flatbuf.Timestamp",
+        namespace = JsPackage.GLOBAL)
 public class Timestamp {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface TimezoneUnionType {
@@ -47,7 +47,7 @@ public class Timestamp {
     public static native void addUnit(Builder builder, int unit);
 
     public static native double createTimestamp(
-        Builder builder, int unit, double timezoneOffset);
+            Builder builder, int unit, double timezoneOffset);
 
     public static native double endTimestamp(Builder builder);
 

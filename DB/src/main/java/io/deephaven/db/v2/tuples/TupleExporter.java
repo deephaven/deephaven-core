@@ -5,15 +5,15 @@ import io.deephaven.db.v2.sources.WritableSource;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Interface for classes that know how to export the elements of a given tuple type. Currently
- * supports element-wise export to a {@link WritableSource} without unnecessary boxing, or full
- * export to a "{@link SmartKey}" with the necessary boxing.
+ * Interface for classes that know how to export the elements of a given tuple type. Currently supports element-wise
+ * export to a {@link WritableSource} without unnecessary boxing, or full export to a "{@link SmartKey}" with the
+ * necessary boxing.
  */
 public interface TupleExporter<TUPLE_TYPE> {
 
     /**
-     * Export a single element from the tuple, identified by its element index, to the destination
-     * index key of the supplied writable source.
+     * Export a single element from the tuple, identified by its element index, to the destination index key of the
+     * supplied writable source.
      * <p>
      * For the empty tuple, this is unsupported.
      * <p>
@@ -27,7 +27,7 @@ public interface TupleExporter<TUPLE_TYPE> {
      * @param destinationIndexKey The destination index key
      */
     <ELEMENT_TYPE> void exportElement(TUPLE_TYPE tuple, int elementIndex,
-        @NotNull WritableSource<ELEMENT_TYPE> writableSource, long destinationIndexKey);
+            @NotNull WritableSource<ELEMENT_TYPE> writableSource, long destinationIndexKey);
 
     /**
      * Export a single element from the tuple, identified by its element index, to an Object
@@ -45,8 +45,8 @@ public interface TupleExporter<TUPLE_TYPE> {
     Object exportElement(TUPLE_TYPE tuple, int elementIndex);
 
     /**
-     * Export a single element from the tuple, identified by its element index, to an Object. If the
-     * tuple has been internally reinterpreted, return the reinterpreted value.
+     * Export a single element from the tuple, identified by its element index, to an Object. If the tuple has been
+     * internally reinterpreted, return the reinterpreted value.
      *
      * <p>
      * For the empty tuple, this is unsupported.
@@ -64,8 +64,7 @@ public interface TupleExporter<TUPLE_TYPE> {
 
     /**
      * <p>
-     * Export this tuple's element list as a key suitable for the
-     * {@link io.deephaven.db.v2.TableMap}s resulting from
+     * Export this tuple's element list as a key suitable for the {@link io.deephaven.db.v2.TableMap}s resulting from
      * {@link io.deephaven.db.tables.Table#byExternal}.
      * <p>
      * For the empty tuple this is a unsupported.

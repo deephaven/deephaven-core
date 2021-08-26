@@ -29,8 +29,7 @@ public interface TreeIndexImpl {
     TreeIndexImpl ixInsertRange(long startKey, long endKey);
 
     @FinalDefault
-    default TreeIndexImpl ixInsert(final LongChunk<OrderedKeyIndices> keys, final int offset,
-        final int length) {
+    default TreeIndexImpl ixInsert(final LongChunk<OrderedKeyIndices> keys, final int offset, final int length) {
         if (length <= 1) {
             if (length == 0) {
                 return this;
@@ -59,8 +58,7 @@ public interface TreeIndexImpl {
     TreeIndexImpl ixRemoveRange(long startKey, long endKey);
 
     @FinalDefault
-    default TreeIndexImpl ixRemove(final LongChunk<OrderedKeyIndices> keys, final int offset,
-        final int length) {
+    default TreeIndexImpl ixRemove(final LongChunk<OrderedKeyIndices> keys, final int offset, final int length) {
         if (ixIsEmpty()) {
             return this;
         }
@@ -173,16 +171,15 @@ public interface TreeIndexImpl {
     }
 
     /**
-     * Produce a {@link TreeIndexImpl} from a slice of a {@link LongChunk} of
-     * {@link OrderedKeyIndices}.
+     * Produce a {@link TreeIndexImpl} from a slice of a {@link LongChunk} of {@link OrderedKeyIndices}.
      *
      * @param keys The {@link LongChunk} of {@link OrderedKeyIndices} to build from
      * @param offset The offset in {@code keys} to begin building from
      * @param length The number of keys to include
      * @return A new {@link TreeIndexImpl} containing the specified slice of {@code keys}
      */
-    static TreeIndexImpl fromChunk(final LongChunk<OrderedKeyIndices> keys, final int offset,
-        final int length, final boolean disposable) {
+    static TreeIndexImpl fromChunk(final LongChunk<OrderedKeyIndices> keys, final int offset, final int length,
+            final boolean disposable) {
         if (length == 0) {
             return EMPTY;
         }
@@ -194,8 +191,7 @@ public interface TreeIndexImpl {
             return SingleRange.make(first, last);
         }
 
-        final TreeIndexImplSequentialBuilder builder =
-            new TreeIndexImplSequentialBuilder(disposable);
+        final TreeIndexImplSequentialBuilder builder = new TreeIndexImplSequentialBuilder(disposable);
         builder.appendKey(first);
         for (int ki = offset + 1; ki < lastOffsetInclusive; ++ki) {
             builder.appendKey(keys.get(ki));
@@ -229,14 +225,14 @@ public interface TreeIndexImpl {
         }
 
         @Override
-        public TreeIndexImpl ixInsertSecondHalf(final LongChunk<OrderedKeyIndices> keys,
-            final int offset, final int length) {
+        public TreeIndexImpl ixInsertSecondHalf(final LongChunk<OrderedKeyIndices> keys, final int offset,
+                final int length) {
             return fromChunk(keys, offset, length, false);
         }
 
         @Override
-        public TreeIndexImpl ixRemoveSecondHalf(final LongChunk<OrderedKeyIndices> keys,
-            final int offset, final int length) {
+        public TreeIndexImpl ixRemoveSecondHalf(final LongChunk<OrderedKeyIndices> keys, final int offset,
+                final int length) {
             throw new IllegalStateException();
         }
 
@@ -291,8 +287,7 @@ public interface TreeIndexImpl {
         }
 
         @Override
-        public void ixGetKeysForPositions(PrimitiveIterator.OfLong inputPositions,
-            LongConsumer outputKeys) {
+        public void ixGetKeysForPositions(PrimitiveIterator.OfLong inputPositions, LongConsumer outputKeys) {
             while (inputPositions.hasNext()) {
                 inputPositions.nextLong();
                 outputKeys.accept(Index.NULL_KEY);
@@ -418,8 +413,7 @@ public interface TreeIndexImpl {
         }
 
         @Override
-        public OrderedKeys ixGetOrderedKeysByKeyRange(long startKeyInclusive,
-            long endKeyInclusive) {
+        public OrderedKeys ixGetOrderedKeysByKeyRange(long startKeyInclusive, long endKeyInclusive) {
             return OrderedKeys.EMPTY;
         }
 
@@ -464,8 +458,8 @@ public interface TreeIndexImpl {
 
     interface SequentialBuilder extends LongRangeConsumer {
         boolean check =
-            Configuration.getInstance().getBooleanForClassWithDefault(
-                TreeIndexImpl.class, "sequentialBuilderCheck", true);
+                Configuration.getInstance().getBooleanForClassWithDefault(
+                        TreeIndexImpl.class, "sequentialBuilderCheck", true);
 
         String outOfOrderKeyErrorMsg = "Out of order key(s) in sequential builder: ";
 
@@ -477,8 +471,7 @@ public interface TreeIndexImpl {
 
         void appendRange(long firstKey, long lastKey);
 
-        default void appendTreeIndexImpl(final long shiftAmount, final TreeIndexImpl ix,
-            final boolean acquire) {
+        default void appendTreeIndexImpl(final long shiftAmount, final TreeIndexImpl ix, final boolean acquire) {
             ix.ixForEachLongRange((final long start, final long last) -> {
                 appendRange(start + shiftAmount, last + shiftAmount);
                 return true;
@@ -522,8 +515,8 @@ public interface TreeIndexImpl {
         SortedRanges sr = SortedRanges.tryMakeForKnownRangeKnownCount(4, s1, e2);
         if (sr != null) {
             sr = sr.appendRangeUnsafe(s1, e1)
-                .appendRangeUnsafe(s2, e2)
-                .tryCompactUnsafe(4);
+                    .appendRangeUnsafe(s2, e2)
+                    .tryCompactUnsafe(4);
             return sr;
         }
         final RspBitmap ans = new RspBitmap(s1, e1);
@@ -538,7 +531,7 @@ public interface TreeIndexImpl {
     // are of type RspBitmap already.
     static RspBitmap asRspBitmap(final TreeIndexImpl t) {
         return (t instanceof RspBitmap)
-            ? (RspBitmap) t
-            : t.ixToRspOnNew();
+                ? (RspBitmap) t
+                : t.ixToRspOnNew();
     }
 }

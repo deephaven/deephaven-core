@@ -16,13 +16,13 @@ import java.math.BigInteger;
  * Creates iterative operators for the supplied type.
  */
 public abstract class IterativeOperatorStateFactory extends ReaggregatableStatefactory
-    implements IterativeChunkedOperatorFactory {
+        implements IterativeChunkedOperatorFactory {
 
     IterativeOperatorStateFactory() {}
 
     @Override
     public abstract IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name,
-        boolean exposeInternalColumns);
+            boolean exposeInternalColumns);
 
     static IterativeChunkedAggregationOperator getSumChunked(Class type, String name) {
         if (type == Boolean.class || type == boolean.class) {
@@ -49,8 +49,8 @@ public abstract class IterativeOperatorStateFactory extends ReaggregatableStatef
         throw new UnsupportedOperationException("Unsupported type " + type);
     }
 
-    static IterativeChunkedAggregationOperator getMinMaxChunked(Class type, boolean minimum,
-        boolean isStreamOrAddOnly, String name) {
+    static IterativeChunkedAggregationOperator getMinMaxChunked(Class type, boolean minimum, boolean isStreamOrAddOnly,
+            String name) {
         if (!isStreamOrAddOnly) {
             return new SsmChunkedMinMaxOperator(type, minimum, name);
         } else {
@@ -77,27 +77,24 @@ public abstract class IterativeOperatorStateFactory extends ReaggregatableStatef
     }
 
     static IterativeChunkedAggregationOperator getPercentileChunked(Class type, double percentile,
-        boolean averageMedian, String name) {
+            boolean averageMedian, String name) {
         return new SsmChunkedPercentileOperator(type, percentile, averageMedian, name);
     }
 
-    static IterativeChunkedAggregationOperator getCountDistinctChunked(Class type, String name,
-        boolean countNulls, boolean exposeInternal, boolean isRollup) {
-        return DistinctOperatorFactory.createCountDistinct(type, name, countNulls, exposeInternal,
-            isRollup);
+    static IterativeChunkedAggregationOperator getCountDistinctChunked(Class type, String name, boolean countNulls,
+            boolean exposeInternal, boolean isRollup) {
+        return DistinctOperatorFactory.createCountDistinct(type, name, countNulls, exposeInternal, isRollup);
     }
 
-    static IterativeChunkedAggregationOperator getDistinctChunked(Class type, String name,
-        boolean countNulls, boolean exposeInternal, boolean isRollup) {
-        return DistinctOperatorFactory.createDistinct(type, name, countNulls, exposeInternal,
-            isRollup);
+    static IterativeChunkedAggregationOperator getDistinctChunked(Class type, String name, boolean countNulls,
+            boolean exposeInternal, boolean isRollup) {
+        return DistinctOperatorFactory.createDistinct(type, name, countNulls, exposeInternal, isRollup);
     }
 
-    static IterativeChunkedAggregationOperator getUniqueChunked(Class type, String name,
-        boolean countNulls, boolean exposeInternal, Object noKeyValue, Object nonUniqueValue,
-        boolean isRollup) {
-        return DistinctOperatorFactory.createUnique(type, name, countNulls, exposeInternal,
-            noKeyValue, nonUniqueValue, isRollup);
+    static IterativeChunkedAggregationOperator getUniqueChunked(Class type, String name, boolean countNulls,
+            boolean exposeInternal, Object noKeyValue, Object nonUniqueValue, boolean isRollup) {
+        return DistinctOperatorFactory.createUnique(type, name, countNulls, exposeInternal, noKeyValue, nonUniqueValue,
+                isRollup);
     }
 
     static IterativeChunkedAggregationOperator getAbsSumChunked(Class type, String name) {
@@ -125,8 +122,7 @@ public abstract class IterativeOperatorStateFactory extends ReaggregatableStatef
         throw new UnsupportedOperationException("Unsupported type " + type);
     }
 
-    static IterativeChunkedAggregationOperator getAvgChunked(Class type, String name,
-        boolean exposeInternalColumns) {
+    static IterativeChunkedAggregationOperator getAvgChunked(Class type, String name, boolean exposeInternalColumns) {
         if (type == Byte.class || type == byte.class) {
             return new ByteChunkedAvgOperator(name, exposeInternalColumns);
         } else if (type == Character.class || type == char.class) {
@@ -154,7 +150,7 @@ public abstract class IterativeOperatorStateFactory extends ReaggregatableStatef
     }
 
     static IterativeChunkedAggregationOperator getVarChunked(Class type, boolean std, String name,
-        boolean exposeInternalColumns) {
+            boolean exposeInternalColumns) {
         if (type == Byte.class || type == byte.class) {
             return new ByteChunkedVarOperator(std, name, exposeInternalColumns);
         } else if (type == Character.class || type == char.class) {

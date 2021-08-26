@@ -24,13 +24,13 @@ import java.util.function.BiConsumer;
 public class GenerateTableUpdates {
 
     static public void generateTableUpdates(int size, Random random, QueryTable table,
-        TstUtils.ColumnInfo[] columnInfo) {
+            TstUtils.ColumnInfo[] columnInfo) {
         final Index[] result = computeTableUpdates(size, random, table, columnInfo);
         table.notifyListeners(result[0], result[1], result[2]);
     }
 
     public static void generateAppends(final int size, Random random, QueryTable table,
-        TstUtils.ColumnInfo[] columnInfos) {
+            TstUtils.ColumnInfo[] columnInfos) {
         final long firstKey = table.getIndex().lastKey() + 1;
         final int randomSize = 1 + random.nextInt(size);
         final Index keysToAdd = Index.FACTORY.getIndexByRange(firstKey, firstKey + randomSize - 1);
@@ -51,28 +51,26 @@ public class GenerateTableUpdates {
                 throw new RuntimeException(e);
             }
         }
-        table.notifyListeners(keysToAdd, Index.FACTORY.getEmptyIndex(),
-            Index.FACTORY.getEmptyIndex());
+        table.notifyListeners(keysToAdd, Index.FACTORY.getEmptyIndex(), Index.FACTORY.getEmptyIndex());
     }
 
     static public Index[] computeTableUpdates(int size, Random random, QueryTable table,
-        TstUtils.ColumnInfo[] columnInfo) {
+            TstUtils.ColumnInfo[] columnInfo) {
         return computeTableUpdates(size, random, table, columnInfo, true, true, true);
     }
 
     static public Index[] computeTableUpdates(int size, Random random, QueryTable table,
-        TstUtils.ColumnInfo[] columnInfo, boolean add, boolean remove, boolean modify) {
+            TstUtils.ColumnInfo[] columnInfo, boolean add, boolean remove, boolean modify) {
         final Index keysToRemove;
         if (remove && table.getIndex().size() > 0) {
-            keysToRemove = TstUtils.selectSubIndexSet(
-                random.nextInt(table.getIndex().intSize() + 1), table.getIndex(), random);
+            keysToRemove = TstUtils.selectSubIndexSet(random.nextInt(table.getIndex().intSize() + 1), table.getIndex(),
+                    random);
         } else {
             keysToRemove = TstUtils.i();
         }
 
         final Index keysToAdd =
-            add ? TstUtils.newIndex(random.nextInt(size / 2 + 1), table.getIndex(), random)
-                : TstUtils.i();
+                add ? TstUtils.newIndex(random.nextInt(size / 2 + 1), table.getIndex(), random) : TstUtils.i();
         TstUtils.removeRows(table, keysToRemove);
         for (final Index.Iterator iterator = keysToRemove.iterator(); iterator.hasNext();) {
             final long next = iterator.nextLong();
@@ -83,8 +81,8 @@ public class GenerateTableUpdates {
 
         final Index keysToModify;
         if (modify && table.getIndex().size() > 0) {
-            keysToModify = TstUtils.selectSubIndexSet(random.nextInt((int) table.getIndex().size()),
-                table.getIndex(), random);
+            keysToModify =
+                    TstUtils.selectSubIndexSet(random.nextInt((int) table.getIndex().size()), table.getIndex(), random);
         } else {
             keysToModify = TstUtils.i();
         }
@@ -126,8 +124,7 @@ public class GenerateTableUpdates {
         int MOD_ADDITIONAL_COLUMN = 50; // probability of modifying each column
 
         void validate() {
-            validateGroup(SHIFT_10_PERCENT_KEY_SPACE, SHIFT_10_PERCENT_POS_SPACE,
-                SHIFT_AGGRESSIVELY);
+            validateGroup(SHIFT_10_PERCENT_KEY_SPACE, SHIFT_10_PERCENT_POS_SPACE, SHIFT_AGGRESSIVELY);
             validateGroup(SHIFT_LIMIT_50_PERCENT);
             validateGroup(MOD_ADDITIONAL_COLUMN);
         }
@@ -144,23 +141,22 @@ public class GenerateTableUpdates {
 
     static public final SimulationProfile DEFAULT_PROFILE = new SimulationProfile();
 
-    static public void generateShiftAwareTableUpdates(final SimulationProfile profile,
-        final int targetUpdateSize,
-        final Random random, final QueryTable table,
-        final TstUtils.ColumnInfo<?, ?>[] columnInfo) {
+    static public void generateShiftAwareTableUpdates(final SimulationProfile profile, final int targetUpdateSize,
+            final Random random, final QueryTable table,
+            final TstUtils.ColumnInfo<?, ?>[] columnInfo) {
         profile.validate();
 
         try (final Index index = table.getIndex().clone()) {
-            final TstUtils.ColumnInfo<?, ?>[] mutableColumns = Arrays.stream(columnInfo)
-                .filter(ci -> !ci.immutable).toArray(TstUtils.ColumnInfo[]::new);
+            final TstUtils.ColumnInfo<?, ?>[] mutableColumns =
+                    Arrays.stream(columnInfo).filter(ci -> !ci.immutable).toArray(TstUtils.ColumnInfo[]::new);
             final boolean hasImmutableColumns = columnInfo.length > mutableColumns.length;
 
             final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
 
             // Removes in pre-shift keyspace.
             if (index.size() > 0) {
-                update.removed = TstUtils.selectSubIndexSet(
-                    Math.min(index.intSize(), random.nextInt(targetUpdateSize)), index, random);
+                update.removed = TstUtils.selectSubIndexSet(Math.min(index.intSize(), random.nextInt(targetUpdateSize)),
+                        index, random);
                 index.remove(update.removed); // remove blatted and explicit removals
             } else {
                 update.removed = TstUtils.i();
@@ -182,19 +178,15 @@ public class GenerateTableUpdates {
                     if (shiftBuilder.nonempty()) {
                         minShift = lastDest.longValue() + 1 - first;
                         maxShift = Math.max(minShift,
-                            random.nextInt(100) < profile.SHIFT_LIMIT_50_PERCENT ? (len + 1) / 2
-                                : 2 * len);
+                                random.nextInt(100) < profile.SHIFT_LIMIT_50_PERCENT ? (len + 1) / 2 : 2 * len);
                     } else {
-                        maxShift =
-                            random.nextInt(100) < profile.SHIFT_LIMIT_50_PERCENT ? (len + 1) / 2
-                                : 2 * len;
+                        maxShift = random.nextInt(100) < profile.SHIFT_LIMIT_50_PERCENT ? (len + 1) / 2 : 2 * len;
                         minShift = -maxShift;
                     }
 
                     long shiftDelta = 0;
                     while (shiftDelta == 0) {
-                        shiftDelta =
-                            Math.max(-first, minShift + nextLong(random, maxShift - minShift + 1));
+                        shiftDelta = Math.max(-first, minShift + nextLong(random, maxShift - minShift + 1));
                     }
 
                     lastDest.setValue(last + shiftDelta);
@@ -205,14 +197,12 @@ public class GenerateTableUpdates {
                 if (shiftStrategy < profile.SHIFT_10_PERCENT_KEY_SPACE && index.nonempty()) {
                     // 10% of keyspace
                     final long startKey = nextLong(random, index.lastKey() + 1);
-                    final long lastKey =
-                        Math.min(startKey + (long) (index.lastKey() * 0.1), index.lastKey());
+                    final long lastKey = Math.min(startKey + (long) (index.lastKey() * 0.1), index.lastKey());
                     shiftConsumer.accept(startKey, lastKey);
                 }
                 shiftStrategy -= profile.SHIFT_10_PERCENT_KEY_SPACE;
 
-                if (shiftStrategy >= 0 && shiftStrategy < profile.SHIFT_10_PERCENT_POS_SPACE
-                    && index.nonempty()) {
+                if (shiftStrategy >= 0 && shiftStrategy < profile.SHIFT_10_PERCENT_POS_SPACE && index.nonempty()) {
                     // 10% of keys
                     final long startIdx = nextLong(random, index.size());
                     final long lastIdx = Math.min(index.size() - 1, startIdx + (index.size() / 10));
@@ -220,25 +210,21 @@ public class GenerateTableUpdates {
                 }
                 shiftStrategy -= profile.SHIFT_10_PERCENT_POS_SPACE;
 
-                if (shiftStrategy >= 0 && shiftStrategy < profile.SHIFT_AGGRESSIVELY
-                    && index.nonempty()) {
+                if (shiftStrategy >= 0 && shiftStrategy < profile.SHIFT_AGGRESSIVELY && index.nonempty()) {
                     // aggressive shifting
                     long currIdx = 0;
                     while (currIdx < index.size()) {
                         final long startIdx = currIdx + (nextLong(random, index.size() - currIdx));
-                        final long lastIdx = startIdx
-                            + (long) (Math.sqrt(nextLong(random, index.size() - startIdx)));
+                        final long lastIdx = startIdx + (long) (Math.sqrt(nextLong(random, index.size() - startIdx)));
                         shiftConsumer.accept(index.get(startIdx), index.get(lastIdx));
-                        currIdx = 1 + lastIdx
-                            + (long) (Math.sqrt(nextLong(random, index.size() - lastIdx)));
+                        currIdx = 1 + lastIdx + (long) (Math.sqrt(nextLong(random, index.size() - lastIdx)));
                     }
                 }
                 shiftStrategy -= profile.SHIFT_AGGRESSIVELY;
             }
             update.shifted = shiftBuilder.build();
 
-            // Compute what data needs to be removed otherwise the shift generated would be invalid.
-            // We must also update
+            // Compute what data needs to be removed otherwise the shift generated would be invalid. We must also update
             // our cloned index so we can pick appropriate added and modified sets.
             final int preShiftIndexSize = index.intSize();
             update.shifted.apply((start, end, delta) -> {
@@ -246,7 +232,7 @@ public class GenerateTableUpdates {
                 final long blatStart = delta < 0 ? start + delta : end;
                 final long blatEnd = delta < 0 ? start - 1 : end + delta;
                 try (final Index blattedRows =
-                    index.extract(Index.CURRENT_FACTORY.getIndexByRange(blatStart, blatEnd))) {
+                        index.extract(Index.CURRENT_FACTORY.getIndexByRange(blatStart, blatEnd))) {
                     update.removed.insert(blattedRows);
                 }
             });
@@ -257,7 +243,7 @@ public class GenerateTableUpdates {
             // Modifies and Adds in post-shift keyspace.
             if (index.nonempty()) {
                 update.modified = TstUtils.selectSubIndexSet(
-                    Math.min(index.intSize(), random.nextInt(targetUpdateSize * 2)), index, random);
+                        Math.min(index.intSize(), random.nextInt(targetUpdateSize * 2)), index, random);
             } else {
                 update.modified = TstUtils.i();
             }
@@ -270,27 +256,25 @@ public class GenerateTableUpdates {
                 update.modifiedColumnSet.clear();
 
                 final String mustModifyColumn = (mutableColumns.length == 0) ? null
-                    : mutableColumns[random.nextInt(mutableColumns.length)].name;
+                        : mutableColumns[random.nextInt(mutableColumns.length)].name;
                 for (final TstUtils.ColumnInfo<?, ?> ci : columnInfo) {
                     if (ci.name.equals(mustModifyColumn)
-                        || (!ci.immutable && random.nextInt(100) < profile.MOD_ADDITIONAL_COLUMN)) {
+                            || (!ci.immutable && random.nextInt(100) < profile.MOD_ADDITIONAL_COLUMN)) {
                         modifiedColumns.add(ci.name);
                     }
                 }
-                update.modifiedColumnSet
-                    .setAll(modifiedColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                update.modifiedColumnSet.setAll(modifiedColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
             }
 
-            update.added = TstUtils
-                .newIndex(numRowsBlattedByShift + random.nextInt(targetUpdateSize), index, random);
+            update.added = TstUtils.newIndex(numRowsBlattedByShift + random.nextInt(targetUpdateSize), index, random);
 
             generateTableUpdates(update, random, table, columnInfo);
         }
     }
 
     static public void generateTableUpdates(final ShiftAwareListener.Update update,
-        final Random random, final QueryTable table,
-        final TstUtils.ColumnInfo<?, ?>[] columnInfo) {
+            final Random random, final QueryTable table,
+            final TstUtils.ColumnInfo<?, ?>[] columnInfo) {
         final Index index = table.getIndex();
 
         if (LiveTableTestCase.printTableUpdates) {
@@ -311,8 +295,7 @@ public class GenerateTableUpdates {
         // Shift data:
         update.shifted.apply((start, end, delta) -> {
             // Move data!
-            final Index.SearchIterator iter =
-                (delta < 0) ? index.searchIterator() : index.reverseIterator();
+            final Index.SearchIterator iter = (delta < 0) ? index.searchIterator() : index.reverseIterator();
             if (iter.advance((delta < 0) ? start : end)) {
                 long idx = iter.currentValue();
                 do {

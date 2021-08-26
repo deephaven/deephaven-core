@@ -63,10 +63,10 @@ public class ClassGraphExtension {
 
     public static Table tableAllExtensions(String extension, ScanResult scan) {
         return fromUris(scan
-            .getResourcesWithExtension(extension)
-            .stream()
-            .map(Resource::getURI)
-            .iterator());
+                .getResourcesWithExtension(extension)
+                .stream()
+                .map(Resource::getURI)
+                .iterator());
     }
 
     public static Table tableAllExtensions(String extension) {
@@ -99,16 +99,15 @@ public class ClassGraphExtension {
             fragments.add(uri.getFragment());
         }
         return TableTools.newTable(
-            TableTools.stringCol("Scheme", schemes.toArray(new String[0])),
-            TableTools.stringCol("SchemeSpecificPart", schemeSpecificParts.toArray(new String[0])),
-            TableTools.stringCol("Authority", authorities.toArray(new String[0])),
-            TableTools.stringCol("UserInfo", userInfos.toArray(new String[0])),
-            TableTools.stringCol("Host", hosts.toArray(new String[0])),
-            TableTools.intCol("Port",
-                ports.stream().mapToInt(ClassGraphExtension::toDhInt).toArray()),
-            TableTools.stringCol("Path", paths.toArray(new String[0])),
-            TableTools.stringCol("Query", queries.toArray(new String[0])),
-            TableTools.stringCol("Fragment", fragments.toArray(new String[0])));
+                TableTools.stringCol("Scheme", schemes.toArray(new String[0])),
+                TableTools.stringCol("SchemeSpecificPart", schemeSpecificParts.toArray(new String[0])),
+                TableTools.stringCol("Authority", authorities.toArray(new String[0])),
+                TableTools.stringCol("UserInfo", userInfos.toArray(new String[0])),
+                TableTools.stringCol("Host", hosts.toArray(new String[0])),
+                TableTools.intCol("Port", ports.stream().mapToInt(ClassGraphExtension::toDhInt).toArray()),
+                TableTools.stringCol("Path", paths.toArray(new String[0])),
+                TableTools.stringCol("Query", queries.toArray(new String[0])),
+                TableTools.stringCol("Fragment", fragments.toArray(new String[0])));
     }
 
     private static int toDhInt(Integer boxed) {

@@ -10,24 +10,22 @@ import java.util.function.Supplier;
 
 /**
  * <p>
- * {@link ResettableContext} used as a holder for other {@link ResettableContext}s that may be
- * shared across components.
+ * {@link ResettableContext} used as a holder for other {@link ResettableContext}s that may be shared across components.
  *
  * <p>
- * This serves as a place to cache re-usable computations or resources, but must be {@link #reset()}
- * for every step of an operation (usually a chunk of ordered keys).
+ * This serves as a place to cache re-usable computations or resources, but must be {@link #reset()} for every step of
+ * an operation (usually a chunk of ordered keys).
  *
  * <p>
- * For example, {@link io.deephaven.db.v2.sources.ReadOnlyRedirectedColumnSource}s that share the
- * same {@link io.deephaven.db.v2.utils.RedirectionIndex} cache a chunk of redirections for the most
- * recent chunk of ordered keys they have been handed.
+ * For example, {@link io.deephaven.db.v2.sources.ReadOnlyRedirectedColumnSource}s that share the same
+ * {@link io.deephaven.db.v2.utils.RedirectionIndex} cache a chunk of redirections for the most recent chunk of ordered
+ * keys they have been handed.
  *
  * <p>
- * It's important that "nested" usage follows the convention of creating a new instance and passing
- * that instance to context creation methods. Said nested instance should be (or be attached to) an
- * entry in the parent context, and reset/closed when said entry is. It should always be safe to
- * skip nested SharedContext creation if all sources that may be using a given instance will be
- * passed the same ordered keys.
+ * It's important that "nested" usage follows the convention of creating a new instance and passing that instance to
+ * context creation methods. Said nested instance should be (or be attached to) an entry in the parent context, and
+ * reset/closed when said entry is. It should always be safe to skip nested SharedContext creation if all sources that
+ * may be using a given instance will be passed the same ordered keys.
  */
 public class SharedContext implements ResettableContext {
 
@@ -46,15 +44,14 @@ public class SharedContext implements ResettableContext {
      * @param <VALUE_TYPE> The type of the context that should be associated with this key type
      */
     @SuppressWarnings("unused")
-    // The VALUE_TYPE parameter is in fact used to produce a compile-time association between a key
-    // class and its associated value class
+    // The VALUE_TYPE parameter is in fact used to produce a compile-time association between a key class and its
+    // associated value class
     public interface Key<VALUE_TYPE extends ResettableContext> {
     }
 
     /**
-     * Get or create the {@link ResettableContext} value for a {@link Key} key. If the value is
-     * computed, the result value will be associated with the {@code key} until the
-     * {@link SharedContext} is {@link #close()}ed.
+     * Get or create the {@link ResettableContext} value for a {@link Key} key. If the value is computed, the result
+     * value will be associated with the {@code key} until the {@link SharedContext} is {@link #close()}ed.
      *
      * @param key The key
      * @param valueFactory The value factory, to be invoked if {@code key} is not found within this
@@ -62,15 +59,15 @@ public class SharedContext implements ResettableContext {
      * @return The value associated with {@code key}, possibly newly-created
      */
     public final <V extends ResettableContext, K extends Key<V>> V getOrCreate(final K key,
-        @NotNull final Supplier<V> valueFactory) {
+            @NotNull final Supplier<V> valueFactory) {
         // noinspection unchecked
         return (V) entries.computeIfAbsent(key, k -> valueFactory.get());
     }
 
     /**
      * <p>
-     * Reset implementation which invokes {@link ResettableContext#reset()} on all values registered
-     * via {@link #getOrCreate(Key, Supplier)}.
+     * Reset implementation which invokes {@link ResettableContext#reset()} on all values registered via
+     * {@link #getOrCreate(Key, Supplier)}.
      *
      * <p>
      * Sub-classes should be sure to call {@code super.reset()}.
@@ -104,11 +101,11 @@ public class SharedContext implements ResettableContext {
     }
 
     /**
-     * Abstract {@link Key} implementation for use when a simple Object reference coupled with
-     * sub-class identity can determine equality for sharing purposes.
+     * Abstract {@link Key} implementation for use when a simple Object reference coupled with sub-class identity can
+     * determine equality for sharing purposes.
      */
     public static abstract class ExactReferenceSharingKey<VALUE_TYPE extends ResettableContext>
-        implements Key<VALUE_TYPE> {
+            implements Key<VALUE_TYPE> {
 
         private final Object differentiator;
 
@@ -131,8 +128,8 @@ public class SharedContext implements ResettableContext {
         @Override
         public final int hashCode() {
             return 31
-                + 31 * getClass().hashCode()
-                + 31 * differentiator.hashCode();
+                    + 31 * getClass().hashCode()
+                    + 31 * differentiator.hashCode();
         }
     }
 }

@@ -16,8 +16,7 @@ public class PrettyChart1 {
         final java.awt.Color red = java.awt.Color.decode("#d62728");
         final java.awt.Color darkBlue = java.awt.Color.decode("#1f77b4");
         final Color lighterRed = new Color(red.getRed(), red.getGreen(), red.getBlue(), 50);
-        final Color lighterDarkBlue =
-            new Color(darkBlue.getRed(), darkBlue.getGreen(), darkBlue.getBlue(), 100);
+        final Color lighterDarkBlue = new Color(darkBlue.getRed(), darkBlue.getGreen(), darkBlue.getBlue(), 100);
         final long time = 1491946585000000000L;
 
         DBDateTime[] date1 = {
@@ -167,19 +166,19 @@ public class PrettyChart1 {
 
         Figure fig = FigureFactory.figure();
         Figure cht = fig.newChart(0)
-            .chartTitle("Chart Title");
+                .chartTitle("Chart Title");
         Figure axs = cht.newAxes().plotStyle("LINE")
-            .yLabel("Predicted Index")
-            .plot("Test2", date3, y3).pointsVisible(false)
-            .plot("Test1", date1, y1).pointsVisible(false);
+                .yLabel("Predicted Index")
+                .plot("Test2", date3, y3).pointsVisible(false)
+                .plot("Test1", date1, y1).pointsVisible(false);
 
 
         Figure axs2 = axs.twin()
-            .plotStyle(PlotStyle.AREA)
-            .plot("Test1", date3, y3Lower).seriesColor(new Color(250, 250, 250))
-            .plot("Test2", date3, y3Higher).seriesColor(lighterRed)
-            .plot("Test3", date1, y1Lower).seriesColor(new Color(250, 250, 250))
-            .plot("Test4", date1, y1Higher).seriesColor(lighterDarkBlue);
+                .plotStyle(PlotStyle.AREA)
+                .plot("Test1", date3, y3Lower).seriesColor(new Color(250, 250, 250))
+                .plot("Test2", date3, y3Higher).seriesColor(lighterRed)
+                .plot("Test3", date1, y1Lower).seriesColor(new Color(250, 250, 250))
+                .plot("Test4", date1, y1Higher).seriesColor(lighterDarkBlue);
 
 
         ExamplePlotUtils.display(axs2);

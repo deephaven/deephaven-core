@@ -25,23 +25,21 @@ public class SnapshotTableGrpcImpl extends GrpcTableOperation<SnapshotTableReque
     private final LiveTableMonitor liveTableMonitor;
 
     private static final MultiDependencyFunction<SnapshotTableRequest> EXTRACT_DEPS =
-        (request) -> {
-            if (request.hasLeftId()) {
-                return Arrays.asList(request.getLeftId(), request.getRightId());
-            }
-            return Collections.singletonList(request.getRightId());
-        };
+            (request) -> {
+                if (request.hasLeftId()) {
+                    return Arrays.asList(request.getLeftId(), request.getRightId());
+                }
+                return Collections.singletonList(request.getRightId());
+            };
 
     @Inject
     public SnapshotTableGrpcImpl(final LiveTableMonitor liveTableMonitor) {
-        super(BatchTableRequest.Operation::getSnapshot, SnapshotTableRequest::getResultId,
-            EXTRACT_DEPS);
+        super(BatchTableRequest.Operation::getSnapshot, SnapshotTableRequest::getResultId, EXTRACT_DEPS);
         this.liveTableMonitor = liveTableMonitor;
     }
 
     @Override
-    public Table create(final SnapshotTableRequest request,
-        final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final SnapshotTableRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
         final Table lhs;
         final Table rhs;
         if (sourceTables.size() == 1) {
@@ -51,18 +49,15 @@ public class SnapshotTableGrpcImpl extends GrpcTableOperation<SnapshotTableReque
             lhs = sourceTables.get(0).get();
             rhs = sourceTables.get(1).get();
         } else {
-            throw Assert
-                .statementNeverExecuted("Unexpected sourceTables size " + sourceTables.size());
+            throw Assert.statementNeverExecuted("Unexpected sourceTables size " + sourceTables.size());
         }
 
-        final String[] stampColumns =
-            request.getStampColumnsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-        final SelectColumn[] stampExpressions =
-            SelectColumnFactory.getExpressions(request.getStampColumnsList());
+        final String[] stampColumns = request.getStampColumnsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final SelectColumn[] stampExpressions = SelectColumnFactory.getExpressions(request.getStampColumnsList());
         ColumnExpressionValidator.validateColumnExpressions(stampExpressions, stampColumns, lhs);
 
         final FunctionalInterfaces.ThrowingSupplier<Table, RuntimeException> doSnapshot =
-            () -> lhs.snapshot(rhs, request.getDoInitialSnapshot(), stampColumns);
+                () -> lhs.snapshot(rhs, request.getDoInitialSnapshot(), stampColumns);
 
         final Table result;
         if (!lhs.isLive() && !rhs.isLive()) {

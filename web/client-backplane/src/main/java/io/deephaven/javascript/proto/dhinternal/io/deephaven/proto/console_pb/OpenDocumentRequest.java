@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.OpenDocumentRequest",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.OpenDocumentRequest",
+        namespace = JsPackage.GLOBAL)
 public class OpenDocumentRequest {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -22,7 +22,7 @@ public class OpenDocumentRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static OpenDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -57,20 +57,20 @@ public class OpenDocumentRequest {
 
             @JsProperty
             void setTicket(
-                OpenDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    OpenDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<OpenDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<OpenDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<OpenDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<OpenDocumentRequest.ToObjectReturnType.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -121,8 +121,7 @@ public class OpenDocumentRequest {
         void setConsoleId(OpenDocumentRequest.ToObjectReturnType.ConsoleIdFieldType consoleId);
 
         @JsProperty
-        void setTextDocument(
-            OpenDocumentRequest.ToObjectReturnType.TextDocumentFieldType textDocument);
+        void setTextDocument(OpenDocumentRequest.ToObjectReturnType.TextDocumentFieldType textDocument);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -133,7 +132,7 @@ public class OpenDocumentRequest {
             public interface GetTicketUnionType {
                 @JsOverlay
                 static OpenDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType of(
-                    Object o) {
+                        Object o) {
                     return Js.cast(o);
                 }
 
@@ -168,20 +167,20 @@ public class OpenDocumentRequest {
 
             @JsProperty
             void setTicket(
-                OpenDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
+                    OpenDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType ticket);
 
             @JsOverlay
             default void setTicket(String ticket) {
                 setTicket(
-                    Js.<OpenDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<OpenDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
 
             @JsOverlay
             default void setTicket(Uint8Array ticket) {
                 setTicket(
-                    Js.<OpenDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
-                        ticket));
+                        Js.<OpenDocumentRequest.ToObjectReturnType0.ConsoleIdFieldType.GetTicketUnionType>uncheckedCast(
+                                ticket));
             }
         }
 
@@ -233,18 +232,18 @@ public class OpenDocumentRequest {
 
         @JsProperty
         void setTextDocument(
-            OpenDocumentRequest.ToObjectReturnType0.TextDocumentFieldType textDocument);
+                OpenDocumentRequest.ToObjectReturnType0.TextDocumentFieldType textDocument);
     }
 
     public static native OpenDocumentRequest deserializeBinary(Uint8Array bytes);
 
     public static native OpenDocumentRequest deserializeBinaryFromReader(
-        OpenDocumentRequest message, Object reader);
+            OpenDocumentRequest message, Object reader);
 
     public static native void serializeBinaryToWriter(OpenDocumentRequest message, Object writer);
 
     public static native OpenDocumentRequest.ToObjectReturnType toObject(
-        boolean includeInstance, OpenDocumentRequest msg);
+            boolean includeInstance, OpenDocumentRequest msg);
 
     public native void clearConsoleId();
 

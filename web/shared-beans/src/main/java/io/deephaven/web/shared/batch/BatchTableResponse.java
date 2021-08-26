@@ -7,9 +7,8 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
- * A response object for batch requests; only contains failure messages, since successful results
- * will be pushed directly the client as they come in (rather than waiting until entire batch is
- * complete).
+ * A response object for batch requests; only contains failure messages, since successful results will be pushed
+ * directly the client as they come in (rather than waiting until entire batch is complete).
  *
  * Seems like we could do {@code Callback<Void, BatchFailures>} instead...
  */
@@ -47,10 +46,10 @@ public class BatchTableResponse implements Serializable {
     @Override
     public String toString() {
         return "BatchTableResponse{" +
-            "success=" + Arrays.toString(success) +
-            ", failedTableHandles=" + Arrays.toString(failedTableHandles) +
-            ", failureMessages=" + Arrays.toString(failureMessages) +
-            '}';
+                "success=" + Arrays.toString(success) +
+                ", failedTableHandles=" + Arrays.toString(failedTableHandles) +
+                ", failureMessages=" + Arrays.toString(failureMessages) +
+                '}';
     }
 
     public boolean hasFailures(TableHandle handle) {

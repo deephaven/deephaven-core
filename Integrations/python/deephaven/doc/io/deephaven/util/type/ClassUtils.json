@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.util.type.ClassUtils",
  "methods": {
-  "checkedClassForName": "Gets the specified className, and if it is assignable from the expectedType returns it.  Otherwise throws\n a RuntimeException.\n\nNote: Java generics information - <T>\n\n:param className: (java.lang.String) - the class we would like to retrieve\n:param expectedType: (java.lang.Class<T>) - the type of class we expect className to be\n:return: (java.lang.Class<? extends T>) the Class object for className"
+  "checkedClassForName": "Gets the specified className, and if it is assignable from the expectedType returns it. Otherwise throws a\n RuntimeException.\n\nNote: Java generics information - <T>\n\n:param className: (java.lang.String) - the class we would like to retrieve\n:param expectedType: (java.lang.Class<T>) - the type of class we expect className to be\n:return: (java.lang.Class<? extends T>) the Class object for className"
  },
  "path": "io.deephaven.util.type.ClassUtils",
  "typeName": "class"

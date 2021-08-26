@@ -49,8 +49,7 @@ public class JsNumberFormat {
         } else if (number instanceof LongWrapper) {
             return wrapped.format((Long) ((LongWrapper) number).getWrapped());
         }
-        throw new IllegalStateException(
-            "Can't format non-number object of type " + Js.typeof(number));
+        throw new IllegalStateException("Can't format non-number object of type " + Js.typeof(number));
     }
 
     @Override

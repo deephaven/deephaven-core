@@ -40,9 +40,9 @@ public abstract class BaseProcessEnvironment implements ProcessEnvironment {
      * @param log
      */
     protected BaseProcessEnvironment(@NotNull final ShutdownManager shutdownManager,
-        @NotNull final FatalErrorReporter fatalErrorReporter,
-        @NotNull final String mainClassName,
-        @NotNull final Logger log) {
+            @NotNull final FatalErrorReporter fatalErrorReporter,
+            @NotNull final String mainClassName,
+            @NotNull final Logger log) {
         this.shutdownManager = Require.neqNull(shutdownManager, "shutdownManager");
         this.fatalErrorReporter = Require.neqNull(fatalErrorReporter, "fatalErrorReporter");
         this.mainClassName = Require.nonempty(mainClassName, "mainClassName");
@@ -68,9 +68,8 @@ public abstract class BaseProcessEnvironment implements ProcessEnvironment {
     public final Logger getLog() {
         if (!Boolean.getBoolean("LoggerFactory.silenceOnProcessEnvironment")) {
             log.warn(new RuntimeException("Trace"))
-                .append(
-                    "Logger being fetched via ProcessEnvironment instead of io.deephaven.internal.log.LoggerFactory")
-                .endl();
+                    .append("Logger being fetched via ProcessEnvironment instead of io.deephaven.internal.log.LoggerFactory")
+                    .endl();
         }
         return log;
     }

@@ -54,11 +54,10 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
         queryScope = newQueryScope();
         queryLibrary = QueryLibrary.makeNewLibrary();
 
-        compilerContext =
-            new CompilerTools.Context(classCacheDirectory, getClass().getClassLoader()) {
-                {
-                    addClassSource(getFakeClassDestination());
-                }
+        compilerContext = new CompilerTools.Context(classCacheDirectory, getClass().getClassLoader()) {
+            {
+                addClassSource(getFakeClassDestination());
+            }
 
             @Override
             public File getFakeClassDestination() {
@@ -87,8 +86,7 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
         final CompilerTools.Context prevCompilerContext = CompilerTools.getContext();
         final QueryScope prevQueryScope = QueryScope.getScope();
 
-        // retain any objects which are created in the executed code, we'll release them when the
-        // script session closes
+        // retain any objects which are created in the executed code, we'll release them when the script session closes
         try (final SafeCloseable ignored = LivenessScopeStack.open(this, false)) {
             // point query scope static state to our session's state
             QueryScope.setScope(queryScope);
@@ -134,8 +132,7 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
             final ExportedObjectType type = ExportedObjectType.fromObject(value);
             if (type.isDisplayableInSwing()) {
                 if (type != types.get(name)) {
-                    // either the name no longer exists, or it has a new type, and we mark it as
-                    // removed (see above)
+                    // either the name no longer exists, or it has a new type, and we mark it as removed (see above)
                     diff.removed.put(entry.getKey(), type);
                 }
             }

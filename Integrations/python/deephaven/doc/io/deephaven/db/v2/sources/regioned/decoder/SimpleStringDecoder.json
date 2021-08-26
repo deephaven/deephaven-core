@@ -2,7 +2,7 @@
  "className": "io.deephaven.db.v2.sources.regioned.decoder.SimpleStringDecoder",
  "methods": {
   "decode": "Decode an object from an array of bytes.\n\n:param data: (byte[]) - The input byte array containing bytes to decode\n:param offset: (int) - The offset into the byte array to start decoding from\n:param length: (int) - The length of the byte array to decode from, starting at the offset\n:return: (SimpleStringDecoder.STRING_LIKE_TYPE) The output object, possibly null",
-  "expectedObjectWidth": "What width byte array does this ObjectCodec expect to encode and decode?\n\n:return: (int) VARIABLE_WIDTH_SENTINEL if the codec  must encode and decode variable width columns, otherwise the fixed\n size of byte array that must be decoded and encoded."
+  "expectedObjectWidth": "What width byte array does this ObjectCodec expect to encode and decode?\n\n:return: (int) VARIABLE_WIDTH_SENTINEL if the codec must encode and decode variable width columns, otherwise the fixed\n         size of byte array that must be decoded and encoded."
  },
  "path": "io.deephaven.db.v2.sources.regioned.decoder.SimpleStringDecoder",
  "typeName": "class"

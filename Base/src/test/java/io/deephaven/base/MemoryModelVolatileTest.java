@@ -24,8 +24,7 @@ public class MemoryModelVolatileTest extends TestCase {
 
         private final static long ratherFrequently = 1 << 10; // power of 2.
         private final static long rfmask = ratherFrequently - 1;
-        private final static long ratherUnfrequently = 1 << 15; // power of 2, bigger than
-                                                                // ratherFrequently.
+        private final static long ratherUnfrequently = 1 << 15; // power of 2, bigger than ratherFrequently.
         private final static long rumask = ratherUnfrequently - 1;
 
         void writeConsistently() {

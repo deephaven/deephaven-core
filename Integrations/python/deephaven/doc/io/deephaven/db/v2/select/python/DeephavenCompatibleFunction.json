@@ -10,6 +10,6 @@
   "toFormulaKernel": ":return: io.deephaven.db.v2.select.formula.FormulaKernel"
  },
  "path": "io.deephaven.db.v2.select.python.DeephavenCompatibleFunction",
- "text": "A Deephaven-compatible functions holds a native python function with associated typing\n information, used to help implement AbstractConditionFilter and FormulaColumnPython.",
+ "text": "A Deephaven-compatible functions holds a native python function with associated typing information, used to help\n implement AbstractConditionFilter and FormulaColumnPython.",
  "typeName": "class"
 }

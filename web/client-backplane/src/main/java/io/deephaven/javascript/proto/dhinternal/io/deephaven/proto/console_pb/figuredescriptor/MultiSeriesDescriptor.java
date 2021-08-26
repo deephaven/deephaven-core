@@ -10,9 +10,9 @@ import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 @JsType(
-    isNative = true,
-    name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.MultiSeriesDescriptor",
-    namespace = JsPackage.GLOBAL)
+        isNative = true,
+        name = "dhinternal.io.deephaven.proto.console_pb.FigureDescriptor.MultiSeriesDescriptor",
+        namespace = JsPackage.GLOBAL)
 public class MultiSeriesDescriptor {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
@@ -205,15 +205,15 @@ public class MultiSeriesDescriptor {
 
         @JsOverlay
         default void setDataSourcesList(
-            MultiSeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType[] dataSourcesList) {
+                MultiSeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType[] dataSourcesList) {
             setDataSourcesList(
-                Js.<JsArray<MultiSeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType>>uncheckedCast(
-                    dataSourcesList));
+                    Js.<JsArray<MultiSeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType>>uncheckedCast(
+                            dataSourcesList));
         }
 
         @JsProperty
         void setDataSourcesList(
-            JsArray<MultiSeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType> dataSourcesList);
+                JsArray<MultiSeriesDescriptor.ToObjectReturnType.DataSourcesListFieldType> dataSourcesList);
 
         @JsProperty
         void setGradientVisible(Object gradientVisible);
@@ -223,7 +223,7 @@ public class MultiSeriesDescriptor {
 
         @JsProperty
         void setLinesVisible(
-            MultiSeriesDescriptor.ToObjectReturnType.LinesVisibleFieldType linesVisible);
+                MultiSeriesDescriptor.ToObjectReturnType.LinesVisibleFieldType linesVisible);
 
         @JsProperty
         void setName(String name);
@@ -447,15 +447,15 @@ public class MultiSeriesDescriptor {
 
         @JsOverlay
         default void setDataSourcesList(
-            MultiSeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType[] dataSourcesList) {
+                MultiSeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType[] dataSourcesList) {
             setDataSourcesList(
-                Js.<JsArray<MultiSeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType>>uncheckedCast(
-                    dataSourcesList));
+                    Js.<JsArray<MultiSeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType>>uncheckedCast(
+                            dataSourcesList));
         }
 
         @JsProperty
         void setDataSourcesList(
-            JsArray<MultiSeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType> dataSourcesList);
+                JsArray<MultiSeriesDescriptor.ToObjectReturnType0.DataSourcesListFieldType> dataSourcesList);
 
         @JsProperty
         void setGradientVisible(Object gradientVisible);
@@ -465,7 +465,7 @@ public class MultiSeriesDescriptor {
 
         @JsProperty
         void setLinesVisible(
-            MultiSeriesDescriptor.ToObjectReturnType0.LinesVisibleFieldType linesVisible);
+                MultiSeriesDescriptor.ToObjectReturnType0.LinesVisibleFieldType linesVisible);
 
         @JsProperty
         void setName(String name);
@@ -501,17 +501,17 @@ public class MultiSeriesDescriptor {
     public static native MultiSeriesDescriptor deserializeBinary(Uint8Array bytes);
 
     public static native MultiSeriesDescriptor deserializeBinaryFromReader(
-        MultiSeriesDescriptor message, Object reader);
+            MultiSeriesDescriptor message, Object reader);
 
     public static native void serializeBinaryToWriter(MultiSeriesDescriptor message, Object writer);
 
     public static native MultiSeriesDescriptor.ToObjectReturnType toObject(
-        boolean includeInstance, MultiSeriesDescriptor msg);
+            boolean includeInstance, MultiSeriesDescriptor msg);
 
     public native MultiSeriesSourceDescriptor addDataSources();
 
     public native MultiSeriesSourceDescriptor addDataSources(
-        MultiSeriesSourceDescriptor value, double index);
+            MultiSeriesSourceDescriptor value, double index);
 
     public native MultiSeriesSourceDescriptor addDataSources(MultiSeriesSourceDescriptor value);
 

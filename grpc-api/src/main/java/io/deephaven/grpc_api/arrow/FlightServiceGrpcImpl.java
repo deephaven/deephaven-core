@@ -57,17 +57,14 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     public StreamObserver<Flight.HandshakeRequest> handshake(
             StreamObserver<Flight.HandshakeResponse> responseObserver) {
         return GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            throw GrpcUtil.statusRuntimeException(Code.UNIMPLEMENTED,
-                "See deephaven-core#997; support flight auth.");
+            throw GrpcUtil.statusRuntimeException(Code.UNIMPLEMENTED, "See deephaven-core#997; support flight auth.");
         });
     }
 
     @Override
-    public void listFlights(final Flight.Criteria request,
-        final StreamObserver<Flight.FlightInfo> responseObserver) {
+    public void listFlights(final Flight.Criteria request, final StreamObserver<Flight.FlightInfo> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            ticketRouter.visitFlightInfo(sessionService.getOptionalSession(),
-                responseObserver::onNext);
+            ticketRouter.visitFlightInfo(sessionService.getOptionalSession(), responseObserver::onNext);
             responseObserver.onCompleted();
         });
     }
@@ -78,8 +75,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getOptionalSession();
 
-            final SessionState.ExportObject<Flight.FlightInfo> export =
-                ticketRouter.flightInfoFor(session, request);
+            final SessionState.ExportObject<Flight.FlightInfo> export = ticketRouter.flightInfoFor(session, request);
 
             if (session != null) {
                 session.nonExport()
@@ -113,8 +109,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getOptionalSession();
 
-            final SessionState.ExportObject<Flight.FlightInfo> export =
-                ticketRouter.flightInfoFor(session, request);
+            final SessionState.ExportObject<Flight.FlightInfo> export = ticketRouter.flightInfoFor(session, request);
 
             if (session != null) {
                 session.nonExport()
@@ -131,8 +126,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                     try {
                         if (export.getState() == ExportNotification.State.EXPORTED) {
                             responseObserver.onNext(Flight.SchemaResult.newBuilder()
-                                .setSchema(export.get().getSchema())
-                                .build());
+                                    .setSchema(export.get().getSchema())
+                                    .build());
                             responseObserver.onCompleted();
                         }
                     } finally {
@@ -146,12 +141,10 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         });
     }
 
-    public void doGetCustom(final Flight.Ticket request,
-        final StreamObserver<InputStream> responseObserver) {
+    public void doGetCustom(final Flight.Ticket request, final StreamObserver<InputStream> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
             final SessionState session = sessionService.getCurrentSession();
-            final SessionState.ExportObject<BaseTable> export =
-                ticketRouter.resolve(session, request);
+            final SessionState.ExportObject<BaseTable> export = ticketRouter.resolve(session, request);
             session.nonExport()
                     .require(export)
                     .onError(responseObserver)
@@ -185,8 +178,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                             throw new UncheckedDeephavenException(e); // unexpected
                         }
 
-                    responseObserver.onCompleted();
-                });
+                        responseObserver.onCompleted();
+                    });
         });
     }
 
@@ -196,8 +189,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
      * @param responseObserver the observer to reply to
      * @return the observer that grpc can delegate received messages to
      */
-    public StreamObserver<InputStream> doPutCustom(
-        final StreamObserver<Flight.PutResult> responseObserver) {
+    public StreamObserver<InputStream> doPutCustom(final StreamObserver<Flight.PutResult> responseObserver) {
         return GrpcUtil.rpcWrapper(log, responseObserver,
                 () -> new ArrowFlightUtil.DoPutObserver(sessionService.getCurrentSession(), ticketRouter,
                         responseObserver));
@@ -209,10 +201,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
      * @param responseObserver the observer to reply to
      * @return the observer that grpc can delegate received messages to
      */
-    public StreamObserver<InputStream> doExchangeCustom(
-        final StreamObserver<InputStream> responseObserver) {
+    public StreamObserver<InputStream> doExchangeCustom(final StreamObserver<InputStream> responseObserver) {
         return GrpcUtil.rpcWrapper(log, responseObserver,
-            () -> doExchangeFactory.openExchange(sessionService.getCurrentSession(),
-                responseObserver));
+                () -> doExchangeFactory.openExchange(sessionService.getCurrentSession(), responseObserver));
     }
 }

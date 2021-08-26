@@ -15,19 +15,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class IterativeIndexStateFactory extends ReaggregatableStatefactory {
     static final String REDIRECTION_INDEX_PREFIX = "RedirectionIndex_";
     private final Map<String, ColumnSource> nameToDestColumns = new LinkedHashMap<>();
-    final protected RedirectionIndex redirectionIndex =
-        RedirectionIndex.FACTORY.createRedirectionIndex(8);
+    final protected RedirectionIndex redirectionIndex = RedirectionIndex.FACTORY.createRedirectionIndex(8);
     private boolean firstTime;
     final boolean lowestRollup;
     final boolean secondRollup;
     final int rollupColumnIdentifier;
 
-    // if we have multiple aggregations, we do not want them to have conflicting column names, so we
-    // use an identifier to find them
+    // if we have multiple aggregations, we do not want them to have conflicting column names, so we use an identifier
+    // to find them
     private final static AtomicInteger nextRollupColumnIdentifier = new AtomicInteger(1);
 
-    IterativeIndexStateFactory(boolean lowestRollup, boolean secondRollup,
-        int rollupColumnIdentifier) {
+    IterativeIndexStateFactory(boolean lowestRollup, boolean secondRollup, int rollupColumnIdentifier) {
         firstTime = true;
         this.lowestRollup = lowestRollup;
         this.secondRollup = secondRollup;
@@ -40,8 +38,7 @@ public abstract class IterativeIndexStateFactory extends ReaggregatableStatefact
 
     @NotNull
     private String getRedirectionName() {
-        return REDIRECTION_INDEX_PREFIX + rollupColumnIdentifier
-            + ComboAggregateFactory.ROLLUP_COLUMN_SUFFIX;
+        return REDIRECTION_INDEX_PREFIX + rollupColumnIdentifier + ComboAggregateFactory.ROLLUP_COLUMN_SUFFIX;
     }
 
     @Override
@@ -60,7 +57,7 @@ public abstract class IterativeIndexStateFactory extends ReaggregatableStatefact
     }
 
     class RedirectionValueColumnSource extends AbstractColumnSource<Long>
-        implements MutableColumnSourceGetDefaults.ForLong {
+            implements MutableColumnSourceGetDefaults.ForLong {
         RedirectionValueColumnSource() {
             super(Long.class);
         }
