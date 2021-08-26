@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.qst.TableAdapterResults",
+ "methods": {
+  "map": ":return: java.util.Map<io.deephaven.qst.table.TableSpec,io.deephaven.qst.TableAdapterResults.Output<TableAdapterResults.TOPS,TableAdapterResults.TABLE>>"
+ },
+ "path": "io.deephaven.qst.TableAdapterResults",
+ "typeName": "class"
+}

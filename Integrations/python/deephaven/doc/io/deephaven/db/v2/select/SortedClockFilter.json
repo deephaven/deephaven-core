@@ -7,11 +7,11 @@
   "getWeakReference": "Get a WeakReference to this referent. This may be cached, or newly created.\n\n:return: (java.lang.ref.WeakReference<? extends io.deephaven.db.util.liveness.LivenessReferent>) A new or cached reference to this referent",
   "initializeTransientFieldsForLiveness": "Package-private for Serializable sub-classes to use in readObject only.\n Public to allow unit tests in another package to work around mock issues where the constructor is never invoked.",
   "requiresSorting": ":return: (boolean) True iff getSortColumns will return a non-null, non-empty array of column names to sort on.",
-  "sortingDone": "Advise this filter that sorting has been performed.  requiresSorting must return false hereafter.",
+  "sortingDone": "Advise this filter that sorting has been performed. requiresSorting must return false hereafter.",
   "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: (io.deephaven.db.util.liveness.LivenessReferent) - The referent to add\n:return: (boolean) Whether the referent was in fact added",
-  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true.\n Otherwise, returns false rather than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
+  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true. Otherwise, returns false rather\n than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
  },
  "path": "io.deephaven.db.v2.select.SortedClockFilter",
- "text": "This will filter a table on a DBDateTime column for all rows greater than \"now\" according to a supplied clock.\n It requires sorting of the input table according to the specified timestamp column, leveraging this for a very\n efficient implementation (albeit one that requires sorting first) and an output sequence that is monotonically\n nondecreasing in the specified column.",
+ "text": "This will filter a table on a DBDateTime column for all rows greater than \"now\" according to a supplied clock. It\n requires sorting of the input table according to the specified timestamp column, leveraging this for a very efficient\n implementation (albeit one that requires sorting first) and an output sequence that is monotonically nondecreasing in\n the specified column.",
  "typeName": "class"
 }

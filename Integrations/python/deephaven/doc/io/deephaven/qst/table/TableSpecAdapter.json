@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.qst.table.TableSpecAdapter",
+ "methods": {
+  "table": ":return: io.deephaven.qst.table.TableSpec"
+ },
+ "path": "io.deephaven.qst.table.TableSpecAdapter",
+ "typeName": "class"
+}

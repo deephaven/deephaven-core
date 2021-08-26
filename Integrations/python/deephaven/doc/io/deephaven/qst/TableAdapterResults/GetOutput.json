@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.qst.TableAdapterResults$GetOutput",
+ "methods": {
+  "out": ":return: TableAdapterResults.GetOutput.T",
+  "visit": ":param t: TableAdapterResults.GetOutput.T"
+ },
+ "path": "io.deephaven.qst.TableAdapterResults.GetOutput",
+ "text": "Used to collapse an output when the table operations and table type are the same generic type.",
+ "typeName": "class"
+}

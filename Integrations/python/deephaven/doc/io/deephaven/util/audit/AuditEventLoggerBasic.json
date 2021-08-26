@@ -4,6 +4,6 @@
   "log": ":param event: java.lang.String\n:param details: java.lang.String"
  },
  "path": "io.deephaven.util.audit.AuditEventLoggerBasic",
- "text": "An simple interface that hides the context necessary for creating and logging\n AuditEvents. Useful so that callers are only responsible for the core parts of the event,\n namely AuditEvent#getEvent() and AuditEvent#getDetails().",
+ "text": "An simple interface that hides the context necessary for creating and logging AuditEvents. Useful so that\n callers are only responsible for the core parts of the event, namely AuditEvent#getEvent() and\n AuditEvent#getDetails().",
  "typeName": "interface"
 }

@@ -9,15 +9,15 @@
   "getCompressionCodecName": ":return: java.lang.String",
   "getDefaultCompressionCodecName": ":return: (java.lang.String) The default for getCompressionCodecName()",
   "getDefaultMaximumDictionaryKeys": ":return: (int) The default for getMaximumDictionaryKeys()",
-  "getMaximumDictionaryKeys": ":return: (int) The maximum number of unique keys the writer should add to a dictionary page before switching to\n non-dictionary encoding; never evaluated for non-String columns, ignored if useDictionary(String)",
+  "getMaximumDictionaryKeys": ":return: (int) The maximum number of unique keys the writer should add to a dictionary page before switching to\n         non-dictionary encoding; never evaluated for non-String columns, ignored if\n         useDictionary(String)",
   "getParquetColumnNameFromColumnNameOrDefault": ":param columnName: java.lang.String\n:return: java.lang.String",
   "isLegacyParquet": ":return: boolean",
   "sameColumnNamesAndCodecMappings": ":param i1: io.deephaven.db.v2.parquet.ParquetInstructions\n:param i2: io.deephaven.db.v2.parquet.ParquetInstructions\n:return: boolean",
   "setDefaultCompressionCodecName": "Set the default for getCompressionCodecName().\n\n:param name: (java.lang.String) - The new default",
   "setDefaultMaximumDictionaryKeys": "Set the default for getMaximumDictionaryKeys().\n\n:param maximumDictionaryKeys: (int) - The new default",
-  "useDictionary": ":param columnName: java.lang.String\n:return: (boolean) A hint that the writer should use dictionary-based encoding for writing this column; never evaluated\n for non-String columns, defaults to false"
+  "useDictionary": ":param columnName: java.lang.String\n:return: (boolean) A hint that the writer should use dictionary-based encoding for writing this column; never evaluated for\n         non-String columns, defaults to false"
  },
  "path": "io.deephaven.db.v2.parquet.ParquetInstructions",
- "text": "This class provides instructions intended for read and write parquet operations (which take\n it as an optional argument) specifying desired transformations.  Examples are\n mapping column names and use of specific codecs during (de)serialization.",
+ "text": "This class provides instructions intended for read and write parquet operations (which take it as an optional\n argument) specifying desired transformations. Examples are mapping column names and use of specific codecs during\n (de)serialization.",
  "typeName": "class"
 }

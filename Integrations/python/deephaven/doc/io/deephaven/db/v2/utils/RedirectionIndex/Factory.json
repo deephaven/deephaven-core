@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.utils.RedirectionIndex$Factory",
  "methods": {
-  "createRedirectionIndex": "*Overload 1*  \n  :param initialCapacity: int\n  :return: io.deephaven.db.v2.utils.RedirectionIndex\n  \n*Overload 2*  \n  :param map: (gnu.trove.map.TLongLongMap) - The initial map. Needs to have the same dynamic type as that returned by\n              createUnderlyingMapWithCapacity(int).\n  :return: io.deephaven.db.v2.utils.RedirectionIndex",
+  "createRedirectionIndex": "*Overload 1*  \n  :param initialCapacity: int\n  :return: io.deephaven.db.v2.utils.RedirectionIndex\n  \n*Overload 2*  \n  :param map: (gnu.trove.map.TLongLongMap) - The initial map. Needs to have the same dynamic type as that returned by\n          createUnderlyingMapWithCapacity(int).\n  :return: io.deephaven.db.v2.utils.RedirectionIndex",
   "createUnderlyingMapWithCapacity": ":param initialCapacity: int\n:return: gnu.trove.map.TLongLongMap"
  },
  "path": "io.deephaven.db.v2.utils.RedirectionIndex.Factory",

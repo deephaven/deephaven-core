@@ -2,9 +2,9 @@
  "className": "io.deephaven.util.profiling.ThreadProfiler",
  "methods": {
   "cpuProfilingAvailable": "Check if CPU profiling (e.g. getCurrentThreadCpuTime() and getCurrentThreadUserTime()) is\n available (supported and enabled).\n\n:return: (boolean) Whether CPU profiling is available.",
-  "getCurrentThreadAllocatedBytes": "Get the approximate number of total bytes allocated by the current thread.\n\n:return: (long) The approximate number of total bytes allocated by the current thread, or\n QueryConstants.NULL_LONG if unavailable.",
-  "getCurrentThreadCpuTime": "Get the approximate number of total nanoseconds the current thread has executed (in system or user mode) since\n CPU time measurement started.\n\n:return: (long) The approximate number of total nanoseconds the current thread has executed, or\n QueryConstants.NULL_LONG if unavailable.",
-  "getCurrentThreadUserTime": "Get the approximate number of total nanoseconds the current thread has executed (in user mode) since CPU time\n measurement started.\n\n:return: (long) The approximate number of total nanoseconds the current thread has executed in user mode, or\n QueryConstants.NULL_LONG if unavailable.",
+  "getCurrentThreadAllocatedBytes": "Get the approximate number of total bytes allocated by the current thread.\n\n:return: (long) The approximate number of total bytes allocated by the current thread, or\n         QueryConstants.NULL_LONG if unavailable.",
+  "getCurrentThreadCpuTime": "Get the approximate number of total nanoseconds the current thread has executed (in system or user mode) since\n CPU time measurement started.\n\n:return: (long) The approximate number of total nanoseconds the current thread has executed, or\n         QueryConstants.NULL_LONG if unavailable.",
+  "getCurrentThreadUserTime": "Get the approximate number of total nanoseconds the current thread has executed (in user mode) since CPU time\n measurement started.\n\n:return: (long) The approximate number of total nanoseconds the current thread has executed in user mode, or\n         QueryConstants.NULL_LONG if unavailable.",
   "make": "Make a new ThreadProfiler for this JVM. The result may not support all measurements, if there's no suitable\n implementation available.\n\n:return: (io.deephaven.util.profiling.ThreadProfiler) A new ThreadProfiler for this JVM.",
   "memoryProfilingAvailable": "Check if memory profiling (e.g. getCurrentThreadAllocatedBytes()) is available (supported and enabled).\n\n:return: (boolean) Whether memory profiling is available."
  },

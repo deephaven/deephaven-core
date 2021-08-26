@@ -6,7 +6,7 @@
   "ensureCapacity": "Ensure the source has at least `capacity` capacity\n\n:param capacity: (long) - the capacity to ensure.",
   "get": ":param index: long\n:return: io.deephaven.db.tables.dbarrays.DbIntArray",
   "getCurrentSsm": "Get the current SSM at the specified key. This does not permute it in any way.\n\n:param key: (long) - the key to get the ssm for.\n:return: (io.deephaven.db.v2.ssms.IntSegmentedSortedMultiset) the SSM",
-  "getOrCreate": "Get the ssm at the specified key, creating one if none existed.  This method will\n update the current previous tracking state of the SSM.\n\n:param key: (long) - the key to get the ssm for.\n:return: (io.deephaven.db.v2.ssms.IntSegmentedSortedMultiset) the SSM at the key, or a new one.",
+  "getOrCreate": "Get the ssm at the specified key, creating one if none existed. This method will update the current previous\n tracking state of the SSM.\n\n:param key: (long) - the key to get the ssm for.\n:return: (io.deephaven.db.v2.ssms.IntSegmentedSortedMultiset) the SSM at the key, or a new one.",
   "getPrev": ":param index: long\n:return: io.deephaven.db.tables.dbarrays.DbIntArray",
   "getUnderlyingSource": ":return: io.deephaven.db.v2.sources.ObjectArraySource<io.deephaven.db.v2.ssms.IntSegmentedSortedMultiset>",
   "isImmutable": "Determine if this column source is immutable, meaning that the values at a given index key never change.\n\n:return: (boolean) true if the values at a given index of the column source never change, false otherwise",

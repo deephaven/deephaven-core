@@ -2,6 +2,6 @@
  "className": "io.deephaven.db.v2.sources.chunk.Attributes$OrderedKeyRanges",
  "methods": {},
  "path": "io.deephaven.db.v2.sources.chunk.Attributes.OrderedKeyRanges",
- "text": "The chunk contains index ranges.\n\n These are to be represented as pairs of an inclusive start and an inclusive end in even and odd\n slots, respectively.",
+ "text": "The chunk contains index ranges.\n\n These are to be represented as pairs of an inclusive start and an inclusive end in even and odd slots,\n respectively.",
  "typeName": "interface"
 }

@@ -2,6 +2,6 @@
  "className": "io.deephaven.util.annotations.ReferentialIntegrity",
  "methods": {},
  "path": "io.deephaven.util.annotations.ReferentialIntegrity",
- "text": "This annotation indicates that a field exists simply for referential integrity to\n the object it's holding.",
+ "text": "This annotation indicates that a field exists simply for referential integrity to the object it's holding.",
  "typeName": "class"
 }

@@ -8,6 +8,6 @@
   "defaultKeys": "Set the default key column name.\n\n:param keys: (java.lang.String...) - the new default key column names\n:return: (io.deephaven.db.v2.utils.SyncTableFilter.Builder) this builder"
  },
  "path": "io.deephaven.db.v2.utils.SyncTableFilter.Builder",
- "text": "Produce a TableMap of synchronized tables.\n\n You may include either Tables or TableMaps, but not both.  When Tables are included, the result of the build\n call is a TableMap with a String key that corresponds to the name of the input table.  When TableMaps are added,\n the result is a TableMap with composite keys (SmartKeys) that are prefixed with the keys from the input TableMap,\n with a last element that is the name of the source passed to the builder.",
+ "text": "Produce a TableMap of synchronized tables.\n\n \n You may include either Tables or TableMaps, but not both. When Tables are included, the result of the build call\n is a TableMap with a String key that corresponds to the name of the input table. When TableMaps are added, the\n result is a TableMap with composite keys (SmartKeys) that are prefixed with the keys from the input TableMap,\n with a last element that is the name of the source passed to the builder.",
  "typeName": "class"
 }

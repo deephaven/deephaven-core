@@ -5,6 +5,6 @@
   "iterator": "Creates an iterator for the models to exec for the model data instance.\n\n:param data: (ConditionalModels.DATA_TYPE) - model data\n:return: (java.util.Iterator<io.deephaven.modelfarm.Model<ConditionalModels.DATA_TYPE>>) iterator for the models to exec for the model data instance."
  },
  "path": "io.deephaven.modelfarm.ConditionalModels",
- "text": "A set of multiple models where predicates determine which of the models execute on any iteration.\n The predicates use input data and the most recent state for an underlying to determine which models should execute on an iteration.\n For example, the state could be the most recent valid result from a numerical model.\n \n Active models are executed in their input order.",
+ "text": "A set of multiple models where predicates determine which of the models execute on any iteration. The predicates use\n input data and the most recent state for an underlying to determine which models should execute on an iteration. For\n example, the state could be the most recent valid result from a numerical model.\n \n Active models are executed in their input order.",
  "typeName": "class"
 }

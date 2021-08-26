@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.db.plot.datasets.data.IndexableNumericDataArrayDate",
+ "methods": {
+  "get": "Gets the value at the specified index as a double.\n\n:param index: (int) - index\n:return: (double) value at index as a double",
+  "size": "Gets the size of this dataset.\n\n:return: (int) size of this dataset"
+ },
+ "path": "io.deephaven.db.plot.datasets.data.IndexableNumericDataArrayDate",
+ "text": "IndexableNumericData dataset comprised of an array of Dates.\n\n Date values are accessed as nanoseconds from epoch. Data conversion to double means these values are accurate to\n about 250 nanoseconds.",
+ "typeName": "class"
+}

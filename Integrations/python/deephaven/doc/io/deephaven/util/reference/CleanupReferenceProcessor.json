@@ -1,8 +1,8 @@
 {
  "className": "io.deephaven.util.reference.CleanupReferenceProcessor",
  "methods": {
-  "getReferenceQueue": "Get the reference queue for this cleaner.\n On the first call after construction or resetForUnitTests(), this method initializes the instance as\n a side effect. Initialization entails:\n \n* Constructing a ReferenceQueue.\n* Starting a daemon thread that will drain the reference queue and invoke\n CleanupReference.cleanup() on any CleanupReference dequeued.\n\n\nNote: Java generics information - <RT>\n\n:return: (java.lang.ref.ReferenceQueue<RT>) The ReferenceQueue constructed in the most recent initialization of this CleanupReferenceProcessor\n instance",
-  "resetForUnitTests": "Reset this instance so that the next call to getReferenceQueue() will re-initialize it and provide a new\n queue.\n Results in eventual termination of the daemon thread that may have been draining the existing queue."
+  "getReferenceQueue": "Get the reference queue for this cleaner.\n \n On the first call after construction or resetForUnitTests(), this method initializes the instance as a\n side effect. Initialization entails:\n \n* Constructing a ReferenceQueue.\n* Starting a daemon thread that will drain the reference queue and invoke CleanupReference.cleanup() on\n any CleanupReference dequeued.\n\n\nNote: Java generics information - <RT>\n\n:return: (java.lang.ref.ReferenceQueue<RT>) The ReferenceQueue constructed in the most recent initialization of this\n         CleanupReferenceProcessor instance",
+  "resetForUnitTests": "Reset this instance so that the next call to getReferenceQueue() will re-initialize it and provide a new\n queue. Results in eventual termination of the daemon thread that may have been draining the existing queue."
  },
  "path": "io.deephaven.util.reference.CleanupReferenceProcessor",
  "text": "Utility for draining a reference queue of CleanupReferences and invoking their cleanup methods.",

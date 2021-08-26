@@ -2,6 +2,6 @@
  "className": "io.deephaven.modelfarm.ModelFarmTick",
  "methods": {},
  "path": "io.deephaven.modelfarm.ModelFarmTick",
- "text": "A multithreaded resource to execute data driven models.\n Every time a row of the data table ticks, the unique identifier is executed using the data from the tick.\n Successive executions for a unique identifier are processed in order.\n \n This is useful for executing against historical data at a regular interval.",
+ "text": "A multithreaded resource to execute data driven models. Every time a row of the data table ticks, the unique\n identifier is executed using the data from the tick. Successive executions for a unique identifier are processed in\n order.\n \n This is useful for executing against historical data at a regular interval.",
  "typeName": "class"
 }

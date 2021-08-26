@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.util.text.ScriptSanitizer",
  "methods": {
-  "sanitizeScriptCode": "Replaces unwanted characters like smart quotes with the standard equivalent.  Used so that copy and paste\n operations from tools like Outlook or Slack don't result in unusable scripts.\n\n:param commandToSanitize: (java.lang.String) - the command to sanitize\n:return: (java.lang.String) the command with unwanted characters replaced with allowable characters"
+  "sanitizeScriptCode": "Replaces unwanted characters like smart quotes with the standard equivalent. Used so that copy and paste\n operations from tools like Outlook or Slack don't result in unusable scripts.\n\n:param commandToSanitize: (java.lang.String) - the command to sanitize\n:return: (java.lang.String) the command with unwanted characters replaced with allowable characters"
  },
  "path": "io.deephaven.util.text.ScriptSanitizer",
  "typeName": "class"

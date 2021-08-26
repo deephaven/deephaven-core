@@ -2,8 +2,8 @@
  "className": "io.deephaven.db.plot.datasets.DynamicSeriesNamer",
  "methods": {
   "add": "Adds a new series name to the namer.\n\n:param name: (java.lang.Comparable) - new series name\n:param plotInfo: io.deephaven.db.plot.errors.PlotInfo",
-  "getNames": "Gets all the series names.\n \n The order of series in 3D-plots are determined by returned set.\n\n:return: (java.util.List<java.lang.Comparable>) Set of seriesNames",
-  "makeUnusedName": "Takes a potential series name and creates a unique name from it.  If the series would be new, the original series name is returned.\n\n:param potentialName: (java.lang.String) - potential series name\n:param plotInfo: io.deephaven.db.plot.errors.PlotInfo\n:return: (java.lang.String) uniquified series name",
+  "getNames": "Gets all the series names. \n The order of series in 3D-plots are determined by returned set.\n\n:return: (java.util.List<java.lang.Comparable>) Set of seriesNames",
+  "makeUnusedName": "Takes a potential series name and creates a unique name from it. If the series would be new, the original series\n name is returned.\n\n:param potentialName: (java.lang.String) - potential series name\n:param plotInfo: io.deephaven.db.plot.errors.PlotInfo\n:return: (java.lang.String) uniquified series name",
   "removeAll": "Remove all the specified series names.\n\n:param names: (java.util.Collection<? extendsjava.lang.Comparable>) - series names to remove"
  },
  "path": "io.deephaven.db.plot.datasets.DynamicSeriesNamer",

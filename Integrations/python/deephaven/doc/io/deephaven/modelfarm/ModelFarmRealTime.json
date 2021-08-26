@@ -1,10 +1,10 @@
 {
  "className": "io.deephaven.modelfarm.ModelFarmRealTime",
  "methods": {
-  "requestUpdate": "Request an update for the given key with the specified priority level.\n\n:param key: (ModelFarmRealTime.KEYTYPE) - The key to update.\n:param priority: (int) - The priority with which the key should be updated.\n:return: (boolean) true if the element was newly inserted to the queue or reinserted with a higher priority,\n otherwise false.",
-  "requestUpdateMaxPriority": "Request an update for the given key with the maximum priority level.\n\n:param key: (ModelFarmRealTime.KEYTYPE) - The key to update.\n:return: (boolean) true if the element was newly inserted to the queue or reinserted with a higher priority,\n otherwise false."
+  "requestUpdate": "Request an update for the given key with the specified priority level.\n\n:param key: (ModelFarmRealTime.KEYTYPE) - The key to update.\n:param priority: (int) - The priority with which the key should be updated.\n:return: (boolean) true if the element was newly inserted to the queue or reinserted with a higher priority,\n         otherwise false.",
+  "requestUpdateMaxPriority": "Request an update for the given key with the maximum priority level.\n\n:param key: (ModelFarmRealTime.KEYTYPE) - The key to update.\n:return: (boolean) true if the element was newly inserted to the queue or reinserted with a higher priority,\n         otherwise false."
  },
  "path": "io.deephaven.modelfarm.ModelFarmRealTime",
- "text": "A multithreaded resource to execute data driven models.\n Every time a row of the data table ticks, the unique identifier is queued for execution.\n Once the security reaches the top of the execution queue, the most recent data for the unique identifier is used for execution.\n \n This is useful for real-time processing, where executing unique identifiers as fast as possible is desired.\n \n The execution priority is determined by how long it has been since the data changed.\n The prioritizer can be used to bump a unique identifier to a higher execution priority.",
+ "text": "A multithreaded resource to execute data driven models. Every time a row of the data table ticks, the unique\n identifier is queued for execution. Once the security reaches the top of the execution queue, the most recent data\n for the unique identifier is used for execution.\n \n This is useful for real-time processing, where executing unique identifiers as fast as possible is desired.\n \n The execution priority is determined by how long it has been since the data changed. The prioritizer can be used to\n bump a unique identifier to a higher execution priority.",
  "typeName": "class"
 }

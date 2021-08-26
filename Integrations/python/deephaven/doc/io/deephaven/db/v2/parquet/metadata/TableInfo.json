@@ -3,7 +3,7 @@
  "methods": {
   "builder": ":return: io.deephaven.db.v2.parquet.metadata.TableInfo.Builder",
   "columnTypeMap": ":return: java.util.Map<java.lang.String,io.deephaven.db.v2.parquet.metadata.ColumnTypeInfo>",
-  "columnTypes": ":return: (java.util.List<io.deephaven.db.v2.parquet.metadata.ColumnTypeInfo>) List of column types for columns requiring non-default deserialization or type\n selection",
+  "columnTypes": ":return: (java.util.List<io.deephaven.db.v2.parquet.metadata.ColumnTypeInfo>) List of column types for columns requiring non-default deserialization or type\n         selection",
   "deserializeFromJSON": ":param tableInfoRaw: java.lang.String\n:return: io.deephaven.db.v2.parquet.metadata.TableInfo",
   "groupingColumnMap": ":return: java.util.Map<java.lang.String,io.deephaven.db.v2.parquet.metadata.GroupingColumnInfo>",
   "groupingColumnNames": ":return: java.util.Set<java.lang.String>",

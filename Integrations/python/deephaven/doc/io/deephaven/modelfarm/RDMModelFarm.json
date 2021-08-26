@@ -2,6 +2,6 @@
  "className": "io.deephaven.modelfarm.RDMModelFarm",
  "methods": {},
  "path": "io.deephaven.modelfarm.RDMModelFarm",
- "text": "Abstract class for ModelFarm implementations that will take data from a RowDataManager. This class tracks\n the mappings between each key and the corresponding index in the RowDataManager's table.\n Each row of this table should contain all of the data necessary to populate an instance of DATATYPE, which\n will then be passed to the model.",
+ "text": "Abstract class for ModelFarm implementations that will take data from a RowDataManager. This class tracks the\n mappings between each key and the corresponding index in the RowDataManager's table. Each row of this table should contain all of the data necessary to populate an instance of DATATYPE,\n which will then be passed to the model.",
  "typeName": "class"
 }

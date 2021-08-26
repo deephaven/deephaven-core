@@ -2,13 +2,13 @@
  "className": "io.deephaven.util.codec.UTF8StringAsByteArrayCodec",
  "methods": {
   "decode": "Decode an object from an array of bytes.\n\n:param input: (byte[]) - The input byte array containing bytes to decode\n:param offset: (int) - The offset into the byte array to start decoding from\n:param length: (int) - The length of the byte array to decode from, starting at the offset\n:return: (java.lang.String) The output object, possibly null",
-  "encode": "Encode the specified input as an array of bytes.\n Note that it is up to the implementation how to encode null inputs. The use of a zero-length byte array\n (e.g. CollectionUtil.ZERO_LENGTH_BYTE_ARRAY) is strongly encouraged.\n\n:param input: (java.lang.String) - The input object, possibly null\n:return: (byte[]) The output byte array",
-  "expectedObjectWidth": "What width byte array does this ObjectCodec expect to encode and decode?\n\n:return: (int) VARIABLE_WIDTH_SENTINEL if the codec  must encode and decode variable width columns, otherwise the fixed\n size of byte array that must be decoded and encoded.",
-  "getPrecision": "If applicable, the maximum encodable precision. If precision is not applicable (i.e. for non-numeric types)\n this method should return zero.\n\n:return: (int) the numeric precision supported by this codec",
-  "getScale": "If applicable, the maximum encodable scale. If scale is not applicable (i.e. for non-numeric types)\n this method should return zero.\n\n:return: (int) the numeric scale (digits after the decimal point) supported by this codec",
+  "encode": "Encode the specified input as an array of bytes. Note that it is up to the implementation how to encode null\n inputs. The use of a zero-length byte array (e.g.\n CollectionUtil.ZERO_LENGTH_BYTE_ARRAY) is strongly encouraged.\n\n:param input: (java.lang.String) - The input object, possibly null\n:return: (byte[]) The output byte array",
+  "expectedObjectWidth": "What width byte array does this ObjectCodec expect to encode and decode?\n\n:return: (int) VARIABLE_WIDTH_SENTINEL if the codec must encode and decode variable width columns, otherwise the fixed\n         size of byte array that must be decoded and encoded.",
+  "getPrecision": "If applicable, the maximum encodable precision. If precision is not applicable (i.e. for non-numeric types) this\n method should return zero.\n\n:return: (int) the numeric precision supported by this codec",
+  "getScale": "If applicable, the maximum encodable scale. If scale is not applicable (i.e. for non-numeric types) this method\n should return zero.\n\n:return: (int) the numeric scale (digits after the decimal point) supported by this codec",
   "isNullable": "Does this codec support encoding of null values?\n\n:return: (boolean) if null values are supported"
  },
  "path": "io.deephaven.util.codec.UTF8StringAsByteArrayCodec",
- "text": "Codec for non-nullable Strings from UTF8 byte arrays.\n One particular instance where this is useful is reading parquet 1.0 data\n    encoded as binary as String.",
+ "text": "Codec for non-nullable Strings from UTF8 byte arrays.\n \n One particular instance where this is useful is reading parquet 1.0 data encoded as binary as String.",
  "typeName": "class"
 }

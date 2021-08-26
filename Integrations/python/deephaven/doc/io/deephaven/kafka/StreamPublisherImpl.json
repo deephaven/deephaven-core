@@ -5,8 +5,8 @@
   "doLocked": "Run the provided Runnable under our lock, preventing flush from taking our chunks while filling them.\n\n:param runnable: (java.lang.Runnable) - the runnable to run",
   "flush": "Flush any accumulated data in this publisher to the consumer, by invoking its\n accept method.",
   "getChunks": ":return: io.deephaven.db.v2.sources.chunk.WritableChunk[]",
-  "register": "Register a consumer whose accept method\n will be used when sufficient data is accumulated or on StreamPublisher.flush().\n\n consumer must typically be primed to expect the same\n chunk types that this produces, in the same order.\n\n:param consumer: (io.deephaven.stream.StreamConsumer) - The consumer",
-  "setChunkFactory": "You must set the chunk factory and consumer before allowing other threads or objects to interact with the StreamPublisherImpl.\n\n:param chunkFactory: (java.util.function.Supplier<io.deephaven.db.v2.sources.chunk.WritableChunk[]>) - a supplier of WritableChunks that is acceptable to our consumer\n:param chunkTypeIntFunction: (java.util.function.IntFunction<io.deephaven.db.v2.sources.chunk.ChunkType>) - a function from column index to ChunkType"
+  "register": "Register a consumer whose accept method\n will be used when sufficient data is accumulated or on StreamPublisher.flush().\n\n \nconsumer must typically be primed to expect the same chunk types that this produces, in the same order.\n\n:param consumer: (io.deephaven.stream.StreamConsumer) - The consumer",
+  "setChunkFactory": "You must set the chunk factory and consumer before allowing other threads or objects to interact with the\n StreamPublisherImpl.\n\n:param chunkFactory: (java.util.function.Supplier<io.deephaven.db.v2.sources.chunk.WritableChunk[]>) - a supplier of WritableChunks that is acceptable to our consumer\n:param chunkTypeIntFunction: (java.util.function.IntFunction<io.deephaven.db.v2.sources.chunk.ChunkType>) - a function from column index to ChunkType"
  },
  "path": "io.deephaven.kafka.StreamPublisherImpl",
  "typeName": "class"

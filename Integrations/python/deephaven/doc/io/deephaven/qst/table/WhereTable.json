@@ -3,6 +3,7 @@
  "methods": {
   "builder": ":return: io.deephaven.qst.table.WhereTable.Builder",
   "filters": ":return: java.util.List<io.deephaven.api.filter.Filter>",
+  "hasRawFilter": "Checks if any of the filters is, or contains, a raw-string filter.\n\n:return: (boolean) true if there are any raw-string filters",
   "parent": ":return: io.deephaven.qst.table.TableSpec",
   "walk": "Note: Java generics information - <V extends io.deephaven.qst.table.TableSpec.Visitor>\n\n:param visitor: V\n:return: V"
  },

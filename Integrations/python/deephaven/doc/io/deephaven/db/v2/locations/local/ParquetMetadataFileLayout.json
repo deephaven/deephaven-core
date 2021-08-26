@@ -7,6 +7,6 @@
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.db.v2.locations.local.ParquetMetadataFileLayout",
- "text": "Location finder that will examine a parquet metadata file to discover locations.\n\n Note that we expect to find the following files:\n \n* _metadata - A file containing Parquet metadata for all row groups in all\n     .parquet files for the entire data set, including schema information non-partitioning columns and\n     key-value metadata\n* _common_metadata (optional) - A file containing Parquet metadata with schema information\n     that applies to the entire data set, including partitioning columns that are inferred from file paths rather than\n     explicitly written in column chunks within .parquet\n     files",
+ "text": "Location finder that will examine a parquet metadata file to discover locations.\n\n \n Note that we expect to find the following files:\n \n* _metadata - A file containing Parquet metadata for all row groups in all\n .parquet files for the entire data set, including schema information non-partitioning columns and key-value\n metadata\n* _common_metadata (optional) - A file containing Parquet metadata with schema information that\n applies to the entire data set, including partitioning columns that are inferred from file paths rather than\n explicitly written in column chunks within .parquet files",
  "typeName": "class"
 }

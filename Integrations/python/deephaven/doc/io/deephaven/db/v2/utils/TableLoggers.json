@@ -4,11 +4,11 @@
   "processInfoLog": "Return a static table with process information for the current engine process.\n\n:return: (io.deephaven.db.v2.QueryTable) A table with process information for the current engine process.",
   "processMetricsLog": "Return a table with metrics collected for the current engine process.\n\n:return: (io.deephaven.db.v2.QueryTable) A table with metrics fopr the current engine process.",
   "queryOperationPerformanceLog": "Return a table with individual subquery performance data.\n\n:return: (io.deephaven.db.v2.QueryTable) A table with subquery performance data.",
-  "queryPerformanceLog": "Return a table with query performance data.  Individual sub-operations in the query\n are referenced in QueryOperationPerformanceLog.\n\n:return: (io.deephaven.db.v2.QueryTable) A table with query performance data.",
+  "queryPerformanceLog": "Return a table with query performance data. Individual sub-operations in the query are referenced in\n QueryOperationPerformanceLog.\n\n:return: (io.deephaven.db.v2.QueryTable) A table with query performance data.",
   "startUpdatePerformanceLog": "Start collecting data for query update performance.",
   "updatePerformanceLog": "Return a table with update performance data.\n\n Note this table will only tick if/since startUpdatePerformanceLog is called.\n\n:return: (io.deephaven.db.v2.QueryTable) A table with update performance data."
  },
  "path": "io.deephaven.db.v2.utils.TableLoggers",
- "text": "Tools to obtain internal, Deephaven logs as tables.  These tables include query logs and performance logs.",
+ "text": "Tools to obtain internal, Deephaven logs as tables. These tables include query logs and performance logs.",
  "typeName": "class"
 }
