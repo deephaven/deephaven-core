@@ -16,7 +16,9 @@
  * tunneled in a single tcp socket, and there is no limitation on the
  * number of connections that can be made, but without bidirectional
  * streams, we need to send calls to the server out-of-band in a one-off
- * unary stream.
+ * unary stream. That out-of-band "next" operation must take a simple
+ * success/failure response to indicate that the server accepted the message,
+ * actual responses should be sent on the server-stream.
  *
  * As such, we presently use a new websocket for all calls from non-ssl
  * connections, and fetch/h2 for all ssl connections. Certain unary calls
