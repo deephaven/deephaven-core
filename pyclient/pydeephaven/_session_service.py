@@ -30,7 +30,7 @@ class SessionService:
             response = self._grpc_session_stub.RefreshSessionToken(
                 session_pb2.HandshakeRequest(auth_protocol=0, payload=self.session.session_token),
                 metadata=self.session.grpc_metadata)
-            return response.session_token
+            return response.session_token, response.token_expiration_delay_millis
         except Exception as e:
             raise DHError("failed to refresh session token.") from e
 

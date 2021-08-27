@@ -32,6 +32,7 @@ class Session:
 
     def __init__(self, host: str = None, port: int = None, never_timeout: bool = True):
         """ Initialize a Session object that connects to the Deephaven server
+
         Args:
             host (str): the host name or IP address of the remote machine, default is 'localhost'
             port (int): the port number that Deephaven server is listening on, default is 10000
@@ -134,7 +135,7 @@ class Session:
     def _refresh_token(self):
         with self._r_lock:
             try:
-                self.session_token = self.session_service.refresh_token()
+                self.session_token, self._timeout = self.session_service.refresh_token()
             except DHError:
                 self.is_connected = False
 

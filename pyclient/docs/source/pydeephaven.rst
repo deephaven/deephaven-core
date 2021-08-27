@@ -40,6 +40,13 @@ pydeephaven.table module
    :members:
    :show-inheritance:
 
+pydeephaven._table_interface module
+-----------------------------------
+
+.. automodule:: pydeephaven._table_interface
+   :members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

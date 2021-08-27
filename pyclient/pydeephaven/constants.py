@@ -38,31 +38,3 @@ class SortDirection(Enum):
     REVERSE = 3
 
 
-class TableOpType(Enum):
-    EMPTY_TABLE = auto()
-    TIME_TABLE = auto()
-    DROP_COLUMNS = auto()
-    UPDATE = auto()
-    LAZY_UPDATE = auto()
-    VIEW = auto()
-    UPDATE_VIEW = auto()
-    SELECT = auto()
-    SELECT_DISTINCT = auto()
-    UNSTRUCTURED_FILTER = auto()
-    SORT = auto()
-    HEAD = auto()
-    TAIL = auto()
-    HEAD_BY = auto()
-    TAIL_BY = auto()
-    UNGROUP = auto()
-    MERGE_TABLES = auto()
-    FLATTEN = auto()
-    CROSS_JOIN = auto()
-    NATURAL_JOIN = auto()
-    EXACT_JOIN = auto()
-    LEFT_JOIN = auto()
-    AS_OF_JOIN = auto()
-    COMBO_AGG = auto()
-
-
-

@@ -6,13 +6,11 @@ from abc import ABC
 from typing import List, Any
 
 from pydeephaven._combo_aggs import ComboAggregation
-from pydeephaven.constants import TableOpType, SortDirection, MatchRule, AggType
-from pydeephaven.proto import table_pb2
+from pydeephaven.constants import SortDirection, MatchRule, AggType
+from pydeephaven.proto import table_pb2, table_pb2_grpc
 
 
 class TableOp(ABC):
-    op_type: TableOpType
-
     def make_grpc_request(self, result_id, source_id=None):
         ...
 
@@ -27,9 +25,12 @@ class NoneOp(TableOp):
 
 class TimeTableOp(TableOp):
     def __init__(self, start_time: int = 0, period: int = 1000000000):
-        self.op_type = TableOpType.TIME_TABLE
         self.start_time = start_time
         self.period = period
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.TimeTable
 
     def make_grpc_request(self, result_id, source_id=None):
         return table_pb2.TimeTableRequest(result_id=result_id, start_time_nanos=self.start_time,
@@ -42,8 +43,11 @@ class TimeTableOp(TableOp):
 
 class EmptyTableOp(TableOp):
     def __init__(self, size: int):
-        self.op_type = TableOpType.EMPTY_TABLE
         self.size = size
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.EmptyTable
 
     def make_grpc_request(self, result_id, source_id=None):
         return table_pb2.EmptyTableRequest(result_id=result_id, size=self.size)
@@ -55,8 +59,11 @@ class EmptyTableOp(TableOp):
 
 class DropColumnsOp(TableOp):
     def __init__(self, column_names: List[str]):
-        self.op_type = TableOpType.DROP_COLUMNS
         self.column_names = column_names
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.DropColumns
 
     def make_grpc_request(self, result_id, source_id):
         return table_pb2.DropColumnsRequest(result_id=result_id, source_id=source_id,
@@ -75,8 +82,11 @@ class USVOp(TableOp):
 
 class UpdateOp(USVOp):
     def __init__(self, column_specs: List[str]):
-        self.op_type = TableOpType.UPDATE
         self.column_specs = column_specs
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.Update
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
@@ -85,8 +95,11 @@ class UpdateOp(USVOp):
 
 class LazyUpdateOp(USVOp):
     def __init__(self, column_specs: List[str]):
-        self.op_type = TableOpType.LAZY_UPDATE
         self.column_specs = column_specs
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.LazyUpdate
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
@@ -95,8 +108,11 @@ class LazyUpdateOp(USVOp):
 
 class ViewOp(USVOp):
     def __init__(self, column_specs: List[str]):
-        self.op_type = TableOpType.VIEW
         self.column_specs = column_specs
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.View
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
@@ -105,8 +121,11 @@ class ViewOp(USVOp):
 
 class UpdateViewOp(USVOp):
     def __init__(self, column_specs: List[str]):
-        self.op_type = TableOpType.UPDATE_VIEW
         self.column_specs = column_specs
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.UpdateView
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
@@ -115,8 +134,11 @@ class UpdateViewOp(USVOp):
 
 class SelectOp(USVOp):
     def __init__(self, column_specs: List[str] = []):
-        self.op_type = TableOpType.SELECT
         self.column_specs = column_specs
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.Select
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
@@ -125,8 +147,11 @@ class SelectOp(USVOp):
 
 class SelectDistinctOp(TableOp):
     def __init__(self, column_names: List[str] = []):
-        self.op_type = TableOpType.SELECT_DISTINCT
         self.column_names = column_names
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.SelectDistinct
 
     def make_grpc_request(self, result_id, source_id):
         return table_pb2.SelectDistinctRequest(result_id=result_id, source_id=source_id,
@@ -139,8 +164,11 @@ class SelectDistinctOp(TableOp):
 
 class UnstructuredFilterOp(TableOp):
     def __init__(self, filters: List[str]):
-        self.op_type = TableOpType.UNSTRUCTURED_FILTER
         self.filters = filters
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.UnstructuredFilter
 
     def make_grpc_request(self, result_id, source_id):
         return table_pb2.UnstructuredFilterTableRequest(result_id=result_id,
@@ -153,9 +181,12 @@ class UnstructuredFilterOp(TableOp):
 
 class SortOp(TableOp):
     def __init__(self, column_names: List[str], directions: List[SortDirection]):
-        self.op_type = TableOpType.SORT
         self.column_names = column_names
         self.directions = directions
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.Sort
 
     def make_grpc_request(self, result_id, source_id):
         from itertools import zip_longest
@@ -184,8 +215,11 @@ class HeadOrTailOp(TableOp):
 
 class HeadOp(HeadOrTailOp):
     def __init__(self, num_rows: int):
-        self.op_type = TableOpType.HEAD
         self.num_rows = num_rows
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.Head
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
@@ -194,8 +228,11 @@ class HeadOp(HeadOrTailOp):
 
 class TailOp(HeadOrTailOp):
     def __init__(self, num_rows: int):
-        self.op_type = TableOpType.TAIL
         self.num_rows = num_rows
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.Tail
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
@@ -211,9 +248,12 @@ class HeadOrTailByOp(TableOp):
 
 class HeadByOp(HeadOrTailByOp):
     def __init__(self, num_rows: int, column_names: List[str]):
-        self.op_type = TableOpType.HEAD_BY
         self.num_rows = num_rows
         self.column_names = column_names
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.HeadBy
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
@@ -222,9 +262,12 @@ class HeadByOp(HeadOrTailByOp):
 
 class TailByOp(HeadOrTailByOp):
     def __init__(self, num_rows: int, column_names: List[str]):
-        self.op_type = TableOpType.HEAD_BY
         self.num_rows = num_rows
         self.column_names = column_names
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.TailBy
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
@@ -233,9 +276,12 @@ class TailByOp(HeadOrTailByOp):
 
 class UngroupOp(TableOp):
     def __init__(self, column_names: List[str], null_fill: bool = True):
-        self.op_type = TableOpType.UNGROUP
         self.column_names = column_names
         self.null_fill = null_fill
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.Ungroup
 
     def make_grpc_request(self, result_id, source_id):
         return table_pb2.UngroupRequest(result_id=result_id,
@@ -249,9 +295,12 @@ class UngroupOp(TableOp):
 
 class MergeTablesOp(TableOp):
     def __init__(self, tables: List[Any], key_column: str = ""):
-        self.op_type = TableOpType.MERGE_TABLES
         self.tables = tables
         self.key_column = key_column
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.MergeTables
 
     def make_grpc_request(self, result_id, source_id):
         table_references = []
@@ -269,10 +318,13 @@ class MergeTablesOp(TableOp):
 
 class NaturalJoinOp(TableOp):
     def __init__(self, table: Any, keys: List[str], columns_to_add: List[str] = []):
-        self.op_type = TableOpType.NATURAL_JOIN
         self.table = table
         self.keys = keys
         self.columns_to_add = columns_to_add
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.NaturalJoinTables
 
     def make_grpc_request(self, result_id, source_id):
         left_id = source_id
@@ -290,10 +342,13 @@ class NaturalJoinOp(TableOp):
 
 class ExactJoinOp(TableOp):
     def __init__(self, table: Any, keys: List[str], columns_to_add: List[str] = []):
-        self.op_type = TableOpType.EXACT_JOIN
         self.table = table
         self.keys = keys
         self.columns_to_add = columns_to_add
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.ExactJoinTables
 
     def make_grpc_request(self, result_id, source_id):
         left_id = source_id
@@ -311,10 +366,13 @@ class ExactJoinOp(TableOp):
 
 class LeftJoinOp(TableOp):
     def __init__(self, table: Any, keys: List[str], columns_to_add: List[str] = []):
-        self.op_type = TableOpType.LEFT_JOIN
         self.table = table
         self.keys = keys
         self.columns_to_add = columns_to_add
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.LeftJoinTables
 
     def make_grpc_request(self, result_id, source_id):
         left_id = source_id
@@ -332,11 +390,14 @@ class LeftJoinOp(TableOp):
 
 class CrossJoinOp(TableOp):
     def __init__(self, table: Any, keys: List[str] = [], columns_to_add: List[str] = [], reserve_bits: int = 10):
-        self.op_type = TableOpType.CROSS_JOIN
         self.table = table
         self.keys = keys
         self.columns_to_add = columns_to_add
         self.reserve_bits = reserve_bits
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.CrossJoinTables
 
     def make_grpc_request(self, result_id, source_id):
         left_id = source_id
@@ -356,11 +417,14 @@ class CrossJoinOp(TableOp):
 class AsOfJoinOp(TableOp):
     def __init__(self, table: Any, keys: List[str] = [], columns_to_add: List[str] = [],
                  match_rule: MatchRule = MatchRule.LESS_THAN_EQUAL):
-        self.op_type = TableOpType.AS_OF_JOIN
         self.table = table
         self.keys = keys
         self.columns_to_add = columns_to_add
         self.match_rule = match_rule
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.AsOfJoinTables
 
     def make_grpc_request(self, result_id, source_id):
         left_id = source_id
@@ -378,8 +442,9 @@ class AsOfJoinOp(TableOp):
 
 
 class FlattenOp(TableOp):
-    def __init__(self):
-        self.op_type = TableOpType.FLATTEN
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.Flatten
 
     def make_grpc_request(self, result_id, source_id):
         return table_pb2.FlattenRequest(result_id=result_id, source_id=source_id)
@@ -391,10 +456,13 @@ class FlattenOp(TableOp):
 
 class DedicatedAggOp(TableOp):
     def __init__(self, agg_type: AggType, column_names: List[str] = [], count_column: str = None):
-        self.op_type = TableOpType.COMBO_AGG
         self.agg_type = agg_type
         self.column_names = column_names
         self.count_column = count_column
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.ComboAggregate
 
     def make_grpc_request(self, result_id, source_id):
         aggregates = []
@@ -416,9 +484,12 @@ class DedicatedAggOp(TableOp):
 
 class ComboAggOp(TableOp):
     def __init__(self, column_names: List[str], combo_aggregation: ComboAggregation):
-        self.op_type = TableOpType.COMBO_AGG
         self.column_names = column_names
         self.combo_aggregation = combo_aggregation
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.ComboAggregate
 
     def make_grpc_request(self, result_id, source_id):
         aggregates = []

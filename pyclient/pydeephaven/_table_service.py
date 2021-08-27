@@ -3,7 +3,6 @@
 #
 from pydeephaven._batch_assembler import BatchOpAssembler
 from pydeephaven._table_ops import TableOp
-from pydeephaven.constants import TableOpType
 from pydeephaven.dherror import DHError
 from pydeephaven.proto import table_pb2_grpc, table_pb2
 from pydeephaven.table import Table
@@ -13,32 +12,6 @@ class TableService:
     def __init__(self, session):
         self.session = session
         self._grpc_table_stub = table_pb2_grpc.TableServiceStub(session.grpc_channel)
-        self.op_to_stub_func = {
-            TableOpType.EMPTY_TABLE: self._grpc_table_stub.EmptyTable,
-            TableOpType.TIME_TABLE: self._grpc_table_stub.TimeTable,
-            TableOpType.UNSTRUCTURED_FILTER: self._grpc_table_stub.UnstructuredFilter,
-            TableOpType.DROP_COLUMNS: self._grpc_table_stub.DropColumns,
-            TableOpType.UPDATE: self._grpc_table_stub.Update,
-            TableOpType.LAZY_UPDATE: self._grpc_table_stub.LazyUpdate,
-            TableOpType.VIEW: self._grpc_table_stub.View,
-            TableOpType.UPDATE_VIEW: self._grpc_table_stub.UpdateView,
-            TableOpType.SELECT: self._grpc_table_stub.Select,
-            TableOpType.SELECT_DISTINCT: self._grpc_table_stub.SelectDistinct,
-            TableOpType.SORT: self._grpc_table_stub.Sort,
-            TableOpType.TAIL: self._grpc_table_stub.Tail,
-            TableOpType.HEAD: self._grpc_table_stub.Head,
-            TableOpType.HEAD_BY: self._grpc_table_stub.HeadBy,
-            TableOpType.TAIL_BY: self._grpc_table_stub.TailBy,
-            TableOpType.UNGROUP: self._grpc_table_stub.Ungroup,
-            TableOpType.MERGE_TABLES: self._grpc_table_stub.MergeTables,
-            TableOpType.NATURAL_JOIN: self._grpc_table_stub.NaturalJoinTables,
-            TableOpType.EXACT_JOIN: self._grpc_table_stub.ExactJoinTables,
-            TableOpType.LEFT_JOIN: self._grpc_table_stub.LeftJoinTables,
-            TableOpType.CROSS_JOIN: self._grpc_table_stub.CrossJoinTables,
-            TableOpType.AS_OF_JOIN: self._grpc_table_stub.AsOfJoinTables,
-            TableOpType.FLATTEN: self._grpc_table_stub.Flatten,
-            TableOpType.COMBO_AGG: self._grpc_table_stub.ComboAggregate
-        }
 
     def batch(self, ops):
         batch_op = BatchOpAssembler(self.session, table_ops=ops).build_batch()
@@ -67,7 +40,7 @@ class TableService:
                 table_reference = table_pb2.TableReference(ticket=table.ticket)
             else:
                 table_reference = None
-            stub_func = self.op_to_stub_func[op.op_type]
+            stub_func = op.__class__.get_stub_func(self._grpc_table_stub)
             response = stub_func(op.make_grpc_request(result_id=result_id, source_id=table_reference),
                                  metadata=self.session.grpc_metadata)
 
@@ -77,6 +50,6 @@ class TableService:
                              size=response.size,
                              is_static=response.is_static)
             else:
-                raise DHError(f"Server error received for {op.op_type.name}: {response.error_info}")
+                raise DHError(f"Server error received for {op.__class__.__name__}: {response.error_info}")
         except Exception as e:
-            raise DHError(f"failed to finish table {op.op_type.name} operation") from e
+            raise DHError(f"failed to finish {op.__class__.__name__} operation") from e

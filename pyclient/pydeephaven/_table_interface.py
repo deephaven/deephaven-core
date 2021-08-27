@@ -287,7 +287,7 @@ class TableInterface(ABC):
         table_op = CrossJoinOp(table=table, keys=keys, columns_to_add=columns_to_add, reserve_bits=reserve_bits)
         return self.table_op_handler(table_op)
 
-    def aj(self, table: Any, keys: List[str], columns_to_add: List[str] = []):
+    def aj(self, table: Any, keys: List[str], columns_to_add: List[str] = [], match_rule: MatchRule = MatchRule.LESS_THAN_EQUAL):
         """ Perform a as-of join between this table as the left table and another table as the right table) and
         returns the result table.
 
@@ -297,6 +297,7 @@ class TableInterface(ABC):
                 i.e. "col_a = col_b" for different column names
             columns_to_add (List[str], optional): a list of the columns to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is empty
+            match_rule (MatchRule, optional): the match rule for the as-of join, default is LESS_THAN_EQUAL
 
         Returns:
             a Table object
@@ -305,10 +306,11 @@ class TableInterface(ABC):
             DHError
 
         """
-        table_op = AsOfJoinOp(table=table, keys=keys, columns_to_add=columns_to_add)
+        match_rule = MatchRule.LESS_THAN if match_rule == MatchRule.LESS_THAN else MatchRule.LESS_THAN_EQUAL
+        table_op = AsOfJoinOp(table=table, keys=keys, columns_to_add=columns_to_add, match_rule=match_rule)
         return self.table_op_handler(table_op)
 
-    def raj(self, table: Any, keys: List[str], columns_to_add: List[str] = []):
+    def raj(self, table: Any, keys: List[str], columns_to_add: List[str] = [], match_rule: MatchRule = MatchRule.GREATER_THAN_EQUAL):
         """ Perform a reverse as-of join between this table as the left table and another table as the right table) and
         returns the result table.
 
@@ -318,6 +320,7 @@ class TableInterface(ABC):
                 i.e. "col_a = col_b" for different column names
             columns_to_add (List[str], optional): a list of the columns to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is empty
+            match_rule (MatchRule, optional): the match rule for the as-of join, default is GREATER_THAN_EQUAL
 
         Returns:
             a Table object
@@ -326,8 +329,9 @@ class TableInterface(ABC):
             DHError
 
         """
+        match_rule = MatchRule.GREATER_THAN if match_rule == MatchRule.LESS_THAN else MatchRule.LESS_THAN_EQUAL
         table_op = AsOfJoinOp(table=table, keys=keys, columns_to_add=columns_to_add,
-                              match_rule=MatchRule.GREATER_THAN_EQUAL)
+                              match_rule=match_rule)
         return self.table_op_handler(table_op)
 
     def head_by(self, num_rows: int, column_names: List[str]):
