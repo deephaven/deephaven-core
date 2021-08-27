@@ -1,8 +1,8 @@
 {
  "className": "io.deephaven.db.v2.select.codegen.FormulaAnalyzer",
  "methods": {
-  "analyze": ":param rawFormulaString: java.lang.String\n:param columnDefinitionMap: java.util.Map<java.lang.String,io.deephaven.db.tables.ColumnDefinition>\n:param otherVariables: java.util.Map<java.lang.String,java.lang.Class>\n:return: io.deephaven.db.v2.select.codegen.FormulaAnalyzer.Result",
-  "getCompiledFormula": ":param availableColumns: java.util.Map<java.lang.String,io.deephaven.db.tables.ColumnDefinition>\n:param timeConversionResult: io.deephaven.db.tables.utils.DBTimeUtils.Result\n:param otherVariables: java.util.Map<java.lang.String,java.lang.Class>\n:return: io.deephaven.db.tables.lang.DBLanguageParser.Result"
+  "analyze": ":param rawFormulaString: java.lang.String\n:param columnDefinitionMap: java.util.Map<java.lang.String,io.deephaven.db.tables.ColumnDefinition<?>>\n:param otherVariables: java.util.Map<java.lang.String,java.lang.Class<?>>\n:return: io.deephaven.db.v2.select.codegen.FormulaAnalyzer.Result",
+  "getCompiledFormula": ":param availableColumns: java.util.Map<java.lang.String,io.deephaven.db.tables.ColumnDefinition<?>>\n:param timeConversionResult: io.deephaven.db.tables.utils.DBTimeUtils.Result\n:param otherVariables: java.util.Map<java.lang.String,java.lang.Class<?>>\n:return: io.deephaven.db.tables.lang.DBLanguageParser.Result"
  },
  "path": "io.deephaven.db.v2.select.codegen.FormulaAnalyzer",
  "typeName": "class"

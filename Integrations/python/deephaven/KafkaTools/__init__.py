@@ -258,18 +258,18 @@ except Exception as e:
 def avroSchemaToColumnDefinitions(*args):
     """
     *Overload 1*  
-      :param columns: java.util.List<io.deephaven.db.tables.ColumnDefinition>
+      :param columns: java.util.List<io.deephaven.db.tables.ColumnDefinition<?>>
       :param mappedOut: java.util.Map<java.lang.String,java.lang.String>
       :param schema: org.apache.avro.Schema
       :param fieldNameToColumnName: java.util.function.Function<java.lang.String,java.lang.String>
       
     *Overload 2*  
-      :param columns: java.util.List<io.deephaven.db.tables.ColumnDefinition>
+      :param columns: java.util.List<io.deephaven.db.tables.ColumnDefinition<?>>
       :param schema: org.apache.avro.Schema
       :param fieldNameToColumnName: java.util.function.Function<java.lang.String,java.lang.String>
       
     *Overload 3*  
-      :param columns: java.util.List<io.deephaven.db.tables.ColumnDefinition>
+      :param columns: java.util.List<io.deephaven.db.tables.ColumnDefinition<?>>
       :param schema: org.apache.avro.Schema
     """
     

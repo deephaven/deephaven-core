@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.sources.LongSparseArraySource",
  "methods": {
-  "copy": ":param sourceColumn: io.deephaven.db.v2.sources.ColumnSource<java.lang.Long>\n:param sourceKey: long\n:param destKey: long",
+  "copy": ":param sourceColumn: io.deephaven.db.v2.sources.ColumnSource<? extendsjava.lang.Long>\n:param sourceKey: long\n:param destKey: long",
   "set": ":param key: long\n:param value: java.lang.Long"
  },
  "path": "io.deephaven.db.v2.sources.LongSparseArraySource",

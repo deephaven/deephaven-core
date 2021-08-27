@@ -125,7 +125,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, int.class, new String[] {});
 
         expression = "1*1.0";
-        resultExpression = "times(1, 1.0)";
+        resultExpression = "multiply(1, 1.0)";
         check(expression, resultExpression, double.class, new String[] {});
 
         expression = "1/1L";
@@ -133,7 +133,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, double.class, new String[] {});
 
         expression = "1.0+2L+3*4";
-        resultExpression = "plus(plus(1.0, 2L), times(3, 4))";
+        resultExpression = "plus(plus(1.0, 2L), multiply(3, 4))";
         check(expression, resultExpression, double.class, new String[] {});
 
         expression = "1==1";
@@ -145,15 +145,15 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, boolean.class, new String[] {});
 
         expression = "false | true";
-        resultExpression = "binOr(false, true)";
+        resultExpression = "binaryOr(false, true)";
         check(expression, resultExpression, Boolean.class, new String[] {});
 
         expression = "1>1+2*3/4 || true";
-        resultExpression = "greater(1, plus(1, divide(times(2, 3), 4)))||true";
+        resultExpression = "greater(1, plus(1, divide(multiply(2, 3), 4)))||true";
         check(expression, resultExpression, boolean.class, new String[] {});
 
         expression = "(1>1+2*3/4) | true";
-        resultExpression = "binOr((greater(1, plus(1, divide(times(2, 3), 4)))), true)";
+        resultExpression = "binaryOr((greater(1, plus(1, divide(multiply(2, 3), 4)))), true)";
         check(expression, resultExpression, Boolean.class, new String[] {});
 
         expression = "1+\"test\"";
@@ -369,7 +369,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
         // Test a crazy unicode character. (This is an arrow - ↳ - U+21b3)
         expression = "'\\u21b3'";
-        resultExpression = "'\u21b3'";
+        resultExpression = "'\\u21b3'";
         check(expression, resultExpression, char.class, new String[] {});
     }
 
@@ -838,7 +838,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, int.class, new String[] {"myInt"});
 
         expression = "1*myDouble";
-        resultExpression = "times(1, myDouble)";
+        resultExpression = "multiply(1, myDouble)";
         check(expression, resultExpression, double.class, new String[] {"myDouble"});
 
         expression = "myInt/myLong";
@@ -846,7 +846,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, double.class, new String[] {"myInt", "myLong"});
 
         expression = "myDouble+myLong+3*4";
-        resultExpression = "plus(plus(myDouble, myLong), times(3, 4))";
+        resultExpression = "plus(plus(myDouble, myLong), multiply(3, 4))";
         check(expression, resultExpression, double.class, new String[] {"myDouble", "myLong"});
 
         expression = "1==myInt";
@@ -854,11 +854,11 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, boolean.class, new String[] {"myInt"});
 
         expression = "myInt>1+2*myInt/4 || myBoolean";
-        resultExpression = "greater(myInt, plus(1, divide(times(2, myInt), 4)))||myBoolean";
+        resultExpression = "greater(myInt, plus(1, divide(multiply(2, myInt), 4)))||myBoolean";
         check(expression, resultExpression, boolean.class, new String[] {"myBoolean", "myInt"});
 
         expression = "myInt>1+2*myInt/4 | myBoolean";
-        resultExpression = "binOr(greater(myInt, plus(1, divide(times(2, myInt), 4))), myBoolean)";
+        resultExpression = "binaryOr(greater(myInt, plus(1, divide(multiply(2, myInt), 4))), myBoolean)";
         check(expression, resultExpression, Boolean.class, new String[] {"myBoolean", "myInt"});
 
         expression = "myInt+myString";
@@ -920,7 +920,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, int.class, new String[] {"myTestClass"});
 
         expression = "myTestClass*1.0";
-        resultExpression = "times(myTestClass, 1.0)";
+        resultExpression = "multiply(myTestClass, 1.0)";
         check(expression, resultExpression, char.class, new String[] {"myTestClass"});
 
         expression = "myTestClass-'c'";
@@ -1098,11 +1098,11 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
     public void testImplicitConversion() throws Exception {
         String expression = "testImplicitConversion1(myInt, myDouble, myLong, myInt, myDouble, myLong)";
         String resultExpression =
-                "testImplicitConversion1(new double[] { doubleCast(myInt), myDouble, doubleCast(myLong), doubleCast(myInt), myDouble, doubleCast(myLong) })";
+                "testImplicitConversion1(new double[]{ doubleCast(myInt), myDouble, doubleCast(myLong), doubleCast(myInt), myDouble, doubleCast(myLong) })";
         check(expression, resultExpression, new double[0].getClass(), new String[] {"myDouble", "myInt", "myLong"});
 
         expression = "testVarArgs(myInt, 'a', myDouble, 1.0, 5.0, myDouble)";
-        resultExpression = "testVarArgs(myInt, 'a', new double[] { myDouble, 1.0, 5.0, myDouble })";
+        resultExpression = "testVarArgs(myInt, 'a', new double[]{ myDouble, 1.0, 5.0, myDouble })";
         check(expression, resultExpression, new double[0].getClass(), new String[] {"myDouble", "myInt"});
 
         expression = "testVarArgs(myInt, 'a', myDoubleArray)";
@@ -1114,7 +1114,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, new double[0].getClass(), new String[] {"myDoubleDBArray"});
 
         expression = "testImplicitConversion2(myInt, myInt)";
-        resultExpression = "testImplicitConversion2(new int[] { myInt, myInt })";
+        resultExpression = "testImplicitConversion2(new int[]{ myInt, myInt })";
         check(expression, resultExpression, new int[0].getClass(), new String[] {"myInt"});
 
         expression = "testImplicitConversion3(myDBArray)";
@@ -1428,7 +1428,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, int.class, new String[] {"myIntObj"});
 
         expression = "1*myDoubleObj";
-        resultExpression = "times(1, myDoubleObj.doubleValue())";
+        resultExpression = "multiply(1, myDoubleObj.doubleValue())";
         check(expression, resultExpression, double.class, new String[] {"myDoubleObj"});
 
         expression = "myInt/myLongObj";
@@ -1440,7 +1440,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, double.class, new String[] {"myIntObj", "myLong"});
 
         expression = "myDoubleObj+myLongObj+3*4";
-        resultExpression = "plus(plus(myDoubleObj.doubleValue(), myLongObj.longValue()), times(3, 4))";
+        resultExpression = "plus(plus(myDoubleObj.doubleValue(), myLongObj.longValue()), multiply(3, 4))";
         check(expression, resultExpression, double.class, new String[] {"myDoubleObj", "myLongObj"});
 
         expression = "1==myIntObj";
@@ -1448,7 +1448,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, boolean.class, new String[] {"myIntObj"});
 
         expression = "myInt>1+2*myIntObj/4 || myBooleanObj";
-        resultExpression = "greater(myInt, plus(1, divide(times(2, myIntObj.intValue()), 4)))||myBooleanObj";
+        resultExpression = "greater(myInt, plus(1, divide(multiply(2, myIntObj.intValue()), 4)))||myBooleanObj";
         check(expression, resultExpression, boolean.class, new String[] {"myBooleanObj", "myInt", "myIntObj"});
 
         expression = "myIntObj+myString";
@@ -1543,16 +1543,16 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         resultExpression = "new int[4][2]";
         check(expression, resultExpression, new int[0][0].getClass(), new String[] {});
 
-        expression = "new int[] { 1, 2, 3, 4 }";
-        resultExpression = "new int[] { 1, 2, 3, 4 }";
+        expression = "new int[]{ 1, 2, 3, 4 }";
+        resultExpression = "new int[]{ 1, 2, 3, 4 }";
         check(expression, resultExpression, new int[0].getClass(), new String[] {});
 
-        expression = "new int[]{1,2,3,4}";
-        resultExpression = "new int[] { 1, 2, 3, 4 }"; // note that the parser alters spacing
+        expression = "new int[] {1,2,3,4}";
+        resultExpression = "new int[]{ 1, 2, 3, 4 }"; // note that the parser alters spacing
         check(expression, resultExpression, new int[0].getClass(), new String[] {});
 
-        expression = "new String[] { `This`, `is`, `a`, `test` }";
-        resultExpression = "new String[] { \"This\", \"is\", \"a\", \"test\" }";
+        expression = "new String[]{ `This`, `is`, `a`, `test` }";
+        resultExpression = "new String[]{ \"This\", \"is\", \"a\", \"test\" }";
         check(expression, resultExpression, new String[0].getClass(), new String[] {});
 
         expression = "new SubclassOfDBLanguageParserDummyClass[] { " +
@@ -1560,7 +1560,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
                 "DBLanguageParserDummyClass.innerClass2Instance, " +
                 "new DBLanguageParserDummyClass.StaticNestedClass(), " +
                 "myDummyInnerClass }";
-        resultExpression = "new SubclassOfDBLanguageParserDummyClass[] { " +
+        resultExpression = "new SubclassOfDBLanguageParserDummyClass[]{ " +
                 "DBLanguageParserDummyClass.innerClassInstance, " +
                 "DBLanguageParserDummyClass.innerClass2Instance, " +
                 "new DBLanguageParserDummyClass.StaticNestedClass(), " +
@@ -1604,8 +1604,8 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         resultExpression = "new String(\"Hello, world!\")";
         check(expression, resultExpression, String.class, new String[] {});
 
-        expression = "new String(new char[] { 'a', 'b', 'c', 'd', 'e' }, 1, 4)";
-        resultExpression = "new String(new char[] { 'a', 'b', 'c', 'd', 'e' }, 1, 4)";
+        expression = "new String(new char[]{ 'a', 'b', 'c', 'd', 'e' }, 1, 4)";
+        resultExpression = "new String(new char[]{ 'a', 'b', 'c', 'd', 'e' }, 1, 4)";
         check(expression, resultExpression, String.class, new String[] {});
 
         expression = "new HashSet()";
@@ -1734,9 +1734,9 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
 
     public void testComplexExpressions() throws Exception {
         String expression =
-                "java.util.stream.Stream.of(new String[] { `a`, `b`, `c`, myInt > 0 ? myString=Double.toString(myDouble) ? `1` : `2` : new DBLanguageParserDummyClass().toString() }).count()";
+                "java.util.stream.Stream.of(new String[]{ `a`, `b`, `c`, myInt > 0 ? myString=Double.toString(myDouble) ? `1` : `2` : new DBLanguageParserDummyClass().toString() }).count()";
         String resultExpression =
-                "java.util.stream.Stream.of(new String[] { \"a\", \"b\", \"c\", greater(myInt, 0) ? eq(myString, Double.toString(myDouble)) ? \"1\" : \"2\" : new DBLanguageParserDummyClass().toString() }).count()";
+                "java.util.stream.Stream.of(new String[]{ \"a\", \"b\", \"c\", greater(myInt, 0) ? eq(myString, Double.toString(myDouble)) ? \"1\" : \"2\" : new DBLanguageParserDummyClass().toString() }).count()";
         check(expression, resultExpression, long.class, new String[] {"myDouble", "myInt", "myString"});
 
         expression = "myDummyClass.innerClassInstance.staticVar == 1_000_000L" +
@@ -1744,9 +1744,8 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
                 +
                 ": myIntArray";
         resultExpression = "eq(myDummyClass.innerClassInstance.staticVar, 1_000_000L)" +
-                " ? new int[] { java.util.stream.Stream.of(new String[] { \"a\", \"b\", \"c\", greater(myInt, 0) ? eq(myString, Double.toString(myDouble)) ? \"1\" : \"2\" : new DBLanguageParserDummyClass().toString() }).count() }"
-                +
-                " : myIntArray";
+                " ? new int[]{ java.util.stream.Stream.of(new String[]{ \"a\", \"b\", \"c\", greater(myInt, 0) ? eq(myString, Double.toString(myDouble)) ? \"1\" : \"2\" : new DBLanguageParserDummyClass().toString() }).count() }"
+                + " : myIntArray";
         check(expression, resultExpression, int[].class,
                 new String[] {"myDouble", "myDummyClass", "myInt", "myIntArray", "myString"});
 
@@ -1762,14 +1761,14 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         expression =
                 "io.deephaven.db.tables.lang.DBLanguageParserDummyClass.interpolate(myDoubleDBArray.toArray(),myDoubleDBArray.toArray(),new double[]{myDouble},io.deephaven.db.tables.lang.DBLanguageParserDummyClass.NestedEnum.ONE,false)[0]";
         resultExpression =
-                "io.deephaven.db.tables.lang.DBLanguageParserDummyClass.interpolate(myDoubleDBArray.toArray(), myDoubleDBArray.toArray(), new double[] { myDouble }, io.deephaven.db.tables.lang.DBLanguageParserDummyClass.NestedEnum.ONE, false)[0]";
+                "io.deephaven.db.tables.lang.DBLanguageParserDummyClass.interpolate(myDoubleDBArray.toArray(), myDoubleDBArray.toArray(), new double[]{ myDouble }, io.deephaven.db.tables.lang.DBLanguageParserDummyClass.NestedEnum.ONE, false)[0]";
         check(expression, resultExpression, double.class, new String[] {"myDouble", "myDoubleDBArray"});
 
         // For good measure, same test as above w/ implicit array conversions:
         expression =
                 "DBLanguageParserDummyClass.interpolate(myDoubleDBArray,myDoubleDBArray,new double[]{myDouble},DBLanguageParserDummyClass.NestedEnum.ONE,false)[0]";
         resultExpression =
-                "DBLanguageParserDummyClass.interpolate(ArrayUtils.nullSafeDbArrayToArray(myDoubleDBArray), ArrayUtils.nullSafeDbArrayToArray(myDoubleDBArray), new double[] { myDouble }, DBLanguageParserDummyClass.NestedEnum.ONE, false)[0]";
+                "DBLanguageParserDummyClass.interpolate(ArrayUtils.nullSafeDbArrayToArray(myDoubleDBArray), ArrayUtils.nullSafeDbArrayToArray(myDoubleDBArray), new double[]{ myDouble }, DBLanguageParserDummyClass.NestedEnum.ONE, false)[0]";
         check(expression, resultExpression, double.class, new String[] {"myDouble", "myDoubleDBArray"});
     }
 
@@ -2097,7 +2096,7 @@ public class TestDBLanguageParser extends BaseArrayTestCase {
         return -1;
     }
 
-    public static char times(TestClass testClass, double d) {
+    public static char multiply(TestClass testClass, double d) {
         return 'a';
     }
 

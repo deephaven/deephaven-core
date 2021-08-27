@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.util.datastructures.LazyCachingSupplier",
+ "methods": {
+  "get": ":return: LazyCachingSupplier.T"
+ },
+ "path": "io.deephaven.util.datastructures.LazyCachingSupplier",
+ "text": "Supplier wrapper that caches the result in a SoftReference. Only suitable to wrap suppliers that are\n safely repeatable and don't return null.",
+ "typeName": "class"
+}

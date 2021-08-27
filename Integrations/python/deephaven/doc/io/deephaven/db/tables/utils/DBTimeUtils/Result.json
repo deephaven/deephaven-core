@@ -3,7 +3,7 @@
  "methods": {
   "getConvertedFormula": ":return: java.lang.String",
   "getInstanceVariablesString": ":return: java.lang.String",
-  "getNewVariables": ":return: java.util.HashMap<java.lang.String,java.lang.Class>"
+  "getNewVariables": ":return: java.util.HashMap<java.lang.String,java.lang.Class<?>>"
  },
  "path": "io.deephaven.db.tables.utils.DBTimeUtils.Result",
  "text": "A container object for the result of DBTimeUtils.convertExpression(String), which includes the converted formula\n String, a String of instance variable declarations, and a map describing the names and types of these instance\n variables.",

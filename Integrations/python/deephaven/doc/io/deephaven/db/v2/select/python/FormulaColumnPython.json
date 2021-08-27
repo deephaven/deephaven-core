@@ -3,8 +3,8 @@
  "methods": {
   "copy": "Create a copy of this SelectColumn.\n\n:return: (io.deephaven.db.v2.select.SelectColumn) an independent copy of this SelectColumn.",
   "create": ":param columnName: java.lang.String\n:param dcf: io.deephaven.db.v2.select.python.DeephavenCompatibleFunction\n:return: io.deephaven.db.v2.select.python.FormulaColumnPython",
-  "createInstance": ":param arrays: io.deephaven.db.tables.dbarrays.DbArrayBase[]\n:param params: io.deephaven.db.tables.select.Param[]\n:return: io.deephaven.db.v2.select.formula.FormulaKernel",
-  "initDef": "Initialize any internal column definitions from the provided initial.\n\n:param columnNameMap: (java.util.Map<java.lang.String,io.deephaven.db.tables.ColumnDefinition>) - the starting set of column definitions\n:return: (java.util.List<java.lang.String>) a list of columns on which the result of this is dependent"
+  "createInstance": ":param arrays: io.deephaven.db.tables.dbarrays.DbArrayBase<?>[]\n:param params: io.deephaven.db.tables.select.Param<?>[]\n:return: io.deephaven.db.v2.select.formula.FormulaKernel",
+  "initDef": "Initialize any internal column definitions from the provided initial.\n\n:param columnNameMap: (java.util.Map<java.lang.String,io.deephaven.db.tables.ColumnDefinition<?>>) - the starting set of column definitions\n:return: (java.util.List<java.lang.String>) a list of columns on which the result of this is dependent"
  },
  "path": "io.deephaven.db.v2.select.python.FormulaColumnPython",
  "text": "A formula column for python native code.",

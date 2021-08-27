@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.db.v2.sources.LongSingleValueSource",
  "methods": {
-  "copy": ":param sourceColumn: io.deephaven.db.v2.sources.ColumnSource<java.lang.Long>\n:param sourceKey: long\n:param destKey: long",
+  "copy": ":param sourceColumn: io.deephaven.db.v2.sources.ColumnSource<? extendsjava.lang.Long>\n:param sourceKey: long\n:param destKey: long",
   "fillFromChunk": "Our default, inefficient, implementation. Inheritors who care should provide a better implementation.\n\n:param context: (io.deephaven.db.v2.sources.WritableChunkSink.FillFromContext) - A context containing all mutable/state related data used in writing the Chunk.\n:param src: (io.deephaven.db.v2.sources.chunk.Chunk<? extendsio.deephaven.db.v2.sources.chunk.Attributes.Values>) - The source of the data orderedKeys\n:param orderedKeys: (io.deephaven.db.v2.utils.OrderedKeys) - An OrderedKeys representing the keys to be written",
   "fillFromChunkUnordered": "Fills the ChunkSink with data from the source, with data corresponding to the keys from the given key chunk.\n\n:param context: (io.deephaven.db.v2.sources.WritableChunkSink.FillFromContext) - A context containing all mutable/state related data used in writing the Chunk.\n:param src: (io.deephaven.db.v2.sources.chunk.Chunk<? extendsio.deephaven.db.v2.sources.chunk.Attributes.Values>) - The source of the data orderedKeys\n:param keys: (io.deephaven.db.v2.sources.chunk.LongChunk<io.deephaven.db.v2.sources.chunk.Attributes.KeyIndices>) - A LongChunk representing the keys to be written",
   "getLong": ":param index: long\n:return: long",
