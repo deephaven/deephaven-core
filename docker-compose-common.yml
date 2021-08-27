@@ -20,7 +20,7 @@ services:
     # Note: using old-style volume mounts, so that the directories get created if they don't exist
     # See https://docs.docker.com/storage/bind-mounts/#differences-between--v-and---mount-behavior
     volumes:
-      - ./docker/core/data:/data
+      - ./data:/data
       - ./docker/core/cache:/cache
 
     deploy:
@@ -46,7 +46,7 @@ services:
     expose:
       - "80"
     volumes:
-      - ./docker/core/data:/data
+      - ./data:/data
     deploy:
       resources:
         limits:
