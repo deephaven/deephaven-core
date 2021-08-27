@@ -5,7 +5,7 @@ plugins {
 description = 'The java client flight library'
 
 dependencies {
-    api project(':java-client-session')
+    api project(':client-session')
     implementation project(':proto:proto-backplane-grpc-util')
 
     api 'org.apache.arrow:flight-core:5.0.0'
